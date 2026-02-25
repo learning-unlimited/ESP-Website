@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 import logging
 logger = logging.getLogger(__name__)
@@ -121,7 +119,7 @@ class StudentProgramApp(models.Model):
         return "{}'s app for {}".format(self.user, self.program)
 
     def __init__(self, *args, **kwargs):
-        super(StudentProgramApp, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if self.__class__ == StudentProgramApp:
             model = apps.get_model('application', self.app_type + self.__class__.__name__)
@@ -191,7 +189,7 @@ class StudentClassApp(models.Model):
         return "{}'s app for {}".format(self.app.user, self.subject)
 
     def __init__(self, *args, **kwargs):
-        super(StudentClassApp, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if self.__class__ == StudentClassApp:
             model = apps.get_model('application', self.app.app_type + self.__class__.__name__)
@@ -313,7 +311,7 @@ class FormstackStudentProgramApp(StudentProgramApp):
     objects = FormstackStudentProgramAppManager()
 
     def __init__(self, *args, **kwargs):
-        super(FormstackStudentProgramApp, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.app_type = 'Formstack'
 
     def program_settings(self):

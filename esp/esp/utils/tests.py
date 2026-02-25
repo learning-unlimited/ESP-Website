@@ -2,13 +2,9 @@
 Test cases for Django-ESP utilities
 """
 
-from __future__ import with_statement
 
-from __future__ import absolute_import
 import datetime
 import doctest
-from six.moves import map
-from six.moves import range
 try:
     import pylibmc as memcache
 except:
@@ -453,6 +449,5 @@ def suite():
     # Add doctests from esp.utils.__init__.py
     s.addTest(doctest.DocTestSuite(utils))
     return s
-
 
 

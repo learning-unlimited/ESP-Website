@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -52,7 +49,7 @@ from esp.users.models import ESPUser, Permission
 
 class TeacherClassRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        super(TeacherClassRegTest, self).setUp(num_students=5, room_capacity=5, *args, **kwargs)
+        super().setUp(num_students=5, room_capacity=5, *args, **kwargs)
 
         # Select a primary teacher, two other teachers, and the class
         self.teacher = random.choice(self.teachers)
@@ -197,7 +194,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         self.delete_resource_request(sec, new_res_type1)
         self.assertTrue(not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
-
 
     def check_all_teachers(self, all_teachers):
         teaching_teachers = [teacher for teacher in self.teachers
