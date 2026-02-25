@@ -47,7 +47,15 @@ class ModeratorForm(forms.ModelForm):
         else:
             raise KeyError('Need to supply program as named argument to ModeratorForm')
         super(ModeratorForm, self).__init__(*args, **kwargs)
-        self.fields['class_categories'].queryset = self.program.class_categories.all()
+        # Add lunch_category to queryset if present and not already included
+        categories_qs = self.program.class_categories.all()
+        if getattr(self.program, 'lunch_category', None):
+            lunch_cat = self.program.lunch_category
+            if lunch_cat not in categories_qs:
+                # Union with lunch_category
+                from django.db.models import Q
+                categories_qs = categories_qs | type(categories_qs).model.objects.filter(pk=lunch_cat.pk)
+        self.fields['class_categories'].queryset = categories_qs
         choices = [(0, 'Please select an option')] + [(num, num) for num in range(1, self.program.num_timeslots() + 1)]
         self.fields['num_slots'].choices = choices
         self.fields['num_slots'].widget.choices = choices

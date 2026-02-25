@@ -162,9 +162,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @no_auth
     @cached_module_view
     def categories(prog):
+
         categories = prog.class_categories.all()
-        if prog.open_class_registration:
+        # Add open class category if not already present
+        if prog.open_class_registration and prog.open_class_category not in categories:
             categories = categories.union(ClassCategories.objects.filter(pk=prog.open_class_category.pk))
+        # Add lunch category if not already present
+        if prog.lunch_category not in categories:
+            categories = categories.union(ClassCategories.objects.filter(pk=prog.lunch_category.pk))
         if len(categories) == 0:
             categories = ClassCategories.objects.filter(program__isnull=True)
 

@@ -147,8 +147,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # num_sections: section_list; hide if useless
         self.fields['num_sections'].choices = section_numbers
         hide_choice_if_useless( self.fields['num_sections'] )
-        # category: program.class_categories.all()
-        self.fields['category'].choices = [ (x.id, x.category) for x in prog.class_categories.all() ]
+        # category: program.class_categories.all() plus lunch_category if present
+        categories = list(prog.class_categories.all())
+        if getattr(prog, 'lunch_category', None):
+            # Only add lunch_category if not already in categories
+            if prog.lunch_category not in categories:
+                categories.append(prog.lunch_category)
+        self.fields['category'].choices = [(x.id, x.category) for x in categories]
         # grade_min, grade_max: crmi.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
@@ -310,7 +315,14 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         super(TeacherOpenClassRegForm, self).__init__(crmi, *args, **kwargs)
         program = crmi.program
         open_class_category = program.open_class_category
-        self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
+        # Add open_class_category if not already present
+        if (open_class_category.id, open_class_category.category) not in self.fields['category'].choices:
+            self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
+        # Add lunch_category if not already present
+        if getattr(program, 'lunch_category', None):
+            lunch_cat = program.lunch_category
+            if (lunch_cat.id, lunch_cat.category) not in self.fields['category'].choices:
+                self.fields['category'].choices += [(lunch_cat.id, lunch_cat.category)]
 
         # Re-enable the requested special resources field as a space needs .
         self.fields['requested_special_resources'].widget = forms.Textarea()

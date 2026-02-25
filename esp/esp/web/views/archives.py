@@ -1,7 +1,6 @@
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 from six.moves import map
 import six
 from six.moves import range

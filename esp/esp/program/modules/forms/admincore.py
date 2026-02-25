@@ -42,7 +42,12 @@ class LunchConstraintsForm(forms.Form):
         self.load_data()
 
     def load_data(self):
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').distinct()
+        # Use lunch_category property if available
+        lunch_cat = getattr(self.program, 'lunch_category', None)
+        if lunch_cat:
+            lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category=lunch_cat).distinct()
+        else:
+            lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').distinct()
         self.fields['timeslots'].initial = list(lunch_timeslots.values_list('id', flat=True))
         sched_constraints = ScheduleConstraint.objects.filter(program=self.program)
         # If there are any schedule constraints for this program, check that box

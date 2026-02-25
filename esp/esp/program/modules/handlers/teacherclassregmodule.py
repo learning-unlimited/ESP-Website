@@ -100,6 +100,9 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['modlist'] = get_current_request().user.getModeratingSectionsFromProgram(self.program)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program)
         context['open_class_category'] = self.program.open_class_category.category
+        # Add lunch_category to context if present
+        if getattr(self.program, 'lunch_category', None):
+            context['lunch_category'] = self.program.lunch_category.category
         return context
 
 
@@ -748,6 +751,9 @@ class TeacherClassRegModule(ProgramModuleObj):
         cls = classes[0]
 
         if cls.category == self.program.open_class_category:
+            pass
+        elif getattr(self.program, 'lunch_category', None) and cls.category == self.program.lunch_category:
+            pass
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -769,6 +775,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             if 'category' in request.POST and self.program.open_class_registration:
                 category = request.POST['category']
                 if category.isdigit() and int(category) == int(self.program.open_class_category.id):
+                    pass
+                elif getattr(self.program, 'lunch_category', None) and category.isdigit() and int(category) == int(self.program.lunch_category.id):
+                    pass
                     action = 'createopenclass'
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog, action=action)
         if not 'cls' in request.GET:
@@ -785,6 +794,9 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         # Select the correct action
         if cls.category == self.program.open_class_category:
+            pass
+        elif getattr(self.program, 'lunch_category', None) and cls.category == self.program.lunch_category:
+            pass
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -980,6 +992,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             },
             1: {
                 'type': self.program.open_class_category.category,
+                # Add lunch_category type if present
+                'lunch_type': getattr(self.program.lunch_category, 'category', None) if getattr(self.program, 'lunch_category', None) else None,
                 'link': 'makeopenclass',
                 'reg_open': self.open_class_reg_is_open(),
             }

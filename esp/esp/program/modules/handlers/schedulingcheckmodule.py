@@ -134,7 +134,11 @@ class SchedulingCheckRunner:
     def _getLunchByDay(self):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_cat = getattr(self.p, 'lunch_category', None)
+        if lunch_cat:
+            lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category=lunch_cat).order_by('start').distinct()
+        else:
+            lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.p.getTimeSlots():
@@ -217,6 +221,10 @@ class SchedulingCheckRunner:
             if include_walkins == False:
                 #filter out walkins
                 qs = qs.exclude(parent_class__category__id=self.p.open_class_category.id)
+            # Exclude lunch_category if present
+            lunch_cat = getattr(self.p, 'lunch_category', None)
+            if lunch_cat:
+                qs = qs.exclude(parent_class__category=lunch_cat)
             if self.incl_unreview:
                 #filter out rejected/cancelled sections
                 qs = qs.exclude(status__lt=0)
@@ -226,7 +234,8 @@ class SchedulingCheckRunner:
             #filter out unscheduled classes
             qs = qs.exclude(resourceassignment__isnull=True)
             #filter out lunch
-            qs = qs.exclude(parent_class__category__category=six.u('Lunch'))
+            if not lunch_cat:
+                qs = qs.exclude(parent_class__category__category=six.u('Lunch'))
             qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
             qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers', 'moderators')
             if include_walkins:
@@ -389,12 +398,15 @@ class SchedulingCheckRunner:
             return self.d_categories
 
         self.class_categories =  list(self.p.class_categories.all().values_list('category', flat=True))
-
         #not regular class categories
         open_class_cat = self.p.open_class_category.category
-        if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
-        lunch_cat = "Lunch"
-        if lunch_cat in self.class_categories: self.class_categories.remove(lunch_cat)
+        if open_class_cat in self.class_categories:
+            self.class_categories.remove(open_class_cat)
+        lunch_cat_obj = getattr(self.p, 'lunch_category', None)
+        if lunch_cat_obj and lunch_cat_obj.category in self.class_categories:
+            self.class_categories.remove(lunch_cat_obj.category)
+        elif "Lunch" in self.class_categories:
+            self.class_categories.remove("Lunch")
 
         #generating a dictionary of class categories
         class_cat_d = {}

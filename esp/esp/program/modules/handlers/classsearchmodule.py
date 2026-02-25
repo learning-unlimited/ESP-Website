@@ -71,8 +71,13 @@ class ClassSearchModule(ProgramModuleObj):
                                        inputs=[any_resource_input])
 
         categories = list(self.program.class_categories.all())
+        if getattr(self.program, 'lunch_category', None):
+            lunch_cat = self.program.lunch_category
+            if lunch_cat not in categories:
+                categories.append(lunch_cat)
         if self.program.open_class_registration:
-            categories.append(self.program.open_class_category)
+            if self.program.open_class_category not in categories:
+                categories.append(self.program.open_class_category)
         category_filter = SearchFilter(
             name='category', title='the category',
             inputs=[SelectInput(field_name='category',

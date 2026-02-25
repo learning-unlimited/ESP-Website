@@ -41,6 +41,7 @@ Learning Unlimited, Inc.
 #                                                                              #
 ################################################################################
 import os
+import socket
 
 ###############################################
 # Default site identification                 #
@@ -118,7 +119,7 @@ DATABASES = {'default':
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
+SERVER_EMAIL = 'server@{}'.format(socket.gethostname())
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
 EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
@@ -241,7 +242,6 @@ INSTALLED_APPS = (
     'esp.survey',
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
-    'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.tagdict',
     'esp.seltests',
     'esp.themes',

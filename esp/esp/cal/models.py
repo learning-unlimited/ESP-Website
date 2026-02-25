@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 import six
 from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
@@ -47,7 +46,6 @@ from argcache import cache_function
 from esp.utils import cmp
 
 # Create your models here.
-@python_2_unicode_compatible
 class EventType(models.Model):
     """ A list of possible event types, ie. Program, Social Activity, etc. """
     description = models.TextField() # Textual description; not computer-parseable
@@ -70,7 +68,6 @@ class EventType(models.Model):
             'training': cls.get_from_desc('Teacher Training'),
         }
 
-@python_2_unicode_compatible
 class Event(models.Model):
     """ A unit calendar entry.
 
