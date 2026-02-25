@@ -2,7 +2,7 @@
 {% load render_qsd %}
 {% load users %}
 
-{% block title %} Manage Phase Zero for {{program.niceName}} {% endblock %}
+{% block title %} Manage Program Lottery for {{program.niceName}} {% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
@@ -62,7 +62,7 @@ td {
 {% endblock xtrajs %}
 
 {% block content %}
-<h1>Manage Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+<h1>Manage Program Lottery for {{program.niceName}}</h1>
 
 <center>
 {% include "program/modules/bigboardmodule/bigboard_graph.html" %}

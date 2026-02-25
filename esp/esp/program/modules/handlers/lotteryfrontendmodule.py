@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import logging
 
 from esp.program.models import StudentRegistration

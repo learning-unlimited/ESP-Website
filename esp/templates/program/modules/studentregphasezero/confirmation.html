@@ -49,9 +49,9 @@
 {% endblock %}
 
 {% block content %}
-<h1 style="color: black">Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+<h1 style="color: black">Program Lottery for {{program.niceName}}</h1>
 {% inline_program_qsd_block program "learn:studentregphasezero/top" %}
-Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. Only students selected in the student lottery may proceed to register for classes.
+Welcome to the Program Lottery for {{program.niceName}}. Any student that submits interest to the program before the lottery closes will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. Only students selected in the program lottery may proceed to register for classes.
 {% end_inline_program_qsd_block %}
 
 {% if join_error %}

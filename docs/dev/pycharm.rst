@@ -1,26 +1,23 @@
 Using the PyCharm IDE
 ---------------------
 
-The Professional Edition of PyCharm (unfortunately, not the free Community Edition) supports development and debugging of Django projects running in Vagrant.
-Follow these steps to set it up for this project.  These instructions are for PyCharm version 2016.1.
+The Professional Edition of PyCharm (unfortunately, not the free Community Edition) supports development and debugging of Django projects running in Docker.
+Follow these steps to set it up for this project:
 
-1. Enable `Vagrant in PyCharm <https://www.jetbrains.com/help/pycharm/2016.1/vagrant.html>`_.
+1. Enable Docker support in PyCharm (Preferences > Build, Execution, Deployment > Docker).
 
-2. Enable `Django in PyCharm <https://www.jetbrains.com/help/pycharm/2016.1/django.html>`_.  The Django project root is the ``esp`` directory.  The Settings file is ``esp/settings.py``.
+2. Enable Django support (Preferences > Languages & Frameworks > Django). The Django project root is the ``esp`` directory. The Settings file is ``esp/settings.py``.
 
-3. Set up a `remote Python interpreter <https://www.jetbrains.com/help/pycharm/2016.1/configuring-remote-interpreters-via-vagrant.html>`_. The "Python interpreter path" should be set to /home/vagrant/venv/bin/python .
+3. Set up a remote Python interpreter via Docker Compose (Preferences > Project > Python Interpreter > Add > Docker Compose). Select the ``web`` service.
 
-4. Set up your run/debug configuration by going to Run -> Edit Configurations.  Add a configuration of type "Django Server".
+4. Set up your run/debug configuration by going to Run -> Edit Configurations. Add a configuration of type "Django Server".
     * Host: 0.0.0.0   Port: 8000
     * Environment variables:
         * DJANGO_SETTINGS_MODULE=esp.settings
-        * VIRTUALENV=/home/vagrant/venv
+        * VIRTUAL_ENV=/usr
 
-To get started, first do ``vagrant up``, then ``fab runserver`` from a terminal, type in the passphrase for the encrypted partition, then Ctrl-C to exit the server.  You only
-need to do these steps once per session (until you do ``vagrant halt``), so that the VM can access the encrypted partition.
+To get started, make sure your containers are built by running ``docker compose up --build`` once from a terminal.
 
-Now you can start or stop the server using the Run, Debug, or Stop commands in the ``Run`` menu.  To debug your code, you can set whatever
-breakpoints you want, and select Run -> Debug to run the server.  Go to localhost:8000 on your browser as usual, and the debugger will stop
+Now you can start or stop the server using the Run, Debug, or Stop commands in the ``Run`` menu. To debug your code, you can set whatever
+breakpoints you want, and select Run -> Debug to run the server. Go to localhost:8000 on your browser as usual, and the debugger will stop
 on a breakpoint when it is hit.
-
-If you forget to ``fab runserver`` after ``vagrant up``, then starting the server using the ``Run`` menu will not work because the encrypted partition will be inaccessible.

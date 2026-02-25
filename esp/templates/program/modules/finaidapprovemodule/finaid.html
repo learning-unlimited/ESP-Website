@@ -46,6 +46,9 @@
 function toggle(source) {
   $j('input[name=user]').prop('checked', source.checked);
 }
+function hideEmpty(source) {
+  $j("tr[data-done=False]").toggle()
+}
 </script>
 {% endblock %}
 
@@ -55,7 +58,7 @@ function toggle(source) {
   <p>Below is a list of users that have requested financial aid.</p>
   <p>Please select the requests that you would like to approve.</p>
   <p>Click on a row to see further information about a student's financial situation (if it was provided).</p>
-
+  <h4><input type="checkbox" onClick="hideEmpty(this)" /> Hide incomplete requests</h4>
   <form action="/manage/{{ program.getUrlBase }}/finaidapprove/" method="post">
     <div id="program_form">
       <table align="center" id="finaid_table">
@@ -68,7 +71,7 @@ function toggle(source) {
           <th width="20%">Filled Out Only by Student?</th>
         </tr>
         {% for req in requests %}
-        <tr class="req-basics">
+        <tr class="req-basics" {%if not req.done %} data-done = "False" {% endif %}>
           <td><input type="checkbox" name="user" value={{ req.user.id }}></td>
           <td align="center">
             {% if req.approved %}
