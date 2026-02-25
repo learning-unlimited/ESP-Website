@@ -237,6 +237,7 @@ td, th { padding: 5px !important; }
             {% for sec in entry.sections %}
                 {% ifchanged sec.parent_class %}
                     {% if not forloop.first %}
+                        </table>
                         </div>{# close previous class-accordion-body #}
                     {% endif %}
 
@@ -259,10 +260,10 @@ td, th { padding: 5px !important; }
 
                 <tr style="border-top: 1px dashed black;">
                     <th><h3>Responses for Section {{ sec.index }}
-                        <span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span>
+                        <span style="float:right;font-weight: normal;"><a href="#top" style="color: #417e68; text-decoration: none; font-size: 13px;">&uarr; Back to top</a></span>
                     </h3></th>
                 </tr>
-                {% render_responses_for_section sec entry.survey "teach" %}
+                {% render_responses_for_section sec entry.survey "" %}
 
                 {% if forloop.last %}
                         </table>
