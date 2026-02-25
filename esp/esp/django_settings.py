@@ -138,10 +138,9 @@ INSTITUTION_NAME = 'LearningUniversity'
 # A 'slug' used in email titles, like 'ESP' or 'Splash'
 ORGANIZATION_SHORT_NAME = 'Splash'
 # The host for ESP site-supported email lists.
-EMAIL_HOST = 'localhost'
-
-#################################
-# Default localization settings #
+EMAIL_HOST   = 'localhost'
+EMAIL_PORT   = '25'
+SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
 #################################
 TIME_ZONE = 'America/New_York'
 
