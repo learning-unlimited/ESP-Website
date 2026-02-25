@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.db import transaction
 from django.db.models import ProtectedError
 
 from esp.cal.models import Event
@@ -86,6 +86,7 @@ class ResourceController(object):
         form.save_restype(self.program, new_restype, choices)
         return new_restype
 
+    @transaction.atomic
     def delete_classroom(self, id):
         target_resource = Resource.objects.get(id=id)
         rooms = self.program.getClassrooms().filter(name=target_resource.name)

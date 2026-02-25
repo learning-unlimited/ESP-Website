@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import forms
 
 from esp.web.models import NavBarCategory
@@ -15,7 +14,7 @@ class QSDMoveForm(forms.Form):
     destination = forms.CharField(help_text='The portion of the URL that comes before the \'.html\'.')
 
     def __init__(self, *args, **kwargs):
-        super(QSDMoveForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['nav_category'].choices = [(n.id, n.name) for n in NavBarCategory.objects.all()]
 
     def load_data(self, qsd):
