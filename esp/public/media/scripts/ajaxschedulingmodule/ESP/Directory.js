@@ -17,18 +17,19 @@ function Directory(sections, el, schedule_assignments, matrix) {
      * Render the directory. If an old directory exists, remove it, then re-render it.
      */
     this.render = function(){
-        // Remove old classes from the directory
-        var oldChildren = this.el.children();
-        $j.each(oldChildren, function(c){
-            oldChildren[c].hidden = true;
-        });
+        // // Remove old classes from the directory
+        // var oldChildren = this.el.children();
+        // $j.each(oldChildren, function(c){
+        //     oldChildren[c].hidden = true;
+        // });
 
-        setTimeout(function(){
-            $j.each(oldChildren, function(c){
-                oldChildren[c].remove();
-                });
-        }.bind(this), 0);
-
+        // setTimeout(function(){
+        //     $j.each(oldChildren, function(c){
+        //         oldChildren[c].remove();
+        //         });
+        // }.bind(this), 0);
+        // Clear existing content immediately
+        this.el.empty();
         // Create the directory table
         var table = $j("<table/>");
         $j.each(this.sections.filtered_sections(), function(id, section){
@@ -91,3 +92,11 @@ function TableRow(section, el, directory){
         this.el.append(this.cell.el);
     };
 }
+if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
+  module.exports = {
+    Directory,
+    TableRow
+  };
+}
+
+

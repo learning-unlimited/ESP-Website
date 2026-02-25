@@ -1,0 +1,32 @@
+{
+  "name": "esp-website",
+  "version": "1.0.0",
+  "description": "[![Lint and Unit Tests](https://github.com/learning-unlimited/ESP-Website/actions/workflows/tests.yml/badge.svg)](https://github.com/learning-unlimited/ESP-Website/actions/workflows/tests.yml)\r [![codecov](https://codecov.io/gh/learning-unlimited/ESP-Website/branch/main/graph/badge.svg?token=eY0C5a1Lju)](https://codecov.io/gh/learning-unlimited/ESP-Website)\r # ESP Website\r This repository contains a website to help manage the logistics of preparing for and running large, short-term educational programs. It is written and maintained by members and alums of the interscholastic Splash community and [Learning Unlimited](https://learningu.org). Documentation for [program administrators](/docs/admin) and [developers](/docs/dev) is in the [`docs`](/docs) directory, including [dev setup documentation](/docs/dev/vagrant.rst) and [instructions for contributors](/docs/dev/contributing.rst).  Additional documentation for chapters of Learning Unlimited is on the [LU Wiki](https://wiki.learningu.org).",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haneefa96/ESP-Website.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/haneefa96/ESP-Website/issues"
+  },
+  "homepage": "https://github.com/haneefa96/ESP-Website#readme",
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "jquery": "^4.0.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom"
+  }
+}
