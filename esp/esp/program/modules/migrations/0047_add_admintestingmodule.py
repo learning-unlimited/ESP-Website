@@ -29,6 +29,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('modules', '0046_auto_20260106_2204'),
+        ('program', '0013_auto_20200217_2130'),
     ]
 
     operations = [
