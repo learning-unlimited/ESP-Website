@@ -4,7 +4,7 @@
 
 <table class="progressbar" align="center" width="400">
 <tr>
-<td><img src="/media/images/progress/left_fill.gif" alt="Progress bar start" /></td>
+<td><img src="/media/images/progress/left_fill.gif" /></td>
 {% for module in modules %}
 {% if module.isStep %}
 {% with module.isCompleted as moduleCompleted %}
@@ -32,6 +32,6 @@
 {% endwith %}
 {% endif %}
 {% endfor %}
-<td><img src="/media/images/progress/right{% if completedAll %}_fill{% endif %}.gif" alt="Progress bar end" /></td>
+<td><img src="/media/images/progress/right{% if completedAll %}_fill{% endif %}.gif" /></td>
 </tr>
 </table>

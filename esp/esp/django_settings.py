@@ -118,8 +118,7 @@ DATABASES = {'default':
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-import platform
-SERVER_EMAIL = 'server@{}'.format(platform.node())
+SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
 EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
