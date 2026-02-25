@@ -198,9 +198,7 @@ td, th { padding: 5px !important; }
         {% ifchanged cs.section.parent_class.id %}
         <tr onclick="toggleAccordion('prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}'); toggleClassAccordion('prog-{{ entry.program.id }}-class-{{ cs.section.parent_class.id }}');" title="Click to view responses">
             <td>
-                {% ifchanged entry.program.id %}
-                    <strong>{{ entry.program.niceName }}</strong>
-                {% endifchanged %}
+                <strong>{{ entry.program.niceName }}</strong>
             </td>
             <td>{{ cs.section.parent_class.emailcode }}: <span class="tex2jax_ignore">{{ cs.section.title }}</span></td>
             <td>
