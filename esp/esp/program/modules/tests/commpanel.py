@@ -252,7 +252,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertEqual(response['Content-Type'], 'application/json')
         data = json.loads(response.content.decode('UTF-8'))
         self.assertEqual(data['status'], 'error')
-        self.assertIn('No such file', data['message'])
+        self.assertIn('Failed to start email processing', data['message'])
 
     def test_process_emails_button_on_emails_page(self):
         """The 'Process Emails Now' button appears on /manage/emails."""

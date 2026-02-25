@@ -235,7 +235,7 @@ class CommModule(ProgramModuleObj):
                 close_fds=True,
             )
         except Exception:
-            logger.exception('Failed to auto-trigger dbmail_cron.py after commpanel submit')
+            logger.exception('Failed to auto-trigger email processing after commpanel submit')
 
         context = {}
         if public_view:

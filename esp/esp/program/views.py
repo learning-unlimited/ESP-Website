@@ -832,10 +832,10 @@ def process_emails(request):
             close_fds=True,
             start_new_session=True,
         )
-    except Exception as e:
-        logger.exception('Failed to launch dbmail_cron.py')
+    except Exception:
+        logger.exception('Failed to launch email processing subprocess')
         return HttpResponse(
-            json.dumps({'status': 'error', 'message': str(e)}),
+            json.dumps({'status': 'error', 'message': 'Failed to start email processing.'}),
             content_type='application/json',
             status=500,
         )
