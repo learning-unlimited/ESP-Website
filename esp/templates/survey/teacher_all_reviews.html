@@ -1,0 +1,352 @@
+{% extends "main.html" %}
+
+{% block title %}All Survey Responses{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+{% load survey %}
+
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+.bordered { border: 2px solid black; }
+td, th { padding: 5px !important; }
+
+/* Summary table */
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+.summary-table th {
+    background-color: #417e68;
+    color: white;
+    text-align: left;
+    padding: 10px !important;
+    font-size: 14px;
+}
+.summary-table td {
+    padding: 10px !important;
+    border-bottom: 1px solid #ddd;
+}
+.summary-table tr:hover {
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+.summary-table .program-row {
+    background-color: #eef5f0;
+    font-weight: bold;
+}
+.summary-table .program-row:hover {
+    background-color: #dceee4;
+}
+.rating-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 13px;
+    color: white;
+}
+.rating-high { background-color: #28a745; }
+.rating-mid { background-color: #ffc107; color: #333; }
+.rating-low { background-color: #dc3545; }
+
+/* Accordion */
+.accordion-section {
+    margin-bottom: 5px;
+}
+.accordion-header {
+    background-color: #eee;
+    padding: 12px 16px;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+.accordion-header:hover {
+    background-color: #e0e0e0;
+}
+.accordion-header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+.accordion-header .survey-label {
+    font-size: 13px;
+    color: #666;
+    font-weight: normal;
+}
+.accordion-toggle {
+    font-size: 22px;
+    font-weight: bold;
+    color: #417e68;
+    min-width: 30px;
+    text-align: center;
+    transition: transform 0.3s;
+}
+.accordion-toggle.open {
+    transform: rotate(45deg);
+}
+.accordion-body {
+    display: none;
+    border: 1px solid #ccc;
+    border-top: none;
+    padding: 10px 5px;
+}
+.accordion-body.open {
+    display: block;
+}
+.class-accordion-header {
+    background-color: #f8f8f8;
+    padding: 8px 14px;
+    margin: 5px 0;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+.class-accordion-header:hover {
+    background-color: #f0f0f0;
+}
+.class-accordion-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+.class-accordion-body {
+    display: none;
+    padding: 5px;
+}
+.class-accordion-body.open {
+    display: block;
+}
+.expand-all-btn {
+    background: none;
+    border: 1px solid #417e68;
+    color: #417e68;
+    padding: 5px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+.expand-all-btn:hover {
+    background-color: #417e68;
+    color: white;
+}
+.stats-inline {
+    font-size: 12px;
+    color: #888;
+    margin-left: 10px;
+}
+</style>
+
+<a name="top"></a>
+<h1>All Survey Responses{% if teacher %} for {{ teacher.name }}{% endif %}</h1>
+
+{% if teacher_form %}
+<form method="POST" action="{{ request.get_full_path }}">
+{% csrf_token %}
+<h2>Search for a teacher to retrieve their survey results across all programs:</h2>
+{% for error in teacher_form.target_user.errors %}
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        {{ error|escape }}
+</div>
+{% endfor %}
+{{ teacher_form.target_user }}
+<input type="submit" value="Search" />
+</form>
+{% if teacher %}
+<br />(<a href="{{ request.path }}">Reset Search</a>)
+{% endif %}
+<br /><br />
+{% endif %}
+
+{% if not teacher %}
+<p>No teacher selected. {% if is_admin %}Use the search form above to find a teacher.{% endif %}</p>
+{% elif not programs_data %}
+<p>No survey responses found for {{ teacher.name }}.</p>
+{% else %}
+
+<div id="program_form">
+
+{# ===== SUMMARY TABLE ===== #}
+<h2>Overview</h2>
+<table class="summary-table">
+<thead>
+<tr>
+    <th>Program</th>
+    <th>Class</th>
+    <th>Avg Rating</th>
+    <th>Responses</th>
+    <th></th>
+</tr>
+</thead>
+<tbody>
+{% for entry in programs_data %}
+    {% for cs in entry.classes_summary %}
+        {% ifchanged cs.section.parent_class.id %}
+        <tr onclick="toggleAccordion('prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}'); toggleClassAccordion('prog-{{ entry.program.id }}-class-{{ cs.section.parent_class.id }}');" title="Click to view responses">
+            <td>
+                {% ifchanged entry.program.id %}
+                    <strong>{{ entry.program.niceName }}</strong>
+                {% endifchanged %}
+            </td>
+            <td>{{ cs.section.parent_class.emailcode }}: <span class="tex2jax_ignore">{{ cs.section.title }}</span></td>
+            <td>
+                {% if cs.avg_rating != None %}
+                    <span class="rating-badge {% if cs.avg_rating >= 4 %}rating-high{% elif cs.avg_rating >= 3 %}rating-mid{% else %}rating-low{% endif %}">
+                        {{ cs.avg_rating }}
+                    </span>
+                {% else %}
+                    <span style="color:#999;">N/A</span>
+                {% endif %}
+            </td>
+            <td>{{ cs.total_responses }}</td>
+            <td style="color:#417e68;">&#9654;</td>
+        </tr>
+        {% endifchanged %}
+    {% endfor %}
+{% endfor %}
+</tbody>
+</table>
+
+{# ===== ACCORDION DETAIL SECTIONS ===== #}
+<h2>Detailed Responses</h2>
+<button class="expand-all-btn" onclick="toggleAll();" id="expand-all-btn">Expand All</button>
+
+{% for entry in programs_data %}
+    <div class="accordion-section">
+        <div class="accordion-header" onclick="toggleAccordion('prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}');">
+            <div>
+                <h2>{{ entry.program.niceName }}
+                    <span class="survey-label">&mdash; {{ entry.survey.name }}</span>
+                </h2>
+            </div>
+            <div class="accordion-toggle" id="toggle-prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}">+</div>
+        </div>
+        <div class="accordion-body" id="prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}">
+            {% for sec in entry.sections %}
+                {% ifchanged sec.parent_class %}
+                    {% if not forloop.first %}
+                        </div>{# close previous class-accordion-body #}
+                    {% endif %}
+
+                    <div class="class-accordion-header" onclick="event.stopPropagation(); toggleClassAccordion('prog-{{ entry.program.id }}-class-{{ sec.parent_class.id }}');">
+                        <h3>{{ sec.parent_class.emailcode }}: <span class="tex2jax_ignore">{{ sec.title }}</span>
+                        {% for cs in entry.classes_summary %}
+                            {% if cs.section.parent_class.id == sec.parent_class.id %}
+                                <span class="stats-inline">
+                                    {% if cs.avg_rating != None %}(avg: {{ cs.avg_rating }}, {% else %}({% endif %}{{ cs.total_responses }} responses)
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                        </h3>
+                        <div class="accordion-toggle" id="toggle-prog-{{ entry.program.id }}-class-{{ sec.parent_class.id }}">+</div>
+                    </div>
+                    <div class="class-accordion-body" id="prog-{{ entry.program.id }}-class-{{ sec.parent_class.id }}">
+                        <table class="fullwidth bordered">
+                        <tr><th><h2><a name="prog{{ entry.program.id }}-class{{ sec.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: <div class="tex2jax_ignore">{{ sec.title }}</div></h2></th></tr>
+                {% endifchanged %}
+
+                <tr style="border-top: 1px dashed black;">
+                    <th><h3>Responses for Section {{ sec.index }}
+                        <span style="float:right;font-weight: normal;"><a href="#top">[to top]</a></span>
+                    </h3></th>
+                </tr>
+                {% render_responses_for_section sec entry.survey "teach" %}
+
+                {% if forloop.last %}
+                        </table>
+                    </div>{# close last class-accordion-body #}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+{% endfor %}
+
+</div>
+{% endif %}
+
+<script type="text/javascript">
+function toggleAccordion(id) {
+    var body = document.getElementById(id);
+    var toggle = document.getElementById('toggle-' + id);
+    if (body.classList.contains('open')) {
+        body.classList.remove('open');
+        toggle.classList.remove('open');
+        toggle.textContent = '+';
+    } else {
+        body.classList.add('open');
+        toggle.classList.add('open');
+        toggle.textContent = '+';
+    }
+}
+
+function toggleClassAccordion(id) {
+    var body = document.getElementById(id);
+    var toggle = document.getElementById('toggle-' + id);
+    if (!body) return;
+    // Make sure parent accordion is open first
+    var parent = body.closest('.accordion-body');
+    if (parent && !parent.classList.contains('open')) {
+        parent.classList.add('open');
+        var parentId = parent.id;
+        var parentToggle = document.getElementById('toggle-' + parentId);
+        if (parentToggle) {
+            parentToggle.classList.add('open');
+            parentToggle.textContent = '+';
+        }
+    }
+    if (body.classList.contains('open')) {
+        body.classList.remove('open');
+        if (toggle) {
+            toggle.classList.remove('open');
+            toggle.textContent = '+';
+        }
+    } else {
+        body.classList.add('open');
+        if (toggle) {
+            toggle.classList.add('open');
+            toggle.textContent = '+';
+        }
+        body.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+}
+
+var allExpanded = false;
+function toggleAll() {
+    var bodies = document.querySelectorAll('.accordion-body, .class-accordion-body');
+    var toggles = document.querySelectorAll('.accordion-toggle');
+    var btn = document.getElementById('expand-all-btn');
+    allExpanded = !allExpanded;
+    for (var i = 0; i < bodies.length; i++) {
+        if (allExpanded) {
+            bodies[i].classList.add('open');
+        } else {
+            bodies[i].classList.remove('open');
+        }
+    }
+    for (var j = 0; j < toggles.length; j++) {
+        if (allExpanded) {
+            toggles[j].classList.add('open');
+        } else {
+            toggles[j].classList.remove('open');
+        }
+        toggles[j].textContent = '+';
+    }
+    btn.textContent = allExpanded ? 'Collapse All' : 'Expand All';
+}
+</script>
+
+{% endblock %}

@@ -36,11 +36,13 @@ Learning Unlimited, Inc.
 """
 
 import datetime
+import logging
 import xlwt
 import re
 from io import BytesIO
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.contrib.contenttypes.models import ContentType
 from esp.users.models import ESPUser, Record, RecordType, admin_required
 from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
@@ -55,6 +57,8 @@ from wsgiref.util import FileWrapper
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Min
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):
@@ -391,6 +395,126 @@ def survey_dump(request, tl, program, instance):
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
     return dump_survey_xlwt(user, prog, surveys, request, tl)
+
+@login_required
+def teacher_survey_all(request):
+    """Aggregated view of all survey responses for a teacher across all programs.
+
+    Teachers see their own responses. Admins can search for any teacher.
+    """
+    user = request.user
+    teacher = None
+    teacher_form = None
+
+    if user.isAdmin():
+        # Admin can search for a specific teacher
+        if 'target_user' in request.POST:
+            teacher_form = ApprovedTeacherSearchForm(request.POST)
+            if teacher_form.is_valid():
+                teacher = teacher_form.cleaned_data['target_user']
+            else:
+                teacher = None
+        elif 'teacher_id' in request.GET:
+            try:
+                t_id = int(request.GET['teacher_id'])
+            except (ValueError, TypeError):
+                t_id = None
+            if t_id is not None:
+                teachers = ESPUser.objects.filter(id=t_id)
+                if teachers.exists() and teachers[0].isTeacher():
+                    teacher = teachers[0]
+        if teacher is None and user.isTeacher():
+            teacher = user
+        if teacher_form is None:
+            if teacher and teacher != user:
+                teacher_form = ApprovedTeacherSearchForm(initial={'target_user': teacher.id})
+            else:
+                teacher_form = ApprovedTeacherSearchForm()
+    elif user.isTeacher():
+        teacher = user
+    else:
+        raise ESPError('You need to be a teacher or administrator to view survey responses.', log=False)
+
+    programs_data = []
+    if teacher is not None:
+        taught_classes = teacher.getTaughtClasses()
+        program_ids = taught_classes.values_list(
+            'parent_program_id', flat=True
+        ).distinct()
+        programs = Program.objects.filter(id__in=program_ids).order_by('-id')
+
+        for prog in programs:
+            surveys = prog.getSurveys().filter(
+                category='learn'
+            ).select_related()
+            if not surveys.exists():
+                continue
+
+            sections = teacher.getTaughtSections(prog).order_by(
+                'parent_class', 'id'
+            )
+            if not sections:
+                continue
+
+            section_ct = ContentType.objects.get_for_model(ClassSection)
+            section_ids = [sec.id for sec in sections]
+            for survey in surveys:
+                # Batch query 1: response counts per section (single query)
+                response_counts = dict(
+                    Answer.objects.filter(
+                        question__survey=survey,
+                        question__per_class=True,
+                        content_type=section_ct,
+                        object_id__in=section_ids,
+                    ).values('object_id').annotate(
+                        count=Count('survey_response', distinct=True)
+                    ).values_list('object_id', 'count')
+                )
+
+                # Batch query 2: numeric ratings per section (single query)
+                avg_ratings = {}
+                first_numeric = survey.questions.filter(
+                    question_type__is_numeric=True, per_class=True
+                ).first()
+                if first_numeric:
+                    raw_values = Answer.objects.filter(
+                        question=first_numeric,
+                        content_type=section_ct,
+                        object_id__in=section_ids,
+                    ).values_list('object_id', 'value')
+                    # Group values by section and compute averages in memory
+                    section_vals = {}
+                    for obj_id, val in raw_values:
+                        try:
+                            section_vals.setdefault(obj_id, []).append(float(val))
+                        except (ValueError, TypeError):
+                            pass
+                    for obj_id, vals in section_vals.items():
+                        if vals:
+                            avg_ratings[obj_id] = round(sum(vals) / len(vals), 1)
+
+                classes_summary = []
+                for sec in sections:
+                    classes_summary.append({
+                        'section': sec,
+                        'total_responses': response_counts.get(sec.id, 0),
+                        'avg_rating': avg_ratings.get(sec.id),
+                    })
+
+                programs_data.append({
+                    'program': prog,
+                    'survey': survey,
+                    'sections': sections,
+                    'classes_summary': classes_summary,
+                })
+
+    context = {
+        'teacher': teacher,
+        'programs_data': programs_data,
+        'teacher_form': teacher_form,
+        'is_admin': user.isAdmin(),
+    }
+    return render_to_response('survey/teacher_all_reviews.html', request, context)
 
 @login_required
 def survey_review(request, tl, program, instance, template = 'survey/review.html', context = {}):
