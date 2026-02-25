@@ -41,3 +41,4 @@ local_fabfile.py
 
 # Mac
 .DS_Store
+.docker-setup-done

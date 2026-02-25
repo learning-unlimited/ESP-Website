@@ -1,7 +1,7 @@
 Workflow
 ========
 
-To set up your dev server, see `<vagrant.rst>`_.  The remainder of this document assumes you've set up a dev server, and are ready to contribute a change.
+To set up your dev server, see `<docker.rst>`_.  The remainder of this document assumes you've set up a dev server, and are ready to contribute a change.
 
 Recommended one-time setup
 --------------------------
@@ -31,8 +31,8 @@ From the directory ``/esp``: ::
 
   git checkout main  # for historical reasons we use 'main' instead of 'master'
   git pull
-  ./update_deps.sh # on vagrant: see vagrant docs; no need to bother if deps haven’t changed
-  ./manage.py update # on vagrant: fab refresh
+  ./update_deps.sh # if using Docker: docker compose up --build; no need to bother if deps haven’t changed
+  ./manage.py update # if using Docker: docker compose exec web python esp/manage.py update
   git checkout -b new-branch-name
 
 Write some code!
