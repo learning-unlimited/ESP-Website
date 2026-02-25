@@ -43,8 +43,24 @@ from django.http import Http404, HttpResponseRedirect
 import datetime
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
+from esp.users.forms.user_profile import TeacherInfoForm, StudentInfoForm, EducatorInfoForm, GuardianInfoForm, EmergContactForm, GuardContactForm
 from esp.utils.web import render_to_response
 from django.db.models.query import Q
+
+# Mapping from role name to the standalone info form class for that role.
+# Used by profile_editor() to create extra forms for multi-role users.
+ROLE_INFO_FORMS = {
+    'student': StudentInfoForm,
+    'teacher': TeacherInfoForm,
+    'guardian': GuardianInfoForm,
+    'educator': EducatorInfoForm,
+}
+
+# Roles that require additional sub-forms (guardian contact, emergency contact)
+# when rendered as an extra (non-primary) form.
+ROLE_EXTRA_SUBFORMS = {
+    'student': [GuardContactForm, EmergContactForm],
+}
 
 @login_required
 def myesp_passwd(request):
@@ -89,24 +105,16 @@ def edit_profile(request):
 
     curUser = request.user
 
-    if curUser.isTeacher():
-        return profile_editor(request, None, True, 'teacher')
+    # Collect all roles this user has, filtered to known ESP user types.
+    valid_types = [t.lower() for t in ESPUser.getTypes()]
+    user_roles = [t.lower() for t in curUser.getUserTypes() if t.lower() in valid_types]
 
-    elif curUser.isStudent():
-        return profile_editor(request, None, True, 'student')
-
-    elif curUser.isGuardian():
-        return profile_editor(request, None, True, 'guardian')
-
-    elif curUser.isEducator():
-        return profile_editor(request, None, True, 'educator')
-
-    elif curUser.isVolunteer():
-        return profile_editor(request, None, True, 'volunteer')
-
-    else:
+    if not user_roles:
+        # Fallback: try group names directly
         user_types = curUser.groups.all().order_by('-id')
-        return profile_editor(request, None, True, user_types[0].name if user_types else '')
+        user_roles = [user_types[0].name.lower()] if user_types else ['']
+
+    return profile_editor(request, None, True, user_roles)
 
 @login_required
 def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
