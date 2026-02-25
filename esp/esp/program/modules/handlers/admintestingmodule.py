@@ -138,7 +138,7 @@ class AdminTestingModule(ProgramModuleObj):
         # This avoids setting user_morph, so needs_admin will NOT
         # grant admin privileges to the test session.
         logout(request)
-        test_user.backend = 'django.contrib.auth.backends.ModelBackend'
+        test_user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
         login(request, test_user)
 
         # Store enough info to restore the admin session later.
@@ -150,7 +150,9 @@ class AdminTestingModule(ProgramModuleObj):
 
         logger.info('Admin "%s" started testing as %s (pk=%d) for program %s',
                     admin_name, role, test_user.pk, prog)
-        return HttpResponseRedirect('/')
+        response = HttpResponseRedirect('/')
+        response.set_cookie('esp_testing_role', role, path='/')
+        return response
 
     @aux_call
     @needs_admin

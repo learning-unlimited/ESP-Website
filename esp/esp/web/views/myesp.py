@@ -99,12 +99,14 @@ def myesp_stop_testing(request):
     auth_logout(request)
     try:
         admin_user = ESPUser.objects.get(pk=admin_user_id)
-        admin_user.backend = 'django.contrib.auth.backends.ModelBackend'
+        admin_user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
         auth_login(request, admin_user)
     except ESPUser.DoesNotExist:
         return HttpResponseRedirect('/')
 
-    return HttpResponseRedirect('/manage/%s/admin_testing/' % program_url)
+    response = HttpResponseRedirect('/manage/%s/admin_testing/' % program_url)
+    response.delete_cookie('esp_testing_role')
+    return response
 
 @login_required
 def edit_profile(request):
