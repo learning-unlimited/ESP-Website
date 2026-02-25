@@ -84,6 +84,28 @@ def myesp_switchback(request):
 
     return HttpResponseRedirect(user.switch_back(request))
 
+def myesp_stop_testing(request):
+    """Return from a testing-mode session to the original admin account."""
+    from django.contrib.auth import login as auth_login, logout as auth_logout
+    from esp.users.models import ESPUser
+
+    testing = request.session.get('testing_mode')
+    if not testing:
+        return HttpResponseRedirect('/')
+
+    admin_user_id = testing['admin_user_id']
+    program_url = testing['program_url']
+
+    auth_logout(request)
+    try:
+        admin_user = ESPUser.objects.get(pk=admin_user_id)
+        admin_user.backend = 'django.contrib.auth.backends.ModelBackend'
+        auth_login(request, admin_user)
+    except ESPUser.DoesNotExist:
+        return HttpResponseRedirect('/')
+
+    return HttpResponseRedirect('/manage/%s/admin_testing/' % program_url)
+
 @login_required
 def edit_profile(request):
 
