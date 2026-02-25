@@ -22,7 +22,7 @@
 
 <h1>Module Management for {{ program.niceName }}</h1>
 
-<p>Welcome to the module management page for {{ program.niceName }}. This page lists the modules that students and teachers will encounter during registration. You can drag individual modules to reorder them and change whether they are required or not. You can also click on a module name to edit the requirement label that will be shown in parentheses next to the module title in the student/teacher registration to-do list. To add or remove modules, you will need to enable/disable them in the <a href="/manage/{{ program.getUrlBase }}/settings/program">program settings</a>.</p>
+<p>Welcome to the module management page for {{ program.niceName }}. This page lists the modules that students and teachers will encounter during registration. You can drag individual modules to reorder them and change whether they are required or not. You can also click on a module name to edit the Registration Step Title that will be shown instead of the module's default title in the student/teacher registration to-do list, or the requirement label that will be shown in parentheses next to the title. To add or remove modules, you will need to enable/disable them in the <a href="/manage/{{ program.getUrlBase }}/settings/program">program settings</a>.</p>
 {% inline_program_qsd_block program "manage:modules" %}
 {% end_inline_program_qsd_block %}
 
@@ -55,9 +55,10 @@
                 </h3>
                 <ol id="sortable1" class="connectedSortable">
                 {% for mod in learn_modules.required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {{ mod.module.admin_title }}<br/>
-                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
+                        <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
                 {% endfor %}
                 </ol>
@@ -66,9 +67,10 @@
                 </h3>
                 <ol id="sortable2" class="connectedSortable">
                 {% for mod in learn_modules.not_required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {{ mod.module.admin_title }}<br/>
-                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
+                        <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
                 {% endfor %}
                 </ol>
@@ -84,9 +86,10 @@
                 </h3>
                 <ol id="sortable3" class="connectedSortable">
                 {% for mod in teach_modules.required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {{ mod.module.admin_title }}<br/>
-                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
+                        <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
                 {% endfor %}
                 </ol>
@@ -95,9 +98,10 @@
                 </h3>
                 <ol id="sortable4" class="connectedSortable">
                 {% for mod in teach_modules.not_required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}">
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {{ mod.module.admin_title }}<br/>
-                        <input type="text" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
+                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
+                        <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
                 {% endfor %}
                 </ol>
@@ -117,7 +121,8 @@
     <center>
         <input type='checkbox' name='default_seq' id='default_seq' checked><label for="default_seq">Reset the sequence values of all modules to their defaults</label><br/>
         <input type='checkbox' name='default_req' id='default_req' checked><label for="default_req">Reset the required status of all modules to their defaults</label><br/>
-        <input type='checkbox' name='default_lab' id='default_lab' checked><label for="default_lab">Reset the requirement labels of all modules to their defaults</label><br/><br/>
+        <input type='checkbox' name='default_lab' id='default_lab' checked><label for="default_lab">Reset the requirement labels of all modules to their defaults</label><br/>
+        <input type='checkbox' name='default_link_title' id='default_link_title' checked><label for="default_link_title">Reset the Registration Step Title overrides of all modules to their defaults</label><br/><br/>
         <input class="fancybutton" type="submit" value="Reset Modules"/>
     </center>
 </form>
