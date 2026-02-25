@@ -415,30 +415,26 @@ def ajax_qsd_image_upload(request):
     saved_urls = []
     saved_paths = []
     for uploaded_file, ext in validated_files:
-        # Generate a safe, unique filename (UUID prevents collisions and path traversal)
         safe_filename = '%s.%s' % (uuid.uuid4().hex, ext)
-        file_path = os.path.join(upload_dir, safe_filename)
-
-        # Path confinement: ensure the resolved path stays within the
-        # upload directory.  This check is the CodeQL-recognized sanitizer
-        # for py/path-injection (CWE-022).
-        if not os.path.realpath(file_path).startswith(real_upload_dir):
-            continue
+        # Normalize the path and verify it stays inside the upload
+        # directory (CodeQL barrier-guard for py/path-injection CWE-022).
+        file_path = os.path.normpath(os.path.join(upload_dir, safe_filename))
+        if not file_path.startswith(real_upload_dir):
+            raise ValueError("Path traversal detected")
 
         try:
             with open(file_path, 'wb') as dest:
                 for chunk in uploaded_file.chunks():
                     dest.write(chunk)
         except IOError:
-            logger.error("Failed to write uploaded image to %s", file_path, exc_info=True)
             # Clean up any files already written in this batch
             for path in saved_paths:
-                if not os.path.realpath(path).startswith(real_upload_dir):
-                    continue
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
+                safe_path = os.path.normpath(path)
+                if safe_path.startswith(real_upload_dir):
+                    try:
+                        os.remove(safe_path)
+                    except OSError:
+                        pass
             return JsonResponse(
                 {'success': False, 'data': {'messages': ['Server error: failed to save file.']}},
                 status=500,
