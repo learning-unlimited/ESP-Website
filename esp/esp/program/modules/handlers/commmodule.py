@@ -49,9 +49,9 @@ from esp.middleware import ESPError
 
 import re
 
-# Match /learn/ProgramName/Instance or /manage/ProgramName/Instance (program url = two path segments)
+# Match /learn/, /teach/, or /volunteer/ + ProgramName/Instance (program url = two path segments)
 _PROGRAM_URL_PATTERN = re.compile(
-    r'(?:/learn|/manage)/([^/\s\'"<>]+/[^/\s\'"<>]+)',
+    r'(?:/learn|/teach|/volunteer)/([^/\s\'"<>]+/[^/\s\'"<>]+)',
     re.IGNORECASE
 )
 
