@@ -47,8 +47,6 @@ from esp.users.forms.user_profile import TeacherInfoForm, StudentInfoForm, Educa
 from esp.utils.web import render_to_response
 from django.db.models.query import Q
 
-# Mapping from role name to the standalone info form class for that role.
-# Used by profile_editor() to create extra forms for multi-role users.
 ROLE_INFO_FORMS = {
     'student': StudentInfoForm,
     'teacher': TeacherInfoForm,
@@ -56,8 +54,6 @@ ROLE_INFO_FORMS = {
     'educator': EducatorInfoForm,
 }
 
-# Roles that require additional sub-forms (guardian contact, emergency contact)
-# when rendered as an extra (non-primary) form.
 ROLE_EXTRA_SUBFORMS = {
     'student': [GuardContactForm, EmergContactForm],
 }
@@ -105,12 +101,10 @@ def edit_profile(request):
 
     curUser = request.user
 
-    # Collect all roles this user has, filtered to known ESP user types.
     valid_types = [t.lower() for t in ESPUser.getTypes()]
     user_roles = [t.lower() for t in curUser.getUserTypes() if t.lower() in valid_types]
 
     if not user_roles:
-        # Fallback: try group names directly
         user_types = curUser.groups.all().order_by('-id')
         user_roles = [user_types[0].name.lower()] if user_types else ['']
 
@@ -135,6 +129,17 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     curUser.updateOnsite(request)
 
+    # Normalize role: accept both a single string (backward compat from
+    # RegProfileModule) and a list of strings (from the new edit_profile).
+    if isinstance(role, str):
+        roles = [role]
+    else:
+        roles = list(role)
+
+    # Primary role is the first one; extra roles get their own info forms.
+    primary_role = roles[0] if roles else ''
+    extra_roles = roles[1:] if len(roles) > 1 else []
+
     #   Get the profile form from the user's type, although we need to handle
     #   a couple of extra possibilities for the 'role' variable.
     user_types = ESPUser.getAllUserTypes()
@@ -144,15 +149,37 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     additional_type_labels = [x[0] for x in additional_types]
     #   Handle all-lowercase versions of role being passed in by calling title()
     user_type_labels = [x[0] for x in user_types]
-    if role.title() in user_type_labels:
-        target_type = user_types[user_type_labels.index(role.title())][1]
+    if primary_role.title() in user_type_labels:
+        target_type = user_types[user_type_labels.index(primary_role.title())][1]
     else:
-        target_type = additional_types[additional_type_labels.index(role.title())][1]
+        target_type = additional_types[additional_type_labels.index(primary_role.title())][1]
     mod = __import__('esp.users.forms.user_profile', (), (), target_type['profile_form'])
     FormClass = getattr(mod, target_type['profile_form'])
 
-    context['profiletype'] = role
+    context['profiletype'] = primary_role
 
+    # Build list of extra info form classes for additional roles.
+    # Each entry is {'role': str, 'form_class': FormClass, 'prefix': str}
+    extra_form_specs = []
+    for extra_role in extra_roles:
+        if extra_role in ROLE_INFO_FORMS:
+            info_form_cls = ROLE_INFO_FORMS[extra_role]
+            prefix = extra_role + '_extra'
+            extra_form_specs.append({
+                'role': extra_role,
+                'form_class': info_form_cls,
+                'prefix': prefix,
+            })
+            # Also add any sub-forms (e.g., guardian/emergency contacts for students)
+            for sub_form_cls in ROLE_EXTRA_SUBFORMS.get(extra_role, []):
+                sub_prefix = extra_role + '_' + sub_form_cls.__name__.lower()
+                extra_form_specs.append({
+                    'role': extra_role,
+                    'form_class': sub_form_cls,
+                    'prefix': sub_prefix,
+                    'is_subform': True,
+                })
+    extra_forms = []
     if request.method == 'POST' and 'profile_page' in request.POST:
         form = FormClass(curUser, request.POST)
 
@@ -161,7 +188,24 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             if hasattr(form, 'repress_studentrep_expl_error'):
                 form.repress_studentrep_expl_error()
 
-        if form.is_valid():
+        # Instantiate extra forms with POST data
+        extra_forms = []
+        for spec in extra_form_specs:
+            if hasattr(spec['form_class'], 'user'):
+                ef = spec['form_class'](curUser, request.POST, prefix=spec['prefix'])
+            else:
+                ef = spec['form_class'](request.POST, prefix=spec['prefix'])
+            extra_forms.append({
+                'form': ef,
+                'role': spec['role'],
+                'prefix': spec['prefix'],
+                'is_subform': spec.get('is_subform', False),
+            })
+
+        # Check if all forms are valid
+        all_extra_valid = all(ef['form'].is_valid() for ef in extra_forms)
+
+        if form.is_valid() and all_extra_valid:
             new_data = form.cleaned_data
 
             if prog_input is None:
@@ -179,16 +223,42 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             if new_data.get('dietary_restrictions'):
                 regProf.dietary_restrictions = new_data['dietary_restrictions']
 
-            if role == 'student':
+            # Save primary role's info
+            if primary_role == 'student':
                 regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
                 regProf.contact_guardian = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_guardian, 'guard_')
                 regProf.contact_emergency = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_emergency, 'emerg_')
-            elif role == 'teacher':
+            elif primary_role == 'teacher':
                 regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
-            elif role == 'guardian':
+            elif primary_role == 'guardian':
                 regProf.guardian_info = GuardianInfo.addOrUpdate(curUser, regProf, new_data)
-            elif role == 'educator':
+            elif primary_role == 'educator':
                 regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
+
+            # Save extra role info
+            for ef in extra_forms:
+                if ef['is_subform']:
+                    continue  # Sub-forms are handled below with their parent role
+                extra_data = ef['form'].cleaned_data
+                extra_role_name = ef['role']
+                if extra_role_name == 'student':
+                    regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, extra_data)
+                elif extra_role_name == 'teacher':
+                    regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, extra_data)
+                elif extra_role_name == 'guardian':
+                    regProf.guardian_info = GuardianInfo.addOrUpdate(curUser, regProf, extra_data)
+                elif extra_role_name == 'educator':
+                    regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, extra_data)
+
+            # Save student sub-forms (guardian contact, emergency contact) from extra roles
+            for ef in extra_forms:
+                if ef['is_subform'] and ef['role'] == 'student':
+                    sub_data = ef['form'].cleaned_data
+                    if 'guard_first_name' in sub_data or ef['prefix'].endswith('guardcontactform'):
+                        regProf.contact_guardian = ContactInfo.addOrUpdate(curUser, regProf, sub_data, regProf.contact_guardian, 'guard_')
+                    elif 'emerg_first_name' in sub_data or ef['prefix'].endswith('emergcontactform'):
+                        regProf.contact_emergency = ContactInfo.addOrUpdate(curUser, regProf, sub_data, regProf.contact_emergency, 'emerg_')
+
             regProf.save()
 
             curUser.first_name = new_data.get('first_name')
@@ -237,7 +307,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         new_data['first_name'] = curUser.first_name
         new_data['last_name']  = curUser.last_name
         new_data['e_mail']     = curUser.email
-        new_data = regProf.updateForm(new_data, role)
+        new_data = regProf.updateForm(new_data, primary_role)
 
         if regProf.student_info and regProf.student_info.dob:
             new_data['dob'] = regProf.student_info.dob
@@ -252,10 +322,27 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             state_tag_map[field] = 'local_state'
         form = FormClass(curUser, initial=new_data, tag_map=state_tag_map)
 
+        # Build extra forms with initial data from the registration profile
+        extra_forms = []
+        extra_data = {}
+        extra_data = regProf.updateForm(extra_data)
+        for spec in extra_form_specs:
+            if hasattr(spec['form_class'], 'user'):
+                ef = spec['form_class'](curUser, initial=extra_data, prefix=spec['prefix'])
+            else:
+                ef = spec['form_class'](initial=extra_data, prefix=spec['prefix'])
+            extra_forms.append({
+                'form': ef,
+                'role': spec['role'],
+                'prefix': spec['prefix'],
+                'is_subform': spec.get('is_subform', False),
+            })
+
     context['new_user'] = regProf.id is None
     context['request'] = request
     context['form'] = form
     context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum')
+    context['extra_forms'] = extra_forms
     return render_to_response('users/profile.html', request, context)
 
 @login_required
