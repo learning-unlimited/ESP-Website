@@ -168,7 +168,6 @@ class QSDImageUploadTest(TestCase):
 
     def _make_image_file(self, name='test.png', size=100, content_type='image/png'):
         """Create a minimal in-memory image file for upload testing."""
-        from io import BytesIO
         from django.core.files.uploadedfile import SimpleUploadedFile
         # Minimal valid 1x1 PNG (67 bytes)
         png_header = (

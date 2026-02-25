@@ -359,19 +359,29 @@ def ajax_qsd_image_upload(request):
         if uploaded_file.size > QSD_IMAGE_MAX_SIZE:
             return JsonResponse(
                 {'success': False, 'data': {'messages': [
-                    'File "%s" exceeds the %d MB size limit.' % (uploaded_file.name, QSD_IMAGE_MAX_SIZE // (1024 * 1024))
+                    'File exceeds the %d MB size limit.' % (QSD_IMAGE_MAX_SIZE // (1024 * 1024))
                 ]}},
                 status=400,
             )
 
-        # Validate file extension
+        # Validate file extension — use allowlist lookup to produce a
+        # known-safe extension string (breaks CodeQL taint chain).
         original_name = uploaded_file.name
-        ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
-        if ext not in QSD_IMAGE_ALLOWED_EXTENSIONS:
+        raw_ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
+        # Re-derive ext from the allowlist so the value used in file paths
+        # is never directly from user input.
+        safe_ext = None
+        for allowed in QSD_IMAGE_ALLOWED_EXTENSIONS:
+            if raw_ext == allowed:
+                safe_ext = allowed
+                break
+        if safe_ext is None:
+            if raw_ext == '':
+                msg = 'Files must have an extension. Allowed types: %s' % ', '.join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS))
+            else:
+                msg = 'File type ".%s" is not allowed. Allowed types: %s' % (raw_ext, ', '.join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS)))
             return JsonResponse(
-                {'success': False, 'data': {'messages': [
-                    'File type ".%s" is not allowed. Allowed types: %s' % (ext, ', '.join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS)))
-                ]}},
+                {'success': False, 'data': {'messages': [msg]}},
                 status=400,
             )
 
@@ -380,12 +390,12 @@ def ajax_qsd_image_upload(request):
         if not content_type.startswith('image/'):
             return JsonResponse(
                 {'success': False, 'data': {'messages': [
-                    'File "%s" does not appear to be an image.' % original_name
+                    'File does not appear to be an image.'
                 ]}},
                 status=400,
             )
 
-        validated_files.append((uploaded_file, ext))
+        validated_files.append((uploaded_file, safe_ext))
 
     # Phase 2: Write all validated files to disk.
     saved_urls = []
