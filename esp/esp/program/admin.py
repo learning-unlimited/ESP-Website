@@ -326,11 +326,6 @@ admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):
      list_display = ('category', 'symbol', 'seq', )
-
-     def get_readonly_fields(self, request, obj=None):
-         if obj:  # Editing an existing object
-             return self.readonly_fields + ('symbol',)
-         return self.readonly_fields
 admin_site.register(ClassCategories, Admin_ClassCategories)
 
 class Admin_ClassSizeRange(admin.ModelAdmin):
