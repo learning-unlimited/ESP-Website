@@ -38,6 +38,7 @@ from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 
 from django.template import Template, Context
+from django.urls import reverse
 
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
@@ -141,3 +142,61 @@ class QSDCorrectnessTest(TestCase):
             #   Delete the new QSD so we can start again.
             qsd_rec_new.delete()
 
+class QSDAdminAuthorTest(TestCase):
+
+    def setUp(self):
+        # Create two superusers
+        self.user1 = ESPUser.objects.create_superuser(
+            username="user1",
+            email="user1@test.com",
+            password="password123"
+        )
+        self.user2 = ESPUser.objects.create_superuser(
+            username="user2",
+            email="user2@test.com",
+            password="password123"
+        )
+
+        self.nav_category = NavBarCategory.objects.create(
+            name="default"
+        )
+
+        # Create initial QSD object with all required fields
+        self.qsd = QuasiStaticData.objects.create(
+            title="Test QSD",
+            name="test_qsd",
+            url="test-url",
+            content="Test content",
+            author=self.user1,
+            nav_category=self.nav_category,
+        )
+
+    def test_admin_updates_author_on_edit(self):
+        self.client.login(username="user2", password="password123")
+
+        url = reverse(
+                "admin:qsd_quasistaticdata_change",
+                args=[self.qsd.pk]
+        )
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        # Build clean POST data manually
+        form_data = {
+            "title": "Updated Title",
+            "name": self.qsd.name,
+            "url": self.qsd.url,
+            "content": self.qsd.content,
+            "nav_category": self.nav_category.pk,
+            "disabled": self.qsd.disabled,
+            "_save": "Save",
+        }
+
+        response = self.client.post(url, form_data)
+
+        # Must redirect on success
+        self.assertEqual(response.status_code, 302)
+
+        self.qsd.refresh_from_db()
+        self.assertEqual(self.qsd.author, self.user2)

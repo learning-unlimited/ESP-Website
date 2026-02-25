@@ -45,4 +45,10 @@ class QuasiStaticDataAdmin(VersionAdmin):
     list_filter = ['nav_category',]
     date_hierarchy = 'create_date'
 
+    exclude = ['author']
+
+    def save_model(self, request, obj, form, change):
+        obj.load_cur_user_time(request)
+        super().save_model(request, obj, form, change)
+
 admin_site.register(QuasiStaticData, QuasiStaticDataAdmin)
