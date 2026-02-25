@@ -1,4 +1,3 @@
-
 from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -47,6 +46,7 @@ from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
+from django.apps import apps
 from phonenumber_field.modelfields import PhoneNumberField
 from localflavor.us.forms import USStateSelect
 
@@ -230,14 +230,19 @@ class BaseESPUser(object):
         query_set = cls.objects.filter(q_names | q_username | q_id)
 
         if grade and prog:
-            # We need to calculate the graduation year for this grade in this program
-            # Grade G at year Y has YOG = Y + (12 - G) + 1 (if before summer)
+            # Normalize prog to a Program instance and filter by calculated graduation year.
+            Program = apps.get_model('program', 'Program')
             try:
-                grade_int = int(grade)
+                if isinstance(prog, (int, str)):
+                    prog = Program.objects.get(id=prog)
                 schoolyear = cls.program_schoolyear(prog)
-                yog = schoolyear + (12 - grade_int)
-                query_set = query_set.filter(registrationprofile__student_info__graduation_year = yog, registrationprofile__program = prog)
-            except (ValueError, TypeError, cls.DoesNotExist):
+                yog = cls.YOGFromGrade(grade, schoolyear)
+                query_set = query_set.filter(
+                    registrationprofile__student_info__graduation_year=yog,
+                    registrationprofile__program=prog,
+                )
+            except (ValueError, TypeError, Program.DoesNotExist):
+                # If grade or program cannot be interpreted, skip grade filtering.
                 pass
 
         if last_name_range:
