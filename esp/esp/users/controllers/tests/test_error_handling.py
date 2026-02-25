@@ -19,13 +19,11 @@ class UserSearchErrorHandlingTest(TestCase):
         mock_process_post.return_value = {'base_list': 'test', 'recipient_type': 'Student'}
         mock_filter.side_effect = ESPError("Invalid user ID", log=False)
         mock_render.return_value = "rendered_response"
-        
         # Execute
         add_to_context = {}
         response, found = self.controller.create_filter(
             self.request, self.program, add_to_context=add_to_context
         )
-        
         # Verify
         self.assertFalse(found)
         self.assertEqual(add_to_context['error'], "Invalid user ID")
@@ -43,10 +41,8 @@ class UserSearchErrorHandlingTest(TestCase):
         mock_filter.side_effect = ESPError("Calculation error", log=False)
         mock_prepare.return_value = {'prepared': 'context'}
         mock_render.return_value = "rendered_error_page"
-        
         # Execute
         response = module.selectList(self.request, None, None, None, None, None, self.program)
-        
         # Verify
         mock_render.assert_called()
         args, kwargs = mock_render.call_args
