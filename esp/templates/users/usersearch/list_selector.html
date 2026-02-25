@@ -8,12 +8,18 @@ $j(document).ready(function() {
 <h3>Commonly used searches:</h3>
 <div id="common_searches">
     <ul>
+        {% if "Student" in user_types %}
         <li><a href="?recipient_type=Student&base_list=all_Student&grade_min={{ program.grade_min }}&grade_max={{ program.grade_max }}">All students within the age range of the program</a></li>
         <li><a href="?recipient_type=Student&base_list=enrolled">All students enrolled in at least one class</a></li>
+        {% endif %}
+        {% if "Teacher" in user_types %}
         <li><a href="?recipient_type=Teacher&base_list=all_Teacher&gradyear_min={% now 'Y' %}">All teachers who have not graduated</a></li>
         <li><a href="?recipient_type=Teacher&base_list=class_approved">All teachers teaching at least one approved class</a></li>
+        {% endif %}
+        {% if "Volunteer" in user_types %}
         <li><a href="?recipient_type=Volunteer&base_list=all_Volunteer">All volunteers in the database</a></li>
         <li><a href="?recipient_type=Volunteer&base_list=volunteer_all">All volunteers signed up for this program</a></li>
+        {% endif %}
     </ul>
 </div>
 {% endif %}
@@ -42,7 +48,7 @@ $j(document).ready(function() {
             <div id="recipient_type_options">
                 <select id="recipient_type" name="recipient_type">
                     {% for user_type in user_types %}
-                    <option value="{{ user_type }}" id="{{ "recipient_type_"|add:user_type }}">{{ user_type|capfirst|add:"s" }}</option>
+                    <option value="{{ user_type }}" id="{{ "recipient_type_"|add:user_type }}"{% if default_user_type == user_type %} selected="selected"{% endif %}>{{ user_type|capfirst|add:"s" }}</option>
                     {% endfor %}
                     <option value="emaillist" id="recipient_type_emaillist">Mailing list</option>
                 </select>

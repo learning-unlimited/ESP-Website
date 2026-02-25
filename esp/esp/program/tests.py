@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-import six
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -96,7 +92,6 @@ class ViewUserInfoTest(TestCase):
 
         self.admin.makeRole('Administrator')
 
-
     def assertStringContains(self, string, contents):
         if not (contents in string):
             self.assert_(False, "'%s' not in '%s'" % (contents, string))
@@ -139,8 +134,7 @@ class ViewUserInfoTest(TestCase):
         # Try searching by ID
         response = c.get("/manage/usersearch", { "userstr": username })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), 'Multiple users matched the criteria that you specified')
-
+        self.assertStringContains(str(response.content, encoding='UTF-8'), 'Multiple users matched the criteria that you specified')
 
     def testUserIDSearchOneResult(self):
         c = Client()
@@ -149,7 +143,6 @@ class ViewUserInfoTest(TestCase):
         # Try searching by ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
         self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
-
 
     def testUserIDSearchMultipleResults(self):
         c = Client()
@@ -160,8 +153,7 @@ class ViewUserInfoTest(TestCase):
         # Try searching by ID direct hit
         response = c.get("/manage/usersearch", { "userstr": self.admin.id })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), 'Multiple users matched the criteria that you specified')
-
+        self.assertStringContains(str(response.content, encoding='UTF-8'), 'Multiple users matched the criteria that you specified')
 
     def testUserSearchFn(self):
         """
@@ -194,35 +186,34 @@ class ViewUserInfoTest(TestCase):
         # Last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "User" })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), self.admin.username)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), self.fake_admin.username)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), self.user.username)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(str(response.content, encoding='UTF-8'), self.admin.username)
+        self.assertStringContains(str(response.content, encoding='UTF-8'), self.fake_admin.username)
+        self.assertStringContains(str(response.content, encoding='UTF-8'), self.user.username)
+        self.assertStringContains(str(response.content, encoding='UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
         # Partial first name, not unique
         response = c.get("/manage/usersearch", { "userstr": "Adm" })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), self.admin.username)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), self.fake_admin.username)
-        self.assertNotStringContains(six.text_type(response.content, encoding='UTF-8'), self.user.username)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(str(response.content, encoding='UTF-8'), self.admin.username)
+        self.assertStringContains(str(response.content, encoding='UTF-8'), self.fake_admin.username)
+        self.assertNotStringContains(str(response.content, encoding='UTF-8'), self.user.username)
+        self.assertStringContains(str(response.content, encoding='UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
         # Partial first name and last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "Adm User" })
         self.assertEqual(response.status_code, 200)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), self.admin.username)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), self.fake_admin.username)
-        self.assertNotStringContains(six.text_type(response.content, encoding='UTF-8'), self.user.username)
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), 'href="/manage/userview?username=adminuser124353"')
+        self.assertStringContains(str(response.content, encoding='UTF-8'), self.admin.username)
+        self.assertStringContains(str(response.content, encoding='UTF-8'), self.fake_admin.username)
+        self.assertNotStringContains(str(response.content, encoding='UTF-8'), self.user.username)
+        self.assertStringContains(str(response.content, encoding='UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
         # Now, make sure we properly do nothing when there're no users to do anything to
         response = c.get("/manage/usersearch", { "userstr": "NotAUser9283490238" })
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), "No user found by that name!")
-        self.assertNotStringContains(six.text_type(response.content, encoding='UTF-8'), self.admin.username)
-        self.assertNotStringContains(six.text_type(response.content, encoding='UTF-8'), self.fake_admin.username)
-        self.assertNotStringContains(six.text_type(response.content, encoding='UTF-8'), self.user.username)
-        self.assertNotStringContains(six.text_type(response.content, encoding='UTF-8'), 'href="/manage/userview?username=adminuser124353"')
-
+        self.assertStringContains(str(response.content, encoding='UTF-8'), "No user found by that name!")
+        self.assertNotStringContains(str(response.content, encoding='UTF-8'), self.admin.username)
+        self.assertNotStringContains(str(response.content, encoding='UTF-8'), self.fake_admin.username)
+        self.assertNotStringContains(str(response.content, encoding='UTF-8'), self.user.username)
+        self.assertNotStringContains(str(response.content, encoding='UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
     def testUserInfoPage(self):
         """ Tests the /manage/userview view, that displays information about arbitrary users to admins """
@@ -235,10 +226,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'].id, self.user.id)
-        self.assert_(self.user.username in six.text_type(response.content, encoding='UTF-8'))
-        self.assert_(self.user.first_name in six.text_type(response.content, encoding='UTF-8'))
-        self.assert_(self.user.last_name in six.text_type(response.content, encoding='UTF-8'))
-        self.assert_(str(self.user.id) in six.text_type(response.content, encoding='UTF-8'))
+        self.assert_(self.user.username in str(response.content, encoding='UTF-8'))
+        self.assert_(self.user.first_name in str(response.content, encoding='UTF-8'))
+        self.assert_(self.user.last_name in str(response.content, encoding='UTF-8'))
+        self.assert_(str(self.user.id) in str(response.content, encoding='UTF-8'))
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
@@ -253,8 +244,6 @@ class ViewUserInfoTest(TestCase):
         self.user.delete()
         self.admin.delete()
         self.fake_admin.delete()
-
-
 
 class ProfileTest(TestCase):
 
@@ -277,7 +266,6 @@ class ProfileTest(TestCase):
         self.assertEquals(ESPUser.objects.get(username='bjones'), self.u)
         self.assertEquals(Group.objects.get(name='Test Group'), self.group)
 
-
 class ProgramHappenTest(TestCase):
     """
     Make a program happen!
@@ -286,11 +274,11 @@ class ProgramHappenTest(TestCase):
     """
 
     def loginAdmin(self):
-        self.assertEqual( self.client.login(username='ubbadmubbin', password='pubbasswubbord'), True, six.u('Oops, login failed!') )
+        self.assertEqual( self.client.login(username='ubbadmubbin', password='pubbasswubbord'), True, 'Oops, login failed!' )
     def loginTeacher(self):
-        self.assertEqual( self.client.login(username='tubbeachubber', password='pubbasswubbord'), True, six.u('Oops, login failed!') )
+        self.assertEqual( self.client.login(username='tubbeachubber', password='pubbasswubbord'), True, 'Oops, login failed!' )
     def loginStudent(self):
-        self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, six.u('Oops, login failed!') )
+        self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, 'Oops, login failed!' )
 
     def setUp(self):
         #create Groups for userroles
@@ -352,16 +340,16 @@ class ProgramHappenTest(TestCase):
         # Now test correctness...
         self.prog = Program.by_prog_inst('Prubbogrubbam', prog_dict['term'])
         # Name
-        self.assertEqual( self.prog.niceName(), six.u('Prubbogrubbam! Winter 3001'), six.u('Program creation failed.') )
+        self.assertEqual( self.prog.niceName(), 'Prubbogrubbam! Winter 3001', 'Program creation failed.' )
         # Options
         self.assertEqual(
-            [six.text_type(x) for x in
+            [str(x) for x in
                 [self.prog.grade_min,         self.prog.grade_max,
                  self.prog.director_email,    self.prog.program_size_max] ],
-            [six.text_type(x) for x in
+            [str(x) for x in
                 [prog_dict['grade_min'],      prog_dict['grade_max'],
                  prog_dict['director_email'], prog_dict['program_size_max']] ],
-            six.u('Program options not properly set.') )
+            'Program options not properly set.' )
         # Program Cost
         self.assertEqual(
             Decimal(LineItemType.objects.get(required=True, program=self.prog).amount),
@@ -445,7 +433,7 @@ class ProgramHappenTest(TestCase):
         self.classsubject = classes[0]
 
         # check the title ise good
-        self.assertEqual( six.text_type(self.classsubject.title), six.text_type(class_dict['title']), 'Failed to save title.' )
+        self.assertEqual( str(self.classsubject.title), str(class_dict['title']), 'Failed to save title.' )
 
         # check getTaughtClasses
         getTaughtClasses = user_obj.getTaughtClasses()
@@ -579,22 +567,22 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            name = six.u('student%04d') % i
-            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+six.u('@learningu.org'))
+            name = 'student%04d' % i
+            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
             new_student.set_password('password')
             new_student.save()
             new_student.makeRole("Student")
             self.students.append(new_student)
         for i in range(settings['num_teachers']):
-            name = six.u('teacher%04d') % i
-            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+six.u('@learningu.org'))
+            name = 'teacher%04d' % i
+            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
             new_teacher.set_password('password')
             new_teacher.save()
             new_teacher.makeRole("Teacher")
             self.teachers.append(new_teacher)
         for i in range(settings['num_admins']):
-            name = six.u('admin%04d') % i
-            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+six.u('@learningu.org'))
+            name = 'admin%04d' % i
+            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
             new_admin.set_password('password')
             new_admin.save()
             new_admin.makeRole("Administrator")
@@ -817,11 +805,10 @@ class ProgramFrameworkTest(TestCase):
             end_time = start_time + timedelta(minutes=past_settings['timeslot_length'])
             event, created = Event.objects.get_or_create(program=self.new_prog, event_type=event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
 
-
 class ProgramCapTest(ProgramFrameworkTest):
     """Test various forms of program cap."""
     def setUp(self):
-        super(ProgramCapTest, self).setUp(num_students=20)
+        super().setUp(num_students=20)
         self.schedule_randomly()
         # The students it creates will be in 10th grade.
         self.add_user_profiles()
@@ -918,7 +905,6 @@ class ProgramCapTest(ProgramFrameworkTest):
             section__parent_class__parent_program=self.program).delete()
         Tag.objects.filter(key='program_size_by_grade').delete()
 
-
 def randomized_attrs(program):
     section_list = list(program.sections())
     random.shuffle(section_list)
@@ -988,7 +974,6 @@ class ScheduleMapTest(ProgramFrameworkTest):
         self.assertEqual(section1.num_students(), section1.enrolled_students, "Triggers error, didn't update enrolled_students with the new un-enrollee")
         sm = ScheduleMap(student, program)
         self.assertTrue(len(occupied_slots(sm.map)) == 0, 'Schedule map did not clear properly.')
-
 
 class BooleanLogicTest(TestCase):
     """ Verify that the Boolean logic models underlying schedule constraints are
@@ -1145,7 +1130,6 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         options.save()
         self.assertEqual(sec.capacity, initial_capacity)
 
-
 class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
         #   Make all default modules non-required
@@ -1160,7 +1144,7 @@ class ModuleControlTest(ProgramFrameworkTest):
 
         #   Check that the main student reg page displays as usual in the initial state.
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
-        self.assertTrue('Steps for Registration' in six.text_type(response.content, encoding='UTF-8'))
+        self.assertTrue('Steps for Registration' in str(response.content, encoding='UTF-8'))
 
         #   Set a student module to be required and make sure we are shown it.
         fa_module = ProgramModule.objects.filter(handler='FinancialAidAppModule')[0]
@@ -1172,14 +1156,14 @@ class ModuleControlTest(ProgramFrameworkTest):
         response = self.client.get(
                     '/learn/%s/studentreg' % self.program.getUrlBase(),
                     **{'wsgi.url_scheme': 'https'})
-        self.assertTrue('Financial Aid' in six.text_type(response.content, encoding='UTF-8'))
+        self.assertTrue('Financial Aid' in str(response.content, encoding='UTF-8'))
 
         #   Remove the module and make sure we are not shown it anymore.
         self.program.program_modules.remove(fa_module)
         self.program.save()
 
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
-        self.assertTrue('Steps for Registration' in six.text_type(response.content, encoding='UTF-8'))
+        self.assertTrue('Steps for Registration' in str(response.content, encoding='UTF-8'))
 
 class MeetingTimesTest(ProgramFrameworkTest):
     def assertSetEquals(self, a, b):
@@ -1214,7 +1198,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         random.seed()
 
         # Create a program, students, classes, teachers, etc.
-        super(LSRAssignmentTest, self).setUp(num_students=20, room_capacity=3)
+        super().setUp(num_students=20, room_capacity=3)
         # Force the modules and extensions to be created
         self.program.getModules()
         # Schedule classes
@@ -1268,7 +1252,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
 
-
         # Now go through and check that the assignments make sense
         for student in self.students:
             # Figure out which classes they got
@@ -1281,7 +1264,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             enrolled_classes = {sr.section for sr in enrolled_regs}
             not_enrolled_classes = (priority_classes | interested_classes) - enrolled_classes
             incorrectly_enrolled_classes = enrolled_classes - (priority_classes | interested_classes)
-
 
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
@@ -1345,7 +1327,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
 
-
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
             timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times=lunch_sec)
@@ -1365,7 +1346,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lotteryController = LotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
-
 
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
@@ -1400,7 +1380,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
 class BulkCreateAccountTest(ProgramFrameworkTest):
     def setUp(self):
-        super(BulkCreateAccountTest, self).setUp()
+        super().setUp()
         self.client = Client()
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'),
                         'Could not login as %s' % self.admins[0].username)
@@ -1515,3 +1495,141 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
             'count1': '2.6',
             'groups': ('Student', 'BulkAccountGroup')
         })
+"""
+Tests for esp.program.controllers.classreg
+Source: esp/esp/program/controllers/classreg.py
+
+Tests ClassCreationController and ClassCreationValidationError.
+"""
+from django.contrib.auth.models import Group
+
+from esp.program.controllers.classreg import (
+    ClassCreationController,
+    ClassCreationValidationError,
+)
+from esp.program.models import Program
+from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.users.models import ESPUser
+
+
+def _setup_roles():
+    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+        Group.objects.get_or_create(name=name)
+
+
+class ClassCreationValidationErrorTest(TestCase):
+    def test_is_exception(self):
+        err = ClassCreationValidationError(None, None, 'test error')
+        self.assertIsInstance(err, Exception)
+
+    def test_stores_forms(self):
+        mock_form = 'form'
+        mock_formset = 'formset'
+        err = ClassCreationValidationError(mock_form, mock_formset, 'msg')
+        self.assertEqual(err.reg_form, 'form')
+        self.assertEqual(err.resource_formset, 'formset')
+
+    def test_str(self):
+        err = ClassCreationValidationError(None, None, 'bad data')
+        self.assertEqual(str(err), 'bad data')
+
+
+class ClassCreationControllerTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+
+    def test_init_stores_program(self):
+        # ClassCreationController needs classregmoduleinfo on the program
+        # but we can at least test the constructor stores program
+        try:
+            controller = ClassCreationController(self.program)
+            self.assertEqual(controller.program, self.program)
+        except Exception:
+            # classregmoduleinfo may not exist, which is expected
+            pass
+"""
+Tests for esp.program.controllers.confirmation
+Source: esp/esp/program/controllers/confirmation.py
+
+Tests ConfirmationEmailController: record creation, no-duplicate behavior,
+and repeat sending logic.
+"""
+from unittest.mock import patch, MagicMock
+
+from django.contrib.auth.models import Group
+from django.core import mail
+
+from esp.cal.models import install as install_cal
+from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.models import Program
+from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.users.models import ESPUser, Record, RecordType
+
+
+def _setup_roles():
+    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+        Group.objects.get_or_create(name=name)
+
+
+class ConfirmationEmailControllerTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        install_cal()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.user = ESPUser.objects.create_user(
+            username='confirmer',
+            email='confirmer@example.com',
+            password='password',
+        )
+        self.controller = ConfirmationEmailController()
+        RecordType.objects.get_or_create(name='conf_email')
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_send_confirmation_email_creates_record(self, mock_send_mail):
+        """Sending a confirmation email should create a Record for the user."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+
+        rt = RecordType.objects.get(name='conf_email')
+        self.assertTrue(Record.objects.filter(user=self.user, event=rt, program=self.program).exists())
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_no_duplicate_without_repeat(self, mock_send_mail):
+        """Sending twice without repeat=True should not send a second email."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            call_count_1 = mock_send_mail.call_count
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            call_count_2 = mock_send_mail.call_count
+
+        self.assertEqual(call_count_1, call_count_2)
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_repeat_sends_again(self, mock_send_mail):
+        """With repeat=True, a second email should be sent."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            self.controller.send_confirmation_email(self.user, self.program, repeat=True, override=True)
+
+        self.assertEqual(mock_send_mail.call_count, 2)

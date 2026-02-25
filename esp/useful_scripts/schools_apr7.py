@@ -1,7 +1,4 @@
-from __future__ import absolute_import
-from __future__ import print_function
 from esp.program.models import *
-import six
 
 splash = Program.objects.get(id=2)
 
@@ -20,7 +17,7 @@ for student in students:
 
 schools = list(school_dict.keys())
 def school_key(school):
-    if isinstance(school, six.string_types):
+    if isinstance(school, str):
         return school.lower()
     else:
         return 'N/A'

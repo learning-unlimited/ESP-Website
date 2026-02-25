@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -45,7 +44,7 @@ class TeacherEventsManageModule(ProgramModuleObj):
 
     # Initialization
     def __init__(self, *args, **kwargs):
-        super(TeacherEventsManageModule, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def availability_role(self):
         return Group.objects.get(name='Teacher')

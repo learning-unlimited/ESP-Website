@@ -1,11 +1,9 @@
-from __future__ import absolute_import
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, Record, RecordType
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
-import six
 
 def teacheracknowledgementform_factory(prog):
     name = "TeacherAcknowledgementForm"
@@ -18,9 +16,9 @@ def teacheracknowledgementform_factory(prog):
         teach_text = "teacher"
 
     if date_range is None:
-        label = six.u("I have read the above and commit to serving as a %s for my %s class(es).") % (teach_text, prog.program_type)
+        label = "I have read the above and commit to serving as a %s for my %s class(es)." % (teach_text, prog.program_type)
     else:
-        label = six.u("I have read the above and commit to serving as a %s for my %s class(es) on %s.") % (teach_text, prog.program_type, date_range)
+        label = "I have read the above and commit to serving as a %s for my %s class(es) on %s." % (teach_text, prog.program_type, date_range)
 
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
