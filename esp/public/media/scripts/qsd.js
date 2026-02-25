@@ -141,7 +141,7 @@ function qsd_toggle_history(qsd_url, edit_id)
                   + 'onclick="qsd_preview_version(\'' + edit_id + '\', ' + v.version_id + ')">'
                   + '<span class="glyphicon glyphicon-eye-open"></span> View</button> ';
             html += '<button type="button" class="btn btn-xs btn-warning" '
-                  + 'onclick="qsd_restore_version(\'' + qsd_url + '\', \'' + edit_id + '\', ' + v.version_id + ', \'' + v.date.replace(/'/g, "\\'") + '\')">'
+                  + 'onclick="qsd_restore_version(\'' + qsd_url + '\', \'' + edit_id + '\', ' + v.version_id + ', \'' + v.date.replace(/\\/g, "\\\\").replace(/'/g, "\\'") + '\')">'
                   + '<span class="glyphicon glyphicon-repeat"></span> Restore</button>';
             html += '</td>';
             html += '</tr>';
