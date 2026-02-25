@@ -95,24 +95,47 @@ One exception: when merging a pull request to ``main`` via the GitHub UI button,
 Testing
 -------
 
-**All tests must pass before submitting a pull request.** You can run the full
-test suite using Docker::
+**All tests must pass before submitting a pull request.** If your changes break existing tests,
+fix them before requesting a review. When adding new functionality, add corresponding tests to the appropriate application's test module or directory.
 
-  docker exec -it esp-website-web-1 bash -c "cd /code/esp && python manage.py test --settings=esp.settings 2>&1"
+This project uses Django's built-in test framework. Tests generally live in their respective application directories, typically in a ``tests.py`` file or a ``tests/`` directory (e.g. ``esp/accounting/tests.py`` or ``esp/users/controllers/tests/test_usersearch.py``).
 
-Or run a specific test file::
+Running Tests
+~~~~~~~~~~~~~
 
-  docker exec -it esp-website-web-1 bash -c "cd /code/esp && python manage.py test esp.accounting.tests --settings=esp.settings 2>&1"
+**Using Docker (recommended):**
 
-Without Docker::
+To run all tests::
+
+  docker compose exec web python esp/manage.py test
+
+To run tests for a specific module (e.g. ``accounting``)::
+
+  docker compose exec web python esp/manage.py test esp.accounting.tests
+
+**Without Docker:**
+
+If you are running the server natively without Docker::
 
   cd esp
   python manage.py test --settings=esp.settings
 
-Test files live in their respective application directories, typically in a ``tests.py`` file or
-a ``tests/`` directory (e.g. ``accounting/tests.py`` or ``users/controllers/tests/test_usersearch.py``). When
-adding new functionality, add corresponding tests to the appropriate application's
-test module or directory.
+Test Suite Reference
+~~~~~~~~~~~~~~~~~~~~
+
+Many tests are located in application-specific files. Some legacy tests may still exist in ``esp.tests``. Key test locations include:
+
+* ``esp/accounting/tests.py``
+* ``esp/application/tests.py``
+* ``esp/cal/tests.py``
+* ``esp/dbmail/tests.py``
+* ``esp/formstack/tests.py``
+* ``esp/miniblog/tests.py``
+* ``esp/program/tests.py``
+* ``esp/survey/tests.py``
+* ``esp/varnish/tests.py``
+
+Additional tests exist in directories: ``customforms/tests.py``, ``program/tests.py``, ``users/tests.py``, ``resources/tests.py``, ``qsd/tests.py``, ``qsdmedia/tests.py``, ``tagdict/tests.py``, ``themes/tests.py``, ``utils/tests.py``, ``web/tests.py``, and autoscheduler tests in ``program/controllers/autoscheduler/tests/``.
 
 Code reviews
 ------------
