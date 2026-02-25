@@ -11,7 +11,8 @@ def run_install(sender, **kwargs):
     function; in that case we should simply do nothing rather than error.
     """
     models_module = sender.models_module
-    models_module.install()
+    if hasattr(models_module, "install"):
+        models_module.install()
 
 
 class InstallConfig(AppConfig):
