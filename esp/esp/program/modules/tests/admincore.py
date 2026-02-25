@@ -77,7 +77,10 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
 
         super(ModuleManagementLinkTitleTest, self).setUp(modules=modules)
 
-        # Create a dedicated admin account for these tests
+        # Force lazy creation of ProgramModuleObj rows so they exist
+        # before individual tests query for them.
+        self.program.getModules()
+
         self.adminUser, created = ESPUser.objects.get_or_create(username='admin_modmgmt')
         self.adminUser.set_password('password')
         self.adminUser.makeAdmin()
@@ -130,26 +133,33 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
             pmo = ProgramModuleObj.objects.get(id=int(mod_id))
             self.assertEqual(pmo.link_title, 'Custom Title for %s' % mod_id)
 
+    def _step_pmos(self):
+        """Return ProgramModuleObj queryset limited to learn/teach step modules
+        (the ones actually managed by the Module Management page)."""
+        return ProgramModuleObj.objects.filter(
+            program=self.program,
+            module__module_type__in=['learn', 'teach'],
+        )
+
     def test_module_management_resets_link_title(self):
         """POSTing with default_link_title resets all link_title overrides to empty."""
         self.client.login(username='admin_modmgmt', password='password')
 
-        # Give every module a non-empty link_title override
-        for pmo in ProgramModuleObj.objects.filter(program=self.program):
+        for pmo in self._step_pmos():
             pmo.link_title = "Custom Title"
             pmo.save()
 
         r = self.client.post(self._modules_url(), {'default_link_title': 'on'})
         self.assertIn(r.status_code, [200, 302])
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program):
+        for pmo in self._step_pmos():
             self.assertEqual(pmo.link_title, "")
 
     def test_module_management_link_title_reset_independent(self):
         """default_link_title alone triggers the reset without requiring other reset flags."""
         self.client.login(username='admin_modmgmt', password='password')
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program):
+        for pmo in self._step_pmos():
             pmo.link_title = "Should be cleared"
             pmo.seq = 999
             pmo.save()
@@ -158,7 +168,7 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
         r = self.client.post(self._modules_url(), {'default_link_title': 'on'})
         self.assertIn(r.status_code, [200, 302])
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program):
+        for pmo in self._step_pmos():
             self.assertEqual(pmo.link_title, "")
             # seq should be unchanged (not reset) because default_seq was not sent
             self.assertEqual(pmo.seq, 999)
