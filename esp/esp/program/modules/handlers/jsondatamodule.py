@@ -1,8 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
-from six.moves import range
-from six.moves import zip
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -49,7 +45,7 @@ from django.http import Http404
 
 from argcache import cache_function
 
-from esp.cal.models import Event
+from esp.cal.models import Event, EventType
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.class_status import ClassStatus
@@ -80,6 +76,44 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     """ Warning: for performance reasons, these views are not abstracted away from
         the models.  If the schema is changed this code will need to be updated.
     """
+
+    @staticmethod
+    def _bulk_availability(prog, user_ids, subtract_moderation=False):
+        """Bulk-fetch availability for multiple users in one query.
+
+        Returns {user_id: [event_id, ...]} lookup.
+        When subtract_moderation=True, subtracts moderating section times.
+        """
+        avail_by_user = defaultdict(set)
+        if prog.hasModule('AvailabilityModule'):
+            et = EventType.get_from_desc('Class Time Block')
+            for uid, eid in UserAvailability.objects.filter(
+                event__program=prog,
+                event__event_type=et,
+                user_id__in=user_ids,
+            ).values_list('user_id', 'event_id'):
+                avail_by_user[uid].add(eid)
+        else:
+            all_ts = set(prog.getTimeSlots().values_list('id', flat=True))
+            for uid in user_ids:
+                avail_by_user[uid] = set(all_ts)
+
+        if subtract_moderation:
+            #   Bulk-subtract moderating section times
+            mod_times = (
+                ClassSection.objects
+                .filter(
+                    parent_class__parent_program=prog,
+                    moderators__id__in=user_ids,
+                )
+                .values_list('moderators__id', 'meeting_times__id')
+            )
+            for uid, tid in mod_times:
+                if tid is not None:
+                    avail_by_user.get(uid, set()).discard(tid)
+
+        return {uid: list(events) for uid, events in avail_by_user.items()}
+
 
     @aux_call
     @json_response()
@@ -150,8 +184,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                     'comments': "",
                 })
             moderator_list.append(mod_dict)
+        avail_lookup = JSONDataModule._bulk_availability(
+            prog, [m['id'] for m in moderator_list], subtract_moderation=False)
         for m in moderator_list:
-            m['availability'] = [event.id for event in ESPUser.objects.get(id=m['id']).getAvailableTimes(prog, ignore_classes=True, ignore_moderation=True)]
+            m['availability'] = avail_lookup.get(m['id'], [])
         return {'moderators': moderator_list}
     moderators.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
     moderators.method.cached_function.depend_on_model(ModeratorRecord)
@@ -313,8 +349,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 teacher_dict[t.id] = teacher
 
         # Build up teacher availability
+        avail_lookup = JSONDataModule._bulk_availability(
+            prog, [t['id'] for t in teachers], subtract_moderation=True)
         for teacher in teachers:
-            teacher['availability'] = [event.id for event in ESPUser.objects.get(id=teacher['id']).getAvailableTimes(prog, ignore_classes=True)]
+            teacher['availability'] = avail_lookup.get(teacher['id'], [])
 
         return {'sections': sections, 'teachers': teachers}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
@@ -340,12 +378,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'parent_class__sections',
             'parent_class__teachers',
             'parent_class__parent_program',
-            'meeting_times')
+            'meeting_times',
+            'resourcerequest_set')
 
         for s in qs:
-            rrequests = ResourceRequest.objects.filter(target = s)
             rrequest_dict = defaultdict(list)
-            for r in rrequests:
+            for r in s.resourcerequest_set.all():
                 rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
             cls = s.parent_class
@@ -390,8 +428,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 teacher_dict[t.id] = teacher
 
         # Build up teacher availability
+        avail_lookup = JSONDataModule._bulk_availability(
+            prog, [t['id'] for t in teachers], subtract_moderation=True)
         for teacher in teachers:
-            teacher['availability'] = [event.id for event in ESPUser.objects.get(id=teacher['id']).getAvailableTimes(prog, ignore_classes=True)]
+            teacher['availability'] = avail_lookup.get(teacher['id'], [])
 
         return {'sections': sections, 'teachers': teachers}
     sections_admin.method.cached_function.depend_on_cache(sections.cached_function, lambda extra=wildcard, prog=wildcard, **kwargs: {'prog': prog, 'extra': extra})
@@ -434,7 +474,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'timeslot_subjects': subject_ids}
     classes_timeslot.cached_function.depend_on_model(Event)
     classes_timeslot.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program, 'extra': str(event.id)})
-
 
     @aux_call
     @json_response()
@@ -508,8 +547,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 moderator_dict[m.id] = moderator
 
         # Build up teacher availability
+        avail_lookup = JSONDataModule._bulk_availability(
+            prog, [t['id'] for t in teachers], subtract_moderation=True)
         for teacher in teachers:
-            teacher['availability'] = [event.id for event in ESPUser.objects.get(id=teacher['id']).getAvailableTimes(prog, ignore_classes=True)]
+            teacher['availability'] = avail_lookup.get(teacher['id'], [])
 
         return {'classes': classes, 'teachers': teachers, 'moderators': moderators}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
@@ -528,7 +569,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         section_ids = ssis.values('subject__sections')
         return {'interested_subjects': subject_ids,
                 'interested_sections': section_ids}
-
 
     @aux_call
     @json_response()
@@ -575,7 +615,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 #else:
                 #   item['lottery_priority'] = False
         return {'sections': sections}
-
 
     @aux_call
     @cache_control(public=True, max_age=300)
@@ -767,7 +806,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {return_key: [return_dict]}
 
-
     @aux_call
     @json_response()
     @needs_admin
@@ -793,7 +831,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Classes Scheduled", classes.filter(sections__meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Class Sections", sections.distinct().count()))
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))
-        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=ClassStatus.ACCEPTED).distinct().count()))
+        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category="Lunch", status=ClassStatus.ACCEPTED).distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=ClassStatus.UNREVIEWED).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=ClassStatus.ACCEPTED, sections__status=ClassStatus.ACCEPTED).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=ClassStatus.REJECTED).exclude(category__category='Lunch').distinct().count()))
@@ -1137,10 +1175,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         teachers = ESPUser.objects.filter(classsubject__parent_program=prog).distinct()
 
+        teacher_ids = list(teachers.values_list('id', flat=True))
+        avail_lookup = JSONDataModule._bulk_availability(
+            prog, teacher_ids, subtract_moderation=True)
+
         teacher_dicts = [
             {   'uid': t.id,
                 'text': t.name(),
-                'availability': [event.id for event in t.getAvailableTimes(prog, ignore_classes=True)]
+                'availability': avail_lookup.get(t.id, [])
             } for t in teachers ]
 
         return {'teachers': teacher_dicts}

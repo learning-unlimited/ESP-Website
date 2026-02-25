@@ -22,6 +22,7 @@ esp/file_db/*
 esp/esp/database_settings.py.chicago
 esp/esp/database_settings.py.mit
 env
+venv
 useful_logs
 theme_compiled.css
 /.vagrant/*
@@ -40,3 +41,4 @@ local_fabfile.py
 
 # Mac
 .DS_Store
+.docker-setup-done

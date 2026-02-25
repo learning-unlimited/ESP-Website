@@ -146,6 +146,11 @@ $j('input:radio[name="type"]').change( function(e){
     if (option == "other") {
         $j('#group').prop('disabled', function(i, v) { return !v; });
         $j('#title_wrapper').toggle();
+        // Autofill the title with the selected group name when switching to "other"
+        var selectedGroupName = $j('#group option:selected').text().trim();
+        if (selectedGroupName) {
+            $j('#blanktitle').val(selectedGroupName);
+        }
     } else if (option == "aul") {
         $j('#aul_wrapper').toggle();
         $j('#title_wrapper').toggle();
@@ -165,6 +170,15 @@ $j('input:radio[name="type"]').change( function(e){
         $old_this.trigger("change");
         // set current radio button as old
         $old_this = $j(this);
+    }
+});
+// When the group dropdown changes while "other" is selected, update the title field
+$j('#group').change(function() {
+    if ($j('input:radio[name="type"]:checked').val() === 'other') {
+        var selectedGroupName = $j(this).find('option:selected').text().trim();
+        if (selectedGroupName) {
+            $j('#blanktitle').val(selectedGroupName);
+        }
     }
 });
 $j(function() {
