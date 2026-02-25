@@ -143,3 +143,58 @@ class RefundViewsTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounting/refund_error.html')
         self.assertContains(response, 'No valid refund amounts were specified')
+
+    @patch('stripe.Charge.retrieve')
+    def test_refund_search_post(self, mock_retrieve):
+        """Searching via POST should return Stripe transactions."""
+        class MockCharge:
+            amount_refunded = 500
+            amount = 2500
+        mock_retrieve.return_value = MockCharge()
+
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.post('/accounting/refund/', {
+            'search': '1',
+            'program': self.program.id,
+            'target_user': self.student.id,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'refund_amount_{self.transfer.id}')
+        self.assertContains(response, self.student.username)
+
+    def test_process_refund_get(self):
+        """GET request to process_refund should return the search form."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get('/accounting/refund/process/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounting/refund.html')
+
+    def test_process_refund_invalid_program(self):
+        """POST to process_refund with invalid program should return an error."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.post('/accounting/refund/process/', {
+            'program_id': 99999,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounting/refund_error.html')
+        self.assertContains(response, 'Invalid program specified.')
+
+    def test_process_refund_invalid_amount(self):
+        """POST to process_refund with an invalid amount or transfer should just ignore it and error on empty."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.post('/accounting/refund/process/', {
+            'program_id': self.program.id,
+            f'refund_amount_{self.transfer.id}': 'invalid_amount',
+            'refund_amount_99999': '10.00',  # Invalid transfer ID
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounting/refund_error.html')
+        self.assertContains(response, 'No valid refund amounts were specified.')
+
+    def test_refund_invalid_program_and_user_get(self):
+        """GET request to refund with invalid program and user shouldn't crash."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get('/accounting/refund/', {'program': 99999, 'user': 99999})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounting/refund.html')
