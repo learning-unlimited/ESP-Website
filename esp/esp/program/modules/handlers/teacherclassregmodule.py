@@ -813,7 +813,6 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         A brief description of some of the key arguments:
         - newclass -- The class object from which to fill in the data
-        - newclass -- The class object from which to fill in the data
         - action -- What action is the form performing? Options are 'create',
               'createopenclass', 'edit', 'editopenclass'
         - populateonly -- If True and newclass is specified, the form will only

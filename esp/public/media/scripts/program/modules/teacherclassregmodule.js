@@ -20,13 +20,11 @@ and change the grade range.");
 var sectionNums = JSON.parse(document.getElementById('section-numbers-per-duration').textContent);
 
 function updateMaxSections(){
-//{
-	//var sectionNums = JSON.parse(document.getElementById('section-numbers-per-duration').textContent);
 	var num_sections_cur = $j("#id_num_sections");
 	var maxSections = sectionNums[$j("#id_duration").val()];
-	
+
 	num_sections_cur.empty();
-	//TODO is hiding options better?
+
 	for (let i = 0; i <= maxSections; i++) {
 		if (i == 0){
 			num_sections_cur.append('<option value= > </option>');
@@ -35,7 +33,6 @@ function updateMaxSections(){
 			num_sections_cur.append('<option value='+ i +' >' + String(i) + '</option>');
 		}
 	}
-//}
 }
 
 $j(function(){
