@@ -65,7 +65,7 @@ class RefundViewsTest(ProgramFrameworkTest):
         mock_retrieve.return_value = MockCharge()
 
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get('/accounting/refund/', {'program': self.program.id})
+        response = self.client.get('/accounting/refund/', {'program': self.program.id, 'user': self.student.id})
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'refund_amount_{self.transfer.id}')

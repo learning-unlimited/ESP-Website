@@ -19,5 +19,4 @@ class RefundSearchForm(forms.Form):
         label='Student',
         help_text='Search for a student to refund.',
         ajax_func='ajax_autocomplete_student',
-        required=False,
     )

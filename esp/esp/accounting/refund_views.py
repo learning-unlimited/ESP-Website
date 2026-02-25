@@ -149,12 +149,17 @@ def _send_refund_notification_email(program, refund_results, is_error=False):
 def refund(request):
     """Main refund page. Handles program/user search and shows transactions."""
     context = {
-        'form': RefundSearchForm(),
         'max_age_days': REFUND_MAX_TRANSACTION_AGE_DAYS,
     }
 
     program = None
     users = []
+
+    initial_program_id = request.session.get('refund_last_program_id')
+    if not initial_program_id:
+        current_progs = Program.current_programs()
+        if current_progs:
+            initial_program_id = current_progs[0].id
 
     if request.method == 'POST' and 'search' in request.POST:
         form = RefundSearchForm(request.POST)
@@ -164,20 +169,25 @@ def refund(request):
             user = form.cleaned_data.get('target_user')
             if user:
                 users = [user]
+            request.session['refund_last_program_id'] = program.id
 
     elif request.method == 'GET' and 'program' in request.GET:
         try:
             program = Program.objects.get(id=request.GET['program'])
             context['form'] = RefundSearchForm(initial={'program': program.id})
+            request.session['refund_last_program_id'] = program.id
         except Program.DoesNotExist:
-            pass
+            context['form'] = RefundSearchForm(initial={'program': initial_program_id})
         if 'user' in request.GET:
             try:
                 users = [ESPUser.objects.get(id=request.GET['user'])]
             except ESPUser.DoesNotExist:
                 pass
 
-    if program:
+    if 'form' not in context:
+        context['form'] = RefundSearchForm(initial={'program': initial_program_id})
+
+    if program and users:
         context['selected_program'] = program
         context['searched_with_user'] = bool(users)
         _configure_stripe(program)
