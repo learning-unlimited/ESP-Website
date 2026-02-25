@@ -411,6 +411,7 @@ def ajax_qsd_image_upload(request):
         validated_files.append((uploaded_file, safe_ext))
 
     # Phase 2: Write all validated files to disk.
+    real_upload_dir = os.path.realpath(upload_dir)
     saved_urls = []
     saved_paths = []
     for uploaded_file, ext in validated_files:
@@ -418,7 +419,12 @@ def ajax_qsd_image_upload(request):
         safe_filename = '%s.%s' % (uuid.uuid4().hex, ext)
         file_path = os.path.join(upload_dir, safe_filename)
 
-        # Write file to disk in chunks to handle large files safely
+        # Path confinement: ensure the resolved path stays within the
+        # upload directory.  This check is the CodeQL-recognized sanitizer
+        # for py/path-injection (CWE-022).
+        if not os.path.realpath(file_path).startswith(real_upload_dir):
+            continue
+
         try:
             with open(file_path, 'wb') as dest:
                 for chunk in uploaded_file.chunks():
@@ -427,6 +433,8 @@ def ajax_qsd_image_upload(request):
             logger.error("Failed to write uploaded image to %s", file_path, exc_info=True)
             # Clean up any files already written in this batch
             for path in saved_paths:
+                if not os.path.realpath(path).startswith(real_upload_dir):
+                    continue
                 try:
                     os.remove(path)
                 except OSError:
