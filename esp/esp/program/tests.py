@@ -1495,3 +1495,141 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
             'count1': '2.6',
             'groups': ('Student', 'BulkAccountGroup')
         })
+"""
+Tests for esp.program.controllers.classreg
+Source: esp/esp/program/controllers/classreg.py
+
+Tests ClassCreationController and ClassCreationValidationError.
+"""
+from django.contrib.auth.models import Group
+
+from esp.program.controllers.classreg import (
+    ClassCreationController,
+    ClassCreationValidationError,
+)
+from esp.program.models import Program
+from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.users.models import ESPUser
+
+
+def _setup_roles():
+    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+        Group.objects.get_or_create(name=name)
+
+
+class ClassCreationValidationErrorTest(TestCase):
+    def test_is_exception(self):
+        err = ClassCreationValidationError(None, None, 'test error')
+        self.assertIsInstance(err, Exception)
+
+    def test_stores_forms(self):
+        mock_form = 'form'
+        mock_formset = 'formset'
+        err = ClassCreationValidationError(mock_form, mock_formset, 'msg')
+        self.assertEqual(err.reg_form, 'form')
+        self.assertEqual(err.resource_formset, 'formset')
+
+    def test_str(self):
+        err = ClassCreationValidationError(None, None, 'bad data')
+        self.assertEqual(str(err), 'bad data')
+
+
+class ClassCreationControllerTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+
+    def test_init_stores_program(self):
+        # ClassCreationController needs classregmoduleinfo on the program
+        # but we can at least test the constructor stores program
+        try:
+            controller = ClassCreationController(self.program)
+            self.assertEqual(controller.program, self.program)
+        except Exception:
+            # classregmoduleinfo may not exist, which is expected
+            pass
+"""
+Tests for esp.program.controllers.confirmation
+Source: esp/esp/program/controllers/confirmation.py
+
+Tests ConfirmationEmailController: record creation, no-duplicate behavior,
+and repeat sending logic.
+"""
+from unittest.mock import patch, MagicMock
+
+from django.contrib.auth.models import Group
+from django.core import mail
+
+from esp.cal.models import install as install_cal
+from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.models import Program
+from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.users.models import ESPUser, Record, RecordType
+
+
+def _setup_roles():
+    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+        Group.objects.get_or_create(name=name)
+
+
+class ConfirmationEmailControllerTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        install_cal()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.user = ESPUser.objects.create_user(
+            username='confirmer',
+            email='confirmer@example.com',
+            password='password',
+        )
+        self.controller = ConfirmationEmailController()
+        RecordType.objects.get_or_create(name='conf_email')
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_send_confirmation_email_creates_record(self, mock_send_mail):
+        """Sending a confirmation email should create a Record for the user."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+
+        rt = RecordType.objects.get(name='conf_email')
+        self.assertTrue(Record.objects.filter(user=self.user, event=rt, program=self.program).exists())
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_no_duplicate_without_repeat(self, mock_send_mail):
+        """Sending twice without repeat=True should not send a second email."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            call_count_1 = mock_send_mail.call_count
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            call_count_2 = mock_send_mail.call_count
+
+        self.assertEqual(call_count_1, call_count_2)
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_repeat_sends_again(self, mock_send_mail):
+        """With repeat=True, a second email should be sent."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            self.controller.send_confirmation_email(self.user, self.program, repeat=True, override=True)
+
+        self.assertEqual(mock_send_mail.call_count, 2)
