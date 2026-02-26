@@ -33,6 +33,14 @@ import tempfile
 
 logger.info('dbmail_cron: starting!')
 
+# Try to deactivate bouncing emails via SendGrid before queuing more emails
+from django.core.management import call_command
+try:
+    logger.info('dbmail_cron: checking for hard bouncing emails to deactivate.')
+    call_command('deactivate_bouncing_emails')
+except Exception as e:
+    logger.exception(f'dbmail_cron: ignored error during deactivate_bouncing_emails: {e}')
+
 # lock to ensure only one cron instance runs at a time
 lock_file_path = os.path.join(tempfile.gettempdir(), 'espweb.dbmailcron.lock')
 lock_file_handle = open(lock_file_path, 'w')
