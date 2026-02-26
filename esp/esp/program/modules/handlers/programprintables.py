@@ -99,7 +99,7 @@ class ProgramPrintables(ProgramModuleObj):
             try:
                 ids = [ int(x) for x in request.GET.getlist('filter') ]
                 single_select = ( len(ids) == 1 )
-            except (KeyError, ValueError):
+            except ValueError:
                 ids = None
                 single_select = False
 

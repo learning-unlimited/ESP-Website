@@ -122,7 +122,7 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
             student = ESPUser.objects.get(id = request.GET.get('student', ''))
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, ClassSubject.DoesNotExist, ESPUser.DoesNotExist):
             raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
@@ -140,7 +140,7 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
             student = ESPUser.objects.get(id = request.GET.get('student', ''))
-        except ClassSubject.DoesNotExist:
+        except (ClassSubject.DoesNotExist, ESPUser.DoesNotExist):
             raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
@@ -177,7 +177,7 @@ class AdminReviewApps(ProgramModuleObj):
 
         try:
             student.app = student.studentapplication_set.get(program = self.program)
-        except ESPUser.DoesNotExist:
+        except StudentApplication.DoesNotExist:
             student.app = None
             assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)

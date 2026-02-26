@@ -338,7 +338,7 @@ class StudentClassRegModule(ProgramModuleObj):
             sec_ids = self.user.getSections(self.program).values_list('id', flat=True)
         elif isinstance(extra, list) or isinstance(extra, QuerySet):
             sec_ids = list(extra)
-        elif extra:
+        else:
             try:
                 sec_ids = [int(x) for x in extra.split(',')]
             except (ValueError, TypeError, AttributeError):

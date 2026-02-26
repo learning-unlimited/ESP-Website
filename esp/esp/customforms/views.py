@@ -371,8 +371,8 @@ def getExcelData(request, form_id):
     form = Form.objects.get(pk=form_id)
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
-    response = HttpResponse(wbk.getvalue(), content_type="application/vnd.ms-excel")
-    response['Content-Disposition']='attachment; filename=%s.xls' % form.title
+    response = HttpResponse(wbk.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response['Content-Disposition']='attachment; filename=%s.xlsx' % form.title
     return response
 
 @user_passes_test(test_func)

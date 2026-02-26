@@ -10,11 +10,7 @@ from django.conf import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii
 import hashlib
-
-try:
-    import six.moves.cPickle as pickle
-except ImportError:
-    import pickle
+import pickle
 
 CACHE_WARNING_SIZE = 1 * 1024**2
 MAX_KEY_LENGTH = 250
