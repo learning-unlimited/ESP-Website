@@ -274,6 +274,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if teach_teacherreg %}<li><a href="/teach/{{ program.getUrlBase }}/teacherreg">Teacher Reg</a></li>{% endif %}
         {% if volunteer_signup %}<li><a href="/volunteer/{{ program.getUrlBase }}/signup">Volunteer Reg</a></li>{% endif %}
         {% if onsite_main %}<li><a href="/onsite/{{ program.getUrlBase }}/main">Onsite</a></li>{% endif %}
+        {% if manage_refund %}<li><a href="/accounting/refund?program={{ program.id }}">Refunds</a></li>{% endif %}
     </ul>
     </div>
 </div>
