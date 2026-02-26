@@ -1,8 +1,5 @@
 " A view to show surveys. "
 
-from __future__ import absolute_import
-from __future__ import division
-import six
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"
@@ -39,7 +36,7 @@ Learning Unlimited, Inc.
 """
 
 import datetime
-import xlwt
+import openpyxl
 import re
 from io import BytesIO
 from django.db import models
@@ -245,7 +242,6 @@ def get_survey_info(request, tl, program, instance):
 
     return (user, prog, surveys)
 
-
 def display_survey(user, prog, surveys, request, tl, format, template = 'survey/review.html', context = {}):
     """ Wrapper doing the necessary work for the survey output. """
     from esp.program.models import ClassSubject, ClassSection
@@ -307,85 +303,97 @@ def delist(x):
         return x
 
 
-def dump_survey_xlwt(user, prog, surveys, request, tl):
+def dump_survey_xlsx(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
     if tl == 'manage' and not 'teacher_id' in request.GET and not 'classsection_id' in request.GET and not 'classsubject_id' in request.GET:
-        # Styles yoinked from <http://www.djangosnippets.org/snippets/1151/>
-        datetime_style = xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss')
-        wb=xlwt.Workbook()
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
         survey_index = 0
         for s in surveys:
             # Certain characters are forbidden in sheet names
-            # See <https://github.com/python-excel/xlwt/blob/8f0afdc9b322129600d81e754cabd2944e7064f2/xlwt/Utils.py#L154>
             s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name)
             s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category)
             # The length of sheet names is limited to 31 characters
             survey_index += 1
-            if len(s.name)>31:
-                ws=wb.add_sheet("%d %s... (%s)" % (survey_index, s.name[:17], s.category[:5]))
+            if len(s.name) > 31:
+                ws = wb.create_sheet("%d %s... (%s)" % (survey_index, s.name[:17], s.category[:5]))
             else:
-                ws=wb.add_sheet(s.name)
-            ws.write(0, 0, 'Response ID')
-            ws.write(0, 1, 'Timestamp')
-            qs=list(s.questions.filter(per_class=False).order_by('seq', 'id'))
-            srs=list(s.surveyresponse_set.all().order_by('id'))
-            i=2
-            q_dict={}
+                ws = wb.create_sheet(s.name)
+
+            ws.cell(row=1, column=1, value='Response ID')
+            ws.cell(row=1, column=2, value='Timestamp')
+            qs = list(s.questions.filter(per_class=False).order_by('seq', 'id'))
+            srs = list(s.surveyresponse_set.all().order_by('id'))
+            i = 3
+            q_dict = {}
             for q in qs:
-                q_dict[q.id]=i
-                ws.write(0, i, q.name)
-                i+=1
-            i=1
-            sr_dict={}
+                q_dict[q.id] = i
+                ws.cell(row=1, column=i, value=q.name)
+                i += 1
+            i = 2
+            sr_dict = {}
             for sr in srs:
-                sr_dict[sr.id]=i
-                ws.write(i, 0, sr.id)
-                ws.write(i, 1, sr.time_filled, datetime_style)
-                i+=1
+                sr_dict[sr.id] = i
+                ws.cell(row=i, column=1, value=sr.id)
+                if sr.time_filled:
+                    cell = ws.cell(row=i, column=2, value=sr.time_filled.replace(tzinfo=None))
+                    cell.number_format = 'yyyy-mm-dd hh:mm:ss'
+                i += 1
             for a in Answer.objects.filter(question__in=qs).order_by('id'):
-                ws.write(sr_dict[a.survey_response_id], q_dict[a.question_id], delist(a.answer))
+                if a.survey_response_id in sr_dict and a.question_id in q_dict:
+                    ws.cell(row=sr_dict[a.survey_response_id], column=q_dict[a.question_id], value=delist(a.answer))
+
             # PER-CLASS QUESTIONS
-            # The length of sheet names is limited to 31 characters
-            if len(s.name)>19:
-                ws_perclass=wb.add_sheet("%d %s... (%s, per-class)" % (survey_index, s.name[:5], s.category[:5]))
+            if len(s.name) > 19:
+                ws_perclass = wb.create_sheet("%d %s... (%s, per-class)" % (survey_index, s.name[:5], s.category[:5]))
             else:
-                ws_perclass=wb.add_sheet(s.name + " (per-class)")
-            ws_perclass.write(0, 0, "Response ID")
-            ws_perclass.write(0, 1, "Timestamp")
-            ws_perclass.write(0, 2, "Class Code")
-            ws_perclass.write(0, 3, "Class Title")
-            qs_perclass=list(s.questions.filter(per_class=True).order_by('seq', 'id'))
-            i=4
-            q_dict_perclass={}
+                ws_perclass = wb.create_sheet(s.name + " (per-class)")
+            ws_perclass.cell(row=1, column=1, value="Response ID")
+            ws_perclass.cell(row=1, column=2, value="Timestamp")
+            ws_perclass.cell(row=1, column=3, value="Class Code")
+            ws_perclass.cell(row=1, column=4, value="Class Title")
+            qs_perclass = list(s.questions.filter(per_class=True).order_by('seq', 'id'))
+            i = 5
+            q_dict_perclass = {}
             for q in qs_perclass:
-                q_dict_perclass[q.id]=i
-                ws_perclass.write(0, i, q.name)
-                i+=1
-            i=1
-            src_dict_perclass={}
+                q_dict_perclass[q.id] = i
+                ws_perclass.cell(row=1, column=i, value=q.name)
+                i += 1
+            i = 2
+            src_dict_perclass = {}
             for a in Answer.objects.filter(question__in=qs_perclass).order_by('id').select_related('survey_response'):
-                sr=a.survey_response
-                cs=a.target
+                sr = a.survey_response
+                cs = a.target
                 if isinstance(cs, ClassSection):
-                    key=(sr, cs)
+                    key = (sr, cs)
                 else:
-                    key=sr
+                    key = sr
                 if key in src_dict_perclass:
-                    row=src_dict_perclass[key]
+                    row = src_dict_perclass[key]
                 else:
-                    row=i
-                    src_dict_perclass[key]=i
-                    ws_perclass.write(i, 0, sr.id)
-                    ws_perclass.write(i, 1, sr.time_filled, datetime_style)
+                    row = i
+                    src_dict_perclass[key] = i
+                    ws_perclass.cell(row=i, column=1, value=sr.id)
+                    if sr.time_filled:
+                        cell = ws_perclass.cell(row=i, column=2, value=sr.time_filled.replace(tzinfo=None))
+                        cell.number_format = 'yyyy-mm-dd hh:mm:ss'
                     if cs:
-                        ws_perclass.write(i, 2, cs.emailcode())
-                        ws_perclass.write(i, 3, cs.title())
-                    i+=1
-                ws_perclass.write(row, q_dict_perclass[a.question_id], delist(a.answer))
-        out=BytesIO()
+                        ws_perclass.cell(row=i, column=3, value=cs.emailcode())
+                        ws_perclass.cell(row=i, column=4, value=cs.title())
+                    i += 1
+                if a.question_id in q_dict_perclass:
+                    ws_perclass.cell(row=row, column=q_dict_perclass[a.question_id], value=delist(a.answer))
+
+        # Ensure at least one sheet exists
+        if len(wb.sheetnames) == 0:
+            wb.create_sheet("Empty")
+
+        out = BytesIO()
         wb.save(out)
-        response=HttpResponse(out.getvalue(), content_type='application/vnd.ms-excel')
-        response['Content-Disposition']='attachment; filename=dump-%s.xls' % (prog.name)
+        wb.close()
+        response = HttpResponse(out.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        out.close()
+        response['Content-Disposition'] = 'attachment; filename=dump-%s.xlsx' % (prog.name)
         return response
     else:
         raise ESPError("You need to be an administrator to dump survey results.", log=False)
@@ -395,7 +403,7 @@ def survey_dump(request, tl, program, instance):
     """ A dump of all survey results in the given program. """
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
-    return dump_survey_xlwt(user, prog, surveys, request, tl)
+    return dump_survey_xlsx(user, prog, surveys, request, tl)
 
 @login_required
 def survey_review(request, tl, program, instance, template = 'survey/review.html', context = {}):
@@ -481,7 +489,6 @@ def top_classes(request, tl, program, instance):
         return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
 
     survey = surveys[0]
-
 
     if tl == 'manage':
         classes = prog.classes()

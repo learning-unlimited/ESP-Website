@@ -400,7 +400,7 @@ var ConstantInput = React.createClass({
 });
 
 /**
- * An input reperesented by an HTML <select> with a fixed set of options.
+ * An input represented by an HTML <select> with a fixed set of options.
  *
  * The input specification object should have the following extra key:
  *   `options`: an array of objects, each of which has the following keys:
