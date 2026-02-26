@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import json
 import random
 
 from django.db import transaction
@@ -285,3 +286,18 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertTrue(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
         self.assertTrue(not self.moduleobj.deadline_met())
+
+    # Regression: fix for GET/POST boolean guard in teacherlookup
+    def test_teacherlookup_post_with_name_returns_json(self):
+        """POST with 'name' absent from GET must return JSON, not redirect."""
+        self.client.login(username=self.teacher.username, password='password')
+        url = '%steacherlookup' % self.program.get_teach_url()
+        response = self.client.post(url, {'name': 'teacher'})
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(json.loads(response.content), list)
+
+    def test_teacherlookup_no_name_redirects(self):
+        """Request without 'name' in GET or POST must redirect via goToCore."""
+        self.client.login(username=self.teacher.username, password='password')
+        url = '%steacherlookup' % self.program.get_teach_url()
+        self.assertEqual(self.client.get(url).status_code, 302)
