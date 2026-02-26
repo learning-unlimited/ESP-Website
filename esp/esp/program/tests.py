@@ -46,6 +46,7 @@ from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 
 from django.contrib.auth.models import Group
+from django.core.management import call_command
 from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
@@ -1495,6 +1496,49 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
             'count1': '2.6',
             'groups': ('Student', 'BulkAccountGroup')
         })
+
+
+class SeedDummyDataTest(TestCase):
+    """Tests for the seed_dummy_data management command."""
+
+    def test_seed_dummy_data_creates_programs_and_users(self):
+        """Running seed_dummy_data creates expected programs and users."""
+        call_command('seed_dummy_data', verbosity=0)
+
+        # Programs
+        for url in ['SplashDev/2026', 'SparkDev/2026']:
+            self.assertTrue(
+                Program.objects.filter(url=url).exists(),
+                f'Program {url} should exist after seeding',
+            )
+
+        # Users
+        for username in ['admin', 'teacher1', 'student1', 'volunteer1']:
+            self.assertTrue(
+                ESPUser.objects.filter(username=username).exists(),
+                f'User {username} should exist after seeding',
+            )
+
+    def test_seed_dummy_data_idempotent(self):
+        """Running seed_dummy_data twice does not duplicate data."""
+        call_command('seed_dummy_data', verbosity=0)
+        count_before = Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']).count()
+
+        call_command('seed_dummy_data', verbosity=0)
+        count_after = Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']).count()
+
+        self.assertEqual(count_before, count_after, 'Second run should not create duplicate programs')
+
+    def test_seed_dummy_data_flush_recreates_data(self):
+        """Running with --flush clears and re-seeds; programs exist afterward."""
+        call_command('seed_dummy_data', verbosity=0)
+        self.assertTrue(Program.objects.filter(url='SplashDev/2026').exists())
+
+        call_command('seed_dummy_data', '--flush', verbosity=0)
+        self.assertTrue(
+            Program.objects.filter(url='SplashDev/2026').exists(),
+            'Programs should exist after flush (command re-seeds)',
+        )
 """
 Tests for esp.program.controllers.classreg
 Source: esp/esp/program/controllers/classreg.py
