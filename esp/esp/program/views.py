@@ -1088,7 +1088,14 @@ def statistics(request, program=None):
 
             users = ESPUser.objects.filter(users_q).distinct()
             result_dict['num_users'] = users.count()
-            profiles = [user.getLastProfile() for user in users]
+            user_list = list(users)
+            # Batch-fetch latest profile per user to avoid N+1
+            profile_by_user = {}
+            if user_list:
+                for p in RegistrationProfile.objects.filter(user__in=users).select_related('user').order_by('user_id', '-last_ts'):
+                    if p.user_id not in profile_by_user:
+                        profile_by_user[p.user_id] = p
+            profiles = [profile_by_user.get(u.id) or RegistrationProfile(user=u) for u in user_list]
 
             #   Accumulate desired information for selected query
             from esp.program import statistics as statistics_functions
