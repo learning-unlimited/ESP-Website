@@ -65,7 +65,8 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
         'seq',
         'required',
         'required_label',
+        'link_title',
     )
     list_filter = ('program', 'module')
-    search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title')
+    search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title', 'link_title')
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)
