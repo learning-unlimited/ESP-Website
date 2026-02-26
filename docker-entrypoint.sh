@@ -29,19 +29,20 @@ except psycopg2.OperationalError:
 done
 echo ">>> PostgreSQL is ready!"
 
-# Run migrations and collect static files only on first run,
+# Always run migrations on container start so new migrations
+# are applied automatically when switching branches or pulling code.
+echo ">>> Running migrations..."
+python /app/esp/manage.py migrate --noinput
+
+# Collect static files only on first run,
 # or when FORCE_SETUP=1 is set (e.g., after pulling new code).
 MARKER_FILE="/app/.docker-setup-done"
 if [ ! -f "$MARKER_FILE" ] || [ "${FORCE_SETUP:-0}" = "1" ]; then
-    echo ">>> Running migrations..."
-    python /app/esp/manage.py migrate --noinput
-
     echo ">>> Collecting static files..."
     python /app/esp/manage.py collectstatic --noinput -v 0
-
     touch "$MARKER_FILE"
 else
-    echo ">>> Skipping migrations and collectstatic (already done)."
+    echo ">>> Skipping collectstatic (already done)."
     echo ">>> To force re-run, use: FORCE_SETUP=1 docker compose up"
 fi
 
