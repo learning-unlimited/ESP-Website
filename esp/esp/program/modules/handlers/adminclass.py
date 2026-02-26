@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,6 +31,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+
 from esp.program.class_status import ClassStatus
 from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
@@ -42,7 +43,7 @@ from esp.tagdict.models import Tag
 
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
-
+from django.utils.http import is_safe_url
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.middleware import ESPError
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -102,6 +103,18 @@ class AdminClass(ProgramModuleObj):
             curTimeslot['classcount'] = section_list.count()
             clsTimeSlots.append(curTimeslot)
         return clsTimeSlots
+    
+    def _safe_redirect(self, request, fallback_url):
+        redirect_url = request.GET.get('redirect')
+
+        if redirect_url and is_safe_url(
+            url=redirect_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return HttpResponseRedirect(redirect_url)
+
+        return HttpResponseRedirect(fallback_url)
 
     def getClasses(self):
         return ClassSubject.objects.catalog(self.program, force_all=True, order_args_override=['id'])
@@ -274,27 +287,23 @@ class AdminClass(ProgramModuleObj):
     def approveclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.accept()
-        if 'redirect' in request.GET:
-            return HttpResponseRedirect(request.GET['redirect'])
-        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
-
+        fallback = prog.get_manage_url() + 'manageclass/' + str(cls.id)
+        return self._safe_redirect(request, fallback)
     @aux_call
     @needs_admin
     def rejectclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.reject()
-        if 'redirect' in request.GET:
-            return HttpResponseRedirect(request.GET['redirect'])
-        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
+        fallback = prog.get_manage_url() + 'manageclass/' + str(cls.id)
+        return self._safe_redirect(request, fallback)
 
     @aux_call
     @needs_admin
     def proposeclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.propose()
-        if 'redirect' in request.GET:
-            return HttpResponseRedirect(request.GET['redirect'])
-        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
+        fallback = prog.get_manage_url() + 'manageclass/' + str(cls.id)
+        return self._safe_redirect(request, fallback)
 
     @aux_call
     @needs_admin
@@ -430,3 +439,4 @@ class AdminClass(ProgramModuleObj):
     class Meta:
         proxy = True
         app_label = 'modules'
+ 
