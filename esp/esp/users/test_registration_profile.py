@@ -10,10 +10,6 @@ Addresses:
   - Issue #226: Admin grade-change view on student userview page
                 (partially covered here; also in ESPUserTest.testGradeChange).
 """
-import datetime
-
-from django.test import TestCase
-from django.contrib.auth.models import Group
 
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase, user_role_setup
@@ -55,6 +51,7 @@ def _setup_student_tags():
 
 def _valid_student_data():
     """Return a minimal dict that makes StudentInfoForm valid."""
+    import datetime
     valid_year = str(ESPUser.YOGFromGrade(9))
     return {
         'graduation_year': valid_year,
@@ -146,15 +143,6 @@ class StudentInfoFormGradeValidationTest(CacheFlushTestCase):
             form.is_valid(),
             f"StudentInfoForm should be valid with grade 12. Errors: {form.errors}"
         )
-
-    def test_invalid_graduation_year_string_becomes_na(self):
-        """A non-numeric, non-'G' graduation_year string is cleaned to 'N/A'."""
-        data = _valid_student_data()
-        data['graduation_year'] = str(ESPUser.YOGFromGrade(9))  # must be in choices
-        form = self._make_form(data)
-        # If is_valid, the cleaner must have run and produced a valid value
-        if form.is_valid():
-            self.assertIsNotNone(form.cleaned_data.get('graduation_year'))
 
 
 # ---------------------------------------------------------------------------
@@ -351,6 +339,7 @@ class StudentInfoFormProfileTest(CacheFlushTestCase):
             most_recent_profile=True,
         )
         rp.save()
+        self._flush_cache()  # getGrade() is @cache_function; flush before asserting
         self.assertEqual(self.student.getGrade(), 10)
 
     def test_form_grade_range_covers_all_allowed_grades(self):
@@ -408,7 +397,7 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
         """GET /myesp/profile/ for a student should return 200."""
         self._login(self.student)
         response = self.client.get('/myesp/profile/')
-        self.assertIn(response.status_code, [200, 302])
+        self.assertEqual(response.status_code, 200)
 
     # --- Teacher profile view ---------------------------------------------------
 
@@ -416,7 +405,7 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
         """GET /myesp/profile/ for a teacher should return 200."""
         self._login(self.teacher)
         response = self.client.get('/myesp/profile/')
-        self.assertIn(response.status_code, [200, 302])
+        self.assertEqual(response.status_code, 200)
 
     # --- Issue #226: Admin grade-change -----------------------------------------
 
