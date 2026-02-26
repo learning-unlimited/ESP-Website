@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from copy import deepcopy
 import json
 
@@ -20,7 +19,6 @@ from django.contrib.auth.decorators import user_passes_test
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
 from esp.utils.web import render_to_response, zip_download
-import six
 
 def test_func(user):
     return user.is_authenticated and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
@@ -373,8 +371,8 @@ def getExcelData(request, form_id):
     form = Form.objects.get(pk=form_id)
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
-    response = HttpResponse(wbk.getvalue(), content_type="application/vnd.ms-excel")
-    response['Content-Disposition']='attachment; filename=%s.xls' % form.title
+    response = HttpResponse(wbk.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response['Content-Disposition']='attachment; filename=%s.xlsx' % form.title
     return response
 
 @user_passes_test(test_func)
@@ -448,7 +446,7 @@ def get_links(request):
             link_objects = link_model.objects.all().order_by('-id')
             retval = []
             for obj in link_objects:
-                retval.append({'id': obj.id, 'name': six.text_type(obj)})
+                retval.append({'id': obj.id, 'name': str(obj)})
 
             return HttpResponse(json.dumps(retval))
     return HttpResponse(status=400)
