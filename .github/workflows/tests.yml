@@ -31,7 +31,7 @@ jobs:
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -69,17 +69,14 @@ jobs:
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
     - name: Get apt packages list
-      if: ${{ matrix.ci_job == 'test' }}
       id: apt-action
       run: |
         PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
         echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
-      if: ${{ matrix.ci_job == 'test' }}
-      uses: awalsh128/cache-apt-pkgs-action@latest
+      uses: Eeems-Org/apt-cache-action@v1
       with:
         packages: ${{ steps.apt-action.outputs.packages }}
-        version: 1.0
     - name: Prepare for Installing Dependencies
       run: deploy/ci/before_install
       env:
