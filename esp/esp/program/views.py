@@ -230,14 +230,14 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
     sections_by_block = [defaultdict(set) for i in range(0, priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
 
     errors = []
-    
+
     for section_id, value in data.items():
         try:
             priority, block_id = value
         except (ValueError, TypeError):
             errors.append({"text": "Invalid data structure for class registration", "cls_sections": []})
             continue
-        
+
         try:
             section_id = int(section_id)
             priority = int(priority)
@@ -245,7 +245,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
         except (ValueError, TypeError):
             errors.append({"text": "Invalid data format", "cls_sections": []})
             continue
-            
+
         classes_flagged[0].add(section_id)
         classes_flagged[priority].add(section_id)
         sections_by_block[priority][block_id].add(section_id)

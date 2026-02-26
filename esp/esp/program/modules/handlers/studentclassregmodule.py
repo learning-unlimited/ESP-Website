@@ -630,7 +630,7 @@ class StudentClassRegModule(ProgramModuleObj):
             clsid = extra
 
         classes = ClassSubject.objects.filter(id = clsid)
-        
+
         if not classes.exists():
             raise Http404("Class not found")
 
