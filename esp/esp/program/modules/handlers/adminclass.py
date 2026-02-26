@@ -103,7 +103,6 @@ class AdminClass(ProgramModuleObj):
             curTimeslot['classcount'] = section_list.count()
             clsTimeSlots.append(curTimeslot)
         return clsTimeSlots
-    
     def _safe_redirect(self, request, fallback_url):
         redirect_url = request.GET.get('redirect')
 
