@@ -1,6 +1,5 @@
 '''Things that will be useful to have in shell_plus, which it will auto-import.'''
 
-from __future__ import absolute_import
 from django.db.models import F, Q, Count, Avg, Min, Max, Sum
 
 import datetime

@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import print_function
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,6 +32,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import logging
+
 from django import forms
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
@@ -46,6 +46,7 @@ from django.utils import timezone  # add timezone from local_settings.py in labe
 from esp.accounting.controllers import ProgramAccountingController
 from esp.cal.models import Event
 from esp.db.forms import AjaxForeignKeyNewformField
+from esp.program.controllers.testingutils import TestDataCleanupController
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
@@ -54,6 +55,8 @@ from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
 
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 from decimal import Decimal
 from copy import copy
 from collections import OrderedDict
@@ -76,7 +79,7 @@ class NewDeadlineForm(forms.Form):
     end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
 
     def __init__(self, *args, **kwargs):
-        super(NewDeadlineForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['role'].choices = self.fields['role'].choices + [(role, role + "s") for role in Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]
                                                                                                                           ).order_by('name').values_list('name', flat = True)]
 
@@ -508,7 +511,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context = {}
 
         if request.method == 'POST':
-            if "default_seq" in request.POST or "default_req" in request.POST or "default_lab" in request.POST:
+            if "default_seq" in request.POST or "default_req" in request.POST or "default_lab" in request.POST or "default_link_title" in request.POST:
                 # Reset some or all values for learn and teach modules
                 for pmo in [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
@@ -518,6 +521,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         pmo.required = pmo.module.required
                     if "default_lab" in request.POST: # Reset module required label values
                         pmo.required_label = ""
+                    if "default_link_title" in request.POST: # Reset module link title override values
+                        pmo.link_title = ""
                     pmo.save()
                 for pmo in [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
@@ -527,6 +532,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         pmo.required = pmo.module.required
                     if "default_lab" in request.POST: # Reset module required label values
                         pmo.required_label = ""
+                    if "default_link_title" in request.POST: # Reset module link title override values
+                        pmo.link_title = ""
                     pmo.save()
 
             # If the sequence form was submitted, process it and update program modules
@@ -535,7 +542,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             teach_req = [mod for mod in request.POST.get("teach_req", "").split(",") if mod]
             teach_not_req = [mod for mod in request.POST.get("teach_not_req", "").split(",") if mod]
             # Set student registration module sequence and requiredness
-            # Also set requirement labels if supplied
+            # Also set requirement labels and link title overrides if supplied
             seq = 12 # In case there are other modules that aren't steps and should be earlier
             for mod_id in learn_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
@@ -543,6 +550,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 seq += 1
                 pmo.required = True
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
                 pmo.save()
             for mod_id in learn_not_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
@@ -550,6 +558,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 seq += 1
                 pmo.required = False
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
                 pmo.save()
             # Set teacher registration module sequence and requiredness
             seq = 12 # In case there are other modules that aren't steps and should be earlier
@@ -559,6 +568,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 seq += 1
                 pmo.required = True
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
                 pmo.save()
             for mod_id in teach_not_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
@@ -566,6 +576,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 seq += 1
                 pmo.required = False
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
+                pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
                 pmo.save()
             # Override some settings that shouldn't be changed
             # Profile modules should always be required and always first
@@ -613,6 +624,54 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['program'] = prog
 
         return render_to_response(self.baseDir()+'modules.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def wipe_test_data(self, request, tl, one, two, module, extra, prog):
+        """Wipe all test registration data for a single user for this program.
+
+        Step 1 (GET or POST without confirmation): enter a username and preview
+        every object that will be deleted.
+        Step 2 (POST with confirmed=1): delegate to TestDataCleanupController.
+        """
+        context = {
+            'one': one,
+            'two': two,
+            'prog': prog,
+        }
+
+        username = request.POST.get('username', '').strip()
+        confirmed = request.POST.get('confirmed', '')
+
+        if request.method == 'POST' and username:
+            try:
+                target_user = ESPUser.objects.get(username=username)
+            except ESPUser.DoesNotExist:
+                context['error'] = 'No user found with username "%s".' % username
+                return render_to_response(self.baseDir() + 'wipe_test_data.html', request, context)
+
+            ctrl = TestDataCleanupController(prog, target_user)
+            counts = ctrl.get_counts()
+            total = sum(counts.values())
+
+            if confirmed == '1':
+                ctrl.execute()
+                logger.warning(
+                    'Test data wipe executed: program=%s (id=%s) user=%s by=%s',
+                    prog, prog.id, target_user.username, request.user.username,
+                )
+                context['success'] = True
+                context['target_user'] = target_user
+                context['counts'] = counts
+                context['total'] = total
+            else:
+                context['preview'] = True
+                context['target_user'] = target_user
+                context['counts'] = counts
+                context['total'] = total
+                context['username'] = username
+
+        return render_to_response(self.baseDir() + 'wipe_test_data.html', request, context)
 
     def isStep(self):
         return False
