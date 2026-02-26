@@ -28,6 +28,8 @@ function update_user_classes() {
     var type_name = "";
     for (var i = 0; i < esp_user.cur_roles.length; i++) {
         type_name = "." + esp_user.cur_roles[i];
+    // This is wrapped in a try/catch block because custom user role names
+    // might not be in a format that jQuery accepts as a selector.
         try {
             $j(type_name).removeClass("hidden");
         } catch (e) {}
