@@ -12,10 +12,7 @@
 #
 # Step 4 takes much longer to run than the others (O(n^2) where n is the number of scheduled classes).
 
-from __future__ import absolute_import
-from __future__ import print_function
 from esp.program.models import ClassSubject, ClassSection, Program
-from six.moves import range
 
 program_name = '2011_Spring'  # change to your program
 program = Program.objects.get(anchor__name = program_name)
@@ -78,7 +75,5 @@ for i in range(0, numsections):
         if len(s2_used_resources) > 0:
             if s1_used_resources.intersection(s2_used_resources) != set():
                 print(str(s1.emailcode()) + ' and ' + str(s2.emailcode()) + ' are both using: ' + str([[x.name, x.event] for x in set(s1_used_resources).intersection(s2_used_resources)]))
-
-
 
 

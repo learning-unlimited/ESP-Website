@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import datetime
 import subprocess
 
@@ -12,8 +11,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
-import six
-from six.moves import zip
 
 def get_filter(prog, approved = False, scheduled = False, teachers = None):
     filt = Q(parent_program=prog)
@@ -211,6 +208,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def teach_times(self, prog, approved = False, scheduled = False):
+<<<<<<< HEAD
         qs = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled))
         lunch_cat = getattr(prog, 'lunch_category', None)
         if lunch_cat:
@@ -219,6 +217,13 @@ class TeacherBigBoardModule(ProgramModuleObj):
             qs = qs.exclude(category__category__iexact="Lunch")
         teacher_times = dict(qs.exclude(teachers=None).distinct().values_list('teachers').annotate(Min('timestamp')))
         return sorted(six.itervalues(teacher_times))
+=======
+        teacher_times = dict(ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled)
+        ).exclude(category__category__iexact="Lunch"
+        ).exclude(teachers=None
+        ).distinct().values_list('teachers').annotate(Min('timestamp')))
+        return sorted(teacher_times.values())
+>>>>>>> upstream/main
 
     @cache_function_for(105)
     def get_hours(prog, approved = False, scheduled = False, teachers = None):

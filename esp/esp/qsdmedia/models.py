@@ -1,7 +1,3 @@
-
-from __future__ import absolute_import
-from __future__ import unicode_literals
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -9,8 +5,7 @@ __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
-  (see AUTHORS file)
-
+    (see AUTHORS file)
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU Affero General Public License
 as published by the Free Software Foundation; either version 3
@@ -119,10 +114,10 @@ class Media(models.Model):
         if os.path.isfile(self.get_uploaded_filename()):
             os.remove(self.get_uploaded_filename())
 
-        super(Media, self).delete(*args, **kwargs)
+        super().delete(*args, **kwargs)
 
     def rename(self, new_name):
         self.friendly_name = new_name
 
     def __str__(self):
-        return six.text_type(self.friendly_name)
+        return str(self.friendly_name)

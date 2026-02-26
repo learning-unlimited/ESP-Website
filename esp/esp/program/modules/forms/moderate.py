@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -7,13 +5,11 @@ __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2010 by the individual contributors
-  (see AUTHORS file)
-
+    (see AUTHORS file)
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU Affero General Public License
 as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
-
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -46,6 +42,7 @@ class ModeratorForm(forms.ModelForm):
             del kwargs['program']
         else:
             raise KeyError('Need to supply program as named argument to ModeratorForm')
+<<<<<<< HEAD
         super(ModeratorForm, self).__init__(*args, **kwargs)
         # Add lunch_category to queryset if present and not already included
         categories_qs = self.program.class_categories.all()
@@ -56,6 +53,10 @@ class ModeratorForm(forms.ModelForm):
                 from django.db.models import Q
                 categories_qs = categories_qs | type(categories_qs).model.objects.filter(pk=lunch_cat.pk)
         self.fields['class_categories'].queryset = categories_qs
+=======
+        super().__init__(*args, **kwargs)
+        self.fields['class_categories'].queryset = self.program.class_categories.all()
+>>>>>>> upstream/main
         choices = [(0, 'Please select an option')] + [(num, num) for num in range(1, self.program.num_timeslots() + 1)]
         self.fields['num_slots'].choices = choices
         self.fields['num_slots'].widget.choices = choices

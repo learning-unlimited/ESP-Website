@@ -1,6 +1,5 @@
 " Survey models for Educational Studies Program. "
 
-from __future__ import absolute_import
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"

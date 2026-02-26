@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 from __future__ import absolute_import
 from __future__ import unicode_literals
+=======
+from django.utils.encoding import python_2_unicode_compatible
+>>>>>>> upstream/main
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -205,7 +209,7 @@ class StudentApplication(models.Model):
         return str(self.user)
 
     def __init__(self, *args, **kwargs):
-        super(StudentApplication, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.save()
         self.set_questions()
 
