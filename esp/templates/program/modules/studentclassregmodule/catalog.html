@@ -85,6 +85,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 <br>
 
 {% if categories %}
+{% if not selected_category %}
 <table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
  <tr>
   <th colspan="2">
@@ -96,7 +97,11 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% if forloop.counter0|divisibleby:2 %}
 <tr>{% endif %}
   <td style="width: 50%; vertical-align: top;" valign="top" align="center">
+    {% if separate_catalog %}
+    <a href="/learn/{{ program.getUrlBase }}/catalog/{{ category.id }}" data-category="{{ category.id }}">{{category.category}}</a>
+    {% else %}
     <a href="#cat{{ category.id }}" data-category="{{ category.id }}" title="Click to skip down to `{{ category.category }}'">{{category.category}}</a>
+    {% endif %}
   </td>
  {% if forloop.counter|divisibleby:2 %}
 </tr>{% endif %} 
@@ -105,6 +110,9 @@ Viewing classes for: {{ timeslot.friendly_name }}
 </tr>
 {% endif %}
 </table>
+{% endif %}
+{% else %}
+<p><a href="/learn/{{ program.getUrlBase }}/catalog">&laquo; Back to Category List</a></p>
 {% endif %}
 
 {% load render_qsd %}

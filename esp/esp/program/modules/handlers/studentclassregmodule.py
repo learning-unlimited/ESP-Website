@@ -506,7 +506,32 @@ class StudentClassRegModule(ProgramModuleObj):
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
-        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories_sort, 'collapse_full': collapse_full}
+
+        separate_catalog = Tag.getBooleanTag('separate_catalog_pages', prog)
+        selected_category = None
+        if separate_catalog:
+            if extra:
+                try:
+                    category_id = int(extra)
+                    classes = [c for c in classes if c.category_id == category_id]
+                    for cat in (categories_sort or []):
+                        if cat['id'] == category_id:
+                            selected_category = cat
+                            break
+                except ValueError:
+                    classes = []
+            else:
+                classes = []
+
+        context = {
+            'classes': classes,
+            'one': one,
+            'two': two,
+            'categories': categories_sort,
+            'collapse_full': collapse_full,
+            'separate_catalog': separate_catalog,
+            'selected_category': selected_category,
+        }
 
         scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
