@@ -35,6 +35,11 @@ $j(document).ready(function() {
 </script>
 <script src="/media/scripts/utils/search_filter.js"></script>
 
+<script type="text/javascript">
+    window.ADMIN_SEARCH_ENTRIES = {{ admin_search_entries_json|safe }};
+</script>
+<script src="/media/scripts/admin_search.js"></script>
+
 {% endblock %}
 
 {% block stylesheets %}
@@ -51,6 +56,25 @@ $j(document).ready(function() {
 {% load render_qsd %}
 
 <h1>Admin Portal for {{ program.niceName }} (ID: {{ program.id }})</h1>
+
+<div class="module_group" id="admin_search_wrapper" style="margin-top: 10px; margin-bottom: 20px;">
+    <div class="module_group_header">
+        Search admin tools
+    </div>
+    <div class="module_group_body">
+        <input
+            type="text"
+            id="admin_search_input"
+            placeholder="Search for modules, pages, or printables…"
+            style="width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ccc; border-radius: 4px;"
+        >
+        <div id="admin_search_results" style="margin-top: 10px; display: none;"></div>
+        <div id="admin_search_empty" style="margin-top: 10px; display: none; font-style: italic;">
+            No modules found for that search. You may be able to find more via
+            <a href="/manage/{{ program.getUrlBase }}/modules">Module Management</a>.
+        </div>
+    </div>
+</div>
 
 {% inline_program_qsd_block program "manage:main_top" %}
 Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
