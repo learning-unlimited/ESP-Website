@@ -146,6 +146,195 @@ class StudentRegTest(ProgramFrameworkTest):
         sec.preregister_student(student)
         verify_catalog_correctness()
 
+    def test_separate_catalog(self):
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        # Enable separate catalog pages
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        # Get a category ID from existing classes
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0, "No classes found to test catalog")
+        cat = classes[0].category
+        cat_id = cat.id
+        cat_name = cat.category
+
+        # Test main catalog page (should only show categories, no classes)
+        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Jump to Categories')
+        self.assertContains(response, '/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+
+        # Test specific category page
+        response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Back to Category List')
+        self.assertContains(response, cat_name)
+
+        # Disable the tag and ensure original behavior
+        Tag.setTag('separate_catalog_pages', target=self.program, value='False')
+        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        self.assertContains(response, 'Jump to Categories')
+        # Anchor links instead of URL links
+        self.assertContains(response, '#cat%s' % cat_id)
+
+    def test_separate_catalog_main_page_no_class_content(self):
+        """When separate_catalog_pages is enabled, the main catalog page should
+        not render individual class descriptions — only category links."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+
+        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content.decode('UTF-8')
+        # Individual class divs should NOT appear on the main page
+        for cls in classes:
+            self.assertNotIn('class_%d' % cls.id, content,
+                "Class %s should not appear on the main catalog page when separate_catalog_pages is enabled" % cls.emailcode())
+
+    def test_separate_catalog_category_shows_only_matching_classes(self):
+        """A category page should only show classes belonging to that category."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+
+        # Build a mapping of category_id -> class ids
+        cat_classes = {}
+        for cls in classes:
+            cat_classes.setdefault(cls.category_id, []).append(cls.id)
+
+        # Only test if we have at least one category with classes
+        for cat_id, class_ids in cat_classes.items():
+            response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+            self.assertEqual(response.status_code, 200)
+            content = response.content.decode('UTF-8')
+
+            # Classes in this category should be present
+            for cid in class_ids:
+                self.assertIn('class_%d' % cid, content,
+                    "Class id=%d should appear on category %d page" % (cid, cat_id))
+
+            # Classes from OTHER categories should NOT be present
+            for other_cat_id, other_ids in cat_classes.items():
+                if other_cat_id == cat_id:
+                    continue
+                for cid in other_ids:
+                    self.assertNotIn('class_%d' % cid, content,
+                        "Class id=%d (category %d) should not appear on category %d page" % (cid, other_cat_id, cat_id))
+
+    def test_separate_catalog_invalid_category_id(self):
+        """A non-numeric extra parameter should yield an empty class list (no crash)."""
+        from esp.tagdict.models import Tag
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        response = self.client.get('/learn/%s/catalog/not-a-number' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        # Should still render the page without error
+        content = response.content.decode('UTF-8')
+        self.assertNotIn('class_', content,
+            "No classes should appear for an invalid category id")
+
+    def test_separate_catalog_nonexistent_category_id(self):
+        """A numeric category id that doesn't match any category should show no classes."""
+        from esp.tagdict.models import Tag
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        response = self.client.get('/learn/%s/catalog/999999' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('UTF-8')
+        self.assertNotIn('class_', content,
+            "No classes should appear for a non-existent category id")
+
+    def test_separate_catalog_back_link(self):
+        """The category page should contain a link back to the main catalog."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+        cat_id = classes[0].category_id
+
+        response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '/learn/%s/catalog' % self.program.getUrlBase(),
+            msg_prefix="Category page should contain a back-link to the main catalog")
+        self.assertContains(response, 'Back to Category List')
+
+    def test_separate_catalog_disabled_shows_all_classes(self):
+        """When the tag is disabled (or absent), the catalog should render all classes
+        with anchor-based category navigation."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        # Ensure the tag is explicitly disabled
+        Tag.setTag('separate_catalog_pages', target=self.program, value='False')
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+
+        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('UTF-8')
+
+        # All classes should appear on the single catalog page
+        for cls in classes:
+            self.assertIn('class_%d' % cls.id, content,
+                "Class %s should appear on the catalog when separate_catalog_pages is disabled" % cls.emailcode())
+
+        # Category links should be anchors, not separate-page URLs
+        seen_categories = set()
+        for cls in classes:
+            if cls.category_id not in seen_categories:
+                seen_categories.add(cls.category_id)
+                self.assertContains(response, '#cat%s' % cls.category_id)
+                self.assertNotContains(response, '/learn/%s/catalog/%s' % (self.program.getUrlBase(), cls.category_id))
+
+    def test_separate_catalog_context_variables(self):
+        """Verify that the template context contains the expected variables
+        for separate catalog mode."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+        cat_id = classes[0].category_id
+
+        # Main catalog page: separate_catalog=True, selected_category=None
+        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['separate_catalog'],
+            "Context should have separate_catalog=True")
+        self.assertIsNone(response.context['selected_category'],
+            "Context should have selected_category=None on main page")
+        self.assertIn('categories', response.context)
+        self.assertTrue(len(response.context['categories']) > 0,
+            "Context should contain at least one category")
+
+        # Category-specific page: separate_catalog=True, selected_category set
+        response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['separate_catalog'])
+        self.assertIsNotNone(response.context['selected_category'],
+            "Context should have selected_category set on a category page")
+        self.assertEqual(response.context['selected_category']['id'], cat_id)
+
     def test_profile(self):
 
         #   Login as a student and ensure we can submit the profile
