@@ -85,7 +85,7 @@ class TeacherModeratorModule(ProgramModuleObj):
     @staticmethod
     def moderatorlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.views.json_utils import JsonResponse
+        from django.http import JsonResponse
 
         queryset = prog.teachers()['will_moderate']
 
@@ -130,7 +130,7 @@ class TeacherModeratorModule(ProgramModuleObj):
         else:
             obj_list = []
 
-        return JsonResponse(obj_list)
+        return JsonResponse(obj_list, safe=False)
 
     class Meta:
         proxy = True

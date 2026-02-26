@@ -40,10 +40,9 @@ from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm
 from esp.dbmail.models import send_mail
 from esp.tagdict.models import Tag
-from esp.web.views.json_utils import JsonResponse
 
 from django.conf import settings
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.template.loader import render_to_string
 from django.db.models.query import Q
 
@@ -234,7 +233,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         else:
             obj_list = []
 
-        return JsonResponse(obj_list)
+        return JsonResponse(obj_list, safe=False)
 
     def send_confirmation_email(self, student, note=None):
         email_title = 'Student Lottery Confirmation for %s: %s' % (self.program.niceName(), student.name())

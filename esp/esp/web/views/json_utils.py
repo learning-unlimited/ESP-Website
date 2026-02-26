@@ -36,13 +36,8 @@ import json
 
 from django.http import HttpResponse
 
-# TODO(benkraft): replace users of this with @json_response, and remove.
-class JsonResponse(HttpResponse):
-    def __init__(self, obj):
-        self.original_obj = obj
-        HttpResponse.__init__(self, self.serialize())
-#self["Content-Type"] = "application/json"
-        self["Content-Type"] = "text/plain"
-
-    def serialize(self):
-        return(json.dumps(self.original_obj))
+# The custom JsonResponse class that was defined here has been removed.
+# It incorrectly set Content-Type to "text/plain" instead of "application/json".
+# All callers now use django.http.JsonResponse, which sets the correct
+# Content-Type. For views that return JSON via a decorator, see
+# esp.utils.decorators.json_response.
