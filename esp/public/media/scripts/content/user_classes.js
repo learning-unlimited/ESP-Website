@@ -17,7 +17,7 @@ function update_user_classes() {
         $j(".qsd_bits").removeClass("hidden");
     }
 
-    if (esp_user.cur_username) {
+    if (esp_user.cur_username != null) {
         $j(".not_logged_in").addClass("hidden");
         $j(".logged_in").removeClass("hidden");
     } else {
