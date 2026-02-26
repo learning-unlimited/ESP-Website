@@ -193,11 +193,10 @@
 
 // Reset container width
 // Required here as we reset the width earlier on and the grid mixins don't override early enough
-// Note (Feb 2026 upgrade): Inlined the math below to support Less 3.13.1+ compatibility.
 .navbar-static-top .container,
 .navbar-fixed-top .container,
 .navbar-fixed-bottom .container {
-  width: (@gridColumnWidth * @gridColumns) + (@gridGutterWidth * (@gridColumns - 1));
+  width: @gridRowWidth;
 }
 
 // Fixed to top

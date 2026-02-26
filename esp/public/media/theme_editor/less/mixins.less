@@ -605,12 +605,11 @@
       margin-left: @gridGutterWidth;
     }
 
-    // Note (Feb 2026 upgrade): Inlined the .span mixin calculation below to support Less 3.13.1+
-    // compatibility, as newer Less versions struggle to resolve the nested mixin in this context.
+    // Set the container width, and override it for fixed navbars in media queries
     .container,
     .navbar-static-top .container,
     .navbar-fixed-top .container,
-    .navbar-fixed-bottom .container { width: (@gridColumnWidth * @gridColumns) + (@gridGutterWidth * (@gridColumns - 1)); }
+    .navbar-fixed-bottom .container { width: @gridRowWidth; }
 
     // generate .spanX and .offsetX
     .spanX (@gridColumns);
