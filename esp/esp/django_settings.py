@@ -241,7 +241,7 @@ INSTALLED_APPS = (
     'esp.survey',
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
-    'esp.utils.apps.UtilsConfig',    # Not a real app, but, has test cases that the test-case runner needs to find
+    'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.tagdict',
     'esp.seltests',
     'esp.themes',
