@@ -26,5 +26,12 @@ class Command(BaseCommand):
                     pyc_path = os.path.join(dirpath, filename)
                     py_path = pyc_path[:-1]  # Remove trailing 'c' to get .py path
                     if not os.path.isfile(py_path):
-                        os.remove(pyc_path)
-                        logger.info("Removed orphaned .pyc: %s", pyc_path)
+                        try:
+                            os.remove(pyc_path)
+                            logger.info("Removed orphaned .pyc: %s", pyc_path)
+                        except OSError as e:
+                            logger.warning(
+                                "Failed to remove orphaned .pyc %s: %s",
+                                pyc_path,
+                                e,
+                            )

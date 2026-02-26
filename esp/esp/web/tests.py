@@ -242,10 +242,9 @@ class JavascriptSyntaxTest(TestCase):
             cmd.extend(['--js', file])
         cmd.extend(['--js_output_file', closure_output_code])
         with open(closure_output_file, 'w') as err_file:
-            subprocess.run(cmd, stderr=err_file, stdout=subprocess.DEVNULL)
-        checkfile = open(closure_output_file)
-
-        results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
+            subprocess.run(cmd, stderr=err_file, stdout=subprocess.DEVNULL, check=True)
+        with open(closure_output_file) as checkfile:
+            results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
 
         if len(results) > 0:
             closure_result = results[-1].split(',')
