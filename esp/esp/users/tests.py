@@ -811,29 +811,17 @@ class StudentInfoFormGradeTest(TestCase):
         from esp.users.forms.user_profile import StudentInfoForm
         return StudentInfoForm(user=self.student, data=data)
 
-    # ------------------------------------------------------------------
-    # Core regression tests (Issue #224)
-    # ------------------------------------------------------------------
-
     def test_missing_grade_makes_form_invalid(self):
-        """Form is invalid when graduation_year is submitted as blank."""
+        """Blank graduation_year must make the form invalid."""
         form = self._make_form({
             'graduation_year': '',
             'dob': self.valid_dob,
         })
         self.assertFalse(form.is_valid())
-        self.assertIn(
-            'graduation_year', form.errors,
-            "Expected a validation error on 'graduation_year' when it is "
-            "left blank, but no error was raised."
-        )
+        self.assertIn('graduation_year', form.errors)
 
     def test_missing_grade_triggers_required_error(self):
-        """The error raised for a blank grade is Django's 'required' error.
-
-        This confirms the form rejects the submission rather than silently
-        accepting it with some default value.
-        """
+        """Blank graduation_year must raise the 'required' validation error."""
         form = self._make_form({
             'graduation_year': '',
             'dob': self.valid_dob,
@@ -841,71 +829,62 @@ class StudentInfoFormGradeTest(TestCase):
         form.is_valid()
         errors = form.errors.get('graduation_year', [])
         self.assertTrue(
-            any('required' in msg.lower() for msg in errors),
-            "Expected a 'required' validation error on graduation_year; "
-            "got: %s" % errors
+            any('required' in e.lower() for e in errors),
+            "Expected a 'required' error for graduation_year, got: %s" % errors,
         )
 
     def test_no_auto_default_to_lowest_grade(self):
-        """The blank sentinel '' is the first (default) choice for graduation_year.
+        """The first choice must be a blank sentinel, not a real grade.
 
-        Before Issue #9 / PR #193 the form defaulted to the lowest grade.
-        This test confirms the first choice is the empty placeholder and
-        that no real grade is pre-selected.
+        Previously the form auto-selected the lowest grade when the field
+        was left empty.  The blank sentinel '' ensures no default is chosen.
         """
         form = self._make_form({})
         first_value = form.fields['graduation_year'].choices[0][0]
         self.assertEqual(
             first_value, '',
-            "Expected blank ('') to be the first graduation_year choice, "
-            "got %r.  The form must NOT default to the lowest grade." % first_value
+            "First choice must be the blank sentinel '', not a real grade."
         )
 
     def test_valid_grade_clears_graduation_year_error(self):
-        """Providing a real graduation_year removes the field-level error."""
+        """Supplying a real grade year must clear the graduation_year error."""
         form = self._make_form({
             'graduation_year': self.valid_grad_year,
             'dob': self.valid_dob,
         })
-        form.is_valid()  # other fields may still fail; only check this one
-        self.assertNotIn(
-            'graduation_year', form.errors,
-            "graduation_year should be valid when a real grade is supplied, "
-            "but errors were: %s" % form.errors.get('graduation_year', [])
-        )
+        form.is_valid()
+        self.assertNotIn('graduation_year', form.errors)
 
     def test_profile_not_saved_when_grade_missing(self):
-        """No StudentInfo or RegistrationProfile row is written when the grade is omitted.
+        """No StudentInfo row is written when graduation_year is omitted.
 
-        The view only calls StudentInfo.addOrUpdate() / regProf.save() after
-        form.is_valid() returns True.  This test mirrors that guard by
-        checking that an invalid form leaves the database untouched.
+        The view only calls StudentInfo.addOrUpdate() after form.is_valid()
+        returns True.  This test mirrors that guard by checking that an
+        invalid form leaves StudentInfo untouched in the database.
+
+        Scope: only StudentInfo is asserted here.  RegistrationProfile
+        persistence is only triggered by regProf.save() inside the view,
+        which is outside the scope of this unit test on form validation.
         """
-        initial_si_count  = StudentInfo.objects.filter(user=self.student).count()
-        initial_rp_count  = RegistrationProfile.objects.filter(user=self.student).count()
+        initial_si_count = StudentInfo.objects.filter(user=self.student).count()
 
         form = self._make_form({
             'graduation_year': '',
             'dob': self.valid_dob,
         })
 
-        # Simulate the view: only persist when the form is valid.
+        # Simulate the view guard: only persist when the form is valid.
+        # If this branch is ever reached (bug regression), the assertion
+        # below will correctly catch the unexpected DB write.
         if form.is_valid():
-            # This branch should NOT be reached; if it is, the test will
-            # still correctly report the unexpected DB writes below.
             StudentInfo.addOrUpdate(
                 self.student,
                 self.student.getLastProfile(),
-                form.cleaned_data
+                form.cleaned_data,
             )
 
         self.assertEqual(
             StudentInfo.objects.filter(user=self.student).count(),
             initial_si_count,
-            "StudentInfo must NOT be saved when graduation_year is missing."
-        )
-        self.assertEqual(
-            RegistrationProfile.objects.filter(user=self.student).count(),
-            initial_rp_count,
-            "RegistrationProfile must NOT be saved when graduation_year is missing."
+            "StudentInfo must NOT be saved when graduation_year is missing.",
         )
