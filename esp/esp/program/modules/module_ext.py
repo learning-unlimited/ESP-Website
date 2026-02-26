@@ -258,6 +258,99 @@ class ClassRegModuleInfo(models.Model):
     def __str__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
 
+
+MODE_BLOCK = 'block'
+MODE_WARN = 'warn'
+TEACHER_EMAIL_MODE_CHOICES = [
+    (MODE_BLOCK, 'Block (reject non-matching emails)'),
+    (MODE_WARN, 'Warn only (show notice but allow)'),
+]
+
+
+@python_2_unicode_compatible
+class TeacherEmailRules(models.Model):
+    """
+    Per-program optional rules for teacher contact email addresses.
+    When enabled, teacher registration/profile emails can be restricted to
+    allowed domains and/or a regex pattern. Mode can be block (reject) or warn (allow with notice).
+    """
+    program = models.OneToOneField(Program, on_delete=models.CASCADE, related_name='teacher_email_rules')
+
+    enabled = models.BooleanField(
+        default=False,
+        help_text='Enable teacher email validation for this program. When enabled, teacher '
+                  'emails are checked against the allowed domains and/or regex below.'
+    )
+    allowed_domains = models.TextField(
+        blank=True,
+        help_text='Comma-separated list of allowed email domains (e.g. school.edu, university.edu). '
+                  'Case-insensitive. Leave blank to not restrict by domain.'
+    )
+    regex_pattern = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text='Optional regex pattern the full email must match (e.g. .*@school\\.edu$). '
+                  'Leave blank to not use regex. If both domains and regex are set, email must match either.'
+    )
+    mode = models.CharField(
+        max_length=10,
+        choices=TEACHER_EMAIL_MODE_CHOICES,
+        default=MODE_WARN,
+        help_text='Block: reject signup/profile save if email does not match. '
+                  'Warn: show a notice but allow the email.'
+    )
+
+    class Meta:
+        app_label = 'modules'
+        db_table = 'modules_teacheremailrules'
+        verbose_name = 'Teacher email rules'
+        verbose_name_plural = 'Teacher email rules'
+
+    def __str__(self):
+        return 'Teacher email rules for %s' % str(self.program)
+
+    def validate_teacher_email(self, email):
+        """
+        Validate a teacher email against this program's rules.
+        Returns (is_valid, message, is_warning).
+        - is_valid: True if email is allowed (or rules disabled).
+        - message: Human-readable message if invalid or warning.
+        - is_warning: True if in warn mode and email did not match (but we allow it).
+        """
+        if not self.enabled or not email:
+            return True, '', False
+
+        email = email.strip().lower()
+        domain = email.split('@')[-1] if '@' in email else ''
+
+        # Allowed domains: comma-separated, case-insensitive
+        domains_ok = False
+        if self.allowed_domains:
+            allowed = [d.strip().lower() for d in self.allowed_domains.split(',') if d.strip()]
+            domains_ok = domain in allowed
+
+        # Optional regex
+        regex_ok = False
+        if self.regex_pattern:
+            try:
+                import re
+                regex_ok = bool(re.search(self.regex_pattern, email))
+            except re.error:
+                return True, '', False  # Invalid regex: don't block
+
+        # Must have at least one rule that matches
+        if self.allowed_domains or self.regex_pattern:
+            if not (domains_ok or regex_ok):
+                msg = (
+                    'This program prefers teacher emails from allowed domains or matching the configured pattern. '
+                    'Your email may still be accepted depending on program settings.'
+                )
+                if self.mode == MODE_BLOCK:
+                    return False, msg, False
+                return True, msg, True
+        return True, '', False
+
+
 class AJAXChangeLogEntry(models.Model):
 
     # unique index in change_log of this entry

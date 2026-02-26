@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
+from django.contrib import messages
 from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
 from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog
@@ -146,7 +147,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     context['profiletype'] = role
 
     if request.method == 'POST' and 'profile_page' in request.POST:
-        form = FormClass(curUser, request.POST)
+        form = FormClass(curUser, request.POST, program=prog, role=role)
 
         # Don't suddenly demand an explanation from people who are already student reps
         if curUser.hasRole("StudentRep"):
@@ -154,6 +155,8 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 form.repress_studentrep_expl_error()
 
         if form.is_valid():
+            if getattr(form, '_teacher_email_warning', None):
+                messages.warning(request, form._teacher_email_warning)
             new_data = form.cleaned_data
 
             if prog_input is None:
@@ -198,7 +201,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 replacement_data['k12school'] = form.fields['k12school'].clean(form.data['k12school']).id
             except:
                 pass
-            form = FormClass(curUser, replacement_data)
+            form = FormClass(curUser, replacement_data, program=prog, role=role)
             if prog_input is None:
                 regProf = RegistrationProfile.getLastProfile(curUser)
             else:
@@ -242,7 +245,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         state_tag_map = {}
         for field in state_fields:
             state_tag_map[field] = 'local_state'
-        form = FormClass(curUser, initial=new_data, tag_map=state_tag_map)
+        form = FormClass(curUser, initial=new_data, tag_map=state_tag_map, program=prog, role=role)
 
     context['new_user'] = regProf.id is None
     context['request'] = request
