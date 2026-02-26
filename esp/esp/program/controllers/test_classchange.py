@@ -28,14 +28,11 @@ from unittest.mock import patch
 import numpy
 
 from esp.program.models import (
-    Program,
     StudentRegistration,
     RegistrationType,
-    RegistrationProfile,
 )
 from esp.program.controllers.classchange import ClassChangeController
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import ESPUser
 
 
 # ---------------------------------------------------------------------------
