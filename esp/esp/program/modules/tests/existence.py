@@ -75,7 +75,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         inline_ids = [int(x[0]) for x in re_links_inline]
 
         for mod in prog_modules:
-            if (mod.module.link_title in link_titles) or (mod.id in inline_ids):
+            if (mod.get_link_title() in link_titles) or (mod.id in inline_ids):
                 modules_found.append(mod)
 
         return modules_found

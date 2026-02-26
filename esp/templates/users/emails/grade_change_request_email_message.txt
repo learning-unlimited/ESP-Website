@@ -5,5 +5,5 @@ Claimed Grade: {{ change_request.claimed_grade }}
 Reason: {{ change_request.reason }}
 
 
-Please review the request here: http://{{ site }}/manage/userview?username={{ student.username }}
+Please review the request here: https://{{ site }}/manage/userview?username={{ student.username }}
 
