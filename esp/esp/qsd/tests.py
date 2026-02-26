@@ -39,6 +39,7 @@ from esp.users.models import ESPUser
 
 from django.core.cache import cache
 from django.template import Template, Context
+from esp.qsd.models import qsd_cache_key
 
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
@@ -162,7 +163,7 @@ class QSDDefaultContentTest(TestCase):
 
     def test_edit_shows_cached_default(self):
         """When default content is cached, edit should show it instead of placeholder."""
-        cache.set('qsd_default_content:contact', {
+        cache.set(qsd_cache_key('contact'), {
             'content': '<p>Default contact content from template</p>',
             'title': 'Contact Us',
         }, timeout=3600)
@@ -175,7 +176,7 @@ class QSDDefaultContentTest(TestCase):
 
     def test_cache_populated_by_inline_qsd_block(self):
         """Rendering a template with inline_qsd_block should populate the cache."""
-        cache.delete('qsd_default_content:test/defaultblock')
+        cache.delete(qsd_cache_key('test/defaultblock'))
         template_data = """
             {% load render_qsd %}
             {% inline_qsd_block "test/defaultblock" %}
@@ -184,17 +185,18 @@ class QSDDefaultContentTest(TestCase):
         """
         template = Template(template_data)
         template.render(Context({}))
-        cached = cache.get('qsd_default_content:test/defaultblock')
+        cached = cache.get(qsd_cache_key('test/defaultblock'))
         self.assertIsNotNone(cached)
         self.assertIn('This is the default block content', cached['content'])
 
     def test_edit_loads_default_via_internal_render(self):
         """Visiting /contact.edit.html should load defaults even without prior cache."""
-        cache.delete('qsd_default_content:contact')
+        cache.delete(qsd_cache_key('contact'))
         self.client.login(username='qsd_default_admin', password='password')
         response = self.client.get('/contact.edit.html')
         self.assertEqual(response.status_code, 200)
         content = str(response.content, encoding='UTF-8')
         # Should contain the contact page default content, not the placeholder
         self.assertNotIn('Please insert your text here', content)
+        self.assertIn('Before contacting us', content)
 
