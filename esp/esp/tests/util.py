@@ -13,7 +13,12 @@ class CacheFlushTestCase(TestCase):
             cache.flush_all()
         else:
             # Best effort to clear out everything anyway
-            dump_all_caches()
+            try:
+                dump_all_caches()
+            except AttributeError:
+                # Catch "AttributeError: 'NewCls' object has no attribute 'model'"
+                # generated from argcache's derivedfield.py during testing
+                pass
 
             from esp import settings
             settings.CACHE_PREFIX = ''.join( random.sample( string.ascii_letters + string.digits, 16 ) )
