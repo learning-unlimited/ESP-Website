@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 import re
+import six
 
 from django.http import HttpResponseForbidden
 from django.template import Context, Template
@@ -35,7 +37,7 @@ def csrf_failure(request, reason=""):
             prog = None
 
         response = render_to_response('403_csrf_failure.html', request, c)
-        response = HttpResponseForbidden(str(response.content, encoding='UTF-8'),
+        response = HttpResponseForbidden(six.text_type(response.content, encoding='UTF-8'),
                                          content_type=response['Content-Type'])
 
     except Exception:

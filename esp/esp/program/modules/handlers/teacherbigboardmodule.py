@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import datetime
 import subprocess
 
@@ -11,6 +12,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
+import six
+from six.moves import zip
 
 def get_filter(prog, approved = False, scheduled = False, teachers = None):
     filt = Q(parent_program=prog)
@@ -146,13 +149,10 @@ class TeacherBigBoardModule(ProgramModuleObj):
     def num_teachers_teaching(prog, approved = False, scheduled = False, teachers = None):
         # Querying for SRs and then extracting the users saves us joining the
         # users table.
-        qs = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers))
-        lunch_cat = getattr(prog, 'lunch_category', None)
-        if lunch_cat:
-            qs = qs.exclude(category=lunch_cat)
-        else:
-            qs = qs.exclude(category__category__iexact="Lunch")
-        return qs.exclude(teachers=None).values_list('teachers', flat = True).distinct().count()
+        return ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)
+            ).exclude(category__category__iexact="Lunch"
+            ).exclude(teachers=None
+            ).values_list('teachers', flat = True).distinct().count()
     num_teachers_teaching = staticmethod(num_teachers_teaching)
 
     @cache_function_for(105)
@@ -168,13 +168,10 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def num_active_users(self, prog, minutes=10):
         recent = datetime.datetime.now() - datetime.timedelta(0, minutes * 60)
-        qs = ClassSubject.objects.filter(parent_program=prog, timestamp__gt=recent)
-        lunch_cat = getattr(prog, 'lunch_category', None)
-        if lunch_cat:
-            qs = qs.exclude(category=lunch_cat)
-        else:
-            qs = qs.exclude(category__category__iexact="Lunch")
-        return qs.exclude(teachers=None).values_list('teachers').distinct().count()
+        return ClassSubject.objects.filter(parent_program=prog, timestamp__gt=recent
+        ).exclude(category__category__iexact="Lunch"
+        ).exclude(teachers=None
+        ).values_list('teachers').distinct().count()
 
     @cache_function_for(105)
     def num_checked_in_teachers(self, prog):
@@ -186,54 +183,30 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_class_reg(prog, approved = False, scheduled = False, teachers = None):
-        qs = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers))
-        lunch_cat = getattr(prog, 'lunch_category', None)
-        if lunch_cat:
-            qs = qs.exclude(category=lunch_cat)
-        else:
-            qs = qs.exclude(category__category__iexact="Lunch")
-        return qs.distinct().count()
+        return ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)
+        ).exclude(category__category__iexact="Lunch").distinct().count()
     num_class_reg = staticmethod(num_class_reg)
 
     @cache_function_for(105)
     def reg_classes(self, prog, approved = False, scheduled = False):
-        qs = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled))
-        lunch_cat = getattr(prog, 'lunch_category', None)
-        if lunch_cat:
-            qs = qs.exclude(category=lunch_cat)
-        else:
-            qs = qs.exclude(category__category__iexact="Lunch")
-        class_times = qs.distinct().values_list('timestamp', flat=True)
+        class_times = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled)
+        ).exclude(category__category__iexact="Lunch"
+        ).distinct().values_list('timestamp', flat=True)
         return sorted(class_times)
 
     @cache_function_for(105)
     def teach_times(self, prog, approved = False, scheduled = False):
-<<<<<<< HEAD
-        qs = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled))
-        lunch_cat = getattr(prog, 'lunch_category', None)
-        if lunch_cat:
-            qs = qs.exclude(category=lunch_cat)
-        else:
-            qs = qs.exclude(category__category__iexact="Lunch")
-        teacher_times = dict(qs.exclude(teachers=None).distinct().values_list('teachers').annotate(Min('timestamp')))
-        return sorted(six.itervalues(teacher_times))
-=======
         teacher_times = dict(ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled)
         ).exclude(category__category__iexact="Lunch"
         ).exclude(teachers=None
         ).distinct().values_list('teachers').annotate(Min('timestamp')))
-        return sorted(teacher_times.values())
->>>>>>> upstream/main
+        return sorted(six.itervalues(teacher_times))
 
     @cache_function_for(105)
     def get_hours(prog, approved = False, scheduled = False, teachers = None):
-        qs = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)).annotate(num_sections=Count('sections')).filter(num_sections__gt=0)
-        lunch_cat = getattr(prog, 'lunch_category', None)
-        if lunch_cat:
-            qs = qs.exclude(category=lunch_cat)
-        else:
-            qs = qs.exclude(category__category__iexact="Lunch")
-        classes = qs
+        classes = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)
+        ).annotate(num_sections=Count('sections')).filter(num_sections__gt=0
+        ).exclude(category__category__iexact="Lunch")
         for cls in classes:
             cls.section_sum = 0
             for sec in cls.get_sections():

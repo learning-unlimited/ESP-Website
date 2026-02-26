@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 import logging
 import random
-import urllib.request, urllib.parse, urllib.error
+import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
 
 log = logging.getLogger(__name__)
 
@@ -109,8 +110,8 @@ When there are already accounts with this email address (depending on some tags)
                     { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'initial_role':form.cleaned_data['initial_role'], 'site': Site.objects.get_current(), 'form': form })
 
         #form is valid, and not caring about multiple accounts
-        email = urllib.parse.quote(form.cleaned_data['email'])
-        initial_role = urllib.parse.quote(form.cleaned_data['initial_role'])
+        email = six.moves.urllib.parse.quote(form.cleaned_data['email'])
+        initial_role = six.moves.urllib.parse.quote(form.cleaned_data['initial_role'])
         return HttpResponseRedirect(reverse('esp.users.views.user_registration_phase2')+'?email='+email+'&initial_role='+initial_role)
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
@@ -152,8 +153,8 @@ def user_registration_phase2(request):
         return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
 
     try:
-        email = urllib.parse.unquote(request.GET['email'])
-        initial_role = urllib.parse.unquote(request.GET['initial_role'])
+        email = six.moves.urllib.parse.unquote(request.GET['email'])
+        initial_role = six.moves.urllib.parse.unquote(request.GET['initial_role'])
     except MultiValueDictKeyError:
         return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
     form = UserRegForm(initial={'email':email,'confirm_email':email,'initial_role':initial_role})
@@ -234,6 +235,6 @@ class GradeChangeRequestView(CreateView):
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
+        return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)
 
 

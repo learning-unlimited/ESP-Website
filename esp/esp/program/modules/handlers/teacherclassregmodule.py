@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import map
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -96,10 +100,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['modlist'] = get_current_request().user.getModeratingSectionsFromProgram(self.program)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program)
         context['open_class_category'] = self.program.open_class_category.category
-        # Add lunch_category to context if present
-        if getattr(self.program, 'lunch_category', None):
-            context['lunch_category'] = self.program.lunch_category.category
         return context
+
 
     def noclasses(self):
         """ Returns true of there are no classes in this program """
@@ -176,7 +178,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 result[key] = additional_qs[key]
         else:
             result = {k: ESPUser.objects.filter(v).distinct()
-                      for k, v in qobjects.items()}
+                      for k, v in six.iteritems(qobjects)}
             for key in additional_qs:
                 result[key] = ESPUser.objects.filter(additional_qs[key]).distinct()
 
@@ -198,7 +200,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         return result
 
     def deadline_met(self, extension=''):
-        tmpModule = super()
+        tmpModule = super(TeacherClassRegModule, self)
         if len(extension) > 0:
             return tmpModule.deadline_met(extension)
         else:
@@ -746,9 +748,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         cls = classes[0]
 
         if cls.category == self.program.open_class_category:
-            pass
-        elif getattr(self.program, 'lunch_category', None) and cls.category == self.program.lunch_category:
-            pass
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -770,9 +769,6 @@ class TeacherClassRegModule(ProgramModuleObj):
             if 'category' in request.POST and self.program.open_class_registration:
                 category = request.POST['category']
                 if category.isdigit() and int(category) == int(self.program.open_class_category.id):
-                    pass
-                elif getattr(self.program, 'lunch_category', None) and category.isdigit() and int(category) == int(self.program.lunch_category.id):
-                    pass
                     action = 'createopenclass'
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog, action=action)
         if not 'cls' in request.GET:
@@ -789,9 +785,6 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         # Select the correct action
         if cls.category == self.program.open_class_category:
-            pass
-        elif getattr(self.program, 'lunch_category', None) and cls.category == self.program.lunch_category:
-            pass
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -818,6 +811,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     )
     def makeopenclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None, action = 'createopenclass')
+
 
     def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None, action = 'create', populateonly = False):
         """
@@ -986,8 +980,6 @@ class TeacherClassRegModule(ProgramModuleObj):
             },
             1: {
                 'type': self.program.open_class_category.category,
-                # Add lunch_category type if present
-                'lunch_type': getattr(self.program.lunch_category, 'category', None) if getattr(self.program, 'lunch_category', None) else None,
                 'link': 'makeopenclass',
                 'reg_open': self.open_class_reg_is_open(),
             }
@@ -1012,6 +1004,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 context['flag_types'] = ClassFlagType.get_flag_types(self.program)
 
         return render_to_response(self.baseDir() + 'classedit.html', request, context)
+
 
     @aux_call
     @needs_teacher
@@ -1079,7 +1072,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         if key == 'full_classes':
             return user.getFullClasses_pretty(self.program)
 
-        return ''
+        return six.u('')
 
     class Meta:
         proxy = True

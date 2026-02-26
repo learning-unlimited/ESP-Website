@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -112,6 +115,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
 
+
     def __init__(self, crmi, *args, **kwargs):
         from esp.program.controllers.classreg import get_custom_fields
 
@@ -124,7 +128,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             if len(field.choices) == 1:
                 hide_field(field, default=field.choices[0][0])
 
-        super().__init__(*args, **kwargs)
+        super(TeacherClassRegForm, self).__init__(*args, **kwargs)
 
         prog = crmi.program
 
@@ -143,13 +147,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # num_sections: section_list; hide if useless
         self.fields['num_sections'].choices = section_numbers
         hide_choice_if_useless( self.fields['num_sections'] )
-        # category: program.class_categories.all() plus lunch_category if present
-        categories = list(prog.class_categories.all())
-        if getattr(prog, 'lunch_category', None):
-            # Only add lunch_category if not already in categories
-            if prog.lunch_category not in categories:
-                categories.append(prog.lunch_category)
-        self.fields['category'].choices = [(x.id, x.category) for x in categories]
+        # category: program.class_categories.all()
+        self.fields['category'].choices = [ (x.id, x.category) for x in prog.class_categories.all() ]
         # grade_min, grade_max: crmi.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
@@ -269,7 +268,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             grade_min = int(grade_min)
             grade_max = int(grade_max)
             if grade_min > grade_max:
-                msg = 'Minimum grade must be less than the maximum grade.'
+                msg = six.u('Minimum grade must be less than the maximum grade.')
                 self.add_error('grade_min', msg)
                 self.add_error('grade_max', msg)
 
@@ -280,7 +279,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             class_size_optimal = int(class_size_optimal)
             class_size_max = int(class_size_max)
             if class_size_optimal > class_size_max:
-                msg = 'Optimal class size must be less than or equal to the maximum class size.'
+                msg = six.u('Optimal class size must be less than or equal to the maximum class size.')
                 self.add_error('class_size_optimal', msg)
                 self.add_error('class_size_max', msg)
 
@@ -298,6 +297,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         """ Get total time requested. Do not call before validation. """
         return float(self.cleaned_data['duration']) * int(self.cleaned_data['num_sections'])
 
+
 class TeacherOpenClassRegForm(TeacherClassRegForm):
 
     def __init__(self, crmi, *args, **kwargs):
@@ -307,17 +307,10 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
             if default is not None:
                 field.initial = default
 
-        super().__init__(crmi, *args, **kwargs)
+        super(TeacherOpenClassRegForm, self).__init__(crmi, *args, **kwargs)
         program = crmi.program
         open_class_category = program.open_class_category
-        # Add open_class_category if not already present
-        if (open_class_category.id, open_class_category.category) not in self.fields['category'].choices:
-            self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
-        # Add lunch_category if not already present
-        if getattr(program, 'lunch_category', None):
-            lunch_cat = program.lunch_category
-            if (lunch_cat.id, lunch_cat.category) not in self.fields['category'].choices:
-                self.fields['category'].choices += [(lunch_cat.id, lunch_cat.category)]
+        self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
 
         # Re-enable the requested special resources field as a space needs .
         self.fields['requested_special_resources'].widget = forms.Textarea()
@@ -343,6 +336,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 self.fields[field].required = False
                 hide_field(self.fields[field], default)
 
+
 class TeacherEventSignupForm(FormWithRequiredCss):
     """ Form for teachers to pick interview and teacher training times. """
     interview = forms.ChoiceField( label='Interview', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick an interview timeslot...')) )
@@ -366,7 +360,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         return self._slot_is_mine(event) or (not self._slot_is_taken(event) and not self._slot_too_late(event))
 
     def __init__(self, module, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(TeacherEventSignupForm, self).__init__(*args, **kwargs)
         self.module = module
         self.user = get_current_request().user
 

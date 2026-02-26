@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 from django.http import HttpResponse
 from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
@@ -14,6 +16,9 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 import json
 import re
+import six
+from six.moves import map
+from six.moves import range
 
 
 class SchedulingCheckModule(ProgramModuleObj):
@@ -101,14 +106,14 @@ class JSONFormatter:
         output = {}
         output["help_text"] = help_text
         output["headings"] = list(map(str, headings))
-        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.items())]
+        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(six.iteritems(d))]
         return output
 
 class SchedulingCheckRunner:
     # Generate html report and generate text report functions?lingCheckRunner:
     def __init__(self, program, formatter=JSONFormatter()):
         """
-        high_school_only and lunch should be lists of indices of timeslots for the high school
+        high_school_only and lunch should be lists of indeces of timeslots for the high school
         only block and for lunch respectively
         """
         self.p = program
@@ -129,11 +134,7 @@ class SchedulingCheckRunner:
     def _getLunchByDay(self):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
-        lunch_cat = getattr(self.p, 'lunch_category', None)
-        if lunch_cat:
-            lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category=lunch_cat).order_by('start').distinct()
-        else:
-            lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.p.getTimeSlots():
@@ -216,10 +217,6 @@ class SchedulingCheckRunner:
             if include_walkins == False:
                 #filter out walkins
                 qs = qs.exclude(parent_class__category__id=self.p.open_class_category.id)
-            # Exclude lunch_category if present
-            lunch_cat = getattr(self.p, 'lunch_category', None)
-            if lunch_cat:
-                qs = qs.exclude(parent_class__category=lunch_cat)
             if self.incl_unreview:
                 #filter out rejected/cancelled sections
                 qs = qs.exclude(status__lt=0)
@@ -229,12 +226,7 @@ class SchedulingCheckRunner:
             #filter out unscheduled classes
             qs = qs.exclude(resourceassignment__isnull=True)
             #filter out lunch
-<<<<<<< HEAD
-            if not lunch_cat:
-                qs = qs.exclude(parent_class__category__category=six.u('Lunch'))
-=======
-            qs = qs.exclude(parent_class__category__category='Lunch')
->>>>>>> upstream/main
+            qs = qs.exclude(parent_class__category__category=six.u('Lunch'))
             qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
             qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers', 'moderators')
             if include_walkins:
@@ -397,15 +389,12 @@ class SchedulingCheckRunner:
             return self.d_categories
 
         self.class_categories =  list(self.p.class_categories.all().values_list('category', flat=True))
+
         #not regular class categories
         open_class_cat = self.p.open_class_category.category
-        if open_class_cat in self.class_categories:
-            self.class_categories.remove(open_class_cat)
-        lunch_cat_obj = getattr(self.p, 'lunch_category', None)
-        if lunch_cat_obj and lunch_cat_obj.category in self.class_categories:
-            self.class_categories.remove(lunch_cat_obj.category)
-        elif "Lunch" in self.class_categories:
-            self.class_categories.remove("Lunch")
+        if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
+        lunch_cat = "Lunch"
+        if lunch_cat in self.class_categories: self.class_categories.remove(lunch_cat)
 
         #generating a dictionary of class categories
         class_cat_d = {}
@@ -613,7 +602,7 @@ class SchedulingCheckRunner:
         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p))
         classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(classes.values(),[]))}
         bad_classes = []
-        for key, l in classes.items():
+        for key, l in six.iteritems(classes):
             eventtuples = list(Event.objects.filter(meeting_times__parent_class__in=l).values_list('description', 'meeting_times', 'meeting_times__parent_class'))
             overlaps = {}
             for event, sec, cls in eventtuples:
@@ -651,7 +640,7 @@ class SchedulingCheckRunner:
         HEADINGS = ["Class Section", "Unfulfilled Request", "Current Room"]
         mismatches = []
 
-        for type_regex, matching_rooms in DEFAULT_CONFIG.items():
+        for type_regex, matching_rooms in six.iteritems(DEFAULT_CONFIG):
             resource_requests = ResourceRequest.objects.filter(
                 res_type__program=self.p, desired_value__iregex=type_regex)
 

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from django.forms.models import fields_for_model
@@ -24,6 +25,9 @@ from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
 
 from datetime import datetime
+from six.moves import map
+import six
+from six.moves import range
 
 class BaseCustomForm(BetterForm):
     """
@@ -307,7 +311,7 @@ class CustomFormHandler():
 
 class FormStorage(FileSystemStorage):
     """
-    The Storage subclass used to temporarily store submitted files.
+    The Storage sublass used to temporarily store submitted files.
     """
     pass
 
@@ -334,7 +338,7 @@ class ComboForm(SessionWizardView):
         context data such as the form's title and description
         """
 
-        context = super().get_context_data(form=form, **kwargs)
+        context = super(ComboForm, self).get_context_data(form=form, **kwargs)
         context.update({
                         'form_title': self.form.title,
                         'form_description': self.form.description,
@@ -679,7 +683,7 @@ class FormHandler:
             # Add in user if form is not anonymous
             if not form.anonymous and response['user_id']:
                 user = users[response['user_id']]
-                response['user_id'] = str(response['user_id'])
+                response['user_id'] = six.text_type(response['user_id'])
                 response['user_display'] = user.name()
                 response['user_email'] = user.email
                 response['username'] = user.username
@@ -689,7 +693,7 @@ class FormHandler:
                 if only_fkey_model.objects.filter(pk=response["link_%s_id" % only_fkey_model.__name__]).exists():
                     inst = only_fkey_model.objects.get(pk=response["link_%s_id" % only_fkey_model.__name__])
                 else: inst = None
-                response["link_%s_id" % only_fkey_model.__name__] = str(inst)
+                response["link_%s_id" % only_fkey_model.__name__] = six.text_type(inst)
 
             # Now, put in the additional fields in response
             for qname, data in add_fields.items():
@@ -720,34 +724,34 @@ class FormHandler:
         """
         Returns the response data as excel data.
         """
-        import openpyxl
-        from openpyxl.styles import Font
-        from io import BytesIO
+        import xlwt
+        try:
+            from cStringIO import StringIO
+        except:
+            from io import StringIO
 
         response_data = self.getResponseData(self.form)
-        wbk = openpyxl.Workbook(write_only=True)
-        sheet = wbk.create_sheet('sheet 1')
+        wbk = xlwt.Workbook()
+        sheet = wbk.add_sheet('sheet 1')
 
-        font = Font(name="Times New Roman", bold=True)
-        from openpyxl.cell import WriteOnlyCell
+        # Adding in styles for the column headers
+        style = xlwt.XFStyle()
+        font = xlwt.Font()
+        font.name = "Times New Roman"
+        font.bold = True
+        style.font = font
 
-        # write the questions as header row
-        header_row = []
+        # write the questions first
         for i in range(0, len(response_data['questions'])):
-            cell = WriteOnlyCell(sheet, value=response_data['questions'][i][1])
-            cell.font = font
-            header_row.append(cell)
-        sheet.append(header_row)
+            sheet.write(0, i, response_data['questions'][i][1], style)
 
         # Build up a simple dict storing question_name and question_index (=column number)
         ques_cols = {}
-        num_cols = len(response_data['questions'])
         for qid, ques in enumerate(response_data['questions']):
             ques_cols.update({ques[0]: qid})
 
-        # Now writing the answers row by row
-        for response in response_data['answers']:
-            row = [None] * num_cols
+        # Now writing the answers
+        for idx, response in enumerate(response_data['answers']):
             for ques, ans in response.items():
                 try:
                     col = ques_cols[ques]
@@ -757,16 +761,10 @@ class FormHandler:
                 if isinstance(ans, list):
                     write_ans = " ".join(ans)
                 else: write_ans = ans
+                sheet.write(idx+1, col, write_ans)
 
-                if isinstance(write_ans, datetime):
-                    write_ans = write_ans.replace(tzinfo=None)
-
-                row[col] = write_ans
-            sheet.append(row)
-
-        output = BytesIO()
+        output = StringIO()
         wbk.save(output)
-        wbk.close()
         return output
 
     def rebuildData(self):
@@ -807,5 +805,12 @@ class FormHandler:
                 module = ''
             metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
+
+
+
+
+
+
+
 
 

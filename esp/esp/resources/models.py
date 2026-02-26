@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -5,7 +9,8 @@ __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
-    (see AUTHORS file)
+  (see AUTHORS file)
+
 The ESP Web Site is free software; you can redistribute it and/or
 modify it under the terms of the GNU Affero General Public License
 as published by the Free Software Foundation; either version 3
@@ -108,7 +113,7 @@ class ResourceType(models.Model):
     def save(self, *args, **kwargs):
         if hasattr(self, '_attributes_cached'):
             self.attributes_dumped = json.dumps(self._attributes_cached)
-        super().save(*args, **kwargs)
+        super(ResourceType, self).save(*args, **kwargs)
 
     _get_or_create_cache = {}
     @classmethod
@@ -122,7 +127,7 @@ class ResourceType(models.Model):
                 base_q = base_q | Q(program__isnull=True)
         else:
             base_q = Q(program__isnull=True)
-        current_type = ResourceType.objects.filter(base_q, name__icontains=label)
+        current_type = ResourceType.objects.filter(base_q).filter(name__icontains=label)
         if len(current_type) != 0:
             ret = current_type[0]
         else:
@@ -151,7 +156,7 @@ class ResourceRequest(models.Model):
     desired_value = models.TextField()
 
     def __str__(self):
-        return 'Resource request of %s for %s: %s' % (str(self.res_type), self.target.emailcode(), self.desired_value)
+        return 'Resource request of %s for %s: %s' % (six.text_type(self.res_type), self.target.emailcode(), self.desired_value)
 
 @python_2_unicode_compatible
 class ResourceGroup(models.Model):
@@ -182,12 +187,12 @@ class Resource(models.Model):
 
     def __str__(self):
         if self.user is not None:
-            return 'For %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
+            return 'For %s: %s (%s)' % (six.text_type(self.user), self.name, six.text_type(self.res_type))
         else:
             if self.num_students != -1:
-                return 'For %d students: %s (%s)' % (self.num_students, self.name, str(self.res_type))
+                return 'For %d students: %s (%s)' % (self.num_students, self.name, six.text_type(self.res_type))
             else:
-                return '%s (%s)' % (self.name, str(self.res_type))
+                return '%s (%s)' % (self.name, six.text_type(self.res_type))
 
     def save(self, *args, **kwargs):
         if self.res_group is None:
@@ -198,7 +203,7 @@ class Resource(models.Model):
         else:
             self.is_unique = False
 
-        super().save(*args, **kwargs)
+        super(Resource, self).save(*args, **kwargs)
 
     # I'd love to kill this, but since it's set as the __sub__, it's hard to
     # grep to be sure it's not used.
@@ -239,7 +244,7 @@ class Resource(models.Model):
         id_list = []
 
         for req in request_list:
-            if not furnishings.filter(res_type=req.res_type).exists():
+            if furnishings.filter(res_type=req.res_type).count() < 1:
                 result[0] = False
                 id_list.append(req.id)
 
@@ -311,7 +316,7 @@ class Resource(models.Model):
         return (len(self.available_times(program)) > 0)
 
     def available_times_html(self, program=None):
-        return '<br /> '.join([str(e) for e in Event.collapse(self.available_times(program))])
+        return '<br /> '.join([six.text_type(e) for e in Event.collapse(self.available_times(program))])
 
     def available_times(self, program=None):
         event_list = [x for x in list(self.matching_times(program)) if self.is_available(timeslot=x)]
@@ -344,7 +349,7 @@ class Resource(models.Model):
             return Q(resource=self)
         else:
             collision = ResourceAssignment.objects.filter(resource=self)
-            return collision.exists()
+            return (collision.count() > 0)
 
 @python_2_unicode_compatible
 class AssignmentGroup(models.Model):
@@ -367,7 +372,7 @@ class ResourceAssignment(models.Model):
     assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        result = 'Resource assignment for %s' % str(self.getTargetOrSubject())
+        result = 'Resource assignment for %s' % six.text_type(self.getTargetOrSubject())
         if self.lock_level > 0:
             result += ' (locked)'
         return result
@@ -377,7 +382,7 @@ class ResourceAssignment(models.Model):
             #   Make a new group for this
             new_group = AssignmentGroup.objects.create()
             self.assignment_group = new_group
-        super().save(*args, **kwargs)
+        super(ResourceAssignment, self).save(*args, **kwargs)
 
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """

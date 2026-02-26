@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -58,13 +60,7 @@ class SurveyManagement(ProgramModuleObj):
     def survey_manage(self, request, tl, one, two, module, extra, prog):
         context = {'program': prog}
         # Make some dummy data for survey questions that need it
-        # Use lunch_category if present for one of the dummy classes, otherwise use first class_category
-        categories = list(prog.class_categories.all())
-        if getattr(prog, 'lunch_category', None):
-            lunch_cat = prog.lunch_category
-            if lunch_cat not in categories:
-                categories.append(lunch_cat)
-        classes = [ClassSubject(id = i, title="Test %s" %i, parent_program = prog, category = categories[i % len(categories)],
+        classes = [ClassSubject(id = i, title="Test %s" %i, parent_program = prog, category = prog.class_categories.all()[0],
                    grade_min = prog.grade_min, grade_max = prog.grade_max) for i in range(1, 4)]
         context['classes'] = classes
         context['section'] = ClassSection(parent_class=classes[0])

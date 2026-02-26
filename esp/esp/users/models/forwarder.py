@@ -1,10 +1,14 @@
 # django dependencies
+from __future__ import absolute_import
+from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-from django.db import models, transaction
+from django.db import models
 
 # esp dependencies
 from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
+import six
+from six.moves import range
 
 MAX_DEPTH = 5
 
@@ -55,7 +59,7 @@ class UserForwarder(models.Model):
         original_target = target
         for i in range(MAX_DEPTH):
             # Get the next forwarder if it exists
-            if not target.forwarders_out.exists():
+            if target.forwarders_out.count() == 0:
                 break
             f = target.forwarders_out.get()
             # Check for circular references
@@ -68,21 +72,20 @@ class UserForwarder(models.Model):
         # Update
         self.target = target
         if save:
-            with transaction.atomic():
-                self.save()
-                # Flatten
-                if flatten:
-                    for f in rewrites:
-                        f.target = target
-                        if f.source == f.target:
-                            f.delete()
-                        else:
-                            f.save()
+            self.save()
+            # Flatten
+            if flatten:
+                for f in rewrites:
+                    f.target = target
+                    if f.source == f.target:
+                        f.delete()
+                    else:
+                        f.save()
 
     @staticmethod
     def forward(source, target):
         """Forward from source to target, creating a forwarder if needed."""
-        if source.forwarders_out.exists():
+        if source.forwarders_out.count() > 0:
             f = source.forwarders_out.get()
         else:
             f = UserForwarder()
@@ -100,7 +103,7 @@ class UserForwarder(models.Model):
         (with forward() or updateTarget()), to save computation.
 
         """
-        if user.forwarders_out.exists():
+        if user.forwarders_out.count() > 0:
             ans = user.forwarders_out.get().target
             for extra in ['backend']:
                 if hasattr(user, extra):
@@ -110,4 +113,4 @@ class UserForwarder(models.Model):
             return (user, False)
 
     def __str__(self):
-        return '%s to %s' % (str(self.source), str(self.target))
+        return '%s to %s' % (six.text_type(self.source), six.text_type(self.target))

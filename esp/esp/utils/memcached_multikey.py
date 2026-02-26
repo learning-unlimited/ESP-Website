@@ -1,5 +1,6 @@
 "Memcached cache backend"
 
+from __future__ import absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ from esp.utils import ascii
 import hashlib
 
 try:
-    import pickle
+    import six.moves.cPickle as pickle
 except:
     import pickle
 
@@ -30,7 +31,7 @@ class CacheClass(BaseCache):
 
     def make_key(self, key, version=None):
         rawkey = ascii( NO_HASH_PREFIX + settings.CACHE_PREFIX + key )
-        django_prefix = super().make_key('', version=version)
+        django_prefix = super(CacheClass, self).make_key('', version=version)
         real_max_length = MAX_KEY_LENGTH - len(django_prefix)
         if len(rawkey) <= real_max_length:
             return rawkey

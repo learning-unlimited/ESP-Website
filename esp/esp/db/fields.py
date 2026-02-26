@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.db.models import ForeignKey, Field
 from django.conf import settings
 from esp.db.forms import AjaxForeignKeyNewformField
@@ -22,4 +23,4 @@ class AjaxForeignKey(ForeignKey):
                     'field': self}
 
         defaults.update(kwargs)
-        return super().formfield(**defaults)
+        return super(AjaxForeignKey, self).formfield(**defaults)

@@ -6,6 +6,7 @@ To activate your custom menu add the following to your settings.py::
     ADMIN_TOOLS_MENU = 'admintoolsmenu.CustomMenu'
 """
 
+from __future__ import absolute_import
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
@@ -35,4 +36,4 @@ class CustomMenu(Menu):
         """
         Use this method if you need to access the request context.
         """
-        return super().init_with_context(context)
+        return super(CustomMenu, self).init_with_context(context)

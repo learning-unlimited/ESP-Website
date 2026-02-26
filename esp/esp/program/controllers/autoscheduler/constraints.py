@@ -30,11 +30,13 @@ AS_Schedule itself. Having an internal state and also passing in a schedule
 seems too fragile.)
 """
 
+from __future__ import absolute_import
 import inspect
 import logging
 
 import esp.program.controllers.autoscheduler.util as util
 import esp.program.controllers.autoscheduler.config as config
+import six
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,7 @@ class BaseConstraint(object):
     required = False
 
     def __init__(self, **kwargs):
-        # Create a constructor which takes in arbitrary kwargs in case any
+        # Create a constructor wihch takes in arbitrary kwargs in case any
         # subclass needs them.
         pass
 
@@ -161,7 +163,7 @@ class ContiguousConstraint(BaseConstraint):
     def check_schedule(self, schedule):
         """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
         None otherwise."""
-        for section in schedule.class_sections.values():
+        for section in six.itervalues(schedule.class_sections):
             if len(section.assigned_roomslots) > 1:
                 section_room = section.assigned_roomslots[0].room
                 prev_timeslot = \
@@ -225,7 +227,7 @@ class LunchConstraint(BaseConstraint):
     def check_schedule(self, schedule):
         """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
         None otherwise."""
-        for list_lunch_slots in schedule.lunch_timeslots.values():
+        for list_lunch_slots in six.itervalues(schedule.lunch_timeslots):
             start_lunch = list_lunch_slots[0].start
             end_lunch = list_lunch_slots[-1].end
             for section in schedule.class_sections:
@@ -243,7 +245,7 @@ class LunchConstraint(BaseConstraint):
         """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
         violate the constraint, None otherwise."""
-        for list_lunch_slots in schedule.lunch_timeslots.values():
+        for list_lunch_slots in six.itervalues(schedule.lunch_timeslots):
             start_lunch = list_lunch_slots[0].start
             end_lunch = list_lunch_slots[-1].end
             roomslots = start_roomslot.room.get_roomslots_by_duration(
@@ -333,7 +335,7 @@ class ResourceCriteriaConstraint(BaseConstraint):
     so that we can specify resource-based constraints to the autoscheduler but
     humans can make exceptions manually."""
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super(ResourceCriteriaConstraint, self).__init__(**kwargs)
         self.resource_criteria = kwargs.get("resource_criteria", [])
 
     def check_schedule(self, schedule):
@@ -494,7 +496,7 @@ class SectionDurationConstraint(BaseConstraint):
     def check_schedule(self, schedule):
         """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
         None otherwise."""
-        for section in schedule.class_sections.values():
+        for section in six.itervalues(schedule.class_sections):
             if len(section.assigned_roomslots) != 0:
                 start_time = section.assigned_roomslots[0].timeslot.start
                 end_time = section.assigned_roomslots[-1].timeslot.end
@@ -559,8 +561,8 @@ class TeacherAvailabilityConstraint(BaseConstraint):
     def check_schedule(self, schedule):
         """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
         None otherwise."""
-        for teacher in schedule.teachers.values():
-            for section in teacher.taught_sections.values():
+        for teacher in six.itervalues(schedule.teachers):
+            for section in six.itervalues(teacher.taught_sections):
                 if len(section.assigned_roomslots) > 0:
                     for roomslot in section.assigned_roomslots:
                         start_time = roomslot.timeslot.start
@@ -669,7 +671,7 @@ class TeacherConcurrencyConstraint(BaseConstraint):
 
     def get_already_teaching_set(self, teacher):
         already_teaching = set()
-        for section in teacher.taught_sections.values():
+        for section in six.itervalues(teacher.taught_sections):
             for roomslot in section.assigned_roomslots:
                 already_teaching.add((
                     roomslot.timeslot.start, roomslot.timeslot.end))
@@ -678,9 +680,9 @@ class TeacherConcurrencyConstraint(BaseConstraint):
     def check_schedule(self, schedule):
         """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
         None otherwise."""
-        for teacher in schedule.teachers.values():
+        for teacher in six.itervalues(schedule.teachers):
             already_teaching = set()
-            for section in teacher.taught_sections.values():
+            for section in six.itervalues(teacher.taught_sections):
                 for roomslot in section.assigned_roomslots:
                     start_time = roomslot.timeslot.start
                     end_time = roomslot.timeslot.end
@@ -764,7 +766,7 @@ class TeacherConcurrencyConstraint(BaseConstraint):
 
 def get_all_constraint_classes_dict():
     return {
-        name: item for name, item in globals().items()
+        name: item for name, item in six.iteritems(globals())
         if inspect.isclass(item)
         and issubclass(item, BaseConstraint)
         and item not in [BaseConstraint, CompositeConstraint]}
@@ -773,11 +775,11 @@ def get_all_constraint_classes_dict():
 def get_required_constraint_names():
     return [
         name for name, constraint in
-        get_all_constraint_classes_dict().items() if constraint.required]
+        six.iteritems(get_all_constraint_classes_dict()) if constraint.required]
 
 
 def get_optional_constraint_names():
     return [
         name for name, constraint in
-        get_all_constraint_classes_dict().items() if not
+        six.iteritems(get_all_constraint_classes_dict()) if not
         constraint.required]

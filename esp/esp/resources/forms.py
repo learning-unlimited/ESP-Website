@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -54,7 +56,7 @@ class ResourceRequestForm(forms.Form):
             self.resource_type = kwargs['resource_type']
             del kwargs['resource_type']
 
-        super().__init__(data, **kwargs)
+        super(ResourceRequestForm, self).__init__(data, **kwargs)
 
         if data and ('prefix' in kwargs):
             self.prefix = kwargs['prefix']
@@ -77,20 +79,21 @@ class ResourceRequestForm(forms.Form):
 
             self.initial['resource_type'] = self.resource_type.id
 
+
 class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
     """ Like a FormSet, but handles the list of resource_types for the forms to start out with. """
     def __init__(self, *args, **kwargs):
         if 'resource_type' in kwargs:
             self.resource_type = kwargs['resource_type']
             del kwargs['resource_type']
-        super().__init__(*args, **kwargs)
+        super(ResourceRequestFormSet, self).__init__(*args, **kwargs)
 
     def initial_form_count(self):
         """Returns the number of forms that are required in this FormSet."""
         if hasattr(self, 'resource_type'):
             return len(self.resource_type)
         else:
-            return super().initial_form_count()
+            return super(ResourceRequestFormSet, self).initial_form_count()
 
     def _construct_form(self, i, **kwargs):
         #   Adapted from Django 1.1 release.

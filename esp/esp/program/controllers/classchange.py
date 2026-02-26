@@ -1,4 +1,9 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from io import open
+import six
+from six.moves import range
+from six.moves import input
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -39,7 +44,7 @@ import numpy
 from pkg_resources import parse_version
 assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
 import numpy.random
-import queue
+import six.moves.queue
 import random
 
 from datetime import date, datetime
@@ -159,6 +164,10 @@ class ClassChangeController(object):
         self.num_timeslots = len(self.timeslots)
         self.num_students = len(self.students)
         self.num_sections = len(self.sections)
+
+
+
+
 
 
         numpy.random.seed(self.now.microsecond)
@@ -551,6 +560,8 @@ class ClassChangeController(object):
                 return False
 
 
+
+
         #   Filter students by the section's grade limits
         if self.options['check_grade']:
             possible_students *= (self.student_grades >= self.section_grade_min[si])
@@ -640,7 +651,7 @@ class ClassChangeController(object):
                             # class by requesting it, in the enrollment we've
                             # computed so far.
                             students_to_kick[sec_ind] = numpy.transpose(numpy.nonzero((self.enroll_final*self.request)[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1)))
-                            pq = queue.PriorityQueue()
+                            pq = six.moves.queue.PriorityQueue()
                             random.shuffle(students_to_kick[sec_ind])
                             for [student] in students_to_kick[sec_ind]:
                                 # For each student, get class sections they
@@ -662,7 +673,7 @@ class ClassChangeController(object):
                         # Try to kick a student.
                         try:
                             self.enroll_final[students_to_kick[sec_ind].get(False)[2], sec_ind, self.section_schedules[sec_ind,:]] = False
-                        except queue.Empty:
+                        except six.moves.queue.Empty:
                             pass
 
     def compute_assignments(self):
@@ -714,7 +725,7 @@ class ClassChangeController(object):
             logger.info(text_fn(student_ind, for_real=False) + sent_to)
             sys.stdout.flush()
         if f:
-            f.write((text_fn(student_ind, for_real=False) + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"').encode('ascii', 'ignore'))
+            f.write((text_fn(student_ind, for_real=False) + sent_to).replace(six.u('\u2019'), "'").replace(six.u('\u201c'), '"').replace(six.u('\u201d'), '"').encode('ascii', 'ignore'))
         if for_real:
             send_mail(self.subject, text_fn(student_ind, for_real=True), self.from_email, recipient_list, bcc=self.bcc, extra_headers=self.extra_headers)
             time.sleep(self.timeout)

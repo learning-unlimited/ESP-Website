@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -131,11 +132,8 @@ class UnenrollModule(ProgramModuleObj):
 
         sections = prog.sections().filter(
             status__gt=0, parent_class__status__gt=0)
-        lunch_cat = getattr(prog, 'lunch_category', None)
-        if lunch_cat:
-            sections = sections.exclude(parent_class__category=lunch_cat)
-        else:
-            sections = sections.exclude(parent_class__category__category='Lunch')
+        sections = sections.exclude(
+            parent_class__category__category='Lunch')
 
         enrollments = StudentRegistration.valid_objects().filter(
             relationship=enrolled, section__in=sections)

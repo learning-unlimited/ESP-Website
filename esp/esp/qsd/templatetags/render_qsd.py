@@ -1,7 +1,9 @@
+from __future__ import absolute_import
 from django import template
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 from esp.qsd.models import QuasiStaticData
 from esp.tagdict.models import Tag
+import six
 
 register = template.Library()
 
@@ -81,7 +83,7 @@ class InlineQSDNode(template.Node):
 
         title = self.url
         if program is not None:
-            title += ' - ' + str(program)
+            title += ' - ' + six.text_type(program)
 
         qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
         context.update({'qsdrec': qsd_obj, 'inline': True})

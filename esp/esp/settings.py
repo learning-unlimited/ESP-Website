@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -226,14 +227,13 @@ for (key, value) in CONTACTFORM_EMAIL_CHOICES:
         CONTACTFORM_EMAIL_ADDRESSES[key] = DEFAULT_EMAIL_ADDRESSES[{'esp':'default','general':'default','esp-web':'support','relations':'default'}[key]]
 
 
-if 'CACHES' not in locals():
-    CACHES = {
-        'default': {
-            'BACKEND': 'esp.utils.memcached_multikey.CacheClass',
-            'LOCATION': '127.0.0.1:11211',
-            'TIMEOUT': DEFAULT_CACHE_TIMEOUT,
-        }
+CACHES = {
+    'default': {
+        'BACKEND': 'esp.utils.memcached_multikey.CacheClass',
+        'LOCATION': '127.0.0.1:11211',
+        'TIMEOUT': DEFAULT_CACHE_TIMEOUT,
     }
+}
 
 MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 

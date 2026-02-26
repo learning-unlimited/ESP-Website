@@ -1,0 +1,15 @@
+#!/bin/bash
+set -euf -o pipefail
+
+if [ "$TRAVIS_JOB" = "test" ]; then
+    sudo apt-get remove -y libhashkit2
+    sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev | grep -v ^.*pip)
+    esp/packages_base_manual_install.sh
+    pip3 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
+    pip3 install coverage
+elif [ "$TRAVIS_JOB" = "lint" ]; then
+    pip3 install flake8
+else
+    echo "Unknown TRAVIS_JOB: $TRAVIS_JOB"
+    exit 1
+fi

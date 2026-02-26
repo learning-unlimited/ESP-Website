@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -26,11 +28,13 @@ Contact information:
 MIT Educational Studies Program
   84 Massachusetts Ave W20-467, Cambridge, MA 02139
   Phone: 617-253-4882
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
-__copyright__ = ""
+  Email: esp-webmasters@mit.edu
+Learning Unlimited, Inc.
+  527 Franklin St, Cambridge, MA 02139
+  Phone: 617-379-0178
+  Email: web-team@learningu.org
+"""
+
 from django.db import models
 from reversion import revisions as reversion
 
@@ -61,7 +65,7 @@ class TemplateOverride(models.Model):
     def save(self, *args, **kwargs):
         #   Never overwrite; save a new copy with the version incremented.
         self.version = self.next_version()
-        super().save(*args, **kwargs)
+        super(TemplateOverride, self).save(*args, **kwargs)
 
     def get_absolute_url(self):
         return "/manage/templateoverride/" + str(self.id)

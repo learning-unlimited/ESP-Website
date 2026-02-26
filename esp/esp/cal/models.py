@@ -1,13 +1,10 @@
 
-<<<<<<< HEAD
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 import six
 from six.moves import range
-=======
-from django.utils.encoding import python_2_unicode_compatible
->>>>>>> upstream/main
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -50,12 +47,13 @@ from argcache import cache_function
 from esp.utils import cmp
 
 # Create your models here.
+@python_2_unicode_compatible
 class EventType(models.Model):
     """ A list of possible event types, ie. Program, Social Activity, etc. """
     description = models.TextField() # Textual description; not computer-parseable
 
     def __str__(self):
-        return str(self.description)
+        return six.text_type(self.description)
 
     @cache_function
     def get_from_desc(cls, desc):
@@ -72,6 +70,7 @@ class EventType(models.Model):
             'training': cls.get_from_desc('Teacher Training'),
         }
 
+@python_2_unicode_compatible
 class Event(models.Model):
     """ A unit calendar entry.
 
@@ -107,25 +106,25 @@ class Event(models.Model):
         dur = self.end - self.start
         hours = int(dur.seconds // 3600)
         minutes = int(dur.seconds // 60) - hours * 60
-        return '%d hr %d min' % (hours, minutes)
+        return six.u('%d hr %d min') % (hours, minutes)
 
     def __str__(self):
         return self.start.strftime('%a %b %d: ') + self.short_time()
 
     def short_time(self):
-        day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        day_list = [six.u('Mon'), six.u('Tue'), six.u('Wed'), six.u('Thu'), six.u('Fri'), six.u('Sat'), six.u('Sun')]
 
-        start_minutes = ''
-        end_minutes = ''
-        start_ampm = ''
+        start_minutes = six.u('')
+        end_minutes = six.u('')
+        start_ampm = six.u('')
         if self.start.minute != 0:
-            start_minutes = ':%02d' % self.start.minute
+            start_minutes = six.u(':%02d') % self.start.minute
         if self.end.minute != 0:
-            end_minutes = ':%02d' % self.end.minute
+            end_minutes = six.u(':%02d') % self.end.minute
         if (self.start.hour < 12) != (self.end.hour < 12):
             start_ampm = self.start.strftime(' %p')
 
-        return '%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
+        return six.u('%d%s%s to %d%s %s') % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
             (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p') )
 
     @staticmethod
@@ -201,10 +200,10 @@ class Event(models.Model):
             s += self.start.strftime(', %b %d,')
             s2 += self.end.strftime(', %b %d,')
         if s != s2:
-            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
-               + s2 + ' ' + self.end.strftime('%I:%M%p').lower().strip('0')
+            return s + six.u(' ') + self.start.strftime('%I:%M%p').lower().strip('0') + six.u('--') \
+               + s2 + six.u(' ') + self.end.strftime('%I:%M%p').lower().strip('0')
         else:
-            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
+            return s + six.u(' ') + self.start.strftime('%I:%M%p').lower().strip('0') + six.u('--') \
                + self.end.strftime('%I:%M%p').lower().strip('0')
 
     def pretty_time_with_date(self):
@@ -214,7 +213,7 @@ class Event(models.Model):
         return self.start.strftime('%A, %B %d')
 
     def pretty_start_time(self):
-        return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0')
+        return self.start.strftime('%a') + six.u(' ') + self.start.strftime('%I:%M%p').lower().strip('0')
 
     def parent_program(self):
         return self.program

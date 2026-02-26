@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,6 +37,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
 import re
+import six
 
 class ResourceModuleTest(ProgramFrameworkTest):
     ## This test is very incomplete.
@@ -46,7 +48,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
     ## It also also needs to test all the other queries on this page.
 
     def setUp(self):
-        super().setUp()
+        super(ResourceModuleTest, self).setUp()
 
         if not getattr(self, 'isSetUp', False):
             self.pm = ProgramModule.objects.get(handler='ResourceModule')
@@ -64,7 +66,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
 
         #   Search for matching items in the response and ensure they are consistent
-        results = re.findall(regexp, str(response.content, encoding='UTF-8'))
+        results = re.findall(regexp, six.text_type(response.content, encoding='UTF-8'))
         displayed_names = {x[index] for x in results}
 
         return displayed_names

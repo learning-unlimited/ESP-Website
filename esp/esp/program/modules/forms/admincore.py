@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 from django.conf import settings
 from django.contrib import admin
@@ -27,26 +28,21 @@ def get_rt_choices():
 class VisibleRegistrationTypeForm(forms.Form):
     display_names = forms.MultipleChoiceField(choices=[], required=False, label='', help_text=mark_safe("<br />Select the Registration Types that should be displayed on a student's schedule on the studentreg page. To select an entry, hold Ctrl (on Windows or Linux) or Meta (on Mac), and then press it with your mouse."), widget=forms.SelectMultiple(attrs={'style':'height:150px; background:white;'}))
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(VisibleRegistrationTypeForm, self).__init__(*args, **kwargs)
         self.fields['display_names'].choices = get_rt_choices()
 
 class LunchConstraintsForm(forms.Form):
     def __init__(self, program, *args, **kwargs):
         self.program = program
 
-        super().__init__(*args, **kwargs)
+        super(LunchConstraintsForm, self).__init__(*args, **kwargs)
 
         #   Set choices for timeslot field
         self.fields['timeslots'].choices = [(ts.id, ts.short_description) for ts in self.program.getTimeSlots()]
         self.load_data()
 
     def load_data(self):
-        # Use lunch_category property if available
-        lunch_cat = getattr(self.program, 'lunch_category', None)
-        if lunch_cat:
-            lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category=lunch_cat).distinct()
-        else:
-            lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').distinct()
+        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').distinct()
         self.fields['timeslots'].initial = list(lunch_timeslots.values_list('id', flat=True))
         sched_constraints = ScheduleConstraint.objects.filter(program=self.program)
         # If there are any schedule constraints for this program, check that box
@@ -55,7 +51,7 @@ class LunchConstraintsForm(forms.Form):
             # If any schedule constraints have an 'on_failure' function, check the autocorrect box
             if sched_constraints.exclude(on_failure='').exists():
                 self.fields['autocorrect'].initial = True
-            # If any BooleanTokens associated with the schedule constraints have text other than '1', check the include_conditions box
+            # If any BooleanTokens associated with the schedule cosntraints have text other than '1', check the include_conditions box
             if BooleanToken.objects.filter(exp__condition_constraint__program=2).exclude(text='1').exists():
                 self.fields['include_conditions'].initial = True
 
@@ -78,10 +74,10 @@ class ProgramSettingsForm(ProgramCreationForm):
     student_reg_start = None
     student_reg_end   = None
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(ProgramSettingsForm, self).__init__(*args, **kwargs)
 
     def save(self):
-        return super().save()
+        return super(ProgramSettingsForm, self).save()
 
     class Meta:
         fieldsets = [
@@ -102,7 +98,7 @@ ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attr
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(TeacherRegSettingsForm, self).__init__(*args, **kwargs)
 
     class Meta:
         fieldsets = [
@@ -117,7 +113,7 @@ class TeacherRegSettingsForm(BetterModelForm):
 class StudentRegSettingsForm(BetterModelForm):
     """ Form for changing student class registration settings. """
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(StudentRegSettingsForm, self).__init__(*args, **kwargs)
 
     class Meta:
         fieldsets = [
@@ -155,7 +151,7 @@ class ReceiptsForm(BetterForm):
 
     def __init__(self, *args, **kwargs):
         self.program = kwargs.pop('program')
-        super().__init__(*args, **kwargs)
+        super(ReceiptsForm, self).__init__(*args, **kwargs)
         for action in ['confirm', 'confirmemail', 'cancel']:
             receipts = DBReceipt.objects.filter(program=self.program, action=action)
             if receipts.count() > 0:
@@ -196,7 +192,7 @@ class ProgramTagSettingsForm(BetterForm):
     def __init__(self, *args, **kwargs):
         self.program = kwargs.pop('program')
         self.categories = set()
-        super().__init__(*args, **kwargs)
+        super(ProgramTagSettingsForm, self).__init__(*args, **kwargs)
         from esp.program.modules.forms.teacherreg import TeacherClassRegForm
         classreg_fields = [field.name for field in TeacherClassRegForm(self.program.classregmoduleinfo).visible_fields()]
         for key in all_program_tags:

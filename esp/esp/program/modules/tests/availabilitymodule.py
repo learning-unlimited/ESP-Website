@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -43,7 +44,7 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
             'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
             'num_teachers': 1, 'classes_per_teacher': 2, 'sections_per_class': 1
             } )
-        super().setUp(*args, **kwargs)
+        super(AvailabilityModuleTest, self).setUp(*args, **kwargs)
 
         # Get and remember the instance of AvailabilityModule
         am = ProgramModule.objects.get(handler='AvailabilityModule', module_type='teach')

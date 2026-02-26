@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from argcache.registry import dump_all_caches
 
 from django.core.cache import cache
@@ -13,12 +14,7 @@ class CacheFlushTestCase(TestCase):
             cache.flush_all()
         else:
             # Best effort to clear out everything anyway
-            try:
-                dump_all_caches()
-            except AttributeError:
-                # Catch "AttributeError: 'NewCls' object has no attribute 'model'"
-                # generated from argcache's derivedfield.py during testing
-                pass
+            dump_all_caches()
 
             from esp import settings
             settings.CACHE_PREFIX = ''.join( random.sample( string.ascii_letters + string.digits, 16 ) )
@@ -27,11 +23,11 @@ class CacheFlushTestCase(TestCase):
 
     def _fixture_setup(self):
         self._flush_cache()
-        super()._fixture_setup()
+        super(CacheFlushTestCase, self)._fixture_setup()
 
     def _fixture_teardown(self):
         self._flush_cache()
-        super()._fixture_teardown()
+        super(CacheFlushTestCase, self)._fixture_teardown()
 
 def user_role_setup(names=['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']):
     from django.contrib.auth.models import Group

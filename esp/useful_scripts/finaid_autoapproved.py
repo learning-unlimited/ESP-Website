@@ -7,6 +7,8 @@
 # PROGRAM_ID before running.
 #
 
+from __future__ import absolute_import
+from __future__ import print_function
 from script_setup import *
 from esp.program.models import FinancialAidRequest
 

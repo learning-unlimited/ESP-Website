@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+import six
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -86,7 +89,7 @@ class StudentRegSanityController(object):
         logger.debug(report)
         if closeatend: csvfile.close()
         logger.info("Walkins checked")
-        if not fake: "Please re-run self.initialize() to update."
+        if not fake: "Please re-run self.initalize() to update."
         return report
 
     def sanitize_lunch(self, csvlog=False, fake = True, csvwriter=None, directory=None):
@@ -116,7 +119,7 @@ class StudentRegSanityController(object):
         logger.debug(report)
         if closeatend: csvfile.close()
         logger.info("Lunch checked.")
-        if not fake: "Please re-run self.initialize() to update."
+        if not fake: "Please re-run self.initalize() to update."
         return report
 
     def sanitize(self, checks=None, fake=True, csvlog=True, directory=None):
@@ -142,7 +145,7 @@ class StudentRegSanityController(object):
             print('-------------Known Bugs-----------------')
             print("Guys, I'm not course 6 for a reason~shulinye")
             return None
-        if isinstance(checks, str):
+        if isinstance(checks, six.string_types):
             checks = [checks]
         if csvlog:
             import csv

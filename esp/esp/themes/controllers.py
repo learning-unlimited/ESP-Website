@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from __future__ import division
+import six
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -49,7 +52,7 @@ import distutils.dir_util
 import json
 import hashlib
 import copy
-from urllib.parse import quote, unquote
+from six.moves.urllib.parse import quote, unquote
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -103,7 +106,7 @@ class ThemeController(object):
     def get_template_settings(self):
         """
         Get the current template settings. The base settings are the initial
-        values of the configuration form fields, which are overridden by values
+        values of the configuration form fields, which are overriden by values
         in the theme_template_control Tag.
         """
         form_class = self.get_config_form_class(self.get_current_theme())
@@ -303,7 +306,7 @@ class ThemeController(object):
         css_data = self.compile_less(less_data)
 
         with open(output_filename, 'w') as output_file:
-            output_file.write(str(THEME_COMPILED_WARNING) + css_data.decode('UTF-8'))
+            output_file.write(six.text_type(THEME_COMPILED_WARNING) + css_data.decode('UTF-8'))
         logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
         Tag.setTag("current_theme_version", value = hex(random.getrandbits(16)))
 
@@ -591,7 +594,7 @@ class ThemeController(object):
         base_vars = self.find_less_variables()
         for varset in base_vars.values():
             for val in varset.values():
-                if isinstance(val, str) and val.startswith('#'):
+                if isinstance(val, six.string_types) and val.startswith('#'):
                     if len(val) == 4: # Convert to long form
                         val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
                     palette_base.add(val)
@@ -606,7 +609,7 @@ class ThemeController(object):
         base_vars = self.find_less_variables()
         for varset in base_vars.values():
             for val in varset.values():
-                if isinstance(val, str) and val.startswith('#'):
+                if isinstance(val, six.string_types) and val.startswith('#'):
                     if len(val) == 4: # Convert to long form
                         val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
                     if val in palette:

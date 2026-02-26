@@ -20,7 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import urllib.request, urllib.error, urllib.parse
+from __future__ import absolute_import
+import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
+import six.moves.urllib.request, six.moves.urllib.error, six.moves.urllib.parse
 import json
 
 class Formstack(object):
@@ -97,11 +99,11 @@ class Formstack(object):
 
         args['api_key'] = self.__api_key
         args['type'] = 'json'
-        req = urllib.request.Request(self.__api_url + '/' + method, \
-                              urllib.parse.urlencode(args))
+        req = six.moves.urllib.request.Request(self.__api_url + '/' + method, \
+                              six.moves.urllib.parse.urlencode(args))
         try:
 
-            res = urllib.request.urlopen(req)
+            res = six.moves.urllib.request.urlopen(req)
             res = json.load(res)
 
             if len(res) and res['status'] == 'ok':
@@ -113,7 +115,7 @@ class Formstack(object):
 
         # I don't know what they were thinking with try ... except: pass
         # --lua
-        except urllib.error.URLError as e:
+        except six.moves.urllib.error.URLError as e:
             raise APIError(e)
 
         return None

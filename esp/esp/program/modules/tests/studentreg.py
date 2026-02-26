@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -53,7 +55,7 @@ class StudentRegTest(ProgramFrameworkTest):
             'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
             'num_rooms': 6, 'sibling_discount': 20,
             } )
-        super().setUp(*args, **kwargs)
+        super(StudentRegTest, self).setUp(*args, **kwargs)
 
         self.add_student_profiles()
         self.schedule_randomly()

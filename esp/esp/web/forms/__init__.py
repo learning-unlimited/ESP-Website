@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,7 +34,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 """ ESP In-house Form Fields ... some of these might be useful
-    outside ESP.
+    ouside ESP.
     """
 
 from django import forms

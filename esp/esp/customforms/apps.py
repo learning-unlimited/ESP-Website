@@ -1,10 +1,11 @@
+from __future__ import absolute_import
 from esp.utils.apps import InstallConfig
 
 class CustomformsConfig(InstallConfig):
     name = 'esp.customforms'
 
     def ready(self):
-        super().ready()
+        super(CustomformsConfig, self).ready()
 
         # Initialize the model cache for customforms
         # This import needs to go here because it will indirectly

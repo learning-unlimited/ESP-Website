@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -39,10 +40,7 @@ from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.models    import ESPUser, Record, RecordType
-from esp.program.models  import RegistrationProfile, StudentRegistration
-from django.db.models    import Max, Min
 from django.http import HttpResponse
-from django.db import transaction
 from django.template.loader import render_to_string
 from esp.users.views    import search_for_user
 
@@ -139,11 +137,8 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
     @aux_call
     @needs_onsite
-    def ajax_status(self, request, tl, one, two, module, extra, prog, context=None):
-        if context is None:
-            context = {}
-        students = list(ESPUser.objects.filter(prog.students(QObjects=True)['attended']).distinct().order_by('id'))
-        student_ids = [s.id for s in students]
+    def ajax_status(self, request, tl, one, two, module, extra, prog, context={}):
+        students = ESPUser.objects.filter(prog.students(QObjects=True)['attended']).distinct().order_by('id')
 
         #   Populate some stats
         if 'snippets' in request.GET:
@@ -152,22 +147,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
             snippet_list = ['grades']
 
         if 'grades' in snippet_list:
-            #   Bulk-fetch graduation years to avoid per-student getGrade() queries.
-            schoolyear = ESPUser.program_schoolyear(prog)
-            #   Get the latest RegistrationProfile per student for this program.
-            yog_qs = (
-                RegistrationProfile.objects
-                .filter(user_id__in=student_ids, program=prog)
-                .exclude(student_info__isnull=True)
-                .exclude(student_info__graduation_year__isnull=True)
-                .values('user_id')
-                .annotate(yog=Max('student_info__graduation_year'))
-            )
-            yog_lookup = {row['user_id']: row['yog'] for row in yog_qs}
             grade_levels = {}
-            for uid in student_ids:
-                yog = yog_lookup.get(uid)
-                grade = ESPUser.gradeFromYOG(yog, schoolyear) if yog else 0
+            for student in students:
+                grade = student.getGrade(self.program)
                 if grade not in grade_levels:
                     grade_levels[grade] = 0
                 grade_levels[grade] += 1
@@ -176,22 +158,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
             context['grade_levels'] = None
 
         if 'times' in snippet_list:
-            #   Bulk-fetch first class time to avoid per-student getFirstClassTime() queries.
-            first_times_qs = (
-                StudentRegistration.objects
-                .filter(
-                    user_id__in=student_ids,
-                    section__parent_class__parent_program=prog,
-                    relationship__name='Enrolled',
-                )
-                .filter(StudentRegistration.is_valid_qobject())
-                .values('user_id')
-                .annotate(first_start=Min('section__meeting_times__start'))
-            )
-            first_time_lookup = {row['user_id']: row['first_start'] for row in first_times_qs}
             start_times = {}
-            for uid in student_ids:
-                start_time = first_time_lookup.get(uid)
+            for student in students:
+                start_time = student.getFirstClassTime(prog)
                 if start_time not in start_times:
                     start_times[start_time] = 0
                 start_times[start_time] += 1
@@ -264,21 +233,20 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
                     if student.isStudent():
                         self.student = student
-                        with transaction.atomic():
-                            for key in ['attended', 'paid', 'liab', 'med']:
-                                if form.cleaned_data[key]:
-                                    if key == "attended":
-                                        if prog.isCheckedIn(student):
-                                            results['existing'].append(code)
-                                        else:
-                                            self.create_record(key)
-                                            results['new'].append(code)
+                        for key in ['attended', 'paid', 'liab', 'med']:
+                            if form.cleaned_data[key]:
+                                if key == "attended":
+                                    if prog.isCheckedIn(student):
+                                        results['existing'].append(code)
                                     else:
-                                        created = self.create_record(key)
-                                        if created:
-                                            results[key]['new'].append(code)
-                                        else:
-                                            results[key]['existing'].append(code)
+                                        self.create_record(key)
+                                        results['new'].append(code)
+                                else:
+                                    created = self.create_record(key)
+                                    if created:
+                                        results[key]['new'].append(code)
+                                    else:
+                                        results[key]['existing'].append(code)
                     else:
                         results['not_student'].append(code)
         else:
@@ -338,16 +306,15 @@ class OnSiteCheckinModule(ProgramModuleObj):
             user = ESPUser.objects.filter(id = request.POST['userid']).first()
             if user:
                 self.student = user
-                with transaction.atomic():
-                    for key in ['attended', 'paid', 'liab', 'med']:
-                        if key in request.POST:
-                            self.create_record(key)
-                        else:
-                            self.delete_record(key)
-                    if "undocheckin" in request.POST:
-                        Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")[0].delete()
-                    if "undocheckout" in request.POST:
-                        Record.objects.filter(event__name="checked_out", program=self.program, user=self.student).order_by("-time")[0].delete()
+                for key in ['attended', 'paid', 'liab', 'med']:
+                    if key in request.POST:
+                        self.create_record(key)
+                    else:
+                        self.delete_record(key)
+                if "undocheckin" in request.POST:
+                    Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")[0].delete()
+                if "undocheckout" in request.POST:
+                    Record.objects.filter(event__name="checked_out", program=self.program, user=self.student).order_by("-time")[0].delete()
                 message = "Check-in updated for " + user.username
             else:
                 error = True

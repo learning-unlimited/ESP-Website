@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -52,12 +53,13 @@ from decimal import Decimal
 import json
 
 
+
 class DonationForm(forms.Form):
     amount_donation = forms.ChoiceField(widget=forms.RadioSelect())
     custom_amount = forms.DecimalField(decimal_places=2, min_value=1, max_value=1000, required=False)
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(DonationForm, self).__init__(*args, **kwargs)
         self.amount = None
 
     def load_donation(self, amount_donation_initial=None, custom_amount_initial=None):
@@ -169,9 +171,9 @@ class DonationModule(ProgramModuleObj):
         context['user'] = user
 
         # It's unclear if we support changing line item preferences after
-        # credit card payment has occurred. For now, just do the same thing we
+        # credit card payment has occured. For now, just do the same thing we
         # do in other accounting modules, and don't allow changes after payment
-        # has occurred.
+        # has occured.
         if iac.has_paid():
             raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
 

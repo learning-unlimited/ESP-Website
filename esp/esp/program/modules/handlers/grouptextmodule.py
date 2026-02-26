@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from __future__ import division
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -68,9 +71,9 @@ class GroupTextModule(ProgramModuleObj):
         """ Check if Twilio configuration settings are set.
             The text message module will not work without them. """
 
-        if not hasattr(settings, 'TWILIO_ACCOUNT_SID') or not isinstance(settings.TWILIO_ACCOUNT_SID, str):
+        if not hasattr(settings, 'TWILIO_ACCOUNT_SID') or not isinstance(settings.TWILIO_ACCOUNT_SID, six.string_types):
             return False
-        if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, str):
+        if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, six.string_types):
             return False
         if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or (not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, list) and not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, tuple)):
             return False

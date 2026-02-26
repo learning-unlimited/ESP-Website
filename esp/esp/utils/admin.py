@@ -1,6 +1,7 @@
 
 """ Admin settings for esp.utils. """
 
+from __future__ import absolute_import
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 from esp.utils.admin_user_search import default_user_search
 

@@ -1,13 +1,14 @@
+from __future__ import absolute_import
 from django import forms
 
 from esp.survey.models  import Question, Survey
 
 class SurveyForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(SurveyForm, self).__init__(*args, **kwargs)
 
     def save(self, commit=True, program = None, *args, **kwargs):
-        survey = super().save(commit=False, *args, **kwargs)
+        survey = super(SurveyForm, self).save(commit=False, *args, **kwargs)
         survey.program = program
         if commit:
             survey.save()
@@ -22,7 +23,7 @@ class QuestionForm(forms.ModelForm):
         cur_prog = kwargs.pop('cur_prog', None)
         surveys = Survey.objects.filter(program=cur_prog)
         self.base_fields['survey'].choices = ((str(survey.id), survey.name + " (" + survey.category + ")") for survey in surveys)
-        super().__init__(*args, **kwargs)
+        super(QuestionForm, self).__init__(*args, **kwargs)
         instance = kwargs.pop('instance', None)
         if instance:
             self.base_fields['survey'].initial = str(instance.id)
@@ -49,5 +50,5 @@ class SurveyImportForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         cur_prog = kwargs.pop('cur_prog', None)
-        super().__init__(*args, **kwargs)
+        super(SurveyImportForm, self).__init__(*args, **kwargs)
         self.fields['survey_id'].queryset = Survey.objects.exclude(program=cur_prog)

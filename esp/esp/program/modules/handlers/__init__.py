@@ -2,6 +2,7 @@
 Automatically import everything from the handlers directory.
 """
 
+from __future__ import absolute_import
 import os.path
 import glob
 

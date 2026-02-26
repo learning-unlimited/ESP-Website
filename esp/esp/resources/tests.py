@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from datetime import datetime
 
 from django.db.models import ProtectedError
@@ -11,7 +12,7 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 class ResourceTypeTest(TestCase):
 
     def setUp(self):
-        super().setUp()
+        super(ResourceTypeTest, self).setUp()
         now = datetime.now()
         self.event = Event.objects.create(
             name='event', start=now, end=now,

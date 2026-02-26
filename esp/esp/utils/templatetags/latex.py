@@ -1,5 +1,8 @@
 """ ESP Custom Filters for template """
 
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -41,7 +44,9 @@ register = template.Library()
 def texescape(value):
     """ This will escape a string according to the rules of LaTeX """
 
-    value = str(value).strip()
+    value = six.text_type(value).strip()
+
+
 
     # we will make escape all the strings except those sandwiched between
     # $$ and $$. Thus you can write math symbols like $$\sqrt{3}$$ and
@@ -73,6 +78,7 @@ def texescape(value):
 
     value = '$'.join(strings)
 
+
     # now we have to make quotes pretty...
     strings = value.split('"')
 
@@ -90,7 +96,11 @@ def texescape(value):
     value = value.replace('\r',   '\n')
     value = value.replace('\n',   '~\\\\\n')
 
-    value = value.encode('ascii', 'ignore').decode('ascii')
+    value = value.encode('ascii', 'ignore')
 
     return value
+
+
+
+
 

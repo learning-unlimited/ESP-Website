@@ -1,4 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+import six
 from io import open
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,11 +44,12 @@ from django.template import loader
 from esp.program.models import Program, ClassSubject, ClassSection
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 
+
 import os
 import subprocess
 
 try:
-    import pickle
+    import six.moves.cPickle as pickle
 except ImportError:
     import pickle
 
@@ -126,7 +131,7 @@ def unpack_answers(lst):
 @register.filter
 def drop_empty_answers(lst):
     #   Takes a list of answers and drops empty ones. Whitespace-only is empty.
-    return [ ans for ans in lst if (not isinstance(ans.answer, str)) or ans.answer.strip() ]
+    return [ ans for ans in lst if (not isinstance(ans.answer, six.string_types)) or ans.answer.strip() ]
 
 @register.filter
 def average(lst):

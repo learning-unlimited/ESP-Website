@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"

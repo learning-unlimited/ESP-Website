@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core import serializers
 from django.http import HttpResponse
@@ -27,7 +28,7 @@ def autocomplete_wrapper(function, data, is_staff, prog):
 @login_required
 def ajax_autocomplete(request):
     """
-    This function will receive a bunch of GET requests for the
+    This function will recieve a bunch of GET requests for the
     AjaxForeignKey, and return the data for the autocompletion.
     """
     try:

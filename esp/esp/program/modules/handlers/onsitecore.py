@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -73,6 +74,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
 
     def isStep(self):
         return False
+
 
 
     class Meta:

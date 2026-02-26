@@ -1,11 +1,8 @@
-<<<<<<< HEAD
 from __future__ import absolute_import
 from __future__ import division
+from django.utils.encoding import python_2_unicode_compatible
 from six.moves import map
 from six.moves import range
-=======
-from django.utils.encoding import python_2_unicode_compatible
->>>>>>> upstream/main
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -49,6 +46,7 @@ from decimal import Decimal
 import random
 import json
 import logging
+import six
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
@@ -79,6 +77,7 @@ from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
 # Create your models here.
+@python_2_unicode_compatible
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
@@ -143,6 +142,7 @@ class ProgramModule(models.Model):
     def __str__(self):
         return '{}'.format(self.admin_title)
 
+@python_2_unicode_compatible
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
     program = models.CharField(max_length=256)
@@ -259,6 +259,7 @@ def _get_type_url(type):
 
     return _really_get_type_url
 
+@python_2_unicode_compatible
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
@@ -331,7 +332,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def save(self, *args, **kwargs):
 
-        retVal = super().save(*args, **kwargs)
+        retVal = super(Program, self).save(*args, **kwargs)
 
         return retVal
 
@@ -370,7 +371,7 @@ class Program(models.Model, CustomFormsLinkModel):
             if retVal is not None and retVal.strip():
                 return retVal
 
-        return ''
+        return six.u('')
 
     @staticmethod
     def get_users_from_module(method_name):
@@ -405,7 +406,7 @@ class Program(models.Model, CustomFormsLinkModel):
         def _get_num(self):
             result = query_func(self, QObjects=False)
             result_dict = {}
-            for key, value in result.items():
+            for key, value in six.iteritems(result):
                 if isinstance(value, QuerySet):
                     result_dict[key] = value.count()
                 else:
@@ -435,7 +436,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         reg_type = RegistrationType.get_map()['Enrolled']
 
-        regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self, user__id__in=checked_in_ids, relationship=reg_type).values('user', 'section')
+        regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self).filter(user__id__in=checked_in_ids, relationship=reg_type).values('user', 'section')
         for reg in regs:
             if reg['section'] not in counts:
                 counts[reg['section']] = 0
@@ -642,7 +643,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return True
         caps = self.grade_caps()
         grade = user.getGrade(self, assume_student=True)
-        for grades, cap in caps.items():
+        for grades, cap in six.iteritems(caps):
             if (grade in grades and
                     self._students_in_program_in_grades(grades) >= cap):
                 return False
@@ -660,7 +661,7 @@ class Program(models.Model, CustomFormsLinkModel):
         size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
         if size_tag:
-            for k, v in json.loads(size_tag).items():
+            for k, v in six.iteritems(json.loads(size_tag)):
                 if '-' in k:
                     low, high = list(map(int, k.split('-')))
                     size_dict[tuple(range(low, high + 1))] = v
@@ -719,19 +720,6 @@ class Program(models.Model, CustomFormsLinkModel):
     open_class_category.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
     open_class_category = property(open_class_category)
 
-        @cache_function
-        def lunch_category(self):
-            """Return the Lunch class category as a non-program-specific category, similar to open_class_category."""
-            from esp.program.models.class_ import ClassCategories
-            lunch_cat = None
-            try:
-                lunch_cat = ClassCategories.objects.get(category="Lunch", symbol="L")
-            except ClassCategories.DoesNotExist:
-                lunch_cat = ClassCategories.objects.create(category="Lunch", symbol="L")
-            return lunch_cat
-        lunch_category.depend_on_model('program.ClassCategories')
-        lunch_category = property(lunch_category)
-
     @cache_function
     def getScheduleConstraints(self):
         return ScheduleConstraint.objects.filter(program=self).select_related()
@@ -761,7 +749,7 @@ class Program(models.Model, CustomFormsLinkModel):
         verbose_names = ["not_checked_in", "checked_in", "checked_out"]
         recs = Record.objects.filter(event__name__in=["attended", "checked_out"], user=espuser,
                                      program=self).order_by("-time")
-        if recs.exists():
+        if recs.count() > 0:
             # Check if student has ever been checked_in
             if recs.filter(event__name="attended").exists():
                 status = 1
@@ -1006,13 +994,13 @@ class Program(models.Model, CustomFormsLinkModel):
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:
-                        return '%s' % d1.strftime('%b. %d, %Y')
+                        return six.u('%s') % d1.strftime('%b. %d, %Y')
                     else:
-                        return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+                        return six.u('%s - %s') % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
                 else:
-                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
+                    return six.u('%s - %s') % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
             else:
-                return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
+                return six.u('%s - %s') % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
         else:
             return None
 
@@ -1371,6 +1359,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
 Program.setup_user_filters()
 
+@python_2_unicode_compatible
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
         a program.  Stanford has used this for lunch selection and a sibling discount.
@@ -1399,7 +1388,7 @@ class SplashInfo(models.Model):
             q = SplashInfo.objects.filter(student=user, program=program)
         else:
             q = SplashInfo.objects.filter(student=user)
-        return q.exists() and q[0].submitted
+        return (q.count() > 0) and q[0].submitted
 
     @staticmethod
     def getForUser(user, program=None):
@@ -1407,7 +1396,7 @@ class SplashInfo(models.Model):
             q = SplashInfo.objects.filter(student=user, program=program)
         else:
             q = SplashInfo.objects.filter(student=user)
-        if q.exists():
+        if q.count() > 0:
             return q[0]
         else:
             n = SplashInfo(student=user, program=program)
@@ -1428,9 +1417,10 @@ class SplashInfo(models.Model):
             Transfer.objects.filter(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type).delete()
 
     def save(self):
-        super().save()
+        super(SplashInfo, self).save()
         self.execute_sibling_discount()
 
+@python_2_unicode_compatible
 class RegistrationProfile(models.Model):
     """ A student registration form """
     user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
@@ -1481,7 +1471,7 @@ class RegistrationProfile(models.Model):
         regProf = None
 
         # check if this is an actual User, not an AnonymousUser
-        if isinstance(user.id, int):
+        if isinstance(user.id, six.integer_types):
             try:
                 regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
             except RegistrationProfile.DoesNotExist:
@@ -1526,7 +1516,7 @@ class RegistrationProfile(models.Model):
         self.last_ts = datetime.now()
         RegistrationProfile.objects.filter(user = self.user, most_recent_profile = True).update(most_recent_profile = False)
         self.most_recent_profile = True
-        super().save(*args, **kwargs)
+        super(RegistrationProfile, self).save(*args, **kwargs)
 
     @cache_function
     def getLastForProgram(user, program, tl = None):
@@ -1576,9 +1566,9 @@ class RegistrationProfile(models.Model):
 
     def __str__(self):
         if self.program_id is None:
-            return '<Registration for %s>' % str(self.user)
+            return '<Registration for %s>' % six.text_type(self.user)
         if self.user is not None:
-            return '<Registration for %s in %s>' % (str(self.user), str(self.program))
+            return '<Registration for %s in %s>' % (six.text_type(self.user), six.text_type(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1633,7 +1623,7 @@ class TeacherBio(models.Model):
     def save(self, *args, **kwargs):
         """ update the timestamp """
         self.last_ts = datetime.now()
-        super().save(*args, **kwargs)
+        super(TeacherBio, self).save(*args, **kwargs)
 
     def url(self):
         return '/teach/teachers/%s/bio.html' % self.user.username
@@ -1645,7 +1635,7 @@ class TeacherBio(models.Model):
     def getLastForProgram(user, program):
         bios = TeacherBio.objects.filter(user__exact=user, program__exact=program).order_by('-last_ts', '-id')
 
-        if not bios.exists():
+        if bios.count() < 1:
             lastBio         = TeacherBio()
             lastBio.user    = user
             lastBio.program = program
@@ -1653,6 +1643,7 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
+@python_2_unicode_compatible
 class FinancialAidRequest(models.Model):
     """
     Student financial Aid Request
@@ -1674,7 +1665,7 @@ class FinancialAidRequest(models.Model):
 
     @property
     def approved(self):
-        return self.financialaidgrant_set.all().exists()
+        return (self.financialaidgrant_set.all().count() > 0)
 
     class Meta:
         app_label = 'program'
@@ -1690,16 +1681,16 @@ class FinancialAidRequest(models.Model):
 
         explanation = self.extra_explaination
         if explanation is None:
-            explanation = ''
+            explanation = six.u('')
         elif len(explanation) > 40:
-            explanation = explanation[:40] + "..."
+            explanation = explanation[:40] + six.u("...")
 
 
-        string = "%s (%s@%s) for %s (%s, %s) %s"%\
+        string = six.u("%s (%s@%s) for %s (%s, %s) %s")%\
                  (self.user.name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
-            string = "Finished: [" + string + "]"
+            string = six.u("Finished: [") + string + six.u("]")
 
         return string
 
@@ -1748,6 +1739,7 @@ def get_subclass_instance(cls, obj):
     #   If you couldn't find any, return the original object.
     return obj
 
+@python_2_unicode_compatible
 class BooleanToken(models.Model):
     """ A true/false value or Boolean operation.
         Meant to be extended to more meaningful Boolean functions operating on
@@ -1826,6 +1818,7 @@ class BooleanToken(models.Model):
         else:
             return False
 
+@python_2_unicode_compatible
 class BooleanExpression(models.Model):
     """ A combination of BooleanTokens that can be manipulated and evaluated.
         Arbitrary arguments can be supplied to the evaluate function in order
@@ -1859,7 +1852,7 @@ class BooleanExpression(models.Model):
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if isinstance(token_or_value, str):
+        if isinstance(token_or_value, six.string_types):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1886,6 +1879,7 @@ class BooleanExpression(models.Model):
         (value, post_stack) = BooleanToken.evaluate(stack, *args, **kwargs)
         return value
 
+@python_2_unicode_compatible
 class ScheduleMap:
     """ The schedule map is a dictionary mapping Event IDs to lists of class sections.
         It can be generated and cached for a user, then modified
@@ -1925,6 +1919,7 @@ class ScheduleMap:
     def __str__(self):
         return '%s' % self.map
 
+@python_2_unicode_compatible
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested:
         IF [condition] THEN [requirement]
@@ -1950,7 +1945,7 @@ class ScheduleConstraint(models.Model):
         app_label = 'program'
 
     def __str__(self):
-        return '%s: "%s" requires "%s"' % (self.program.niceName(), str(self.condition), str(self.requirement))
+        return '%s: "%s" requires "%s"' % (self.program.niceName(), six.text_type(self.condition), six.text_type(self.requirement))
 
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -2061,6 +2056,7 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
 
         return cls.objects.filter( reduce(operator.or_, q_list) )
 
+@python_2_unicode_compatible
 class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program, on_delete=models.CASCADE)
     timeslot = models.ForeignKey('cal.Event', on_delete=models.CASCADE)
@@ -2078,6 +2074,7 @@ class VolunteerRequest(models.Model):
     def __str__(self):
         return '%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
 
+@python_2_unicode_compatible
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest, on_delete=models.CASCADE)
     confirmed = models.BooleanField(default=False)
@@ -2116,6 +2113,7 @@ class VolunteerOffer(models.Model):
     Note: These models fit better in class_.py but cause validation errors
     due to Django's import scheme if they are placed there.
 """
+@python_2_unicode_compatible
 class RegistrationType(models.Model):
     #   The 'key' (not really the primary key since we may want duplicate names)
     name = models.CharField(max_length=32)
@@ -2145,7 +2143,7 @@ class RegistrationType(models.Model):
     def get_map(include=None, category=None):
         #   If 'include' is specified, make sure we have keys named in that list
         if include:
-            if not isinstance(category, str) and not isinstance(category, str):
+            if not isinstance(category, str) and not isinstance(category, six.text_type):
                 raise ESPError('Need to supply category to RegistrationType.get_map() when passing include arguments', log=True)
             for name in include:
                 type, created = RegistrationType.objects.get_or_create(name=name, category=category)
@@ -2164,6 +2162,7 @@ class RegistrationType(models.Model):
         else:
             return self.name
 
+@python_2_unicode_compatible
 class PhaseZeroRecord(models.Model):
     def __str__(self):
         return str(self.id)
@@ -2177,6 +2176,7 @@ class PhaseZeroRecord(models.Model):
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
 
+@python_2_unicode_compatible
 class ModeratorRecord(models.Model):
     def __str__(self):
         return str(self.id)
@@ -2191,6 +2191,7 @@ class ModeratorRecord(models.Model):
     class Meta:
         app_label = 'program'
 
+@python_2_unicode_compatible
 class StudentRegistration(ExpirableModel):
     """
     Model relating a student with a class section (interest, priority,
@@ -2206,6 +2207,7 @@ class StudentRegistration(ExpirableModel):
     def __str__(self):
         return '%s %s in %s' % (self.user, self.relationship, self.section)
 
+@python_2_unicode_compatible
 class StudentSubjectInterest(ExpirableModel):
     """
     Model indicating a student interest in a class section.

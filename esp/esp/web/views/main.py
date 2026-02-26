@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -215,6 +217,7 @@ def contact(request, section='esp'):
 
     return render_to_response('contact.html', request, {'contact_form': form})
 
+
 def registration_redirect(request):
     """ A view which returns:
         - A redirect to the currently open registration if exactly one registration is open
@@ -266,7 +269,7 @@ def registration_redirect(request):
     #   Most chapters will want this, but it can be disabled by a Tag.
     if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect'):
         ctxt['prog'] = progs[0]
-        return HttpResponseRedirect('/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+        return HttpResponseRedirect(six.u('/%s/%s/%s') % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
         if len(progs) > 0:
             #   Sort available programs newest first

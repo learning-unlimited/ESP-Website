@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.class_status import ClassStatus
 from esp.program.models import ClassSubject
@@ -7,7 +8,7 @@ from django.core import mail
 class CancelClassTest(ProgramFrameworkTest):
     def setUp(self):
         # Set up the program framework and randomly schedule classes
-        super().setUp()
+        super(CancelClassTest, self).setUp()
         self.schedule_randomly()
 
         # Find a class to be cancelled

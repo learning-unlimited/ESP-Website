@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -45,7 +46,7 @@ class SiblingDiscountForm(forms.Form):
             program = kwargs.pop('program')
         else:
             raise KeyError('Need to supply program as named argument to SiblingDiscountForm')
-        super().__init__(*args, **kwargs)
+        super(SiblingDiscountForm, self).__init__(*args, **kwargs)
         choices = [(False, 'I am the first in my household enrolling in Splash (+ $' + str(program.base_cost) + ').'),
                    (True, 'I have a sibling already enrolled in Splash (+ $' + str(program.base_cost - program.sibling_discount) + ').')]
         option_data = {False: {'cost': program.base_cost, 'for_finaid': 'true'},
@@ -55,7 +56,7 @@ class SiblingDiscountForm(forms.Form):
         self.fields['siblingdiscount'].initial = True
 
     def clean(self):
-        cleaned_data = super().clean()
+        cleaned_data = super(SiblingDiscountForm, self).clean()
         siblingdiscount = cleaned_data.get("siblingdiscount")
         siblingname = cleaned_data.get("siblingname")
         if siblingdiscount and not siblingname:

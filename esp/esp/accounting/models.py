@@ -1,5 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -109,13 +112,14 @@ class LineItemType(models.Model):
 
     def __str__(self):
         if self.amount_dec:
-            return '%s for %s ($%s)' % (self.text, self.program, self.amount_dec)
+            return six.u('%s for %s ($%s)') % (self.text, self.program, self.amount_dec)
         else:
-            return '%s for %s' % (self.text, self.program)
+            return six.u('%s for %s') % (self.text, self.program)
 
     class Meta:
         ordering = ('-program_id',)
 
+@python_2_unicode_compatible
 class LineItemOptions(models.Model):
     lineitem_type = models.ForeignKey(LineItemType, on_delete=models.CASCADE)
     description = models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')
@@ -192,6 +196,7 @@ class FinancialAidGrant(models.Model):
     class Meta:
         unique_together = ('request',)
 
+@python_2_unicode_compatible
 class Account(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
@@ -254,6 +259,7 @@ class Account(models.Model):
     class Meta:
         unique_together = ('name',)
 
+@python_2_unicode_compatible
 class Transfer(models.Model):
     source = models.ForeignKey(
         Account, blank=True, null=True, related_name='transfer_source',
@@ -286,6 +292,7 @@ class Transfer(models.Model):
     def __str__(self):
         return 'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
 
+@python_2_unicode_compatible
 class CybersourcePostback(models.Model):
     """ Logs every Cybersource postback to enable debugging and automated
         reconciliation."""

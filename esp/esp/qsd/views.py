@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -242,7 +243,7 @@ def ajax_qsd(request):
         path = urlparse(referer).path
         path_parts = [el for el in path.split('/') if el != '']
 
-        # Sanitize if this is for a class QSD
+        # Santize if this is for a class QSD
         if len(path_parts) > 3 and path_parts[3] == "Classes":
             data = clean(data, strip = True)
 
@@ -273,7 +274,7 @@ def ajax_qsd_preview(request):
     path = urlparse(referer).path
     path_parts = [el for el in path.split('/') if el != '']
 
-    # Sanitize if this is for a class QSD
+    # Santize if this is for a class QSD
     if len(path_parts) > 3 and path_parts[3] == "Classes":
         data = clean(data, strip = True)
 

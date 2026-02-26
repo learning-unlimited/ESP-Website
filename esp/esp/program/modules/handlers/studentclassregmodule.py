@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -59,6 +62,7 @@ from esp.cal.models import Event, EventType
 from esp.program.templatetags.class_render import render_class_direct
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
+
 
 def json_encode(obj):
     if isinstance(obj, ClassSubject):
@@ -122,6 +126,7 @@ def json_encode(obj):
     else:
         raise TypeError(repr(obj) + " is not JSON serializable")
 
+
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
     doc = """Allows students to directly enroll in classes."""
@@ -183,7 +188,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         else:
             return {k: ESPUser.objects.filter(v).distinct()
-                    for k, v in qobjects.items()}
+                    for k, v in six.iteritems(qobjects)}
 
     def studentDesc(self):
         #   Label these heading nicely like the user registration form
@@ -209,16 +214,16 @@ class StudentClassRegModule(ProgramModuleObj):
             text = self.module.link_title
         else:
             text = "Class changes is currently closed, please contact the admin team to register for classes"
-        link = '<a href="%sstudentonsite" title="%s" class="vModuleLink" >%s</a>' % \
+        link = six.u('<a href="%sstudentonsite" title="%s" class="vModuleLink" >%s</a>') % \
             (self.program.get_learn_url(), text, text)
         return mark_safe(link)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
         if extension is not None:
-            return super().deadline_met(extension)
+            return super(StudentClassRegModule, self).deadline_met(extension)
         else:
-            return super().deadline_met('/Classes')
+            return super(StudentClassRegModule, self).deadline_met('/Classes')
 
     def deadline_met_or_lottery_open(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -226,7 +231,7 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.deadline_met(extension)
         else:
             return self.deadline_met(extension) or \
-                   super().deadline_met('/Classes/Lottery')
+                   super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
 
     def prepare(self, context={}):
         user = get_current_request().user
@@ -308,6 +313,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return context
 
+
     @aux_call
     @needs_student_in_grade
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
@@ -358,6 +364,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 json_data['addbutton_catalog_sec%d_html' % sec_id] = addbutton_str2
             except Exception as inst:
                 raise AjaxError('Encountered an error retrieving updated buttons: %s' % inst)
+
 
         return HttpResponse(json.dumps(json_data))
 
@@ -548,9 +555,10 @@ class StudentClassRegModule(ProgramModuleObj):
                 'two':        two,
                 })
 
+
     """@cache_control(public=True, max_age=3600)
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ """Return the program timeslot names for the tabs in the lottery interface""" """
+        """ """Return the program timeslot names for the tabs in the lottery inteface""" """
         # using .extra() to select all the category text simultaneously
         timeslots = self.program.getTimeSlots()
 
@@ -559,6 +567,7 @@ class StudentClassRegModule(ProgramModuleObj):
         json.dump(list(timeslots), resp, default=json_encode)
 
         return resp"""
+
 
     @cache_control(public=True, max_age=3600)
     @no_auth
@@ -659,7 +668,7 @@ class StudentClassRegModule(ProgramModuleObj):
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
         result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if isinstance(result, str):
+        if isinstance(result, six.string_types):
             raise ESPError(result, log=False)
         else:
             return self.goToCore(tl)

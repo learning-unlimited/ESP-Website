@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import migrations, models
 
 
@@ -25,6 +27,7 @@ def populate_program(apps, schema_editor):
                 good_module_info.save()
                 for module_info in module_infos[1:]:
                     module_info.delete()
+
 
 
 class Migration(migrations.Migration):

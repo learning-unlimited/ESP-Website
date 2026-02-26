@@ -8,7 +8,12 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
 
-ENVDIR = os.path.join(BASEDIR, 'env')
+#   Hack for Vagrant development environments: separate virtualenv dir.
+import getpass
+if getpass.getuser() == 'vagrant':
+    ENVDIR = '/home/vagrant/devsite_virtualenv'
+else:
+    ENVDIR = os.path.join(BASEDIR, 'env')
 
 # Path for ESP code
 sys.path.insert(0, os.path.join(BASEDIR, 'esp'))

@@ -1,5 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -79,7 +82,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
 
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
-    if isinstance(recipient_list, str):
+    if isinstance(recipient_list, six.string_types):
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
@@ -146,7 +149,7 @@ class ActionHandler(object):
         # get the object, can't use self.obj since we're doing fun stuff
         if key == '_obj' or key == '_user':
             # use the parent's __getattribute__
-            return super().__getattribute__(key)
+            return super(ActionHandler, self).__getattribute__(key)
 
         obj = self._obj
 
@@ -226,7 +229,7 @@ class MessageRequest(models.Model):
         return '%s/email/%s' % (Site.objects.get_current().domain, self.id or "{ID will be here}")
 
     def __str__(self):
-        return str(self.subject)
+        return six.text_type(self.subject)
 
     # Access special_headers as a dictionary
     def special_headers_dict_get(self):
@@ -271,7 +274,7 @@ class MessageRequest(models.Model):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
 
         # prepare variables
-        text = str(text)
+        text = six.text_type(text)
 
         context = MessageVars.getContext(self, user)
 
@@ -430,7 +433,7 @@ class TextOfEmail(models.Model):
     tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed
 
     def __str__(self):
-        return str(self.subject) + ' <' + (self.send_to) + '>'
+        return six.text_type(self.subject) + ' <' + (self.send_to) + '>'
 
     def send(self):
         """Take the email data in this TextOfEmail and send it.
@@ -577,7 +580,7 @@ class EmailRequest(models.Model):
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        return str(self.msgreq.subject) + ' <' + str(self.target.username) + '>'
+        return six.text_type(self.msgreq.subject) + ' <' + six.text_type(self.target.username) + '>'
 
 @python_2_unicode_compatible
 class EmailList(models.Model):
@@ -615,7 +618,7 @@ class EmailList(models.Model):
             except IndexError:
                 self.seq = 0
 
-        super().save(*args, **kwargs)
+        super(EmailList, self).save(*args, **kwargs)
 
     def __str__(self):
         return '%s (%s)' % (self.description, self.regex)
@@ -643,7 +646,7 @@ class CustomSMTPBackend(SMTPEmailBackend):
 
     def __init__(self, return_path=None, **kwargs):
         self.return_path = return_path
-        super().__init__(**kwargs)
+        super(CustomSMTPBackend, self).__init__(**kwargs)
 
     def _send(self, email_message):
         """A helper method that does the actual sending."""

@@ -2,9 +2,13 @@
 Test cases for Django-ESP utilities
 """
 
+from __future__ import with_statement
 
+from __future__ import absolute_import
 import datetime
 import doctest
+from six.moves import map
+from six.moves import range
 try:
     import pylibmc as memcache
 except:
@@ -89,7 +93,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("DNS")  # Used for validating email address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("json")  # Used for some of our AJAX magic
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
-        self.tryImport("openpyxl")  # Used in our giant statistics spreadsheet-generating code
+        self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
         self.tryImport("form_utils")     #Used to create better forms.
         self.assert_(not self._failed_import)
 
@@ -449,5 +453,6 @@ def suite():
     # Add doctests from esp.utils.__init__.py
     s.addTest(doctest.DocTestSuite(utils))
     return s
+
 
 

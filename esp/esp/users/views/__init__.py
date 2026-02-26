@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
@@ -17,6 +18,7 @@ from esp.users.views.registration import *
 from esp.users.views.usersearch import *
 from esp.utils.web import render_to_response
 from esp.web.views.main import DefaultQSDView
+import six
 
 
 #   This is a huge hack while we figure out what to do about logins and cookies.
@@ -141,9 +143,7 @@ class CustomLoginView(LoginView):
             reply = HttpMetaRedirect('/myesp/profile')
         elif next_url in mask_locations:
             reply = mask_redirect(user, next_url)
-        else:
-            # form_valid() is only called on successful authentication, so we
-            # are always on the success path here — no need to check status_code.
+        elif reply.status_code == 302:
             reply = HttpMetaRedirect(next_url)
 
         reply._new_user = user
@@ -246,9 +246,9 @@ def unsubscribe_oneclick(request, username, token):
 
 @admin_required
 def morph_into_user(request):
-    morph_user = ESPUser.objects.get(id=request.GET['morph_user'])
+    morph_user = ESPUser.objects.get(id=request.GET[six.u('morph_user')])
     try:
-        onsite = Program.objects.get(id=request.GET['onsite'])
+        onsite = Program.objects.get(id=request.GET[six.u('onsite')])
     except (KeyError, ValueError, Program.DoesNotExist):
         onsite = None
     request.user.switch_to_user(request,

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 from django.forms.models import fields_for_model
 from django.apps import apps
@@ -106,7 +107,7 @@ class CustomFormsCache:
         setting classes on link fields when they are rendered in the form.
         If this field doesn't resemble any of the generic fields, we return 'custom'.
         We first try to match the field class and widget. If there's no match, we just
-        try to match the widget.
+        try to macth the widget.
         """
         widget = field_instance.widget
         for k, v in generic_fields.items():
