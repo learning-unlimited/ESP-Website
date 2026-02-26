@@ -16,7 +16,6 @@
 #
 
 
-from __future__ import absolute_import
 import sys
 import subprocess
 from io import open
