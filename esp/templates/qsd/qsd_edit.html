@@ -18,8 +18,7 @@
 {% else %}
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
 {% endif %}
-<!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
-<script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
+<script src="/media/scripts/onElementAdded.js"></script>
 {% endblock %}
 
 
@@ -74,7 +73,7 @@ var editor = new Jodit("#qsd_content", {
 {% endif %}
 
 $j(document).ready(function() {
-  $j.initialize(".jodit_toolbar_btn-image input[name=url]", function() {
+  onElementAdded(".jodit_toolbar_btn-image input[name=url]", function() {
     $j(this).after("Upload files <a href='/admin/filebrowser/browse/' target='_blank'>here");
   });
 });

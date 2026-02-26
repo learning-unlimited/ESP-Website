@@ -1,8 +1,7 @@
 <script src="https://unpkg.com/tiny-markdown-editor/dist/tiny-mde.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://unpkg.com/tiny-markdown-editor/dist/tiny-mde.min.css"/>
 
-<!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
-<script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
+<script src="/media/scripts/onElementAdded.js"></script>
 
 {% load markup %}
 <div class="qsd_header qsd_bits hidden" id="inline_edit_msg_{{ qsdrec.edit_id }}" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">
@@ -48,7 +47,7 @@ $j(document).ready(function() {
     $j(".qsd_view_visible").removeClass("qsd_view_visible");
   }
   
-  $j.initialize(".jodit_toolbar_btn-image input[name=url]", function() {
+  onElementAdded(".jodit_toolbar_btn-image input[name=url]", function() {
     if ($j(this).next().is("input")) {
       $j(this).after("Upload files <a href='/admin/filebrowser/browse/' target='_blank'>here");
     }

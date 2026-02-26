@@ -51,7 +51,7 @@ function update_furnishing_choices(furnishing_select_obj, value) {
 }
 
 //Upon page load and dynamic creation of new selects
-$j.initialize("select", function() {
+onElementAdded("select", function() {
     //Selects start with (option) or (furnishing) by default, but we want to hide these as options in the dropdown.
     var opt = $j(this).find("option")[0];
     $j(opt).hide();
@@ -64,7 +64,7 @@ $j.initialize("select", function() {
         var value = $j('#id_furnishings-' + num + '-choice').val();
         update_furnishing_choices($j(this), value);
     }
-}, { target: document.getElementById('furnishing_formset') });
+}, document.getElementById('furnishing_formset'));
 
 //Whenever a new furnishing is selected, update the respective option field
 $j('.furnishing-dynamic-form select').change(function() {

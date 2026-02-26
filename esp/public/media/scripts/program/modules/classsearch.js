@@ -45,9 +45,9 @@ function checkInput(inp){
 }
 
 //Set up choices if resource type already chosen on page load
-$j.initialize("input.qb-input", function() {
+onElementAdded("input.qb-input", function() {
     checkInput(this);
-}, { target: document.getElementsByClassName('query-builder')[0] });
+}, document.getElementsByClassName('query-builder')[0]);
 
 //Update choices when resource type is changed
 $j(document).on('change', 'select.qb-input', function() {
