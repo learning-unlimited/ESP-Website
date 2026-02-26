@@ -121,9 +121,10 @@ class StudentJunctionAppModule(ProgramModuleObj):
             for form in forms:
                 if form.is_valid():
                     form.target.update(form)
-            if request.POST['submitform'].lower() == 'complete':
+            submitform = request.POST.get('submitform', '').lower()
+            if submitform == 'complete':
                 app.done = True
-            if request.POST['submitform'].lower() == 'mark as unfinished':
+            elif submitform == 'mark as unfinished':
                 app.done = False
             app.save()
             return self.goToCore(tl)
