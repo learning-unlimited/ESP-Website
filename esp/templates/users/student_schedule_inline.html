@@ -17,6 +17,9 @@
 <table cellpadding='3' style='width: 500px; margin: auto' border=1>
 <tr>
     <td colspan='3'>
+    <div style="float: right;">
+        <a href='/learn/{{ one }}/{{ two }}/studentschedule_ics' style="text-decoration: none; font-weight: normal; font-size: 0.9em; padding: 3px 6px; background: #eee; border: 1px solid #ccc; border-radius: 4px; color: #333;">&#128197; Export to Apple/Outlook</a>
+    </div>
     <b>Your schedule for {{ prog.niceName }} {% ifequal num_classes 0 %}is empty.  Please add classes below!{% endifequal %}</b>
     </td>
 </tr>
@@ -48,7 +51,8 @@
             {% endif %}
             -->
 	{% comment %}{% endif %}{% endcomment %}
-	{{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %} 
+	{{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %}
+        <a href="{{ cls.section.google_calendar_url }}" target="_blank" style="text-decoration:none; margin-left: 5px; font-size:12px; color:#4285F4;">[+ Google Calendar]</a>
             
             {% if request.user.onsite_local %}
                 ({{ cls.section.prettyrooms|join:', ' }})

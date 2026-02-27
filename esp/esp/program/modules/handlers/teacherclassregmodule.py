@@ -1067,6 +1067,29 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         return ''
 
+    @aux_call
+    @needs_teacher
+    def teacherschedule_ics(self, request, tl, one, two, module, extra, prog):
+        import icalendar
+        import pytz
+        from datetime import datetime # Added import for datetime
+        cal = icalendar.Calendar()
+
+        for cls in self.clslist(request.user):
+            for sec in cls.get_sections():
+                for mt in sec.get_meeting_times():
+                    event = icalendar.Event()
+                    event.add('summary', sec.title())
+                    event.add('location', ", ".join(sec.prettyrooms()))
+                    event.add('dtstart', mt.start.astimezone(pytz.utc))
+                    event.add('dtend', mt.end.astimezone(pytz.utc))
+                    event.add('dtstamp', datetime.now(pytz.utc))
+                    cal.add_component(event)
+
+        response = HttpResponse(cal.to_ical(), content_type='text/calendar')
+        response['Content-Disposition'] = 'attachment; filename="teacher_schedule.ics"'
+        return response
+
     class Meta:
         proxy = True
         app_label = 'modules'
