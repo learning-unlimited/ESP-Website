@@ -66,7 +66,7 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType, StudentSubjectInterest
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -422,11 +422,21 @@ def userview(request):
     change_grade_form.fields['graduation_year'].initial = user.getYOG()
     change_grade_form.fields['graduation_year'].choices = [choice for choice in change_grade_form.fields['graduation_year'].choices if bool(choice[0])]
 
+    # Get StudentSubjectInterests (starred classes) for this user
+    starred_classes = []
+    if program:
+        # If a specific program is selected, filter by that program
+        starred_classes = StudentSubjectInterest.objects.filter(user=user, subject__parent_program=program)
+    else:
+        # If no specific program, show all starred classes for this user
+        starred_classes = StudentSubjectInterest.objects.filter(user=user)
+
     context = {
         'user': user,
         'taught_classes': user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
         'enrolled_classes': user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
         'taken_classes': user.getSections().order_by('parent_class__parent_program', 'id'),
+        'starred_classes': starred_classes,
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
@@ -1088,7 +1098,14 @@ def statistics(request, program=None):
 
             users = ESPUser.objects.filter(users_q).distinct()
             result_dict['num_users'] = users.count()
-            profiles = [user.getLastProfile() for user in users]
+            user_list = list(users)
+            # Batch-fetch latest profile per user to avoid N+1
+            profile_by_user = {}
+            if user_list:
+                for p in RegistrationProfile.objects.filter(user__in=users).select_related('user').order_by('user_id', '-last_ts'):
+                    if p.user_id not in profile_by_user:
+                        profile_by_user[p.user_id] = p
+            profiles = [profile_by_user.get(u.id) or RegistrationProfile(user=u) for u in user_list]
 
             #   Accumulate desired information for selected query
             from esp.program import statistics as statistics_functions
