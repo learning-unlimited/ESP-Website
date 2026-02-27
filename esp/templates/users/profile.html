@@ -6,8 +6,11 @@
 {{ block.super }}
 <style>
 div.required label.control-label:after {
-  content:"*";
+  content:" *";
   color:red;
+}
+div.required label.control-label {
+  /* Ensure required fields have a visible asterisk indicator */
 }
 
 #id_receive_txt_message {
@@ -15,6 +18,7 @@ div.required label.control-label:after {
   margin-left: 0px;
 }
 </style>
+<p class="help-block"><span aria-hidden="true" style="color:red;">*</span> indicates a required field</p>
 {% endblock %}
 
 {% block content %}
