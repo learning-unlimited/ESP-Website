@@ -496,18 +496,122 @@ def no_auth(method):
     method.has_auth_check = True
     return method
 
-def needs_teacher(method):
-    def _checkTeacher(moduleObj, request, *args, **kwargs):
-        if not_logged_in(request):
-            return _login_redirect(request)
+def render_deadline_for_tl(tl, request, context):
+    errorpage = 'errors/program/deadline-%s.html' % tl
+    return render_to_response(errorpage, request, context)
 
-        if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program):
-            return render_to_response('errors/program/notateacher.html', request, {})
-        return method(moduleObj, request, *args, **kwargs)
-    _checkTeacher.call_tl = 'teach'
-    _checkTeacher.method = method
-    _checkTeacher.has_auth_check = True
-    return _checkTeacher
+def user_passes_test(test_func, error_message=None, error_template=None,
+                     error_context_var='extension', extra_context_func=None,
+                     require_login=True, call_tl=None):
+    """A method decorator for ProgramModuleObj view methods.
+
+    Requests pass through only if test_func(moduleObj, request) returns True.
+    On failure, an error page is rendered.
+
+    This is the primary building block for access-control decorators in this
+    module. Simple decorators such as needs_teacher, needs_student, and
+    meets_cap are implemented using this function.
+
+    Parameters
+    ----------
+    test_func : callable(moduleObj, request) -> bool
+        Determines whether the request should pass through.
+    error_message : str, optional
+        Value of the ``error_context_var`` template variable on failure.
+        When using the default render_deadline_for_tl() fallback, format
+        this similarly to the output of list_extensions().
+    error_template : str, optional
+        Path to a specific template to render on failure. If None, falls
+        back to render_deadline_for_tl(), which renders the per-tl deadline
+        error template (errors/program/deadline-<tl>.html).
+    error_context_var : str
+        Template variable name for error_message. Defaults to 'extension'.
+    extra_context_func : callable(moduleObj, request) -> dict, optional
+        Called on failure to supply additional variables to the error template.
+    require_login : bool
+        If True (default), redirect unauthenticated users to the login page.
+        Set to False when a surrounding decorator already handles login.
+    call_tl : str, optional
+        If provided, the wrapper function will have this as its call_tl
+        attribute (e.g., 'learn', 'teach', 'manage', 'onsite').
+    """
+    def decorator(view_method):
+        @wraps(view_method, assigned=available_attrs(view_method))
+        def _check(moduleObj, request, tl, *args, **kwargs):
+            if require_login and not_logged_in(request):
+                return _login_redirect(request)
+            if test_func(moduleObj, request):
+                return view_method(moduleObj, request, tl, *args, **kwargs)
+            context = {'moduleObj': moduleObj}
+            if error_message is not None:
+                context[error_context_var] = error_message
+            if extra_context_func is not None:
+                context.update(extra_context_func(moduleObj, request))
+            if error_template is not None:
+                return render_to_response(error_template, request, context)
+            return render_deadline_for_tl(tl, request, context)
+        _check.has_auth_check = True
+        _check.method = view_method
+        if call_tl is not None:
+            _check.call_tl = call_tl
+        return _check
+    return decorator
+
+
+def _meets_grade_test(moduleObj, request):
+    """Return True if the user meets the program's grade range requirement."""
+    if Permission.user_has_perm(request.user, 'GradeOverride', moduleObj.program):
+        return True
+    cur_grade = request.user.getGrade(moduleObj.program)
+    return not (cur_grade != 0 and (
+        cur_grade < moduleObj.program.grade_min or
+        cur_grade > moduleObj.program.grade_max
+    ))
+
+
+def _meets_grade_extra_context(moduleObj, request):
+    """Extra template context for the wronggrade error page."""
+    return {
+        'program': moduleObj.program,
+        'yog': request.user.getYOG(moduleObj.program),
+    }
+
+
+meets_grade = user_passes_test(
+    _meets_grade_test,
+    error_template='errors/program/wronggrade.html',
+    extra_context_func=_meets_grade_extra_context,
+    require_login=False,
+)
+
+needs_student = user_passes_test(
+    lambda moduleObj, request: (
+        request.user.isStudent() or request.user.isAdmin(moduleObj.program)
+    ),
+    error_template='errors/program/notastudent.html',
+    call_tl='learn',
+)
+
+def needs_student_in_grade(method):
+    """Require that the user is a logged-in student within the program grade range.
+
+    Combines needs_student (login + student/admin check) with meets_grade
+    (grade range check) so that each failure renders the appropriate error
+    page (notastudent.html or wronggrade.html respectively).
+    """
+    decorated = needs_student(meets_grade(method))
+    # Override .method to point to the original unwrapped function, consistent
+    # with the convention used by the other auth decorators.
+    decorated.method = method
+    return decorated
+
+needs_teacher = user_passes_test(
+    lambda moduleObj, request: (
+        request.user.isTeacher() or request.user.isAdmin(moduleObj.program)
+    ),
+    error_template='errors/program/notateacher.html',
+    call_tl='teach',
+)
 
 def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
@@ -563,79 +667,10 @@ def needs_onsite_no_switchback(method):
     _checkAdmin.has_auth_check = True
     return _checkAdmin
 
-def needs_student_in_grade(method):
-    def _check_student_and_grade(moduleObj, request, tl, *args, **kwargs):
-        """Check if student and is in correct grade."""
-        errorpage = 'errors/program/wronggrade.html'
-        if not_logged_in(request):
-            return _login_redirect(request)
-        if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
-            return render_to_response('errors/program/notastudent.html', request, {})
-
-        # if there's grade override we can just skip everything
-        if Permission.user_has_perm(request.user, 'GradeOverride', moduleObj.program):
-            return method(moduleObj, request, tl, *args, **kwargs)
-
-        # now we have to use the grade...
-        # get the last grade...
-        cur_grade = request.user.getGrade(moduleObj.program)
-        if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
-                               cur_grade > moduleObj.program.grade_max):
-            return render_to_response(errorpage, request, {
-                    'program': moduleObj.program,
-                    'yog': request.user.getYOG(moduleObj.program),
-                })
-
-        return method(moduleObj, request, tl, *args, **kwargs)
-    _check_student_and_grade.call_tl = 'learn'
-    _check_student_and_grade.method = method
-    _check_student_and_grade.has_auth_check = True
-    return _check_student_and_grade
-
-def needs_student(method):
-    def _checkStudent(moduleObj, request, *args, **kwargs):
-        if not_logged_in(request):
-            return _login_redirect(request)
-        if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
-            return render_to_response('errors/program/notastudent.html', request, {})
-        return method(moduleObj, request, *args, **kwargs)
-    _checkStudent.call_tl = 'learn'
-    _checkStudent.method = method
-    _checkStudent.has_auth_check = True
-    return _checkStudent
-
-def needs_account(method):
-    def _checkAccount(moduleObj, request, *args, **kwargs):
-        if not_logged_in(request):
-            return _login_redirect(request)
-
-        return method(moduleObj, request, *args, **kwargs)
-    _checkAccount.method = method
-    _checkAccount.has_auth_check = True
-    return _checkAccount
-
-def meets_grade(method):
-    def _checkGrade(moduleObj, request, tl, *args, **kwargs):
-        errorpage = 'errors/program/wronggrade.html'
-
-        # if there's grade override we can just skip everything
-        if Permission.user_has_perm(request.user, 'GradeOverride', moduleObj.program):
-            return method(moduleObj, request, tl, *args, **kwargs)
-
-        # now we have to use the grade..
-
-        # get the last grade...
-        cur_grade = request.user.getGrade(moduleObj.program)
-        if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
-                               cur_grade > moduleObj.program.grade_max):
-            return render_to_response(errorpage, request, {
-                    'program': moduleObj.program,
-                    'yog': request.user.getYOG(moduleObj.program),
-                })
-
-        return method(moduleObj, request, tl, *args, **kwargs)
-
-    return _checkGrade
+needs_account = user_passes_test(
+    lambda moduleObj, request: True,
+    require_login=True,
+)
 
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
     """
@@ -700,10 +735,6 @@ def list_extensions(tl, extensions, andor=''):
     else:
         return 'the deadlines '+', '.join([nicetl+e for e in extensions[:-1]])+', '+andor+' '+nicetl+extensions[-1]+' were'
 
-def render_deadline_for_tl(tl, request, context):
-    errorpage = 'errors/program/deadline-%s.html' % tl
-    return render_to_response(errorpage, request, context)
-
 def meets_deadline(extension=''):
     """
     Decorate a function to check if a deadline is met.
@@ -736,43 +767,11 @@ def meets_any_deadline(extensions=[]):
         return _checkDeadline
     return meets_deadline
 
-def meets_cap(view_method):
-    """Only allow students who meet the program cap past this point."""
-    @wraps(view_method, assigned=available_attrs(view_method))
-    def _meets_cap(moduleObj, request, tl, one, two, module, extra, prog,
-                   *args, **kwargs):
-        if prog.user_can_join(request.user):
-            return view_method(moduleObj, request, tl, one, two, module, extra,
-                               prog, *args, **kwargs)
-        else:
-            return render_to_response('errors/program/program_full.html',
-                                      request, {'moduleObj': moduleObj})
-    return _meets_cap
-
-
-def user_passes_test(test_func, error_message):
-    """A method decorator based on django.contrib.auth.decorators.user_passes_test.
-
-    Decorate a ProgramModuleObj view method, such that requests will only
-    pass through if test_func(moduleObj) returns True. test_func must be a
-    callable with a signature of test_func(moduleObj) -> `bool`.
-    The body of test_func can use moduleObj and get_current_request()
-    (particularly, get_current_request().user) to decide if it should return
-    True or False.
-
-    In the failure case, an error page will be rendered. error_message will
-    be used as the 'extension' template variable in the error page, so it
-    should be formatted similarly to the output of list_extensions().
-    """
-    def user_passes_test(view_method):
-        @wraps(view_method, assigned=available_attrs(view_method))
-        def _check(moduleObj, request, tl, *args, **kwargs):
-            if test_func(moduleObj):
-                return view_method(moduleObj, request, tl, *args, **kwargs)
-            return render_deadline_for_tl(tl, request,
-                    {'extension': error_message, 'moduleObj': moduleObj})
-        return _check
-    return user_passes_test
+meets_cap = user_passes_test(
+    lambda moduleObj, request: moduleObj.program.user_can_join(request.user),
+    error_template='errors/program/program_full.html',
+    require_login=False,
+)
 
 
 def main_call(func):
