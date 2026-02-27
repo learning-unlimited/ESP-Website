@@ -82,6 +82,26 @@ class FormstackAppModule(ProgramModuleObj):
         result['applied'] = """Students who submitted an application"""
         return result
 
+    def _resolve_field_expression(self, expression, context_vars):
+        if not expression:
+            return None
+
+        try:
+            parts = expression.split(".")
+            obj = context_vars.get(parts[0])
+
+            if obj is None:
+                return None
+
+            for attr in parts[1:]:
+                obj = getattr(obj, attr, None)
+                if obj is None:
+                    return None
+
+            return obj if obj != "" else ""
+        except Exception:
+            return None
+
     def isCompleted(self):
         # TODO
         return False
