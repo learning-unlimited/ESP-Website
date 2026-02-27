@@ -376,7 +376,7 @@
 {% endif %}{% endwith %}
 
 {% with starred_classes as classes %}{% if classes %}
-    <h2>Starred Classes (Subject Interests):</h2>
+    <h2>Starred Classes:</h2>
     <br />
     {% for interest in classes %}
     {% ifchanged interest.subject.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ interest.subject.parent_program.niceName }}<br /><ul>{% endifchanged %}
