@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 
-from django.db.models.query import Q
+from django.db.models.query import Q  # noqa
 from django.template import Variable, Context, VariableDoesNotExist
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, aux_call
 from esp.utils.web import render_to_response
