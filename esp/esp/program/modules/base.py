@@ -76,6 +76,8 @@ class ProgramModuleObj(models.Model):
     seq      = models.IntegerField()
     required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=False, default="")
+    link_title = models.CharField(max_length=64, blank=True, null=False, default="",
+                                  help_text="Override the default link title for this program. Leave blank to use the module's default.")
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
@@ -275,13 +277,17 @@ class ProgramModuleObj(models.Model):
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
     get_full_path.depend_on_model('program.Program')
 
+    def get_link_title(self):
+        return self.link_title or self.module.link_title
+
     def makeLink(self):
+        title = self.get_link_title()
         if not self.module.module_type == 'manage':
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                (self.get_full_path(), self.module.link_title, self.module.link_title)
+                (self.get_full_path(), title, title)
         else:
             link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
+               (self.get_full_path(), title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
 
         return mark_safe(link)
 
@@ -291,7 +297,7 @@ class ProgramModuleObj(models.Model):
     def get_setup_title(self):
         if hasattr(self, 'setup_title') and self.setup_title is not None and str(self.setup_title).strip() != '':
             return self.setup_title
-        return self.module.link_title
+        return self.get_link_title()
 
     def get_setup_path(self):
         if hasattr(self, 'setup_path') and self.setup_path is not None and str(self.setup_path).strip() != '':
