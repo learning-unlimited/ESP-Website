@@ -226,11 +226,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         rec = Record(user=student, event=rt, program=prog)
                         rec.save()
                     context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
-                    if request.is_ajax():
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
                 else:
                     context['message'] = '%s %s is not a student and has not been checked in' % (student.first_name, student.last_name)
-                    if request.is_ajax():
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
                 form = StudentSearchForm(initial={'target_user': student.id})
         else:

@@ -1120,7 +1120,7 @@ def statistics(request, program=None):
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
 
-            if request.is_ajax():
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['result_html'] = context['result']
                 result['script'] = render_to_string('program/statistics/script.js', context)
@@ -1133,7 +1133,7 @@ def statistics(request, program=None):
             context = {'form': form}
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
-            if request.is_ajax():
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1145,7 +1145,7 @@ def statistics(request, program=None):
     context['clear_first'] = False
     context['field_ids'] = get_field_ids(form)
 
-    if request.is_ajax():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return HttpResponse(json.dumps(context), content_type='application/json')
     else:
         return render_to_response('program/statistics.html', request, context)
