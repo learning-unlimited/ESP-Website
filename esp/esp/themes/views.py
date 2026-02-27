@@ -77,28 +77,53 @@ def _generate_favicon_variants(ico_path, images_dir):
     the correct icons (see #4304, #4466).
     """
     if not HAS_PIL:
+        logger.warning(
+            "Skipping favicon variant generation for %s because Pillow (PIL) is not available.",
+            ico_path,
+        )
         return
     if not os.path.exists(ico_path):
+        logger.warning(
+            "Skipping favicon variant generation because source favicon.ico does not exist: %s",
+            ico_path,
+        )
         return
     try:
         os.makedirs(images_dir, exist_ok=True)
-    except OSError:
+    except OSError as e:
+        logger.warning(
+            "Failed to create images directory '%s' for favicon variants; skipping generation: %s",
+            images_dir,
+            e,
+            exc_info=True,
+        )
         return
     try:
-        img = Image.open(ico_path)
-        img = img.convert('RGBA')
-        # LANCZOS for quality; Pillow 8 has Image.LANCZOS, Pillow 10+ has Image.Resampling.LANCZOS
-        resample = getattr(Image, 'LANCZOS', getattr(getattr(Image, 'Resampling', None), 'LANCZOS', 1))
-        for size, filename in FAVICON_SIZES:
-            out_path = os.path.join(images_dir, filename)
-            resized = img.resize((size, size), resample)
-            resized.save(out_path, 'PNG')
+        with Image.open(ico_path) as img:
+            img = img.convert('RGBA')
+            # LANCZOS for quality; Pillow 10+ has Image.Resampling.LANCZOS, older versions have Image.LANCZOS
+            try:
+                resample = Image.Resampling.LANCZOS  # type: ignore[attr-defined]
+            except AttributeError:
+                resample = getattr(
+                    Image,
+                    'LANCZOS',
+                    getattr(Image, 'BICUBIC', getattr(Image, 'BILINEAR', 0)),
+                )
+            for size, filename in FAVICON_SIZES:
+                out_path = os.path.join(images_dir, filename)
+                resized = img.resize((size, size), resample)
+                resized.save(out_path, 'PNG')
         name = Tag.getTag('site_name') or Tag.getTag('full_group_name') or getattr(settings, 'INSTITUTION_NAME', 'ESP Website')
         short_name = Tag.getTag('site_short_name') or Tag.getTag('full_group_name') or getattr(settings, 'ORGANIZATION_SHORT_NAME', 'ESP')
-        if not isinstance(name, str):
+        if name is None:
             name = 'ESP Website'
-        if not isinstance(short_name, str):
+        elif not isinstance(name, str):
+            name = str(name)
+        if short_name is None:
             short_name = 'ESP'
+        elif not isinstance(short_name, str):
+            short_name = str(short_name)
         media_url = settings.MEDIA_URL.rstrip('/') + '/'
         manifest = {
             "name": name,
