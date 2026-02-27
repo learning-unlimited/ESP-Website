@@ -33,11 +33,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import datetime
+import json
 import logging
 from django.db.models import signals
 from esp.users.models import Record
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.models import StudentRegistration, RegistrationType
+from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.web import render_to_response
@@ -108,6 +110,8 @@ class UnenrollModule(ProgramModuleObj):
         } for seq, timeslot in enumerate(timeslots)]
         context = {}
         context['selections'] = selections
+        context['timer_enabled'] = Tag.getBooleanTag('unenroll_timer_enabled', program=prog, default=False)
+        context['timer_interval'] = Tag.getProgramTag('unenroll_timer_interval_minutes', program=prog, default=5)
         return render_to_response(
             self.baseDir()+'select.html', request, context)
 
@@ -168,6 +172,44 @@ class UnenrollModule(ProgramModuleObj):
             'student_timeslots': student_timeslots,
             'enrollments': enrollments
         }
+    @aux_call
+    @json_response(None)
+    @needs_admin
+    def unenroll_timer(self, request, tl, one, two, module, extra, prog):
+        """Save timer settings (enabled flag + interval) as per-program tags."""
+        if request.method != 'POST':
+            return {'error': 'POST required'}
+        try:
+            body = json.loads(request.body)
+            enabled = bool(body.get('enabled', False))
+            interval = int(body.get('interval_minutes', 5))
+        except (ValueError, KeyError):
+            return {'error': 'invalid payload'}
+        Tag.setTag('unenroll_timer_enabled', target=prog, value=str(enabled))
+        Tag.setTag('unenroll_timer_interval_minutes', target=prog, value=str(interval))
+        return {'ok': True}
+
+    @aux_call
+    @json_response(None)
+    @needs_admin
+    def unenroll_execute(self, request, tl, one, two, module, extra, prog):
+        """Expire the given enrollment IDs and return the count. Called by the JS timer."""
+        if request.method != 'POST':
+            return {'error': 'POST required'}
+        try:
+            body = json.loads(request.body)
+            ids = [int(i) for i in body.get('selected_enrollments', [])]
+        except (ValueError, KeyError):
+            return {'error': 'invalid payload'}
+        if not ids:
+            return {'expired': 0, 'ids': []}
+        registrations = StudentRegistration.objects.filter(id__in=ids)
+        registrations.update(end_date=datetime.datetime.now())
+        logger.info("Auto-unenroll expired student registrations: %s", ids)
+        for reg in registrations:
+            signals.post_save.send(sender=StudentRegistration, instance=reg)
+        return {'expired': len(ids), 'ids': ids}
+
     cache = unenroll_status.method.cached_function
     cache.depend_on_row(StudentRegistration,
         lambda sr: {'prog': sr.section.parent_class.parent_program})
