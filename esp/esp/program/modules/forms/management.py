@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 from django import forms
 
 from esp.cal.models import Event
@@ -10,7 +9,6 @@ from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 from esp.program.models.class_ import ClassSubject, ClassSection
 from esp.program.class_status import ClassStatus
 from decimal import Decimal
-import six
 
 """ Forms for the new class management module.  Can be used elsewhere. """
 
@@ -21,7 +19,7 @@ class ManagementForm(forms.Form):
     """ A form that automatically asks the program module to populate its field
     data and choices. """
     def __init__(self, module=None, *args, **kwargs):
-        super(ManagementForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if module:
             self.module = module
             for key in self.fields:
@@ -49,7 +47,7 @@ class ClassManageForm(ManagementForm):
             if 'prefix' in kwargs:
                 prefix = kwargs['prefix'] + '-'
             initial_dict = self.load_data(self.cls, prefix)
-            super(ClassManageForm, self).__init__(data=initial_dict, *args, **kwargs)
+            super().__init__(data=initial_dict, *args, **kwargs)
             if self.cls.hasScheduledSections():
                 self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
                 self.fields['duration'].widget.attrs['disabled'] = True
@@ -61,7 +59,7 @@ class ClassManageForm(ManagementForm):
                 self.fields['status'].choices.remove((ClassStatus.CANCELLED, 'Cancelled'))
             self.fields['status'].widget.attrs['data-cls-status'] = self.cls.status
         else:
-            super(ClassManageForm, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
     def load_data(self, cls, prefix=''):
         if isinstance(cls.class_size_max, int):
@@ -126,7 +124,7 @@ class SectionManageForm(ManagementForm):
             if 'prefix' in kwargs:
                 prefix = kwargs['prefix'] + '-'
             initial_dict = self.load_data(self.sec, prefix)
-            super(SectionManageForm, self).__init__(data=initial_dict, *args, **kwargs)
+            super().__init__(data=initial_dict, *args, **kwargs)
             if self.sec.isScheduled():
                 self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
             elif self.sec.isCancelled():
@@ -136,7 +134,7 @@ class SectionManageForm(ManagementForm):
             self.fields['status'].widget.attrs['data-sec-status'] = self.sec.status
             self.fields['status'].widget.attrs['data-cls-status'] = self.sec.parent_class.status
         else:
-            super(SectionManageForm, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
     def load_data(self, sec, prefix=''):
         self.initial = {prefix+'status': sec.status,
@@ -195,14 +193,14 @@ class ClassCancellationForm(forms.Form):
         initial = kwargs.pop('initial', {})
         initial['target'] = kwargs.pop('subject', None)
         kwargs['initial'] = initial
-        super(ClassCancellationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if not initial['target'].parent_program.hasModule('GroupTextModule') or not GroupTextModule.is_configured():
             self.fields['text_students'].widget = forms.HiddenInput()
 
 class SectionMultipleChoiceField(forms.ModelMultipleChoiceField):
     """ Custom field to customize the section labels """
     def label_from_instance(self, sec):
-        return six.u('%s: %s (%s)') % (sec.emailcode(), sec.title(), ', '.join(sec.friendly_times(include_date = True)))
+        return '%s: %s (%s)' % (sec.emailcode(), sec.title(), ', '.join(sec.friendly_times(include_date = True)))
 
 class SectionCancellationForm(forms.Form):
     target = SectionMultipleChoiceField(label = "Section(s)", queryset=ClassSection.objects.all(), widget = forms.CheckboxSelectMultiple(), required=False)
@@ -217,7 +215,7 @@ class SectionCancellationForm(forms.Form):
         initial = kwargs.pop('initial', {})
         cls = kwargs.pop('cls', None)
         kwargs['initial'] = initial
-        super(SectionCancellationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['target'].queryset = cls.sections.filter(status__gte = 0)
         if not cls.parent_program.hasModule('GroupTextModule') or not GroupTextModule.is_configured():
             self.fields['text_students'].widget = forms.HiddenInput()

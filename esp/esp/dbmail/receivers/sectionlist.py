@@ -1,6 +1,4 @@
-from __future__ import absolute_import
 import logging
-from six.moves import filter
 logger = logging.getLogger(__name__)
 
 from esp.users.models import ESPUser
@@ -11,8 +9,6 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.sites.models import Site
-DEBUG=True
-DEBUG=False
 
 class SectionList(BaseHandler):
 

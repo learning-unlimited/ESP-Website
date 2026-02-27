@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,7 +44,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update({'num_students': 3,})
-        super(ProgramPrintablesModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         self.add_student_profiles()
         self.schedule_randomly()
@@ -74,14 +72,14 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
         #   Select users to fetch
         response = self.client.get('/manage/%s/%s' % (self.program.getUrlBase(), view_name))
-        self.assertEquals(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
         post_data = {
             'recipient_type': user_type,
             'base_list': list_name,
             'use_checklist': 0,
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), view_name), post_data)
-        self.assertEquals(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
         return response
 
     def get_userlist_views(self):
@@ -127,7 +125,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         """
         self._login_admin()
         response = self.client.get(self.all_classes_csv_url)
-        self.assertEquals(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'program/modules/programprintables/all_classes_select_fields.html')
 
     def test_all_classes_spreadsheet_invalid_post(self):
@@ -138,7 +136,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
         #Test empty form
         response = self.client.post(self.all_classes_csv_url)
-        self.assertEquals(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
         self.assertFormError(response, 'form', 'subject_fields', 'This field is required.')
 
         #Test invalid fieldname
@@ -155,9 +153,9 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         post_data = {'subject_fields':[field.name for field in ClassSubject._meta.fields if field.name not in exclude_fields]}
 
         response = self.client.post(self.all_classes_csv_url, post_data)
-        self.assertEquals(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
 
-        self.assertEquals(
+        self.assertEqual(
             response.get('Content-Disposition'),
             "attachment; filename=all_classes.csv"
         )
@@ -186,7 +184,7 @@ class TestAllClassesSelectionForm(ProgramFrameworkTest):
 class TestAllClassesFieldConverter(ProgramFrameworkTest):
 
     def setUp(self, *args, **kwargs):
-        super(TestAllClassesFieldConverter, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
         self.class_subjects = ClassSubject.objects.all()
         self.class_subject_fieldnames = [field.name for field in ClassSubject._meta.fields]
         self.converter = AllClassesFieldConverter(self.program)
@@ -205,8 +203,8 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
         """
         class_subject = self.class_subjects[0]
         for fieldname in self.class_subject_fieldnames:
-            self.assertEquals(self.converter.fieldvalue(class_subject, fieldname), \
-                              getattr(class_subject, fieldname))
+            self.assertEqual(self.converter.fieldvalue(class_subject, fieldname), \
+                             getattr(class_subject, fieldname))
 
     def test_class_subject_teachers_format(self):
         class_subject = self.class_subjects[0]
@@ -214,7 +212,7 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
         teacher_names = [t.name() for t in class_subject.get_teachers()]
         formatted_teachers = [t.strip() for t in self.converter. \
                               fieldvalue(class_subject, 'teachers').split(',')]
-        self.assertEquals(set(formatted_teachers), set(teacher_names))
+        self.assertEqual(set(formatted_teachers), set(teacher_names))
 
     def test_class_times_format(self):
         class_subject = self.class_subjects[0]

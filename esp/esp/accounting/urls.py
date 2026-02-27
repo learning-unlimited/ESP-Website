@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,8 +35,11 @@ Learning Unlimited, Inc.
 
 from django.conf.urls import url
 from esp.accounting.views import summary, user_summary
+from esp.accounting.refund_views import refund, process_refund
 
 urlpatterns = [
     url(r'^$', summary),
     url(r'^user$', user_summary),
+    url(r'^refund/?$', refund, name='accounting_refund'),
+    url(r'^refund/process/?$', process_refund, name='accounting_refund_process'),
 ]
