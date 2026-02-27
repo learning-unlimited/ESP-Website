@@ -207,17 +207,17 @@ def _latest_release():
         if line and not set(line).issubset(set('= ')):
             label = line.strip()
             break
-            
+
     # Truncate to give a preview (stop at Changelog or after 15 lines)
     preview_lines = []
     for i, line in enumerate(lines):
         if line.startswith('Changelog') or i >= 15:
             break
         preview_lines.append(line)
-        
+
     preview_lines.append("")
     preview_lines.append("`\u2192 Read the full %s release notes </manage/docs/releases/README.rst>`__" % label)
-        
+
     return label, _rst_to_html("\n".join(preview_lines))
 
 # ---------------------------------------------------------------------------
@@ -1297,9 +1297,13 @@ def manage_docs(request, doc_path=None):
     doc_title = 'Admin Documentation'
 
     if doc_path:
-        # Security: ensure resolved path stays within DOCS_ADMIN_ROOT
+        # Security: validate path only contains safe characters (whitelist)
+        # before joining with DOCS_ADMIN_ROOT to prevent path traversal.
+        if not re.match(r'^[A-Za-z0-9_./-]+$', doc_path) or '..' in doc_path:
+            raise Http404
+        # Resolve the full path and confirm it stays inside DOCS_ADMIN_ROOT
         requested = os.path.realpath(os.path.join(DOCS_ADMIN_ROOT, doc_path))
-        if not requested.startswith(DOCS_ADMIN_ROOT + os.sep) and requested != DOCS_ADMIN_ROOT:
+        if not requested.startswith(DOCS_ADMIN_ROOT + os.sep):
             raise Http404
         if not os.path.isfile(requested):
             raise Http404
