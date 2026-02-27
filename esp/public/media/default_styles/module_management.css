@@ -23,6 +23,14 @@
     max-width: 80%;
 }
 
+.connectedSortable li input.link_title_input {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-top: 2px;
+}
+
 .column {
     width: 100%;
     text-align: center;
