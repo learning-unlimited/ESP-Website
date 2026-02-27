@@ -1,0 +1,20 @@
+Stripe Refund ERROR
+====================================
+
+Program: {{ program.niceName }}
+Site: {{ domain_name }}
+
+The following refunds FAILED:
+
+{% for result in refund_results %}
+- User ID: {{ result.user_id }}
+  Username: {{ result.username }}
+  Full Name: {{ result.full_name }}
+  Stripe Transaction ID: {{ result.transaction_id }}
+  Amount Requested: ${{ result.amount_requested }}
+  Error: {{ result.error_message }}
+
+{% endfor %}
+
+ACTION REQUIRED: Please issue these refunds manually through the Stripe website
+(https://dashboard.stripe.com).

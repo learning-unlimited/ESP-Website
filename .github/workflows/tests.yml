@@ -18,7 +18,11 @@ jobs:
   build:
     name: ${{ matrix.travis_job }} (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+      timeout-minutes: 45
+      strategy:
+        fail-fast: false
+        matrix:
+          python-version: [3.7]
     services:
       postgres:
         image: postgres:10.8
@@ -56,6 +60,16 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
+<<<<<<< HEAD
+    - name: Get apt packages list
+      id: apt-action
+      run: |
+        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+        echo "packages=$PKGS" >> $GITHUB_OUTPUT
+    - name: Cache apt packages
+      uses: Eeems-Org/apt-cache-action@v1
+      with:
+        packages: ${{ steps.apt-action.outputs.packages }}
     - name: Prepare for Installing Dependencies
       run: deploy/travis/before_install
       env:
