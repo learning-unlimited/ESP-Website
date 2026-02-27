@@ -20,7 +20,7 @@
   <div class="controls">
     {{ field }}
   {% if field.errors %}
-  <span class="help-inline">
+  <span class="help-inline" role="alert">
     {% for error in field.errors %}
     {{error}}
     {% endfor %}

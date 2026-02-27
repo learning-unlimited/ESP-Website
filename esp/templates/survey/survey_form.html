@@ -5,12 +5,12 @@
         <p class="message">
         {% if submitted or completed %}
         {% if submitted %}
-            <div class="alert alert-success">
+            <div role="alert" class="alert alert-success">
                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                     Your survey responses for {% if section %}{{ section }}{% elif general %}the general program survey{% endif %} have been saved.
             </div>
         {% elif completed %}
-            <div class="alert alert-danger">
+            <div role="alert" class="alert alert-danger">
                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                     You've already completed the {% if section %}survey for {{ section }}{% elif general %}general program survey{% endif %}.
             </div>

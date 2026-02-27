@@ -29,7 +29,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
 </p>
 
 {% if form.errors %}
-    <div class="alert alert-danger">
+    <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
             Please fix the error{{ form.errors|pluralize }} in the form.
     </div>
@@ -51,7 +51,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
  <td><label for="id_slugbio">Description of you in 50 characters or less:<br />
        <small>(e.g. "{{ institution }} sophomore studying Architecture." or "Aspiring teacher of high school mathematics.")</small></label></td>
  <td>{{ form.slugbio }} {% if form.slugbio.errors %}
-   <br /><span class="form_error">{{ form.slugbio.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.slugbio.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -61,7 +61,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
  </label></td>
 
  <td>{{ form.bio }} {% if form.bio.errors %}
-   <br /><span class="form_error">{{ form.bio.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.bio.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -74,7 +74,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
      <img src="/media/{{ picture_file}}" title="Your current photo." alt="Your current photo" />
      {% endif %}
      {% if form.picture.errors %}
-   <br /><span class="form_error">{{ form.picture.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.picture.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
