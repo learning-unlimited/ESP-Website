@@ -47,7 +47,7 @@ $j(document).ready(initialize);
 <h1>Admin Portal for {{ program.niceName }} (ID: {{ program.id }})</h1>
 
 {% inline_program_qsd_block program "manage:main_top" %}
-Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
+Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="https://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
 {% end_inline_program_qsd_block %}
 
 <div class="row-fluid">
@@ -274,6 +274,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if teach_teacherreg %}<li><a href="/teach/{{ program.getUrlBase }}/teacherreg">Teacher Reg</a></li>{% endif %}
         {% if volunteer_signup %}<li><a href="/volunteer/{{ program.getUrlBase }}/signup">Volunteer Reg</a></li>{% endif %}
         {% if onsite_main %}<li><a href="/onsite/{{ program.getUrlBase }}/main">Onsite</a></li>{% endif %}
+        {% if manage_refund %}<li><a href="/accounting/refund?program={{ program.id }}">Refunds</a></li>{% endif %}
     </ul>
     </div>
 </div>

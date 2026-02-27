@@ -49,7 +49,7 @@
 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
 <big><b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.</big>
 </div>
-    
+
 {% ifequal scrmi.progress_mode 1 %}
     {% include "program/modules/checkboxes.html" %}
 {% endifequal %}
@@ -140,14 +140,23 @@
                 </button>
             {% endif %}
             </form>
-            {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}
-                <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
-                    <button type="submit" id="cancelbutton" class="btn btn-danger btn-large">
-                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                        {{ scrmi.cancel_button_text }}
-                    </button>
-                </form>
-            {% endif %}{% endif %}
+            {% if isConfirmed or scrmi.cancel_button_dereg %}
+
+                {# Hide button for CC payments (has_external_payment) but keep for financial aid #}
+                {% if has_external_payment %}
+                    <p style="margin-top: 15px; font-style: italic; color: #555;">
+                        You have already paid for this program. If you want to cancel, please <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">contact us</a> directly to request a refund.
+                    </p>
+                {% else %}
+                    <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
+                        <button type="submit" id="cancelbutton" class="btn btn-danger btn-large">
+                            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                            {{ scrmi.cancel_button_text }}
+                        </button>
+                    </form>
+                {% endif %}
+
+            {% endif %}
         {% endif %}
     {% endif %}
     </center>
