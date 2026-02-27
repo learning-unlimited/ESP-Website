@@ -573,13 +573,13 @@ class LotteryAssignmentController(object):
         stats['num_sections'] = self.num_sections
         stats['num_enrolled_students'] = numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
         stats['num_lottery_students'] = self.num_students
-        
+
         int_req = numpy.sum(interest_requested)
         if int_req > 0:
             stats['overall_interest_ratio'] = float(numpy.sum(interest_assigned)) / int_req
         else:
             stats['overall_interest_ratio'] = 'NA'
-            
+
         stats['num_registrations'] = numpy.sum(self.student_sections)
         stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
@@ -695,7 +695,7 @@ class LotteryAssignmentController(object):
                 ratios.append('NA%% of priority classes were enrolled')
             else:
                 ratios.append('%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0))
-                
+
         if stats['overall_interest_ratio'] == 'NA':
             ratios.append('NA%% of interested classes were enrolled')
         else:
