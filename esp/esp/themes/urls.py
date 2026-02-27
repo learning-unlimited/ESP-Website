@@ -4,7 +4,7 @@ from esp.themes.views import editor, selector, configure, confirm_overwrite, lan
 from django.conf.urls import url
 
 urlpatterns = [
-    url(r'^/?$', landing, name='themes_landing'),
+    url(r'^/$', landing, name='themes_landing'),
     url(r'^/select', selector, name='themes_select'),
     url(r'^/setup', configure, name='themes_configure'),
     url(r'^/confirm_overwrite', confirm_overwrite, name='themes_confirm_overwrite'),
