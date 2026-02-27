@@ -50,7 +50,6 @@ class NavBarCategoryAdmin(admin.ModelAdmin):
                 level = messages.ERROR,
             )
         return super().delete_model(request, obj)
-    
     def has_delete_permission(self, request, obj = None):
         if obj and obj.name == "default":
             return False
