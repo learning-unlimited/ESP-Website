@@ -173,7 +173,7 @@ class UserContactFormTest(CacheFlushTestCase):
             'first_name': 'Test',
             'last_name': 'User',
             'e_mail': 'testuser@example.com',
-            'phone_day': '',
+            'phone_day': '+16175551234',
             'phone_cell': '',
             'address_street': '123 Main St',
             'address_city': 'Springfield',
