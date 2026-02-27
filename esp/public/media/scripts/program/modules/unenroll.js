@@ -3,6 +3,8 @@ function setup() {
     setup_handlers.call(this);
     fetch_status.call(this);
     setInterval(poll_status.bind(this), 15000);
+    this.timer_id = null;
+    apply_timer.call(this);
 }
 
 function fetch_status() {
@@ -102,6 +104,65 @@ function setup_handlers() {
         }
     }.bind(this));
     $j('#refresh').click(fetch_status.bind(this));
+    $j('#timer_enabled').change(function () {
+        save_timer_settings.call(this);
+        apply_timer.call(this);
+    }.bind(this));
+    $j('#timer_interval').change(function () {
+        save_timer_settings.call(this);
+        apply_timer.call(this);
+    }.bind(this));
+}
+
+function save_timer_settings() {
+    var enabled = $j('#timer_enabled').prop('checked');
+    var interval = parseInt($j('#timer_interval').val(), 10) || 5;
+    var csrf = $j.cookie('esp_csrftoken');
+    $j.ajax({
+        url: program_base_url + 'unenroll_timer',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({enabled: enabled, interval_minutes: interval}),
+        headers: {'X-CSRFToken': csrf}
+    });
+}
+
+function apply_timer() {
+    if (this.timer_id !== null) {
+        clearInterval(this.timer_id);
+        this.timer_id = null;
+    }
+    var enabled = $j('#timer_enabled').prop('checked');
+    if (enabled) {
+        var interval = (parseInt($j('#timer_interval').val(), 10) || 5) * 60000;
+        this.timer_id = setInterval(auto_unenroll.bind(this), interval);
+        $j('#timer_status').text('Timer active.');
+    } else {
+        $j('#timer_status').text('');
+    }
+}
+
+function auto_unenroll() {
+    var students = selected_students.call(this);
+    var sections = selected_sections.call(this);
+    var enrollments = selected_enrollments.call(this, students, sections);
+    var ids = _.keys(enrollments);
+    if (ids.length === 0) {
+        $j('#timer_status').text('Last run: ' + new Date().toLocaleTimeString() + ' — nothing to unenroll.');
+        return;
+    }
+    var csrf = $j.cookie('esp_csrftoken');
+    $j.ajax({
+        url: program_base_url + 'unenroll_execute',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({selected_enrollments: ids}),
+        headers: {'X-CSRFToken': csrf},
+        success: function (data) {
+            $j('#timer_status').text('Last run: ' + new Date().toLocaleTimeString() + ' — expired ' + data.expired + ' enrollment(s).');
+            fetch_status.call(this);
+        }.bind(this)
+    });
 }
 
 function update_checkboxes(event) {
