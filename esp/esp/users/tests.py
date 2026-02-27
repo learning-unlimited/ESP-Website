@@ -775,3 +775,115 @@ class PermissionTestCase(TestCase):
         implications = ['Teacher/Classes/Create/OpenClass']
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
+
+
+class StudentInfoFormGradeTest(TestCase):
+    """Registration Profile grade validation.
+
+    Ensures that when a student fills out the Registration Profile without
+    selecting a grade / graduation year, the form is invalid and no profile
+    is saved.
+    """
+
+    def setUp(self):
+        user_role_setup()
+
+        # StudentInfoForm.__init__ calls Tag.getTag(...).split(',') for
+        # these three keys unconditionally, so they must exist.
+        Tag.setTag('student_shirt_sizes', value='XS, S, M, L, XL, XXL')
+        Tag.setTag('shirt_types',         value='Straight cut, Fitted cut')
+        Tag.setTag('food_choices',        value='Vegetarian, Vegan, None')
+
+        self.student, _created = ESPUser.objects.get_or_create(
+            username='student_grade_test_224'
+        )
+        self.student.makeRole('Student')
+
+        # A date of birth accepted by the SplitDateWidget (passed as a
+        # date object so value_from_datadict returns it without parsing).
+        self.valid_dob = datetime.date(2010, 6, 15)
+
+        # A valid graduation year corresponding to grade 9.
+        self.valid_grad_year = str(ESPUser.YOGFromGrade(9))
+
+    def _make_form(self, data):
+        from esp.users.forms.user_profile import StudentInfoForm
+        return StudentInfoForm(user=self.student, data=data)
+
+    def test_missing_grade_makes_form_invalid(self):
+        """Blank graduation_year must make the form invalid."""
+        form = self._make_form({
+            'graduation_year': '',
+            'dob': self.valid_dob,
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('graduation_year', form.errors)
+
+    def test_missing_grade_triggers_required_error(self):
+        """Blank graduation_year must raise the 'required' validation error."""
+        form = self._make_form({
+            'graduation_year': '',
+            'dob': self.valid_dob,
+        })
+        form.is_valid()
+        errors = form.errors.get('graduation_year', [])
+        self.assertTrue(
+            any('required' in e.lower() for e in errors),
+            "Expected a 'required' error for graduation_year, got: %s" % errors,
+        )
+
+    def test_no_auto_default_to_lowest_grade(self):
+        """The first choice must be a blank sentinel, not a real grade.
+
+        Previously the form auto-selected the lowest grade when the field
+        was left empty.  The blank sentinel '' ensures no default is chosen.
+        """
+        form = self._make_form({})
+        first_value = form.fields['graduation_year'].choices[0][0]
+        self.assertEqual(
+            first_value, '',
+            "First choice must be the blank sentinel '', not a real grade."
+        )
+
+    def test_valid_grade_clears_graduation_year_error(self):
+        """Supplying a real grade year must clear the graduation_year error."""
+        form = self._make_form({
+            'graduation_year': self.valid_grad_year,
+            'dob': self.valid_dob,
+        })
+        form.is_valid()
+        self.assertNotIn('graduation_year', form.errors)
+
+    def test_profile_not_saved_when_grade_missing(self):
+        """No StudentInfo row is written when graduation_year is omitted.
+
+        The view only calls StudentInfo.addOrUpdate() after form.is_valid()
+        returns True.  This test mirrors that guard by checking that an
+        invalid form leaves StudentInfo untouched in the database.
+
+        Scope: only StudentInfo is asserted here.  RegistrationProfile
+        persistence is only triggered by regProf.save() inside the view,
+        which is outside the scope of this unit test on form validation.
+        """
+        initial_si_count = StudentInfo.objects.filter(user=self.student).count()
+
+        form = self._make_form({
+            'graduation_year': '',
+            'dob': self.valid_dob,
+        })
+
+        # Simulate the view guard: only persist when the form is valid.
+        # If this branch is ever reached (bug regression), the assertion
+        # below will correctly catch the unexpected DB write.
+        if form.is_valid():
+            StudentInfo.addOrUpdate(
+                self.student,
+                self.student.getLastProfile(),
+                form.cleaned_data,
+            )
+
+        self.assertEqual(
+            StudentInfo.objects.filter(user=self.student).count(),
+            initial_si_count,
+            "StudentInfo must NOT be saved when graduation_year is missing.",
+        )
