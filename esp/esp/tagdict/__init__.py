@@ -1318,6 +1318,21 @@ all_program_tags = {
         'category': 'onsite',
         'is_setting': True,
     },
+    'unenroll_timer_enabled': {
+        'is_boolean': True,
+        'help_text': 'Whether the auto-unenroll timer is enabled for this program.',
+        'default': False,
+        'category': 'onsite',
+        'is_setting': True,
+    },
+    'unenroll_timer_interval_minutes': {
+        'is_boolean': False,
+        'help_text': 'How often (in minutes) the auto-unenroll timer should run.',
+        'default': 5,
+        'category': 'onsite',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=1),
+    },
     'already_paid_extracosts_allowed': {
         'is_boolean': True,
         'help_text': 'Whether students should be able to return to the extracosts page to add items or change options after they have already paid once via credit card.',
