@@ -45,12 +45,12 @@ Here is some important information regarding your class:<br />
   <small>(Not reviewed, Accepted, or Rejected)</small>
 </th>
  <td>{% if cls.isReviewed %}{% if cls.isAccepted %}
-   <span style="font-size: 120%; font-weight: bold; color: #0C0;">Accepted!</span>
+   <span style="font-size: 120%; font-weight: bold; color: #0C0;">&#10003; Accepted!</span>
    {% else %}
-   <span style="font-size: 120%; font-weight: bold; color: #C00;">Rejected</span>
+   <span style="font-size: 120%; font-weight: bold; color: #C00;">&#10007; Rejected</span>
    {% endif %}
    {% else %}
-   <span style="font-size: 120%; font-weight: bold; color: #00C;">Not Reviewed</span>
+   <span style="font-size: 120%; font-weight: bold; color: #00C;">&#9679; Not Reviewed</span>
    {% endif %}
 </td>
 </tr>
