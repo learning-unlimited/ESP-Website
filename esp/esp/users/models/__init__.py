@@ -1221,7 +1221,7 @@ class ESPUser(User, BaseESPUser):
         self.save()
 
     def get_absolute_url(self):
-        return "/manage/userview?username="+self.username
+        return reverse('manage_userview') + '?username=' + self.username
 
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass

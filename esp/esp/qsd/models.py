@@ -36,6 +36,7 @@ from datetime import datetime
 import hashlib
 
 from django.db import models
+from django.urls import reverse
 
 from markdown import markdown
 from esp.db.fields import AjaxForeignKey
@@ -186,7 +187,7 @@ class QuasiStaticData(models.Model):
         return None
 
     def get_absolute_url(self):
-        return "/"+self.url+".html"
+        return reverse('qsd_page', kwargs={'url': self.url})
 
     class Meta:
         verbose_name = 'Editable'

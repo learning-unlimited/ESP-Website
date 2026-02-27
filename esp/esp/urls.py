@@ -75,7 +75,7 @@ urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + st
 
 # Robots.txt
 urlpatterns += [
-    url('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain"))
+    url('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain"), name='robots_txt')
 ]
 
 # Admin stuff
@@ -97,8 +97,8 @@ urlpatterns += [
 
 # generic stuff
 urlpatterns += [
-    url(r'^$', main.home), # index
-    url(r'^set_csrf_token', main.set_csrf_token), # tiny view used to set csrf token
+    url(r'^$', main.home, name='home'), # index
+    url(r'^set_csrf_token', main.set_csrf_token, name='set_csrf_token'), # tiny view used to set csrf token
 ]
 
 # main list of apps (please consolidate more things into this!)
@@ -130,7 +130,7 @@ urlpatterns += [
 ]
 
 urlpatterns += [
-    url(r'^(?P<url>.*)\.html$', esp.qsd.views.qsd),
+    url(r'^(?P<url>.*)\.html$', esp.qsd.views.qsd, name='qsd_page'),
 ]
 
 # QSD Media
@@ -138,8 +138,8 @@ urlpatterns += [
 urlpatterns += [
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
-    url(r'^contact/contact/?$', main.contact),
-    url(r'^contact/contact/(?P<section>[^/]+)/?$', main.contact),
+    url(r'^contact/contact/?$', main.contact, name='contact'),
+    url(r'^contact/contact/(?P<section>[^/]+)/?$', main.contact, name='contact_section'),
 
     # Program stuff
     url(r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.program),
@@ -150,7 +150,7 @@ urlpatterns += [
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
 
-    url(r'^email/([0-9]+)/?$', main.public_email),
+    url(r'^email/([0-9]+)/?$', main.public_email, name='public_email'),
 ]
 
 urlpatterns += [
@@ -159,5 +159,5 @@ url(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0
 
 urlpatterns += [
     url(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
-        esp.utils.views.diff_templateoverride),
+        esp.utils.views.diff_templateoverride, name='diff_templateoverride'),
 ]

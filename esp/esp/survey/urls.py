@@ -4,5 +4,5 @@ from esp.survey.views import survey_view
 
 urlpatterns = [
     # Program stuff
-    url(r'^(onsite|manage|teach|learn)/(.*?)/(.*?)/program.survey$', survey_view),
+    url(r'^(onsite|manage|teach|learn)/(.*?)/(.*?)/program.survey$', survey_view, name='program_survey'),
 ]

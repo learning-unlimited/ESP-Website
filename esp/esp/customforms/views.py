@@ -3,6 +3,7 @@ import json
 
 from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
+from django.urls import reverse
 from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.db import connection
 from django.core.serializers.json import DjangoJSONEncoder
@@ -355,7 +356,7 @@ def viewResponse(request, form_id):
         form = Form.objects.get(id=form_id)
         return render_to_response('customforms/view_results.html', request, {'form': form})
     else:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('home'))
 
 @user_passes_test(test_func)
 def getExcelData(request, form_id):

@@ -76,7 +76,7 @@ This function is overloaded to handle either one or two phase reg"""
                                     password=form.cleaned_data['password'])
 
             login(request, user)
-            return HttpResponseRedirect('/myesp/profile/')
+            return HttpResponseRedirect(reverse('myesp_profile'))
         else:
             send_activation_email(user, userkey)
             return render_to_response('registration/account_created_activation_required.html', request,
@@ -180,7 +180,7 @@ def activate_account(request):
     u.is_active = True
     u.save()
 
-    return HttpResponseRedirect('/myesp/profile/')
+    return HttpResponseRedirect(reverse('myesp_profile'))
 
 def send_activation_email(user, userkey):
     t = loader.get_template('registration/activation_email.txt')

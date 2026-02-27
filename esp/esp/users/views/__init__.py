@@ -166,7 +166,7 @@ def signout(request):
 def signed_out_message(request):
     """ If the user is indeed logged out, show them a "Goodbye" message. """
     if request.user.is_authenticated:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('home'))
 
     return render_to_response('registration/logged_out.html', request, {})
 
@@ -253,14 +253,14 @@ def morph_into_user(request):
         onsite = None
     request.user.switch_to_user(request,
                                 morph_user,
-                                '/manage/userview?username=' + morph_user.username,
+                                reverse('manage_userview') + '?username=' + morph_user.username,
                                 'User Search for '+morph_user.name(),
                                 onsite is not None)
 
     if onsite is not None:
         return HttpResponseRedirect('/learn/%s/studentreg' % onsite.getUrlBase())
     else:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('home'))
 
 class LoginHelpView(DefaultQSDView):
     template_name = "users/loginhelp.html"
