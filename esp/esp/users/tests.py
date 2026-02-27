@@ -778,12 +778,11 @@ class PermissionTestCase(TestCase):
 
 
 class StudentInfoFormGradeTest(TestCase):
-    """Tests for Issue #224: Registration Profile grade validation.
+    """Registration Profile grade validation.
 
     Ensures that when a student fills out the Registration Profile without
     selecting a grade / graduation year, the form is invalid and no profile
-    is saved.  This locks the behavior introduced by Issue #9 / PR #193,
-    which removed the automatic default grade and forced an explicit choice.
+    is saved.
     """
 
     def setUp(self):
