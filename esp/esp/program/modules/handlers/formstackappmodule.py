@@ -47,7 +47,10 @@ def resolve_field_expression(expression, context_vars):
     try:
         return str(Variable(expression).resolve(Context(context_vars)))
     except VariableDoesNotExist:
-        return ""
+        return None
+    except Exception as e:
+        logger.exception("Error resolving field expression '%s': %s", expression, e)
+        return None
 
 class FormstackAppModule(ProgramModuleObj):
     doc = """
@@ -98,7 +101,7 @@ class FormstackAppModule(ProgramModuleObj):
                 continue
             field, _, expr = line.partition(':')
             value = resolve_field_expression(expr, {'user': request.user})
-            if value:
+            if value is not None:
                 autopopulated.append((field.strip(), value))
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, context)
