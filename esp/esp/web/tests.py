@@ -37,8 +37,12 @@ from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
 from esp.program.tests import ProgramFrameworkTest  ## Really should find somewhere else to put this...
 from django.test.client import Client
 from django.conf import settings
+from django.test import RequestFactory
+from django.contrib.auth.models import User
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.utils.models import TemplateOverride
+from esp.web.admin import NavBarCategoryAdmin
+from esp.admin import admin_site
 
 import difflib
 import logging
@@ -120,6 +124,59 @@ class NavbarTest(TestCase):
         n1.save()
         self.assertTrue(self.get_navbar_titles('/') == ['NavBar2', 'NavBar1A'], 'Altered navbar order not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar2', 'NavBar1A']))
 
+
+class NavBarAdminDeletionTest(TestCase):
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+        # Create superuser
+        self.user = User.objects.create_superuser(
+            username="admin",
+            email="admin@test.com",
+            password="password"
+        )
+
+        # Ensure default category exists
+        self.default_category = NavBarCategory.objects.create(
+            name="default",
+            long_explanation="Default category"
+        )
+
+        self.admin = NavBarCategoryAdmin(NavBarCategory, admin_site)
+
+    def test_default_category_cannot_be_deleted(self):
+        request = self.factory.get("/")
+        request.user = self.user
+
+        has_permission = self.admin.has_delete_permission(
+            request,
+            obj=self.default_category
+        )
+
+        self.assertFalse(
+            has_permission,
+            '"default" nav category should not be deletable.'
+        )
+
+    def test_non_default_category_can_be_deleted(self):
+        other = NavBarCategory.objects.create(
+            name="home",
+            long_explanation="Home category"
+        )
+
+        request = self.factory.get("/")
+        request.user = self.user
+
+        has_permission = self.admin.has_delete_permission(
+            request,
+            obj=other
+        )
+
+        self.assertTrue(
+            has_permission,
+            'Non-default nav category should be deletable.'
+        )
 
 class NoVaryOnCookieTest(ProgramFrameworkTest):
     """
