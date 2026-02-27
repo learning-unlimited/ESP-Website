@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: devsite_django
+      POSTGRES_USER: esp
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  memcached:
+    image: memcached:alpine
+    ports:
+      - "11211:11211"
+
+  web:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - memcached
+    environment:
+      VIRTUAL_ENV: /usr
+
+volumes:
+  postgres_data:
