@@ -2,8 +2,6 @@
 Tests for the theme editor.
 """
 
-from __future__ import absolute_import
-import six
 import os
 import random
 import re
@@ -74,7 +72,7 @@ class ThemesTest(TestCase):
         #   Get the home page (this is a fresh site) and make sure it has a link to the theme landing.
         response = self.client.get('/')
         self.assertTrue(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>',
-                                       six.text_type(response.content, encoding='UTF-8'), flags=re.DOTALL)) == 1)
+                                       str(response.content, encoding='UTF-8'), flags=re.DOTALL)) == 1)
 
         #   Go to the themes landing page and theme selector, make sure neither errors out.
         response = self.client.get('/themes/')
@@ -90,7 +88,7 @@ class ThemesTest(TestCase):
         # should be doing all these tests in some sort of tmpdir to avoid
         # touching anything of the user's.
         images_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
-        # Really we should use a tempdir, but on vagrant it may be on a
+        # Really we should use a tempdir, but on Docker it may be on a
         # different file system, which causes problems, so we do a hackier
         # thing instead.
         images_backup_dir = os.path.join(settings.MEDIA_ROOT, 'images',
@@ -121,9 +119,9 @@ class ThemesTest(TestCase):
                 self.assertEqual(response.status_code, 200)
 
                 #   Supply more settings if the theme asks for them.
-                if '<form id="theme_setup_form"' in six.text_type(response.content, encoding='UTF-8'):
+                if '<form id="theme_setup_form"' in str(response.content, encoding='UTF-8'):
                     field_matches = re.findall(r'<(input id="\S+"|textarea).*?name="(\S+)".*?>',
-                                               six.text_type(response.content, encoding='UTF-8'), flags=re.DOTALL)
+                                               str(response.content, encoding='UTF-8'), flags=re.DOTALL)
                     #   This is the union of all the theme configuration settings that
                     #   have a non-trivial form (e.g. key = value fails validation).
                     settings_dict = {
@@ -153,14 +151,14 @@ class ThemesTest(TestCase):
                     self.assertTrue(('/themes/', 302) in response.redirect_chain)
 
                 #   Check that the CSS stylesheet has been included in the page.
-                self.assertTrue('/media/styles/theme_compiled.css' in six.text_type(response.content, encoding='UTF-8'))
+                self.assertTrue('/media/styles/theme_compiled.css' in str(response.content, encoding='UTF-8'))
 
                 #   Check that the CSS stylesheet has been compiled.
                 self.assertTrue(os.path.exists(css_filename))
                 self.assertTrue(len(open(css_filename).read()) > 1000)  #   Hacky way to check that content is substantial
 
                 #   Check that the template override is marked with the theme name.
-                self.assertTrue(('<!-- Theme: %s -->' % theme_name) in six.text_type(response.content, encoding='UTF-8'))
+                self.assertTrue(('<!-- Theme: %s -->' % theme_name) in str(response.content, encoding='UTF-8'))
 
             self.client.logout()
 
@@ -201,7 +199,7 @@ class ThemesTest(TestCase):
                 variables = re.findall(r'@(\S+):\s+?(\S+);', open(variables_filename).read())
                 for (varname, value) in variables:
                     self.assertTrue(len(re.findall(r'<input.*?name="%s".*?value="%s".*?>',
-                                    six.text_type(response.content, encoding='UTF-8'), flags=re.I)) > 0)
+                                    str(response.content, encoding='UTF-8'), flags=re.I)) > 0)
 
         #   Test that we can change a parameter and the right value appears in the stylesheet
         def verify_linkcolor(color_str):

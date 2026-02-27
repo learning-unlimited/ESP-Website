@@ -56,6 +56,23 @@ users to whom you are sending this email.
 <br />
 </p>
 
+{% if other_program_urls %}
+<div class="alert alert-warning" role="alert">
+  <strong>This email contains links that may reference another program.</strong>
+  The following program URL(s) in the subject or body do not match the current program ({{ program.getUrlBase }}):
+  <ul class="mb-0">
+  {% for prog_url in other_program_urls %}
+    <li>{{ prog_url }}</li>
+  {% endfor %}
+  </ul>
+  {% if confirm_send_required %}
+  Please update the links to the current program, or click "Send anyway" below if the links are intentional.
+  {% else %}
+  Consider updating the links so recipients see the current program.
+  {% endif %}
+</div>
+{% endif %}
+
 <br />
 <p>
 <strong>Email body:</strong>
@@ -92,7 +109,10 @@ users to whom you are sending this email.
 {% if public_view %}
 <input type="hidden" name="public_view" value="on" />
 {% endif %}
-<input type="submit" value="Send Message!" id="submitform" class="btn btn-primary" />
+{% if confirm_send_required %}
+<input type="hidden" name="confirm_send_with_other_program_links" value="1" />
+{% endif %}
+<input type="submit" value="{% if confirm_send_required %}Send anyway{% else %}Send Message!{% endif %}" id="submitform" class="btn btn-primary" />
 </form>
 
 <script>

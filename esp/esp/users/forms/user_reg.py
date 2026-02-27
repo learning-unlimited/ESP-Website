@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import forms
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
@@ -6,14 +5,13 @@ from django.forms.fields import HiddenInput, TextInput
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import StrippedCharField
 from phonenumber_field.formfields import PhoneNumberField
-import six
 
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
 
     def clean(self, value):
         """ Make sure the email address is sane """
-        email = super(ValidHostEmailField, self).clean(value)
+        email = super().clean(value)
         email_parts = email.split("@")
         if len(email_parts) != 2:
             raise forms.ValidationError('Email addresses must be of the form "name@host"')
@@ -47,13 +45,13 @@ class EmailUserRegForm(forms.Form):
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
-        if data == six.u(''):
+        if data == '':
             raise forms.ValidationError('Please select an initial role')
         return data
 
     def __init__(self, *args, **kwargs):
         #   Set up the default form
-        super(EmailUserRegForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         #   Adjust initial_role choices
         role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
@@ -82,7 +80,7 @@ class UserRegForm(forms.Form):
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
-        if data == six.u(''):
+        if data == '':
             raise forms.ValidationError('Please select an initial role')
         return data
 
@@ -121,7 +119,7 @@ class UserRegForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         #   Set up the default form
-        super(UserRegForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         #   Adjust initial_role choices
         role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
@@ -130,7 +128,7 @@ class UserRegForm(forms.Form):
 class SinglePhaseUserRegForm(UserRegForm):
     def __init__(self, *args, **kwargs):
         #email field not hidden
-        super(SinglePhaseUserRegForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['email'].widget = TextInput(attrs=self.fields['email'].widget.attrs)
         self.fields['confirm_email'].widget = TextInput(attrs=self.fields['confirm_email'].widget.attrs)
 

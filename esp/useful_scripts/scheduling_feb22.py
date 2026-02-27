@@ -3,8 +3,6 @@
 """
 
 #   Run-specific stuff
-from __future__ import absolute_import
-from __future__ import print_function
 from io import open
 prog_id = 11
 filename = '/home/pricem/scheduling/scheduling_%d.txt' % prog_id

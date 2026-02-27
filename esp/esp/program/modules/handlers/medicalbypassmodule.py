@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.users.models import Record, RecordType
