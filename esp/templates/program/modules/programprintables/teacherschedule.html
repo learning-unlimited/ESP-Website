@@ -64,6 +64,7 @@
     <th>Room</th>
     <th>Class</th>
     {% if moderators and teachers %}<th>Role</th> {% endif %}
+    <th>Export</th>
 </tr>
 {% endifchanged %}
 {% autoescape off %}
@@ -73,6 +74,10 @@
       {{ scheditem.cls.prettyrooms|join:"<br />" }}{% endif %}</td>
   <td>{{ scheditem.cls.title }}</td>
     {% if moderators and teachers %}<td>{{ scheditem.role }}</td>{% endif %}
+  <td style="text-align: center;">
+      <a href="{{ scheditem.cls.google_calendar_url }}" target="_blank" title="Add to Google Calendar" style="text-decoration:none;font-size:0.9em;padding:2px 4px;background:#eee;border:1px solid #ccc;border-radius:4px;color:#333;margin-bottom:2px;display:inline-block;">[+ Google Calendar]</a><br/>
+      <a href="/learn/{{ program.url }}/studentschedule_ics?secid={{ scheditem.cls.id }}" title="Download .ics" style="text-decoration:none;font-size:0.9em;padding:2px 4px;background:#eee;border:1px solid #ccc;border-radius:4px;color:#333;display:inline-block;">&#128197; Apple/Outlook</a>
+  </td>
 </tr>
 {% endautoescape %}
 {% endfor %}

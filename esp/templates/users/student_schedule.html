@@ -1,53 +1,49 @@
 <style type="text/css">
+    .Enrolled {
+        color: red;
+        font-weight: bold;
+    }
 
-.Enrolled
-  {
-    color: red;
-    font-weight: bold;
-  }
-
-.NotAccepted
- {
-   color: red;
- }
-
+    .NotAccepted {
+        color: red;
+    }
 </style>
 {% if not request.user.onsite_local %}
 <script type="text/javascript">
-$j(function() {
-    // Create two dialog boxes with two different warning messages,
-    // one that appears when you try to remove an enrolled class,
-    // and another that appears when you try removing a non-enrolled class.
-    // autoOpen: false makes it so that the dialog boxes don't appear on page load.
-    $j( "div.remove-confirm" ).dialog({
-        resizable: false,
-        modal: true,
-        autoOpen: false,
-        closeOnEscape: false
-    });
+    $j(function () {
+        // Create two dialog boxes with two different warning messages,
+        // one that appears when you try to remove an enrolled class,
+        // and another that appears when you try removing a non-enrolled class.
+        // autoOpen: false makes it so that the dialog boxes don't appear on page load.
+        $j("div.remove-confirm").dialog({
+            resizable: false,
+            modal: true,
+            autoOpen: false,
+            closeOnEscape: false
+        });
 
-    // When clicking any remove link, handle the event here rather than immediately removing the class.
-    // Display a warning dialog box, and give the user an option to confirm the removal or cancel it.
-    $j("a.remove").click( function(eventObject) {
+        // When clicking any remove link, handle the event here rather than immediately removing the class.
+        // Display a warning dialog box, and give the user an option to confirm the removal or cancel it.
+        $j("a.remove").click(function (eventObject) {
 
-        // The hyperlink click is always cancelled at first.
-        // If the user confirms the removal,
-        // the clearslot link is followed, and the class is removed.
-        eventObject.preventDefault();
-        var $a_remove_tag = $j(this);
-        var cls_code = $j(this).attr("data-sec-code");
-        var remove_type = $j(this).attr("data-remove-type");    // "enrolled" for enrolled classes, "applied" for non-enrolled classes
-        $j( "#"+remove_type+"-remove-confirm" ).dialog( "option", "title", "Remove class "+cls_code+"?" ).dialog( "option", "buttons", {
-            "Remove class": function() {
-                $j( this ).dialog( "close" );
-                window.location.replace($a_remove_tag.attr("href"));
-            },
-            "Cancel": function() {
-                $j( this ).dialog( "close" );
-            }
-        }).dialog( "open" );
+            // The hyperlink click is always cancelled at first.
+            // If the user confirms the removal,
+            // the clearslot link is followed, and the class is removed.
+            eventObject.preventDefault();
+            var $a_remove_tag = $j(this);
+            var cls_code = $j(this).attr("data-sec-code");
+            var remove_type = $j(this).attr("data-remove-type");    // "enrolled" for enrolled classes, "applied" for non-enrolled classes
+            $j("#" + remove_type + "-remove-confirm").dialog("option", "title", "Remove class " + cls_code + "?").dialog("option", "buttons", {
+                "Remove class": function () {
+                    $j(this).dialog("close");
+                    window.location.replace($a_remove_tag.attr("href"));
+                },
+                "Cancel": function () {
+                    $j(this).dialog("close");
+                }
+            }).dialog("open");
+        });
     });
-});
 </script>
 {% endif %}
 <div id="enrolled-remove-confirm" class="remove-confirm" style="display:none;">
@@ -64,119 +60,133 @@ $j(function() {
 </div>
 
 <p>
-{% load render_qsd %}
-{% inline_program_qsd_block program "class_schedule_header_text" %}
-Below is your class schedule for {{ program.niceName }}.  You can
-<a href="/learn/{{one}}/{{two}}/catalog">click here</a> to view the full 
-catalog, or you can use the course listing below.
+    {% load render_qsd %}
+    {% inline_program_qsd_block program "class_schedule_header_text" %}
+    Below is your class schedule for {{ program.niceName }}. You can
+    <a href="/learn/{{one}}/{{two}}/catalog">click here</a> to view the full
+    catalog, or you can use the course listing below.
 </p>
 
-<p>  <b>Please note</b>: Your space in a class is saved immediately when it
-appears in the schedule below.  However, please do
-click the "Confirm" button below to mark your registration as complete and
-receive instructions on how to get to the program and what to do when
-you arrive. 
+<p> <b>Please note</b>: Your space in a class is saved immediately when it
+    appears in the schedule below. However, please do
+    click the "Confirm" button below to mark your registration as complete and
+    receive instructions on how to get to the program and what to do when
+    you arrive.
 </p>
 {% end_inline_program_qsd_block %}
 
 {% if not module.deadline_met_or_lottery_open %}
-    <center>
+<center>
     <div class="note">
-    Note: Student registration is no longer open. Please use this page to view your schedule. {% if completedAll %}You can still click `Save' to view your receipt. {% endif %}
+        Note: Student registration is no longer open. Please use this page to view your schedule. {% if completedAll
+        %}You can still click `Save' to view your receipt. {% endif %}
     </div>
-    </center>
-    <br />
+</center>
+<br />
 {% endif %}
 
 <table cellpadding="3" class="table table-condensed table-bordered">
-<tr style="background-color: #f9f9f9">
-    <th colspan="3" style="text-align: center;">
-    Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
-    </th>
-</tr>
-{% for timeslot in timeslots %}
+    <tr style="background-color: #f9f9f9">
+        <th colspan="3" style="text-align: center;">
+            Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
+        </th>
+    </tr>
+    {% for timeslot in timeslots %}
     {% ifchanged timeslot.0.start.day %}
-        <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.0.pretty_date }}</th></tr>
+    <tr style="background-color: #f9f9f9">
+        <th colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.0.pretty_date }}</th>
+    </tr>
     {% endifchanged %}
     {% ifchanged timeslot.2 %}
-        <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">Block {{ timeslot.2 }}</th></tr>
+    <tr style="background-color: #f9f9f9">
+        <th colspan="3" height="3" style="text-align: center;">Block {{ timeslot.2 }}</th>
+    </tr>
     {% endifchanged %}
     <tr>
-    {% ifequal timeslot.0.event_type.description "Compulsory" %}
-        <td width="25%" valign="middle" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
+        {% ifequal timeslot.0.event_type.description "Compulsory" %}
+        <td width="25%" valign="middle" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}
+        </td>
         <td valign="middle" align="center" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
         <td width="25%"></td>
     </tr>
     {% else %}
-        <td width="25%" valign="middle" align="center">{{ timeslot.0.short_description }}</td>
-        {% if timeslot.1|length_is:0 %}
-            <td style="vertical-align: middle !important;" align="center" class="class_desc">
-                No classes
-            </td>
-        {% elif timeslot.1.0.first_meeting_time %}
-            <td style="vertical-align: middle; border-left: 5px solid {% cycle 'black' 'lightgray' %}" align="center" rowspan="{{ timeslot.1.0.section.get_meeting_times|length }}" class="class_desc">
-            {% for cls in timeslot.1 %}
-                {% comment %}{% if use_priority %}{% endcomment %}
-                    {% if not cls.section.verbs|length_is:0 %}
-                        <i>{% for v in cls.section.verbs %}<span class="{{ v }}">{{ v }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
-                    {% endif %}
-                {% comment %}{% endif %}{% endcomment %}
-                {{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %} 
-                
-                {% if request.user.onsite_local %}
-                    ({{ cls.section.prettyrooms|join:", " }})
-                {% endif %}
-                {% if not forloop.last %}<br />{% endif %}
-            {% endfor %}
-            </td>
+    <td width="25%" valign="middle" align="center">{{ timeslot.0.short_description }}</td>
+    {% if timeslot.1|length_is:0 %}
+    <td style="vertical-align: middle !important;" align="center" class="class_desc">
+        No classes
+    </td>
+    {% elif timeslot.1.0.first_meeting_time %}
+    <td style="vertical-align: middle; border-left: 5px solid {% cycle 'black' 'lightgray' %}" align="center"
+        rowspan="{{ timeslot.1.0.section.get_meeting_times|length }}" class="class_desc">
+        {% for cls in timeslot.1 %}
+        {% comment %}{% if use_priority %}{% endcomment %}
+        {% if not cls.section.verbs|length_is:0 %}
+        <i>{% for v in cls.section.verbs %}<span class="{{ v }}">{{ v }}</span>{% if not forloop.last %}, {% endif %}{%
+            endfor %}:</i>
         {% endif %}
-        
-        {% if not timeslot.1|length_is:0 %}
-            {% if module.deadline_met %}
-            <td width='25%' align='center' style="vertical-align: middle !important;">
-          {% comment %} <input type="button" value="Edit My Schedule"
+        {% comment %}{% endif %}{% endcomment %}
+        {{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %}
+        <a href="{{ cls.section.google_calendar_url }}" target="_blank"
+            style="text-decoration:none; margin-left: 5px; font-size:12px; color:#4285F4;">[+ Google Calendar]</a>
+
+        {% if request.user.onsite_local %}
+        ({{ cls.section.prettyrooms|join:", " }})
+        {% endif %}
+        {% if not forloop.last %}<br />{% endif %}
+        {% endfor %}
+    </td>
+    {% endif %}
+
+    {% if not timeslot.1|length_is:0 %}
+    {% if module.deadline_met %}
+    <td width='25%' align='center' style="vertical-align: middle !important;">
+        {% comment %} <input type="button" value="Edit My Schedule"
             onclick="window.location='/learn/{{one}}/{{two}}/catalog';">
-          <br />Or: {% endcomment %} 
-            {% for cls in timeslot.1 %}
-                {% if cls.first_meeting_time %}
-                    <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}" class="remove" data-remove-type="{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}" data-sec-code="{{ cls.section.emailcode }}">[remove {{ cls.section.emailcode }}]</a>
-                    <br />
-                {% endif %}
-            {% endfor %}
-            <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[view other classes]</a>
-            {% if timeslot.3 %}
-                <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
-                {% if not timeslot.1|length_is:1 %}
-                    <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
-                {% endif %}
-            {% endif %}
-            </td>
-            {% else %}
-            <!-- Allow removal of classes if the appropriate flag is set -->
-            {% if allow_removal %}
-            <td width='25%' align='center' style="vertical-align: middle !important;">
-            {% for cls in timeslot.1 %}
-                {% if cls.first_meeting_time %}
-                    <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}" class="remove" data-remove-type="{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}" data-sec-code="{{ cls.section.emailcode }}">[remove]</a>
-                {% endif %}
-                <br />
-            {% endfor %}
-            </td>
-            {% endif %}
-            {% endif %}
-        {% else %}
-            {% if module.deadline_met %}
-                <td width='20%' align='center'>
-          {% comment %} <input type="button" value="Edit My Schedule"
-          onclick="window.location='/learn/{{one}}/{{two}}/catalog';">
-          <br />Or: {% endcomment %}
-                <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
-                </td>
-            {% endif %}	
+        <br />Or: {% endcomment %}
+        {% for cls in timeslot.1 %}
+        {% if cls.first_meeting_time %}
+        <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}" class="remove"
+            data-remove-type="{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}"
+            data-sec-code="{{ cls.section.emailcode }}">[remove {{ cls.section.emailcode }}]</a>
+        <br />
         {% endif %}
+        {% endfor %}
+        <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[view other classes]</a>
+        {% if timeslot.3 %}
+        <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
+        {% if not timeslot.1|length_is:1 %}
+        <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
+        {% endif %}
+        {% endif %}
+    </td>
+    {% else %}
+    <!-- Allow removal of classes if the appropriate flag is set -->
+    {% if allow_removal %}
+    <td width='25%' align='center' style="vertical-align: middle !important;">
+        {% for cls in timeslot.1 %}
+        {% if cls.first_meeting_time %}
+        <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}" class="remove"
+            data-remove-type="{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}"
+            data-sec-code="{{ cls.section.emailcode }}">[remove]</a>
+        {% endif %}
+        <br />
+        {% endfor %}
+    </td>
+    {% endif %}
+    {% endif %}
+    {% else %}
+    {% if module.deadline_met %}
+    <td width='20%' align='center'>
+        {% comment %} <input type="button" value="Edit My Schedule"
+            onclick="window.location='/learn/{{one}}/{{two}}/catalog';">
+        <br />Or: {% endcomment %}
+        <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
+    </td>
+    {% endif %}
+    {% endif %}
     </tr>
     {% endifequal %}
-{% endfor %}
-</table> 
+    {% endfor %}
+</table>
 
-<br/>
+<br />
