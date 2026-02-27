@@ -1,0 +1,85 @@
+{% extends "main.html" %}
+
+{% block title %}Refund Confirmation{% endblock %}
+
+{% block content %}
+
+<h1>Refund Results</h1>
+
+{% if has_errors %}
+<div class="alert alert-danger"
+    style="border: 2px solid #d9534f; padding: 15px; margin-bottom: 20px; background-color: #f2dede;">
+    <h4 style="margin-top: 0;"><strong>Some refunds encountered errors</strong></h4>
+    <p>One or more refunds could not be processed. Details are shown below.
+        An email notification has been sent to <a href="mailto:cfo@learningu.org">cfo@learningu.org</a>.</p>
+    <p><strong>If you believe this page did not work properly</strong>, please send an email to
+        <a href="mailto:cfo@learningu.org">cfo@learningu.org</a> with details, including the list
+        of students and amounts to be refunded, so that refunds can be issued manually through the
+        Stripe website.
+    </p>
+</div>
+{% endif %}
+
+{% if successful_results %}
+<h2>Successful Refunds</h2>
+<div class="alert alert-success" style="border: 1px solid #3c763d; padding: 10px; background-color: #dff0d8;">
+    <strong>{{ successful_results|length }} refund{{ successful_results|length|pluralize }} processed
+        successfully.</strong>
+    A confirmation email has been sent to <a href="mailto:cfo@learningu.org">cfo@learningu.org</a>.
+</div>
+
+<table class="table table-bordered" style="width: 100%; border-collapse: collapse;">
+    <thead>
+        <tr style="background-color: #dff0d8;">
+            <th>User ID</th>
+            <th>Username</th>
+            <th>Full Name</th>
+            <th>Amount Refunded</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for result in successful_results %}
+        <tr>
+            <td>{{ result.user_id }}</td>
+            <td>{{ result.username }}</td>
+            <td>{{ result.full_name }}</td>
+            <td>${{ result.amount_requested }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if failed_results %}
+<h2>Failed Refunds</h2>
+<table class="table table-bordered" style="width: 100%; border-collapse: collapse;">
+    <thead>
+        <tr style="background-color: #f2dede;">
+            <th>User ID</th>
+            <th>Username</th>
+            <th>Full Name</th>
+            <th>Amount Requested</th>
+            <th>Error</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for result in failed_results %}
+        <tr>
+            <td>{{ result.user_id }}</td>
+            <td>{{ result.username }}</td>
+            <td>{{ result.full_name }}</td>
+            <td>${{ result.amount_requested }}</td>
+            <td style="color: #a94442;">{{ result.error_message }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<hr />
+<p>
+    <a href="{% url 'accounting_refund' %}" class="btn btn-primary">Back to Refund Page</a>
+    <a href="/accounting/" class="btn btn-default" style="margin-left: 10px;">Back to Accounting Summary</a>
+</p>
+
+{% endblock %}
