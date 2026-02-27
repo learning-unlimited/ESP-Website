@@ -644,6 +644,7 @@ class BaseESPUser(object):
             lambda self=wildcard, program=wildcard, **kwargs:
                  {'self':self, 'program':program, 'ignore_classes':True})
     getAvailableTimes.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher, 'program': cls.parent_program})
+    getAvailableTimes.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator, 'program': sec.parent_program})
     getAvailableTimes.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'program': sec.parent_program})
     getAvailableTimes.depend_on_m2m('program.Program', 'program_modules', lambda prog, pm: {'program': prog})
     getAvailableTimes.depend_on_row('users.UserAvailability', lambda ua:
