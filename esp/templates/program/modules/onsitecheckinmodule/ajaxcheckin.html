@@ -31,45 +31,41 @@ table {
 Welcome to student check-in for {{program.niceName}}.  Make sure that the students have handed in all necessary forms and payments.
 </p>
 
-<div class="row" style="margin-bottom: 20px;">
-    <div class="col-md-6">
-        <div class="panel panel-default">
-            <div class="panel-heading"><b>Filters</b></div>
-            <div class="panel-body">
-                <div class="form-group row">
-                    <label for="grade_filter" class="col-sm-4 control-label">Grade:</label>
-                    <div class="col-sm-8">
-                        <select id="grade_filter" class="form-control">
-                            <option value="">All Grades</option>
-                            <option value="7">7th Grade</option>
-                            <option value="8">8th Grade</option>
-                            <option value="9">9th Grade</option>
-                            <option value="10">10th Grade</option>
-                            <option value="11">11th Grade</option>
-                            <option value="12">12th Grade</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group row">
-                    <label for="last_name_filter" class="col-sm-4 control-label">Last Name:</label>
-                    <div class="col-sm-8">
-                        <select id="last_name_filter" class="form-control">
-                            <option value="">All</option>
-                            <option value="A-G">A - G</option>
-                            <option value="H-N">H - N</option>
-                            <option value="O-Z">O - Z</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6" align="right">
-        <a href="/onsite/{{ program.url }}/barcodecheckin" class="button btn-lg" style="text-decoration: none; display: inline-block;">
-            <span class="glyphicon glyphicon-barcode"></span> Barcode Checkin
-        </a>
-    </div>
-</div>
+<table style="margin-bottom: 20px;">
+    <col width="85%">
+    <col width="15%">
+    <tr>
+        <th>Filters</th>
+        <th>Quick Links</th>
+    </tr>
+    <tr>
+        <td style="padding: 10px;">
+            <label for="grade_filter" style="font-weight: bold; margin-right: 5px;">Grade:</label>
+            <select id="grade_filter" style="margin-right: 20px; padding: 3px;">
+                <option value="">All Grades</option>
+                <option value="7">7th Grade</option>
+                <option value="8">8th Grade</option>
+                <option value="9">9th Grade</option>
+                <option value="10">10th Grade</option>
+                <option value="11">11th Grade</option>
+                <option value="12">12th Grade</option>
+            </select>
+            
+            <label for="last_name_filter" style="font-weight: bold; margin-right: 5px;">Last Name:</label>
+            <select id="last_name_filter" style="padding: 3px;">
+                <option value="">All</option>
+                <option value="A-G">A - G</option>
+                <option value="H-N">H - N</option>
+                <option value="O-Z">O - Z</option>
+            </select>
+        </td>
+        <td align="center" style="vertical-align: middle;">
+            <a href="/onsite/{{ program.url }}/barcodecheckin" class="button" style="text-decoration: none;">
+                Barcode Checkin
+            </a>
+        </td>
+    </tr>
+</table>
 
 {% if message %}
 <div align="center" class="alert alert-info">
