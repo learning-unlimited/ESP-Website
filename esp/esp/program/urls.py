@@ -21,5 +21,7 @@ urlpatterns = [
     url(r'^manage/redirects/?(?P<section>[^/]*)/?$', views.redirects),
     url(r'^manage/statistics/?$', views.statistics),
     url(r'^manage/preview/?$', views.template_preview),
+    url(r'^manage/docs/?$', views.manage_docs),
+    url(r'^manage/docs/(?P<doc_path>.+\.rst)/?$', views.manage_docs),
     url(r'^manage/mergeaccounts/?$', esp.users.views.merge.merge_accounts),
 ]

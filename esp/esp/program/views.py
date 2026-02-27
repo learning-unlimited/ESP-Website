@@ -37,6 +37,7 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import traceback
+import os
 from operator import __or__ as OR
 from pprint import pprint
 
@@ -87,6 +88,7 @@ import re
 import pickle
 import operator
 import json
+from docutils.core import publish_parts
 import datetime
 from collections import defaultdict
 from decimal import Decimal
@@ -96,6 +98,129 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from io import StringIO
+
+# ---------------------------------------------------------------------------
+# Documentation viewer helpers
+# ---------------------------------------------------------------------------
+
+# Absolute path to docs/admin/ (three levels above this file:
+# views.py -> program -> esp -> esp -> devsite/docs/admin)
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+DOCS_ADMIN_ROOT = os.path.normpath(
+    os.path.join(_THIS_DIR, '..', '..', '..', 'docs', 'admin')
+)
+
+
+def _rst_to_html(rst_text):
+    """Convert a reStructuredText string to an HTML body fragment."""
+    parts = publish_parts(
+        source=rst_text,
+        writer_name='html',
+        settings_overrides={
+            'halt_level': 5,
+            'report_level': 5,
+            'file_insertion_enabled': False,
+            'raw_enabled': False,
+        },
+    )
+    return parts['body']
+
+
+def _docs_nav():
+    """Return a list of {'title', 'url_path'} dicts for the docs sidebar."""
+
+    def _extract_rst_title(fpath):
+        """Return the RST document title from a file, or None."""
+        try:
+            with open(fpath, 'r', encoding='utf-8') as f:
+                lines = [l.rstrip() for l in f.readlines()]
+        except OSError:
+            return None
+        deco = set('=-~^+`:#\'\"!$%&()*,./;<>?@[\\]_{|}')
+        for i, line in enumerate(lines):
+            if not line:
+                continue
+            stripped = line.strip()
+            is_deco = stripped and all(c in deco for c in stripped)
+            if is_deco:
+                # Could be an overline before the title
+                if i + 2 < len(lines):
+                    candidate = lines[i + 1].strip()
+                    underline = lines[i + 2].strip()
+                    if candidate and all(c in deco for c in underline) and len(underline) >= len(candidate):
+                        return candidate
+                continue
+            # Not a decoration line: check if next line is an underline
+            if i + 1 < len(lines):
+                nxt = lines[i + 1].strip()
+                if nxt and all(c in deco for c in nxt) and len(nxt) >= len(stripped):
+                    return stripped
+        return None
+
+    nav = []
+    for fname in sorted(os.listdir(DOCS_ADMIN_ROOT)):
+        if not fname.endswith('.rst'):
+            continue
+        # Skip the admin README — the index page serves as the overview
+        if fname == 'README.rst':
+            continue
+        fpath = os.path.join(DOCS_ADMIN_ROOT, fname)
+        fallback = fname.replace('.rst', '').replace('_', ' ').title()
+        title = _extract_rst_title(fpath) or fallback
+        nav.append({
+            'title': title,
+            'url_path': fname,
+        })
+    # Release notes index
+    nav.append({
+        'title': 'Release Notes',
+        'url_path': 'releases/README.rst',
+    })
+    return nav
+
+
+
+def _latest_release():
+    """Return (label, html) for the most recent release notes."""
+    releases_dir = os.path.join(DOCS_ADMIN_ROOT, 'releases')
+    try:
+        subdirs = [
+            d for d in os.listdir(releases_dir)
+            if os.path.isdir(os.path.join(releases_dir, d)) and d.isdigit()
+        ]
+    except OSError:
+        return None, None
+    if not subdirs:
+        return None, None
+    latest = str(max(int(d) for d in subdirs))
+    rst_path = os.path.join(releases_dir, latest, 'README.rst')
+    try:
+        with open(rst_path, 'r', encoding='utf-8') as f:
+            rst_text = f.read()
+    except OSError:
+        return None, None
+    # Extract title line for the label
+    label = 'SR{0}'.format(latest)
+    lines = rst_text.splitlines()
+    for line in lines:
+        line = line.strip()
+        if line and not set(line).issubset(set('= ')):
+            label = line.strip()
+            break
+            
+    # Truncate to give a preview (stop at Changelog or after 15 lines)
+    preview_lines = []
+    for i, line in enumerate(lines):
+        if line.startswith('Changelog') or i >= 15:
+            break
+        preview_lines.append(line)
+        
+    preview_lines.append("")
+    preview_lines.append("`\u2192 Read the full %s release notes </manage/docs/releases/README.rst>`__" % label)
+        
+    return label, _rst_to_html("\n".join(preview_lines))
+
+# ---------------------------------------------------------------------------
 
 @login_required
 def lottery_student_reg(request, program = None):
@@ -1161,3 +1286,44 @@ def template_preview(request):
     context = {}
 
     return render_to_response(template, request, context)
+
+
+@admin_required
+def manage_docs(request, doc_path=None):
+    """Render admin documentation pages embedded within the website."""
+    from django.http import Http404
+
+    doc_html = None
+    doc_title = 'Admin Documentation'
+
+    if doc_path:
+        # Security: ensure resolved path stays within DOCS_ADMIN_ROOT
+        requested = os.path.realpath(os.path.join(DOCS_ADMIN_ROOT, doc_path))
+        if not requested.startswith(DOCS_ADMIN_ROOT + os.sep) and requested != DOCS_ADMIN_ROOT:
+            raise Http404
+        if not os.path.isfile(requested):
+            raise Http404
+        try:
+            with open(requested, 'r', encoding='utf-8') as f:
+                rst_text = f.read()
+        except OSError:
+            raise Http404
+        doc_html = _rst_to_html(rst_text)
+        # Use the first non-decoration line as the page title
+        for line in rst_text.splitlines():
+            line = line.strip()
+            if line and not set(line).issubset(set('=-~^')):
+                doc_title = line
+                break
+
+    latest_release_label, latest_release_html = _latest_release()
+
+    context = {
+        'doc_nav': _docs_nav(),
+        'doc_html': doc_html,
+        'doc_title': doc_title,
+        'doc_path': doc_path,
+        'latest_release_label': latest_release_label,
+        'latest_release_html': latest_release_html,
+    }
+    return render_to_response('program/manage_docs.html', request, context)

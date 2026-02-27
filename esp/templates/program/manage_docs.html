@@ -1,0 +1,154 @@
+{% extends "main.html" %}
+
+{% block title %}{{ doc_title }} &mdash; Admin Documentation{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/management.css" type="text/css">
+    <style>
+        .docs-layout {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            margin-top: 16px;
+        }
+        .docs-sidebar {
+            flex: 0 0 210px;
+            min-width: 150px;
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px 0;
+        }
+        .docs-sidebar h3 {
+            font-size: 13px;
+            text-transform: uppercase;
+            color: #777;
+            letter-spacing: 0.05em;
+            padding: 0 14px 6px;
+            margin: 0 0 6px;
+            border-bottom: 1px solid #ddd;
+        }
+        .docs-sidebar ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .docs-sidebar ul li a {
+            display: block;
+            padding: 6px 14px;
+            font-size: 13px;
+            color: #333;
+            text-decoration: none;
+        }
+        .docs-sidebar ul li a:hover,
+        .docs-sidebar ul li a.active {
+            background: #e8e8e8;
+            color: #000;
+        }
+        .docs-sidebar ul li a.active {
+            font-weight: bold;
+        }
+        .docs-main {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+        .release-notes-banner {
+            background: #fffae6;
+            border: 1px solid #f0c040;
+            border-left: 5px solid #f0c040;
+            border-radius: 4px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+        .release-notes-banner .release-notes-heading {
+            font-size: 15px;
+            font-weight: bold;
+            color: #7a5c00;
+            margin-bottom: 10px;
+        }
+        .release-notes-banner .release-notes-body h1,
+        .release-notes-banner .release-notes-body h2 {
+            font-size: 16px;
+        }
+        .release-notes-banner .release-notes-body h3 {
+            font-size: 14px;
+        }
+        .docs-main .doc-body h1 { font-size: 22px; margin-top: 0; }
+        .docs-main .doc-body h2 { font-size: 18px; }
+        .docs-main .doc-body h3 { font-size: 15px; }
+        .docs-main .doc-body pre {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        .docs-main .doc-body tt,
+        .docs-main .doc-body code {
+            background: #f4f4f4;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 90%;
+        }
+        .docs-index-intro {
+            margin-bottom: 20px;
+            color: #555;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<h2>Admin Documentation</h2>
+
+<div class="docs-layout">
+
+    {# ---- Sidebar nav ---- #}
+    <nav class="docs-sidebar">
+        <h3>Contents</h3>
+        <ul>
+            <li><a href="/manage/docs"{% if not doc_path %} class="active"{% endif %}>Overview</a></li>
+            {% for item in doc_nav %}
+            <li>
+                <a href="/manage/docs/{{ item.url_path }}"
+                   {% if doc_path == item.url_path %}class="active"{% endif %}>
+                    {{ item.title }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+
+    {# ---- Main content area ---- #}
+    <div class="docs-main">
+
+        {% if not doc_html %}
+            {# Index page: show release notes banner then a welcome blurb #}
+            {% if latest_release_html %}
+            <div class="release-notes-banner">
+                <div class="release-notes-heading">
+                    &#9733; Latest Release &mdash; {{ latest_release_label }}
+                </div>
+                <div class="release-notes-body">
+                    {{ latest_release_html|safe }}
+                </div>
+            </div>
+            {% endif %}
+
+            <p class="docs-index-intro">
+                Welcome to the ESP Website admin documentation. Use the sidebar
+                to browse documentation pages, or click a link above to jump
+                directly to a topic.
+            </p>
+
+        {% else %}
+            {# Individual doc page #}
+            <div class="doc-body">
+                {{ doc_html|safe }}
+            </div>
+        {% endif %}
+
+    </div>{# .docs-main #}
+
+</div>{# .docs-layout #}
+{% endblock %}
