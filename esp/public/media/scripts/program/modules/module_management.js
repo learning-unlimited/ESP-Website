@@ -7,12 +7,12 @@ $j(document).ready(function() {
     // Issue #3656.
     var constraints = JSON.parse(document.getElementById('module-constraints-data').textContent);
 
-    // Mark every constrained module and collect their IDs for the cancel selector.
+    // Collect constrained module IDs for the cancel selector.
+    // The module-locked class is already applied server-side in the template.
     var lockedSelectors = [];
     $j('.connectedSortable li').each(function() {
         var id = $j(this).attr('id');
         if (constraints.hasOwnProperty(id)) {
-            $j(this).addClass('module-locked');
             lockedSelectors.push('#' + id);
         }
     });
@@ -22,7 +22,7 @@ $j(document).ready(function() {
     var cancelSelector = 'input,textarea,button,select,option' +
         (lockedSelectors.length ? ',' + lockedSelectors.join(',') : '');
 
-    // Reject cross-section drops for required-locked items as defense-in-depth.
+    // Reject cross-section drops as defense-in-depth.
     // (These modules are also non-draggable via cancelSelector, but this guard
     // ensures correctness if that ever changes.)
     function makeReceiveHandler(isRequiredList) {
@@ -31,6 +31,9 @@ $j(document).ready(function() {
             var c = constraints[id];
             if (!c) { return; }
             if (!isRequiredList && c.required_locked) {
+                ui.sender.sortable('cancel');
+            }
+            if (isRequiredList && c.not_required_locked) {
                 ui.sender.sortable('cancel');
             }
         };
