@@ -200,3 +200,4 @@ class QSDAdminAuthorTest(TestCase):
 
         self.qsd.refresh_from_db()
         self.assertEqual(self.qsd.author, self.user2)
+        
