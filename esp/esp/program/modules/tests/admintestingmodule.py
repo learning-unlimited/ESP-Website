@@ -94,6 +94,11 @@ class AdminTestingModuleTest(ProgramFrameworkTest):
         resp = self.client.get('/myesp/stop_testing/')
         self.assertEqual(resp.status_code, 302)
         self.assertIn('/admin_testing/', resp.url)
+        # testing_mode should be cleared from the session
+        session = self.client.session
+        self.assertNotIn('testing_mode', session)
+        # testing cookie should be removed from the client
+        self.assertNotIn('esp_testing_role', self.client.cookies)
         # Should be logged back in as admin
         resp2 = self.client.get('/')
         self.assertEqual(resp2.wsgi_request.user.pk, self.admin.pk)

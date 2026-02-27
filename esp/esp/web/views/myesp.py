@@ -99,6 +99,13 @@ def myesp_stop_testing(request):
     auth_logout(request)
     try:
         admin_user = ESPUser.objects.get(pk=admin_user_id)
+        if not admin_user.isAdministrator():
+            import logging
+            logging.getLogger(__name__).warning(
+                'stop_testing: session admin_user_id=%d is not an administrator; rejecting restore',
+                admin_user_id,
+            )
+            return HttpResponseRedirect('/')
         admin_user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
         auth_login(request, admin_user)
     except ESPUser.DoesNotExist:
