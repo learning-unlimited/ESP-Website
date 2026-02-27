@@ -97,8 +97,8 @@ class AdminTestingModuleTest(ProgramFrameworkTest):
         # testing_mode should be cleared from the session
         session = self.client.session
         self.assertNotIn('testing_mode', session)
-        # testing cookie should be removed from the client
-        self.assertNotIn('esp_testing_role', self.client.cookies)
+        # testing cookie should be cleared (delete_cookie sets value to '')
+        self.assertEqual(self.client.cookies['esp_testing_role'].value, '')
         # Should be logged back in as admin
         resp2 = self.client.get('/')
         self.assertEqual(resp2.wsgi_request.user.pk, self.admin.pk)
