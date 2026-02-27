@@ -27,7 +27,7 @@ class CalendarExportTest(TestCase):
             end=datetime(2025, 1, 1, 12, 0, tzinfo=pytz.utc),
             event_type=event_type
         )
-        
+
         with patch.object(self.section, 'get_meeting_times', return_value=[event]):
             url = self.section.google_calendar_url
             self.assertIn("calendar.google.com", url)
@@ -39,12 +39,12 @@ class CalendarExportTest(TestCase):
         from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
         module = StudentClassRegModule()
         module.program = self.program
-        
+
         # Test direct call to avoid complicated url/auth setup of ESP framework
         from django.http import HttpRequest
         request = HttpRequest()
         request.user = self.user
-        
+
         response = module.studentschedule_ics(request, None, None, None, module, None, self.program)
         self.assertEqual(response['Content-Type'], 'text/calendar')
         self.assertIn(b'BEGIN:VCALENDAR', response.content)
