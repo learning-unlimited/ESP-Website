@@ -2044,6 +2044,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def __ne__(self, other):
         return self.__cmp__(other) != 0
 
+    def __hash__(self):
+        if self.pk is None:
+            return super().__hash__()
+        return hash(self.pk)
+
     def firstBlockEvent(self):
         eventList = self.all_meeting_times.all().order_by('start')
         if not eventList.exists():
