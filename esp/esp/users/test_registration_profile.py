@@ -2,12 +2,12 @@
 Tests for Registration Profile forms and views.
 
 Addresses:
-  - Issue #224: Test that the StudentInfoForm requires graduation_year and does
+  - Test that the StudentInfoForm requires graduation_year and does
                 not default to the lowest grade.
-  - Issue #225: Test Registration Profile for all account types (Student,
+  - Test Registration Profile for all account types (Student,
                 Teacher, Guardian, Educator), covering both first-time
                 creation and editing flows.
-  - Issue #226: Admin grade-change view on student userview page
+  - Admin grade-change view on student userview page
                 (partially covered here; also in ESPUserTest.testGradeChange).
 """
 
@@ -67,12 +67,12 @@ def _valid_student_data():
 
 
 # ---------------------------------------------------------------------------
-# Issue #224 — Default Grade in Profile Creation
+# Default Grade in Profile Creation
 # ---------------------------------------------------------------------------
 
 class StudentInfoFormGradeValidationTest(CacheFlushTestCase):
     """
-    Issue #224: When a student first fills out the Registration Profile,
+    When a student first fills out the Registration Profile,
     neglecting to set graduation_year must cause validation failure.
     The form must NOT default to the lowest grade.
     """
@@ -90,7 +90,7 @@ class StudentInfoFormGradeValidationTest(CacheFlushTestCase):
         return StudentInfoForm(user=self.student, data=data)
 
     def test_empty_graduation_year_is_invalid(self):
-        """Form must reject an empty graduation_year (closes #224 core requirement)."""
+        """Form must reject an empty graduation_year."""
         data = _valid_student_data()
         data['graduation_year'] = ''
         form = self._make_form(data)
@@ -146,7 +146,7 @@ class StudentInfoFormGradeValidationTest(CacheFlushTestCase):
 
 
 # ---------------------------------------------------------------------------
-# Issue #225 — Full Registration Profile Tests (all account types)
+# Full Registration Profile Tests (all account types)
 # ---------------------------------------------------------------------------
 
 class UserContactFormTest(CacheFlushTestCase):
@@ -275,7 +275,7 @@ class EmergContactFormTest(CacheFlushTestCase):
 
 class StudentInfoFormProfileTest(CacheFlushTestCase):
     """
-    Issue #225 (student portion): test first-time creation and editing of
+    test first-time creation and editing of
     the student profile via StudentInfo.addOrUpdate.
     """
 
@@ -360,9 +360,9 @@ class StudentInfoFormProfileTest(CacheFlushTestCase):
 
 class RegistrationProfileViewTest(CacheFlushTestCase):
     """
-    Issue #225 (view portion): test the /myesp/profile/ view for student,
+    test the /myesp/profile/ view for student,
     teacher, guardian, and educator account types — both GET and POST.
-    Issue #226: Test admin grade-change via userview URL.
+    Test admin grade-change via userview URL.
     """
 
     def setUp(self):
@@ -407,11 +407,11 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
         response = self.client.get('/myesp/profile/')
         self.assertEqual(response.status_code, 200)
 
-    # --- Issue #226: Admin grade-change -----------------------------------------
+    # --- Admin grade-change -----------------------------------------
 
     def test_admin_can_change_student_grade(self):
         """
-        Issue #226: Admin should be able to change a student's grade via the
+        Admin should be able to change a student's grade via the
         userview URL parameter.
         """
         # Set up a starting grade (9)
