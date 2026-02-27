@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os
 import csv
 import random
@@ -77,8 +76,6 @@ def random_email(first, last):
     return '%s%s@%s' % (first.lower()[0],
                         last.lower(),
                         random.choice(email_domains))
-
-
 
 
 RandomClass = collections.namedtuple('RandomClass',

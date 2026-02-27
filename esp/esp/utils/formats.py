@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.utils.functional import lazy
 
 def format_lazy(string, substitution):

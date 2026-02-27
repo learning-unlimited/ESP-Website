@@ -1,8 +1,4 @@
-from __future__ import absolute_import
-from __future__ import division
 from django.utils.encoding import python_2_unicode_compatible
-from six.moves import map
-from six.moves import range
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -46,7 +42,6 @@ from decimal import Decimal
 import random
 import json
 import logging
-import six
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
@@ -332,7 +327,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def save(self, *args, **kwargs):
 
-        retVal = super(Program, self).save(*args, **kwargs)
+        retVal = super().save(*args, **kwargs)
 
         return retVal
 
@@ -371,7 +366,7 @@ class Program(models.Model, CustomFormsLinkModel):
             if retVal is not None and retVal.strip():
                 return retVal
 
-        return six.u('')
+        return ''
 
     @staticmethod
     def get_users_from_module(method_name):
@@ -406,7 +401,7 @@ class Program(models.Model, CustomFormsLinkModel):
         def _get_num(self):
             result = query_func(self, QObjects=False)
             result_dict = {}
-            for key, value in six.iteritems(result):
+            for key, value in result.items():
                 if isinstance(value, QuerySet):
                     result_dict[key] = value.count()
                 else:
@@ -643,7 +638,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return True
         caps = self.grade_caps()
         grade = user.getGrade(self, assume_student=True)
-        for grades, cap in six.iteritems(caps):
+        for grades, cap in caps.items():
             if (grade in grades and
                     self._students_in_program_in_grades(grades) >= cap):
                 return False
@@ -661,7 +656,7 @@ class Program(models.Model, CustomFormsLinkModel):
         size_tag = Tag.getProgramTag("program_size_by_grade", self)
         size_dict = {}
         if size_tag:
-            for k, v in six.iteritems(json.loads(size_tag)):
+            for k, v in json.loads(size_tag).items():
                 if '-' in k:
                     low, high = list(map(int, k.split('-')))
                     size_dict[tuple(range(low, high + 1))] = v
@@ -994,13 +989,13 @@ class Program(models.Model, CustomFormsLinkModel):
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:
-                        return six.u('%s') % d1.strftime('%b. %d, %Y')
+                        return '%s' % d1.strftime('%b. %d, %Y')
                     else:
-                        return six.u('%s - %s') % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+                        return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
                 else:
-                    return six.u('%s - %s') % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
+                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
             else:
-                return six.u('%s - %s') % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
+                return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
         else:
             return None
 
@@ -1417,7 +1412,7 @@ class SplashInfo(models.Model):
             Transfer.objects.filter(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type).delete()
 
     def save(self):
-        super(SplashInfo, self).save()
+        super().save()
         self.execute_sibling_discount()
 
 @python_2_unicode_compatible
@@ -1471,7 +1466,7 @@ class RegistrationProfile(models.Model):
         regProf = None
 
         # check if this is an actual User, not an AnonymousUser
-        if isinstance(user.id, six.integer_types):
+        if isinstance(user.id, int):
             try:
                 regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
             except RegistrationProfile.DoesNotExist:
@@ -1516,7 +1511,7 @@ class RegistrationProfile(models.Model):
         self.last_ts = datetime.now()
         RegistrationProfile.objects.filter(user = self.user, most_recent_profile = True).update(most_recent_profile = False)
         self.most_recent_profile = True
-        super(RegistrationProfile, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @cache_function
     def getLastForProgram(user, program, tl = None):
@@ -1566,9 +1561,9 @@ class RegistrationProfile(models.Model):
 
     def __str__(self):
         if self.program_id is None:
-            return '<Registration for %s>' % six.text_type(self.user)
+            return '<Registration for %s>' % str(self.user)
         if self.user is not None:
-            return '<Registration for %s in %s>' % (six.text_type(self.user), six.text_type(self.program))
+            return '<Registration for %s in %s>' % (str(self.user), str(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1623,7 +1618,7 @@ class TeacherBio(models.Model):
     def save(self, *args, **kwargs):
         """ update the timestamp """
         self.last_ts = datetime.now()
-        super(TeacherBio, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def url(self):
         return '/teach/teachers/%s/bio.html' % self.user.username
@@ -1681,16 +1676,16 @@ class FinancialAidRequest(models.Model):
 
         explanation = self.extra_explaination
         if explanation is None:
-            explanation = six.u('')
+            explanation = ''
         elif len(explanation) > 40:
-            explanation = explanation[:40] + six.u("...")
+            explanation = explanation[:40] + "..."
 
 
-        string = six.u("%s (%s@%s) for %s (%s, %s) %s")%\
+        string = "%s (%s@%s) for %s (%s, %s) %s"%\
                  (self.user.name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
-            string = six.u("Finished: [") + string + six.u("]")
+            string = "Finished: [" + string + "]"
 
         return string
 
@@ -1852,7 +1847,7 @@ class BooleanExpression(models.Model):
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if isinstance(token_or_value, six.string_types):
+        if isinstance(token_or_value, str):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1945,7 +1940,7 @@ class ScheduleConstraint(models.Model):
         app_label = 'program'
 
     def __str__(self):
-        return '%s: "%s" requires "%s"' % (self.program.niceName(), six.text_type(self.condition), six.text_type(self.requirement))
+        return '%s: "%s" requires "%s"' % (self.program.niceName(), str(self.condition), str(self.requirement))
 
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -2143,7 +2138,7 @@ class RegistrationType(models.Model):
     def get_map(include=None, category=None):
         #   If 'include' is specified, make sure we have keys named in that list
         if include:
-            if not isinstance(category, str) and not isinstance(category, six.text_type):
+            if not isinstance(category, str) and not isinstance(category, str):
                 raise ESPError('Need to supply category to RegistrationType.get_map() when passing include arguments', log=True)
             for name in include:
                 type, created = RegistrationType.objects.get_or_create(name=name, category=category)

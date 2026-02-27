@@ -62,7 +62,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     <li>Dive into the sections and <strong>customize</strong> at will. Press <strong>Apply Without Saving</strong> often to see your changes in action.</li>
                     <li>When you're happy with your changes, just enter a name under "Save/Load Theme Settings" and press <strong>Save</strong>!</li>
                 </ol>
-                <p>For even more <strong>color picking power</strong>, we recommend using a full featured colour picker like <a href='http://colorschemedesigner.com' target="_blank">this one</a> to decide your colours, and enter the hex values when adding to your palette.</p>
+                <p>For even more <strong>color picking power</strong>, we recommend using a full featured colour picker like <a href='https://colorschemedesigner.com' target="_blank">this one</a> to decide your colours, and enter the hex values when adding to your palette.</p>
             </div>
             <div class="modal-footer"></div>
         </div>
@@ -306,9 +306,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}" data-default="{{ variable_defaults|index:'navbarLinkColorHover' }}"/>
                             </div>
                         </div>
+                    {% endif %}
                     </div>
                 </div>
-                {% endif %}
 
                 <div class="accordion-group">
                     <div class="accordion-heading">
