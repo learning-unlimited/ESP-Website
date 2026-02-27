@@ -6,6 +6,7 @@ def run_install(sender, **kwargs):
     sender.models_module.install()
 
 class InstallConfig(AppConfig):
+    name = 'esp.utils'
     """
     Base class for app configs of modules that use install() for initial
     data. Don't use this on its own, subclass it to provide a name.
