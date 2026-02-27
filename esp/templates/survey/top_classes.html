@@ -129,6 +129,9 @@
 
 {% endif %}
 
-{% include "program/modules/admincore/returnlink.html" %}
+<p>
+    <a class="btn btn-primary" href="/manage/{{ program.getUrlBase }}/main">Return to the main program management page</a>
+    <a class="btn btn-default" href="/manage/{{ program.getUrlBase }}/surveys" style="margin-left: 8px;">Return to survey management</a>
+</p>
 
 {% endblock %}
