@@ -3,14 +3,23 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 {% if theme %}<!-- Theme: {{ theme.theme_name }} -->{% endif %}
   <head>
-    <title>{% block fulltitle %}{% endblock %}</title>
-  {% block meta %}
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="description" content="{% block description %}{% endblock %}" />
-    <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  {% endblock meta %}
+   <title>{% block fulltitle %}{% endblock %}</title>
+
+<meta name="description" content="{% block description %}{% endblock %}" />
+<meta name="keywords" content="{% block keywords %}{% endblock %}" />
+
+<!-- OpenGraph -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="{% block fulltitle %}{% endblock %}" />
+<meta property="og:description" content="{% block description %}{% endblock %}" />
+<meta property="og:url" content="{{ request.build_absolute_uri }}" />
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{% block fulltitle %}{% endblock %}" />
+<meta name="twitter:description" content="{% block description %}{% endblock %}" />
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png" />
 
     {% block stylesheets %}
     <link rel="shortcut icon" href="/media/images/favicon.ico?v={{ current_favicon_version }}">
