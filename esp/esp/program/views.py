@@ -135,9 +135,15 @@ def lottery_student_reg_simple(request, program = None):
 @login_required
 def lsr_submit(request, program=None):
 
+    if request.method != 'POST' or 'json_data' not in request.POST:
+        return HttpResponseBadRequest("Invalid request")
+
     priority_limit = program.priorityLimit()
 
-    data = json.loads(request.POST['json_data'])
+    try:
+        data = json.loads(request.POST['json_data'])
+    except ValueError:
+        return HttpResponseBadRequest("Invalid JSON")
 
     if priority_limit > 1:
         return lsr_submit_HSSP(request, program, priority_limit, data) # temporary function. will merge the two later -jmoldow 05/31

@@ -173,7 +173,7 @@ class AllViewsTest(ProgramFrameworkTest):
                         if str(response.status_code)[:1] in ['2', '3']:
                             passes = True
                     except Exception as e:
-                        failed_modules[module_view]['GET'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
+                        failed_modules[module_view]['GET base'] = f'{module_view} is throwing an error:\n{e}'
                     try: # Use a class ID as the extra argument
                         response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id)
                         if str(response.status_code)[:1] in ['2', '3']:
