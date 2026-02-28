@@ -158,6 +158,8 @@ url(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0
 
 
 urlpatterns += [
+    url(r'^manage/templateoverride/default_content/$',
+        esp.utils.views.get_default_template_content),
     url(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
         esp.utils.views.diff_templateoverride),
 ]
