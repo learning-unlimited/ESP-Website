@@ -1,0 +1,155 @@
+Skip to content
+learning-unlimited
+ESP-Website
+Repository navigation
+Code
+Issues
+646
+ (646)
+Pull requests
+197
+ (197)
+Discussions
+Actions
+Projects
+Wiki
+Security
+Insights
+Back to pull request #4506
+feat(program): implement full Calendar Integration (ICS & Google Calendar) for Students/Teachers (#3151) #3086
+All jobs
+Run details
+Annotations
+1 error
+Test (Python 3.7)
+failed 3 minutes ago in 11m 50s
+Search logs
+3s
+28s
+2s
+46s
+1s
+0s
+1m 50s
+8s
+29s
+0s
+8m 0s
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 937, in render
+    bit = node.render_annotated(context)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 904, in render_annotated
+    return self.render(context)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/loader_tags.py", line 62, in render
+    result = block.nodelist.render(context)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 937, in render
+    bit = node.render_annotated(context)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 904, in render_annotated
+    return self.render(context)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/loader_tags.py", line 62, in render
+    result = block.nodelist.render(context)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 937, in render
+    bit = node.render_annotated(context)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 904, in render_annotated
+    return self.render(context)
+  File "/home/runner/work/ESP-Website/ESP-Website/esp/esp/qsd/templatetags/render_qsd.py", line 88, in render
+    return template.loader.render_to_string("inclusion/qsd/render_qsd.html", context.flatten())
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/backends/django.py", line 34, in get_template
+    return Template(self.engine.get_template(template_name), self)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/engine.py", line 143, in get_template
+    template, origin = self.find_template(template_name)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/engine.py", line 125, in find_template
+    template = loader.get_template(name, skip=skip)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/loaders/cached.py", line 54, in get_template
+    template = super().get_template(template_name, skip)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/loaders/base.py", line 30, in get_template
+    contents, origin, origin.template_name, self.engine,
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 156, in __init__
+    self.nodelist = self.compile_nodelist()
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 194, in compile_nodelist
+    return parser.parse()
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 478, in parse
+    raise self.error(token, e)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 476, in parse
+    compiled_result = compile_func(self, token)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/defaulttags.py", line 955, in do_if
+    nodelist = parser.parse(('elif', 'else', 'endif'))
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 478, in parse
+    raise self.error(token, e)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 476, in parse
+    compiled_result = compile_func(self, token)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/defaulttags.py", line 954, in do_if
+    condition = TemplateIfParser(parser, bits).parse()
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/defaulttags.py", line 887, in __init__
+    super().__init__(*args, **kwargs)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/smartif.py", line 166, in __init__
+    mapped_tokens.append(self.translate_token(token))
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/smartif.py", line 177, in translate_token
+    return self.create_var(token)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/defaulttags.py", line 890, in create_var
+    return TemplateLiteral(self.template_parser.compile_filter(value), value)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 563, in compile_filter
+    return FilterExpression(token, self)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/base.py", line 663, in __init__
+    "from '%s'" % (token[upto:], token))
+django.template.exceptions.TemplateSyntaxError: Could not parse the remainder: '==0' from 'display_date_author==0'
+
+======================================================================
+ERROR: test_finaid (esp.program.modules.tests.studentreg.StudentRegTest)
+Verify that financial aid behaves as specified.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/template/smartif.py", line 175, in translate_token
+    op = OPERATORS[token]
+KeyError: 'display_date_author==0'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/runner/work/ESP-Website/ESP-Website/esp/esp/program/modules/tests/studentreg.py", line 193, in test_finaid
+    **{'wsgi.url_scheme': 'https'})
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/test/client.py", line 535, in get
+    response = super().get(path, data=data, secure=secure, **extra)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/test/client.py", line 347, in get
+    **extra,
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/test/client.py", line 422, in generic
+    return self.request(**r)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/test/client.py", line 503, in request
+    raise exc_value
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/core/handlers/exception.py", line 34, in inner
+    response = get_response(request)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/core/handlers/base.py", line 115, in _get_response
+    response = self.process_exception_by_middleware(e, request)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/core/handlers/base.py", line 113, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/home/runner/work/ESP-Website/ESP-Website/esp/esp/web/views/main.py", line 91, in program
+    newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
+  File "/home/runner/work/ESP-Website/ESP-Website/esp/esp/program/modules/base.py", line 209, in findModule
+    return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
+  File "/home/runner/work/ESP-Website/ESP-Website/esp/esp/program/modules/base.py", line 595, in _check_student_and_grade
+    return method(moduleObj, request, tl, *args, **kwargs)
+  File "/home/runner/work/ESP-Website/ESP-Website/esp/esp/program/modules/base.py", line 736, in _checkDeadline
+    return method(moduleObj, request, tl, *args, **kwargs)
+  File "/home/runner/venv-3.7/lib/python3.7/site-packages/django/utils/decorators.py", line 45, in _wrapper
+    return bound_method(*args, **kwargs)
+0s
+0s
+0s
+0s
+1s
+0s
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information

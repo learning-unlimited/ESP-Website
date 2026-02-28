@@ -41,7 +41,7 @@
                }
                return object;
               }
-            get_object("inputdata{{ scheditem.teacher.id }}").innerHTML=DrawHTMLBarcode_Code39(get_object("inputdata{{ scheditem.teacher.id }}").innerHTML,0,"yes","in",0,1.5,.75,2.5,"bottom","center", "","black","white");
+            get_object("inputdata{{ scheditem.teacher.id }}").innerHTML=DrawHTMLBarcode_Code39(String({{ scheditem.teacher.id }}),0,"yes","in",0,1.5,.75,2.5,"bottom","center", "","black","white");
             /* ]]> */
             </script>
         </td>
@@ -75,8 +75,8 @@
   <td>{{ scheditem.cls.title }}</td>
     {% if moderators and teachers %}<td>{{ scheditem.role }}</td>{% endif %}
   <td style="text-align: center;">
-      <a href="{{ scheditem.cls.google_calendar_url }}" target="_blank" title="Add to Google Calendar" style="text-decoration:none;font-size:0.9em;padding:2px 4px;background:#eee;border:1px solid #ccc;border-radius:4px;color:#333;margin-bottom:2px;display:inline-block;">[+ Google Calendar]</a><br/>
-      <a href="/learn/{{ program.url }}/studentschedule_ics?secid={{ scheditem.cls.id }}" title="Download .ics" style="text-decoration:none;font-size:0.9em;padding:2px 4px;background:#eee;border:1px solid #ccc;border-radius:4px;color:#333;display:inline-block;">&#128197; Apple/Outlook</a>
+      <a href="{{ scheditem.cls.google_calendar_url|escape }}" target="_blank" title="Add to Google Calendar" style="text-decoration:none;font-size:0.9em;padding:2px 4px;background:#eee;border:1px solid #ccc;border-radius:4px;color:#333;margin-bottom:2px;display:inline-block;">[+ Google Calendar]</a><br/>
+      <a href="/learn/{{ program.url|escape }}/studentschedule_ics?secid={{ scheditem.cls.id|escape }}" title="Download .ics" style="text-decoration:none;font-size:0.9em;padding:2px 4px;background:#eee;border:1px solid #ccc;border-radius:4px;color:#333;display:inline-block;">&#128197; Apple/Outlook</a>
   </td>
 </tr>
 {% endautoescape %}
