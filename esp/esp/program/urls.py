@@ -1,11 +1,13 @@
 from django.conf.urls import url
 
 from esp.program import views
+from esp.qsdmedia.views import site_media
 import esp.users.views.merge
 
 urlpatterns = [
     # manage stuff
     url(r'^manage/programs/?$', views.manage_programs),
+    url(r'^manage/site_media/?$', site_media),
     url(r'^manage/newprogram/?$', views.newprogram),
     url(r'^manage/submit_transaction/?$', views.submit_transaction),
     url(r'^manage/pages/?$', views.manage_pages),
