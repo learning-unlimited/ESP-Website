@@ -1,3 +1,5 @@
+This README is intended to help new contributors get started quickly.
+
 [![Lint and Unit Tests](https://github.com/learning-unlimited/ESP-Website/actions/workflows/tests.yml/badge.svg)](https://github.com/learning-unlimited/ESP-Website/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/gh/learning-unlimited/ESP-Website/branch/main/graph/badge.svg?token=eY0C5a1Lju)](https://codecov.io/gh/learning-unlimited/ESP-Website)
 
