@@ -78,8 +78,8 @@
 {% if not module.deadline_met_or_lottery_open %}
 <center>
     <div class="note">
-        Note: Student registration is no longer open. Please use this page to view your schedule. {% if completedAll
-        %}You can still click `Save' to view your receipt. {% endif %}
+        Note: Student registration is no longer open. Please use this page to view your schedule. {% if completedAll %}
+        You can still click `Save' to view your receipt. {% endif %}
     </div>
 </center>
 <br />
@@ -121,8 +121,7 @@
         {% for cls in timeslot.1 %}
         {% comment %}{% if use_priority %}{% endcomment %}
         {% if not cls.section.verbs|length_is:0 %}
-        <i>{% for v in cls.section.verbs %}<span class="{{ v }}">{{ v }}</span>{% if not forloop.last %}, {% endif %}{%
-            endfor %}:</i>
+        <i>{% for v in cls.section.verbs %}<span class="{{ v }}">{{ v }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
         {% endif %}
         {% comment %}{% endif %}{% endcomment %}
         {{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %}
