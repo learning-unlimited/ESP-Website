@@ -59,7 +59,7 @@ def _resolve_program(path:str, program_class: Type)-> Optional[object]:
         - Any unexpected error occurs during resolution
 
         Note: prog_type and prog_instance must be URL-safe (alphanumeric, hyphens, underscores).
-        Spaces are excluded intentionally — program URLs should be slugified.
+        Spaces are included now : it was giving errors in test cases as urls.py and elsewhere url is allowed to have spaces
         """
 
     prog_re = r'^[-A-Za-z0-9_ ]+/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)'
