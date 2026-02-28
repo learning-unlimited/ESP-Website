@@ -154,7 +154,7 @@ def _extract_rst_title(fpath):
     try:
         with open(fpath, 'r', encoding='utf-8') as f:
             rst_text = f.read()
-            
+
         from docutils.core import publish_doctree
         # Disable file insertion during parsing for safety
         doctree = publish_doctree(
@@ -1360,7 +1360,7 @@ def manage_docs(request, doc_path=None):
         except OSError:
             raise Http404
         doc_html = _rst_to_html(rst_text)
-        
+
         # Consistent title extraction using our helper
         doc_title = _extract_rst_title(requested) or 'Admin Documentation'
 
