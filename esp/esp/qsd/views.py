@@ -383,7 +383,7 @@ def ajax_qsd_image_upload(request):
 
     # Phase 1: Validate ALL files before writing any to disk.
     # This prevents orphaned files when a multi-file upload partially fails.
-    
+
     total_size = sum(f.size for f in uploaded_files)
     if total_size > QSD_IMAGE_MAX_SIZE:
         return JsonResponse(
@@ -429,7 +429,7 @@ def ajax_qsd_image_upload(request):
         # Normalize the path and verify it stays inside the upload
         # directory (CodeQL barrier-guard for py/path-injection CWE-022).
         file_path = os.path.normpath(os.path.join(upload_dir, safe_filename))
-        
+
         # Resolve symlinks in file_path before comparing to real_upload_dir
         # to ensure compatibility when settings.MEDIA_ROOT contains a symlink.
         if os.path.commonpath([real_upload_dir, os.path.realpath(file_path)]) != real_upload_dir:
