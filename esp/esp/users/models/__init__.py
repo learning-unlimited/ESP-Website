@@ -2667,19 +2667,28 @@ class Permission(ExpirableModel):
             None,
             program_is_none_implies_all,
             is_valid=False,
-        )
+        ).select_related("user_filter")
 
         perms = list(direct_qs)
+        membership_cache = {}
         for perm in filter_qs:
             uf = perm.user_filter
             if uf is None:
                 continue
-            try:
-                if uf.getList(ESPUser).filter(pk=user.pk).exists():
-                    perms.append(perm)
-            except ESPError:
-                # Ignore invalid filters when computing deadlines
-                continue
+            cache_key = uf.pk
+            is_member = None
+            if cache_key is not None and cache_key in membership_cache:
+                is_member = membership_cache[cache_key]
+            else:
+                try:
+                    is_member = uf.getList(ESPUser).filter(pk=user.pk).exists()
+                except ESPError:
+                    # Ignore invalid filters when computing deadlines
+                    continue
+                if cache_key is not None:
+                    membership_cache[cache_key] = is_member
+            if is_member:
+                perms.append(perm)
 
         if not perms:
             return None
