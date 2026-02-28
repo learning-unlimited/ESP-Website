@@ -263,8 +263,8 @@ class ProfileTest(TestCase):
         self.group=Group(name='Test Group')
         self.group.save()
         self.u.groups.add(self.group)
-        self.assertEquals(ESPUser.objects.get(username='bjones'), self.u)
-        self.assertEquals(Group.objects.get(name='Test Group'), self.group)
+        self.assertEqual(ESPUser.objects.get(username='bjones'), self.u)
+        self.assertEqual(Group.objects.get(name='Test Group'), self.group)
 
 class ProgramHappenTest(TestCase):
     """
