@@ -250,7 +250,7 @@ class QSDImageUploadTest(TestCase):
         self.assertIn('does not appear to be an image', data['data']['messages'][0])
 
     def test_upload_rejects_oversized_file(self):
-        """Files exceeding 25MB are rejected."""
+        """A single file exceeding 25MB per-file limit is rejected."""
         self.client.login(username='upload_admin', password='password')
         f = self._make_image_file(size=26 * 1024 * 1024)  # 26 MB
         response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
@@ -258,19 +258,46 @@ class QSDImageUploadTest(TestCase):
         import json
         data = json.loads(response.content)
         self.assertFalse(data['success'])
-        self.assertIn('Total upload size', data['data']['messages'][0])
+        self.assertIn('per-file size limit', data['data']['messages'][0])
 
-    def test_upload_rejects_oversized_combined_files(self):
-        """Combined filesize exceeding 25MB are rejected."""
+    def test_upload_allows_multiple_files_under_per_file_limit(self):
+        """Multiple files each under 25MB are accepted (no combined limit)."""
         self.client.login(username='upload_admin', password='password')
         f1 = self._make_image_file(name='test1.png', size=15 * 1024 * 1024)  # 15 MB
         f2 = self._make_image_file(name='test2.png', size=15 * 1024 * 1024)  # 15 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f1, 'files[1]': f2})
+        self._track_response_files(response)
+        self.assertEqual(response.status_code, 200)
+        import json
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['data']['files']), 2)
+
+    def test_upload_rejects_oversized_in_multi_file_batch(self):
+        """If any file in a batch exceeds 25MB, the entire batch is rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f1 = self._make_image_file(name='small.png', size=1024)  # 1 KB
+        f2 = self._make_image_file(name='huge.png', size=26 * 1024 * 1024)  # 26 MB
         response = self.client.post(self.UPLOAD_URL, {'files[0]': f1, 'files[1]': f2})
         self.assertEqual(response.status_code, 400)
         import json
         data = json.loads(response.content)
         self.assertFalse(data['success'])
-        self.assertIn('Total upload size', data['data']['messages'][0])
+        self.assertIn('huge.png', data['data']['messages'][0])
+        self.assertIn('per-file size limit', data['data']['messages'][0])
+
+    def test_oversized_error_escapes_filename(self):
+        """Filenames in size-limit errors are HTML-escaped to prevent XSS."""
+        self.client.login(username='upload_admin', password='password')
+        xss_name = '<img src=x onerror=alert(1)>.png'
+        f = self._make_image_file(name=xss_name, size=26 * 1024 * 1024)
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        msg = data['data']['messages'][0]
+        self.assertNotIn('<img', msg)
+        self.assertIn('&lt;img', msg)
 
     def test_upload_valid_png(self):
         """A valid PNG upload succeeds and returns correct JSON."""
@@ -361,6 +388,18 @@ class QSDImageUploadTest(TestCase):
         f = self._make_image_file(name='noextension')
         response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
         self.assertEqual(response.status_code, 400)
+
+    def test_upload_handles_missing_filename(self):
+        """Files with no filename (None) are handled safely and rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='')
+        f.name = None # Simulate missing filename
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('Invalid file type', data['data']['messages'][0])
 
     def test_multi_file_bad_second_no_orphan(self):
         """When one file in a batch fails validation, no files are saved.

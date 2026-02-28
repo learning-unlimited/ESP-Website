@@ -53,6 +53,7 @@ from bleach import clean
 from django.contrib import messages
 
 from django.conf import settings
+from django.utils.html import escape as html_escape
 from django.views.decorators.http import require_POST
 
 from reversion import revisions as reversion
@@ -384,21 +385,25 @@ def ajax_qsd_image_upload(request):
     # Phase 1: Validate ALL files before writing any to disk.
     # This prevents orphaned files when a multi-file upload partially fails.
 
-    total_size = sum(f.size for f in uploaded_files)
-    if total_size > QSD_IMAGE_MAX_SIZE:
-        return JsonResponse(
-            {'success': False, 'data': {'messages': [
-                'Total upload size exceeds the %d MB limit.' % (QSD_IMAGE_MAX_SIZE // (1024 * 1024))
-            ]}},
-            status=400,
-        )
-
     validated_files = []
     for uploaded_file in uploaded_files:
 
+        # Per-file size limit
+        if uploaded_file.size > QSD_IMAGE_MAX_SIZE:
+            # HTML-escape the filename because Jodit renders error messages
+            # via innerHTML; a crafted filename could otherwise inject markup.
+            safe_name = html_escape(uploaded_file.name or 'unknown')
+            return JsonResponse(
+                {'success': False, 'data': {'messages': [
+                    'File "%s" exceeds the %d MB per-file size limit.'
+                    % (safe_name, QSD_IMAGE_MAX_SIZE // (1024 * 1024))
+                ]}},
+                status=400,
+            )
+
         # Validate file extension — _sanitize_image_extension returns a
         # string literal so CodeQL cannot trace user input into file paths.
-        original_name = uploaded_file.name
+        original_name = uploaded_file.name or ''
         raw_ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
         safe_ext = _sanitize_image_extension(raw_ext)
         if safe_ext is None:
