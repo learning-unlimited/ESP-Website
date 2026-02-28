@@ -9,22 +9,18 @@ div.required label.control-label:after {
   content:" *";
   color:red;
 }
-div.required label.control-label {
-  /* Ensure required fields have a visible asterisk indicator */
-}
-
 #id_receive_txt_message {
   list-style-type: none;
   margin-left: 0px;
 }
-</style>
-<p class="help-block"><span aria-hidden="true" style="color:red;">*</span> indicates a required field</p>
+
 {% endblock %}
 
 {% block content %}
 <div class="row-fluid">
   <div class="span10">
     <h1>Your Profile Information</h1>
+    <p class="help-block"><span aria-hidden="true" style="color:red;">*</span> indicates a required field</p>
   </div>
   <div class="row-fluid">
     <div class="span12">

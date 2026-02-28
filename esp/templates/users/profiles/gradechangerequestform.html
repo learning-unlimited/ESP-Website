@@ -8,7 +8,7 @@
 
 {% if messages %}
 	{% for message in messages %}
-	<div role="alert" class="alert alert-{% if message.SUCCESS %}success{% else %}success{% endif %}"> <strong>{{ message.type }}{{ message }}</strong>
+	<div role="alert" class="alert alert-{% if message.SUCCESS %}success{% else %}danger{% endif %}"> <strong>{{ message.type }}{{ message }}</strong>
 	</div>
 	{% endfor %}
 {% else %}
