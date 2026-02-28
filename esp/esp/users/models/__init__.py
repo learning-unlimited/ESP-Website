@@ -2758,18 +2758,38 @@ class Permission(ExpirableModel):
             program,
             when,
             program_is_none_implies_all,
-        )
+        ).select_related('user_filter')
+
+        # Per-request cache for user filter membership checks, keyed by
+        # (user_id, user_filter_id) to avoid repeated DB queries.
+        cache_attr = '_user_filter_membership_cache'
+        membership_cache = getattr(user, cache_attr, None)
+        if membership_cache is None:
+            membership_cache = {}
+            setattr(user, cache_attr, membership_cache)
+
         for perm in filter_qs:
             uf = perm.user_filter
             if uf is None:
                 continue
-            try:
-                if uf.getList(ESPUser).filter(pk=user.pk).exists():
+
+            key = (user.pk, uf.pk)
+            cached_result = membership_cache.get(key)
+            if cached_result is not None:
+                if cached_result:
                     return True
-            except ESPError:
-                # Ignore invalid filters when checking permissions
                 continue
 
+            try:
+                is_member = uf.getList(ESPUser).filter(pk=user.pk).exists()
+            except ESPError:
+                # Ignore invalid filters when checking permissions
+                membership_cache[key] = False
+                continue
+
+            membership_cache[key] = is_member
+            if is_member:
+                return True
         return False
 
     @classmethod
