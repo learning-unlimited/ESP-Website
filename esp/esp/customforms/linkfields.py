@@ -27,7 +27,7 @@ generic_fields = {
     'pronoun': {'typeMap': forms.CharField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'size': '50', 'class': 'pronoun '}},
     'radio_yesno': {'typeMap': forms.ChoiceField, 'attrs': {'widget': forms.RadioSelect, 'choices': (('T', 'Yes'), ('F', 'No'))}, 'widget_attrs': {'class': ''}},
     'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs': {'class': ''}},
-    'null_boolean': {'typeMap': forms.NullBooleanField, 'attrs': {'widget': forms.NullBooleanSelect}, 'widget_attrs': {'class': ''}},
+    'null_boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.NullBooleanSelect, 'required': False}, 'widget_attrs': {'class': ''}},
     'instructions': {'typeMap': DummyField, 'attrs': {'widget': None}, 'widget_attrs': {'class': ''}},
 }
 
