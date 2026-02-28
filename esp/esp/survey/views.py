@@ -445,91 +445,120 @@ def teacher_survey_all(request):
 
     programs_data = []
     if teacher is not None:
-        taught_classes = teacher.getTaughtClasses()
-        program_ids = taught_classes.values_list(
-            'parent_program_id', flat=True
-        ).distinct()
-        programs = Program.objects.filter(id__in=program_ids).order_by('-id')
-        section_ct = ContentType.objects.get_for_model(ClassSection)
+        # Fetch ALL taught sections at once with related objects to avoid
+        # N+1 queries on parent_class, category, and parent_program FKs.
+        all_sections = list(
+            teacher.getTaughtSections().select_related(
+                'parent_class__category',
+                'parent_class__parent_program',
+            ).order_by('parent_class__parent_program_id', 'parent_class', 'id')
+        )
+        if not all_sections:
+            pass  # programs_data stays empty
+        else:
+            program_ids = list(set(
+                s.parent_class.parent_program_id for s in all_sections
+            ))
 
-        for prog in programs:
-            surveys = prog.getSurveys().filter(
-                category='learn'
-            ).select_related()
-            if not surveys.exists():
-                continue
+            # 1 query: all programs, ordered newest-first
+            programs = Program.objects.filter(id__in=program_ids).order_by('-id')
 
-            sections = teacher.getTaughtSections(prog).order_by(
-                'parent_class', 'id'
+            # 1 query: all student surveys across all programs
+            all_surveys = list(
+                Survey.objects.filter(
+                    program_id__in=program_ids, category='learn'
+                ).select_related('program')
             )
-            if not sections:
-                continue
+            if all_surveys:
+                surveys_by_program = {}
+                for survey in all_surveys:
+                    surveys_by_program.setdefault(survey.program_id, []).append(survey)
 
-            section_ids = [sec.id for sec in sections]
-            for survey in surveys:
-                # Batch query 1: response counts per section (single query)
-                response_counts = dict(
-                    Answer.objects.filter(
-                        question__survey=survey,
-                        question__per_class=True,
-                        content_type=section_ct,
-                        object_id__in=section_ids,
-                    ).values('object_id').annotate(
-                        count=Count('survey_response', distinct=True)
-                    ).values_list('object_id', 'count')
-                )
+                sections_by_program = {}
+                for sec in all_sections:
+                    pid = sec.parent_class.parent_program_id
+                    sections_by_program.setdefault(pid, []).append(sec)
 
-                # Batch query 2: numeric ratings per section (single query)
-                section_ratings = {}
-                first_numeric = survey.questions.filter(
-                    question_type__is_numeric=True, per_class=True
-                ).first()
-                if first_numeric:
-                    raw_values = Answer.objects.filter(
-                        question=first_numeric,
+                section_ct = ContentType.objects.get_for_model(ClassSection)
+                all_section_ids = [s.id for s in all_sections]
+                all_survey_ids = [s.id for s in all_surveys]
+
+                # 1 query: response counts for ALL sections across ALL surveys
+                response_count_map = {}
+                for row in Answer.objects.filter(
+                    question__survey_id__in=all_survey_ids,
+                    question__per_class=True,
+                    content_type=section_ct,
+                    object_id__in=all_section_ids,
+                ).values('question__survey_id', 'object_id').annotate(
+                    count=Count('survey_response', distinct=True)
+                ):
+                    response_count_map[(row['question__survey_id'], row['object_id'])] = row['count']
+
+                # 1 query: find the first numeric per-class question per survey
+                first_numeric_qs = {}
+                for q in Question.objects.filter(
+                    survey_id__in=all_survey_ids,
+                    question_type__is_numeric=True,
+                    per_class=True,
+                ).order_by('survey_id', 'seq'):
+                    if q.survey_id not in first_numeric_qs:
+                        first_numeric_qs[q.survey_id] = q
+
+                # 1 query: all numeric rating values across all surveys
+                rating_map = {}
+                numeric_q_ids = [q.id for q in first_numeric_qs.values()]
+                if numeric_q_ids:
+                    for survey_id, obj_id, val in Answer.objects.filter(
+                        question_id__in=numeric_q_ids,
                         content_type=section_ct,
-                        object_id__in=section_ids,
-                    ).values_list('object_id', 'value')
-                    for obj_id, val in raw_values:
+                        object_id__in=all_section_ids,
+                    ).values_list('question__survey_id', 'object_id', 'value'):
                         try:
-                            section_ratings.setdefault(obj_id, []).append(float(val))
+                            rating_map.setdefault((survey_id, obj_id), []).append(float(val))
                         except (ValueError, TypeError):
                             pass
 
-                # Aggregate per-class: sum responses, weighted-average rating
-                class_data = {}  # parent_class_id -> {class, total, rating_vals}
-                for sec in sections:
-                    cid = sec.parent_class_id
-                    if cid not in class_data:
-                        class_data[cid] = {
-                            'class': sec.parent_class,
-                            'emailcode': sec.parent_class.emailcode(),
-                            'title': sec.title,
-                            'total_responses': 0,
-                            'rating_vals': [],
-                        }
-                    class_data[cid]['total_responses'] += response_counts.get(sec.id, 0)
-                    class_data[cid]['rating_vals'].extend(
-                        section_ratings.get(sec.id, [])
-                    )
+                # Build programs_data by grouping in Python (0 extra queries)
+                for prog in programs:
+                    prog_surveys = surveys_by_program.get(prog.id, [])
+                    prog_sections = sections_by_program.get(prog.id, [])
+                    if not prog_surveys or not prog_sections:
+                        continue
 
-                classes_summary = []
-                for cid, cd in class_data.items():
-                    vals = cd['rating_vals']
-                    classes_summary.append({
-                        'class': cd['class'],
-                        'emailcode': cd['emailcode'],
-                        'title': cd['title'],
-                        'total_responses': cd['total_responses'],
-                        'avg_rating': round(sum(vals) / len(vals), 1) if vals else None,
-                    })
+                    for survey in prog_surveys:
+                        class_data = {}
+                        for sec in prog_sections:
+                            cid = sec.parent_class_id
+                            if cid not in class_data:
+                                class_data[cid] = {
+                                    'class': sec.parent_class,
+                                    'emailcode': sec.parent_class.emailcode(),
+                                    'title': sec.title,
+                                    'total_responses': 0,
+                                    'rating_vals': [],
+                                }
+                            key = (survey.id, sec.id)
+                            class_data[cid]['total_responses'] += response_count_map.get(key, 0)
+                            class_data[cid]['rating_vals'].extend(rating_map.get(key, []))
 
-                programs_data.append({
-                    'program': prog,
-                    'survey': survey,
-                    'sections': sections,
-                    'classes_summary': classes_summary,
-                })
+                        classes_summary = []
+                        for cid, cd in class_data.items():
+                            vals = cd['rating_vals']
+                            classes_summary.append({
+                                'class': cd['class'],
+                                'emailcode': cd['emailcode'],
+                                'title': cd['title'],
+                                'total_responses': cd['total_responses'],
+                                'avg_rating': round(sum(vals) / len(vals), 1) if vals else None,
+                            })
+
+                        programs_data.append({
+                            'program': prog,
+                            'survey': survey,
+                            'sections': prog_sections,
+                            'classes_summary': classes_summary,
+                        })
 
     context = {
         'teacher': teacher,
