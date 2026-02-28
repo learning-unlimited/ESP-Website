@@ -42,8 +42,7 @@ logger = logging.getLogger(__name__)
 
 import random
 import re
-import urllib.parse
-import pytz
+
 # django Util
 from django.conf import settings
 from django.db import models, transaction
@@ -474,27 +473,6 @@ class ClassSection(models.Model):
     def title(self):
         return self.parent_class.title
 
-    @property
-    def google_calendar_url(self):
-        meeting_times = self.get_meeting_times()
-        if not meeting_times:
-            return ""
-
-        start_time = min(event.start for event in meeting_times)
-        end_time = max(event.end for event in meeting_times)
-
-        start_str = start_time.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
-        end_str = end_time.astimezone(pytz.utc).strftime('%Y%m%dT%H%M%SZ')
-
-        params = {
-            'action': 'TEMPLATE',
-            'text': self.title(),
-            'dates': f"{start_str}/{end_str}",
-            'location': ", ".join(self.prettyrooms()),
-        }
-
-        return "https://calendar.google.com/calendar/render?" + urllib.parse.urlencode(params)
-
     def __str__(self):
         return '%s: %s' % (self.emailcode(), self.title())
 
@@ -562,6 +540,33 @@ class ClassSection(models.Model):
 
     def isScheduled(self):
         return len(self.get_meeting_times()) > 0
+
+
+    @property
+    def google_calendar_url(self):
+        """Generate a Google Calendar URL for this class section."""
+        from urllib.parse import quote
+        title = self.parent_class.title if self.parent_class else 'ESP Class'
+        meeting_times = self.get_meeting_times()
+        if not meeting_times:
+            return ""
+            
+        meeting_times = sorted(meeting_times, key=lambda mt: mt.start)
+        mt = meeting_times[0]
+        start = mt.start.strftime('%Y%m%dT%H%M%SZ')
+        end_mt = meeting_times[-1]
+        end = end_mt.end.strftime('%Y%m%dT%H%M%SZ')
+
+        rooms = ', '.join([r.name for r in self.initial_rooms()])
+        desc = self.parent_class.class_info if hasattr(self.parent_class, 'class_info') else ''
+        url = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+        url += '&text=' + quote(str(title))
+        url += '&dates=' + start + '/' + end
+        if rooms:
+            url += '&location=' + quote(rooms)
+        if desc:
+            url += '&details=' + quote(str(desc)[:500])
+        return url
 
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """
@@ -1518,6 +1523,32 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return "N/A"
         else:
             return self.get_sections()[0].prettyDuration()
+
+
+    @property
+    def google_calendar_url(self):
+        """Generate a Google Calendar URL for this class section."""
+        from urllib.parse import quote
+        title = self.parent_class.title if self.parent_class else 'ESP Class'
+        meeting_times = self.get_meeting_times().order_by('start')
+        if meeting_times.exists():
+            mt = meeting_times.first()
+            start = mt.start.strftime('%Y%m%dT%H%M%S')
+            end_mt = meeting_times.last()
+            end = end_mt.end.strftime('%Y%m%dT%H%M%S')
+        else:
+            start = ''
+            end = ''
+        rooms = ', '.join([r.name for r in self.initial_rooms()])
+        desc = self.parent_class.class_info if hasattr(self.parent_class, 'class_info') else ''
+        url = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+        url += '&text=' + quote(str(title))
+        url += '&dates=' + start + '/' + end
+        if rooms:
+            url += '&location=' + quote(rooms)
+        if desc:
+            url += '&details=' + quote(str(desc)[:500])
+        return url
 
     def prettyrooms(self):
         if self.num_sections() <= 0:

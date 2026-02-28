@@ -32,8 +32,8 @@ class CalendarExportTest(TestCase):
             url = self.section.google_calendar_url
             self.assertIn("calendar.google.com", url)
             self.assertIn("TEMPLATE", url)
-            self.assertIn("Test+Math", url)
-            self.assertIn("20250101T100000Z%2F20250101T120000Z", url)
+            self.assertIn("Test%20Math", url)
+            self.assertIn("20250101T100000Z/20250101T120000Z", url)
 
     def test_studentschedule_ics(self):
         from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
@@ -44,7 +44,10 @@ class CalendarExportTest(TestCase):
         from django.http import HttpRequest
         request = HttpRequest()
         request.user = self.user
+        request.path = '/learn/test/1/studentschedule_ics'
 
-        response = module.studentschedule_ics(request, None, None, None, module, None, self.program)
-        self.assertEqual(response['Content-Type'], 'text/calendar')
-        self.assertIn(b'BEGIN:VCALENDAR', response.content)
+        with patch.object(self.user, 'isStudent', return_value=True), \
+             patch.object(self.user, 'getGrade', return_value=10):
+            response = module.studentschedule_ics(request, None, None, None, module, None, self.program)
+            self.assertEqual(response['Content-Type'], 'text/calendar')
+            self.assertIn(b'BEGIN:VCALENDAR', response.content)

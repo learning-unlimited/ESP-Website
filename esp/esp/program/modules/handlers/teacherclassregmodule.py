@@ -1072,7 +1072,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     def teacherschedule_ics(self, request, tl, one, two, module, extra, prog):
         import icalendar
         import pytz
-        from datetime import datetime # Added import for datetime
+        from datetime import datetime
         cal = icalendar.Calendar()
 
         for cls in self.clslist(request.user):
