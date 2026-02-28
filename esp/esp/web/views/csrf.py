@@ -62,7 +62,7 @@ def _resolve_program(path:str, program_class: Type)-> Optional[object]:
         Spaces are included now : it was giving errors in test cases as urls.py and elsewhere url is allowed to have spaces
         """
 
-    prog_re = r'^[-A-Za-z0-9_ ]+/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)'
+    prog_re = r'^[-A-Za-z0-9_ ]+/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)' # Spaces included as URLconf uses [-A-Za-z0-9_ ]+ throughout
     match = re.match(prog_re, path)
     if not match:
                  return None
