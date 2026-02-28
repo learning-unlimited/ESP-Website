@@ -392,8 +392,8 @@ class QSDImageUploadTest(TestCase):
     def test_upload_handles_missing_filename(self):
         """Files with no filename (None) are handled safely and rejected."""
         self.client.login(username='upload_admin', password='password')
-        f = self._make_image_file(name='')
-        f.name = None # Simulate missing filename
+        f = self._make_image_file(name='temp.png')
+        f.name = None  # Simulate missing filename
         response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
         self.assertEqual(response.status_code, 400)
         import json
