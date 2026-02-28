@@ -1712,10 +1712,12 @@ class ManageDocsViewTest(TestCase):
         self.assertIn('<p>', html)
         self.assertIn('This is a paragraph.', html)
 
+    @patch('esp.program.views.os.path.isdir')
     @patch('esp.program.views.os.path.isfile')
-    def test_serve_image_file(self, mock_isfile):
+    def test_serve_image_file(self, mock_isfile, mock_isdir):
         """Image files are served natively by the manage_docs view."""
         mock_isfile.return_value = True
+        mock_isdir.return_value = False
         self.client.login(username='docstestadmin', password=self.password)
         # Mock open so it doesn't crash trying to open a fake image
         from unittest.mock import mock_open
