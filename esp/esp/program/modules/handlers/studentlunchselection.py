@@ -61,7 +61,7 @@ class StudentLunchSelectionForm(forms.Form):
         self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
 
     def load_data(self):
-        lunch_registrations = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__category='Lunch', section__parent_class__parent_program=self.program).select_related('section').prefetch_related('section__meeting_times')
+        lunch_registrations = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__category__iexact='Lunch', section__parent_class__parent_program=self.program).select_related('section').prefetch_related('section__meeting_times')
         lunch_registrations = [lunch_registration for lunch_registration in lunch_registrations if list(lunch_registration.section.meeting_times.all())[0].start.day == self.day.day]
         if len(lunch_registrations) > 0:
             section = lunch_registrations[0].section
@@ -74,13 +74,13 @@ class StudentLunchSelectionForm(forms.Form):
 
         #   Clear existing lunch periods for this day
         for section in self.user.getSections(self.program):
-            if section.parent_class.category.category == 'Lunch':
+            if section.parent_class.category.is_lunch:
                 if section.get_meeting_times()[0].start.day == self.day.day:
                     section.unpreregister_student(self.user)
 
         #   Attempt to sign up for a new lunch period if specified
         if int(self.cleaned_data['timeslot']) != -1:
-            sections = list(ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category__category='Lunch', meeting_times=self.cleaned_data['timeslot']))
+            sections = list(ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category__category__iexact='Lunch', meeting_times=self.cleaned_data['timeslot']))
             if len(sections) > 0:
                 ca_msg = sections[0].cannotAdd(self.user, ignore_constraints=True)
                 if ca_msg:
