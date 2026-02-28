@@ -80,6 +80,8 @@ MIDDLEWARE_LOCAL = []
 DATABASE_NAME = 'test_django'
 DATABASE_USER = 'testuser'
 DATABASE_PASSWORD = 'testpassword'
+DATABASE_HOST = '127.0.0.1'
+DATABASE_PORT = '5432'
 
 ############
 # Selenium #
