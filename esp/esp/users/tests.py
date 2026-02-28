@@ -26,10 +26,6 @@ from esp.users.models import (
     RecordType,
     PersistentQueryFilter,
 )
-import six
-from six.moves import map
-from six.moves import filter
-
 class ESPUserTest(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
