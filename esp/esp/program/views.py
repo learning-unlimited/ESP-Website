@@ -127,11 +127,11 @@ def _rst_to_html(rst_text):
         },
     )
     raw_html = parts['body']
-    
+
     # Sanitize using bleach to prevent XSS (CodeQL robustness)
     allowed_tags = [
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'img', 'ul', 'ol', 'li', 
-        'strong', 'em', 'code', 'pre', 'blockquote', 'table', 'tr', 'td', 'th', 
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'img', 'ul', 'ol', 'li',
+        'strong', 'em', 'code', 'pre', 'blockquote', 'table', 'tr', 'td', 'th',
         'tbody', 'thead', 'span', 'div', 'br', 'hr', 'dl', 'dt', 'dd'
     ]
     allowed_attributes = {
@@ -140,7 +140,7 @@ def _rst_to_html(rst_text):
         'img': ['src', 'alt', 'width', 'height'],
     }
     allowed_protocols = ['http', 'https', 'mailto', 'data']
-    
+
     return bleach.clean(
         raw_html,
         tags=allowed_tags,
@@ -157,7 +157,7 @@ def _docs_nav():
         try:
             with open(fpath, 'r', encoding='utf-8') as f:
                 rst_text = f.read()
-                
+
             from docutils.core import publish_doctree
             # Disable file insertion during parsing for safety
             doctree = publish_doctree(
@@ -180,7 +180,7 @@ def _docs_nav():
         filenames = sorted(os.listdir(DOCS_ADMIN_ROOT))
     except OSError:
         return nav
-        
+
     for fname in filenames:
         if not fname.endswith('.rst'):
             continue
@@ -234,7 +234,7 @@ def _latest_release():
     # Truncate to give a preview (skip table of contents, stop at Changelog or after 15 lines)
     preview_lines = []
     skip_contents = False
-    
+
     for i, line in enumerate(lines):
         if line.startswith('.. contents::'):
             skip_contents = True
@@ -243,7 +243,7 @@ def _latest_release():
             continue
         else:
             skip_contents = False
-            
+
         if line.startswith('Changelog') or len(preview_lines) >= 15:
             break
         preview_lines.append(line)
@@ -1340,7 +1340,7 @@ def manage_docs(request, doc_path=None):
             raise Http404
         if not os.path.isfile(requested):
             raise Http404
-            
+
         # If the requested file is not RST (e.g., an image), serve it directly
         if not requested.endswith('.rst'):
             content_type, _ = mimetypes.guess_type(requested)
@@ -1351,7 +1351,7 @@ def manage_docs(request, doc_path=None):
                     return HttpResponse(f.read(), content_type=content_type)
             except OSError:
                 raise Http404
-                
+
         # Parse RST normally
         try:
             with open(requested, 'r', encoding='utf-8') as f:
