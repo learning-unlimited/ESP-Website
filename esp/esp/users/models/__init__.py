@@ -51,6 +51,9 @@ from localflavor.us.forms import USStateSelect
 
 from django.contrib.sites.models import Site
 from django.core.cache import cache
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+import re
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import signals, Min
@@ -138,6 +141,31 @@ class UserAvailability(models.Model):
     def get_absolute_url(self):
         return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
 
+    
+# Clear all DBListCount cache keys
+def clear_dblistcount_cache():
+    """
+    Remove all cache keys that start with 'DBListCount:'.
+    """
+    try:
+        # LocMemCache backend
+        cache_dict = cache._cache
+        keys_to_delete = [k for k in cache_dict if k.startswith('DBListCount:')]
+        for k in keys_to_delete:
+            cache.delete(k)
+    except AttributeError:
+        # For other backends, use a regex delete if supported, or do nothing.
+        try:
+            cache.delete_pattern('DBListCount:*')
+        except AttributeError:
+            pass
+
+
+# Invalidate DBListCount cache on ESPUser changes
+@receiver(post_save, sender=ESPUser)
+@receiver(post_delete, sender=ESPUser)
+def invalidate_dblistcount_cache(sender, **kwargs):
+    clear_dblistcount_cache()
 
 class ESPUserManager(UserManager):
     pass

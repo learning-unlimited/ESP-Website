@@ -2165,12 +2165,6 @@ class ClassCategories(models.Model):
     symbol = models.CharField(max_length=1, default='Z', blank=False, help_text='A single letter to represent the category', validators = [RegexValidator(r'^[A-Za-z]{1}', 'Must be a single letter.')])
     seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
 
-
-    @property
-    def is_lunch(self):
-        """Return True if this category is Lunch (case-insensitive)."""
-        return self.category.strip().lower() == "lunch"
-
     def used_by_classes(self):
         return ClassSubject.objects.filter(category=self).exists()
 
