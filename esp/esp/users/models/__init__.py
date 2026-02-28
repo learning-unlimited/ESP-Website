@@ -1642,7 +1642,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     pronoun = models.CharField(max_length=50, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     affiliation = models.CharField(max_length=100, blank=True)
-    from_here = models.BooleanField(null=True)
+    from_here = models.BooleanField(blank=True, null=True)
     is_graduate_student = models.BooleanField(blank=True, null=True)
     college = models.CharField(max_length=128, blank=True, null=True)
     major = models.CharField(max_length=32, blank=True, null=True)
