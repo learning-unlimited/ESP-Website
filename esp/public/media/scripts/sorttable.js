@@ -245,6 +245,9 @@ var sorttable = {
 	/** @this {Element} */
 	innerSortFunction: function(e) {
 		var table = this.parentNode.parentNode.parentNode;
+		// Skip sort while attendance AJAX is in progress (fixes #3394 / #3395)
+		if (table.className && /\bsorttable-busy\b/.test(table.className))
+			return;
 		if (!table.tBodies.length)
 			return;
 		var sorted = (this.className.indexOf(sorttable.CLASS_SORT[0]) != -1);

@@ -80,6 +80,7 @@ Please select a section from the dropdown below.
 <tr>
     <td style="padding: 0px;">
         <table align="center" width="100%" class="sortable" style="border: none;">
+            <thead>
             <tr>
                 <th width="5%" class="sorttable_nosort">#</th>
         {% if "student_profile_pronoun_field"|getBooleanTag %}
@@ -96,6 +97,8 @@ Please select a section from the dropdown below.
                 <th width="10%">Checked In?</th>
                 <th width="10%">Attending Section?</th>
             </tr>
+            </thead>
+            <tbody>
                 {% for student in section.enrolled_list %}
                     <tr>
                         <th class="small sorttable_nosort">{{ forloop.counter }}</th>
