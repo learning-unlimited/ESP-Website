@@ -181,7 +181,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.clearScheduleAvailability()
 
         (section, times, rooms, success) = self.program_manager.scheduleClass()
-        self.failUnless(success)
+        self.assertTrue(success)
 
         self.program_manager.unschedule_class(section.id)
 
@@ -195,7 +195,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         #change log should not include failed scheduling of classes
         self.clearScheduleAvailability()
         (s1, times, rooms, success) = self.program_manager.scheduleClass()
-        self.failUnless(success)
+        self.assertTrue(success)
 
         #Long setup to create an unsuccessful scheduling attempt
         #choose another section taught by the same teacher
@@ -206,7 +206,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         s2 = sections[0]
         #schedule it
         (section, times, rooms, success) = self.program_manager.scheduleClass(section=s2, timeslots=times, rooms=rooms)
-        self.failIf(success)
+        self.assertFalse(success)
 
         #change log should not include it
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 1 })
