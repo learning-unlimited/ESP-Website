@@ -254,8 +254,8 @@ class JavascriptSyntaxTest(TestCase):
             if display: logger.info('Closure compiler not found.  Checked CLOSURE_COMPILER_PATH ="%s"', closure_path)
             return
 
-        closure_output_code = tempfile.gettempdir() + '/closure_output.js'
-        closure_output_file = tempfile.gettempdir() + 'closure.out'
+        closure_output_code = os.path.join(tempfile.gettempdir(), 'closure_output.js')
+        closure_output_file = os.path.join(tempfile.gettempdir(), 'closure.out')
 
         base_path = settings.MEDIA_ROOT + 'scripts/'
         exclude_names = ['yui', 'extjs', 'jquery', 'showdown']

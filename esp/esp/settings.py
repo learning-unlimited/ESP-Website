@@ -238,8 +238,12 @@ if 'CACHES' not in locals():
 MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 
 # set tempdir so that we don't have to worry about collision
+# Use a per-UID subdirectory so that different OS users (e.g. www-data vs the
+# developer running tests) each get their own directory.  This prevents the
+# [Errno 13] Permission denied failures described in issue #234 that occurred
+# when runserver (owned by www-data) created the shared tempdir first.
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
-    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX)
+    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(os.getuid()))
     if not os.path.exists(tempdir):
         os.makedirs(tempdir)
     tempfile.tempdir = tempdir
