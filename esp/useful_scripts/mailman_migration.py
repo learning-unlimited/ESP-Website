@@ -12,8 +12,6 @@ corresponds to an active user on the website, and all associated user accounts
 are active, we add it to mailman.
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import *
 from esp import mailman
 from esp.users.models import ESPUser

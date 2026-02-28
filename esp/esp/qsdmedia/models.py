@@ -1,8 +1,5 @@
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -120,10 +117,10 @@ class Media(models.Model):
         if os.path.isfile(self.get_uploaded_filename()):
             os.remove(self.get_uploaded_filename())
 
-        super(Media, self).delete(*args, **kwargs)
+        super().delete(*args, **kwargs)
 
     def rename(self, new_name):
         self.friendly_name = new_name
 
     def __str__(self):
-        return six.text_type(self.friendly_name)
+        return str(self.friendly_name)

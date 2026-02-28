@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.program.models import ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline, needs_admin, aux_call
 from esp.program.modules.forms.moderate import ModeratorForm

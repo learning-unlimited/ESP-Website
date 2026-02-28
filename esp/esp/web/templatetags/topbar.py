@@ -1,9 +1,8 @@
-from __future__ import absolute_import
 from django.conf import settings
 from django import template
 from django.core.cache import cache
 from esp.users.models import ESPUser, AnonymousUser
-from six.moves.urllib.parse import quote as urlencode
+from urllib.parse import quote as urlencode
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 register = template.Library()
 
@@ -144,6 +143,5 @@ sections = {'discoveresp'      : ('about',      'Discover ESP',        '/about/i
 
 known_navlinks = ['about', 'learn', 'teach', 'getinvolved', 'archives', 'myesp', 'contactinfo']
 basic_navlinks = ['discoveresp', 'takeaclass', 'volunteertoteach', 'getinvolved', 'archivesresources', 'myesp', 'contactinfo']
-
 
 

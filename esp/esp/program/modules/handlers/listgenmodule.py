@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -275,7 +273,6 @@ class UserAttributeGetter(object):
         else:
             return None
 
-
 class ListGenForm(forms.Form):
     attr_choices = list(UserAttributeGetter.getFunctions().items())
     attr_choices.sort(key=lambda x: x[0])
@@ -286,7 +283,7 @@ class ListGenForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         usertype = kwargs.pop('usertype', 'any')
-        super(ListGenForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         #   If we have a specific recipient user type,
         #   filter to only the fields that are relevant to that user type
         if usertype != 'combo':
