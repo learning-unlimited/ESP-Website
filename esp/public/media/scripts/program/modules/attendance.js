@@ -50,7 +50,6 @@ $j(function(){
         var $checkedin = $me.closest("tr").find("[name=checkedin]");
         var $table = $me.closest("table.sortable");
         $me.prop('disabled', true);
-        // Prevent sorting during AJAX so checkboxes stay aligned with rows (#3394, #3395)
         $table.addClass('sorttable-busy');
         markAttendance(username, secid, !checked, function(response) {
             if (response.error) {
