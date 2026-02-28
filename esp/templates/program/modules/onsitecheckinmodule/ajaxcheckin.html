@@ -31,12 +31,15 @@ table {
 Welcome to student check-in for {{program.niceName}}.  Make sure that the students have handed in all necessary forms and payments.
 </p>
 
+<p style="margin: 10px 10px 20px 10px;">
+    <a href="/onsite/{{ program.url }}/barcodecheckin" class="button" style="text-decoration: none; font-size: 1.1em; padding: 10px 20px;">
+        Barcode Checkin
+    </a>
+</p>
+
 <table style="margin-bottom: 20px;">
-    <col width="85%">
-    <col width="15%">
     <tr>
         <th>Filters</th>
-        <th>Quick Links</th>
     </tr>
     <tr>
         <td style="padding: 10px;">
@@ -58,11 +61,6 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
                 <option value="H-N">H - N</option>
                 <option value="O-Z">O - Z</option>
             </select>
-        </td>
-        <td align="center" style="vertical-align: middle;">
-            <a href="/onsite/{{ program.url }}/barcodecheckin" class="button" style="text-decoration: none;">
-                Barcode Checkin
-            </a>
         </td>
     </tr>
 </table>
