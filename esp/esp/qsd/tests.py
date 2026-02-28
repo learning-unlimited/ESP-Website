@@ -38,6 +38,7 @@ from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 
 from django.template import Template, Context
+from django.urls import reverse
 
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
@@ -168,7 +169,6 @@ class QSDImageUploadTest(TestCase):
 
     def _make_image_file(self, name='test.png', size=100, content_type='image/png'):
         """Create a minimal in-memory image file for upload testing."""
-        from io import BytesIO
         from django.core.files.uploadedfile import SimpleUploadedFile
         # Minimal valid 1x1 PNG (67 bytes)
         png_header = (
@@ -236,7 +236,7 @@ class QSDImageUploadTest(TestCase):
         import json
         data = json.loads(response.content)
         self.assertFalse(data['success'])
-        self.assertIn('.exe', data['data']['messages'][0])
+        self.assertIn('Invalid file type', data['data']['messages'][0])
 
     def test_upload_rejects_non_image_content_type(self):
         """Files with non-image content type are rejected."""
@@ -258,7 +258,19 @@ class QSDImageUploadTest(TestCase):
         import json
         data = json.loads(response.content)
         self.assertFalse(data['success'])
-        self.assertIn('size limit', data['data']['messages'][0])
+        self.assertIn('Total upload size', data['data']['messages'][0])
+
+    def test_upload_rejects_oversized_combined_files(self):
+        """Combined filesize exceeding 25MB are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f1 = self._make_image_file(name='test1.png', size=15 * 1024 * 1024)  # 15 MB
+        f2 = self._make_image_file(name='test2.png', size=15 * 1024 * 1024)  # 15 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f1, 'files[1]': f2})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('Total upload size', data['data']['messages'][0])
 
     def test_upload_valid_png(self):
         """A valid PNG upload succeeds and returns correct JSON."""
@@ -452,3 +464,63 @@ class QSDBase64StrippingTest(TestCase):
         })
         qsd_rec.refresh_from_db()
         self.assertIn('/media/uploaded/qsd_images/abc123.png', qsd_rec.content)
+
+
+class QSDAdminAuthorTest(TestCase):
+
+    def setUp(self):
+        # Create two superusers
+        self.user1 = ESPUser.objects.create_superuser(
+            username="user1",
+            email="user1@test.com",
+            password="password123"
+        )
+        self.user2 = ESPUser.objects.create_superuser(
+            username="user2",
+            email="user2@test.com",
+            password="password123"
+        )
+
+        self.nav_category = NavBarCategory.objects.create(
+            name="default"
+        )
+
+        # Create initial QSD object with all required fields
+        self.qsd = QuasiStaticData.objects.create(
+            title="Test QSD",
+            name="test_qsd",
+            url="test-url",
+            content="Test content",
+            author=self.user1,
+            nav_category=self.nav_category,
+        )
+
+    def test_admin_updates_author_on_edit(self):
+        self.client.login(username="user2", password="password123")
+
+        url = reverse(
+                "admin:qsd_quasistaticdata_change",
+                args=[self.qsd.pk]
+        )
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        # Build clean POST data manually
+        form_data = {
+            "title": "Updated Title",
+            "name": self.qsd.name,
+            "url": self.qsd.url,
+            "content": self.qsd.content,
+            "nav_category": self.nav_category.pk,
+            "disabled": self.qsd.disabled,
+            "_save": "Save",
+        }
+
+        response = self.client.post(url, form_data)
+
+        # Must redirect on success
+        self.assertEqual(response.status_code, 302)
+
+        self.qsd.refresh_from_db()
+        self.assertEqual(self.qsd.author, self.user2)

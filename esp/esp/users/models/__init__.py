@@ -624,6 +624,7 @@ class BaseESPUser(object):
             other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections if sec not in ignore_sections]
             for lst in other_times:
                 valid_events = valid_events.exclude(id__in=lst)
+
         if not ignore_moderation:
             #   Subtract out the times that they are moderating
             moderating_sections = self.getModeratingSectionsFromProgram(program)
@@ -636,8 +637,8 @@ class BaseESPUser(object):
     getAvailableTimes.depend_on_cache(getTaughtSectionsFromProgram,
             lambda self=wildcard, program=wildcard, **kwargs:
                  {'self':self, 'program':program, 'ignore_classes':True})
-    # FIXME: Really should take into account section's teachers...
-    # even though that shouldn't change often
+    getAvailableTimes.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher, 'program': cls.parent_program})
+    getAvailableTimes.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator, 'program': sec.parent_program})
     getAvailableTimes.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'program': sec.parent_program})
     getAvailableTimes.depend_on_m2m('program.Program', 'program_modules', lambda prog, pm: {'program': prog})
     getAvailableTimes.depend_on_row('users.UserAvailability', lambda ua:
