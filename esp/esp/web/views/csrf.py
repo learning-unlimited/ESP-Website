@@ -1,15 +1,15 @@
-import re
-
-from django.http import HttpResponseForbidden
-from django.template import Context, Template
+import re , logging
+from typing import Optional,Tyoe
 from django.conf import settings
+from django.http import HttpRequest, HttpResponseForbidden
+from django.middleware.csrf import REASON_NO_REFERRER
 from django.views.csrf import csrf_failure as django_csrf_failure
-
-def csrf_failure(request, reason=""):
+logger = logging.getLogger(__name__)
+def csrf_failure(request: HttpRequest,reason: str="")
     """
     View used when request fails CSRF protection
     """
-    from django.middleware.csrf import REASON_NO_REFERER
+
     c = {'DEBUG': settings.DEBUG and request.user.isAdministrator(),
          'reason': reason,
          'no_referer': reason == REASON_NO_REFERER
