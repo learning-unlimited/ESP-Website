@@ -1683,19 +1683,20 @@ class ManageDocsViewTest(TestCase):
     def test_index_redirects_anonymous(self):
         """Anonymous user is redirected away from /manage/docs."""
         response = self.client.get('/manage/docs')
-        self.assertIn(response.status_code, [302, 403])
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response['Location'].startswith('/accounts/login/'))
 
     def test_path_traversal_blocked(self):
         """Attempts to traverse outside DOCS_ADMIN_ROOT return 404."""
         self.client.login(username='docstestadmin', password=self.password)
         response = self.client.get('/manage/docs/../../../etc/passwd.rst')
-        self.assertIn(response.status_code, [301, 302, 404])
+        self.assertEqual(response.status_code, 404)
 
     def test_path_with_dotdot_blocked(self):
         """doc_path containing '..' is rejected with 404."""
         self.client.login(username='docstestadmin', password=self.password)
         response = self.client.get('/manage/docs/..%2F..%2Fetc%2Fpasswd.rst')
-        self.assertIn(response.status_code, [301, 302, 404])
+        self.assertEqual(response.status_code, 404)
 
     def test_rst_to_html_basic(self):
         """_rst_to_html converts RST text to a non-empty HTML fragment."""
@@ -1710,3 +1711,16 @@ class ManageDocsViewTest(TestCase):
         html = _rst_to_html('This is a paragraph.\n')
         self.assertIn('<p>', html)
         self.assertIn('This is a paragraph.', html)
+
+    @patch('esp.program.views.os.path.isfile')
+    def test_serve_image_file(self, mock_isfile):
+        """Image files are served natively by the manage_docs view."""
+        mock_isfile.return_value = True
+        self.client.login(username='docstestadmin', password=self.password)
+        # Mock open so it doesn't crash trying to open a fake image
+        from unittest.mock import mock_open
+        with patch('esp.program.views.open', mock_open(read_data=b'fakeimage')) as m:
+            response = self.client.get('/manage/docs/test_image.png')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'image/png')
+            self.assertEqual(response.content, b'fakeimage')

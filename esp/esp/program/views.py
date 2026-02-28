@@ -110,9 +110,12 @@ DOCS_ADMIN_ROOT = os.path.normpath(
     os.path.join(_THIS_DIR, '..', '..', '..', 'docs', 'admin')
 )
 
+import bleach
+import mimetypes
+
 
 def _rst_to_html(rst_text):
-    """Convert a reStructuredText string to an HTML body fragment."""
+    """Convert a reStructuredText string to an HTML body fragment safely."""
     parts = publish_parts(
         source=rst_text,
         writer_name='html',
@@ -123,7 +126,27 @@ def _rst_to_html(rst_text):
             'raw_enabled': False,
         },
     )
-    return parts['body']
+    raw_html = parts['body']
+    
+    # Sanitize using bleach to prevent XSS (CodeQL robustness)
+    allowed_tags = [
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'img', 'ul', 'ol', 'li', 
+        'strong', 'em', 'code', 'pre', 'blockquote', 'table', 'tr', 'td', 'th', 
+        'tbody', 'thead', 'span', 'div', 'br', 'hr', 'dl', 'dt', 'dd'
+    ]
+    allowed_attributes = {
+        '*': ['class', 'id', 'title'],
+        'a': ['href', 'target'],
+        'img': ['src', 'alt', 'width', 'height'],
+    }
+    allowed_protocols = ['http', 'https', 'mailto', 'data']
+    
+    return bleach.clean(
+        raw_html,
+        tags=allowed_tags,
+        attributes=allowed_attributes,
+        protocols=allowed_protocols
+    )
 
 
 def _docs_nav():
@@ -133,32 +156,32 @@ def _docs_nav():
         """Return the RST document title from a file, or None."""
         try:
             with open(fpath, 'r', encoding='utf-8') as f:
-                lines = [l.rstrip() for l in f.readlines()]
-        except OSError:
+                rst_text = f.read()
+                
+            from docutils.core import publish_doctree
+            # Disable file insertion during parsing for safety
+            doctree = publish_doctree(
+                source=rst_text,
+                settings_overrides={'file_insertion_enabled': False, 'raw_enabled': False}
+            )
+            if doctree.get('title'):
+                return doctree['title']
+            # Fallback to the first text element
+            elif len(doctree.children) > 0 and hasattr(doctree.children[0], 'astext'):
+                text = doctree.children[0].astext().split('\n')[0]
+                if len(text) < 100:
+                    return text
             return None
-        deco = set('=-~^+`:#\'\"!$%&()*,./;<>?@[\\]_{|}')
-        for i, line in enumerate(lines):
-            if not line:
-                continue
-            stripped = line.strip()
-            is_deco = stripped and all(c in deco for c in stripped)
-            if is_deco:
-                # Could be an overline before the title
-                if i + 2 < len(lines):
-                    candidate = lines[i + 1].strip()
-                    underline = lines[i + 2].strip()
-                    if candidate and all(c in deco for c in underline) and len(underline) >= len(candidate):
-                        return candidate
-                continue
-            # Not a decoration line: check if next line is an underline
-            if i + 1 < len(lines):
-                nxt = lines[i + 1].strip()
-                if nxt and all(c in deco for c in nxt) and len(nxt) >= len(stripped):
-                    return stripped
-        return None
+        except Exception:
+            return None
 
     nav = []
-    for fname in sorted(os.listdir(DOCS_ADMIN_ROOT)):
+    try:
+        filenames = sorted(os.listdir(DOCS_ADMIN_ROOT))
+    except OSError:
+        return nav
+        
+    for fname in filenames:
         if not fname.endswith('.rst'):
             continue
         # Skip the admin README — the index page serves as the overview
@@ -208,15 +231,25 @@ def _latest_release():
             label = line.strip()
             break
 
-    # Truncate to give a preview (stop at Changelog or after 15 lines)
+    # Truncate to give a preview (skip table of contents, stop at Changelog or after 15 lines)
     preview_lines = []
+    skip_contents = False
+    
     for i, line in enumerate(lines):
-        if line.startswith('Changelog') or i >= 15:
+        if line.startswith('.. contents::'):
+            skip_contents = True
+            continue
+        if skip_contents and line.startswith('      '): # skip indented TOC items
+            continue
+        else:
+            skip_contents = False
+            
+        if line.startswith('Changelog') or len(preview_lines) >= 15:
             break
         preview_lines.append(line)
 
     preview_lines.append("")
-    preview_lines.append("`\u2192 Read the full %s release notes </manage/docs/releases/README.rst>`__" % label)
+    preview_lines.append("`\u2192 Read the full %s </manage/docs/releases/%s/README.rst>`__" % (label, latest))
 
     return label, _rst_to_html("\n".join(preview_lines))
 
@@ -1291,7 +1324,7 @@ def template_preview(request):
 @admin_required
 def manage_docs(request, doc_path=None):
     """Render admin documentation pages embedded within the website."""
-    from django.http import Http404
+    from django.http import Http404, HttpResponse
 
     doc_html = None
     doc_title = 'Admin Documentation'
@@ -1307,6 +1340,19 @@ def manage_docs(request, doc_path=None):
             raise Http404
         if not os.path.isfile(requested):
             raise Http404
+            
+        # If the requested file is not RST (e.g., an image), serve it directly
+        if not requested.endswith('.rst'):
+            content_type, _ = mimetypes.guess_type(requested)
+            if not content_type:
+                content_type = 'application/octet-stream'
+            try:
+                with open(requested, 'rb') as f:
+                    return HttpResponse(f.read(), content_type=content_type)
+            except OSError:
+                raise Http404
+                
+        # Parse RST normally
         try:
             with open(requested, 'r', encoding='utf-8') as f:
                 rst_text = f.read()
