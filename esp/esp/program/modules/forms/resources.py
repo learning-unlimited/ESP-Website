@@ -19,6 +19,7 @@ class TimeslotForm(forms.Form):
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     openclass = forms.BooleanField(required=False, label='Open Class Timeslot', help_text="Check this if the timeslot should be used for open classes only. If in doubt, don't check this.")
+    compulsory = forms.BooleanField(required=False, label='Compulsory Timeslot', help_text="Check this if the timeslot should be compulsory for all students.")
     group = forms.IntegerField(required=False, label='Group')
 
     def __init__(self, *args, **kwargs):
@@ -42,6 +43,7 @@ class TimeslotForm(forms.Form):
         self.fields['hours'].initial = int(length // 3600)
         self.fields['minutes'].initial = int(length // 60 - 60 * self.fields['hours'].initial)
         self.fields['group'].initial = slot.group
+        self.fields['compulsory'].initial = (slot.event_type == EventType.get_from_desc("Compulsory"))
 
     def save_timeslot(self, program, slot):
         slot.short_description = self.cleaned_data['name']
@@ -50,6 +52,8 @@ class TimeslotForm(forms.Form):
         slot.end = slot.start + timedelta(hours=self.cleaned_data['hours'], minutes=self.cleaned_data['minutes'])
         if self.cleaned_data['openclass']:
             slot.event_type = EventType.get_from_desc("Open Class Time Block")
+        elif self.cleaned_data['compulsory']:
+            slot.event_type = EventType.get_from_desc("Compulsory")
         else:
             slot.event_type = EventType.get_from_desc("Class Time Block")    # default event type for now
         slot.group = self.cleaned_data['group']
