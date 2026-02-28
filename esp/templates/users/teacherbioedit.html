@@ -13,8 +13,8 @@
 
 .required { border: 2px solid black; }
 
+
 .form_error { font-size: 80%; font-style: italic; color: #C00; }
-.form_error:before { content: "Error: "; }
 
 label { font-family: Arial, Lucida, Helvetica, sans-serif; font-size: 0.8em; font-weight: normal;}
 label.groupheader { font-size: 1.2em; font-weight: bold; }
@@ -52,7 +52,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
  <td><label for="id_slugbio">Description of you in 50 characters or less:<br />
        <small>(e.g. "{{ institution }} sophomore studying Architecture." or "Aspiring teacher of high school mathematics.")</small></label></td>
  <td>{{ form.slugbio }} {% if form.slugbio.errors %}
-   <br /><span class="form_error" role="alert">{{ form.slugbio.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">Error: {{ form.slugbio.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -62,7 +62,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
  </label></td>
 
  <td>{{ form.bio }} {% if form.bio.errors %}
-   <br /><span class="form_error" role="alert">{{ form.bio.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">Error: {{ form.bio.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -75,7 +75,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
      <img src="/media/{{ picture_file}}" title="Your current photo." alt="Your current photo" />
      {% endif %}
      {% if form.picture.errors %}
-   <br /><span class="form_error" role="alert">{{ form.picture.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">Error: {{ form.picture.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
