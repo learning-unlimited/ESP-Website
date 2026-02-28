@@ -149,31 +149,32 @@ def _rst_to_html(rst_text):
     )
 
 
+def _extract_rst_title(fpath):
+    """Return the RST document title from a file, or None."""
+    try:
+        with open(fpath, 'r', encoding='utf-8') as f:
+            rst_text = f.read()
+            
+        from docutils.core import publish_doctree
+        # Disable file insertion during parsing for safety
+        doctree = publish_doctree(
+            source=rst_text,
+            settings_overrides={'file_insertion_enabled': False, 'raw_enabled': False}
+        )
+        if doctree.get('title'):
+            return doctree['title']
+        # Fallback to the first text element
+        elif len(doctree.children) > 0 and hasattr(doctree.children[0], 'astext'):
+            text = doctree.children[0].astext().split('\n')[0]
+            if len(text) < 100:
+                return text
+        return None
+    except Exception:
+        return None
+
+
 def _docs_nav():
     """Return a list of {'title', 'url_path'} dicts for the docs sidebar."""
-
-    def _extract_rst_title(fpath):
-        """Return the RST document title from a file, or None."""
-        try:
-            with open(fpath, 'r', encoding='utf-8') as f:
-                rst_text = f.read()
-
-            from docutils.core import publish_doctree
-            # Disable file insertion during parsing for safety
-            doctree = publish_doctree(
-                source=rst_text,
-                settings_overrides={'file_insertion_enabled': False, 'raw_enabled': False}
-            )
-            if doctree.get('title'):
-                return doctree['title']
-            # Fallback to the first text element
-            elif len(doctree.children) > 0 and hasattr(doctree.children[0], 'astext'):
-                text = doctree.children[0].astext().split('\n')[0]
-                if len(text) < 100:
-                    return text
-            return None
-        except Exception:
-            return None
 
     nav = []
     try:
@@ -1359,12 +1360,9 @@ def manage_docs(request, doc_path=None):
         except OSError:
             raise Http404
         doc_html = _rst_to_html(rst_text)
-        # Use the first non-decoration line as the page title
-        for line in rst_text.splitlines():
-            line = line.strip()
-            if line and not set(line).issubset(set('=-~^')):
-                doc_title = line
-                break
+        
+        # Consistent title extraction using our helper
+        doc_title = _extract_rst_title(requested) or 'Admin Documentation'
 
     latest_release_label, latest_release_html = _latest_release()
 
