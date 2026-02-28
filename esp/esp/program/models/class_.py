@@ -550,7 +550,7 @@ class ClassSection(models.Model):
         meeting_times = self.get_meeting_times()
         if not meeting_times:
             return ""
-            
+
         meeting_times = sorted(meeting_times, key=lambda mt: mt.start)
         mt = meeting_times[0]
         start = mt.start.strftime('%Y%m%dT%H%M%SZ')
