@@ -10,7 +10,6 @@ a consistency check unless there are bugs in the code.
 import logging
 
 from esp.program.controllers.autoscheduler import util
-import six
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +30,7 @@ class ConsistencyChecker:
         which are named check_[something]_consistency."""
         for attr in dir(self):
             if attr.startswith("check_") and attr.endswith("_consistency"):
-                logger.info(f"Running: {attr}")
+                logger.info("Running: {}".format(attr))
                 getattr(self, attr)(schedule)
 
     def check_availability_dict_consistency(self, schedule):
@@ -54,8 +53,8 @@ class ConsistencyChecker:
                     raise ConsistencyError(
                         ("Teacher availability dict key/value mismatch for "
                          "teacher {}").format(teacher.id))
-            if {t.id for t in teacher.availability} != {
-                    t.id for t in teacher.availability_dict.values()}:
+            if set(t.id for t in teacher.availability) != set(
+                    t.id for t in teacher.availability_dict.values()):
                 raise ConsistencyError(
                     "Teacher {} availability list and dict don't match"
                     .format(teacher.id))

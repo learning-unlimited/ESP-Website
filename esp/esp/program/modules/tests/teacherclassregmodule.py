@@ -195,7 +195,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.delete_resource_request(sec, new_res_type1)
         self.assertTrue(not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
 
-
     def check_all_teachers(self, all_teachers):
         teaching_teachers = [teacher for teacher in self.teachers
                                      if len(teacher.getTaughtClasses()) > 0]

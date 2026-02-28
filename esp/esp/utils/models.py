@@ -1,5 +1,4 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -41,6 +40,7 @@ from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey
 
 """ A template override model that stores the contents of a template in the database. """
+@python_2_unicode_compatible
 class TemplateOverride(models.Model):
 
     name = models.CharField(max_length=255, help_text='The filename (relative path) of the template to override.')
@@ -63,11 +63,12 @@ class TemplateOverride(models.Model):
     def save(self, *args, **kwargs):
         #   Never overwrite; save a new copy with the version incremented.
         self.version = self.next_version()
-        super(TemplateOverride, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def get_absolute_url(self):
         return "/manage/templateoverride/" + str(self.id)
 
+@python_2_unicode_compatible
 class Printer(models.Model):
     name = models.CharField(max_length=255, help_text='Name to display in onsite interface')
     printer_type = models.CharField(max_length=255, blank=True)

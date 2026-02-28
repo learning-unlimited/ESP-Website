@@ -40,7 +40,6 @@ from django_selenium.testcases import SeleniumTestCase
 import random
 import json
 import logging
-import six
 
 logger = logging.getLogger(__name__)
 

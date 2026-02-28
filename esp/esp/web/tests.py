@@ -1,6 +1,4 @@
-from __future__ import absolute_import
 from io import open
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -39,8 +37,12 @@ from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
 from esp.program.tests import ProgramFrameworkTest  ## Really should find somewhere else to put this...
 from django.test.client import Client
 from django.conf import settings
+from django.test import RequestFactory
+from django.contrib.auth.models import User
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.utils.models import TemplateOverride
+from esp.web.admin import NavBarCategoryAdmin
+from esp.admin import admin_site
 
 import difflib
 import logging
@@ -73,8 +75,8 @@ class PageTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Make sure that we've gotten an HTML document, and not a Django error
-        self.assertStringContains(six.text_type(response.content, encoding='UTF-8'), "<html")
-        self.assertNotStringContains(six.text_type(response.content, encoding='UTF-8'), "You're seeing this error because you have <code>DEBUG = True</code>")
+        self.assertStringContains(str(response.content, encoding='UTF-8'), "<html")
+        self.assertNotStringContains(str(response.content, encoding='UTF-8'), "You're seeing this error because you have <code>DEBUG = True</code>")
 
 class NavbarTest(TestCase):
 
@@ -82,7 +84,7 @@ class NavbarTest(TestCase):
         response = self.client.get(path)
 
         navbaritem_re = re.compile(r'<li class="divsecondarynavlink (?:indent)?">\s+(.*)\s+</li>')
-        re_results = re.findall(navbaritem_re, six.text_type(response.content, encoding='UTF-8'))
+        re_results = re.findall(navbaritem_re, str(response.content, encoding='UTF-8'))
         return re_results
 
     def navbars_enabled(self):
@@ -122,6 +124,59 @@ class NavbarTest(TestCase):
         n1.save()
         self.assertTrue(self.get_navbar_titles('/') == ['NavBar2', 'NavBar1A'], 'Altered navbar order not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar2', 'NavBar1A']))
 
+
+class NavBarAdminDeletionTest(TestCase):
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+        # Create superuser
+        self.user = User.objects.create_superuser(
+            username="admin",
+            email="admin@test.com",
+            password="password"
+        )
+
+        # Ensure default category exists
+        self.default_category = NavBarCategory.objects.create(
+            name="default",
+            long_explanation="Default category"
+        )
+
+        self.admin = NavBarCategoryAdmin(NavBarCategory, admin_site)
+
+    def test_default_category_cannot_be_deleted(self):
+        request = self.factory.get("/")
+        request.user = self.user
+
+        has_permission = self.admin.has_delete_permission(
+            request,
+            obj=self.default_category
+        )
+
+        self.assertFalse(
+            has_permission,
+            '"default" nav category should not be deletable.'
+        )
+
+    def test_non_default_category_can_be_deleted(self):
+        other = NavBarCategory.objects.create(
+            name="home",
+            long_explanation="Home category"
+        )
+
+        request = self.factory.get("/")
+        request.user = self.user
+
+        has_permission = self.admin.has_delete_permission(
+            request,
+            obj=other
+        )
+
+        self.assertTrue(
+            has_permission,
+            'Non-default nav category should be deletable.'
+        )
 
 class NoVaryOnCookieTest(ProgramFrameworkTest):
     """
@@ -169,7 +224,7 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
         self.assertEqual("\n".join(difflib.context_diff(logged_out_content.split("\n"), logged_in_content.split("\n"))), "")
 
     def setUp(self):
-        super(NoVaryOnCookieTest, self).setUp()
+        super().setUp()
 
         #   Create a QSD page associated with the program
         from esp.qsd.models import QuasiStaticData

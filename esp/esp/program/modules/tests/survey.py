@@ -1,4 +1,3 @@
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -90,7 +89,7 @@ class SurveyTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Question1', str(response.content, encoding='UTF-8'))
         #   Check the section-specific survey
-        response = self.client.get('/learn/{}/survey?sec={}'.format(self.program.url, sec.id))
+        response = self.client.get('/learn/%s/survey?sec=%s' % (self.program.url, sec.id))
         self.assertEqual(response.status_code, 200)
         self.assertIn('Question2', str(response.content, encoding='UTF-8'))
         self.assertIn('Question3', str(response.content, encoding='UTF-8'))

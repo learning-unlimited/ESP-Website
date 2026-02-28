@@ -11,12 +11,11 @@ from esp.program.controllers.autoscheduler import \
     db_interface, constraints, config, manipulator, resource_checker, \
     search
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
-import six
 
 logger = logging.getLogger(__name__)
 
 
-class AutoschedulerController:
+class AutoschedulerController(object):
     def __init__(self, prog, **options):
         self.options = options
         constraint_options = {
@@ -220,11 +219,11 @@ class AutoschedulerController:
         manage = "/manage/{}/manageclass/{}".format(
             section_obj.parent_class.parent_program.getUrlBase(),
             section.parent_class)
-        manage_link = f"<a href='{manage}'>Manage</a>"
+        manage_link = "<a href='{}'>Manage</a>".format(manage)
         edit = "/manage/{}/editclass/{}".format(
             section_obj.parent_class.parent_program.getUrlBase(),
             section.parent_class)
-        edit_link = f"<a href='{edit}'>Edit</a>"
+        edit_link = "<a href='{}'>Edit</a>".format(edit)
         return "{}: {} (id: {}) ({}, {})".format(
             section_obj.emailcode(), section_obj.parent_class.title,
             section.id, manage_link, edit_link)

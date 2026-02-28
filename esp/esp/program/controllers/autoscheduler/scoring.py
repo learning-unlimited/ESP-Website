@@ -33,12 +33,11 @@ for this sort of behavior."""
 import logging
 
 import esp.program.controllers.autoscheduler.util as util
-import six
 
 logger = logging.getLogger(__name__)
 
 
-class BaseScorer:
+class BaseScorer(object):
     """Abstract class for scorers."""
     def __init__(self, schedule, **kwargs):
         """Initialize the scorer to the specified schedule."""
@@ -106,7 +105,7 @@ class CompositeScorer(BaseScorer):
                 if weight is None or weight == 0:
                     continue
                 assert weight >= 0, "Scorer weights should be nonnegative"
-                logger.info(f"Using scorer {scorer}")
+                logger.info("Using scorer {}".format(scorer))
                 scorer_obj = available_scorers[scorer](schedule, **kwargs)
                 self.scorers_and_weights.append((scorer_obj, weight))
         self.compute_total_weight()

@@ -1,3 +1,5 @@
+
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -52,6 +54,7 @@ from esp.users.models import ESPUser
 # when the corresponding program modules get added to a program (see
 # esp.program.models.maybe_create_module_ext), but that's about it.
 # TODO(benkraft): rename this to "program settings" or something.
+@python_2_unicode_compatible
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
@@ -60,8 +63,9 @@ class DBReceipt(models.Model):
     receipt = models.TextField()
 
     def __str__(self):
-        return 'Registration ({}) receipt for {}'.format(self.action, self.program)
+        return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
+@python_2_unicode_compatible
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
@@ -75,7 +79,7 @@ class StudentClassRegModuleInfo(models.Model):
     #     b = class_cap_offset
     class_cap_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default='1.00', help_text='A multiplier for class capacities (set to 0.5 to cap all classes at half their stored capacity).')
     class_cap_offset    = models.IntegerField(default=0, help_text='Offset for class capacities (this number is added to the original capacity of every class).')
-    apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multipler and offset to room capacity instead of class capacity.')
+    apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multiplier and offset to room capacity instead of class capacity.')
 
     #   Whether to use priority
     use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration. Note, this is NOT for the two-phase student registration module. This will remove \
@@ -144,6 +148,7 @@ class StudentClassRegModuleInfo(models.Model):
     def __str__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
 
+@python_2_unicode_compatible
 class ClassRegModuleInfo(models.Model):
     program = models.OneToOneField(Program, on_delete=models.CASCADE)
 

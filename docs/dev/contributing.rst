@@ -1,7 +1,7 @@
 Workflow
 ========
 
-To set up your dev server, see `<vagrant.rst>`_.  The remainder of this document assumes you've set up a dev server, and are ready to contribute a change.
+To set up your dev server, see `<docker.rst>`_.  The remainder of this document assumes you've set up a dev server, and are ready to contribute a change.
 
 Recommended one-time setup
 --------------------------
@@ -31,8 +31,8 @@ From the directory ``/esp``: ::
 
   git checkout main  # for historical reasons we use 'main' instead of 'master'
   git pull
-  ./update_deps.sh # on vagrant: see vagrant docs; no need to bother if deps haven’t changed
-  ./manage.py update # on vagrant: fab refresh
+  ./update_deps.sh # if using Docker: docker compose up --build; no need to bother if deps haven’t changed
+  ./manage.py update # if using Docker: docker compose exec web python esp/manage.py update
   git checkout -b new-branch-name
 
 Write some code!
@@ -91,6 +91,51 @@ A note on rebasing
 In our workflow, there is generally no need to rebase or squash.  If you are working on a pull request, it's fine to rebase or squash your changes to keep the history easy to review, if you know exactly what that means, why you might want to do it, and when it is safe to do so.  (Answering those questions is beyond the scope of this document.)  If you're not sure whether now is a safe time, just skip the rebase/squash: it's very easy to make a mess and GitHub has gotten good enough that it doesn't make things much cleaner for reviewers, either.  A good old ``git merge`` will do just fine.
 
 One exception: when merging a pull request to ``main`` via the GitHub UI button, we generally prefer the "squash" option, unless the individual changes in the pull request are fairly distinct or there is a lot of history to preserve, in which case "merge" is better.  (If GitHub doesn't offer "squash", then "merge" is also best.)  If the pull request is *from* ``main`` or will be merged into multiple branches, definitely use "merge".  If you're not sure, ask a more experienced contributor which to use!
+
+Testing
+-------
+
+**All tests must pass before submitting a pull request.** If your changes break existing tests,
+fix them before requesting a review. When adding new functionality, add corresponding tests to the appropriate application's test module or directory.
+
+This project uses Django's built-in test framework. Tests generally live in their respective application directories, typically in a ``tests.py`` file or a ``tests/`` directory (e.g. ``esp/accounting/tests.py`` or ``esp/users/controllers/tests/test_usersearch.py``).
+
+Running Tests
+~~~~~~~~~~~~~
+
+**Using Docker (recommended):**
+
+To run all tests::
+
+  docker compose exec web python esp/manage.py test
+
+To run tests for a specific module (e.g. ``accounting``)::
+
+  docker compose exec web python esp/manage.py test esp.accounting.tests
+
+**Without Docker:**
+
+If you are running the server natively without Docker::
+
+  cd esp
+  python manage.py test --settings=esp.settings
+
+Test Suite Reference
+~~~~~~~~~~~~~~~~~~~~
+
+Many tests are located in application-specific files. Some legacy tests may still exist in ``esp.tests``. Key test locations include:
+
+* ``esp/accounting/tests.py``
+* ``esp/application/tests.py``
+* ``esp/cal/tests.py``
+* ``esp/dbmail/tests.py``
+* ``esp/formstack/tests.py``
+* ``esp/miniblog/tests.py``
+* ``esp/program/tests.py``
+* ``esp/survey/tests.py``
+* ``esp/varnish/tests.py``
+
+Additional tests exist in directories: ``customforms/tests.py``, ``program/tests.py``, ``users/tests.py``, ``resources/tests.py``, ``qsd/tests.py``, ``qsdmedia/tests.py``, ``tagdict/tests.py``, ``themes/tests.py``, ``utils/tests.py``, ``web/tests.py``, and autoscheduler tests in ``program/controllers/autoscheduler/tests/``.
 
 Code reviews
 ------------

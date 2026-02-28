@@ -1,4 +1,4 @@
-import six
+from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,10 +36,10 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import numpy
-from packaging.version import parse as parse_version
+from pkg_resources import parse_version
 assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
 import numpy.random
-import six.moves.queue
+import queue
 import random
 
 from datetime import date, datetime
@@ -58,7 +58,7 @@ from django.conf import settings
 from django.db.models.query import QuerySet
 from django.db.models import Q
 
-class ClassChangeController:
+class ClassChangeController(object):
 
     default_options = {
         'check_grade': False,
@@ -161,10 +161,6 @@ class ClassChangeController:
         self.num_sections = len(self.sections)
 
 
-
-
-
-
         numpy.random.seed(self.now.microsecond)
 
         self.initialize()
@@ -188,9 +184,9 @@ class ClassChangeController:
         print()
         print("Student counts")
         print("--------------")
-        print(f"{len(self.students_not_checked_in):5d} not checked in")
+        print("{:5d} not checked in".format(len(self.students_not_checked_in)))
         print("{:5d} attended".format(len(self.program.students()['attended'])))
-        print(f"{len(self.students):5d} with requests")
+        print("{:5d} with requests".format(len(self.students)))
         print("{:5d} attended with requests".format(len(
                 set(self.students.values_list('id', flat=True)) &
                 set(self.program.students()['attended'].values_list('id', flat=True)))))
@@ -198,8 +194,8 @@ class ClassChangeController:
         print()
         print("Request counts")
         print("--------------")
-        print(f"{numpy.count_nonzero(self.request):5d} requests")
-        print(f"{numpy.count_nonzero(self.request.any(axis=1)):5d} student-timeslots with requests")
+        print("{:5d} requests".format(numpy.count_nonzero(self.request)))
+        print("{:5d} student-timeslots with requests".format(numpy.count_nonzero(self.request.any(axis=1))))
         print()
         print("Student histograms")
         print("(only students with >= 1 request)")
@@ -207,18 +203,18 @@ class ClassChangeController:
         req_freqs = numpy.bincount(self.request.sum(axis=(1, 2)))
         for i in range(req_freqs.size):
             if req_freqs[i]:
-                print(f"{req_freqs[i]:5d} students with {i:3d} request(s)")
+                print("{:5d} students with {:3d} request(s)".format(req_freqs[i], i))
 
         print()
         ts_freqs = numpy.bincount(self.request.any(axis=1).sum(axis=1))
         for i in range(ts_freqs.size):
             if ts_freqs[i]:
-                print(f"{ts_freqs[i]:5d} students with {i:3d} timeslot(s) with requests")
+                print("{:5d} students with {:3d} timeslot(s) with requests".format(ts_freqs[i], i))
         print()
         oe_freqs = numpy.bincount(self.enroll_orig.any(axis=1).sum(axis=1))
         for i in range(ts_freqs.size):
             if oe_freqs[i]:
-                print(f"{oe_freqs[i]:5d} students originally enrolled in {i:3d} section(s)")
+                print("{:5d} students originally enrolled in {:3d} section(s)".format(oe_freqs[i], i))
 
         # Sum requests, enrollments, etc. along the student and timeslot axis
         # to get a count for each section
@@ -234,9 +230,9 @@ class ClassChangeController:
         print("Tentatively changed enrollments")
         print("(not useful if you haven't run compute_assignments)")
         print("---------------------------------------------------")
-        print(f"{numpy.sum(self.enroll_orig & self.enroll_final):5d} unchanged")
-        print(f"{numpy.sum(dropped_counts):5d} dropped")
-        print(f"{numpy.sum(added_counts):5d} added")
+        print("{:5d} unchanged".format(numpy.sum(self.enroll_orig & self.enroll_final)))
+        print("{:5d} dropped".format(numpy.sum(dropped_counts)))
+        print("{:5d} added".format(numpy.sum(added_counts)))
         print()
         print("Most popularly requested sections")
         print("---------------------------------")
@@ -276,7 +272,7 @@ class ClassChangeController:
                 (self.enroll_final & ~self.enroll_orig).sum(axis=(1, 2)))
         for i in range(changed_classes_freq.size):
             if changed_classes_freq[i]:
-                print(f"{changed_classes_freq[i]:5d} students with {i:3d} added sections")
+                print("{:5d} students with {:3d} added sections".format(changed_classes_freq[i], i))
 
         print()
         print("Students originally with no classes")
@@ -286,7 +282,7 @@ class ClassChangeController:
                 self.enroll_final.sum(axis=(1, 2))[orig_no_class_student_indices])
         for i in range(final_classes_freq.size):
             if final_classes_freq[i]:
-                print(f"{final_classes_freq[i]:5d} students with {i:3d} classes")
+                print("{:5d} students with {:3d} classes".format(final_classes_freq[i], i))
 
         print()
         print("Students who still have no classes")
@@ -296,7 +292,7 @@ class ClassChangeController:
                 self.request.sum(axis=(1, 2))[final_no_class_student_indices])
         for i in range(no_class_request_freq.size):
             if no_class_request_freq[i]:
-                print(f"{no_class_request_freq[i]:5d} students made {i:3d} requests")
+                print("{:5d} students made {:3d} requests".format(no_class_request_freq[i], i))
 
         if list_no_class_students:
             for student_index in final_no_class_student_indices:
@@ -342,7 +338,7 @@ class ClassChangeController:
             if orig_section_indices.size == 1:
                 orig_section = self.sections[orig_section_indices[0]]
             else:
-                orig_section = f"(????? {orig_section_indices.size} sections found)"
+                orig_section = "(????? {} sections found)".format(orig_section_indices.size)
 
             print("{:>20} had {} @ {}".format(
                     self.students[student_index],
@@ -396,7 +392,7 @@ class ClassChangeController:
         """ Reset the state of the controller so that new assignments may be computed,
             but without fetching any information from the database. """
 
-        self.changed = numpy.zeros((self.num_students,), dtype=numpy.bool_)
+        self.changed = numpy.zeros((self.num_students,), dtype=numpy.bool)
         self.section_capacities = numpy.copy(self.section_capacities_orig)
         self.section_scores = numpy.copy(self.section_scores_orig)
         self.enroll_final = numpy.copy(self.enroll_final_orig)
@@ -409,19 +405,19 @@ class ClassChangeController:
             -   Timeslots (incl. lunch periods for each day)
         """
 
-        self.enroll_orig = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool_)
-        self.enroll_final = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool_)
-        self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool_)
-        self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool_) for i in range(self.priority_limit+1)]
-        self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool_)
+        self.enroll_orig = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
+        self.enroll_final = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
+        self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
+        self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool) for i in range(self.priority_limit+1)]
+        self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
         # section_capacities tracks *remaining* capacity.
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.int32)
         # A section's score is number of students requesting minus capacity.
         # It's positive if we can't let everybody who wants it take it. Higher
         # scores mean a class is more in demand.
         self.section_scores = numpy.zeros((self.num_sections,), dtype=numpy.int32)
-        self.same_subject = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool_)
-        self.section_conflict = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool_) # is this a section that takes place in the same timeblock
+        self.same_subject = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
+        self.section_conflict = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool) # is this a section that takes place in the same timeblock
 
         #   Get student, section, timeslot IDs and prepare lookup table
         (self.student_ids, self.student_indices) = self.get_ids_and_indices(self.students)
@@ -429,7 +425,7 @@ class ClassChangeController:
         (self.timeslot_ids, self.timeslot_indices) = self.get_ids_and_indices(self.timeslots)
         self.parent_classes = numpy.array(self.sections.values_list('parent_class__id', flat=True))
 
-        self.student_not_checked_in = numpy.zeros((self.num_students,), dtype=numpy.bool_)
+        self.student_not_checked_in = numpy.zeros((self.num_students,), dtype=numpy.bool)
         self.student_not_checked_in[self.student_indices[self.students_not_checked_in]] = True
 
         #   Get IDs of timeslots allocated to lunch by day
@@ -555,8 +551,6 @@ class ClassChangeController:
                 return False
 
 
-
-
         #   Filter students by the section's grade limits
         if self.options['check_grade']:
             possible_students *= (self.student_grades >= self.section_grade_min[si])
@@ -646,7 +640,7 @@ class ClassChangeController:
                             # class by requesting it, in the enrollment we've
                             # computed so far.
                             students_to_kick[sec_ind] = numpy.transpose(numpy.nonzero((self.enroll_final*self.request)[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1)))
-                            pq = six.moves.queue.PriorityQueue()
+                            pq = queue.PriorityQueue()
                             random.shuffle(students_to_kick[sec_ind])
                             for [student] in students_to_kick[sec_ind]:
                                 # For each student, get class sections they
@@ -668,7 +662,7 @@ class ClassChangeController:
                         # Try to kick a student.
                         try:
                             self.enroll_final[students_to_kick[sec_ind].get(False)[2], sec_ind, self.section_schedules[sec_ind,:]] = False
-                        except six.moves.queue.Empty:
+                        except queue.Empty:
                             pass
 
     def compute_assignments(self):

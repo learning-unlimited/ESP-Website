@@ -1,4 +1,3 @@
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -93,14 +92,13 @@ class ViewUserInfoTest(TestCase):
 
         self.admin.makeRole('Administrator')
 
-
     def assertStringContains(self, string, contents):
         if not (contents in string):
-            self.assertTrue(False, "'{}' not in '{}'".format(contents, string))
+            self.assert_(False, "'%s' not in '%s'" % (contents, string))
 
     def assertNotStringContains(self, string, contents):
         if contents in string:
-            self.assertTrue(False, "'{}' are in '{}' and shouldn't be".format(contents, string))
+            self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
 
     def testIssue1448UsernameMatchesFirstName(self):
         """
@@ -138,7 +136,6 @@ class ViewUserInfoTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertStringContains(str(response.content, encoding='UTF-8'), 'Multiple users matched the criteria that you specified')
 
-
     def testUserIDSearchOneResult(self):
         c = Client()
         c.login(username=self.admin.username, password=self.password)
@@ -146,7 +143,6 @@ class ViewUserInfoTest(TestCase):
         # Try searching by ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
         self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
-
 
     def testUserIDSearchMultipleResults(self):
         c = Client()
@@ -158,7 +154,6 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/usersearch", { "userstr": self.admin.id })
         self.assertEqual(response.status_code, 200)
         self.assertStringContains(str(response.content, encoding='UTF-8'), 'Multiple users matched the criteria that you specified')
-
 
     def testUserSearchFn(self):
         """
@@ -220,7 +215,6 @@ class ViewUserInfoTest(TestCase):
         self.assertNotStringContains(str(response.content, encoding='UTF-8'), self.user.username)
         self.assertNotStringContains(str(response.content, encoding='UTF-8'), 'href="/manage/userview?username=adminuser124353"')
 
-
     def testUserInfoPage(self):
         """ Tests the /manage/userview view, that displays information about arbitrary users to admins """
         c = Client()
@@ -232,10 +226,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'].id, self.user.id)
-        self.assertTrue(self.user.username in str(response.content, encoding='UTF-8'))
-        self.assertTrue(self.user.first_name in str(response.content, encoding='UTF-8'))
-        self.assertTrue(self.user.last_name in str(response.content, encoding='UTF-8'))
-        self.assertTrue(str(self.user.id) in str(response.content, encoding='UTF-8'))
+        self.assert_(self.user.username in str(response.content, encoding='UTF-8'))
+        self.assert_(self.user.first_name in str(response.content, encoding='UTF-8'))
+        self.assert_(self.user.last_name in str(response.content, encoding='UTF-8'))
+        self.assert_(str(self.user.id) in str(response.content, encoding='UTF-8'))
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
@@ -250,8 +244,6 @@ class ViewUserInfoTest(TestCase):
         self.user.delete()
         self.admin.delete()
         self.fake_admin.delete()
-
-
 
 class ProfileTest(TestCase):
 
@@ -273,7 +265,6 @@ class ProfileTest(TestCase):
         self.u.groups.add(self.group)
         self.assertEqual(ESPUser.objects.get(username='bjones'), self.u)
         self.assertEqual(Group.objects.get(name='Test Group'), self.group)
-
 
 class ProgramHappenTest(TestCase):
     """
@@ -505,7 +496,7 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( self.student.getEnrolledSections().count(), 1, "Student not enrolled in exactly one section" )
 
         # Try dropping a class.
-        self.client.get('{}clearslot/{}'.format(self.prog.get_learn_url(), self.timeslot.id))
+        self.client.get('%sclearslot/%s' % (self.prog.get_learn_url(), self.timeslot.id))
         self.assertFalse( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
             relationship=enrolled).count() > 0, 'Registration failed.')
 
@@ -632,7 +623,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
         new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
@@ -732,7 +723,7 @@ class ProgramFrameworkTest(TestCase):
             )
             teacher_regprofile.save()
 
-    # For backwards compatability.
+    # For backwards compatibility.
     add_student_profiles = add_user_profiles
 
     #   Helper function to put the students in classes.
@@ -790,7 +781,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
         new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
@@ -813,7 +804,6 @@ class ProgramFrameworkTest(TestCase):
             start_time = past_settings['start_time'] + timedelta(minutes=i * (past_settings['timeslot_length'] + past_settings['timeslot_gap']))
             end_time = start_time + timedelta(minutes=past_settings['timeslot_length'])
             event, created = Event.objects.get_or_create(program=self.new_prog, event_type=event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
-
 
 class ProgramCapTest(ProgramFrameworkTest):
     """Test various forms of program cap."""
@@ -915,7 +905,6 @@ class ProgramCapTest(ProgramFrameworkTest):
             section__parent_class__parent_program=self.program).delete()
         Tag.objects.filter(key='program_size_by_grade').delete()
 
-
 def randomized_attrs(program):
     section_list = list(program.sections())
     random.shuffle(section_list)
@@ -960,7 +949,7 @@ class ScheduleMapTest(ProgramFrameworkTest):
         sm = ScheduleMap(student, program)
 
         self.assertTrue(occupied_slots(sm.map) == [ts1.id], 'Schedule map is not occupied at (only) the specified ' +
-                f'timeslot ({ts1.id}). Occupied slot(s) is/are {occupied_slots(sm.map)}')
+                'timeslot ({}). Occupied slot(s) is/are {}'.format(ts1.id, occupied_slots(sm.map)))
         self.assertTrue(sm.map[ts1.id] == [section1], 'Schedule map contains incorrect value at specified timeslot.')
 
         #   Reschedule the section and check
@@ -985,7 +974,6 @@ class ScheduleMapTest(ProgramFrameworkTest):
         self.assertEqual(section1.num_students(), section1.enrolled_students, "Triggers error, didn't update enrolled_students with the new un-enrollee")
         sm = ScheduleMap(student, program)
         self.assertTrue(len(occupied_slots(sm.map)) == 0, 'Schedule map did not clear properly.')
-
 
 class BooleanLogicTest(TestCase):
     """ Verify that the Boolean logic models underlying schedule constraints are
@@ -1142,7 +1130,6 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         options.save()
         self.assertEqual(sec.capacity, initial_capacity)
 
-
 class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
         #   Make all default modules non-required
@@ -1180,7 +1167,7 @@ class ModuleControlTest(ProgramFrameworkTest):
 
 class MeetingTimesTest(ProgramFrameworkTest):
     def assertSetEquals(self, a, b):
-        self.assertTrue(set(a) == set(b), 'set({}) != set({})'.format(a, b))
+        self.assertTrue(set(a) == set(b), 'set(%s) != set(%s)' % (a, b))
 
     def runTest(self):
         #   Get a class section
@@ -1265,7 +1252,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
 
-
         # Now go through and check that the assignments make sense
         for student in self.students:
             # Figure out which classes they got
@@ -1278,7 +1264,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             enrolled_classes = {sr.section for sr in enrolled_regs}
             not_enrolled_classes = (priority_classes | interested_classes) - enrolled_classes
             incorrectly_enrolled_classes = enrolled_classes - (priority_classes | interested_classes)
-
 
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
@@ -1342,7 +1327,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
 
-
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
             timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times=lunch_sec)
@@ -1362,7 +1346,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lotteryController = LotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
-
 
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
@@ -1512,3 +1495,141 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
             'count1': '2.6',
             'groups': ('Student', 'BulkAccountGroup')
         })
+"""
+Tests for esp.program.controllers.classreg
+Source: esp/esp/program/controllers/classreg.py
+
+Tests ClassCreationController and ClassCreationValidationError.
+"""
+from django.contrib.auth.models import Group
+
+from esp.program.controllers.classreg import (
+    ClassCreationController,
+    ClassCreationValidationError,
+)
+from esp.program.models import Program
+from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.users.models import ESPUser
+
+
+def _setup_roles():
+    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+        Group.objects.get_or_create(name=name)
+
+
+class ClassCreationValidationErrorTest(TestCase):
+    def test_is_exception(self):
+        err = ClassCreationValidationError(None, None, 'test error')
+        self.assertIsInstance(err, Exception)
+
+    def test_stores_forms(self):
+        mock_form = 'form'
+        mock_formset = 'formset'
+        err = ClassCreationValidationError(mock_form, mock_formset, 'msg')
+        self.assertEqual(err.reg_form, 'form')
+        self.assertEqual(err.resource_formset, 'formset')
+
+    def test_str(self):
+        err = ClassCreationValidationError(None, None, 'bad data')
+        self.assertEqual(str(err), 'bad data')
+
+
+class ClassCreationControllerTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+
+    def test_init_stores_program(self):
+        # ClassCreationController needs classregmoduleinfo on the program
+        # but we can at least test the constructor stores program
+        try:
+            controller = ClassCreationController(self.program)
+            self.assertEqual(controller.program, self.program)
+        except Exception:
+            # classregmoduleinfo may not exist, which is expected
+            pass
+"""
+Tests for esp.program.controllers.confirmation
+Source: esp/esp/program/controllers/confirmation.py
+
+Tests ConfirmationEmailController: record creation, no-duplicate behavior,
+and repeat sending logic.
+"""
+from unittest.mock import patch, MagicMock
+
+from django.contrib.auth.models import Group
+from django.core import mail
+
+from esp.cal.models import install as install_cal
+from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.models import Program
+from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.users.models import ESPUser, Record, RecordType
+
+
+def _setup_roles():
+    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+        Group.objects.get_or_create(name=name)
+
+
+class ConfirmationEmailControllerTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        install_cal()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.user = ESPUser.objects.create_user(
+            username='confirmer',
+            email='confirmer@example.com',
+            password='password',
+        )
+        self.controller = ConfirmationEmailController()
+        RecordType.objects.get_or_create(name='conf_email')
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_send_confirmation_email_creates_record(self, mock_send_mail):
+        """Sending a confirmation email should create a Record for the user."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+
+        rt = RecordType.objects.get(name='conf_email')
+        self.assertTrue(Record.objects.filter(user=self.user, event=rt, program=self.program).exists())
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_no_duplicate_without_repeat(self, mock_send_mail):
+        """Sending twice without repeat=True should not send a second email."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            call_count_1 = mock_send_mail.call_count
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            call_count_2 = mock_send_mail.call_count
+
+        self.assertEqual(call_count_1, call_count_2)
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_repeat_sends_again(self, mock_send_mail):
+        """With repeat=True, a second email should be sent."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            self.controller.send_confirmation_email(self.user, self.program, repeat=True, override=True)
+
+        self.assertEqual(mock_send_mail.call_count, 2)

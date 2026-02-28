@@ -17,7 +17,6 @@ from datetime import timedelta, datetime
 from decimal import Decimal
 import json
 from django.conf import settings
-import six
 
 def get_custom_fields():
     result = OrderedDict()
@@ -37,7 +36,7 @@ class ClassCreationValidationError(Exception):
         self.resource_formset = resource_formset
         super().__init__(error_msg)
 
-class ClassCreationController:
+class ClassCreationController(object):
     def __init__(self, prog):
         self.program = prog
         self.crmi = prog.classregmoduleinfo
@@ -119,7 +118,7 @@ class ClassCreationController:
         for k, v in reg_form.cleaned_data.items():
             if k in custom_fields:
                 custom_data[k] = v
-            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] != 'section_':
+            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] is not 'section_':
                 cls.__dict__[k] = v
 
         cls.custom_form_data = custom_data
@@ -169,8 +168,8 @@ class ClassCreationController:
 
     def send_availability_email(self, teacher, note=None):
         timeslots = teacher.getAvailableTimes(self.program, ignore_classes=True)
-        email_title = 'Availability for {}: {}'.format(self.program.niceName(), teacher.name())
-        email_from = '{} Registration System <server@{}>'.format(self.program.program_type, settings.EMAIL_HOST_SENDER)
+        email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
+        email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
         email_context = {'teacher': teacher,
                          'timeslots': timeslots,
                          'program': self.program,
@@ -190,11 +189,11 @@ class ClassCreationController:
             if user == current_user:
                 message = 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
             else:
-                message = "{teacher_full} doesn't have enough free time to teach a class of this length.  Please go back to the class editing page and reduce the duration, or have {teacher_first} remove or shorten other classes to make room for this one.".format(teacher_full=user.name(), teacher_first=user.first_name)
+                message = "%(teacher_full)s doesn't have enough free time to teach a class of this length.  Please go back to the class editing page and reduce the duration, or have %(teacher_first)s remove or shorten other classes to make room for this one." % {'teacher_full': user.name(), 'teacher_first': user.first_name}
             raise ESPError(message, log=False)
 
     def add_teacher_to_program_mailinglist(self, user):
-        add_list_member("{}_{}-teachers".format(self.program.program_type, self.program.program_instance), user)
+        add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user)
 
     def add_rsrc_requests_to_class(self, cls, resource_formset):
         for sec in cls.get_sections():

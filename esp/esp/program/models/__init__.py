@@ -1,3 +1,4 @@
+from django.utils.encoding import python_2_unicode_compatible
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -41,7 +42,6 @@ from decimal import Decimal
 import random
 import json
 import logging
-import six
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
@@ -72,6 +72,7 @@ from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
 # Create your models here.
+@python_2_unicode_compatible
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
@@ -131,11 +132,12 @@ class ProgramModule(models.Model):
     class CannotGetClassException(Exception):
         def __init__(self, msg):
             self.msg = msg
-            super().__init__(msg)
+            super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
     def __str__(self):
-        return f'{self.admin_title}'
+        return '{}'.format(self.admin_title)
 
+@python_2_unicode_compatible
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
     program = models.CharField(max_length=256)
@@ -246,12 +248,13 @@ def _get_type_url(type):
         else:
             self._type_url = {}
 
-        self._type_url[type] = '/{}/{}/'.format(type, self.url)
+        self._type_url[type] = '/%s/%s/' % (type, self.url)
 
         return self._type_url[type]
 
     return _really_get_type_url
 
+@python_2_unicode_compatible
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
@@ -263,7 +266,7 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
     director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(r'(^.+@{}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', r'\.')))],
+                                       validators=[validators.RegexValidator(r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.')))],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
@@ -405,7 +408,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     result_dict[key] = len(value)
             return result_dict
         _get_num.__name__   = "num_" + query_func.__name__
-        _get_num.__doc__    = "Returns a dictionary of the sizes of the various sets of {} that are returned by Program.{}()".format(query_func.__name__, query_func.__name__)
+        _get_num.__doc__    = "Returns a dictionary of the sizes of the various sets of %s that are returned by Program.%s()" % (query_func.__name__, query_func.__name__)
         return _get_num
 
     @cache_function
@@ -428,7 +431,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         reg_type = RegistrationType.get_map()['Enrolled']
 
-        regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self).filter(user__id__in=checked_in_ids, relationship=reg_type).values('user', 'section')
+        regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self, user__id__in=checked_in_ids, relationship=reg_type).values('user', 'section')
         for reg in regs:
             if reg['section'] not in counts:
                 counts[reg['section']] = 0
@@ -741,7 +744,7 @@ class Program(models.Model, CustomFormsLinkModel):
         verbose_names = ["not_checked_in", "checked_in", "checked_out"]
         recs = Record.objects.filter(event__name__in=["attended", "checked_out"], user=espuser,
                                      program=self).order_by("-time")
-        if recs.count() > 0:
+        if recs.exists():
             # Check if student has ever been checked_in
             if recs.filter(event__name="attended").exists():
                 status = 1
@@ -1306,7 +1309,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def by_prog_inst(cls, program, instance):
-        prog_inst = Program.objects.select_related().get(url='{}/{}'.format(program, instance))
+        prog_inst = Program.objects.select_related().get(url='%s/%s' % (program, instance))
         return prog_inst
     by_prog_inst.depend_on_row('program.Program', lambda prog: {'program': prog})
     by_prog_inst = classmethod(by_prog_inst)
@@ -1351,6 +1354,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
 Program.setup_user_filters()
 
+@python_2_unicode_compatible
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
         a program.  Stanford has used this for lunch selection and a sibling discount.
@@ -1371,7 +1375,7 @@ class SplashInfo(models.Model):
         db_table = 'program_splashinfo'
 
     def __str__(self):
-        return 'Lunch/sibling info for {} at {}'.format(self.student, self.program)
+        return 'Lunch/sibling info for %s at %s' % (self.student, self.program)
 
     @staticmethod
     def hasForUser(user, program=None):
@@ -1379,7 +1383,7 @@ class SplashInfo(models.Model):
             q = SplashInfo.objects.filter(student=user, program=program)
         else:
             q = SplashInfo.objects.filter(student=user)
-        return (q.count() > 0) and q[0].submitted
+        return q.exists() and q[0].submitted
 
     @staticmethod
     def getForUser(user, program=None):
@@ -1387,7 +1391,7 @@ class SplashInfo(models.Model):
             q = SplashInfo.objects.filter(student=user, program=program)
         else:
             q = SplashInfo.objects.filter(student=user)
-        if q.count() > 0:
+        if q.exists():
             return q[0]
         else:
             n = SplashInfo(student=user, program=program)
@@ -1411,6 +1415,7 @@ class SplashInfo(models.Model):
         super().save()
         self.execute_sibling_discount()
 
+@python_2_unicode_compatible
 class RegistrationProfile(models.Model):
     """ A student registration form """
     user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
@@ -1558,7 +1563,7 @@ class RegistrationProfile(models.Model):
         if self.program_id is None:
             return '<Registration for %s>' % str(self.user)
         if self.user is not None:
-            return '<Registration for {} in {}>'.format(str(self.user), str(self.program))
+            return '<Registration for %s in %s>' % (str(self.user), str(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1625,7 +1630,7 @@ class TeacherBio(models.Model):
     def getLastForProgram(user, program):
         bios = TeacherBio.objects.filter(user__exact=user, program__exact=program).order_by('-last_ts', '-id')
 
-        if bios.count() < 1:
+        if not bios.exists():
             lastBio         = TeacherBio()
             lastBio.user    = user
             lastBio.program = program
@@ -1633,6 +1638,7 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
+@python_2_unicode_compatible
 class FinancialAidRequest(models.Model):
     """
     Student financial Aid Request
@@ -1654,7 +1660,7 @@ class FinancialAidRequest(models.Model):
 
     @property
     def approved(self):
-        return (self.financialaidgrant_set.all().count() > 0)
+        return self.financialaidgrant_set.all().exists()
 
     class Meta:
         app_label = 'program'
@@ -1695,9 +1701,9 @@ class FinancialAidRequest(models.Model):
                 self.done = True
                 self.save()
                 # send email to student
-                email_from = '{} Registration System <server@{}>'.format(self.program.program_type, settings.EMAIL_HOST_SENDER)
+                email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
                 email_to = [self.user.get_email_sendto_address()]
-                subj = 'Financial Aid Approved for {} for {}'.format(self.user.name(), self.program.niceName())
+                subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
                 email_context = {'student': self.user,
                                  'program': self.program,
                                  'grant': f,
@@ -1728,6 +1734,7 @@ def get_subclass_instance(cls, obj):
     #   If you couldn't find any, return the original object.
     return obj
 
+@python_2_unicode_compatible
 class BooleanToken(models.Model):
     """ A true/false value or Boolean operation.
         Meant to be extended to more meaningful Boolean functions operating on
@@ -1806,6 +1813,7 @@ class BooleanToken(models.Model):
         else:
             return False
 
+@python_2_unicode_compatible
 class BooleanExpression(models.Model):
     """ A combination of BooleanTokens that can be manipulated and evaluated.
         Arbitrary arguments can be supplied to the evaluate function in order
@@ -1866,6 +1874,7 @@ class BooleanExpression(models.Model):
         (value, post_stack) = BooleanToken.evaluate(stack, *args, **kwargs)
         return value
 
+@python_2_unicode_compatible
 class ScheduleMap:
     """ The schedule map is a dictionary mapping Event IDs to lists of class sections.
         It can be generated and cached for a user, then modified
@@ -1905,6 +1914,7 @@ class ScheduleMap:
     def __str__(self):
         return '%s' % self.map
 
+@python_2_unicode_compatible
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested:
         IF [condition] THEN [requirement]
@@ -1930,7 +1940,7 @@ class ScheduleConstraint(models.Model):
         app_label = 'program'
 
     def __str__(self):
-        return '{}: "{}" requires "{}"'.format(self.program.niceName(), str(self.condition), str(self.requirement))
+        return '%s: "%s" requires "%s"' % (self.program.niceName(), str(self.condition), str(self.requirement))
 
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -2041,6 +2051,7 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
 
         return cls.objects.filter( reduce(operator.or_, q_list) )
 
+@python_2_unicode_compatible
 class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program, on_delete=models.CASCADE)
     timeslot = models.ForeignKey('cal.Event', on_delete=models.CASCADE)
@@ -2056,8 +2067,9 @@ class VolunteerRequest(models.Model):
         return self.volunteeroffer_set.all()
 
     def __str__(self):
-        return '{} ({})'.format(self.timeslot.description, self.timeslot.short_time())
+        return '%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
 
+@python_2_unicode_compatible
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest, on_delete=models.CASCADE)
     confirmed = models.BooleanField(default=False)
@@ -2079,7 +2091,7 @@ class VolunteerOffer(models.Model):
         app_label = 'program'
 
     def __str__(self):
-        return '{} ({}, {}) for {}'.format(self.name, self.email, self.phone, self.request)
+        return '%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
 
 
 """ This class provides the information that was provided by the DataTree
@@ -2096,6 +2108,7 @@ class VolunteerOffer(models.Model):
     Note: These models fit better in class_.py but cause validation errors
     due to Django's import scheme if they are placed there.
 """
+@python_2_unicode_compatible
 class RegistrationType(models.Model):
     #   The 'key' (not really the primary key since we may want duplicate names)
     name = models.CharField(max_length=32)
@@ -2144,6 +2157,7 @@ class RegistrationType(models.Model):
         else:
             return self.name
 
+@python_2_unicode_compatible
 class PhaseZeroRecord(models.Model):
     def __str__(self):
         return str(self.id)
@@ -2157,6 +2171,7 @@ class PhaseZeroRecord(models.Model):
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
 
+@python_2_unicode_compatible
 class ModeratorRecord(models.Model):
     def __str__(self):
         return str(self.id)
@@ -2171,6 +2186,7 @@ class ModeratorRecord(models.Model):
     class Meta:
         app_label = 'program'
 
+@python_2_unicode_compatible
 class StudentRegistration(ExpirableModel):
     """
     Model relating a student with a class section (interest, priority,
@@ -2184,8 +2200,9 @@ class StudentRegistration(ExpirableModel):
         app_label = 'program'
 
     def __str__(self):
-        return '{} {} in {}'.format(self.user, self.relationship, self.section)
+        return '%s %s in %s' % (self.user, self.relationship, self.section)
 
+@python_2_unicode_compatible
 class StudentSubjectInterest(ExpirableModel):
     """
     Model indicating a student interest in a class section.
@@ -2197,7 +2214,7 @@ class StudentSubjectInterest(ExpirableModel):
         app_label = 'program'
 
     def __str__(self):
-        return '{} interest in {}'.format(self.user, self.subject)
+        return '%s interest in %s' % (self.user, self.subject)
 
 
 # Hooked up in program.modules.signals and formstack.signals
@@ -2216,7 +2233,7 @@ def maybe_create_module_ext(handler, ext):
     TODO(benkraft): Should we just do this on program creation instead?  We'll
     end up with a bunch of unused settings, but maybe that's fine.
     """
-    uid = 'maybe_create_module_ext:{}:{}'.format(handler, ext.__name__)
+    uid = 'maybe_create_module_ext:%s:%s' % (handler, ext.__name__)
     @receiver(m2m_changed, sender=Program.program_modules.through,
               weak=False, dispatch_uid=uid)
     def signal_handler(sender, **kwargs):

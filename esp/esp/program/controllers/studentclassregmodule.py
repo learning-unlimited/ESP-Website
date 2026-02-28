@@ -1,3 +1,4 @@
+
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,7 +37,7 @@ import json
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, Program
 
-class RegistrationTypeController:
+class RegistrationTypeController(object):
 
     key = 'display_registration_names'
     default_names = ["Enrolled",]

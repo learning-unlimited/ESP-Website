@@ -3,7 +3,6 @@
 import re
 
 from esp.program.controllers.autoscheduler import util
-import six
 
 
 class ResourceCriterion:

@@ -1,3 +1,4 @@
+
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -75,7 +76,7 @@ def commit_program(prog, perms, cost=0, sibling_discount=None):
         elif tup[1] is None and tup[0].startswith("Teacher"):
             new_perm.role=Group.objects.get(name="Teacher")
         else:
-            raise ESPError(f'Invalid permission/deadline: `{tup[1]}`')
+            raise ESPError('Invalid permission/deadline: `{}`'.format(tup[1]))
         new_perm.save()
         return
 

@@ -35,7 +35,6 @@ import logging
 
 import esp.program.controllers.autoscheduler.util as util
 import esp.program.controllers.autoscheduler.config as config
-import six
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +58,7 @@ class BaseConstraint:
     required = False
 
     def __init__(self, **kwargs):
-        # Create a constructor wihch takes in arbitrary kwargs in case any
+        # Create a constructor which takes in arbitrary kwargs in case any
         # subclass needs them.
         pass
 

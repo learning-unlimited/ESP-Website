@@ -1,4 +1,4 @@
-import six
+from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,7 +46,7 @@ from esp.mailman import add_list_member, remove_list_member, list_contents
 from django.conf import settings
 import os
 
-class StudentRegSanityController:
+class StudentRegSanityController(object):
 
     default_options = {
         'directory': os.getenv("HOME"),
@@ -86,7 +86,7 @@ class StudentRegSanityController:
         logger.debug(report)
         if closeatend: csvfile.close()
         logger.info("Walkins checked")
-        if not fake: "Please re-run self.initalize() to update."
+        if not fake: "Please re-run self.initialize() to update."
         return report
 
     def sanitize_lunch(self, csvlog=False, fake = True, csvwriter=None, directory=None):
@@ -116,7 +116,7 @@ class StudentRegSanityController:
         logger.debug(report)
         if closeatend: csvfile.close()
         logger.info("Lunch checked.")
-        if not fake: "Please re-run self.initalize() to update."
+        if not fake: "Please re-run self.initialize() to update."
         return report
 
     def sanitize(self, checks=None, fake=True, csvlog=True, directory=None):

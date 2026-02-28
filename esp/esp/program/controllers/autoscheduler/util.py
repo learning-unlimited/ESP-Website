@@ -5,7 +5,6 @@ from timeit import default_timer
 from functools import wraps
 
 from esp.program.controllers.autoscheduler import config
-import six
 
 
 TIMES = {}

@@ -56,13 +56,13 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
         self.factory = RequestFactory()
 
-        self.all_classes_csv_url = '/manage/{}/{}'.format(self.program.getUrlBase(), 'all_classes_spreadsheet')
+        self.all_classes_csv_url = '/manage/%s/%s' % (self.program.getUrlBase(), 'all_classes_spreadsheet')
 
     def _login_admin(self):
         """
         Login admin user
         """
-        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+        self.failUnless(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
     def get_response(self, view_name, user_type, list_name):
         #   Log in an administrator
@@ -71,14 +71,14 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
         #   Select users to fetch
-        response = self.client.get('/manage/{}/{}'.format(self.program.getUrlBase(), view_name))
+        response = self.client.get('/manage/%s/%s' % (self.program.getUrlBase(), view_name))
         self.assertEqual(response.status_code, 200)
         post_data = {
             'recipient_type': user_type,
             'base_list': list_name,
             'use_checklist': 0,
         }
-        response = self.client.post('/manage/{}/{}'.format(self.program.getUrlBase(), view_name), post_data)
+        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), view_name), post_data)
         self.assertEqual(response.status_code, 200)
         return response
 
@@ -115,7 +115,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         response = self.get_response('studentschedules', 'students', 'enrolled')
 
         #   Check that the output is an actual PDF file
-        print(response['Content-Type'])
+        print((response['Content-Type']))
         self.assertTrue(response['Content-Type'].startswith('application/pdf'))
 
     def test_all_classes_spreadsheet_loads(self):
@@ -204,7 +204,7 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
         class_subject = self.class_subjects[0]
         for fieldname in self.class_subject_fieldnames:
             self.assertEqual(self.converter.fieldvalue(class_subject, fieldname), \
-                              getattr(class_subject, fieldname))
+                             getattr(class_subject, fieldname))
 
     def test_class_subject_teachers_format(self):
         class_subject = self.class_subjects[0]

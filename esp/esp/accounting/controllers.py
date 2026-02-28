@@ -1,7 +1,5 @@
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from six.moves import range
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -80,11 +78,12 @@ class ProgramAccountingController(BaseAccountingController):
         self.finaid_items = ['Financial aid grant', 'Sibling discount']
         self.admission_items = ["Program admission", "Student payment"]
 
+    @transaction.atomic
     def clear_all_data(self):
         #   Clear all financial data for the program
         FinancialAidGrant.objects.filter(request__program=self.program).delete()
-        self.all_transfers(distinct=False).delete()
-        self.get_lineitemtypes(distinct=False).delete()
+        self.all_transfers().delete()
+        self.get_lineitemtypes().delete()
         self.all_accounts().delete()
 
     def setup_accounts(self):
@@ -214,11 +213,9 @@ class ProgramAccountingController(BaseAccountingController):
             q_object &= Q(required=False, for_payments=True)
         return q_object
 
-    def get_lineitemtypes(self, distinct=True, **kwargs):
+    def get_lineitemtypes(self, **kwargs):
         qs = LineItemType.objects.filter(self.get_lineitemtypes_Q(**kwargs))
-        if distinct:
-            return qs.order_by('text', '-id').distinct('text')
-        return qs.order_by('text', '-id')
+        return qs.order_by('text', '-id').distinct('text')
 
     def all_transfers_Q(self, **kwargs):
         """
@@ -228,14 +225,11 @@ class ProgramAccountingController(BaseAccountingController):
         q_object = self.get_lineitemtypes_Q(**kwargs)
         return nest_Q(q_object, 'line_item')
 
-    def all_transfers(self, distinct=True, **kwargs):
+    def all_transfers(self, **kwargs):
         # Avoids a subquery by constructing a Q object, in all_transfers_Q(),
         # that applies all the wanted constraints on the related line_item
         # objects.
-        qs = Transfer.objects.filter(self.all_transfers_Q(**kwargs))
-        if distinct:
-            return qs.distinct()
-        return qs
+        return Transfer.objects.filter(self.all_transfers_Q(**kwargs)).distinct()
 
     def all_students_Q(self, **kwargs):
         """
@@ -280,9 +274,10 @@ class ProgramAccountingController(BaseAccountingController):
         else:
             return 'Unrelated!?'
 
+@python_2_unicode_compatible
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
-        super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
+        super().__init__(program, *args, **kwargs)
         self.user = user
 
     def transfers_to_program_exist(self):
@@ -290,6 +285,7 @@ class IndividualAccountingController(ProgramAccountingController):
                 destination=self.default_program_account(),
                 user=self.user).exists()
 
+    @transaction.atomic
     def ensure_required_transfers(self):
         """ Function to ensure there are transfers for this user corresponding
             to required line item types, e.g. program admission """
@@ -327,6 +323,7 @@ class IndividualAccountingController(ProgramAccountingController):
                 transfer.amount_dec = item.amount_dec
                 transfer.save()
 
+    @transaction.atomic
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
             to optional line item types, according to their preferences.
@@ -335,42 +332,21 @@ class IndividualAccountingController(ProgramAccountingController):
             be set to None if unused.   """
 
         result = []
-        program_account = self.default_program_account()
-        source_account = self.default_source_account()
         line_items = self.get_lineitemtypes(include_donations=False).exclude(text__in=self.admission_items)
 
-        #   Clear existing transfers
+        #   Clear all existing optional transfers for this student at once
         Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
 
-        #   Create transfers for optional line item types
+        #   Delegate each item to set_preference(), which handles transfer creation.
+        #   set_preference()'s own per-item delete is a no-op here since we
+        #   already cleared all transfers above.
         for item_tup in optional_items:
             (item_name, quantity, cost, option_id) = item_tup
-            matched = False
-            for lit in line_items:
-                if lit.text == item_name:
-                    matched = True
-                    option = None
-                    #   Determine the cost to apply to the transfer:
-                    #   - Default to the cost of the line item type
-                    transfer_amount = lit.amount_dec
-                    #   - If a dollar amount is specified, use that amount
-                    #     (note: this will override any line item option)
-                    if cost is not None:
-                        transfer_amount = cost
-                    #   - If a line item option is specified, use its amount
-                    #     (which may inherit from the line item type)
-                    if option_id is not None:
-                        option = LineItemOptions.objects.get(id=option_id)
-                        if cost is None:
-                            transfer_amount = option.amount_dec_inherited
-                    for i in range(quantity or 0):
-                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
-                    break
-            if not matched:
-                raise Exception('Could not find a line item type matching "%s"' % item_name)
+            result.extend(self.set_preference(item_name, quantity or 0, amount=cost, option_id=option_id))
 
         return result
 
+    @transaction.atomic
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
@@ -515,6 +491,7 @@ class IndividualAccountingController(ProgramAccountingController):
         # Success!
         return payment
 
+    @transaction.atomic
     def set_finaid_params(self, dollar_amount, discount_percent):
         #   Get the user's financial aid request or create one if it doesn't exist
         requests = FinancialAidRequest.objects.filter(user=self.user, program=self.program)

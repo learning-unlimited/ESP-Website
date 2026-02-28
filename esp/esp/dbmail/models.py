@@ -1,7 +1,5 @@
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
-import six
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -81,7 +79,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
 
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
-    if isinstance(recipient_list, six.string_types):
+    if isinstance(recipient_list, str):
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
@@ -148,7 +146,7 @@ class ActionHandler(object):
         # get the object, can't use self.obj since we're doing fun stuff
         if key == '_obj' or key == '_user':
             # use the parent's __getattribute__
-            return super(ActionHandler, self).__getattribute__(key)
+            return super().__getattribute__(key)
 
         obj = self._obj
 
@@ -166,6 +164,7 @@ _MESSAGE_CREATED_AT_HELP_TEXT = """
 """
 _MESSAGE_CREATED_AT_HELP_TEXT = re.sub(r'\s+', ' ', _MESSAGE_CREATED_AT_HELP_TEXT.strip())
 
+@python_2_unicode_compatible
 class MessageRequest(models.Model):
     """ An initial request to broadcast an email message """
 
@@ -227,7 +226,7 @@ class MessageRequest(models.Model):
         return '%s/email/%s' % (Site.objects.get_current().domain, self.id or "{ID will be here}")
 
     def __str__(self):
-        return six.text_type(self.subject)
+        return str(self.subject)
 
     # Access special_headers as a dictionary
     def special_headers_dict_get(self):
@@ -272,7 +271,7 @@ class MessageRequest(models.Model):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
 
         # prepare variables
-        text = six.text_type(text)
+        text = str(text)
 
         context = MessageVars.getContext(self, user)
 
@@ -408,6 +407,7 @@ class MessageRequest(models.Model):
 
         logger.info('Prepared emails to send for message request %d: %s', self.id, self.subject)
 
+@python_2_unicode_compatible
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
     messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
@@ -430,7 +430,7 @@ class TextOfEmail(models.Model):
     tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed
 
     def __str__(self):
-        return six.text_type(self.subject) + ' <' + (self.send_to) + '>'
+        return str(self.subject) + ' <' + (self.send_to) + '>'
 
     def send(self):
         """Take the email data in this TextOfEmail and send it.
@@ -503,6 +503,7 @@ class TextOfEmail(models.Model):
     class Meta:
         verbose_name_plural = 'Email texts'
 
+@python_2_unicode_compatible
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
     messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
@@ -568,6 +569,7 @@ class MessageVars(models.Model):
     class Meta:
         verbose_name_plural = 'Message variables'
 
+@python_2_unicode_compatible
 class EmailRequest(models.Model):
     """ Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
     target = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
@@ -575,8 +577,9 @@ class EmailRequest(models.Model):
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        return six.text_type(self.msgreq.subject) + ' <' + six.text_type(self.target.username) + '>'
+        return str(self.msgreq.subject) + ' <' + str(self.target.username) + '>'
 
+@python_2_unicode_compatible
 class EmailList(models.Model):
     """
     A list that gets handled when an email comes in to @esp.mit.edu.
@@ -612,11 +615,12 @@ class EmailList(models.Model):
             except IndexError:
                 self.seq = 0
 
-        super(EmailList, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return '%s (%s)' % (self.description, self.regex)
 
+@python_2_unicode_compatible
 class PlainRedirect(models.Model):
     """
     A simple catch-all for mail redirection.
@@ -639,7 +643,7 @@ class CustomSMTPBackend(SMTPEmailBackend):
 
     def __init__(self, return_path=None, **kwargs):
         self.return_path = return_path
-        super(CustomSMTPBackend, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def _send(self, email_message):
         """A helper method that does the actual sending."""

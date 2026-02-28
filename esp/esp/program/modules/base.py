@@ -1,4 +1,4 @@
-import six
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -41,6 +41,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
+from django.utils.decorators import available_attrs
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
@@ -59,21 +60,24 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 def _login_redirect(request):
     return HttpResponseRedirect(
-        '{}?{}={}'.format(settings.LOGIN_URL, REDIRECT_FIELD_NAME,
+        '%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME,
                       quote(request.get_full_path())))
 
-class CoreModule:
+class CoreModule(object):
     """
     All core modules should derive from this.
     """
     pass
 
+@python_2_unicode_compatible
 class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
     required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=False, default="")
+    link_title = models.CharField(max_length=64, blank=True, null=False, default="",
+                                  help_text="Override the default link title for this program. Leave blank to use the module's default.")
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
@@ -81,7 +85,7 @@ class ProgramModuleObj(models.Model):
         return self.module.link_title
 
     def __str__(self):
-        return '"{}" for "{}"'.format(self.module.admin_title, str(self.program))
+        return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
     def _get_views_by_call_tag(self, tags):
         """ We define decorators below (aux_call, main_call, etc.) which allow
@@ -268,18 +272,22 @@ class ProgramModuleObj(models.Model):
     # important functions for hooks...
     @cache_function
     def get_full_path(self):
-        return '/{}/{}/{}'.format(
+        return '/%s/%s/%s' % (
             self.module.module_type, self.program.url, self.main_view)
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
     get_full_path.depend_on_model('program.Program')
 
+    def get_link_title(self):
+        return self.link_title or self.module.link_title
+
     def makeLink(self):
+        title = self.get_link_title()
         if not self.module.module_type == 'manage':
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                (self.get_full_path(), self.module.link_title, self.module.link_title)
+                (self.get_full_path(), title, title)
         else:
             link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
+               (self.get_full_path(), title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
 
         return mark_safe(link)
 
@@ -289,7 +297,7 @@ class ProgramModuleObj(models.Model):
     def get_setup_title(self):
         if hasattr(self, 'setup_title') and self.setup_title is not None and str(self.setup_title).strip() != '':
             return self.setup_title
-        return self.module.link_title
+        return self.get_link_title()
 
     def get_setup_path(self):
         if hasattr(self, 'setup_path') and self.setup_path is not None and str(self.setup_path).strip() != '':
@@ -345,7 +353,7 @@ class ProgramModuleObj(models.Model):
 
     def getTemplate(self):
         if self.module.inline_template:
-            return 'program/modules/{}/{}'.format(self.__class__.__name__.lower(), self.module.inline_template)
+            return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
         return None
 
     def teacherDesc(self):
@@ -443,7 +451,7 @@ class ProgramModuleObj(models.Model):
                 props["seq"] = 200
             if not "choosable" in props:
                 props["choosable"] = 0
-                raise AttributeError(f"Module `{cls.__name__}` doesn't have choosable property.")
+                raise AttributeError("Module `{}` doesn't have choosable property.".format(cls.__name__))
 
         if isinstance(props, dict):
             props = [ props ]
@@ -736,7 +744,7 @@ def meets_any_deadline(extensions=[]):
 
 def meets_cap(view_method):
     """Only allow students who meet the program cap past this point."""
-    @wraps(view_method)
+    @wraps(view_method, assigned=available_attrs(view_method))
     def _meets_cap(moduleObj, request, tl, one, two, module, extra, prog,
                    *args, **kwargs):
         if prog.user_can_join(request.user):
@@ -763,7 +771,7 @@ def user_passes_test(test_func, error_message):
     should be formatted similarly to the output of list_extensions().
     """
     def user_passes_test(view_method):
-        @wraps(view_method)
+        @wraps(view_method, assigned=available_attrs(view_method))
         def _check(moduleObj, request, tl, *args, **kwargs):
             if test_func(moduleObj):
                 return view_method(moduleObj, request, tl, *args, **kwargs)

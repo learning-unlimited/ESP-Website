@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
+
 from django.db import migrations
-import six
 
 def set_my_defaults(apps, schema_editor):
     defaults_dict = {

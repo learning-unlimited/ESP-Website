@@ -6,7 +6,6 @@ from esp.program.controllers.autoscheduler import \
         consistency_checks, testutils, data_model
 from esp.program.controllers.autoscheduler.consistency_checks import \
         ConsistencyError
-import six
 
 
 class ConsistencyCheckerTest(unittest.TestCase):

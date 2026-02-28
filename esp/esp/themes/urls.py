@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 from esp.themes.views import editor, selector, configure, confirm_overwrite, landing, recompile, logos
 
 from django.conf.urls import url

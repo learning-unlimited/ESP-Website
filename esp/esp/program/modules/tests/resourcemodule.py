@@ -36,7 +36,6 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
 import re
-import six
 
 class ResourceModuleTest(ProgramFrameworkTest):
     ## This test is very incomplete.

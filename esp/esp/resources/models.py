@@ -1,6 +1,4 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-import six
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -69,6 +67,7 @@ Procedures:
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
 
+@python_2_unicode_compatible
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
     # TODO: this model can almost certainly be cleaned up. It is probably possible to delete the caching and dumping
@@ -111,7 +110,7 @@ class ResourceType(models.Model):
     def save(self, *args, **kwargs):
         if hasattr(self, '_attributes_cached'):
             self.attributes_dumped = json.dumps(self._attributes_cached)
-        super(ResourceType, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     _get_or_create_cache = {}
     @classmethod
@@ -125,7 +124,7 @@ class ResourceType(models.Model):
                 base_q = base_q | Q(program__isnull=True)
         else:
             base_q = Q(program__isnull=True)
-        current_type = ResourceType.objects.filter(base_q).filter(name__icontains=label)
+        current_type = ResourceType.objects.filter(base_q, name__icontains=label)
         if len(current_type) != 0:
             ret = current_type[0]
         else:
@@ -144,6 +143,7 @@ class ResourceType(models.Model):
     def __str__(self):
         return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
 
+@python_2_unicode_compatible
 class ResourceRequest(models.Model):
     """ A request for a particular type of resource associated with a particular clas section. """
 
@@ -153,14 +153,16 @@ class ResourceRequest(models.Model):
     desired_value = models.TextField()
 
     def __str__(self):
-        return 'Resource request of %s for %s: %s' % (six.text_type(self.res_type), self.target.emailcode(), self.desired_value)
+        return 'Resource request of %s for %s: %s' % (str(self.res_type), self.target.emailcode(), self.desired_value)
 
+@python_2_unicode_compatible
 class ResourceGroup(models.Model):
     """ A hack to make the database handle resource group ID creation """
 
     def __str__(self):
         return 'Resource group %d' % (self.id,)
 
+@python_2_unicode_compatible
 class Resource(models.Model):
     """ An individual resource, such as a class room or piece of equipment.  Categorize by
     res_type, attach to a user if necessary. """
@@ -182,12 +184,12 @@ class Resource(models.Model):
 
     def __str__(self):
         if self.user is not None:
-            return 'For %s: %s (%s)' % (six.text_type(self.user), self.name, six.text_type(self.res_type))
+            return 'For %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
         else:
             if self.num_students != -1:
-                return 'For %d students: %s (%s)' % (self.num_students, self.name, six.text_type(self.res_type))
+                return 'For %d students: %s (%s)' % (self.num_students, self.name, str(self.res_type))
             else:
-                return '%s (%s)' % (self.name, six.text_type(self.res_type))
+                return '%s (%s)' % (self.name, str(self.res_type))
 
     def save(self, *args, **kwargs):
         if self.res_group is None:
@@ -198,7 +200,7 @@ class Resource(models.Model):
         else:
             self.is_unique = False
 
-        super(Resource, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     # I'd love to kill this, but since it's set as the __sub__, it's hard to
     # grep to be sure it's not used.
@@ -239,7 +241,7 @@ class Resource(models.Model):
         id_list = []
 
         for req in request_list:
-            if furnishings.filter(res_type=req.res_type).count() < 1:
+            if not furnishings.filter(res_type=req.res_type).exists():
                 result[0] = False
                 id_list.append(req.id)
 
@@ -311,7 +313,7 @@ class Resource(models.Model):
         return (len(self.available_times(program)) > 0)
 
     def available_times_html(self, program=None):
-        return '<br /> '.join([six.text_type(e) for e in Event.collapse(self.available_times(program))])
+        return '<br /> '.join([str(e) for e in Event.collapse(self.available_times(program))])
 
     def available_times(self, program=None):
         event_list = [x for x in list(self.matching_times(program)) if self.is_available(timeslot=x)]
@@ -344,14 +346,16 @@ class Resource(models.Model):
             return Q(resource=self)
         else:
             collision = ResourceAssignment.objects.filter(resource=self)
-            return (collision.count() > 0)
+            return collision.exists()
 
+@python_2_unicode_compatible
 class AssignmentGroup(models.Model):
     """ A hack to make the database handle assignment group ID creation """
 
     def __str__(self):
         return 'Assignment group %d' % (self.id,)
 
+@python_2_unicode_compatible
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
@@ -365,7 +369,7 @@ class ResourceAssignment(models.Model):
     assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        result = 'Resource assignment for %s' % six.text_type(self.getTargetOrSubject())
+        result = 'Resource assignment for %s' % str(self.getTargetOrSubject())
         if self.lock_level > 0:
             result += ' (locked)'
         return result
@@ -375,7 +379,7 @@ class ResourceAssignment(models.Model):
             #   Make a new group for this
             new_group = AssignmentGroup.objects.create()
             self.assignment_group = new_group
-        super(ResourceAssignment, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """

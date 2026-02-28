@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import http
 from debug_toolbar.middleware import DebugToolbarMiddleware
 
@@ -19,7 +18,7 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
         if param is not None:
             request.session['debug_toolbar'] = param
 
-        super(ESPDebugToolbarMiddleware, self).process_request(request)
+        super().process_request(request)
 
     @staticmethod
     def custom_show_toolbar(request):

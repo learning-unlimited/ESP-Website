@@ -2,7 +2,6 @@
 
 import datetime
 import esp.program.controllers.autoscheduler.util as util
-import six
 
 
 class SearchOptimizer:

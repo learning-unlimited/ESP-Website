@@ -1,4 +1,4 @@
-import six
+
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -66,7 +66,7 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType, StudentSubjectInterest
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -96,7 +96,6 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from io import StringIO
-
 
 @login_required
 def lottery_student_reg(request, program = None):
@@ -132,8 +131,7 @@ def lottery_student_reg_simple(request, program = None):
 
     return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
-
-#@transaction.atomic
+@transaction.atomic
 @login_required
 def lsr_submit(request, program=None):
 
@@ -166,12 +164,13 @@ def lsr_submit(request, program=None):
             secid = parts[0]
             if reg_status:
                 classes_interest.add(int(secid))
+            else:
                 classes_no_interest.add(int(secid))
 
     errors = []
 
     already_flagged_sections = request.user.getSections(program=program, verbs=[reg_priority.name]).annotate(first_block=Min('meeting_times__start'))
-    already_flagged_secids = {int(x.id) for x in already_flagged_sections}
+    already_flagged_secids = set(int(x.id) for x in already_flagged_sections)
 
     flag_related_sections = classes_flagged | classes_not_flagged
     flagworthy_sections = ClassSection.objects.filter(id__in=flag_related_sections-already_flagged_secids).annotate(first_block=Min('meeting_times__start'))
@@ -195,7 +194,7 @@ def lsr_submit(request, program=None):
                 errors.append({"text": "Unable to add flagged class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": True})
 
     already_interested_sections = request.user.getSections(program=program, verbs=[reg_interested.name])
-    already_interested_secids = {int(x.id) for x in already_interested_sections}
+    already_interested_secids = set(int(x.id) for x in already_interested_sections)
     interest_related_sections = classes_interest | classes_no_interest
     sections = ClassSection.objects.filter(id__in = (interest_related_sections - flag_related_sections - already_flagged_secids - already_interested_secids))
 
@@ -217,8 +216,7 @@ def lsr_submit(request, program=None):
 
     return HttpResponse(json.dumps(errors), content_type='application/json')
 
-
-#@transaction.atomic
+@transaction.atomic
 @login_required
 def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary function. will merge the two later -jmoldow 05/31
 
@@ -279,11 +277,10 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
 
     return HttpResponse(json.dumps(errors), content_type='application/json')
 
-
 def find_user(userstr):
     """
     Do a best-guess effort at finding a user based on a string identifying that user.
-    The string may be a user ID, username, or some permuation of the user's real name.
+    The string may be a user ID, username, or some permutation of the user's real name.
     Will return a list of users if the string is not a username and more than one
     name approximately matches.
     Will return something that evaluates to False if no matching users are found.
@@ -295,7 +292,7 @@ def find_user(userstr):
     userstr_parts = [part.strip() for part in userstr.split(' ') if part]
 
     if len(userstr_parts) == 2 and \
-       re.match(r"\A\(\d\d\d\)\Z", userstr_parts[0]) and \
+       re.match("\A\(\d\d\d\)\Z", userstr_parts[0]) and \
        re.match("[^A-Za-z]*", userstr_parts[1]):
         # HACK: coerce ["(555)", "555-5555"] to ["(555)555-5555"] so that the
         # first branch of the if statement gets taken
@@ -340,7 +337,6 @@ def find_user(userstr):
 
     return found_users
 
-
 @admin_required
 def usersearch(request):
     """
@@ -363,8 +359,7 @@ def usersearch(request):
         sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
         return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
-        raise ESPError(f"No user found by that name! Searched for `{userstr}`", log=False)
-
+        raise ESPError("No user found by that name! Searched for `{}`".format(userstr), log=False)
 
 @admin_required
 def userview(request):
@@ -427,11 +422,21 @@ def userview(request):
     change_grade_form.fields['graduation_year'].initial = user.getYOG()
     change_grade_form.fields['graduation_year'].choices = [choice for choice in change_grade_form.fields['graduation_year'].choices if bool(choice[0])]
 
+    # Get StudentSubjectInterests (starred classes) for this user
+    starred_classes = []
+    if program:
+        # If a specific program is selected, filter by that program
+        starred_classes = StudentSubjectInterest.objects.filter(user=user, subject__parent_program=program)
+    else:
+        # If no specific program, show all starred classes for this user
+        starred_classes = StudentSubjectInterest.objects.filter(user=user)
+
     context = {
         'user': user,
         'taught_classes': user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
         'enrolled_classes': user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
         'taken_classes': user.getSections().order_by('parent_class__parent_program', 'id'),
+        'starred_classes': starred_classes,
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
@@ -448,7 +453,6 @@ def userview(request):
         'grade_change_requests': user.requesting_student_set.filter(approved=None),
     }
     return render_to_response("users/userview.html", request, context )
-
 
 def deactivate_user(request):
     return activate_or_deactivate_user(request, activate=False)
@@ -485,7 +489,6 @@ def activate_or_deactivate_user(request, activate):
             user.is_active = activate
             user.save()
             return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
-
 
 @admin_required
 def manage_programs(request):
@@ -535,7 +538,6 @@ def newprogram(request):
 
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
         template_prog["sibling_discount"] = tprogram.sibling_discount
-
 
     # If the form has been submitted, process it.
     if request.method == 'POST':
@@ -588,9 +590,9 @@ def newprogram(request):
             manage_url = '/manage/' + new_prog.url + '/resources'
             # While we're at it, create the program's mailing list
             if settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
-                mailing_list_name = "{}_{}".format(new_prog.program_type, new_prog.program_instance)
-                teachers_list_name = "{}-{}".format(mailing_list_name, "teachers")
-                students_list_name = "{}-{}".format(mailing_list_name, "students")
+                mailing_list_name = "%s_%s" % (new_prog.program_type, new_prog.program_instance)
+                teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
+                students_list_name = "%s-%s" % (mailing_list_name, "students")
 
                 create_list(students_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
                 create_list(teachers_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
@@ -630,7 +632,7 @@ def submit_transaction(request):
         log_uri = request.build_absolute_uri(
             reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
         message = 'The following Cybersource postback could not be processed. Please ' + \
-                  'reconcile it by hand:\n\n    {}\n\n{}'.format(log_uri, traceback.format_exc())
+                  'reconcile it by hand:\n\n    %s\n\n%s' % (log_uri, traceback.format_exc())
         from_addr = settings.SERVER_EMAIL
         recipients = [settings.DEFAULT_EMAIL_ADDRESSES['treasury']]
         send_mail(subject, message, from_addr, recipients)
@@ -661,7 +663,7 @@ def _submit_transaction(request, log_record):
 
 def _redirect_from_identifier(identifier, result):
     program = IndividualAccountingController.program_from_identifier(identifier)
-    destination = "/learn/{}/cybersource?result={}".format(program.getUrlBase(), result)
+    destination = "/learn/%s/cybersource?result=%s" % (program.getUrlBase(), result)
     return HttpResponseRedirect(destination)
 
 # This really should go in qsd
@@ -748,7 +750,7 @@ def flushcache(request):
                 _cache = _cache._wrapped_cache
             if hasattr(_cache, "clear"):
                 _cache.clear()
-                mail_admins("Cache Flushed on server '%s'!" % request.META['SERVER_NAME'], "The cache was flushed by {}!  The following reason was given:\n\n{}".format(request.user.username, reason))
+                mail_admins("Cache Flushed on server '%s'!" % request.META['SERVER_NAME'], "The cache was flushed by %s!  The following reason was given:\n\n%s" % (request.user.username, reason))
                 context['success'] = "Cache Cleared."
             else:
                 context['error'] = "Error: This cache backend doesn't support the 'clear' method.  Sorry; you'll have to flush this one manually."
@@ -772,7 +774,11 @@ def get_email_data(start_date):
             req.num_rec = CommModule.approx_num_of_recipients(req.recipients, req.get_sendto_fn())
         req.num_sent = toes.filter(sent__isnull=False).count()
         if req.num_rec == req.num_sent:
-            req.finished_at = toes.order_by('-sent').first().sent
+            last_email = toes.order_by('-sent').first()
+            if last_email is not None:
+                req.finished_at = last_email.sent
+            else:
+                req.finished_at = "(Not finished)"
         else:
             req.finished_at = "(Not finished)"
         requests_list.append(req)
@@ -1055,12 +1061,12 @@ def statistics(request, program=None):
             #   Get list of users the query applies to
             users_q = Q()
             for program in programs:
-                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types'] and not form.cleaned_data['student_reg_types']:
+                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types']:
                     students_objects = program.students(QObjects=True)
                     for reg_type in form.cleaned_data['student_reg_types']:
                         if reg_type in list(students_objects.keys()):
                             users_q = users_q | students_objects[reg_type]
-                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types'] and not form.cleaned_data['teacher_reg_types']:
+                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types']:
                     teachers_objects = program.teachers(QObjects=True)
                     for reg_type in form.cleaned_data['teacher_reg_types']:
                         if reg_type in list(teachers_objects.keys()):
@@ -1075,7 +1081,7 @@ def statistics(request, program=None):
                 for item in form.cleaned_data['school_multisel']:
                     if item.startswith('K12:'):
                         k12school_ids.append(int(item[4:]))
-                    elif item.startwith('Sch:'):
+                    elif item.startswith('Sch:'):
                         school_names.append(item[4:])
                 users_q = users_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
 
@@ -1092,7 +1098,14 @@ def statistics(request, program=None):
 
             users = ESPUser.objects.filter(users_q).distinct()
             result_dict['num_users'] = users.count()
-            profiles = [user.getLastProfile() for user in users]
+            user_list = list(users)
+            # Batch-fetch latest profile per user to avoid N+1
+            profile_by_user = {}
+            if user_list:
+                for p in RegistrationProfile.objects.filter(user__in=users).select_related('user').order_by('user_id', '-last_ts'):
+                    if p.user_id not in profile_by_user:
+                        profile_by_user[p.user_id] = p
+            profiles = [profile_by_user.get(u.id) or RegistrationProfile(user=u) for u in user_list]
 
             #   Accumulate desired information for selected query
             from esp.program import statistics as statistics_functions

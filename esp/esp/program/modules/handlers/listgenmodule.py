@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -49,7 +47,7 @@ class UserAttributeGetter(object):
         """ Enter labels for available fields here; they are sorted alphabetically by key
             The values should be dictionaries with at least "label" and "usertype" keys.
             The value for the "label" key will be the text shown in the form.
-            The value for the "usertype" key should be a set of user types that the field is releveant for.
+            The value for the "usertype" key should be a set of user types that the field is relevant for.
             Use 'any' to show the field for all user types (all fields will be shown for combo lists, as well) """
         fields = {  '01_id': {'label': 'ID', 'usertype': {'any'}},
                     '02_username': {'label': 'Username', 'usertype': {'any'}},
@@ -275,7 +273,6 @@ class UserAttributeGetter(object):
         else:
             return None
 
-
 class ListGenForm(forms.Form):
     attr_choices = list(UserAttributeGetter.getFunctions().items())
     attr_choices.sort(key=lambda x: x[0])
@@ -286,7 +283,7 @@ class ListGenForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         usertype = kwargs.pop('usertype', 'any')
-        super(ListGenForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         #   If we have a specific recipient user type,
         #   filter to only the fields that are relevant to that user type
         if usertype != 'combo':

@@ -25,7 +25,6 @@ from esp.program.controllers.autoscheduler.data_model import \
     AS_Timeslot, AS_RoomSlot, AS_ResourceType
 from esp.program.controllers.autoscheduler import \
     util, config, resource_checker
-import six
 
 logger = logging.getLogger(__name__)
 
@@ -185,10 +184,10 @@ def save(schedule, check_consistency=True, check_constraints=True):
         schedule.run_constraint_checks()
 
     # Find all sections which we've actually moved.
-    changed_sections = {
+    changed_sections = set(
         section for section in schedule.class_sections.values()
         if section.initial_state
-        != section.scheduling_hash()}
+        != section.scheduling_hash())
     # Note: we need to be careful not to cache anything after we save
     # because a rollback will not roll back the cache. Ideally we would flush
     # the relevant entries of cache but I don't know how to do that. (TODO)
@@ -266,7 +265,7 @@ def check_can_schedule_sections(section_infos, schedule):
     and verifies the following for each section that we want to schedule:
         - That the teacher is not teaching another class at that time
         - That the rooms are not currently in use by another class
-    A SchedulingError is thrown if any of thes occur, otherwise nothing
+    A SchedulingError is thrown if any of these occur, otherwise nothing
     happens. This function should avoid caching anything because the cached
     value won't get rolled back by the transaction"""
     locked_sections = set(module_ext.AJAXSectionDetail.objects.filter(
@@ -316,14 +315,14 @@ def ensure_section_not_moved(section, as_section):
     assert section.id == as_section.id, "Unexpected ID mismatch"
     if scheduling_hash_of(section) != as_section.initial_state:
         raise SchedulingError(
-                f"Section {section.emailcode()} was moved.")
+                "Section {} was moved.".format(section.emailcode()))
 
 
 @util.timed_func("db_interface_unschedule_section")
 def unschedule_section(
         section, ajax_change_log, unscheduled_sections_log=None):
     """Unschedules a ClassSection and records it as needed."""
-    logger.info(f"Unscheduling {section.emailcode()}")
+    logger.info("Unscheduling {}".format(section.emailcode()))
     section.clear_meeting_times()
     section.clearRooms()
     if unscheduled_sections_log is not None:
@@ -432,8 +431,8 @@ def load_section_assignments(section_ids):
     meeting_times = ClassSection.objects.filter(
         id__in=section_ids
     ).values_list("id", "meeting_times")
-    all_meeting_times = {time for sec, time in meeting_times if time is
-                            not None}
+    all_meeting_times = set(time for sec, time in meeting_times if time is
+                            not None)
     meeting_time_objs = Event.objects.filter(
         id__in=all_meeting_times
     ).select_related()
@@ -626,7 +625,7 @@ def scheduling_hash_of(
                             for e in meeting_times])
     rooms = (rooms_by_section[section.id] if rooms_by_section is not None
              else section.classrooms())
-    rooms = sorted(list({r.name for r in rooms}))
+    rooms = sorted(list(set(r.name for r in rooms)))
     return json.dumps([meeting_times, rooms])
 
 
@@ -678,7 +677,7 @@ def convert_classroom_resources(
                 if target in known_sections:
                     raise SchedulingError(
                         "Room {} is double-booked and has known section " +
-                        f"num {classroom.name}")
+                        "num {}".format(classroom.name, target))
         elif len(assignments) == 1:
             target = assignments[0]
             if target not in known_sections:

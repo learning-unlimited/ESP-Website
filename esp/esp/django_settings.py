@@ -384,7 +384,7 @@ FILEBROWSER_DIRECTORY = ''
 
 FILEBROWSER_EXTENSIONS = {
     'Image': ['.jpg', '.jpeg', '.gif', '.png', '.tif', '.tiff', '.ico'],
-    'Document': ['.pdf', '.doc', '.rtf', '.txt', '.xls', '.csv'],
+    'Document': ['.pdf', '.doc', '.rtf', '.txt', '.xls', '.xlsx', '.csv'],
     'Video': ['.mov', '.wmv', '.mpeg', '.mpg', '.avi', '.rm'],
     'Audio': ['.mp3', '.mp4', '.wav', '.aiff', '.midi', '.m4p'],
 }
