@@ -457,7 +457,7 @@ class ClassSection(models.Model):
                 opt = self.parent_class.class_size_optimal
                 room_cap = self._get_room_capacity(rooms)
                 upper = self._max_none_safe(range_max, opt)
-                ans = self._min_none_safe(upper, room_cap) if upper is not None or room_cap is not None else ans
+                ans = self._min_none_safe(upper, room_cap)
             elif self.parent_class.class_size_optimal and len(rooms) != 0:
                 opt = self.parent_class.class_size_optimal
                 room_cap = self._get_room_capacity(rooms)
