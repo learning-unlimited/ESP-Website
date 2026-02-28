@@ -21,9 +21,6 @@ from esp.survey.models import (
     SurveyResponse,
 )
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser
-
-import random
 
 
 def _setup_roles():
@@ -368,3 +365,98 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         self.assertIn('4.0', content)
         # Response count should be visible
         self.assertIn('1', content)
+
+    def test_admin_post_search_for_teacher(self):
+        """Admin can search for a teacher via POST form."""
+        admin = self.admins[0]
+        self.client.login(username=admin.username, password='password')
+        response = self.client.post(
+            '/myesp/survey_responses',
+            {'target_user': self.teacher.id})
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn(self.teacher.name(), content)
+        self.assertIn(self.program.niceName(), content)
+
+    def test_admin_post_invalid_form(self):
+        """Admin POST with invalid data shows form errors, not crash."""
+        admin = self.admins[0]
+        self.client.login(username=admin.username, password='password')
+        response = self.client.post(
+            '/myesp/survey_responses',
+            {'target_user': 'not-a-valid-id'})
+        self.assertEqual(response.status_code, 200)
+
+    def test_teacher_no_responses_but_survey_exists(self):
+        """A teacher with sections and a survey but zero responses doesn't crash."""
+        self.response.delete()
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/myesp/survey_responses')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('N/A', content)
+        self.assertIn('0', content)
+
+
+class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
+    """Tests for multi-section class aggregation in the survey page."""
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 2, 'classes_per_teacher': 1, 'sections_per_class': 2,
+            'num_rooms': 6,
+        })
+        super().setUp(*args, **kwargs)
+
+        self.add_student_profiles()
+        self.schedule_randomly()
+
+        for pmo in self.program.getModules():
+            pmo.__class__ = ProgramModuleObj
+            pmo.required = False
+            pmo.save()
+
+        self.survey, _ = Survey.objects.get_or_create(
+            name='Multi-Section Survey', program=self.program, category='learn')
+        number_qtype, _ = QuestionType.objects.get_or_create(
+            name='numeric rating', is_numeric=True, is_countable=True,
+            _param_names="Number of ratings|Lower text|Middle text|Upper text")
+        self.question_rating, _ = Question.objects.get_or_create(
+            survey=self.survey, name='Rate this class',
+            question_type=number_qtype, per_class=True, seq=1,
+            _param_values="5|Bad|OK|Great")
+
+        self.teacher = self.teachers[0]
+        self.sections = list(self.teacher.getTaughtSections(self.program).order_by('id'))
+        assert len(self.sections) >= 2, "Need at least 2 sections for this test"
+
+        section_ct = ContentType.objects.get_for_model(self.sections[0])
+        # Section 1: rating 3
+        resp1 = SurveyResponse.objects.create(survey=self.survey)
+        Answer.objects.create(
+            survey_response=resp1, question=self.question_rating,
+            content_type=section_ct, object_id=self.sections[0].id,
+            value='3', value_type="<class 'str'>")
+        # Section 2: rating 5
+        resp2 = SurveyResponse.objects.create(survey=self.survey)
+        Answer.objects.create(
+            survey_response=resp2, question=self.question_rating,
+            content_type=section_ct, object_id=self.sections[1].id,
+            value='5', value_type="<class 'str'>")
+
+    def test_summary_aggregates_across_sections(self):
+        """Summary shows one row per class with aggregated data, not per-section."""
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/myesp/survey_responses')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        # Should show aggregated avg: (3+5)/2 = 4.0
+        self.assertIn('4.0', content)
+        # Should show total 2 responses
+        self.assertIn('2', content)
+        # The class emailcode should appear only once in summary table
+        emailcode = self.sections[0].parent_class.emailcode()
+        summary_section = content.split('Detailed Responses')[0]
+        self.assertEqual(summary_section.count(emailcode), 1,
+                         "Class should appear exactly once in summary table")

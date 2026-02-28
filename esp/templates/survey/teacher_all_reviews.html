@@ -195,12 +195,11 @@ td, th { padding: 5px !important; }
 <tbody>
 {% for entry in programs_data %}
     {% for cs in entry.classes_summary %}
-        {% ifchanged cs.section.parent_class.id %}
-        <tr onclick="toggleAccordion('prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}'); toggleClassAccordion('prog-{{ entry.program.id }}-class-{{ cs.section.parent_class.id }}');" title="Click to view responses">
+        <tr onclick="toggleAccordion('prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}'); toggleClassAccordion('prog-{{ entry.program.id }}-class-{{ cs.class.id }}');" title="Click to view responses">
             <td>
                 <strong>{{ entry.program.niceName }}</strong>
             </td>
-            <td>{{ cs.section.parent_class.emailcode }}: <span class="tex2jax_ignore">{{ cs.section.title }}</span></td>
+            <td>{{ cs.emailcode }}: <span class="tex2jax_ignore">{{ cs.title }}</span></td>
             <td>
                 {% if cs.avg_rating != None %}
                     <span class="rating-badge {% if cs.avg_rating >= 4 %}rating-high{% elif cs.avg_rating >= 3 %}rating-mid{% else %}rating-low{% endif %}">
@@ -213,7 +212,6 @@ td, th { padding: 5px !important; }
             <td>{{ cs.total_responses }}</td>
             <td style="color:#417e68;">&#9654;</td>
         </tr>
-        {% endifchanged %}
     {% endfor %}
 {% endfor %}
 </tbody>
@@ -244,7 +242,7 @@ td, th { padding: 5px !important; }
                     <div class="class-accordion-header" onclick="event.stopPropagation(); toggleClassAccordion('prog-{{ entry.program.id }}-class-{{ sec.parent_class.id }}');">
                         <h3>{{ sec.parent_class.emailcode }}: <span class="tex2jax_ignore">{{ sec.title }}</span>
                         {% for cs in entry.classes_summary %}
-                            {% if cs.section.parent_class.id == sec.parent_class.id %}
+                            {% if cs.class.id == sec.parent_class.id %}
                                 <span class="stats-inline">
                                     {% if cs.avg_rating != None %}(avg: {{ cs.avg_rating }}, {% else %}({% endif %}{{ cs.total_responses }} responses)
                                 </span>

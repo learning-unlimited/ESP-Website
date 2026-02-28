@@ -36,12 +36,11 @@ Learning Unlimited, Inc.
 """
 
 import datetime
-import logging
 import openpyxl
 import re
 from io import BytesIO
 from django.db import models
-from django.db.models import Q, Count
+from django.db.models import Count, Min, Q
 from django.contrib.contenttypes.models import ContentType
 from esp.users.models import ESPUser, Record, RecordType, admin_required
 from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
@@ -55,10 +54,6 @@ from esp.users.forms.generic_search_form import ApprovedTeacherSearchForm
 from django.http import Http404, HttpResponse
 from wsgiref.util import FileWrapper
 from django.contrib.auth.decorators import login_required
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, Min
-
-logger = logging.getLogger(__name__)
 
 @login_required
 def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):
@@ -455,6 +450,7 @@ def teacher_survey_all(request):
             'parent_program_id', flat=True
         ).distinct()
         programs = Program.objects.filter(id__in=program_ids).order_by('-id')
+        section_ct = ContentType.objects.get_for_model(ClassSection)
 
         for prog in programs:
             surveys = prog.getSurveys().filter(
@@ -469,7 +465,6 @@ def teacher_survey_all(request):
             if not sections:
                 continue
 
-            section_ct = ContentType.objects.get_for_model(ClassSection)
             section_ids = [sec.id for sec in sections]
             for survey in surveys:
                 # Batch query 1: response counts per section (single query)
@@ -485,7 +480,7 @@ def teacher_survey_all(request):
                 )
 
                 # Batch query 2: numeric ratings per section (single query)
-                avg_ratings = {}
+                section_ratings = {}
                 first_numeric = survey.questions.filter(
                     question_type__is_numeric=True, per_class=True
                 ).first()
@@ -495,23 +490,38 @@ def teacher_survey_all(request):
                         content_type=section_ct,
                         object_id__in=section_ids,
                     ).values_list('object_id', 'value')
-                    # Group values by section and compute averages in memory
-                    section_vals = {}
                     for obj_id, val in raw_values:
                         try:
-                            section_vals.setdefault(obj_id, []).append(float(val))
+                            section_ratings.setdefault(obj_id, []).append(float(val))
                         except (ValueError, TypeError):
                             pass
-                    for obj_id, vals in section_vals.items():
-                        if vals:
-                            avg_ratings[obj_id] = round(sum(vals) / len(vals), 1)
+
+                # Aggregate per-class: sum responses, weighted-average rating
+                class_data = {}  # parent_class_id -> {class, total, rating_vals}
+                for sec in sections:
+                    cid = sec.parent_class_id
+                    if cid not in class_data:
+                        class_data[cid] = {
+                            'class': sec.parent_class,
+                            'emailcode': sec.parent_class.emailcode(),
+                            'title': sec.title,
+                            'total_responses': 0,
+                            'rating_vals': [],
+                        }
+                    class_data[cid]['total_responses'] += response_counts.get(sec.id, 0)
+                    class_data[cid]['rating_vals'].extend(
+                        section_ratings.get(sec.id, [])
+                    )
 
                 classes_summary = []
-                for sec in sections:
+                for cid, cd in class_data.items():
+                    vals = cd['rating_vals']
                     classes_summary.append({
-                        'section': sec,
-                        'total_responses': response_counts.get(sec.id, 0),
-                        'avg_rating': avg_ratings.get(sec.id),
+                        'class': cd['class'],
+                        'emailcode': cd['emailcode'],
+                        'title': cd['title'],
+                        'total_responses': cd['total_responses'],
+                        'avg_rating': round(sum(vals) / len(vals), 1) if vals else None,
                     })
 
                 programs_data.append({
