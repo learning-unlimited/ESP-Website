@@ -1062,7 +1062,7 @@ class Program(models.Model, CustomFormsLinkModel):
         unreturned_keys = set(
             ResourceAssignment.objects.filter(
                 resource__name__in=floating_names,
-                resource__res_type__in=floating_type_ids,
+                resource__res_type_id__in=floating_type_ids,
                 resource__event__end__lte=timeslot.start,
                 resource__event__program=self,
                 resource__is_unique=True,

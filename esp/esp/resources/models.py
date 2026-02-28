@@ -264,7 +264,7 @@ class Resource(models.Model):
         if override:
             self.clear_assignments()
         if self.is_available():
-            if check_constraint and self.is_unique and self.has_unreturned_prior_assignment(self.event):
+            if check_constraint and self.is_unique and self.res_type.name != 'Classroom' and self.has_unreturned_prior_assignment(self.event, ignore_section=section):
                 raise ESPError(
                     'Resource %s has not been returned from a prior assignment.' % self.name,
                     log=True
@@ -353,19 +353,26 @@ class Resource(models.Model):
             collision = ResourceAssignment.objects.filter(resource=self)
             return collision.exists()
 
-    def has_unreturned_prior_assignment(self, timeslot):
+    def has_unreturned_prior_assignment(self, timeslot, ignore_section=None):
         """Check if any identical resource (same name and type) in an earlier
-        timeslot has an unreturned ResourceAssignment."""
+        timeslot has an unreturned ResourceAssignment.
+
+        If ignore_section is provided, assignments to that section are excluded
+        so that multi-timeslot classes can be assigned without self-blocking."""
         earlier_resources = Resource.objects.filter(
             name=self.name,
             res_type=self.res_type,
+            is_unique=True,
             event__end__lte=timeslot.start,
             event__program=timeslot.program,
         )
-        return ResourceAssignment.objects.filter(
+        query = ResourceAssignment.objects.filter(
             resource__in=earlier_resources,
             returned=False,
-        ).exists()
+        )
+        if ignore_section is not None:
+            query = query.exclude(target=ignore_section)
+        return query.exists()
 
 @python_2_unicode_compatible
 class AssignmentGroup(models.Model):
