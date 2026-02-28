@@ -395,7 +395,7 @@ class Command(BaseCommand):
                 defaults=dict(
                     name=spec['name'], grade_min=spec['grade_min'],
                     grade_max=spec['grade_max'],
-                    director_email='director@example.com',
+                    director_email='director@devsite.learningu.org',
                     director_cc_email='', director_confidential_email='',
                     program_size_max=200, program_allow_waitlist=True,
                 ))
