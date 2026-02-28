@@ -210,7 +210,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         #   Add program-custom form components (for inlining additional questions without
         #   introducing a separate program module)
-        custom_fields = get_custom_fields()
+        custom_fields = get_custom_fields(prog)
         for field_name in custom_fields:
             self.fields[field_name] = custom_fields[field_name]
 

@@ -10,6 +10,7 @@ from esp.cal.models import Event
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken
+from esp.program.models.teacher_custom_fields import TeacherRegistrationCustomField
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
 from esp.tagdict import all_program_tags, tag_categories
 from esp.tagdict.models import Tag
@@ -249,3 +250,124 @@ class ProgramTagSettingsForm(BetterForm):
 
     class Meta:
         fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags[key].get('category') == cat], 'legend': tag_categories[cat]}) for cat in tag_categories.keys()]
+
+
+class TeacherCustomFieldForm(forms.ModelForm):
+    """
+    Form for adding/editing custom teacher registration fields.
+    This allows chapter administrators to add custom fields without
+    requiring developer support or hardcoded Python changes.
+    """
+    
+    class Meta:
+        model = TeacherRegistrationCustomField
+        fields = ['field_name', 'field_type', 'label', 'help_text', 'required', 
+                  'position', 'choices', 'max_length', 'min_value', 'max_value', 'is_visible']
+        widgets = {
+            'help_text': forms.Textarea(attrs={'rows': 3}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.program = kwargs.pop('program', None)
+        super().__init__(*args, **kwargs)
+        # Only show choice-related fields when appropriate
+        self.update_field_visibility()
+    
+    def update_field_visibility(self):
+        """Show/hide fields based on field_type selection."""
+        field_type = self.cleaned_data.get('field_type', 'text') if self.is_bound else self.initial.get('field_type', 'text')
+        
+        # Fields to show only for choice-based types
+        choice_fields = ['choices']
+        # Fields to show for text types
+        text_fields = ['max_length']
+        # Fields to show for number types
+        number_fields = ['min_value', 'max_value']
+        
+        for field in choice_fields:
+            if field in self.fields:
+                self.fields[field].required = field_type in ('select', 'multiselect', 'radio')
+        
+        for field in text_fields:
+            if field in self.fields:
+                self.fields[field].widget.attrs['style'] = 'display:none' if field_type not in ('text', 'textarea') else ''
+        
+        for field in number_fields:
+            if field in self.fields:
+                self.fields[field].widget.attrs['style'] = 'display:none' if field_type not in ('integer', 'float') else ''
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        field_type = cleaned_data.get('field_type')
+        
+        # Validate choices for choice-based fields
+        if field_type in ('select', 'multiselect', 'radio'):
+            if not cleaned_data.get('choices'):
+                self.add_error('choices', 'Choices are required for dropdown, radio, or multi-select fields.')
+        
+        # Validate numeric bounds
+        min_val = cleaned_data.get('min_value')
+        max_val = cleaned_data.get('max_value')
+        if min_val is not None and max_val is not None and min_val >= max_val:
+            self.add_error('min_value', 'Minimum value must be less than maximum value.')
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.program:
+            instance.program = self.program
+        if commit:
+            instance.save()
+        return instance
+
+
+class TeacherCustomFieldsForm(forms.Form):
+    """
+    Form for managing the list of custom teacher registration fields.
+    This provides a simple interface for admins to add, edit, and remove custom fields.
+    """
+    
+    def __init__(self, program, *args, **kwargs):
+        self.program = program
+        super().__init__(*args, **kwargs)
+        
+        # Get existing custom fields for this program
+        self.custom_fields = TeacherRegistrationCustomField.objects.filter(
+            program=program
+        ).order_by('position', 'label')
+    
+    def get_fields_for_editing(self):
+        """Return a list of custom fields that can be edited."""
+        return list(self.custom_fields)
+    
+    def add_field(self, field_data):
+        """Add a new custom field."""
+        field = TeacherRegistrationCustomField(
+            program=self.program,
+            field_name=field_data['field_name'],
+            field_type=field_data['field_type'],
+            label=field_data['label'],
+            help_text=field_data.get('help_text', ''),
+            required=field_data.get('required', False),
+            position=field_data.get('position', 0),
+            choices=field_data.get('choices', ''),
+            max_length=field_data.get('max_length'),
+            min_value=field_data.get('min_value'),
+            max_value=field_data.get('max_value'),
+            is_visible=field_data.get('is_visible', True),
+        )
+        field.save()
+        return field
+    
+    def update_field(self, field_id, field_data):
+        """Update an existing custom field."""
+        field = TeacherRegistrationCustomField.objects.get(id=field_id, program=self.program)
+        for key, value in field_data.items():
+            setattr(field, key, value)
+        field.save()
+        return field
+    
+    def delete_field(self, field_id):
+        """Delete a custom field."""
+        TeacherRegistrationCustomField.objects.filter(id=field_id, program=self.program).delete()

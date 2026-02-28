@@ -373,3 +373,56 @@ class ModeratorRecordAdmin(admin.ModelAdmin):
     search_fields = ['user__username']
     list_filter = ['program', 'will_moderate']
 admin_site.register(ModeratorRecord, ModeratorRecordAdmin)
+
+# Import and register custom teacher registration field models
+from esp.program.models.teacher_custom_fields import TeacherRegistrationCustomField, TeacherRegistrationCustomFieldValue
+
+class TeacherRegistrationCustomFieldAdmin(admin.ModelAdmin):
+    """Admin interface for managing custom teacher registration fields."""
+    
+    list_display = ['label', 'field_name', 'field_type', 'required', 'position', 'is_visible', 'program']
+    list_filter = ['field_type', 'required', 'is_visible', 'program']
+    search_fields = ['label', 'field_name', 'help_text']
+    ordering = ['program', 'position', 'label']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('program', 'field_name', 'field_type', 'label')
+        }),
+        ('Display Options', {
+            'fields': ('help_text', 'required', 'position', 'is_visible')
+        }),
+        ('Choices (for dropdown/radio fields)', {
+            'fields': ('choices',),
+            'classes': ('collapse',),
+            'description': 'Enter comma-separated choices for dropdown, radio button, or multi-select fields.'
+        }),
+        ('Validation', {
+            'fields': ('max_length', 'min_value', 'max_value'),
+            'classes': ('collapse',),
+            'description': 'Optional validation settings for text and number fields.'
+        }),
+    )
+    
+    def get_readonly_fields(self, request, obj=None):
+        # Make field_name readonly after creation to prevent breaking existing data
+        if obj:
+            return ['program', 'field_name']
+        return ['program']
+
+
+class TeacherRegistrationCustomFieldValueAdmin(admin.ModelAdmin):
+    """Admin interface for viewing custom field values."""
+    
+    list_display = ['field', 'class_subject_id', 'value', 'get_display_value']
+    list_filter = ['field__program', 'field']
+    search_fields = ['value', 'field__label', 'field__field_name']
+    readonly_fields = ['field', 'class_subject_id', 'value']
+    
+    def get_display_value(self, obj):
+        return obj.get_display_value()
+    get_display_value.short_description = 'Display Value'
+
+
+admin_site.register(TeacherRegistrationCustomField, TeacherRegistrationCustomFieldAdmin)
+admin_site.register(TeacherRegistrationCustomFieldValue, TeacherRegistrationCustomFieldValueAdmin)

@@ -1,5 +1,6 @@
 from esp.mailman import add_list_member
 from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
+from esp.program.models.teacher_custom_fields import TeacherRegistrationCustomField
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.resources.forms import ResourceRequestFormSet
@@ -18,8 +19,19 @@ from decimal import Decimal
 import json
 from django.conf import settings
 
-def get_custom_fields():
+def get_custom_fields(program=None):
+    """
+    Get custom fields for teacher registration from both:
+    1. Hardcoded Python forms (via Tag system)
+    2. Database-defined custom fields (TeacherRegistrationCustomField)
+    
+    Returns an OrderedDict of field_name -> form field
+    """
+    from esp.program.controllers.classreg import get_custom_fields as _get_hardcoded_fields
+    
     result = OrderedDict()
+    
+    # First, get hardcoded custom fields from Python files (existing behavior)
     form_list_str = Tag.getTag('teacherreg_custom_forms')
     if form_list_str:
         form_cls_list = json.loads(form_list_str)
@@ -28,6 +40,17 @@ def get_custom_fields():
             cls = getattr(mod, item)
             for field in cls.base_fields:
                 result[field] = cls.base_fields[field]
+    
+    # Then, add database-defined custom fields (these override hardcoded fields if there's a name conflict)
+    if program is not None:
+        db_fields = TeacherRegistrationCustomField.objects.filter(
+            program=program, 
+            is_visible=True
+        ).order_by('position', 'label')
+        
+        for field in db_fields:
+            result[field.field_name] = field.to_form_field()
+    
     return result
 
 class ClassCreationValidationError(Exception):
@@ -112,7 +135,7 @@ class ClassCreationController(object):
             cls.propose()
 
     def set_class_data(self, cls, reg_form):
-        custom_fields = get_custom_fields()
+        custom_fields = get_custom_fields(self.program)
         custom_data = {}
 
         for k, v in reg_form.cleaned_data.items():

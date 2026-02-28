@@ -1,6 +1,7 @@
 {% extends "main.html" %}
 
 {% load render_qsd %}
+{% load modules %}
 
 {% block title %}Teacher Registration{% endblock %}
 
@@ -21,7 +22,22 @@
 
 <h1>{{ addoredit }}ing a {{ classtype }} for {{ program.niceName }}</h1>
 
+{# Admin configuration banner #}
+{% if request.user.isAdministrator %}
+<div class="alert alert-info" role="alert">
+    <strong><span class="glyphicon glyphicon-cog" aria-hidden="true"></span> Administrator:</strong>
+    Want to edit this form? <a href="/manage/{{ program.getUrlBase }}/tags/" class="alert-link">Click HERE</a> to configure form fields, labels, help text, and add custom fields.
+</div>
+{% endif %}
+
 {% if manage %}
+    {# Admin configuration banner for manage page #}
+    {% if request.user.isAdministrator %}
+    <div class="alert alert-info" role="alert">
+        <strong><span class="glyphicon glyphicon-cog" aria-hidden="true"></span> Administrator:</strong>
+        Want to edit this form? <a href="/manage/{{ program.getUrlBase }}/tags/" class="alert-link">Click HERE</a> to configure form fields, labels, help text, and add custom fields.
+    </div>
+    {% endif %}
     <p>
     <a href="/manage/{{ program.getUrlBase }}/dashboard">Return to the {{ program.niceName }} dashboard</a><br />
     <a href="/manage/{{ program.getUrlBase }}/main">Return to the {{ program.niceName }} admin portal</a><br />
