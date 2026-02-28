@@ -690,7 +690,7 @@ class LotteryAssignmentController(object):
             assignments = numpy.nonzero(self.priority[1][self.student_indices[student_id],:])[0]
         else:
             import re
-            p = re.search('(?<=priority_)\d*', mode).group(0)
+            p = re.search(r'(?<=priority_)\d*', mode).group(0)
             if p:
                 assignments = numpy.nonzero(self.priority[p][self.student_indices[student_id],:])[0]
         result = []
