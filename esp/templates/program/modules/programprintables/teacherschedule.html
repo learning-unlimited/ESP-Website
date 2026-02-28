@@ -1,7 +1,7 @@
 <html>
 
 <head>
-    <title>{% if teachers %}Teacher {% if moderators %}and {% endif %}{% endif %}{% if moderators %} {{ program.getModeratorTitle }} {% endif %}Schedules</title>
+    <title>{% if teachers %}Teacher {% endif %}{% if teachers and moderators %}and {% endif %}{% if moderators %}{{ program.getModeratorTitle }} {% endif %}Schedules</title>
     <link rel='stylesheet' type='text/css' href='/media/styles/teacherschedule.css' />
     <script type="text/javascript" src="/media/scripts/nametag_barcodes.js"></script>
 </head>
@@ -28,7 +28,7 @@
         </tr>
         <tr>
             <td width="35%"></td>
-            <td class="title">{% if teachers %}Teacher {% if moderators %}and {% endif %}{% endif %}{% if moderators %} {{ program.getModeratorTitle }} {% endif %}Schedule for <h2>{{ scheditem.name }}</h2>
+            <td class="title">{% if teachers %}Teacher {% endif %}{% if teachers and moderators %}and {% endif %}{% if moderators %}{{ program.getModeratorTitle }} {% endif %} Schedule for <h2>{{ scheditem.name }}</h2>
             </td>
             <td width="35%">
                 <div class="barcode">
@@ -39,16 +39,44 @@
                     (function () {
                         var tid = "{{ scheditem.teacher.id|escapejs }}";
                         var el = document.getElementById("inputdata" + tid);
-                        if (el) {
-                            var barcodeHtml = DrawHTMLBarcode_Code39(tid, 0, "yes", "in", 0, 1.5, .75, 2.5, "bottom", "center", "", "black", "white");
-                            var parser = new DOMParser();
-                            var doc = parser.parseFromString(barcodeHtml, 'text/html');
-                            while (el.firstChild) {
-                                el.removeChild(el.firstChild);
+                        if (el && typeof EncodeCode39 === 'function') {
+                            var pattern = EncodeCode39(tid, 0);
+                            var humanText = typeof ConnectCode_Encode_Code39 === 'function' ? ConnectCode_Encode_Code39(tid, 0) : tid;
+
+                            while (el.firstChild) { el.removeChild(el.firstChild); }
+
+                            var container = document.createElement('div');
+                            container.style.textAlign = 'center';
+
+                            var bw = 1.5; // barWidth
+                            var tw = bw * 3; // thickWidth
+                            var h = 0.75; // height
+                            var units = 'in';
+                            var foreColor = 'black';
+
+                            var swing = 1;
+                            for (var i = 0; i < pattern.length; i++) {
+                                var span = document.createElement('span');
+                                var brush = (swing === 0) ? 'white' : foreColor;
+                                var char = pattern.charAt(i);
+                                var width = (char === 'w') ? tw : bw;
+
+                                span.style.borderLeft = width + units + ' solid ' + brush;
+                                span.style.height = h + units;
+                                span.style.display = 'inline-block';
+                                container.appendChild(span);
+
+                                swing = (swing === 0) ? 1 : 0;
                             }
-                            while (doc.body.firstChild) {
-                                el.appendChild(doc.body.firstChild);
-                            }
+
+                            var hrSpan = document.createElement('span');
+                            hrSpan.style.display = 'block';
+                            hrSpan.style.fontFamily = 'arial';
+                            hrSpan.style.fontSize = '12pt';
+                            hrSpan.textContent = humanText;
+                            container.appendChild(hrSpan);
+
+                            el.appendChild(container);
                         }
                     })();
                     /* ]]> */
