@@ -32,7 +32,7 @@ This is the anonymous survey response of a single student at {{ program.niceName
     {% if answers|length_is:0 %}
     </center>
     <p>
-    This survey response contains no results for any of the classes that you taught.  To see the aggregate results for your classes, <a href="/teach/{{ program.getUrlBase }}/survey/review">click here</a>.  Here are the individual survey responses relevant to you (e.g. students that took one or more of your classes):
+    This survey response contains no results for any of the classes that you taught.  To see the aggregate results for your classes, <a href="/teach/{{ program.getUrlBase }}/survey/review">Here are the individual survey responses relevant to you</a>.
     <ul>
     {% for resp in other_responses %}
     <li><a href="/teach/{{ program.getUrlBase }}/survey/review_single?{{ resp.id }}">Survey response #{{ resp.id }}</a></li>

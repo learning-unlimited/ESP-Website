@@ -29,8 +29,11 @@ You have chosen to delete the equipment resource: {{ equipment }}, for {{ prog.n
     <tr><th class="small">Resource type:</th><td>{{ equipment.res_type }}</td></tr>
     <tr><th class="small">Times Available:</th><td>{% for t in equipment.matching_times %}{{ t.short_description }}<br />{% endfor %}</td></tr>
     <tr><th class="small">Options:</th>
-        <td align="center"><a href="/manage/{{ prog.getUrlBase }}/resources">Return to resource editor</a>, or click here:
-        <input class="fancybutton" value="Delete" type="submit" /></td>
+        <td align="center">
+        <a href="/manage/{{ prog.getUrlBase }}/resources">Return to resource editor</a>
+        <br /><br />
+        <input class="fancybutton" value="Delete" type="submit" />
+        </td>
     </tr>
 </table>
 </form>
