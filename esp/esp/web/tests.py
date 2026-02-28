@@ -58,11 +58,11 @@ class PageTest(TestCase):
     # Util Functions
     def assertStringContains(self, string, contents):
         if not (contents in string):
-            self.assert_(False, "'%s' not in '%s'" % (contents, string))
+            self.fail("'%s' not in '%s'" % (contents, string))
 
     def assertNotStringContains(self, string, contents):
         if contents in string:
-            self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
+            self.fail("'%s' are in '%s' and shouldn't be" % (contents, string))
 
 
     def testHomePage(self):
