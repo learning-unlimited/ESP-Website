@@ -79,7 +79,7 @@ class TagTest(TestCase):
 
         user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
 
-        self.assertFalse(Tag.getTag("test", user), "Retrieved a tag for key 'test' target '%s', but we haven't set one yet!" % (user))
+        self.assertFalse(Tag.getTag("test", user), f"Retrieved a tag for key 'test' target '{user}', but we haven't set one yet!")
         Tag.setTag("test", user, "frobbed again")
         self.assertEqual(Tag.getTag("test", user), "frobbed again")
         Tag.setTag("test", user)
