@@ -89,13 +89,17 @@ Expects:
     <tr>
         <td width="100%" colspan="2">
         {% ifequal q.question.question_type.name "Favorite Class" %}
-            <ol>
+            <ul class="favorite-classes-list">
             {% for fav in q.answers|unpack_answers|favorite_classes:20 %}
-                <li>{{ fav.title }} ({{fav.votes}} votes)</li>
+                <li>
+                    <span class="rank-badge">{{ forloop.counter }}</span>
+                    <span class="class-title">{{ fav.title }}</span>
+                    <span class="label label-primary vote-badge">{{ fav.votes }} vote{{ fav.votes|pluralize }}</span>
+                </li>
             {% empty %}
                 <li>There are no responses to this question.</li>
             {% endfor %}
-            </ol>
+            </ul>
         {% else %}
             <ul>
             {% for ans in q.answers|drop_empty_answers %}
