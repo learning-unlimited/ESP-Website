@@ -58,11 +58,11 @@ class PageTest(TestCase):
     # Util Functions
     def assertStringContains(self, string, contents):
         if not (contents in string):
-            self.assert_(False, "'%s' not in '%s'" % (contents, string))
+            self.assert_(False, f"'{contents}' not in '{string}'")
 
     def assertNotStringContains(self, string, contents):
         if contents in string:
-            self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
+            self.assert_(False, f"'{contents}' are in '{string}' and shouldn't be")
 
 
     def testHomePage(self):
@@ -104,25 +104,25 @@ class NavbarTest(TestCase):
 
         #   Clear navbars and ensure we get nothing
         NavBarEntry.objects.all().delete()
-        self.assertTrue(self.get_navbar_titles('/') == [], 'Non-existent navbars appearing: got %s, expected %s' % (self.get_navbar_titles('/'), []))
+        self.assertTrue(self.get_navbar_titles('/') == [], f'Non-existent navbars appearing: got {self.get_navbar_titles("/")}, expected {[]}')
 
         #   Check that when you create a nav bar it shows up
         n1 = NavBarEntry(category=home_category, sort_rank=0, text='NavBar1', indent=False)
         n1.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1'], 'New navbar not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar1']))
+        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1'], f'New navbar not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar1"]}')
 
         #   Check that when you edit a nav bar it changes
         n1.text = 'NavBar1A'
         n1.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1A'], 'Changes to navbar not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar1A']))
+        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1A'], f'Changes to navbar not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar1A"]}')
 
         #   Check that you can create a navbar and reorder them
         n2 = NavBarEntry(category=home_category, sort_rank=10, text='NavBar2', indent=False)
         n2.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1A', 'NavBar2'], 'Additional navbar not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar1A', 'NavBar2']))
+        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1A', 'NavBar2'], f'Additional navbar not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar1A", "NavBar2"]}')
         n1.sort_rank = 20
         n1.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar2', 'NavBar1A'], 'Altered navbar order not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar2', 'NavBar1A']))
+        self.assertTrue(self.get_navbar_titles('/') == ['NavBar2', 'NavBar1A'], f'Altered navbar order not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar2", "NavBar1A"]}')
 
 
 class NavBarAdminDeletionTest(TestCase):
@@ -250,7 +250,7 @@ class JavascriptSyntaxTest(TestCase):
             closure_path = settings.CLOSURE_COMPILER_PATH.rstrip('/') + '/'
         else:
             closure_path = ''
-        if not os.path.exists('%scompiler.jar' % closure_path):
+        if not os.path.exists(f'{closure_path}compiler.jar'):
             if display: logger.info('Closure compiler not found.  Checked CLOSURE_COMPILER_PATH ="%s"', closure_path)
             return
 
@@ -288,11 +288,11 @@ class JavascriptSyntaxTest(TestCase):
                     if exclude:
                         continue
 
-                    file_list.append('%s/%s' % (dirpath, file))
+                    file_list.append(f'{dirpath}/{file}')
                     num_files += 1
 
-        file_args = ' '.join([('--js %s' % file) for file in file_list])
-        os.system('java -jar %s/compiler.jar %s --js_output_file %s 2> %s' % (closure_path, file_args, closure_output_code, closure_output_file))
+        file_args = ' '.join([f'--js {file}' for file in file_list])
+        os.system(f'java -jar {closure_path}/compiler.jar {file_args} --js_output_file {closure_output_code} 2> {closure_output_file}')
         checkfile = open(closure_output_file)
 
         results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]

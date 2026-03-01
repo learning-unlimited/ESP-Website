@@ -262,6 +262,6 @@ def myesp_onsite(request):
     progs = list(progs.order_by("-id"))
 
     if len(progs) == 1:
-        return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
+        return HttpResponseRedirect(f'/onsite/{progs[0].getUrlBase()}/main')
     else:
         return render_to_response('program/pickonsite.html', request, {'progs': progs})

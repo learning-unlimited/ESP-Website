@@ -83,7 +83,7 @@ def program(request, tl, one, two, module, extra = None):
     setattr(request, "program", prog)
     setattr(request, "tl", tl)
     if extra:
-        setattr(request, "module", "%s/%s" % (module, extra))
+        setattr(request, "module", f"{module}/{extra}")
     else:
         setattr(request, "module", module)
 
@@ -266,7 +266,7 @@ def registration_redirect(request):
     #   Most chapters will want this, but it can be disabled by a Tag.
     if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect'):
         ctxt['prog'] = progs[0]
-        return HttpResponseRedirect('/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+        return HttpResponseRedirect(f'/{userrole["base"]}/{progs[0].getUrlBase()}/{userrole["reg"]}')
     else:
         if len(progs) > 0:
             #   Sort available programs newest first

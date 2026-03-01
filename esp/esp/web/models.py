@@ -77,7 +77,7 @@ class NavBarCategory(models.Model):
     from_request = staticmethod(from_request)
 
     def __str__(self):
-        return '%s' % self.name
+        return str(self.name)
 
     class Meta:
         verbose_name_plural = 'Nav bar categories'
@@ -107,7 +107,7 @@ class NavBarEntry(models.Model):
         return user.isAdmin()
 
     def __str__(self):
-        return '%s:%s (%s) [%s]' % (self.category, self.sort_rank, self.text, self.link)
+        return f'{self.category}:{self.sort_rank} ({self.text}) [{self.link}]'
 
     def makeTitle(self):
         return self.text
