@@ -2431,9 +2431,10 @@ class Record(models.Model):
         if program is not None:
             filter = filter.filter(program=program)
         if only_today:
-            filter = filter.filter(time__year=when.year,
-                                   time__month=when.month,
-                                   time__day=when.day)
+            local_when = timezone.localtime(when)
+            filter = filter.filter(time__year=local_when.year,
+                                   time__month=local_when.month,
+                                   time__day=local_when.day)
         return filter.distinct()
 
     @classmethod

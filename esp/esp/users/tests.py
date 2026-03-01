@@ -564,8 +564,8 @@ class TestChangeRequestView(TestCase):
 class RecordTest(TestCase):
     def setUp(self):
         super().setUp()
-        self.past     = datetime.datetime(1970, 1, 1)
-        self.future   = datetime.datetime.max
+        self.past     = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+        self.future   = datetime.datetime(2999, 1, 1, tzinfo=datetime.timezone.utc)
         self.user     = ESPUser.objects.create(username='RecordTest')
         self.event    = "student_survey"
         self.program1 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program1')

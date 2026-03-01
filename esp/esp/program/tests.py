@@ -545,7 +545,7 @@ class ProgramFrameworkTest(TestCase):
                     'program_type': 'TestProgram',
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',
-                    'start_time': datetime(2222, 7, 7, 7, 5),
+                    'start_time': timezone.make_aware(datetime(2222, 7, 7, 7, 5)),
                     'base_cost': 666,
                     'sibling_discount': 0
                     }
@@ -796,7 +796,7 @@ class ProgramFrameworkTest(TestCase):
         past_settings = {'num_timeslots': 3,
                     'timeslot_length': 50,
                     'timeslot_gap': 10,
-                    'start_time': datetime(1901, 7, 7, 7, 5),
+                    'start_time': timezone.make_aware(datetime(1901, 7, 7, 7, 5)),
                     }
 
         #   Create timeblocks

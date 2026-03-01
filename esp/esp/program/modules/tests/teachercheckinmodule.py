@@ -50,8 +50,8 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         pm            = ProgramModule.objects.get(handler='TeacherCheckinModule')
         self.module   = ProgramModuleObj.getFromProgModule(self.program, pm)
         self.now      = self.settings['start_time']
-        self.past     = datetime.datetime(1970, 1, 1)
-        self.future   = datetime.datetime.max
+        self.past     = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+        self.future   = datetime.datetime(2999, 1, 1, tzinfo=datetime.timezone.utc)
         self.admin    = self.admins[0]
         self.teacher  = self.teachers[0]
         self.cls      = self.teacher.getTaughtClasses()[0]
