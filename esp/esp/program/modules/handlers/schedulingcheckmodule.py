@@ -82,7 +82,7 @@ class JSONFormatter:
             if isinstance(r, int):
                 next_row.append(r)
             else:
-                next_row.append(str(r))
+                next_row.append(unicode(r))
         return next_row
 
     def _format_list_table(self, d, headings, help_text=""): #needs verify
@@ -351,15 +351,40 @@ class SchedulingCheckRunner:
          bads = []
          for lunch in lunches:
              if lunch:
-                 q=ESPUser.objects.all()
-                 for block in lunch:
-                     q=q.filter(classsubject__sections__meeting_times=block)
-                 for t in q.distinct():
-                     classes = [ClassSection.objects.filter(parent_class__teachers=t,meeting_times=block)[0] for block in lunch]
-                     if open_class_cat.id not in [c.category.id for c in classes]:
+                # print(lunch)
+                teacher_sets = []
+                teacher_to_class = {}
+                for slot in lunch:
+                    # print(slot.meeting_times.all())
+                    # Get teachers teaching or observing during this block
+                    teacher_set = set()
+                    for class_section in slot.meeting_times.all():
+                        for teacher in class_section.parent_class.teachers.all():
+                            teacher_set.add(teacher)
+                            if teacher.id not in teacher_to_class:
+                                teacher_to_class[teacher.id] = [("teaching ", class_section)]
+                            else:
+                                teacher_to_class[teacher.id] += [("teaching ", class_section)]
+                        for teacher in class_section.observers.all():
+                            teacher_set.add(teacher)
+                            if teacher.id not in teacher_to_class:
+                                teacher_to_class[teacher.id] = [("observing ", class_section)]
+                            else:
+                                teacher_to_class[teacher.id] += [("observing ", class_section)]
+                    teacher_sets.append(teacher_set)
+                # print(teacher_sets)
+                # print(teacher_to_class)
+
+                bad_teachers = teacher_sets[0]
+                for teacher_set in teacher_sets:
+                    bad_teachers &= teacher_set
+                print(bad_teachers)
+                for t in bad_teachers:
+                     classes = teacher_to_class[t.id]
+                     if open_class_cat.id not in [c[1].category.id for c in classes]:
                          #converts the list of class section objects to a single string
                          str1 = ', '
-                         classes = str1.join([unicode(c) for c in classes])
+                         classes = str1.join([what + unicode(c) for what, c in classes])
                          bads.append({
                              'Username': t,
                              'Teacher Name': t.name(),
@@ -373,6 +398,7 @@ class SchedulingCheckRunner:
                          "teachers who are teaching at least one " +
                          "open class / walk-in activity during that day's " +
                          "lunch.")
+
 
      #for classes_by_category and capacity_by_category
      def _calculate_d_categories(self):
