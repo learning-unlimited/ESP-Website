@@ -24,8 +24,6 @@ services:
     depends_on:
       - db
       - memcached
-    environment:
-      VIRTUAL_ENV: /usr
 
 volumes:
   postgres_data:

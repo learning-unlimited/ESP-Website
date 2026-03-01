@@ -1,0 +1,7 @@
+[project]
+name = "esp-website"
+version = "0.1.0"
+description = "A website to help manage the logistics of large, short-term educational programs "
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
