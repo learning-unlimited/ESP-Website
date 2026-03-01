@@ -41,7 +41,7 @@ from esp.users.models import ESPUser
 
 logger = logging.getLogger(__name__)
 
-# Typical exact string matches for permanent failures, 
+# Typical exact string matches for permanent failures,
 # although we heavily rely on the 5.x.x status code
 HARD_BOUNCE_INDICATORS = [
     "user unknown",
@@ -76,14 +76,14 @@ class Command(BaseCommand):
             if response.status_code != 200:
                 logger.error(f"deactivate_bouncing_emails: Failed to fetch bounces from SendGrid. Status: {response.status_code}")
                 return
-            
+
             bounces = response.body
             import json
             if isinstance(bounces, (bytes, bytearray)):
                 bounces = json.loads(bounces.decode('utf-8'))
             elif isinstance(bounces, str):
                 bounces = json.loads(bounces)
-                
+
         except Exception as e:
             logger.exception(f"deactivate_bouncing_emails: Exception while querying SendGrid API: {e}")
             return
@@ -102,7 +102,7 @@ class Command(BaseCommand):
 
             if not email or email in processed_emails:
                 continue
-                
+
             processed_emails.add(email)
 
             # A 5.x.x status code is an explicit permanent failure (hard bounce).
@@ -110,12 +110,12 @@ class Command(BaseCommand):
             is_hard_bounce = status.startswith("5.") or any(
                 indicator in reason for indicator in HARD_BOUNCE_INDICATORS
             )
-            
+
             if is_hard_bounce:
                 # Find associated accounts and deactivate them using a bulk update
                 users_to_deactivate = ESPUser.objects.filter(email__iexact=email, is_active=True)
                 usernames = list(users_to_deactivate.values_list("username", flat=True))
-                
+
                 updated_count = users_to_deactivate.update(is_active=False)
                 for username in usernames:
                     logger.info(f"deactivate_bouncing_emails: Deactivated account {username} due to hard bounce: [{status}] {reason}")

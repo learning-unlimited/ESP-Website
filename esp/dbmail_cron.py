@@ -45,7 +45,7 @@ except IOError:
 
 try:
     logger.info('dbmail_cron: beginning to process messages.')
-    
+
     # Try to deactivate bouncing emails via SendGrid before queuing more emails
     from django.core.management import call_command
     try:
@@ -53,7 +53,7 @@ try:
         call_command('deactivate_bouncing_emails')
     except Exception as e:
         logger.exception(f'dbmail_cron: ignored error during deactivate_bouncing_emails: {e}')
-        
+
     process_messages()
     logger.info('dbmail_cron: message processing complete; sending emails.')
     send_email_requests()
