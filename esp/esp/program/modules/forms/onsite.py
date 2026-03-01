@@ -35,5 +35,5 @@ class TeacherCheckinForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         now = timezone.localtime(timezone.now())
-        self.base_fields['when'].initial=datetime.datetime(now.year, now.month, now.day) + datetime.timedelta(days=1, minutes=-1)
+        self.base_fields['when'].initial = now.replace(hour=23, minute=59, second=0, microsecond=0)
         super().__init__(*args, **kwargs)
