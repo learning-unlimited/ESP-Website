@@ -651,7 +651,7 @@ class FormHandler:
         # Add in the column for link fields, if any
         if form.link_type != "-1":
             only_fkey_model = cf_cache.only_fkey_models[form.link_type]
-            response_data['questions'].append(["link_%s_id" % only_fkey_model.__name__, form.link_type, 'fk'])
+            response_data['questions'].append(["link_%s" % only_fkey_model.__name__, form.link_type, 'fk'])
         else:
             only_fkey_model = None
 
@@ -686,16 +686,16 @@ class FormHandler:
 
             # Add in links
             if only_fkey_model is not None:
-                if only_fkey_model.objects.filter(pk=response["link_%s_id" % only_fkey_model.__name__]).exists():
-                    inst = only_fkey_model.objects.get(pk=response["link_%s_id" % only_fkey_model.__name__])
+                if only_fkey_model.objects.filter(pk=response["link_%s" % only_fkey_model.__name__]).exists():
+                    inst = only_fkey_model.objects.get(pk=response["link_%s" % only_fkey_model.__name__])
                 else: inst = None
-                response["link_%s_id" % only_fkey_model.__name__] = str(inst)
+                response["link_%s" % only_fkey_model.__name__] = str(inst)
 
             # Now, put in the additional fields in response
             for qname, data in add_fields.items():
                 if data[0].__name__ not in link_instances_cache:
-                    if data[0].objects.filter(pk=response["link_%s_id" % data[0].__name__]).exists():
-                        link_instances_cache[data[0].__name__] = data[0].objects.get(pk=response["link_%s_id" % data[0].__name__])
+                    if data[0].objects.filter(pk=response["link_%s" % data[0].__name__]).exists():
+                        link_instances_cache[data[0].__name__] = data[0].objects.get(pk=response["link_%s" % data[0].__name__])
                     else:
                         link_instances_cache[data[0].__name__] = None
 
