@@ -401,7 +401,7 @@ class AccountCreationTest(TestCase):
         self.assertRedirects(response1, "/myesp/register/information?email=tsutton125%40gmail.com&initial_role=Teacher")
 
         #next, make a user with that email and same initial role and try the same
-        u=ESPUser.objects.create(email="tsutton125@gmail.com")
+        u=ESPUser.objects.create(email="tsutton125@gmail.com", username="testuser", is_active=True)
         u.makeRole("Teacher")
         response2 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"}, follow=True)
         self.assertTemplateUsed(response2, 'registration/newuser_phase1.html')
