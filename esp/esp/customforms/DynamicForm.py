@@ -720,34 +720,34 @@ class FormHandler:
         """
         Returns the response data as excel data.
         """
-        import xlwt
-        try:
-            from cStringIO import StringIO
-        except:
-            from io import StringIO
+        import openpyxl
+        from openpyxl.styles import Font
+        from io import BytesIO
 
         response_data = self.getResponseData(self.form)
-        wbk = xlwt.Workbook()
-        sheet = wbk.add_sheet('sheet 1')
+        wbk = openpyxl.Workbook(write_only=True)
+        sheet = wbk.create_sheet('sheet 1')
 
-        # Adding in styles for the column headers
-        style = xlwt.XFStyle()
-        font = xlwt.Font()
-        font.name = "Times New Roman"
-        font.bold = True
-        style.font = font
+        font = Font(name="Times New Roman", bold=True)
+        from openpyxl.cell import WriteOnlyCell
 
-        # write the questions first
+        # write the questions as header row
+        header_row = []
         for i in range(0, len(response_data['questions'])):
-            sheet.write(0, i, response_data['questions'][i][1], style)
+            cell = WriteOnlyCell(sheet, value=response_data['questions'][i][1])
+            cell.font = font
+            header_row.append(cell)
+        sheet.append(header_row)
 
         # Build up a simple dict storing question_name and question_index (=column number)
         ques_cols = {}
+        num_cols = len(response_data['questions'])
         for qid, ques in enumerate(response_data['questions']):
             ques_cols.update({ques[0]: qid})
 
-        # Now writing the answers
-        for idx, response in enumerate(response_data['answers']):
+        # Now writing the answers row by row
+        for response in response_data['answers']:
+            row = [None] * num_cols
             for ques, ans in response.items():
                 try:
                     col = ques_cols[ques]
@@ -757,10 +757,16 @@ class FormHandler:
                 if isinstance(ans, list):
                     write_ans = " ".join(ans)
                 else: write_ans = ans
-                sheet.write(idx+1, col, write_ans)
 
-        output = StringIO()
+                if isinstance(write_ans, datetime):
+                    write_ans = write_ans.replace(tzinfo=None)
+
+                row[col] = write_ans
+            sheet.append(row)
+
+        output = BytesIO()
         wbk.save(output)
+        wbk.close()
         return output
 
     def rebuildData(self):

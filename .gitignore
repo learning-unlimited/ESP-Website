@@ -22,6 +22,8 @@ esp/file_db/*
 esp/esp/database_settings.py.chicago
 esp/esp/database_settings.py.mit
 env
+venv/
+.venv/
 venv
 useful_logs
 theme_compiled.css
@@ -41,3 +43,4 @@ local_fabfile.py
 
 # Mac
 .DS_Store
+.docker-setup-done
