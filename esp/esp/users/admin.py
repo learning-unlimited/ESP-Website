@@ -161,7 +161,7 @@ class GradeChangeRequestAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if getattr(obj, 'acknowledged_by', None) is None:
             obj.acknowledged_by = request.user
-        if getattr(obj, 'acknowledged_time', None) is None and getattr(request.POST, 'approved', None) is True:
+        if getattr(obj, 'acknowledged_time', None) is None and getattr(obj, 'approved', None) is True:
             obj.acknowledged_time = timezone.now()
         obj.save()
 admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)

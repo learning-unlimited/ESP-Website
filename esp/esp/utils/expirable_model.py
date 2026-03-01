@@ -54,7 +54,7 @@ class ExpirableModel(models.Model):
 
     def unexpire(self, save=True):
         self.end_date = None
-        if self.start_date > timezone.now():
+        if self.start_date is not None and self.start_date > timezone.now():
             self.start_date = timezone.now()
         if save:
             self.save()

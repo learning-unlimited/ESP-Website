@@ -77,8 +77,9 @@ class TeacherCheckinModule(ProgramModuleObj):
         if when is None:
             when = timezone.now()
         if teacher.getTaughtOrModeratingSectionsFromProgram(prog).exists():
-            endtime = datetime(when.year, when.month, when.day) + timedelta(days=1, seconds=-1)
-            checked_in_already = Record.user_completed(teacher, 'teacher_checked_in', prog, when, only_today=True)
+            local_when = timezone.localtime(when)
+            endtime = timezone.make_aware(datetime(local_when.year, local_when.month, local_when.day)) + timedelta(days=1, seconds=-1)
+            checked_in_already = Record.user_completed(teacher, 'teacher_checked_in', prog, local_when, only_today=True)
             if not checked_in_already:
                 rt = RecordType.objects.get(name="teacher_checked_in")
                 Record.objects.create(user=teacher, event=rt, program=prog, time=when)

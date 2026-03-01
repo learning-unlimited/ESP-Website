@@ -2420,7 +2420,7 @@ class Record(models.Model):
           program (Program, optional): The program associated with the event.
                                        Use None for events with no associated program.
           when (datetime, optional):   Only Records from before then are considered.
-                                       Defaults to datetime.now().
+                                       Defaults to timezone.now().
           only_today (bool, optional): If True, only Records from the same day as
                                        'when' are considered.
                                        Defaults to False.
