@@ -45,7 +45,7 @@ urlpatterns += [
     url(r'^onsite/?$', myesp.myesp_onsite),
     url(r'^passwd/?$', myesp.myesp_passwd),
     url(r'^accountmanage/?$', myesp.myesp_accountmanage),
-    url(r'^profile/?$', myesp.edit_profile),
+    url(r'^profile/?$', myesp.edit_profile, name='myesp-profile'),
 ]
 
 urlpatterns += [

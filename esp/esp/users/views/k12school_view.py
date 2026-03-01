@@ -13,7 +13,7 @@ def k12school_create(request):
         if form.is_valid():
             new_school = form.save()
             messages.success(request, f'School "{new_school.name}" was successfully created!')
-            return redirect('myesp-profile')
+            return redirect('k12school_create')
     else:
         form = K12SchoolForm()
 
