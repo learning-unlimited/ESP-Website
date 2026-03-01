@@ -7,9 +7,9 @@ class K12SchoolForm(forms.ModelForm):
     A form for creating K12School objects from the frontend.
     """
     contact = AjaxForeignKeyNewformField(
-        key_type=ContactInfo, 
-        field_name='contact', 
-        required=False, 
+        key_type=ContactInfo,
+        field_name='contact',
+        required=False,
         label='Contact Info',
         help_text='A set of contact information for this school. Type to search by name (Last, First), or go edit a new one.'
     )
@@ -17,11 +17,11 @@ class K12SchoolForm(forms.ModelForm):
     class Meta:
         model = K12School
         fields = [
-            'name', 
+            'name',
             'contact',
-            'school_type', 
-            'grades', 
-            'school_id', 
+            'school_type',
+            'grades',
+            'school_id',
             'contact_title'
         ]
         
@@ -30,7 +30,7 @@ class K12SchoolForm(forms.ModelForm):
         self.fields['name'].required = True
         
         # Force single-line inputs for everything, rather than giant textareas
-        for field_name, field in self.fields.items():
+        for _field_name, field in self.fields.items():
             if isinstance(field.widget, forms.Textarea):
                 field.widget = forms.TextInput()
             field.widget.attrs['class'] = 'input-xlarge'

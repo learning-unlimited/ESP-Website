@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from esp.users.forms.k12school_form import K12SchoolForm
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.admin.views.decorators import staff_member_required
 
-@user_passes_test(lambda u: u.is_staff)
+@staff_member_required
 def k12school_create(request):
     """
     A frontend view for admins to create new K12School objects.
@@ -13,7 +13,7 @@ def k12school_create(request):
         if form.is_valid():
             new_school = form.save()
             messages.success(request, f'School "{new_school.name}" was successfully created!')
-            return redirect('/myesp/profile/') 
+            return redirect('myesp-profile')
     else:
         form = K12SchoolForm()
 
