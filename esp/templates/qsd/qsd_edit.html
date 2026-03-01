@@ -70,13 +70,28 @@ var editor = new Jodit("#qsd_content", {
   "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
   "toolbarAdaptive": false,
   "saveModeInStorage": true,
+  "uploader": {
+    "url": "/admin/ajax_qsd_image_upload/",
+    "format": "json",
+    "headers": { "X-CSRFToken": csrf_token() },
+    "data": { "qsd_url": "{{ qsdrec.url|escapejs }}" },
+    "isSuccess": function(resp) { return resp.success; },
+    "getMessage": function(resp) {
+      return resp.data && resp.data.messages ? resp.data.messages.join("\n") : "";
+    },
+    "process": function(resp) {
+      return { files: resp.data.files || [], baseurl: "", error: resp.success ? 0 : 1, msg: "" };
+    },
+    "defaultHandlerSuccess": function(data) {
+      for (var i = 0; i < data.files.length; i++) {
+        this.selection.insertImage(data.files[i]);
+      }
+    },
+    "error": function(e) {
+      this.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
+    }
+  }
 });
 {% endif %}
-
-$j(document).ready(function() {
-  $j.initialize(".jodit_toolbar_btn-image input[name=url]", function() {
-    $j(this).after("Upload files <a href='/admin/filebrowser/browse/' target='_blank'>here");
-  });
-});
 </script>
 {% endblock %}
