@@ -358,7 +358,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.unexpire()
-                    message_good = 'Permission opened for %s: %s.' % (perm.user, perm.nice_name())
+                    target = perm.user or ('filter: %s' % (perm.user_filter.useful_name or perm.user_filter_id) if perm.user_filter else '(none)')
+                    message_good = 'Permission opened for %s: %s.' % (target, perm.nice_name())
                 else:
                     message_bad = 'No permission with ID %s.' % (request.GET['perm_id'])
 
@@ -374,7 +375,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.expire()
-                    message_good = 'Permission closed for %s: %s.' % (perm.user, perm.nice_name())
+                    target = perm.user or ('filter: %s' % (perm.user_filter.useful_name or perm.user_filter_id) if perm.user_filter else '(none)')
+                    message_good = 'Permission closed for %s: %s.' % (target, perm.nice_name())
                 else:
                     message_bad = 'No permission with ID %s.' % (request.GET['perm_id'])
 
@@ -386,7 +388,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if 'deadline' in request.GET:
                     message_good = 'Deadline deleted for %ss: %s.' % (perm.role, perm.nice_name())
                 else:
-                    message_good = 'Permission deleted for %s: %s.' % (perm.user, perm.nice_name())
+                    target = perm.user or ('filter: %s' % (perm.user_filter.useful_name or perm.user_filter_id) if perm.user_filter else '(none)')
+                    message_good = 'Permission deleted for %s: %s.' % (target, perm.nice_name())
                 perm.delete()
             else:
                 if 'deadline' in request.GET:

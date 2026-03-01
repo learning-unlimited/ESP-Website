@@ -140,13 +140,13 @@
 <hr>
 
 <a name="permissions"></a>
-<h2>Permissions (for individual users)</h2>
+<h2>Permissions (for individual users and filters)</h2>
 
 <button type="button" class="dsphead">
    <b>Existing Permissions</b> (click to expand/contract)
 </button>
-<form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_perms_form">
 <div class="dspcont">
+<form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_perms_form">
 {{ perm_manage_form }}
 <input type="hidden" name="action" value="save_permissions">
 
@@ -203,9 +203,8 @@
     {% endfor %}
     </tbody>
 </table>
-</div>
-
 </form>
+</div>
 
 <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="create_perm_form">
 
