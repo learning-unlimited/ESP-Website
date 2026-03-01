@@ -163,7 +163,6 @@ def user_registration_phase2(request):
     return render_to_response('registration/newuser.html',
                               request, {'form':form, 'email':email})
 
-
 def activate_account(request):
     if not 'username' in request.GET or not 'key' in request.GET:
         raise ESPError("Invalid account activation information.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
@@ -210,7 +209,6 @@ def resend_activation_view(request):
         return render_to_response('registration/resend.html', request,
                                   {'form':form, 'site': Site.objects.get_current()})
 
-
 class GradeChangeRequestView(CreateView):
     """
     Handles Display of Grade Change Request Form and dispatching of request.
@@ -238,8 +236,7 @@ class GradeChangeRequestView(CreateView):
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
         return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)
-
-
+    
 # AJAX endpoints for real-time validation
 @require_GET
 def ajax_check_email_availability(request):
@@ -283,7 +280,6 @@ def ajax_check_email_availability(request):
     except Exception as e:
         log.error(f"Error checking email availability for {email}: {e}")
         return JsonResponse({'available': False, 'message': 'Error checking email availability'})
-
 
 @require_GET
 def ajax_check_username_availability(request):
