@@ -244,8 +244,12 @@ MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LO
 # when runserver (owned by www-data) created the shared tempdir first.
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
     tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(os.getuid()))
-    if not os.path.exists(tempdir):
-        os.makedirs(tempdir)
+    os.makedirs(tempdir, mode=0o700, exist_ok=True)
+    try:
+        os.chmod(tempdir, 0o700)
+    except OSError:
+        # If we cannot change permissions, proceed but keep the directory as-is.
+        pass
     tempfile.tempdir = tempdir
     tempfile.alreadytwiddled = True
 
