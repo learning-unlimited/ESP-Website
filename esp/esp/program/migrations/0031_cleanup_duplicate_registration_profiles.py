@@ -64,7 +64,9 @@ def reverse_migration(apps, schema_editor):
     This migration cannot be reversed as we've permanently deleted data.
     This is intentional - we don't want to restore duplicate profiles.
     """
-    print("This migration cannot be reversed (duplicate data was permanently deleted).")
+    raise migrations.IrreversibleError(
+        "This migration cannot be reversed (duplicate data was permanently deleted)."
+    )
 
 
 class Migration(migrations.Migration):
