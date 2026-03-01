@@ -106,7 +106,7 @@ class CommModule(ProgramModuleObj):
         # Set From address
         if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
-            if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')), fromemail):
+            if not re.match(rf'(^.+@{re.escape(settings.SITE_INFO[1])}$)|(^.+<.+@{re.escape(settings.SITE_INFO[1])}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)', fromemail):
                 raise ESPError("Invalid 'From' email address. The 'From' email address must " +
                                "end in @" + settings.SITE_INFO[1] + " (your website), " +
                                "@learningu.org, or a valid subdomain of learningu.org " +
@@ -116,8 +116,7 @@ class CommModule(ProgramModuleObj):
             prs = PlainRedirect.objects.filter(original = "info")
             if not prs.exists():
                 redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
-            fromemail = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
-                                        "info", settings.SITE_INFO[1])
+            fromemail = f'{Tag.getTag("full_group_name") or f"{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}"} <info@{settings.SITE_INFO[1]}>'
 
         # Set Reply-To address
         if request.POST.get('replyto', '').strip():
@@ -148,7 +147,7 @@ class CommModule(ProgramModuleObj):
 
         # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
         template = request.POST.get('template', 'default')
-        rendered_text = render_to_string('email/{}_email.html'.format(template),
+        rendered_text = render_to_string(f'email/{template}_email.html',
                                         {'msgbody': body})
         # Render the text for the first user
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
@@ -223,7 +222,7 @@ class CommModule(ProgramModuleObj):
             current_program_url
         )
         if other_program_urls and not request.POST.get('confirm_send_with_other_program_links'):
-            rendered_text = render_to_string('email/{}_email.html'.format(template),
+            rendered_text = render_to_string(f'email/{template}_email.html',
                                              {'msgbody': body})
             listcount = request.POST.get('listcount', '')
             selected = request.POST.get('selected', '')
@@ -245,7 +244,7 @@ class CommModule(ProgramModuleObj):
             })
 
         # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
-        rendered_text = render_to_string('email/{}_email.html'.format(template),
+        rendered_text = render_to_string(f'email/{template}_email.html',
                                         {'msgbody': body})
 
         try:
@@ -295,8 +294,7 @@ class CommModule(ProgramModuleObj):
         context['sendto_fn_name'] = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         context['sendto_fn'] = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(context['sendto_fn_name'])
 
-        context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
-                                              "info", settings.SITE_INFO[1])
+        context['default_from'] = f'{Tag.getTag("full_group_name") or f"{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}"} <info@{settings.SITE_INFO[1]}>'
         context['from'] = context['default_from']
 
         context['listcount'] = self.approx_num_of_recipients(filterObj, context['sendto_fn'])
@@ -324,8 +322,7 @@ class CommModule(ProgramModuleObj):
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
             data = ListGenModule.processPost(request)
-            context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
-                                                      "info", settings.SITE_INFO[1])
+            context['default_from'] = f'{Tag.getTag("full_group_name") or f"{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}"} <info@{settings.SITE_INFO[1]}>'
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
 

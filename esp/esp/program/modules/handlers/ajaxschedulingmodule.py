@@ -280,7 +280,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         if action == 'removemod':
             sec.moderators.remove(mod)
             self.get_change_log(prog).appendModerator(mod_id, sec_id, False, request.user)
-            return self.makeret(prog, ret=True, msg="Moderator '%s' removed from Class Section '%s'" % (mod.name(), sec.emailcode()))
+            return self.makeret(prog, ret=True, msg=f"Moderator '{mod.name()}' removed from Class Section '{sec.emailcode()}'")
         elif action == 'assignmod':
             override = request.POST['override'] == "true"
             if not override:
@@ -288,10 +288,10 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 avail_times = [time.id for time in mod.getAvailableTimes(prog)]
                 for time in sec.meeting_times.all():
                     if time.id not in avail_times:
-                        return self.makeret(prog, ret=False, msg="Moderator '%s' is not available to moderate Class Section '%s'" % (mod.name(), sec.emailcode()))
+                        return self.makeret(prog, ret=False, msg=f"Moderator '{mod.name()}' is not available to moderate Class Section '{sec.emailcode()}'")
             sec.moderators.add(mod)
             self.get_change_log(prog).appendModerator(mod_id, sec_id, True, request.user)
-            return self.makeret(prog, ret=True, msg="Moderator '%s' assigned to Class Section '%s'" % (mod.name(), sec.emailcode()))
+            return self.makeret(prog, ret=True, msg=f"Moderator '{mod.name()}' assigned to Class Section '{sec.emailcode()}'")
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
@@ -379,7 +379,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         if request.method == 'POST':
             num_affected_sections = self.clear_schedule_logic(prog, lock_level)
-            data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
+            data = {'message': f'Cleared schedule assignments for {num_affected_sections} sections.'}
             response = HttpResponse(content_type="application/json")
             json.dump(data, response)
         else:

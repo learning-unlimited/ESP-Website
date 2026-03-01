@@ -223,7 +223,7 @@ class UserAttributeGetter(object):
         if self.profile.student_info:
             dob = self.profile.student_info.dob
             if dob:
-                return '{:%Y-%m-%d}'.format(dob)
+                return f'{dob:%Y-%m-%d}'
 
     def get_gender(self):
         if self.profile.student_info:

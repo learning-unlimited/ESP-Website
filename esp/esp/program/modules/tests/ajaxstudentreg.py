@@ -69,7 +69,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         resp_data = json.loads(str(response.content, encoding='UTF-8'))
         self.assertTrue('student_schedule_html' in resp_data)
         search_str = 'Your schedule for %s is empty.  Please add classes below!' % self.program.niceName()
-        self.assertTrue(search_str in resp_data['student_schedule_html'], 'Could not find empty fragment "%s" in response "%s"' % (search_str, resp_data['student_schedule_html']))
+        self.assertTrue(search_str in resp_data['student_schedule_html'], f'Could not find empty fragment "{search_str}" in response "{resp_data["student_schedule_html"]}"')
 
     def expect_sections_in_schedule(self, response, sections=[]):
         resp_data = json.loads(str(response.content, encoding='UTF-8'))
@@ -101,7 +101,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
             error_msg = response_dict['error']
 
         self.assertTrue(error_received)
-        self.assertTrue(error_msg == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (error_msg, error_str))
+        self.assertTrue(error_msg == error_str, f'Unexpected Ajax error: "{error_msg}", expected "{error_str}"')
 
     def test_ajax_schedule(self):
         program = self.program
@@ -180,11 +180,11 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         self.expect_sections_in_schedule(response, [sec1, sec2])
 
         #   Clear 1 timeslot and check that only the desired class remains
-        response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec1.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        response = self.client.get(f'/learn/{program.getUrlBase()}/ajax_clearslot/{sec1.meeting_times.all()[0].id}', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec2])
 
         #   Clear other timeslot and check that the schedule is empty
-        response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec2.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        response = self.client.get(f'/learn/{program.getUrlBase()}/ajax_clearslot/{sec2.meeting_times.all()[0].id}', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
 
     def test_lottery(self):

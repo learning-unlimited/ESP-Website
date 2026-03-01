@@ -516,11 +516,11 @@ class StudentClassRegModule(ProgramModuleObj):
         class_blobs = []
 
         category_header_str = """
-    <div class="cat_wrapper" data-category="%d">
+    <div class="cat_wrapper" data-category="{cat_id}">
       <hr size="1"/>
-      <a name="cat%d"></a>
+      <a name="cat{cat_id}"></a>
         <p style="font-size: 1.2em;" class="category">
-           %s
+           {cat_name}
         </p>
         <p class="linktop">
            <a href="#top">[ Return to Category List ]</a>
@@ -533,7 +533,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 class_category_id = cls.category.id
                 if (class_category_id != None):
                     class_blobs.append('</div>')
-                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category))
+                class_blobs.append(category_header_str.format(cat_id=class_category_id, cat_name=cls.category.category))
             class_blobs.append(render_class_direct(cls))
             class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)

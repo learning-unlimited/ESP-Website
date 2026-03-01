@@ -172,7 +172,7 @@ def get_group(group):
         except Group.DoesNotExist:
             return None
     else:
-        raise ESPError('{} is not a Group or Group name'.format(str(group)))
+        raise ESPError(f'{group} is not a Group or Group name')
 
 
 def create_user_with_profile(username, password, program, groups):

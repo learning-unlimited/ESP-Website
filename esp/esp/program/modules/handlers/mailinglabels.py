@@ -72,7 +72,7 @@ class MailingLabels(ProgramModuleObj):
                     for c in ContactInfo.objects.filter(address_postal__contains = "'%s'" % zipc.strip()):
                         c.undeliverable = True
                         c.save()
-                return HttpResponseRedirect("/%s/%s/%s/mailinglabel/" % (tl, one, two))
+                return HttpResponseRedirect(f"/{tl}/{one}/{two}/mailinglabel/")
 
         else:
             form = BanZipsForm()
@@ -133,7 +133,7 @@ class MailingLabels(ProgramModuleObj):
                             Q_grade = reduce(operator.or_, [Q(k12school__grades__contains = grade) for grade in grades_exclude])
                             Q_infos &= ~Q_grade
 
-                        f = PersistentQueryFilter.create_from_Q(ContactInfo, Q_infos, description="All ContactInfos for K12 schools with grades %s and %s miles from zipcode %s." % (form.cleaned_data['grades'], form.cleaned_data['proximity'], form.cleaned_data['zip_code']))
+                        f = PersistentQueryFilter.create_from_Q(ContactInfo, Q_infos, description=f"All ContactInfos for K12 schools with grades {form.cleaned_data['grades']} and {form.cleaned_data['proximity']} miles from zipcode {form.cleaned_data['zip_code']}.")
 
                         num_schools = ContactInfo.objects.filter(Q_infos).distinct().count()
 
@@ -200,9 +200,9 @@ class MailingLabels(ProgramModuleObj):
                 title = None
 
             if use_title:
-                name = "'%s %s','%s'" % (info.first_name.strip(), info.last_name.strip(), title)
+                name = f"'{info.first_name.strip()} {info.last_name.strip()}','{title}'"
             else:
-                name = '%s %s' % (info.first_name.strip(), info.last_name.strip())
+                name = f'{info.first_name.strip()} {info.last_name.strip()}'
 
             if info.address_postal is not None:
                 key = info.address_postal
@@ -225,7 +225,7 @@ class MailingLabels(ProgramModuleObj):
                                   'zip5': info.address_zip,
                                   })
 
-                post_string = '&'.join(['%s=%s' % (key, urlencode(value)) for key, value in post_data.items()])
+                post_string = '&'.join([f'{key}={urlencode(value)}' for key, value in post_data.items()])
 
                 c = pycurl.Curl()
 
@@ -245,10 +245,7 @@ class MailingLabels(ProgramModuleObj):
 
                 ma = regex.search(retdata)
                 try:
-                    key = "'%s','%s','%s','%s'" % (ma.group(1),
-                                                   ma.group(2),
-                                                   ma.group(3),
-                                                   ma.group(4))
+                    key = f"'{ma.group(1)}','{ma.group(2)}','{ma.group(3)}','{ma.group(4)}'"
                     info.address_postal = key
                 except:
                     key = False
@@ -275,16 +272,16 @@ class MailingLabels(ProgramModuleObj):
             if key != False:
                 if combine:
                     if use_title:
-                        output.append("'%s',%s,%s" % (i, ' and '.join(value), key))
+                        output.append(f"'{i}',{' and '.join(value)},{key}")
                     else:
-                        output.append("'%s','%s',%s" % (i, ' and '.join(value), key))
+                        output.append(f"'{i}','{' and '.join(value)}',{key}")
                     i += 1
                 else:
                     for name in value:
                         if use_title:
-                            output.append("'%s',%s,%s" % (i, name, key))
+                            output.append(f"'{i}',{name},{key}")
                         else:
-                            output.append("'%s','%s',%s" % (i, name, key))
+                            output.append(f"'{i}','{name}',{key}")
                         i += 1
 
         return output

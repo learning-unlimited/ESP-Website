@@ -119,7 +119,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         if tl == "manage":
             # They probably want to check or edit someone's availability instead
-            return HttpResponseRedirect( '/manage/%s/%s/edit_availability' % (one, two) )
+            return HttpResponseRedirect( f'/manage/{one}/{two}/edit_availability' )
         else:
             return self.availabilityForm(request, tl, one, two, prog, request.user, False)
 
@@ -199,7 +199,7 @@ class AvailabilityModule(ProgramModuleObj):
 
                 if isAdmin:
                     #   Return to the relevant edit_availability page
-                    return HttpResponseRedirect( '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.id) )
+                    return HttpResponseRedirect( f'/manage/{one}/{two}/edit_availability?user={teacher.id}' )
                 else:
                     #   Return to the main registration page
                     return self.goToCore(tl)

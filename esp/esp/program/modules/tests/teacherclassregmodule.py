@@ -120,7 +120,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Add free_teacher1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Error on adding the same coteacher again
@@ -129,29 +129,29 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Add free_teacher2
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher2.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher2.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher2.username})", status_code=200)
         cur_coteachers.append(self.free_teacher2.id)
 
         # Delete free_teacher 1
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertNotContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertNotContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.remove(self.free_teacher1.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Delete both free_teacher1 and free_teacher2
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': [self.free_teacher1.id, self.free_teacher2.id], 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertNotContains(response, "({})".format(self.free_teacher1.username), status_code=200)
-        self.assertNotContains(response, "({})".format(self.free_teacher2.username), status_code=200)
+        self.assertNotContains(response, f"({self.free_teacher1.username})", status_code=200)
+        self.assertNotContains(response, f"({self.free_teacher2.username})", status_code=200)
         cur_coteachers.remove(self.free_teacher1.id)
         cur_coteachers.remove(self.free_teacher2.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Save the coteachers
@@ -171,7 +171,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         ResourceRequest.objects.filter(target = sec, res_type = res_type).delete()
 
     def has_resource_pair_with_teacher(self, res_type, val_index, teacher):
-        label = 'teacher_res_%d_%d' % (res_type.id, val_index)
+        label = f'teacher_res_{res_type.id}_{val_index}'
         label_list = [resource_pair[0] for resource_pair in self.moduleobj.get_resource_pairs()]
         if not label in label_list:
             return False

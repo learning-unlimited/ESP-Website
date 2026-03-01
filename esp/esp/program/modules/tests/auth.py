@@ -48,7 +48,4 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
             for view_name in view_names:
                 view = getattr(module, view_name)
                 self.assertTrue(getattr(view, 'has_auth_check', None), \
-                    'Module "{}" is missing an auth check for view "{}"'.format(
-                        module,
-                        view_name
-                    ))
+                    f'Module "{module}" is missing an auth check for view "{view_name}"')

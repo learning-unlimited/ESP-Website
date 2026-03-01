@@ -115,7 +115,7 @@ class TeacherQuizModule(ProgramModuleObj):
             cf = Form.objects.get(id=int(custom_form_id))
         else:
             if request.user.isAdmin():
-                error = 'Cannot find an appropriate form for this module. You should <a href="/customforms" target="_blank">create one</a> and link it to the "Teacher Logistics Quiz" module of the %s program.' % (self.program)
+                error = f'Cannot find an appropriate form for this module. You should <a href="/customforms" target="_blank">create one</a> and link it to the "Teacher Logistics Quiz" module of the {self.program} program.'
             else:
                 error = 'Cannot find an appropriate form for this module. Please ask your administrator to create a form and link it to the "Teacher Logistics Quiz" module.'
             raise ESPError(error, log=False)

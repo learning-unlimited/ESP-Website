@@ -266,7 +266,7 @@ class OnSiteClassList(ProgramModuleObj):
             failed_add_sections = []
             for sec in sections_to_add:
                 if sec.isFull(webapp=True) and not override_full:
-                    result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, 'Class is currently full.'))
+                    result['messages'].append(f'Failed to add {user.name()} ({user.id}) to {sec.emailcode()}: {sec.title()} ({sec.id}).  Error was: Class is currently full.')
                     failed_add_sections.append(sec.id)
 
             if len(failed_add_sections) == 0:
@@ -274,7 +274,7 @@ class OnSiteClassList(ProgramModuleObj):
                 #   Remove sections the student wants out of
                 for sec in sections_to_remove:
                     sec.unpreregister_student(user, verbs)
-                    result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
+                    result['messages'].append(f'Removed {user.name()} ({user.id}) from {sec.emailcode()}: {sec.title()} ({sec.id})')
 
                 #   Remove sections that conflict with those the student wants into
                 sec_times = sections_to_add.select_related('meeting_times__id').values_list('id', 'meeting_times__id').order_by('meeting_times__id').distinct()
@@ -286,7 +286,7 @@ class OnSiteClassList(ProgramModuleObj):
                         for sm_sec in sm.map[ts]:
                             if sm_sec.id not in sections_to_add:
                                 sm_sec.unpreregister_student(user, verbs)
-                                result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
+                                result['messages'].append(f'Removed {user.name()} ({user.id}) from {sm_sec.emailcode()}: {sm_sec.title()} ({sm_sec.id})')
                             else:
                                 existing_sections.append(sm_sec)
 
@@ -301,9 +301,9 @@ class OnSiteClassList(ProgramModuleObj):
                         else:
                             reg_result = False
                         if reg_result:
-                            result['messages'].append('Added %s (%s) to %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
+                            result['messages'].append(f'Added {user.name()} ({user.id}) to {sec.emailcode()}: {sec.title()} ({sec.id})')
                         else:
-                            result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, error))
+                            result['messages'].append(f'Failed to add {user.name()} ({user.id}) to {sec.emailcode()}: {sec.title()} ({sec.id}).  Error was: {error}')
 
             result['user'] = user.id
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
@@ -460,16 +460,16 @@ class OnSiteClassList(ProgramModuleObj):
     def makeLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
         strings = ['<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1], call[1]) for call in calls]
+                (f'/{self.module.module_type}/{self.program.url}/{call[0]}', call[1], call[1]) for call in calls]
         return "</li><li>".join(strings)
 
     def makeButtonLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
-        strings = ["""<div class="module_button">\
-                                <a href="%s"><button type="button" class="module_link_large">
-                                    <div class="module_link_main">%s</div>
+        strings = [f"""<div class="module_button">\
+                                <a href="/{self.module.module_type}/{self.program.url}/{call[0]}"><button type="button" class="module_link_large">
+                                    <div class="module_link_main">{call[1]}</div>
                                 </button></a>
-                            </div>""" % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
+                            </div>""" for call in calls]
         return "".join(strings)
 
     class Meta:

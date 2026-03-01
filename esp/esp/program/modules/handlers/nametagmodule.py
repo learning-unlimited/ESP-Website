@@ -91,7 +91,7 @@ class NameTagModule(ProgramModuleObj):
             else:
                 pronoun = None
             user_dict = {'title': title,
-                         'name' : '%s %s' % (user.first_name, user.last_name),
+                         'name' : f'{user.first_name} {user.last_name}',
                          'id'   : user.id,
                          'username': user.username,
                          'pronoun': pronoun}
@@ -225,7 +225,7 @@ class NameTagModule(ProgramModuleObj):
 
         context['barcodes'] = True if 'barcodes' in request.POST else False
         context['users_and_backs'] = users_and_backs
-        context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+        context['group_name'] = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
         context['phone_number'] = Tag.getTag('group_phone_number')
 
         return render_to_response(self.baseDir()+'ids.html', request, context)

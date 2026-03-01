@@ -126,7 +126,7 @@ class TeacherModeratorModule(ProgramModuleObj):
             users = list(user_dict.values())
 
             # Construct combo-box items
-            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
+            obj_list = [{'name': f"{user.last_name}, {user.first_name}", 'username': user.username, 'id': user.id} for user in users]
         else:
             obj_list = []
 

@@ -81,14 +81,14 @@ class TeacherCheckinModule(ProgramModuleObj):
             if not checked_in_already:
                 rt = RecordType.objects.get(name="teacher_checked_in")
                 Record.objects.create(user=teacher, event=rt, program=prog, time=when)
-                return '%s is checked in until %s.' % (teacher.name(), str(endtime))
+                return f'{teacher.name()} is checked in until {endtime}.'
             else:
-                return '%s has already been checked in until %s.' % (teacher.name(), str(endtime))
+                return f'{teacher.name()} has already been checked in until {endtime}.'
         else:
             if prog.hasModule("TeacherModeratorModule"):
-                return '%s is not a teacher or %s for %s.' % (teacher.name(), prog.getModeratorTitle().lower(), prog.niceName())
+                return f'{teacher.name()} is not a teacher or {prog.getModeratorTitle().lower()} for {prog.niceName()}.'
             else:
-                return '%s is not a teacher for %s.' % (teacher.name(), prog.niceName())
+                return f'{teacher.name()} is not a teacher for {prog.niceName()}.'
 
 
     def undoCheckIn(self, teacher, prog, when=None):
@@ -100,7 +100,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             records.delete()
             return '%s is no longer checked in.' % teacher.name()
         else:
-            return '%s was not checked in for %s.' % (teacher.name(), prog.niceName())
+            return f'{teacher.name()} was not checked in for {prog.niceName()}.'
 
     @main_call
     @needs_onsite
