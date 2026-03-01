@@ -85,11 +85,11 @@ var editor = new Jodit("#qsd_content", {
     },
     "defaultHandlerSuccess": function(data) {
       for (var i = 0; i < data.files.length; i++) {
-        this.selection.insertImage(data.files[i]);
+        editor.selection.insertImage(data.files[i]);
       }
     },
     "error": function(e) {
-      this.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
+      editor.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
     }
   }
 });
