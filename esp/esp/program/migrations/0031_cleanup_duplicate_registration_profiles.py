@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from django.db import migrations
 from django.db.models import Count, F
+from django.db.migrations.exceptions import IrreversibleError
 
 
 def cleanup_duplicate_profiles(apps, schema_editor):
@@ -65,7 +66,6 @@ def reverse_migration(apps, schema_editor):
     This migration cannot be reversed as we've permanently deleted data.
     This is intentional - we don't want to restore duplicate profiles.
     """
-    from django.db.migrations.exceptions import IrreversibleError
     raise IrreversibleError(
         "This migration cannot be reversed (duplicate data was permanently deleted)."
     )
