@@ -43,7 +43,14 @@ class TimeslotForm(forms.Form):
         self.fields['hours'].initial = int(length // 3600)
         self.fields['minutes'].initial = int(length // 60 - 60 * self.fields['hours'].initial)
         self.fields['group'].initial = slot.group
+        self.fields['openclass'].initial = (slot.event_type == EventType.get_from_desc("Open Class Time Block"))
         self.fields['compulsory'].initial = (slot.event_type == EventType.get_from_desc("Compulsory"))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('openclass') and cleaned_data.get('compulsory'):
+           raise forms.ValidationError("A timeslot cannot be both 'Open Class' and 'Compulsory' at the same time.")
+        return cleaned_data
 
     def save_timeslot(self, program, slot):
         slot.short_description = self.cleaned_data['name']
