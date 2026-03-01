@@ -1061,12 +1061,12 @@ def statistics(request, program=None):
             #   Get list of users the query applies to
             users_q = Q()
             for program in programs:
-                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types'] and not form.cleaned_data['student_reg_types']:
+                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types']:
                     students_objects = program.students(QObjects=True)
                     for reg_type in form.cleaned_data['student_reg_types']:
                         if reg_type in list(students_objects.keys()):
                             users_q = users_q | students_objects[reg_type]
-                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types'] and not form.cleaned_data['teacher_reg_types']:
+                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types']:
                     teachers_objects = program.teachers(QObjects=True)
                     for reg_type in form.cleaned_data['teacher_reg_types']:
                         if reg_type in list(teachers_objects.keys()):
@@ -1120,7 +1120,7 @@ def statistics(request, program=None):
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
 
-            if request.is_ajax():
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['result_html'] = context['result']
                 result['script'] = render_to_string('program/statistics/script.js', context)
@@ -1133,7 +1133,7 @@ def statistics(request, program=None):
             context = {'form': form}
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
-            if request.is_ajax():
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1145,7 +1145,7 @@ def statistics(request, program=None):
     context['clear_first'] = False
     context['field_ids'] = get_field_ids(form)
 
-    if request.is_ajax():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return HttpResponse(json.dumps(context), content_type='application/json')
     else:
         return render_to_response('program/statistics.html', request, context)
