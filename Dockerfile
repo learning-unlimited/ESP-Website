@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN npm install --prefix /usr less@1.7.5 -g
 
 # Copy requirements first for better Docker layer caching
-COPY esp/requirements.txt /app/esp/requirements.txt
+COPY esp/pyproject.toml /app/esp/pyproject.toml
 
 # Install Python dependencies
 RUN uv pip install -r /app/esp/pyproject.toml --system
