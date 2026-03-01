@@ -24,11 +24,11 @@ class K12SchoolForm(forms.ModelForm):
             'school_id',
             'contact_title'
         ]
-        
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['name'].required = True
-        
+
         # Force single-line inputs for everything, rather than giant textareas
         for _field_name, field in self.fields.items():
             if isinstance(field.widget, forms.Textarea):
