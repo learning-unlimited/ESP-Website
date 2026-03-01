@@ -35,7 +35,11 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 
-from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail
+from esp.dbmail.models import (
+    MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail,
+    InboundEmailThread, InboundEmail, InboundEmailNote,
+    InboxCannedResponse, InboxLabel, InboundEmailThreadLabel,
+)
 from esp.utils.admin_user_search import default_user_search
 
 class MessageVarsAdmin(admin.ModelAdmin):
@@ -66,3 +70,39 @@ class TextOfEmailAdmin(admin.ModelAdmin):
     date_hierarchy = 'sent'
     list_filter = ('send_from',)
 admin_site.register(TextOfEmail, TextOfEmailAdmin)
+
+class InboundEmailThreadAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'status', 'assigned_to', 'created_at', 'updated_at')
+    list_filter = ('status',)
+    search_fields = ('subject',)
+    date_hierarchy = 'created_at'
+admin_site.register(InboundEmailThread, InboundEmailThreadAdmin)
+
+class InboundEmailAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'sender_email', 'recipient', 'received_at', 'is_outbound_reply')
+    list_filter = ('is_outbound_reply',)
+    search_fields = ('subject', 'sender_email', 'body_text')
+    date_hierarchy = 'received_at'
+admin_site.register(InboundEmail, InboundEmailAdmin)
+
+class InboundEmailNoteAdmin(admin.ModelAdmin):
+    list_display = ('thread', 'created_by', 'created_at')
+    search_fields = ('note_text',)
+    date_hierarchy = 'created_at'
+admin_site.register(InboundEmailNote, InboundEmailNoteAdmin)
+
+class InboxCannedResponseAdmin(admin.ModelAdmin):
+    list_display = ('title', 'is_active', 'seq', 'created_by', 'created_at')
+    list_filter = ('is_active',)
+    search_fields = ('title', 'body')
+admin_site.register(InboxCannedResponse, InboxCannedResponseAdmin)
+
+class InboxLabelAdmin(admin.ModelAdmin):
+    list_display = ('name', 'color', 'description')
+    search_fields = ('name',)
+admin_site.register(InboxLabel, InboxLabelAdmin)
+
+class InboundEmailThreadLabelAdmin(admin.ModelAdmin):
+    list_display = ('thread', 'label', 'added_by', 'added_at')
+    list_filter = ('label',)
+admin_site.register(InboundEmailThreadLabel, InboundEmailThreadLabelAdmin)

@@ -56,6 +56,14 @@ try:
 
     message = email.message_from_file(sys.stdin)
 
+    # Store inbound email for the shared inbox UI (Issue #3831)
+    # Wrapped in try/except so storage failures never block forwarding
+    try:
+        from esp.dbmail.inbox import store_inbound_email
+        store_inbound_email(user, message)
+    except Exception as store_err:
+        logger.warning("Failed to store inbound email for '%s': %s", user, store_err)
+
     handlers = EmailList.objects.all()
 
     for handler in handlers:

@@ -61,6 +61,7 @@ from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
+from django.core.validators import RegexValidator
 
 # `user` is required for marketing and subscribed messages to add unsubscribe headers
 # this includes all comm panel emails
@@ -665,3 +666,164 @@ class CustomSMTPBackend(SMTPEmailBackend):
                 raise
             return False
         return True
+
+
+# --- Inbound Email Inbox Models (Issue #3831) ---
+
+@python_2_unicode_compatible
+class InboundEmailThread(models.Model):
+    """Groups related inbound emails into a conversation thread."""
+    subject = models.CharField(max_length=998)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+    STATUS_CHOICES = (
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('closed', 'Closed'),
+    )
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='open', db_index=True)
+    assigned_to = AjaxForeignKey(ESPUser, null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='assigned_threads')
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return self.subject
+
+    @property
+    def email_count(self):
+        return self.emails.count()
+
+    @property
+    def latest_email(self):
+        return self.emails.order_by('-received_at').first()
+
+    @property
+    def labels(self):
+        return InboxLabel.objects.filter(labeled_threads__thread=self)
+
+
+@python_2_unicode_compatible
+class InboundEmail(models.Model):
+    """Stores a single inbound (or outbound reply) email captured by the mailgate."""
+    thread = models.ForeignKey(InboundEmailThread, on_delete=models.CASCADE,
+                               related_name='emails', null=True, blank=True)
+    message_id = models.CharField(max_length=998, unique=True, db_index=True)
+    in_reply_to = models.CharField(max_length=998, blank=True, default='')
+    references = models.TextField(blank=True, default='')
+
+    sender = models.CharField(max_length=512)
+    sender_email = models.EmailField(db_index=True)
+    recipient = models.CharField(max_length=512)
+    subject = models.CharField(max_length=998)
+    body_text = models.TextField(blank=True, default='')
+    body_html = models.TextField(blank=True, default='')
+    raw_headers = models.TextField(blank=True, default='')
+
+    received_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    is_outbound_reply = models.BooleanField(default=False)
+    replied_by = AjaxForeignKey(ESPUser, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name='inbox_replies')
+
+    class Meta:
+        ordering = ['received_at']
+
+    def __str__(self):
+        return '%s from %s' % (self.subject, self.sender_email)
+
+    @property
+    def has_attachments(self):
+        return self.attachments.exists()
+
+
+@python_2_unicode_compatible
+class InboundEmailAttachment(models.Model):
+    """Stores an attachment from an inbound email."""
+    email = models.ForeignKey(InboundEmail, on_delete=models.CASCADE, related_name='attachments')
+    filename = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=255)
+    file = models.FileField(upload_to='inbox_attachments/%Y/%m/')
+    size = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return self.filename
+
+
+class InboundEmailReadStatus(models.Model):
+    """Tracks per-admin read status for inbound email threads."""
+    user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE, related_name='inbox_read_statuses')
+    thread = models.ForeignKey(InboundEmailThread, on_delete=models.CASCADE, related_name='read_statuses')
+    read_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'thread')
+
+
+@python_2_unicode_compatible
+class InboundEmailNote(models.Model):
+    """Admin-only internal notes on inbox threads (not sent as email)."""
+    thread = models.ForeignKey(InboundEmailThread, on_delete=models.CASCADE,
+                               related_name='notes')
+    note_text = models.TextField()
+    created_by = AjaxForeignKey(ESPUser, on_delete=models.CASCADE,
+                                related_name='inbox_notes_created')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return 'Note on "%s" by %s' % (self.thread.subject[:50], self.created_by.username)
+
+
+@python_2_unicode_compatible
+class InboxCannedResponse(models.Model):
+    """Predefined reply templates for common inbox scenarios."""
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    created_by = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    seq = models.SmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['seq', 'title']
+
+    def __str__(self):
+        return self.title
+
+
+@python_2_unicode_compatible
+class InboxLabel(models.Model):
+    """Lightweight colored tags for categorizing inbox threads."""
+    name = models.CharField(max_length=100, unique=True)
+    color = models.CharField(
+        max_length=7,
+        help_text='Hex color code, e.g. #ff0000',
+        validators=[RegexValidator(
+            regex=r'^#[0-9a-fA-F]{6}$',
+            message='Enter a valid 6-digit hex color (e.g. #ff0000).',
+        )],
+    )
+    description = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class InboundEmailThreadLabel(models.Model):
+    """M2M relationship between threads and labels."""
+    thread = models.ForeignKey(InboundEmailThread, on_delete=models.CASCADE,
+                               related_name='thread_labels')
+    label = models.ForeignKey(InboxLabel, on_delete=models.CASCADE,
+                              related_name='labeled_threads')
+    added_by = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('thread', 'label')
