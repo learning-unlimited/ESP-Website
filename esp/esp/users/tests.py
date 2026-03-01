@@ -451,8 +451,7 @@ class AccountCreationTest(TestCase):
                                   first_name="first",
                                   last_name="last",
                                   email="tsutton125@gmail.com")
-        except ESPUser.DoesNotExist as xxx_todo_changeme:
-            ESPUser.MultipleObjectsReturned = xxx_todo_changeme
+        except (ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned):
             self.fail("User not created correctly or created multiple times")
 
         if not Tag.getBooleanTag('require_email_validation'):
