@@ -37,7 +37,7 @@ If you want to create a new module, here's all you have to do:
 
  * OPTIONAL: If you have any HTML pages you want to include in your module, create a new folder ``foobarmodule`` in ``/esp/templates/program/modules/`` and place your files in there
 
- * Run ``fab refresh`` from your command line to make sure all changes are reflected on your server
+ * Run ``docker compose exec web python esp/manage.py update`` from your command line to make sure all changes are reflected on your server
 
  * And you're done! That wasn't so bad, was it?
 
