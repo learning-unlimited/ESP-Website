@@ -126,16 +126,60 @@ var handle_submit = function(mode, attrs, eventObject)
         attrs.form = attrs.id;
     }
 
-    //  I'm not sure if these calls are correct -- test this
+    var request;
+
     if (mode == 'post')
     {
-	$j.post(attrs.url, attrs.content, handle_success, "json");
+        request = $j.post(attrs.url, attrs.content, null, "json");
     }
     else
     {
-	$j.get(attrs.url, attrs.content, handle_success, "json");
+        request = $j.get(attrs.url, attrs.content, null, "json");
     }
-}
+
+    request
+
+    /*
+     * Handle non-2xx AJAX responses.
+     *
+     * AjaxErrorMiddleware returns JSON error payloads with proper
+     * HTTP status codes (e.g., 404, 500). Previously, only 2xx
+     * responses were handled, causing structured errors to be
+     * silently ignored by the UI.
+     *
+     * Adding a .fail() handler ensures all JSON errors are
+     * surfaced consistently while preserving correct HTTP semantics.
+     */
+
+        .done(function(data)
+        {
+            handle_success(data);
+        })
+        .fail(function(xhr)
+        {
+            try
+            {
+                var response = JSON.parse(xhr.responseText);
+
+                if (response && response.error)
+                {
+                    alert(response.error);
+                }
+                else
+                {
+                    alert("An unexpected error occurred.");
+                }
+            }
+            catch (e)
+            {
+                alert("A server error occurred.");
+            }
+        });
+
+    return false;
+};
+
+
 
 
 
