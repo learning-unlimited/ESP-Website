@@ -2,6 +2,7 @@ import datetime
 import traceback
 
 from django.db.models import Min
+from django.utils import timezone
 
 from esp.cal.models import Event
 import esp.program.controllers.autoscheduler.data_model as data_model
