@@ -106,6 +106,7 @@ class StudentRegSanityFrameworkTest(ProgramFrameworkTest):
         cls = ClassSubject.objects.create(
             parent_program=self.program,
             category=category,
+            title=category_name,
             class_size_max=30,
             grade_min=7,
             grade_max=12,
@@ -231,8 +232,8 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
         self.controller.sanitize_walkin(fake=True)
 
         sr.refresh_from_db()
-        self.assertFalse(
-            sr.is_expired(),
+        self.assertTrue(
+            sr.is_valid(),
             "sanitize_walkin(fake=True) must not expire any registrations",
         )
 
@@ -249,8 +250,8 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
         self.controller.sanitize_walkin(fake=False)
 
         sr.refresh_from_db()
-        self.assertTrue(
-            sr.is_expired(),
+        self.assertFalse(
+            sr.is_valid(),
             "sanitize_walkin(fake=False) must expire walk-in registrations",
         )
 
@@ -275,8 +276,8 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
         self.controller.sanitize_walkin(fake=False)
 
         sr.refresh_from_db()
-        self.assertFalse(
-            sr.is_expired(),
+        self.assertTrue(
+            sr.is_valid(),
             "sanitize_walkin must not expire registrations for normal classes",
         )
 
@@ -360,8 +361,8 @@ class SanitizeLunchTest(StudentRegSanityFrameworkTest):
         self.controller.sanitize_lunch(fake=True)
 
         sr.refresh_from_db()
-        self.assertFalse(
-            sr.is_expired(),
+        self.assertTrue(
+            sr.is_valid(),
             "sanitize_lunch(fake=True) must not expire registrations",
         )
 
@@ -375,8 +376,8 @@ class SanitizeLunchTest(StudentRegSanityFrameworkTest):
         self.controller.sanitize_lunch(fake=False)
 
         sr.refresh_from_db()
-        self.assertTrue(
-            sr.is_expired(),
+        self.assertFalse(
+            sr.is_valid(),
             "sanitize_lunch(fake=False) must expire lunch registrations",
         )
 
@@ -386,8 +387,8 @@ class SanitizeLunchTest(StudentRegSanityFrameworkTest):
         self.controller.sanitize_lunch(fake=False)
         for sr in srs:
             sr.refresh_from_db()
-            self.assertTrue(
-                sr.is_expired(),
+            self.assertFalse(
+                sr.is_valid(),
                 "Registration for student %s was not expired" % sr.user,
             )
 
@@ -509,8 +510,8 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         self.controller.sanitize(checks=['antiwalk-in'], fake=False, csvlog=False)
 
         sr.refresh_from_db()
-        self.assertTrue(
-            sr.is_expired(),
+        self.assertFalse(
+            sr.is_valid(),
             "Walk-in registration must be expired after real antiwalk-in run",
         )
 
@@ -525,8 +526,8 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         self.controller.sanitize(checks=['antilunch'], fake=False, csvlog=False)
 
         sr.refresh_from_db()
-        self.assertTrue(
-            sr.is_expired(),
+        self.assertFalse(
+            sr.is_valid(),
             "Lunch registration must be expired after real antilunch run",
         )
 
