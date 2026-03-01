@@ -530,7 +530,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def coteachers_logic(cls, request, prog, template, ajax, is_admin = False):
         # set txtTeachers and coteachers from the database, never from POST.
-        coteachers = cls.get_teachers()
+        coteachers = list(cls.get_teachers())
         if not is_admin:
             coteachers = [user for user in coteachers if user.id != request.user.id]
         txtTeachers = ",".join([str(user.id) for user in coteachers])
@@ -685,8 +685,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                 section.moderators.remove(moderator)
             # should we send the moderator or directors an email?
 
-        # Keep the program-level teacher list synced using server-side teacher data.
-        if request.POST:
+        # Ensure all current teachers are present on the program-level teacher list
+        # using server-side teacher data.
+        if request.POST and op in ('add', 'del'):
             add_list_members("%s_%s-teachers" % (prog.program_type, prog.program_instance), cls.get_teachers())
 
         return render_to_response(template, request, {'class': cls,
