@@ -29,6 +29,8 @@ done
 
 BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
+mkdir -p $BASEDIR/esp/public/static
+
 pythonversion=`python -V 2>&1`
 if [[ $pythonversion != "Python 2.7.18" ]]
 then
