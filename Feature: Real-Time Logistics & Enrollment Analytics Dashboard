@@ -1,0 +1,16 @@
+Summary
+
+This PR introduces a Real-Time Logistics & Enrollment Analytics Dashboard integrated into the Admin Panel to provide centralized, live insights into program health.
+
+The dashboard eliminates dependency on manual spreadsheet exports and enables faster operational decision-making during live program events.
+
+
+Objectives
+
+Provide real-time visibility into enrollment and logistics
+
+Improve operational efficiency during high-volume events
+
+Enable role-based dashboard views
+
+Support scalability for programs with 1000+ students
