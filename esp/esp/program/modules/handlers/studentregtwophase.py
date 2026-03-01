@@ -318,7 +318,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             subject__pk__in=json_data['not_interested'])
         to_expire.update(end_date=datetime.datetime.now())
 
-        if request.is_ajax():
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return HttpResponse()
         else:
             return self.goToCore(tl)
