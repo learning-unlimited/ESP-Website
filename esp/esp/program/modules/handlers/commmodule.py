@@ -48,6 +48,30 @@ from esp.middleware import ESPError
 
 import re
 
+# Match /learn/, /teach/, or /volunteer/ + ProgramName/Instance (program url = two path segments)
+_PROGRAM_URL_PATTERN = re.compile(
+    r'(?:/learn|/teach|/volunteer)/([^/\s\'"<>]+/[^/\s\'"<>]+)',
+    re.IGNORECASE
+)
+
+
+def _program_urls_in_text(text, current_program_url):
+    """
+    Find program URLs in text (e.g. /learn/Splash/2024_Winter/...) that refer to
+    a different program than current_program_url (e.g. "Splash/2025_Spring").
+    Returns a list of unique program url strings (e.g. ["Splash/2024_Winter"]).
+    """
+    if not text or not current_program_url:
+        return []
+    current = current_program_url.strip().rstrip('/')
+    found = set()
+    for match in _PROGRAM_URL_PATTERN.finditer(text):
+        prog_url = match.group(1).strip().rstrip('/')
+        if prog_url != current:
+            found.add(prog_url)
+    return sorted(found)
+
+
 class CommModule(ProgramModuleObj):
     doc = """Email users that match specific search criteria."""
     """ Want to email all ESP students within a 60 mile radius of NYC?
@@ -133,6 +157,12 @@ class CommModule(ProgramModuleObj):
                        'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
         rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
+        current_program_url = self.program.getUrlBase()
+        other_program_urls = _program_urls_in_text(
+            (subject or '') + ' ' + (body or ''),
+            current_program_url
+        )
+
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
                                                'sendto_fn_name': sendto_fn_name,
@@ -144,7 +174,8 @@ class CommModule(ProgramModuleObj):
                                                'public_view': public_view,
                                                'body': body,
                                                'template': template,
-                                               'rendered_text': rendered_text})
+                                               'rendered_text': rendered_text,
+                                               'other_program_urls': other_program_urls})
 
     @staticmethod
     def approx_num_of_recipients(filterObj, sendto_fn):
@@ -184,9 +215,36 @@ class CommModule(ProgramModuleObj):
                                     request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
+        template = request.POST.get('template', 'default')
+
+        current_program_url = self.program.getUrlBase()
+        other_program_urls = _program_urls_in_text(
+            (subject or '') + ' ' + (body or ''),
+            current_program_url
+        )
+        if other_program_urls and not request.POST.get('confirm_send_with_other_program_links'):
+            rendered_text = render_to_string('email/{}_email.html'.format(template),
+                                             {'msgbody': body})
+            listcount = request.POST.get('listcount', '')
+            selected = request.POST.get('selected', '')
+            return render_to_response(self.baseDir() + 'preview.html', request, {
+                'filterid': filterid,
+                'sendto_fn_name': sendto_fn_name,
+                'listcount': listcount,
+                'selected': selected,
+                'subject': subject,
+                'from': fromemail,
+                'replyto': replytoemail,
+                'public_view': public_view,
+                'body': body,
+                'template': template,
+                'rendered_text': rendered_text,
+                'other_program_urls': other_program_urls,
+                'confirm_send_required': True,
+                'program': self.program,
+            })
 
         # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
-        template = request.POST.get('template', 'default')
         rendered_text = render_to_string('email/{}_email.html'.format(template),
                                         {'msgbody': body})
 

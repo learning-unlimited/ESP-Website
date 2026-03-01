@@ -22,7 +22,7 @@ while [ ! -z "$1" ]
 do
   case "$1" in
     -p | --prod) MODE_PROD=true;;
-    -v | --virtualenv) MODE_VIRTUALBOX=true; VIRTUALENV_DIR=$2; shift;;
+    -v | --virtualenv) VIRTUALENV_DIR=$2; shift;;
      *) break;;
   esac
 
