@@ -103,6 +103,7 @@ class TeacherEventsManageModule(ProgramModuleObj):
                         event_type = EventType.objects.get(id=event_type_id, is_teacher_type=True)
                         form.save_timeslot(self.program, new_timeslot, event_type)
                     except (ValueError, EventType.DoesNotExist):
+                        form.add_error(None, "Please select a valid teacher event type.")
                         context['timeslot_form'] = form
                 else:
                     context['timeslot_form'] = form
