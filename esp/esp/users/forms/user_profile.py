@@ -225,7 +225,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             new_choices = []
             for x in self.fields['graduation_year'].choices:
                 if len(x[0]) > 0:
-                    new_choices.append((str(x[0]), "%s (%sth grade)" % (x[0], x[1])))
+                    new_choices.append((str(x[0]), f"{x[0]} ({x[1]}th grade)"))
                 else:
                     new_choices.append(x)
             self.fields['graduation_year'].choices = new_choices
@@ -346,7 +346,7 @@ class TeacherInfoForm(FormWithRequiredCss):
 
     pronoun = forms.CharField(max_length=50, required=False)
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
-    affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label ='What is your affiliation with %s?' % settings.INSTITUTION_NAME)
+    affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label =f'What is your affiliation with {settings.INSTITUTION_NAME}?')
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=[], required=False)
     shirt_type = forms.ChoiceField(choices=[], required=False)
@@ -374,15 +374,15 @@ class TeacherInfoForm(FormWithRequiredCss):
             affiliation_field = self.fields['affiliation']
             affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
             if affiliation == '':
-                msg = 'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
+                msg = f'Please select your affiliation with {settings.INSTITUTION_NAME}.'
                 self.add_error('affiliation', msg)
             elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
                 cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
             else: # OTHER or NONE -- Make sure they entered something into the other box
                 if school.strip() == '':
-                    msg = 'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
+                    msg = f'Please select your affiliation with {settings.INSTITUTION_NAME}.'
                     if affiliation == AFFILIATION_OTHER:
-                        msg = 'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
+                        msg = f'Please enter your affiliation with {settings.INSTITUTION_NAME}.'
                     elif affiliation == AFFILIATION_NONE:
                         msg = 'Please enter your school or employer.'
                     self.add_error('affiliation', msg)
