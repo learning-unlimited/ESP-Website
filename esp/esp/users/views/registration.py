@@ -236,7 +236,7 @@ class GradeChangeRequestView(CreateView):
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
         return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)
-    
+
 # AJAX endpoints for real-time validation
 @require_GET
 def ajax_check_email_availability(request):
@@ -245,7 +245,7 @@ def ajax_check_email_availability(request):
     Returns JSON response with availability status and message.
     """
     email = request.GET.get('email', '').strip().lower()
-    
+
     if not email:
         return JsonResponse({'available': False, 'message': 'Please enter an email address'})
 
@@ -288,13 +288,13 @@ def ajax_check_username_availability(request):
     Returns JSON response with availability status and message.
     """
     username = request.GET.get('username', '').strip()
-    
+
     if not username:
         return JsonResponse({'available': False, 'message': 'Please enter a username'})
 
     if len(username) < 5:
         return JsonResponse({'available': False, 'message': 'Username must be at least 5 characters long'})
-    
+
     if len(username) > 30:
         return JsonResponse({'available': False, 'message': 'Username must be 30 characters or less'})
 
