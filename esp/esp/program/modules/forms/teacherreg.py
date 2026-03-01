@@ -378,16 +378,35 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         for event_type in getattr(self, 'event_types', []):
             field_name = 'event_type_%d' % event_type.id
             event_id = cleaned_data.get(field_name)
-            if event_id:
-                try:
-                    event = Event.objects.get(id=event_id)
-                except ValueError:
-                    continue
-                is_interview = 'interview' in event_type.description.lower()
-                if is_interview and not self._slot_is_available(event):
-                    self.add_error(field_name, 'That time is taken; please select a different one.')
-                else:
-                    cleaned_data[field_name] = event
-            else:
+            if not event_id:
                 cleaned_data[field_name] = None
+                continue
+                
+            # Lookup the selected event; handle invalid or missing IDs gracefully
+            try:
+                event = Event.objects.get(id=event_id)
+            except (ValueError, Event.DoesNotExist):
+                self.add_error(
+                    field_name,
+                    'Please select a valid %s option.' % event_type.description.lower()
+                )
+                cleaned_data[field_name] = None
+                continue
+
+            # Ensure the event is one of the allowed times for this event type/module
+            allowed_times = self.module.getTimes(event_type)
+            if not allowed_times.filter(id=event.id).exists():
+                self.add_error(
+                    field_name,
+                    'Please select a valid %s option.' % event_type.description.lower()
+                )
+                cleaned_data[field_name] = None
+                continue
+
+            is_interview = 'interview' in event_type.description.lower()
+            if is_interview and not self._slot_is_available(event):
+                self.add_error(field_name, 'That time is taken; please select a different one.')
+                cleaned_data[field_name] = None
+            else:
+                cleaned_data[field_name] = event
         return cleaned_data
