@@ -307,14 +307,14 @@ def ajax_check_username_availability(request):
     valid_chars = set(string.ascii_letters + string.digits)
     if not set(username).issubset(valid_chars):
         return JsonResponse({'available': False, 'message': 'Username can only contain letters and numbers'})
-    
+
     try:
         # Check for existing users (same logic as form validation)
         from django.db.models import Q
         awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
-        
+
         existing_users = ESPUser.objects.filter(username__iexact=username).exclude(password='emailuser').exclude(awaiting_activation)
-        
+
         if existing_users.exists():
             return JsonResponse({
                 'available': False,
@@ -325,7 +325,7 @@ def ajax_check_username_availability(request):
                 'available': True,
                 'message': f'Username "{username}" is available'
             })
-            
+
     except Exception as e:
         log.error(f"Error checking username availability for {username}: {e}")
         return JsonResponse({'available': False, 'message': 'Error checking username availability'})
