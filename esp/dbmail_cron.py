@@ -14,15 +14,6 @@ project = os.path.dirname(os.path.realpath(__file__))
 # Path for ESP code
 sys.path.insert(0, project)
 
-# Check if a virtualenv has been installed and activated from elsewhere.
-# If this has happened, then the VIRTUAL_ENV environment variable should be
-# defined.
-# If the variable isn't defined, then activate our own virtualenv.
-if os.environ.get('VIRTUAL_ENV') is None:
-    root = os.path.dirname(project)
-    activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
-
 import django
 django.setup()
 from esp.dbmail.cronmail import process_messages, send_email_requests

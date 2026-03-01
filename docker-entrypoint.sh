@@ -18,7 +18,7 @@ fi
 
 # Wait for PostgreSQL to be ready
 echo ">>> Waiting for PostgreSQL..."
-until uv run python -c "
+until python -c "
 import psycopg2
 try:
     psycopg2.connect(host='db', dbname='devsite_django', user='esp', password='password')

@@ -28,7 +28,7 @@ RUN npm install --prefix /usr less@1.7.5 -g
 COPY esp/requirements.txt /app/esp/requirements.txt
 
 # Install Python dependencies
-RUN uv pip install -r /app/esp/requirements.txt --system
+RUN uv pip install -r /app/esp/pyproject.toml --system
 
 # Copy the rest of the application code
 COPY . /app
@@ -38,5 +38,7 @@ COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && \
     chmod +x /app/docker-entrypoint.sh
 
+USER devuser
+
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["uv", "run", "python", "manage.py", "runserver_plus", "0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver_plus", "0.0.0.0:8000"]

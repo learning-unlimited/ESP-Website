@@ -4,4 +4,46 @@ version = "0.1.0"
 description = "A website to help manage the logistics of large, short-term educational programs "
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "bleach==6.0.0",
+    "dill>=0.4.1",
+    "django==2.2.28",
+    "django-admin-tools",
+    "django-argcache",
+    "django-debug-toolbar==3.2.4",
+    "django-extensions==3.1.5",
+    "django-filebrowser-no-grappelli==3.8.0",
+    "django-form-utils==1.0.3",
+    "django-formtools==2.4",
+    "django-localflavor==3.1",
+    "django-phonenumber-field[phonenumbers]==6.3.0",
+    "django-recaptcha==3.0.0",
+    "django-reversion==5.0.2",
+    "django-sendgrid-v5==1.2.4",
+    "django-vanilla-views==3.0.0",
+    "docutils==0.12",
+    "flake8==3.9.2",
+    "ipython==7.34.0",
+    "markdown==3.9",
+    "numpy==1.20.0",
+    "openpyxl==3.1.2",
+    "pillow==8.3.2",
+    "psycopg2==2.8.6",
+    "py3dns==3.2.1",
+    "pycurl==7.19.5.1",
+    "pygments==2.10.0",
+    "pylibmc==1.5.0",
+    "pytz==2015.4",
+    "raven>=6.10.0",
+    "selenium==2.44.0",
+    "setuptools==57.5.0",
+    "shortuuid==0.4.2",
+    "stripe==2.60.0",
+    "twilio==6.63.2",
+    "werkzeug==0.16.1",
+    "wheel==0.38.4",
+]
+
+[tool.uv.sources]
+django-argcache = { git = "https://github.com/learning-unlimited/django-argcache.git", rev = "django2" }
+django-admin-tools = { git = "https://github.com/learning-unlimited/django-admin-tools.git", rev = "esp" }
