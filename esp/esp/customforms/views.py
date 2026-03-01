@@ -49,7 +49,7 @@ def formBuilder(request):
 
 @user_passes_test(test_func)
 def formBuilderData(request):
-    if request.is_ajax():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
             data = {}
             data['only_fkey_models'] = list(cf_cache.only_fkey_models.keys())
@@ -65,7 +65,7 @@ def getPerms(request):
     """
     Returns the various permissions available for the current program via AJAX.
     """
-    if request.is_ajax():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
             try:
                 prog_id = int(request.GET['prog_id'])
@@ -90,7 +90,7 @@ def getPerms(request):
 def onSubmit(request):
     #Stores form metadata in the database.
 
-    if request.is_ajax():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'POST':
             try:
                 metadata = json.loads(request.body)
@@ -179,7 +179,7 @@ def onModify(request):
     """
     Handles form modifications
     """
-    if request.is_ajax():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'POST':
             try:
                 metadata = json.loads(request.body)
@@ -371,8 +371,8 @@ def getExcelData(request, form_id):
     form = Form.objects.get(pk=form_id)
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
-    response = HttpResponse(wbk.getvalue(), content_type="application/vnd.ms-excel")
-    response['Content-Disposition']='attachment; filename=%s.xls' % form.title
+    response = HttpResponse(wbk.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response['Content-Disposition']='attachment; filename=%s.xlsx' % form.title
     return response
 
 @user_passes_test(test_func)
@@ -380,7 +380,7 @@ def getData(request):
     """
     Returns response data via Ajax
     """
-    if request.is_ajax():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
             try:
                 form_id = int(request.GET['form_id'])
@@ -415,7 +415,7 @@ def getRebuildData(request):
     """
     Returns form metadata for rebuilding via AJAX
     """
-    if request.is_ajax():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
             try:
                 form_id = int(request.GET['form_id'])
@@ -434,7 +434,7 @@ def get_links(request):
     """
     Returns the instances for the specified model, to link to in the form builder.
     """
-    if request.is_ajax():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
             try:
                 link_model = cf_cache.only_fkey_models[request.GET['link_model']]
@@ -460,7 +460,7 @@ def get_modules(request):
     # so we'll just need to update these if they change
     teach_handlers = ['TeacherCustomFormModule', 'TeacherQuizModule']
     learn_handlers = ['StudentCustomFormModule']
-    if request.is_ajax():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
             try:
                 prog = Program.objects.get(id=request.GET.get('program'))
