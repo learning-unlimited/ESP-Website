@@ -50,7 +50,6 @@ import logging
 import os
 import re
 import subprocess
-import sys
 
 logger = logging.getLogger(__name__)
 
@@ -285,17 +284,20 @@ class CommModule(ProgramModuleObj):
         # concurrent execution, so this is safe even if the cron is running.
         from django.conf import settings
         dbmail_cron_path = os.path.join(settings.PROJECT_ROOT, 'dbmail_cron.py')
+        auto_trigger_ok = False
         try:
             subprocess.Popen(
-                [sys.executable, dbmail_cron_path],
+                [dbmail_cron_path],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 close_fds=True,
+                start_new_session=True,
             )
+            auto_trigger_ok = True
         except Exception:
             logger.exception('Failed to auto-trigger email processing after commpanel submit')
 
-        context = {}
+        context = {'auto_trigger_ok': auto_trigger_ok}
         if public_view:
             context['req_id'] = newmsg_request.id
         return render_to_response(self.baseDir()+'finished.html', request, context)

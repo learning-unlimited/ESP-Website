@@ -50,9 +50,9 @@ import json
 import os
 import re
 try:
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import patch
 except ImportError:
-    from mock import patch, MagicMock
+    from mock import patch
 
 class CommunicationsPanelTest(ProgramFrameworkTest):
     """ A test of the basic functionality of the communications panel:
@@ -181,7 +181,8 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
     # Tests for the "Process Emails Now" button  (issue #2920)
     # ------------------------------------------------------------------
 
-    def test_process_emails_success(self):
+    @patch('esp.program.views.subprocess.Popen')
+    def test_process_emails_success(self, mock_popen):
         """POST to /manage/process_emails succeeds for admin and returns JSON."""
         self.client.login(username=self.admins[0].username, password='password')
         response = self.client.post('/manage/process_emails')
@@ -190,6 +191,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         data = json.loads(response.content.decode('UTF-8'))
         self.assertEqual(data['status'], 'started')
         self.assertIn('message', data)
+        mock_popen.assert_called_once()
 
     def test_process_emails_rejects_get(self):
         """GET to /manage/process_emails returns 400."""
@@ -230,7 +232,6 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
     def test_process_emails_spawns_correct_script(self, mock_popen):
         """Verify subprocess.Popen is called with the correct dbmail_cron.py path."""
         from django.conf import settings as django_settings
-        import sys as _sys
         expected_path = os.path.join(django_settings.PROJECT_ROOT, 'dbmail_cron.py')
 
         self.client.login(username=self.admins[0].username, password='password')
@@ -240,8 +241,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         mock_popen.assert_called_once()
         call_args = mock_popen.call_args
         cmd = call_args[0][0]  # first positional arg is the command list
-        self.assertEqual(cmd[0], _sys.executable)
-        self.assertEqual(cmd[1], expected_path)
+        self.assertEqual(cmd, [expected_path])
 
     @patch('esp.program.views.subprocess.Popen', side_effect=OSError('No such file'))
     def test_process_emails_subprocess_failure(self, mock_popen):
@@ -301,7 +301,12 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         # Verify subprocess.Popen was called (auto-trigger fired)
         mock_popen.assert_called_once()
         cmd = mock_popen.call_args[0][0]
-        self.assertTrue(cmd[1].endswith('dbmail_cron.py'))
+        self.assertTrue(cmd[0].endswith('dbmail_cron.py'))
+
+        # Verify the success banner is shown
+        content = response.content.decode('UTF-8')
+        self.assertIn('alert alert-success', content)
+        self.assertIn('automatically started', content)
 
     @patch('esp.program.modules.handlers.commmodule.subprocess.Popen',
            side_effect=OSError('spawn failed'))
@@ -341,3 +346,64 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertTrue(
             MR.objects.filter(subject='Resilience Test').exists(),
             'MessageRequest should be saved even when auto-trigger fails')
+
+        # Verify the warning banner is shown instead of success
+        content = response.content.decode('UTF-8')
+        self.assertIn('alert alert-warning', content)
+        self.assertNotIn('alert alert-success', content)
+
+    # ------------------------------------------------------------------
+    # Edge case tests for deployment scenarios
+    # ------------------------------------------------------------------
+
+    @patch('esp.program.views.subprocess.Popen')
+    def test_process_emails_uses_script_shebang_not_sys_executable(self, mock_popen):
+        """Popen command should use script path directly (shebang), not sys.executable."""
+        from django.conf import settings as django_settings
+        expected_path = os.path.join(django_settings.PROJECT_ROOT, 'dbmail_cron.py')
+
+        self.client.login(username=self.admins[0].username, password='password')
+        response = self.client.post('/manage/process_emails')
+        self.assertEqual(response.status_code, 200)
+
+        cmd = mock_popen.call_args[0][0]
+        # Should be just [script_path], not [sys.executable, script_path]
+        self.assertEqual(len(cmd), 1,
+                         'Command should only contain the script path (shebang handles Python)')
+        self.assertEqual(cmd[0], expected_path)
+
+    @patch('esp.program.modules.handlers.commmodule.subprocess.Popen')
+    def test_commfinal_uses_start_new_session(self, mock_popen):
+        """commfinal() Popen call should use start_new_session=True."""
+        self.assertTrue(self.client.login(
+            username=self.admins[0].username, password='password'))
+
+        post_data = {
+            'submit_user_list': 'true',
+            'base_list': 'enrolled',
+            'keys': '',
+            'finalsent': 'Test List',
+            'submitform': 'I have my list, go on!',
+        }
+        response = self.client.post(
+            '/manage/%s/commpanel_old' % self.program.getUrlBase(), post_data)
+        s = re.search(
+            r'<input type="hidden" name="filterid" value="([0-9]+)" />',
+            response.content.decode('UTF-8'))
+        filterid = s.groups()[0]
+
+        post_data = {
+            'subject': 'Session Test',
+            'body': 'Testing start_new_session',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+            'filterid': filterid,
+        }
+        response = self.client.post(
+            '/manage/%s/commfinal' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+
+        # Verify start_new_session=True was passed
+        call_kwargs = mock_popen.call_args[1]
+        self.assertTrue(call_kwargs.get('start_new_session'),
+                        'Popen should use start_new_session=True for detached subprocess')

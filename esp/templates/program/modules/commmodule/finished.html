@@ -32,7 +32,7 @@
 <p>
 Congratulations!<br />
 <br />
-Your email has been queued and <strong>processing has been automatically triggered</strong>.
+Your email has been queued{% if auto_trigger_ok %} and <strong>processing has been automatically triggered</strong>{% endif %}.
 Visit <a href="/manage/emails">the email status page</a> to monitor its status.
 To avoid being marked as a spam source, <strong>there may be a delay</strong> with sending it to everyone on the list, so please be patient!
 <br /><br />
@@ -41,9 +41,15 @@ To avoid being marked as a spam source, <strong>there may be a delay</strong> wi
 {% endif %}
 </p>
 
-<div style="margin: 15px 0; padding: 10px 15px; background-color: #dff0d8; border: 1px solid #d6e9c6; border-radius: 4px; color: #3c763d;">
+{% if auto_trigger_ok %}
+<div class="alert alert-success">
     &#10003; Email processing was automatically started. Emails will be sent shortly.
 </div>
+{% else %}
+<div class="alert alert-warning">
+    &#9888; Automatic processing could not be started. The email is safely queued and will be picked up by the next scheduled run, or you can manually trigger processing below.
+</div>
+{% endif %}
 
 <p>
     <button id="process-emails-btn" class="btn btn-default" type="button">
