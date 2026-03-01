@@ -30,7 +30,7 @@ urlpatterns = [
     url(r'^morph/?$', views.morph_into_user),
     url(r'^unsubscribe/(?P<username>[\w.@+-]+)/(?P<token>[\w.:\-_=]+)/$', views.unsubscribe, name="unsubscribe"),
     url(r'^unsubscribe_oneclick/(?P<username>[\w.@+-]+)/(?P<token>[\w.:\-_=]+)/$', views.unsubscribe_oneclick, name="unsubscribe_oneclick"),
-    
+
     # AJAX endpoints for real-time validation
     url(r'^ajax/check_email/?$', views.ajax_check_email_availability, name='ajax_check_email'),
     url(r'^ajax/check_username/?$', views.ajax_check_username_availability, name='ajax_check_username'),

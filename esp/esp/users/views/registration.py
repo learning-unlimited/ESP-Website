@@ -241,7 +241,7 @@ class GradeChangeRequestView(CreateView):
 
 
 # AJAX endpoints for real-time validation
-@require_GET 
+@require_GET
 def ajax_check_email_availability(request):
     """
     AJAX endpoint to check if an email address is already registered.
@@ -251,20 +251,20 @@ def ajax_check_email_availability(request):
     
     if not email:
         return JsonResponse({'available': False, 'message': 'Please enter an email address'})
-    
+
     # Basic email format validation
     if '@' not in email or '.' not in email:
         return JsonResponse({'available': False, 'message': 'Please enter a valid email address'})
-    
+
     try:
         # Check for existing users with this email (excluding email-only accounts)
         existing_users = ESPUser.objects.filter(email__iexact=email).exclude(password='emailuser')
-        
+
         if existing_users.exists():
             active_users = existing_users.filter(is_active=True)
             if active_users.exists():
                 return JsonResponse({
-                    'available': False, 
+                    'available': False,
                     'message': 'This email is already registered. Try signing in instead.'
                 })
             else:
@@ -279,7 +279,7 @@ def ajax_check_email_availability(request):
                 'available': True,
                 'message': 'Email address is available'
             })
-            
+
     except Exception as e:
         log.error(f"Error checking email availability for {email}: {e}")
         return JsonResponse({'available': False, 'message': 'Error checking email availability'})
@@ -295,13 +295,13 @@ def ajax_check_username_availability(request):
     
     if not username:
         return JsonResponse({'available': False, 'message': 'Please enter a username'})
-    
+
     if len(username) < 5:
         return JsonResponse({'available': False, 'message': 'Username must be at least 5 characters long'})
     
     if len(username) > 30:
         return JsonResponse({'available': False, 'message': 'Username must be 30 characters or less'})
-    
+
     # Character validation (alphanumeric only)
     import string
     valid_chars = set(string.ascii_letters + string.digits)
