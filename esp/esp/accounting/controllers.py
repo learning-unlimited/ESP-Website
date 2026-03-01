@@ -275,7 +275,7 @@ class ProgramAccountingController(BaseAccountingController):
 
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
-        super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
+        super().__init__(program, *args, **kwargs)
         self.user = user
 
     def transfers_to_program_exist(self):
@@ -522,7 +522,7 @@ class IndividualAccountingController(ProgramAccountingController):
     def latest_finaid_grant(self):
         return FinancialAidGrant.objects.filter(
             request__user=self.user, request__program=self.program
-        ).first()
+        ).order_by('-request__id').first()
 
     def amount_finaid(self, amount_siblingdiscount=None):
         amount_requested = self.amount_requested(for_finaid_only=True)
@@ -630,11 +630,11 @@ class IndividualAccountingController(ProgramAccountingController):
             raise ValueError("Transfers do not sum to target: %.2f" % target_full)
 
     @staticmethod
-    def updatePaid(program, user, paid=True):
+    def updatePaid(program, user, paid=True, in_full=False):
         """ Create an invoice for the user and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
         iac = IndividualAccountingController(program, user)
-        if not iac.has_paid():
+        if not iac.has_paid(in_full=in_full):
             iac.ensure_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())

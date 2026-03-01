@@ -20,14 +20,15 @@ class FixIEMiddleware(MiddlewareMixin):
         )
 
         try:
-            user_agent = request.META.get("User-Agent", "")
+            user_agent = request.META.get("HTTP_USER_AGENT", "")
             if "MSIE" not in user_agent.upper():
                 return response
         except (KeyError, AttributeError):
             return response
 
         content_type = getattr(response, "content_type", "")
-        if content_type.lower() not in safe_mime_types:
+        base_content_type = content_type.split(";", 1)[0].strip().lower()
+        if base_content_type not in safe_mime_types:
             try:
                 del response["Vary"]
                 response["Pragma"] = "no-cache"
