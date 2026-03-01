@@ -27,6 +27,7 @@ from esp.users.models import ESPUser
 from esp import utils
 from esp.utils import query_builder
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
+from esp.utils.try_multi import try_multi
 
 
 # Code from <http://snippets.dzone.com/posts/show/6313>
@@ -111,6 +112,50 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryExecutable("inkscape")  # Used to render LaTeX output (once converted to .pdf) to .svg image files
 
         self.assert_(not self._exe_not_found)
+
+
+class TryMultiTestCase(unittest.TestCase):
+    def test_retries_expected_exceptions(self):
+        calls = {"n": 0}
+
+        @try_multi(3, exceptions=(ValueError,))
+        def flaky():
+            calls["n"] += 1
+            if calls["n"] < 3:
+                raise ValueError("temporary failure")
+            return "ok"
+
+        self.assertEqual(flaky(), "ok")
+        self.assertEqual(calls["n"], 3)
+
+    def test_does_not_swallow_unexpected_exceptions(self):
+        calls = {"n": 0}
+
+        @try_multi(3, exceptions=(ValueError,))
+        def boom():
+            calls["n"] += 1
+            raise TypeError("unexpected")
+
+        with self.assertRaises(TypeError):
+            boom()
+
+        self.assertEqual(calls["n"], 1)
+
+    def test_does_not_catch_baseexception_by_default(self):
+        class MyBaseException(BaseException):
+            pass
+
+        calls = {"n": 0}
+
+        @try_multi(3)
+        def boom():
+            calls["n"] += 1
+            raise MyBaseException("stop")
+
+        with self.assertRaises(MyBaseException):
+            boom()
+
+        self.assertEqual(calls["n"], 1)
 
 class MemcachedTestCase(unittest.TestCase):
     """

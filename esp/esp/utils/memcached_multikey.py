@@ -50,25 +50,25 @@ class CacheClass(BaseCache):
             except TypeError as e:
                 logger.warning("Got a TypeError (likely because value `{}` is not picklable):\n\n{}".format(value, e))
 
-    @try_multi(8)
+    @try_multi(8, exceptions=(pylibmc.Error,))
     def add(self, key, value, timeout=None, version=None):
         self._failfast_test(key, value)
         return self._wrapped_cache.add(self.make_key(key, version), value, timeout=timeout, version=version)
 
-    @try_multi(8)
+    @try_multi(8, exceptions=(pylibmc.Error,))
     def get(self, key, default=None, version=None):
         return self._wrapped_cache.get(self.make_key(key, version), default=default, version=version)
 
-    @try_multi(8)
+    @try_multi(8, exceptions=(pylibmc.Error,))
     def set(self, key, value, timeout=None, version=None):
         self._failfast_test(key, value)
         return self._wrapped_cache.set(self.make_key(key, version), value, timeout=timeout, version=version)
 
-    @try_multi(8)
+    @try_multi(8, exceptions=(pylibmc.Error,))
     def delete(self, key, version=None):
         return self._wrapped_cache.delete(self.make_key(key, version), version=version)
 
-    @try_multi(8)
+    @try_multi(8, exceptions=(pylibmc.Error,))
     def get_many(self, keys, version=None):
         keys_dict = dict((self.make_key(key, version), key) for key in keys)
         wrapped_ans = self._wrapped_cache.get_many(list(keys_dict.keys()), version=version)
