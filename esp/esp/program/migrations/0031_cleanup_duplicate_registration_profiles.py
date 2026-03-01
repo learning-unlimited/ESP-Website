@@ -37,18 +37,24 @@ def cleanup_duplicate_profiles(apps, schema_editor):
             user_id=dup['user_id'],
             program_id=dup['program_id']
         ).order_by('-last_ts', '-id')
-        
-        # Keep the first (most recent), delete the rest
-        profiles_to_delete = list(profiles[1:])
-        count = len(profiles_to_delete)
+
+        # Keep the first (most recent), delete the rest using a bulk delete
+        keep_profile = profiles.first()
+        if keep_profile is None:
+            continue
+
+        profiles_to_delete_qs = RegistrationProfile.objects.filter(
+            user_id=dup['user_id'],
+            program_id=dup['program_id'],
+        ).exclude(pk=keep_profile.pk)
+        count = profiles_to_delete_qs.count()
 
         if count > 0:
             print(f"User {dup['user_id']}, Program {dup['program_id']}: "
                   f"Deleting {count} duplicate profile(s), keeping most recent")
 
-            # Delete the duplicates
-            for profile in profiles_to_delete:
-                profile.delete()
+            # Delete the duplicates in bulk
+            profiles_to_delete_qs.delete()
 
             deleted_count += count
 
