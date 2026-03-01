@@ -259,8 +259,7 @@ function initialize()
 
     for (var i = 0; i < list_names.length; i++)
     {
-        with ({list_name: list_names[i]})
-        {
+        (function (list_name) {
             //  Make the ANDs turn off the ORs and vice versa
             $j("input[name=checkbox_and_" + list_name + "]").on('change', function () {
                 if ($j("input[name=checkbox_and_" + list_name + "]").prop("checked")
@@ -279,7 +278,7 @@ function initialize()
                     && !$j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
                     $j("input[name=checkbox_and_" + list_name + "]").click();
             });
-        }
+        })(list_names[i]);
     }
 
     //  Handle step transitions
@@ -362,5 +361,3 @@ function initialize()
 }
 
 $j(document).ready(initialize);
-
-console.log("Loaded comm panel JS");
