@@ -1,0 +1,136 @@
+{% extends "main.html" %}
+
+{% block title %}Thread: {{ thread.subject }}{% endblock %}
+{% block content_title %}Thread: {{ thread.subject }}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/default_styles/inbox.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+
+<div class="inbox-thread-header">
+    <div class="inbox-thread-nav">
+        <a href="/manage/inbox/" class="btn">&laquo; Back to Inbox</a>
+    </div>
+
+    <h2 class="inbox-thread-subject">{{ thread.subject }}</h2>
+
+    <div class="inbox-thread-controls">
+        <div class="inbox-control-group">
+            <label>Status:</label>
+            <select id="thread-status-select" class="inbox-select">
+                <option value="open" {% if thread.status == 'open' %}selected{% endif %}>Open</option>
+                <option value="in_progress" {% if thread.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                <option value="closed" {% if thread.status == 'closed' %}selected{% endif %}>Closed</option>
+            </select>
+        </div>
+
+        <div class="inbox-control-group">
+            <label>Assigned to:</label>
+            <select id="thread-assignee-select" class="inbox-select">
+                <option value="0">— Unassigned —</option>
+                {% for admin in admin_users %}
+                <option value="{{ admin.id }}" {% if thread.assigned_to and thread.assigned_to.id == admin.id %}selected{% endif %}>
+                    {{ admin.username }} ({{ admin.first_name }} {{ admin.last_name }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <span id="thread-update-feedback" class="inbox-feedback"></span>
+    </div>
+</div>
+
+<!-- Email Timeline -->
+<div class="inbox-timeline">
+    {% for email in emails %}
+    <div class="inbox-timeline-item">
+        <div class="inbox-timeline-dot {% if email.is_outbound_reply %}inbox-timeline-dot-outbound{% else %}inbox-timeline-dot-inbound{% endif %}"></div>
+        <div class="inbox-email {% if email.is_outbound_reply %}inbox-email-outbound{% else %}inbox-email-inbound{% endif %}">
+            <div class="inbox-email-header">
+                <div class="inbox-email-sender-info">
+                    <div class="inbox-avatar inbox-avatar-lg" data-email="{{ email.sender_email }}"></div>
+                    <div class="inbox-email-sender">
+                        {% if email.is_outbound_reply %}
+                            <span class="inbox-outbound-badge">Sent</span>
+                            <strong>{{ email.sender_email }}</strong>
+                            {% if email.replied_by %}
+                                <span class="inbox-replied-by">(by {{ email.replied_by.username }})</span>
+                            {% endif %}
+                        {% else %}
+                            <strong>{{ email.sender }}</strong>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="inbox-email-meta">
+                    <span class="inbox-email-relative-date" data-timestamp="{{ email.received_at|date:'c' }}">{{ email.received_at|date:"M d, Y g:i A" }}</span>
+                    <span>To: {{ email.recipient }}</span>
+                </div>
+            </div>
+
+            <div class="inbox-email-body">
+                {% if email.body_html %}
+                    <iframe srcdoc="{{ email.body_html|escape }}" sandbox class="inbox-email-iframe" onload="this.style.height=this.contentWindow.document.body.scrollHeight+16+'px';"></iframe>
+                {% elif email.body_text %}
+                    <pre class="inbox-email-text">{{ email.body_text }}</pre>
+                {% else %}
+                    <p class="inbox-no-content">(No content)</p>
+                {% endif %}
+            </div>
+
+            {% if email.has_attachments %}
+            <div class="inbox-email-attachments">
+                <strong>Attachments:</strong>
+                {% for att in email.attachments.all %}
+                    <a href="/manage/inbox/attachment/{{ att.id }}/" class="inbox-attachment-link">
+                        {{ att.filename }} ({{ att.size|filesizeformat }})
+                    </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Reply Section -->
+<div class="inbox-reply-section">
+    <h3>Reply</h3>
+    {% if reply_to_email %}
+    <div class="inbox-reply-to">Replying to: <strong>{{ reply_to_email }}</strong></div>
+    {% endif %}
+
+    {% if reply_success and not reply_error %}
+    <div class="inbox-alert inbox-alert-success">
+        Reply sent successfully!
+    </div>
+    {% elif reply_success and reply_error %}
+    <div class="inbox-alert inbox-alert-warning">
+        {{ reply_error }}
+    </div>
+    {% elif reply_error %}
+    <div class="inbox-alert inbox-alert-error">
+        {{ reply_error }}
+    </div>
+    {% endif %}
+
+    <form method="post" action="/manage/inbox/thread/{{ thread.id }}/" class="inbox-reply-form" onsubmit="this.querySelector('[type=submit]').disabled=true;this.querySelector('[type=submit]').value='Sending...';$j('#thread-status-select,#thread-assignee-select').prop('disabled',true);">
+        {% csrf_token %}
+        <div class="inbox-form-group">
+            {{ reply_form.body }}
+        </div>
+        <div class="inbox-form-actions">
+            <input type="submit" value="Send Reply" class="btn btn-primary" />
+        </div>
+    </form>
+</div>
+
+<script type="text/javascript" src="/media/scripts/inbox.js"></script>
+<script type="text/javascript">
+    // Mark this thread as read on page load
+    InboxApp.markRead({{ thread.id }});
+</script>
+
+{% endblock %}

@@ -5,8 +5,6 @@ Source: esp/esp/dbmail/models.py
 Tests send_mail functionality, ActionHandler dynamic dispatch,
 and MessageRequest validation methods.
 """
-from unittest.mock import patch, MagicMock
-
 from django.contrib.auth.models import Group
 from django.core import mail
 
@@ -89,22 +87,6 @@ class MessageRequestTest(TestCase):
 
     def test_is_sendto_fn_name_choice_invalid(self):
         self.assertFalse(MessageRequest.is_sendto_fn_name_choice('not_a_real_choice'))
-"""
-Tests for esp.dbmail.cronmail
-Source: esp/esp/dbmail/cronmail.py
-
-Tests the process_messages and send_email_requests functions.
-"""
-from unittest.mock import patch, MagicMock
-
-from django.contrib.auth.models import Group
-
-from esp.tests.util import CacheFlushTestCase as TestCase
-
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
 
 
 class CronmailImportTest(TestCase):
