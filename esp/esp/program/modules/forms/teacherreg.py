@@ -380,8 +380,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
             event_id = cleaned_data.get(field_name)
             if not event_id:
                 cleaned_data[field_name] = None
-                continue
-                
+                continue   
             # Lookup the selected event; handle invalid or missing IDs gracefully
             try:
                 event = Event.objects.get(id=event_id)
