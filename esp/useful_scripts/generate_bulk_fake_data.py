@@ -8,7 +8,7 @@ In production, if you want to bulk create a large number of blank accounts for u
 These utilities should be useful for general testing during development, and could also be used for performance
 testing by populating a large number of accounts.
 
-You will need to install the faker library (used to generate fake data) on your dev server: 
+You will need to install the faker library (used to generate fake data) on your dev server:
   pip install faker
 
 To use these utilities, one way is to launch the Django shell from the root directory of your dev server with:
@@ -46,24 +46,24 @@ def try_get_phone():
     for i in range(10):
         if i not in [3, 4, 5]:
             phone += str(random.randint(0, 9))
-        else:  
+        else:
             phone += '5'
     return phone
 
 def get_clean_phone():
     phone = try_get_phone()
-    while not PhoneNumber.from_string(phone).is_valid():  
+    while not PhoneNumber.from_string(phone).is_valid():
         phone = try_get_phone()
     return phone
 
 def generate_user(role, group, program=None):
-    """    
+    """
     Generates a random user with their contact information randomly filled out, and optionally attaches the profile to a program.
     This doesn't fill out the `StudentInfo` or `TeacherInfo`.  See `generate_student_info` to generate a random student info and
     attach it to a student.  (There is no `generate_teacher_info` yet.)
 
     `role`: string, either`Student` or `Teacher`
-    `group`: string, a group name (besides `Student` or `Teacher`) to put this user into. This is useful for finding these users 
+    `group`: string, a group name (besides `Student` or `Teacher`) to put this user into. This is useful for finding these users
              after you created them.
     `program`: `Program`, the program to put this registration profile into (if any)
     """
@@ -123,7 +123,7 @@ def generate_user(role, group, program=None):
             address_zip=zip,
             address_country='US'
         )
-        
+
         RegistrationProfile.objects.create(
             user=user,
             program=program,
@@ -136,7 +136,7 @@ def generate_user(role, group, program=None):
             user=user,
             program=program,
             contact_user=contact_info,
-        )             
+        )
 
     return user
 
@@ -179,7 +179,7 @@ def generate_student_info(student, min_grade, max_grade, schools):
     month_of_birth = random.randint(1, 12)
 
     # https://en.wikipedia.org/wiki/Thirty_Days_Hath_September
-    day_of_birth = random.randint(1, 
+    day_of_birth = random.randint(1,
                                   30 if month_of_birth in [4, 6, 9, 11] else  # Thirty days hath September / April, June, and November
                                   28 if month_of_birth == 2 and year_of_birth % 4 != 0 else  # Save February at twenty-eight
                                   29 if month_of_birth == 2 else  # But leap year, coming once in four / February then has one day more
@@ -195,12 +195,12 @@ def generate_student_info(student, min_grade, max_grade, schools):
         student_info.heard_about += fake.text().split('\n')[0].split('.')[0]  # random "sentence"
 
     student_info.save()
- 
+
     # Attach student info to the student's last profile
     last_profile = student.getLastProfile()
     last_profile.student_info = student_info
     last_profile.save()
- 
+
     return student_info
 
 def fill_teacher_availability(teachers, program):
