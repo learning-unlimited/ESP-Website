@@ -164,6 +164,78 @@ class TemplateOverrideTest(DjangoTestCase):
             raise
         self.assertTrue(template_error)
 
+    def test_diff_single_line_change(self):
+        """
+        Regression test for issue #2606: diffs should highlight only
+        changed lines, not the entire template.
+
+        Validates that we use normalized lines (no trailing newline mismatch)
+        so the diff does not show every line as changed.
+        """
+        from django.conf import settings
+        from difflib import HtmlDiff
+
+        from esp.utils.views import _normalize_lines_for_diff
+
+        # Pick a real template file that exists on disk
+        template_dir = os.path.join(settings.PROJECT_ROOT, 'templates')
+        template_name = 'utils/diff_templateoverride.html'
+        original_path = os.path.join(template_dir, template_name)
+        self.assertTrue(os.path.isfile(original_path),
+                        "Test requires template file to exist on disk")
+
+        # Read the original file content (as the view does)
+        with open(original_path, encoding='utf-8', errors='replace') as f:
+            original_content = f.read()
+
+        # Create an override that changes only one line
+        lines = _normalize_lines_for_diff(original_content)
+        self.assertGreater(len(lines), 3, "Template must have several lines")
+        lines = list(lines)
+        lines[0] = lines[0] + ' <!-- modified -->'
+        override_content = '\n'.join(lines)
+
+        with reversion.create_revision():
+            to = TemplateOverride(name=template_name, content=override_content)
+            to.save()
+
+        # OLD BUGGY BEHAVIOUR: view used list(original_file) so original had
+        # trailing newlines, and override_obj.content.split('\n') so override
+        # had none. That made every line compare unequal and the whole file
+        # appeared changed.
+        with open(original_path, encoding='utf-8', errors='replace') as f:
+            original_lines_buggy = list(f)
+        override_lines_buggy = override_content.split('\n')
+        diff_buggy = HtmlDiff().make_table(
+            original_lines_buggy, override_lines_buggy, 'original', 'override')
+        total_buggy = (diff_buggy.count('class="diff_chg"') +
+                       diff_buggy.count('class="diff_sub"') +
+                       diff_buggy.count('class="diff_add"'))
+        self.assertGreaterEqual(total_buggy, len(lines),
+                                "Sanity check: old line-ending mismatch should "
+                                "show many lines as changed (this test validates the bug).")
+
+        # FIXED: use the same normalized lines (no trailing newlines) for both.
+        original_lines = _normalize_lines_for_diff(original_content)
+        override_lines = _normalize_lines_for_diff(override_content)
+        diff_html = HtmlDiff().make_table(original_lines, override_lines,
+                                          'original', 'override')
+
+        changed_count = diff_html.count('class="diff_chg"')
+        sub_count = diff_html.count('class="diff_sub"')
+        add_count = diff_html.count('class="diff_add"')
+        total_diff_lines = changed_count + sub_count + add_count
+
+        # Only 1 line was changed; diff should not mark the entire template.
+        self.assertLess(total_diff_lines, len(lines),
+                        "Diff should not mark the entire template as changed; "
+                        "only the modified line(s) should be highlighted. "
+                        "Got {} diff markers for {} lines.".format(
+                            total_diff_lines, len(lines)))
+
+        # Clean up
+        TemplateOverride.objects.filter(name=template_name).delete()
+
     def test_overrides(self):
         #   Try to render a page from a nonexistent template override
         #   and make sure it doesn't exist
