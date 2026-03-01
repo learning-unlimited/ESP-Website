@@ -84,7 +84,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
             'finalsent': 'Test List',
             'submitform': 'I have my list, go on!',
         }
-        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commpanel_old'), post_data)
+        response = self.client.post(f'/manage/{self.program.getUrlBase()}/commpanel_old', post_data)
         self.assertEqual(response.status_code, 200)
 
         #   Extract filter ID from response
@@ -101,7 +101,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
             'replyto': 'replyto@testserver.learningu.org',
             'filterid': filterid,
         }
-        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commfinal'), post_data)
+        response = self.client.post(f'/manage/{self.program.getUrlBase()}/commfinal', post_data)
         self.assertEqual(response.status_code, 200)
 
         #   Check that a MessageRequest has been created
