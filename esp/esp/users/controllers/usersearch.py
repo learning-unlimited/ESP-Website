@@ -466,6 +466,11 @@ class UserSearchController(object):
         from esp.program.modules.handlers.listgenmodule import ListGenModule
         """ Function to obtain a list of users, possibly requiring multiple requests.
             Similar to the old get_user_list function.
+
+            If the GET parameter 'auto_submit' is set to 'true', the filter
+            will be created directly from the GET parameters without showing
+            the intermediate user search form.  This allows printable links
+            to skip the search step when admins want all users of a type.
         """
 
         if template is None:
@@ -475,6 +480,22 @@ class UserSearchController(object):
             data = ListGenModule.processPost(request)
 
             #   Look for signs that this request contains user search options and act accordingly
+            if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
+                filterObj = self.filter_from_postdata(program, data)
+                return (filterObj, True)
+
+        #   Allow GET requests with auto_submit=true to bypass the search form
+        if request.method == 'GET' and request.GET.get('auto_submit') == 'true':
+            data = {}
+            for key in request.GET:
+                if key == 'auto_submit':
+                    continue
+                #   Handle keys that may have multiple values
+                values = request.GET.getlist(key)
+                if len(values) > 1:
+                    data[key] = values
+                else:
+                    data[key] = request.GET[key]
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
                 filterObj = self.filter_from_postdata(program, data)
                 return (filterObj, True)

@@ -1,7 +1,7 @@
 $j(function () {
     $j("#student_format").on("change", function (){
         // Get user-selected options
-        var url = "./studentschedules/" + $j("#student_format").val() + "/?recipient_type=Student&base_list=enrolled";
+        var url = "./studentschedules/" + $j("#student_format").val() + "/?recipient_type=Student&base_list=enrolled&auto_submit=true";
         
         // Update href
         $j("#student_schedules a").attr('href', url);
@@ -49,9 +49,19 @@ $j(function () {
     
     $j("#item_type").on("change", function (){
         // Get user-selected options
-        var url = "./selectList?recipient_type=Student&base_list=extracosts_" + $j("#item_type").val();
+        var url = "./selectList?recipient_type=Student&base_list=extracosts_" + $j("#item_type").val() + "&auto_submit=true";
         
         // Update href
         $j("#line_item_list a").attr('href', url);
+    });
+    
+    $j("#custom_printable_type").on("change", function (){
+        // Build the URL for the selected printable WITHOUT auto_submit
+        // so the admin is taken to the user search form to filter
+        var selected = $j("#custom_printable_type option:selected");
+        var url = "./" + selected.val() + "?" + selected.data("get");
+        
+        // Update href
+        $j("#custom_printable_btn a").attr('href', url);
     });
 });
