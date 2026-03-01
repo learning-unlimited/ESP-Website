@@ -145,18 +145,19 @@ class UserAvailability(models.Model):
 # Clear all DBListCount cache keys
 def clear_dblistcount_cache():
     """
-    Remove all cache keys that start with 'DBListCount:'.
+    Remove all cache keys that start with the URL-encoded
+    'DBListCount:' prefix, i.e., 'DBListCount%3A'.
     """
     try:
         # LocMemCache backend
         cache_dict = cache._cache
-        keys_to_delete = [k for k in cache_dict if k.startswith('DBListCount:')]
+        keys_to_delete = [k for k in cache_dict if k.startswith('DBListCount%3A')]
         for k in keys_to_delete:
             cache.delete(k)
     except AttributeError:
         # For other backends, use a regex delete if supported, or do nothing.
         try:
-            cache.delete_pattern('DBListCount:*')
+            cache.delete_pattern('DBListCount%3A*')
         except AttributeError:
             pass
 
