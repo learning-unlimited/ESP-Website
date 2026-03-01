@@ -163,6 +163,11 @@ def generate_student_info(student, min_grade, max_grade, schools):
              by repeating some schools multiple times. Use `generate_k12school` to generate a random school.
     """
 
+    if not schools:
+        raise ValueError("generate_student_info requires a list of at least one `K12School` in `schools` parameter. " +
+                         "Use `generate_k12school` to generate a random `K12School`."
+                         )
+
     student_info = StudentInfo()
     student_info.user = student
 
