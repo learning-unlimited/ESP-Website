@@ -298,6 +298,7 @@ ul.nav-collapse {
   margin: 0;
   padding: 0;
 }
+
 #reg_types_div {
     font-size: 13px;
 }
@@ -314,4 +315,20 @@ textarea:not([class*="span"]),
 
 select {
     width: auto;
+}
+
+/* Fix #shortcuts-box overlapping with fixed navbar (Issue #3926).
+   Default style sets top: 10px, which renders behind the fixed navbar
+   (z-index 1030 > 100). Push it below navbar on desktop; on narrow
+   screens move it to bottom-right above the fixed footer. */
+#shortcuts-box {
+    top: 50px;
+}
+
+@media (max-width: @navbarCollapseWidth) {
+    #shortcuts-box {
+        top: auto;
+        bottom: 60px;
+        right: 10px;
+    }
 }
