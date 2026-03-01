@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
@@ -5,13 +6,14 @@ from django.forms.fields import HiddenInput, TextInput
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import StrippedCharField
 from phonenumber_field.formfields import PhoneNumberField
+import six
 
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
 
     def clean(self, value):
         """ Make sure the email address is sane """
-        email = super().clean(value)
+        email = super(ValidHostEmailField, self).clean(value)
         email_parts = email.split("@")
         if len(email_parts) != 2:
             raise forms.ValidationError('Email addresses must be of the form "name@host"')
@@ -32,11 +34,26 @@ class ValidHostEmailField(forms.EmailField):
         return email
 
 class EmailUserRegForm(forms.Form):
-    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>", max_length=75)
+    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>", max_length=75, widget=forms.EmailInput(attrs={'class': 'form-control', 'id': 'id_email', 'data-validation': 'email-availability'}))
     confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>", max_length=75)
 
     #   The choices for this field will be set later in __init__()
     initial_role = forms.ChoiceField(choices = [])
+
+    def clean_email(self):
+        """Check for existing email addresses during form validation"""
+        email = self.cleaned_data.get('email')
+        if email:
+            # Check for existing users with this email (excluding email-only accounts)
+            existing_users = ESPUser.objects.filter(email__iexact=email).exclude(password='emailuser')
+            if existing_users.exists():
+                active_users = existing_users.filter(is_active=True)
+                if active_users.exists():
+                    raise forms.ValidationError(
+                        'An account with this email address already exists. '
+                        'Try signing in instead, or use a different email address.'
+                    )
+        return email
 
     def clean_confirm_email(self):
         if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
@@ -45,13 +62,13 @@ class EmailUserRegForm(forms.Form):
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
-        if data == '':
+        if data == six.u(''):
             raise forms.ValidationError('Please select an initial role')
         return data
 
     def __init__(self, *args, **kwargs):
         #   Set up the default form
-        super().__init__(*args, **kwargs)
+        super(EmailUserRegForm, self).__init__(*args, **kwargs)
 
         #   Adjust initial_role choices
         role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
@@ -64,7 +81,7 @@ class UserRegForm(forms.Form):
     first_name = StrippedCharField(max_length=30)
     last_name  = StrippedCharField(max_length=30)
 
-    username = forms.CharField(min_length=5, max_length=30)
+    username = forms.CharField(min_length=5, max_length=30, widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'id_username', 'data-validation': 'username-availability'}))
 
     password = forms.CharField(widget = forms.PasswordInput(),
                                min_length=5)
@@ -80,7 +97,7 @@ class UserRegForm(forms.Form):
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
-        if data == '':
+        if data == six.u(''):
             raise forms.ValidationError('Please select an initial role')
         return data
 
@@ -119,7 +136,7 @@ class UserRegForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         #   Set up the default form
-        super().__init__(*args, **kwargs)
+        super(UserRegForm, self).__init__(*args, **kwargs)
 
         #   Adjust initial_role choices
         role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
@@ -128,7 +145,7 @@ class UserRegForm(forms.Form):
 class SinglePhaseUserRegForm(UserRegForm):
     def __init__(self, *args, **kwargs):
         #email field not hidden
-        super().__init__(*args, **kwargs)
+        super(SinglePhaseUserRegForm, self).__init__(*args, **kwargs)
         self.fields['email'].widget = TextInput(attrs=self.fields['email'].widget.attrs)
         self.fields['confirm_email'].widget = TextInput(attrs=self.fields['confirm_email'].widget.attrs)
 

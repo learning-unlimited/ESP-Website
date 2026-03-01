@@ -100,6 +100,87 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 <script type="text/javascript">
 <!--
   document.getElementById('id_email').focus();
+
+  // Real-time email validation
+  (function() {
+    var emailField = document.getElementById('id_email');
+    var statusDiv = null;
+    var validationTimer = null;
+    
+    function createStatusDiv() {
+      if (statusDiv) return;
+      statusDiv = document.createElement('div');
+      statusDiv.id = 'email-validation-status';
+      statusDiv.style.marginTop = '5px';
+      statusDiv.style.fontSize = '14px';
+      emailField.parentNode.appendChild(statusDiv);
+    }
+    
+    function showStatus(message, isAvailable, isWarning) {
+      createStatusDiv();
+      statusDiv.innerHTML = message;
+      statusDiv.className = '';
+      if (isAvailable) {
+        statusDiv.style.color = isWarning ? '#f0ad4e' : '#5cb85c';
+        statusDiv.innerHTML = '✓ ' + message;
+      } else {
+        statusDiv.style.color = '#d9534f';
+        statusDiv.innerHTML = '✗ ' + message;
+      }
+    }
+    
+    function hideStatus() {
+      if (statusDiv) {
+        statusDiv.innerHTML = '';
+      }
+    }
+    
+    function checkEmailAvailability() {
+      var email = emailField.value.trim();
+      
+      if (!email) {
+        hideStatus();
+        return;
+      }
+      
+      if (email.indexOf('@') === -1) {
+        showStatus('Please enter a valid email address', false);
+        return;
+      }
+      
+      // Show loading
+      showStatus('Checking email availability...', false);
+      
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/myesp/ajax/check_email/?email=' + encodeURIComponent(email), true);
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          try {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              showStatus(response.message, response.available, response.warning);
+            } else {
+              showStatus('Error checking email availability', false);
+            }
+          } catch (e) {
+            showStatus('Error checking email availability', false);
+          }
+        }
+      };
+      
+      xhr.send();
+    }
+    
+    if (emailField) {
+      emailField.addEventListener('input', function() {
+        clearTimeout(validationTimer);
+        validationTimer = setTimeout(checkEmailAvailability, 500);
+      });
+      
+      emailField.addEventListener('blur', checkEmailAvailability);
+    }
+  })();
 //-->
 </script>
 

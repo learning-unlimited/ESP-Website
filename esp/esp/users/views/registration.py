@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 import logging
 import random
-import urllib.request, urllib.parse, urllib.error
+import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
+import json
 
 log = logging.getLogger(__name__)
 
@@ -11,10 +13,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
 from django.urls import reverse, reverse_lazy
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.template import loader
 from django.utils.datastructures import MultiValueDictKeyError
 from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_GET
+from django.views.decorators.csrf import csrf_exempt
 
 from vanilla import CreateView
 
@@ -27,7 +31,7 @@ from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 
 
-__all__ = ['user_registration_phase1', 'user_registration_phase2', 'resend_activation_view']
+__all__ = ['user_registration_phase1', 'user_registration_phase2', 'resend_activation_view', 'ajax_check_email_availability', 'ajax_check_username_availability']
 
 
 def user_registration_validate(request):
@@ -109,8 +113,8 @@ When there are already accounts with this email address (depending on some tags)
                     { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'initial_role':form.cleaned_data['initial_role'], 'site': Site.objects.get_current(), 'form': form })
 
         #form is valid, and not caring about multiple accounts
-        email = urllib.parse.quote(form.cleaned_data['email'])
-        initial_role = urllib.parse.quote(form.cleaned_data['initial_role'])
+        email = six.moves.urllib.parse.quote(form.cleaned_data['email'])
+        initial_role = six.moves.urllib.parse.quote(form.cleaned_data['initial_role'])
         return HttpResponseRedirect(reverse('esp.users.views.user_registration_phase2')+'?email='+email+'&initial_role='+initial_role)
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
@@ -152,8 +156,8 @@ def user_registration_phase2(request):
         return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
 
     try:
-        email = urllib.parse.unquote(request.GET['email'])
-        initial_role = urllib.parse.unquote(request.GET['initial_role'])
+        email = six.moves.urllib.parse.unquote(request.GET['email'])
+        initial_role = six.moves.urllib.parse.unquote(request.GET['initial_role'])
     except MultiValueDictKeyError:
         return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
     form = UserRegForm(initial={'email':email,'confirm_email':email,'initial_role':initial_role})
@@ -234,6 +238,95 @@ class GradeChangeRequestView(CreateView):
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
+        return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)
 
 
+# AJAX endpoints for real-time validation
+@require_GET 
+def ajax_check_email_availability(request):
+    """
+    AJAX endpoint to check if an email address is already registered.
+    Returns JSON response with availability status and message.
+    """
+    email = request.GET.get('email', '').strip().lower()
+    
+    if not email:
+        return JsonResponse({'available': False, 'message': 'Please enter an email address'})
+    
+    # Basic email format validation
+    if '@' not in email or '.' not in email:
+        return JsonResponse({'available': False, 'message': 'Please enter a valid email address'})
+    
+    try:
+        # Check for existing users with this email (excluding email-only accounts)
+        existing_users = ESPUser.objects.filter(email__iexact=email).exclude(password='emailuser')
+        
+        if existing_users.exists():
+            active_users = existing_users.filter(is_active=True)
+            if active_users.exists():
+                return JsonResponse({
+                    'available': False, 
+                    'message': 'This email is already registered. Try signing in instead.'
+                })
+            else:
+                # Inactive account exists (awaiting activation)
+                return JsonResponse({
+                    'available': True,
+                    'message': 'This email can be used (inactive account will be updated)',
+                    'warning': True
+                })
+        else:
+            return JsonResponse({
+                'available': True,
+                'message': 'Email address is available'
+            })
+            
+    except Exception as e:
+        log.error(f"Error checking email availability for {email}: {e}")
+        return JsonResponse({'available': False, 'message': 'Error checking email availability'})
+
+
+@require_GET
+def ajax_check_username_availability(request):
+    """
+    AJAX endpoint to check if a username is already taken.
+    Returns JSON response with availability status and message.
+    """
+    username = request.GET.get('username', '').strip()
+    
+    if not username:
+        return JsonResponse({'available': False, 'message': 'Please enter a username'})
+    
+    if len(username) < 5:
+        return JsonResponse({'available': False, 'message': 'Username must be at least 5 characters long'})
+    
+    if len(username) > 30:
+        return JsonResponse({'available': False, 'message': 'Username must be 30 characters or less'})
+    
+    # Character validation (alphanumeric only)
+    import string
+    valid_chars = set(string.ascii_letters + string.digits)
+    if not set(username).issubset(valid_chars):
+        return JsonResponse({'available': False, 'message': 'Username can only contain letters and numbers'})
+    
+    try:
+        # Check for existing users (same logic as form validation)
+        from django.db.models import Q
+        awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
+        
+        existing_users = ESPUser.objects.filter(username__iexact=username).exclude(password='emailuser').exclude(awaiting_activation)
+        
+        if existing_users.exists():
+            return JsonResponse({
+                'available': False,
+                'message': f'Username "{username}" is already taken. Please try another.'
+            })
+        else:
+            return JsonResponse({
+                'available': True,
+                'message': f'Username "{username}" is available'
+            })
+            
+    except Exception as e:
+        log.error(f"Error checking username availability for {username}: {e}")
+        return JsonResponse({'available': False, 'message': 'Error checking username availability'})
