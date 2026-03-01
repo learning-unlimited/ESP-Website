@@ -458,6 +458,99 @@ class LotteryAssignmentController(object):
 
         return section_filled
 
+    def assign_lunches(self):
+        """
+        Assign students to lunch sections after main lottery assignment.
+        For students with multiple lunch blocks free, randomly distribute them
+        to equalize the number of students in each lunch block.
+        """
+        
+        # Get all lunch sections for this program
+        lunch_sections = ClassSection.objects.filter(
+            parent_class__parent_program=self.program,
+            parent_class__category__category='Lunch',
+            meeting_times__isnull=False,
+            status__gt=0,
+            registration_status=0
+        ).prefetch_related('meeting_times')
+        
+        if not lunch_sections.exists():
+            if self.options['stats_display']:
+                logger.info('   No lunch sections found, skipping lunch assignment')
+            return
+        
+        # Build mapping of lunch sections by timeblock
+        lunch_by_timeblock = {}
+        for lunch_section in lunch_sections:
+            for timeblock in lunch_section.meeting_times.all():
+                lunch_by_timeblock[timeblock.id] = lunch_section.id
+        
+        # Get section indices for lunch sections
+        lunch_section_indices = {}
+        for ts_id, sec_id in lunch_by_timeblock.items():
+            if sec_id in self.section_indices:
+                ts_index = self.timeslot_indices[ts_id]
+                lunch_section_indices[ts_index] = self.section_indices[sec_id]
+        
+        # Track assignments for logging
+        total_assignments = 0
+        
+        # For each day, assign students to lunches
+        for day_index in range(self.lunch_timeslots.shape[0]):
+            if len(self.lunch_timeslots[day_index]) == 0:
+                continue
+                
+            # Get timeslot indices for this day's lunches
+            day_lunch_timeslots = []
+            for ts_id in self.lunch_timeslots[day_index]:
+                if ts_id in self.timeslot_indices:
+                    day_lunch_timeslots.append(self.timeslot_indices[ts_id])
+            
+            if not day_lunch_timeslots:
+                continue
+            
+            # For each student
+            for student_index in range(self.num_students):
+                # Check if student already has a lunch this day
+                has_lunch = False
+                for ts_index in day_lunch_timeslots:
+                    if ts_index in lunch_section_indices:
+                        sec_index = lunch_section_indices[ts_index]
+                        if self.student_sections[student_index, sec_index]:
+                            has_lunch = True
+                            break
+                
+                if has_lunch:
+                    continue
+                
+                # Find available lunch blocks for this student
+                available_lunches = []
+                for ts_index in day_lunch_timeslots:
+                    # Check if student is free during this lunch block
+                    if not self.student_schedules[student_index, ts_index]:
+                        if ts_index in lunch_section_indices:
+                            available_lunches.append(ts_index)
+                
+                if not available_lunches:
+                    # Student has no lunch blocks free (shouldn't happen)
+                    if self.options['stats_display']:
+                        logger.warning('   Student %d has no lunch blocks free on day %d', 
+                                     self.student_ids[student_index], day_index)
+                    continue
+                
+                # Randomly choose one of the available lunch blocks
+                chosen_lunch_ts = numpy.random.choice(available_lunches)
+                chosen_lunch_sec = lunch_section_indices[chosen_lunch_ts]
+                
+                # Assign student to this lunch section
+                self.student_sections[student_index, chosen_lunch_sec] = True
+                self.student_schedules[student_index, chosen_lunch_ts] = True
+                self.student_enrollments[student_index, chosen_lunch_ts] = self.section_ids[chosen_lunch_sec]
+                total_assignments += 1
+        
+        if self.options['stats_display']:
+            logger.info('   Assigned %d lunch blocks to students', total_assignments)
+
     def compute_assignments(self, check_result=True):
         """ Figure out what students should be assigned to what sections.
             Doesn't actually store results in the database.
@@ -491,6 +584,11 @@ class LotteryAssignmentController(object):
                             ' with rank %s' % rank if self.options['use_student_apps'] else '')
             for section_index in sorted_section_indices:
                 self.fill_section(section_index, priority=False, rank=rank)
+
+        # Assign lunch blocks after all class assignments
+        if self.options['stats_display']:
+            logger.info('\n== Assigning lunch blocks')
+        self.assign_lunches()
 
         if check_result:
             self.check_assignments()
