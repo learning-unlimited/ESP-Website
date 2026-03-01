@@ -2394,7 +2394,7 @@ class Record(models.Model):
         return cls.filter(user, event, program, when, only_today).count()>0
 
     @classmethod
-    def filter(cls, user, event, program=None, when=None, only_today=False):
+    def filter(cls, user, event, program=None, when=None, only_today=False, distinct=True):
         """
         Returns a QuerySet for all of a user's Records for a particular event,
         under various constraints.
@@ -2409,6 +2409,9 @@ class Record(models.Model):
           only_today (bool, optional): If True, only Records from the same day as
                                        'when' are considered.
                                        Defaults to False.
+          distinct (bool, optional):   If True, apply distinct() to the queryset.
+                                       Set to False when calling delete() (Django 3.1+).
+                                       Defaults to True.
         """
         if when is None:
             when = datetime.now()
@@ -2419,7 +2422,9 @@ class Record(models.Model):
             filter = filter.filter(time__year=when.year,
                                    time__month=when.month,
                                    time__day=when.day)
-        return filter.distinct()
+        if distinct:
+            return filter.distinct()
+        return filter
 
     @classmethod
     def createBit(cls, extension, program, user):
