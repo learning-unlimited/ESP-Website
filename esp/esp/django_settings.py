@@ -41,6 +41,7 @@ Learning Unlimited, Inc.
 #                                                                              #
 ################################################################################
 import os
+import platform
 
 ###############################################
 # Default site identification                 #
@@ -118,7 +119,6 @@ DATABASES = {'default':
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-import platform
 SERVER_EMAIL = 'server@{}'.format(platform.node())
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
