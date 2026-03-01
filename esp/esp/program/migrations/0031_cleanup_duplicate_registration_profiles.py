@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations
-from django.db.models import Count
+from django.db.models import Count, F
 
 
 def cleanup_duplicate_profiles(apps, schema_editor):
@@ -33,30 +33,25 @@ def cleanup_duplicate_profiles(apps, schema_editor):
         
         # Get all profiles for this user-program pair, ordered by most recent first
         # We order by -last_ts (most recent timestamp first), then by -id as a tiebreaker
+        # Use nulls_last=True to ensure NULL timestamps are treated as oldest
         profiles = RegistrationProfile.objects.filter(
             user_id=dup['user_id'],
             program_id=dup['program_id']
-        ).order_by('-last_ts', '-id')
+        ).order_by(F('last_ts').desc(nulls_last=True), '-id')
 
         # Keep the first (most recent), delete the rest using a bulk delete
         keep_profile = profiles.first()
         if keep_profile is None:
             continue
-
-        profiles_to_delete_qs = RegistrationProfile.objects.filter(
-            user_id=dup['user_id'],
-            program_id=dup['program_id'],
-        ).exclude(pk=keep_profile.pk)
-        count = profiles_to_delete_qs.count()
-
-        if count > 0:
+        
+        # Use the same queryset and exclude the kept profile for efficient bulk deletion
+        profiles_to_delete_qs = profiles.exclude(pk=keep_profile.pk)
+        deleted_for_pair, _ = profiles_to_delete_qs.delete()
+        
+        if deleted_for_pair > 0:
             print(f"User {dup['user_id']}, Program {dup['program_id']}: "
-                  f"Deleting {count} duplicate profile(s), keeping most recent")
-
-            # Delete the duplicates in bulk
-            profiles_to_delete_qs.delete()
-
-            deleted_count += count
+                  f"Deleting {deleted_for_pair} duplicate profile(s), keeping most recent")
+            deleted_count += deleted_for_pair
 
     print("="*70)
     print(f"Cleanup complete!")
@@ -70,7 +65,8 @@ def reverse_migration(apps, schema_editor):
     This migration cannot be reversed as we've permanently deleted data.
     This is intentional - we don't want to restore duplicate profiles.
     """
-    raise migrations.IrreversibleError(
+    from django.db.migrations.exceptions import IrreversibleError
+    raise IrreversibleError(
         "This migration cannot be reversed (duplicate data was permanently deleted)."
     )
 
