@@ -13,7 +13,7 @@ Remove ``--global`` if you don't want it to apply to other git repos on your com
 
 Other git config you might find useful: ::
 
-  git config --global push.default simple # makes git only push the current branch, which is useful for not accidentally messing things up
+  git config --global push.default simple # default in Git 2.0+; makes git only push the current branch
   git config --global color.{ui,status,branch,diff,interactive,grep} auto # makes various interfaces usefully colorful
   git config --global log.decorate true # shows branch information in `git log` by default
   git config --global core.pager "less -R"
@@ -134,9 +134,26 @@ Many tests are located in application-specific files. Some legacy tests may stil
 * ``esp/program/tests.py``
 * ``esp/survey/tests.py``
 * ``esp/varnish/tests.py``
-
-Additional tests exist in directories: ``customforms/tests.py``, ``program/tests.py``, ``users/tests.py``, ``resources/tests.py``, ``qsd/tests.py``, ``qsdmedia/tests.py``, ``tagdict/tests.py``, ``themes/tests.py``, ``utils/tests.py``, ``web/tests.py``, and autoscheduler tests in ``program/controllers/autoscheduler/tests/``.
-
+* ``esp/accounting/tests.py``
+* ``esp/application/tests.py``
+* ``esp/cal/tests.py``
+* ``esp/dbmail/tests.py``
+* ``esp/formstack/tests.py``
+* ``esp/miniblog/tests.py``
+* ``esp/program/tests.py``
+* ``esp/survey/tests.py``
+* ``esp/varnish/tests.py``
+* ``esp/customforms/tests.py``
+* ``esp/program/tests.py``
+* ``esp/users/tests.py``
+* ``esp/resources/tests.py``
+* ``esp/qsd/tests.py``
+* ``esp/qsdmedia/tests.py``
+* ``esp/tagdict/tests.py``
+* ``esp/themes/tests.py``
+* ``esp/utils/tests.py``
+* ``esp/web/tests.py``
+* ``esp/program/controllers/autoscheduler/tests/``
 Code reviews
 ------------
 
