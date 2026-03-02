@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="/media/styles/myesp2.css" type="text/css" media="screen" />
 {% endif %}
 
+<div role="navigation" aria-label="Primary navigation">
 {% if page_setup.navlinks %}
 {% for navlink in page_setup.navlinks %}
 <div id="divnav{{forloop.counter0}}">
@@ -87,6 +88,7 @@
 </div>
 {% endif %}
 {% endif %}
+</div>
 
 <!-- section name -->
 <div id="divsectionname">
