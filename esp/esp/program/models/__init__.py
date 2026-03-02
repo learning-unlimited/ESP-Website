@@ -1557,6 +1557,7 @@ class RegistrationProfile(models.Model):
     # Thanks to our attempts to be smart and steal profiles from other programs,
     # the cache can't depend only on profiles with the same (user, program).
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
+    getLastForProgram.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastForProgram = staticmethod(getLastForProgram)
 
     def __str__(self):
