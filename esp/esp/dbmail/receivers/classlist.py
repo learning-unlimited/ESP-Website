@@ -20,7 +20,7 @@ class ClassList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id = class_id)
             sections = cls.sections.all()
-        except ESPUser.DoesNotExist:
+        except ClassSubject.DoesNotExist:
             return
 
         self.emailcode = cls.emailcode()
@@ -49,7 +49,7 @@ class ClassList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id = class_id)
             sections = cls.sections.all()
-        except ESPUser.DoesNotExist:
+        except ClassSubject.DoesNotExist:
             return
 
         # Create a class list in Mailman,

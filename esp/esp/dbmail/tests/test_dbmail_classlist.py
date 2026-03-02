@@ -236,10 +236,14 @@ class ClassListTest(ProgramFrameworkTest):
     @patch('esp.dbmail.receivers.classlist.add_list_member')
     @patch('esp.dbmail.receivers.classlist.add_list_members')
     @patch('esp.dbmail.receivers.classlist.apply_list_settings')
+    @patch('esp.dbmail.receivers.classlist.set_list_moderator_password')
+    @patch('esp.dbmail.receivers.classlist.send_mail')
     @patch('esp.dbmail.receivers.classlist.Site')
-    def test_mailman_no_archive_address(self, mock_site, mock_apply, mock_add_members,
-                                        mock_add_member, mock_load, mock_create):
+    def test_mailman_no_archive_address(self, mock_site, mock_send_mail, mock_set_pwd,
+                                        mock_apply, mock_add_members, mock_add_member,
+                                        mock_load, mock_create):
         mock_site.objects.get_current.return_value.domain = 'example.com'
+        mock_set_pwd.return_value = 'test_password'
 
         handler = _make_handler()
         handler.process_mailman(None, self.cls.id, 'class')
