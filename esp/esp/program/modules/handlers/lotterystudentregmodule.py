@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -115,7 +114,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         #HSSP-style lottery
         if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
             return render_to_response('program/modules/lotterystudentregmodule/student_reg_hssp.html', request, context)
-        #Splark/Spash style lottery
+        #Splark/Splash style lottery
         return render_to_response('program/modules/lotterystudentregmodule/student_reg_splash.html', request, context)
 
     @aux_call
@@ -133,7 +132,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
     @no_auth
     @cache_control(public=True, max_age=3600)
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ Return the program timeslot names for the tabs in the lottery inteface """
+        """ Return the program timeslot names for the tabs in the lottery interface """
         # using .extra() to select all the category text simultaneously
         ordered_timeslots = sorted(self.program.getTimeSlotList(), key=lambda event: event.start)
         ordered_timeslot_names = list()

@@ -1,10 +1,8 @@
 """Tools for running tests."""
 
-from __future__ import absolute_import
 from datetime import datetime
 
 import esp.program.controllers.autoscheduler.data_model as data_model
-from six.moves import range
 
 
 def create_test_schedule_1():

@@ -10,7 +10,6 @@ is only entered by "trusted" users.  The code is also simpler for us since we
 pin to a given version of markdown, and don't use markdown extensions.
 """
 
-from __future__ import absolute_import
 from django import template
 from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
