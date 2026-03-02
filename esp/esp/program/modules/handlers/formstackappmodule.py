@@ -1,8 +1,8 @@
 
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2008 by the individual contributors
@@ -34,14 +34,19 @@ Learning Unlimited, Inc.
 """
 
 import logging
-logger = logging.getLogger(__name__)
 
 from django.db.models.query import Q  # noqa
 from django.template import Variable, Context, VariableDoesNotExist
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, aux_call
-from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser
+
 from esp.application.models import FormstackStudentProgramApp
+from esp.program.modules.base import (
+    ProgramModuleObj, needs_student_in_grade, main_call, aux_call
+)
+from esp.users.models import ESPUser
+from esp.utils.web import render_to_response
+
+logger = logging.getLogger(__name__)
+
 
 def resolve_field_expression(expression, context_vars):
     try:
@@ -49,8 +54,11 @@ def resolve_field_expression(expression, context_vars):
     except VariableDoesNotExist:
         return None
     except Exception as e:
-        logger.exception("Error resolving field expression '%s': %s", expression, e)
+        logger.exception(
+            "Error resolving field expression '%s': %s", expression, e
+        )
         return None
+
 
 class FormstackAppModule(ProgramModuleObj):
     doc = """
@@ -69,11 +77,14 @@ class FormstackAppModule(ProgramModuleObj):
             "choosable": 2,
             }]
 
-    def students(self, QObject = False):
+    def students(self, QObject=False):
         result = {}
 
         Q_applied = Q(studentprogramapp__program=self.program)
-        result['applied'] = Q_applied if QObject else ESPUser.objects.filter(Q_applied)
+        if QObject:
+            result['applied'] = Q_applied
+        else:
+            result['applied'] = ESPUser.objects.filter(Q_applied)
 
         return result
 
@@ -114,7 +125,8 @@ class FormstackAppModule(ProgramModuleObj):
         context['form'] = fsas.form()
         context['username_field'] = fsas.username_field
         context['username'] = request.user.username
-        context['app_is_open'] = fsas.app_is_open or request.user.isAdmin(prog)
+        app_is_open = fsas.app_is_open or request.user.isAdmin(prog)
+        context['app_is_open'] = app_is_open
         context['autopopulated'] = autopopulated = []
         for line in fsas.autopopulated_fields.strip().split('\n'):
             if not line.strip():
@@ -131,10 +143,13 @@ class FormstackAppModule(ProgramModuleObj):
     def finaidapp(self, request, tl, one, two, module, extra, prog):
         fsas = prog.formstackappsettings
         if not fsas.finaid_form():
-            return self.goToCore(tl) # no finaid form
-        app = FormstackStudentProgramApp.objects.filter(user=request.user, program=prog)
-        if not (app or request.user.isAdmin(prog)): # student has not applied for the program
-            return # XXX: more useful error here
+            return self.goToCore(tl)  # no finaid form
+        app = FormstackStudentProgramApp.objects.filter(
+            user=request.user, program=prog
+        )
+        # student has not applied for the program
+        if not (app or request.user.isAdmin(prog)):
+            return  # XXX: more useful error here
         context = {}
         context['form'] = fsas.finaid_form()
         context['user_id_field'] = fsas.finaid_user_id_field
