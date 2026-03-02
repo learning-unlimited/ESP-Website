@@ -173,9 +173,9 @@ class CustomFormsTest(TestCase):
         response = self.client.post("/customforms/view/%d/" % form.id, post_dict)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Incorrect answer')
-        responses_corrected = responses_initial
+        responses_corrected = responses_initial.copy()
         responses_corrected['question_%d' % field_id_map['ShortText']] = 'Smart'
-        responses_initial['question_%d' % field_id_map['Choose an option']] = 'B'
+        responses_corrected['question_%d' % field_id_map['Choose an option']] = 'B'
         post_dict.update(responses_corrected)
         response = self.client.post("/customforms/view/%d/" % form.id, post_dict)
         self.assertRedirects(response, "/customforms/success/%s/" % form.id)
@@ -202,7 +202,9 @@ class CustomFormsTest(TestCase):
         indiv_response = response_data['answers'][0]
         self.assertEqual(int(indiv_response['user_id']), self.student.id)
         for field_spec in indiv_response:
-            self.assertEqual(self.map_form_value(responses_corrected[key]), indiv_response[key])
+            if field_spec in ['user_id', 'user_display', 'user_email', 'username', 'id']:
+                continue
+            self.assertEqual(self.map_form_value(responses_corrected[field_spec]), indiv_response[field_spec])
         self.assertTrue('questions' in response_data)
         self.assertEqual(len(response_data['questions']), len(responses_initial) + 4)   #   provided fields plus user_id, user_display, user_email, username
         for entry in response_data['questions']:
