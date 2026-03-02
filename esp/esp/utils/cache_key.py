@@ -30,4 +30,3 @@ def esp_cache_key_function(key, key_prefix, version):
     else:
         hashkey = HASH_PREFIX + hashlib.md5(key.encode("UTF-8")).hexdigest()
         return hashkey + "_" + rawkey[: real_max_length - len(hashkey) - 1]
-    
