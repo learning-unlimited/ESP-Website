@@ -344,20 +344,6 @@ class IndividualAccountingController(ProgramAccountingController):
             (item_name, quantity, cost, option_id) = item_tup
             result.extend(self.set_preference(item_name, quantity or 0, amount=cost, option_id=option_id))
 
-            option = None
-            if option_id is not None:
-                option = LineItemOptions.objects.get(id=option_id)
-
-            if cost is not None:
-                transfer_amount = cost
-            elif option is not None:
-                transfer_amount = option.amount_dec_inherited
-            else:
-                transfer_amount = lit.amount_dec
-
-            for i in range(quantity or 0):
-                result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
-
         return result
 
     @transaction.atomic
