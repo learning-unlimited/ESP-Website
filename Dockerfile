@@ -11,7 +11,11 @@ ENV VIRTUAL_ENV=/usr
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Configure apt-get retries and timeouts for heavy LaTeX downloads
-RUN echo 'Acquire::http::Timeout "120";\nAcquire::ftp::Timeout "120";\nAcquire::Retries "3";' > /etc/apt/apt.conf.d/99custom
+RUN printf '%s\n' \
+    'Acquire::http::Timeout "120";' \
+    'Acquire::https::Timeout "120";' \
+    'Acquire::ftp::Timeout "120";' \
+    'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99custom
 
 # Set the working directory
 WORKDIR /app
