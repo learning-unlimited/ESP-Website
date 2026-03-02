@@ -1799,3 +1799,18 @@ class GradeCacheInvalidationTest(TestCase):
             "getLastForProgram should return updated graduation_year"
         )
 
+    def test_getLastProfile_invalidates_on_studentinfo_change(self):
+        """getLastProfile should return updated student_info after change."""
+        profile1 = RegistrationProfile.getLastProfile(self.student)
+        initial_yog = profile1.student_info.graduation_year
+
+        new_yog = ESPUser.YOGFromGrade(11, ESPUser.program_schoolyear(self.program))
+        self.student_info.graduation_year = new_yog
+        self.student_info.save()
+
+        profile2 = RegistrationProfile.getLastProfile(self.student)
+        self.assertEqual(
+            profile2.student_info.graduation_year, new_yog,
+            "getLastProfile should return updated graduation_year"
+        )
+

@@ -1480,6 +1480,7 @@ class RegistrationProfile(models.Model):
 
         return regProf
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
+    getLastProfile.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
 
     @cache_function
