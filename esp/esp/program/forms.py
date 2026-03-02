@@ -52,6 +52,95 @@ from esp.tagdict import all_global_tags, tag_categories
 from esp.tagdict.models import Tag
 from collections import OrderedDict
 
+
+class SchoolMultiSelectField(forms.MultipleChoiceField):
+    """
+    MultipleChoiceField for statistics school filter. Accepts both:
+    - choice values from the initial list (Sch:free_text_name)
+    - dynamically added K12 school ids (K12:123) from the search widget.
+    """
+
+    def clean(self, value):
+        if not value and self.required:
+            raise forms.ValidationError(self.error_messages['required'], code='required')
+        if not value:
+            return []
+        value = list(value)
+        valid_choices = {str(k) for k, _ in self.choices}
+        for v in value:
+            if v in valid_choices:
+                continue
+            # Allow K12:id added by the search widget (not in initial choices)
+            if isinstance(v, str) and v.startswith('K12:') and v[4:].isdigit():
+                continue
+            raise forms.ValidationError(
+                self.error_messages['invalid_choice'],
+                code='invalid_choice',
+                params={'value': v},
+            )
+        return value
+
+
+class SchoolMultiSelectWithSearchWidget(forms.SelectMultiple):
+    """
+    A SelectMultiple for statistics school filter that also shows a "Search and add"
+    K12 school autocomplete. Use when the list of K12 schools is large (e.g. NCES import);
+    choices should be only free-text schools (Sch:...); K12 schools are added via search.
+    """
+    def __init__(self, attrs=None, choices=()):
+        super().__init__(attrs, choices)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        if attrs is None:
+            attrs = {}
+        attrs = attrs.copy()
+        attrs.setdefault('id', 'id_%s' % name)
+        select_html = super().render(name, value, attrs, renderer)
+        search_id = attrs['id'] + '_k12_search'
+        # Help text and search input; script adds selected K12 school as option to the select
+        html = select_html + '''
+<div class="school-k12-search" style="margin-top: 6px;">
+  <label for="%s">Search and add K12 school (type 2+ characters):</label>
+  <input type="text" id="%s" class="span6" autocomplete="off" style="max-width: 400px;" />
+</div>
+<script type="text/javascript">
+$j(function() {
+  $j("#%s").autocomplete({
+    source: function(request, response) {
+      $j.ajax({
+        url: "/admin/ajax_autocomplete/",
+        dataType: "json",
+        data: {
+          model_module: "esp.users.models",
+          model_name: "K12School",
+          ajax_func: "ajax_autocomplete",
+          ajax_data: request.term,
+          prog: "",
+          limit: 25
+        },
+        success: function(data) {
+          response($j.map(data.result || [], function(item) {
+            return { label: item.ajax_str, value: item.ajax_str, id: item.id };
+          }));
+        }
+      });
+    },
+    minLength: 2,
+    select: function(event, ui) {
+      var sel = $j("#%s");
+      var optVal = "K12:" + ui.item.id;
+      if (sel.find("option").filter(function() { return this.value === optVal; }).length) return;
+      sel.append($j("<option></option>").attr("value", optVal).attr("selected", true).text(ui.item.label));
+      $j(this).val("");
+      return false;
+    }
+  });
+});
+</script>
+''' % (search_id, search_id, search_id, attrs['id'])
+        return mark_safe(html)
+
+
 def make_id_tuple(object_list):
     return tuple([(o.id, str(o)) for o in object_list])
 
@@ -239,14 +328,18 @@ class StatisticsQueryForm(forms.Form):
 
     @staticmethod
     def get_school_choices():
-        k12schools = K12School.objects.all().order_by('name')
-        schools = list(set(StudentInfo.objects.all().exclude(school__isnull=True).exclude(school='').values_list('school', flat=True)))
-        result = []
-        for school in k12schools:
-            result.append(('K12:%d' % school.id, school.name))
-        for school in schools:
-            result.append(('Sch:%s' % school, school))
-        result.sort(key=lambda x: x[1])
+        """
+        Return only free-text (manually typed) school names from StudentInfo.
+        K12 schools are not included here to avoid loading 50k+ options; users
+        add them via the "Search and add school" autocomplete next to this field.
+        """
+        schools = list(set(
+            StudentInfo.objects.all()
+            .exclude(school__isnull=True)
+            .exclude(school='')
+            .values_list('school', flat=True)
+        ))
+        result = [('Sch:%s' % s, s) for s in sorted(schools)]
         return result
 
     query = forms.ChoiceField(choices=stats_questions, widget=forms.Select(), help_text='What question would you like to ask?')
@@ -264,7 +357,7 @@ class StatisticsQueryForm(forms.Form):
 
     school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
     school_name = forms.CharField(required=False, widget=forms.TextInput(), label='[Partial] School Name')
-    school_multisel = forms.MultipleChoiceField(required=False, choices=(), widget=forms.SelectMultiple(), label='School(s)', help_text='Hold down Ctrl to select more than one')
+    school_multisel = SchoolMultiSelectField(required=False, choices=(), widget=forms.SelectMultiple(), label='School(s)', help_text='Hold down Ctrl to select more than one')
 
     zip_query_type = forms.ChoiceField(choices=(('all', 'Any Zip code'), ('exact', 'Exact match'), ('partial', 'Partial match'), ('distance', 'Distance from Zip code')), initial='all', widget=forms.RadioSelect(), label='Zip Code Query Type')
     zip_code = forms.CharField(required=False, widget=forms.TextInput())
@@ -285,9 +378,10 @@ class StatisticsQueryForm(forms.Form):
             self.fields['program_instances'].choices = []
 
         school_choices = StatisticsQueryForm.get_school_choices()
-        if len(school_choices) > 0:
-            self.fields['school_query_type'].choices = (('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school(s) from list'))
-            self.fields['school_multisel'].choices = school_choices
+        # Always offer "Select school(s) from list" so users can search/add K12 schools via autocomplete
+        self.fields['school_query_type'].choices = (('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school(s) from list'))
+        self.fields['school_multisel'].choices = school_choices
+        self.fields['school_multisel'].widget = SchoolMultiSelectWithSearchWidget(attrs=None, choices=school_choices)
 
     def clean(self):
         """ Check that either 'All Programs' is selected or a program is selected   """
