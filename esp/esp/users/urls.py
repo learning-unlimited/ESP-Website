@@ -28,6 +28,8 @@ urlpatterns = [
     url(r'^makeadmin/?$', views.make_admin),
     url(r'^loginhelp', views.LoginHelpView.as_view(), name='Login Help'),
     url(r'^morph/?$', views.morph_into_user),
+    # username uses [^/]+ (not the narrower [\w.@+-]+) to preserve routing for
+    # legacy usernames that may contain characters outside that charset.
     url(r'^unsubscribe/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$',
         views.unsubscribe, name="unsubscribe"),
     url(r'^unsubscribe_oneclick/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$',
