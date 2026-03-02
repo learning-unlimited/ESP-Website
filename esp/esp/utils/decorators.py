@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -113,7 +111,6 @@ def json_response(field_map={}):
         return _evaluate
 
     return dec
-
 
 class CachedModuleViewDecorator(object):
     """ Employs some of the techniques used by the cached inclusion tag to

@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -119,7 +116,6 @@ class BaseAppElement(object):
                 setattr(self, field_name, form.cleaned_data[field_name])
         self.save()
 
-@python_2_unicode_compatible
 class StudentAppQuestion(BaseAppElement, models.Model):
     """ A question for a student application form, a la Junction or Delve.
     Questions pertaining to the program or to classes the student has
@@ -144,7 +140,6 @@ class StudentAppQuestion(BaseAppElement, models.Model):
         app_label = 'program'
         db_table = 'program_studentappquestion'
 
-@python_2_unicode_compatible
 class StudentAppResponse(BaseAppElement, models.Model):
     """ A response to an application question. """
     question = models.ForeignKey(StudentAppQuestion, editable=False, on_delete=models.CASCADE)
@@ -161,7 +156,6 @@ class StudentAppResponse(BaseAppElement, models.Model):
         app_label = 'program'
         db_table = 'program_studentappresponse'
 
-@python_2_unicode_compatible
 class StudentAppReview(BaseAppElement, models.Model):
     """ An individual review for a student application question.
     The application can be reviewed by any director of the program or
@@ -183,7 +177,6 @@ class StudentAppReview(BaseAppElement, models.Model):
         app_label = 'program'
         db_table = 'program_studentappreview'
 
-@python_2_unicode_compatible
 class StudentApplication(models.Model):
     """ Student applications for Junction and any other programs that need them. """
     from esp.program.models import Program
@@ -206,7 +199,7 @@ class StudentApplication(models.Model):
         return str(self.user)
 
     def __init__(self, *args, **kwargs):
-        super(StudentApplication, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.save()
         self.set_questions()
 
