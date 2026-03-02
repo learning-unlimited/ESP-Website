@@ -8,8 +8,10 @@ $j(document).ready(function() {
     var constraints = JSON.parse(document.getElementById('module-constraints-data').textContent);
 
     // Show a brief dismissible notice when a cross-list drop is rejected.
-    function showConstraintMessage(msg) {
+    // Positioned near the mouse cursor so the user sees it immediately.
+    function showConstraintMessage(msg, event) {
         var $msg = $j('#module-constraint-msg');
+        $msg.css({ top: event.pageY + 12, left: event.pageX + 12 });
         $msg.text(msg).stop(true, true).fadeIn(150).delay(3000).fadeOut(400);
     }
 
@@ -43,11 +45,11 @@ $j(document).ready(function() {
             if (!c) { return; }
             if (!isRequiredList && c.required_locked) {
                 ui.sender.sortable('cancel');
-                showConstraintMessage('This module must always be required and cannot be moved here.');
+                showConstraintMessage('This module must always be required and cannot be moved here.', event);
             }
             if (isRequiredList && c.not_required_locked) {
                 ui.sender.sortable('cancel');
-                showConstraintMessage('This module cannot be required and cannot be moved here.');
+                showConstraintMessage('This module cannot be required and cannot be moved here.', event);
             }
         };
     }

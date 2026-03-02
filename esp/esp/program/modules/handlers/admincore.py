@@ -654,6 +654,10 @@ class AdminCore(ProgramModuleObj, CoreModule):
         # Modules that are only required/not_required locked can still be reordered
         # within their list; cross-list drops are blocked in the JS receive handler.
         context['position_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['position_locked']}
+        # required_locked_ids / not_required_locked_ids: used by the template to
+        # render per-module constraint icons and the icon legend.
+        context['required_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['required_locked']}
+        context['not_required_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['not_required_locked']}
 
         context['one'] = one
         context['two'] = two

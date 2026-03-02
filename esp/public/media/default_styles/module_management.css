@@ -59,8 +59,26 @@
     opacity: 0.75;
 }
 
-.connectedSortable li.module-locked .module-lock-icon {
-    font-size: 0.85em;
-    margin-right: 3px;
-    opacity: 0.7;
+/* Per-constraint icons shown inline before the module name.  Issue #3656. */
+.constraint-icon-position,
+.constraint-icon-required,
+.constraint-icon-not-required {
+    font-size: 0.75em;
+    margin-right: 2px;
+    vertical-align: middle;
+}
+
+.constraint-icon-position     { color: #555; }
+.constraint-icon-required     { color: #5cb85c; }  /* green — must be required */
+.constraint-icon-not-required { color: #d9534f; }  /* red   — cannot be required */
+
+/* Icon legend shown above the module lists. */
+.module-constraint-legend {
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.module-constraint-legend .legend-item {
+    margin-left: 12px;
 }
