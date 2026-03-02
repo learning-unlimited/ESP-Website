@@ -492,9 +492,9 @@ def top_classes(request, tl, program, instance):
 
     if tl == 'manage':
         classes = prog.classes()
-        rating_questions = survey.questions.filter(name__contains='overall rating')
+        rating_questions = survey.questions.filter(name__icontains='overall rating')
         if len(rating_questions) < 1:
-            raise ESPError('Couldn\'t find an "overall rating" question in this survey.', log=False)
+            raise ESPError('Couldn\'t find an "overall rating" question in this survey. For top classes to be computed, the survey must include a question whose name contains the text "overall rating" (e.g. "overall rating" or "Overall rating").', log=False)
         rating_question = rating_questions[0]
 
         rating_cut = 0.0
