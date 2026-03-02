@@ -2,11 +2,11 @@ name: Enforce PR Assignment
 
 on:
   pull_request_target:
-    types: [opened, reopened]
+    types: [opened, reopened, edited, synchronize]
 
 permissions:
   pull-requests: write
-  issues: read
+  issues: write
 
 jobs:
   check-assignment:
@@ -25,14 +25,22 @@ jobs:
             console.log(`Checking PR #${prNumber} by @${prAuthor}`);
 
             // Check if the PR author is an admin or maintainer (exempt)
-            const { data: permissionLevel } = await github.rest.repos.getCollaboratorPermissionLevel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              username: prAuthor,
-            });
-
-            const permission = permissionLevel.permission;
-            console.log(`@${prAuthor} has '${permission}' permission`);
+            let permission = 'none';
+            try {
+              const { data: permissionLevel } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: prAuthor,
+              });
+              permission = permissionLevel.permission;
+              console.log(`@${prAuthor} has '${permission}' permission`);
+            } catch (error) {
+              if (error && error.status === 404) {
+                console.log(`@${prAuthor} is not a collaborator; treating as non-admin (permission='none').`);
+              } else {
+                throw error;
+              }
+            }
 
             if (permission === 'admin' || permission === 'maintain') {
               console.log('PR author is admin/maintainer — skipping check.');
