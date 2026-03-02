@@ -127,4 +127,3 @@ fetch('/themes/api/toolbar-links/', {
         displayName: 'Other Important Links'
     });
 });
-console.log('hello')
