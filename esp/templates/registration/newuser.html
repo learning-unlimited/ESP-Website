@@ -132,8 +132,8 @@
         return;
       }
       
-      // Show loading
-      showStatus('Checking username availability...', false);
+      // Clear status while checking to avoid showing an error icon during loading
+      hideStatus();
       
       var xhr = new XMLHttpRequest();
       xhr.open('GET', '/myesp/ajax/check_username/?username=' + encodeURIComponent(username), true);
