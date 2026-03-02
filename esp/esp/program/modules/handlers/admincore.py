@@ -133,6 +133,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
         for (tl, view_name) in prog.getModuleViews():
             context['%s_%s' % (tl, view_name)] = True
 
+        context['manage_refund'] = prog.hasModule('CreditCardModule_Stripe')
+
         return render_to_response(self.baseDir()+'directory.html', request, context)
 
     @aux_call

@@ -422,6 +422,16 @@ class ClassSection(models.Model):
 
         return rc
 
+    def _min_none_safe(self, *values):
+        """Return min of non-None values, or None if all are None (avoids TypeError in comparisons)."""
+        candidates = [v for v in values if v is not None]
+        return min(candidates) if candidates else None
+
+    def _max_none_safe(self, *values):
+        """Return max of non-None values, or None if all are None (avoids TypeError in comparisons)."""
+        candidates = [v for v in values if v is not None]
+        return max(candidates) if candidates else None
+
     @cache_function
     def _get_capacity(self, ignore_changes=False):
         ans = None
@@ -433,22 +443,34 @@ class ClassSection(models.Model):
                 if not ans:
                     ans = self.parent_class.class_size_max
             else:
-                ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
+                class_max = self.parent_class.class_size_max
+                room_cap = self._get_room_capacity(rooms)
+                ans = self._min_none_safe(class_max, room_cap)
 
         #hacky fix for classes with no max size
         if ans is None or ans == 0:
             # New class size capacity condition set for Splash 2010.  In code
             # because it seems like a fairly reasonable metric.
             if self.parent_class.allowable_class_size_ranges.all() and len(rooms) != 0:
-                ans = min(max(self.parent_class.allowable_class_size_ranges.order_by('-range_max').values_list('range_max', flat=True)[0], self.parent_class.class_size_optimal), self._get_room_capacity(rooms))
+                range_max_vals = list(self.parent_class.allowable_class_size_ranges.order_by('-range_max').values_list('range_max', flat=True))
+                range_max = range_max_vals[0] if range_max_vals else None
+                opt = self.parent_class.class_size_optimal
+                room_cap = self._get_room_capacity(rooms)
+                upper = self._max_none_safe(range_max, opt)
+                ans = self._min_none_safe(upper, room_cap)
             elif self.parent_class.class_size_optimal and len(rooms) != 0:
-                ans = min(self.parent_class.class_size_optimal, self._get_room_capacity(rooms))
+                opt = self.parent_class.class_size_optimal
+                room_cap = self._get_room_capacity(rooms)
+                ans = self._min_none_safe(opt, room_cap)
             elif self.parent_class.class_size_optimal:
                 ans = self.parent_class.class_size_optimal
             elif len(rooms) != 0:
                 ans = self._get_room_capacity(rooms)
             else:
                 ans = 0
+
+        if ans is None:
+            ans = 0
 
         options = self.parent_program.studentclassregmoduleinfo
 
@@ -2043,6 +2065,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return self.__cmp__(other) >= 0
     def __ne__(self, other):
         return self.__cmp__(other) != 0
+
+    def __hash__(self):
+        if self.pk is None:
+            return super().__hash__()
+        return hash(self.pk)
 
     def firstBlockEvent(self):
         eventList = self.all_meeting_times.all().order_by('start')
