@@ -1,10 +1,22 @@
-name: "Lint and Unit Tests"
+name: "Unit Tests"
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.gitignore'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.gitignore'
   workflow_dispatch:
 
 concurrency:
@@ -14,14 +26,19 @@ concurrency:
 permissions:
   contents: read
 
+
 jobs:
-  build:
-    name: ${{ matrix.ci_job }} (Python ${{ matrix.python-version }})
+  test:
+    name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7]
     services:
       postgres:
-        image: postgres:10.8
+        image: postgres:14
         env:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpassword
@@ -34,11 +51,6 @@ jobs:
         image: memcached:alpine
         ports:
           - 11211:11211
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [3.7]
-        ci_job: ["lint", "test"]
     env:
       DJANGO_SETTINGS_MODULE: esp.settings
 
@@ -56,27 +68,35 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
+    - name: Get apt packages list
+      id: apt-action
+      run: |
+        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+        echo "packages=$PKGS" >> $GITHUB_OUTPUT
+    - name: Cache apt packages
+      uses: Eeems-Org/apt-cache-action@v1
+      with:
+        packages: ${{ steps.apt-action.outputs.packages }}
     - name: Prepare for Installing Dependencies
       run: deploy/ci/before_install
       env:
         PYTHON_VERSION: ${{ matrix.python-version }}
-    - name: Install Dependencies for ${{ matrix.ci_job }}
+    - name: Install Dependencies
       env:
-        CI_JOB: ${{ matrix.ci_job }}
+        CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/install
-    - name: Prepare for ${{ matrix.ci_job }}
+    - name: Prepare for Test
       env:
-        CI_JOB: ${{ matrix.ci_job }}
+        CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/before_script
-    - name: Run ${{ matrix.ci_job }}
+    - name: Run Tests
       env:
-        CI_JOB: ${{ matrix.ci_job }}
+        CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/script
     - name: Upload Coverage to Codecov
-      if: ${{ matrix.ci_job == 'test' }}
       uses: codecov/codecov-action@v5
       with:
         fail_ci_if_error: true

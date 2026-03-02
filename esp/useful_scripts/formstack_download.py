@@ -10,13 +10,10 @@
 # directory and named cacert.pem - see http://curl.haxx.se/ca/cacert.pem
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
 import json
 import pycurl
 import sys
 from io import open
-from six.moves import input
 
 SUBMISSIONS_PER_PAGE = 100
 #  when enumerating form submissions, the maximum number of metadatas

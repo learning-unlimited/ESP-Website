@@ -1,7 +1,4 @@
 
-from __future__ import absolute_import
-import six
-from six.moves import range
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -73,7 +70,6 @@ def get_user_list(request, listDict2, extra=''):
         listDict[key] = {'list': getQForUser(value['list']),
                          'description': value['description']}
 
-
     if 'select_mailman' in request.POST:
         from esp.mailman import list_members
         import operator
@@ -104,7 +100,6 @@ def get_user_list(request, listDict2, extra=''):
 
         return (filterObj, True) # We got the list, return it.
 
-
     if request.POST.get('submit_checklist') == 'true':
         # If we're coming back after having checked off users from a checklist...
         filterObj = PersistentQueryFilter.getFilterFromID(request.POST['extra'], ESPUser)
@@ -115,7 +110,6 @@ def get_user_list(request, listDict2, extra=''):
             return (newfilterObj, True)
         else:
             return (getUsers, False)
-
 
     if request.POST.get('submit_user_list') == 'true':
         # If a user list was submitted....
@@ -138,7 +132,6 @@ def get_user_list(request, listDict2, extra=''):
         # we or. This closely represents the sentence (it's not as powerful, but makes "sense")
         separated = {'or': [curList], 'and': []}
 
-
         # use double-commas because it's safer?
         keys = request.POST['keys'].split(',,')
 
@@ -147,7 +140,6 @@ def get_user_list(request, listDict2, extra=''):
                request.POST['operator_'+key] != 'ignore':     # and it's not ignore (it should be 'and' or 'or')
                 # We are adding to the list of 'and'd' lists and 'or'd' lists.
                 separated[request.POST['operator_'+key]].append(opmapping[request.POST['not_'+key]](listDict[key]['list']))
-
 
         # ^ - now separated has all the necessary Q objects.
 
@@ -163,9 +155,7 @@ def get_user_list(request, listDict2, extra=''):
         for List in separated['or'][1:]:
             curList = opmapping['or'](curList, List)
 
-
         filterObj = PersistentQueryFilter.getFilterFromQ(curList, ESPUser, request.POST['finalsent'])
-
 
         if request.POST['submitform'] == 'I want to search within this list':
             getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
@@ -188,7 +178,6 @@ def get_user_list(request, listDict2, extra=''):
 
         return (filterObj, True) # We got the list, return it.
 
-
     # if we found a single user:
     if request.method == 'GET' and request.GET.get('op') == 'usersearch':
         filterObj = PersistentQueryFilter.getFilterFromID(request.GET['extra'], ESPUser)
@@ -207,7 +196,6 @@ def get_user_list(request, listDict2, extra=''):
 
         else:
             return (getUser, False)
-
 
     if 'advanced' in request.GET or not settings.USE_MAILMAN:
         # we're going to prepare a list to send out.
@@ -260,7 +248,6 @@ def get_user_checklist(request, userList, extra='', nextpage=None, extra_context
 
     return (render_to_response('users/userchecklist.html', request, context), False) # make the checklist
 
-
 def search_for_user(request, user_type='Any', extra='', returnList = False, add_to_context = None):
     """ Interface to search for a user. If you need a user, just use this.
         Returns (user or response, user returned?) """
@@ -269,7 +256,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False, add_
     error = False
 
     usc = UserSearchController()
-    if isinstance(user_type, six.string_types):
+    if isinstance(user_type, str):
         user_query = usc.query_from_criteria(user_type, request.GET)
         QSUsers = ESPUser.objects.filter(user_query).distinct()
     elif isinstance(user_type, QuerySet):

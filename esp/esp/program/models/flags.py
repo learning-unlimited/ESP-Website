@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -118,5 +116,5 @@ class ClassFlag(models.Model):
             if self.id is None:
                 #We are creating, rather than modifying, so we don't yet have an id.
                 self.created_by = request.user
-        super(ClassFlag, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 

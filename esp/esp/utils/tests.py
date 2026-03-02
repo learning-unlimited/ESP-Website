@@ -2,13 +2,9 @@
 Test cases for Django-ESP utilities
 """
 
-from __future__ import with_statement
 
-from __future__ import absolute_import
 import datetime
 import doctest
-from six.moves import map
-from six.moves import range
 try:
     import pylibmc as memcache
 except:
@@ -93,9 +89,9 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("DNS")  # Used for validating email address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("json")  # Used for some of our AJAX magic
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
-        self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
+        self.tryImport("openpyxl")  # Used in our giant statistics spreadsheet-generating code
         self.tryImport("form_utils")     #Used to create better forms.
-        self.assert_(not self._failed_import)
+        self.assertFalse(self._failed_import)
 
         # Make sure that we're actually using pylibmc.
         # Note that this requires a patch to Django (or Django version 1.3 or later).
@@ -103,9 +99,9 @@ class DependenciesTestCase(unittest.TestCase):
         from pylibmc import Client
         from django.core.cache import cache
         if hasattr(cache, "_cache"):
-            self.assert_(isinstance(cache._cache, Client))
+            self.assertTrue(isinstance(cache._cache, Client))
         elif hasattr(cache, "_wrapped_cache") and hasattr(cache._wrapped_cache, "_cache"):
-            self.assert_(isinstance(cache._wrapped_cache._cache, Client))
+            self.assertTrue(isinstance(cache._wrapped_cache._cache, Client))
 
         self.tryExecutable("latex")  # Used for a whole pile of program printables, as well as inline LaTeX
         self.tryExecutable("dvips")  # Used to convert LaTeX output (.dvi) to .ps files
@@ -114,7 +110,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryExecutable("ps2pdf")  # Used to convert LaTeX output (.dvi) to .pdf files (must go to .ps first because we use some LaTeX packages that depend on Postscript)
         self.tryExecutable("inkscape")  # Used to render LaTeX output (once converted to .pdf) to .svg image files
 
-        self.assert_(not self._exe_not_found)
+        self.assertFalse(self._exe_not_found)
 
 class MemcachedTestCase(unittest.TestCase):
     """
@@ -453,6 +449,5 @@ def suite():
     # Add doctests from esp.utils.__init__.py
     s.addTest(doctest.DocTestSuite(utils))
     return s
-
 
 

@@ -1,6 +1,5 @@
 
 
-from __future__ import absolute_import
 from django import forms
 from esp.users.models import ESPUser, PasswordRecoveryTicket
 from django.utils.html import conditional_escape, mark_safe
@@ -15,7 +14,6 @@ class PasswordResetForm(forms.Form):
 
     username  = forms.CharField(max_length=30, required=False,
                                 help_text = '(Case sensitive)')
-
 
 
     def clean_username(self):
@@ -82,7 +80,7 @@ class UserPasswdForm(FormWithRequiredCss):
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
-        super(UserPasswdForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def clean_password(self):
         if self.user is None:

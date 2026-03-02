@@ -1,11 +1,9 @@
-from __future__ import absolute_import
 from django.db import models
 from django import forms
 from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 import re
-import six
 
 get_id_re = re.compile('.*\((\d+)\)$')
 
@@ -26,10 +24,10 @@ class AjaxForeignKeyFieldBase:
                 obj = objects[0]
                 if hasattr(obj, 'ajax_str'):
                     init_val = obj.ajax_str() + " (%s)" % data
-                    old_init_val = six.text_type(obj)
+                    old_init_val = str(obj)
                 else:
-                    old_init_val = init_val = six.text_type(obj) + " (%s)" % data
-        elif isinstance(data, six.string_types):
+                    old_init_val = init_val = str(obj) + " (%s)" % data
+        elif isinstance(data, str):
             pass
         else:
             data = init_val = ''
@@ -128,7 +126,7 @@ class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
     choices = ()
 
     def __init__(self, attrs=None, *args, **kwargs):
-        super(AjaxForeignKeyWidget, self).__init__(attrs, *args, **kwargs)
+        super().__init__(attrs, *args, **kwargs)
 
         if 'field' in attrs:
             self.field = attrs['field']
@@ -180,7 +178,7 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         if 'limit_choices_to' in kwargs:
             del kwargs['limit_choices_to']
 
-        super(AjaxForeignKeyNewformField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if ajax_func is None:
             self.widget.ajax_func = 'ajax_autocomplete'
