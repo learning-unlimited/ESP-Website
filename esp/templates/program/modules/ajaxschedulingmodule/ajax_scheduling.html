@@ -70,11 +70,6 @@
     </td>
     <td class="no-border">
       <div id="side-panel-wrapper" class="ui-widget">
-		<div style =  "width: 100%; text-align: center; min-height: 30px">
-			<a href = "ajax_clear_change_log">
-				<button id = "clear_change_log" style="height: 100%;">Clear Change Log (deletes unsynchronized progress for all users!)</button>
-			</a>
-		</div>
         <div id="info-panel">
           <div id="section-info-and-message-wrapper">
             <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
@@ -366,7 +361,11 @@
   {% endif %}
 </div>
 
-<div id="loadingOverlay"></div>
+<div id="loadingOverlay">
+    <div id="clear-change-log-wrapper">
+        <a href="ajax_clear_change_log" id="clear_change_log">Clear Change Log (deletes unsynchronized progress for all users!)</a>
+    </div>
+</div>
 
 <script>
 $j("#info-panel").resizable({
