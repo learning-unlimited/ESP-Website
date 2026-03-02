@@ -58,26 +58,6 @@ div.breadcrumbs a {
     text-transform: uppercase;
 
 }
-@font-face {
-  font-family: 'Roboto';
-  src: url('../fonts/Roboto-Bold-webfont.woff');
-  font-weight: 700;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Roboto';
-  src: url('../fonts/Roboto-Regular-webfont.woff');
-  font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Roboto';
-  src: url('../fonts/Roboto-Light-webfont.woff');
-  font-weight: 300;
-  font-style: normal;
-}
 .dashboard-module-content a {
 	color: #205493;
 }
@@ -165,4 +145,3 @@ body.login {
 div.breadcrumbs a:link, div.breadcrumbs a:visited {
 	color: white;
 }
-
