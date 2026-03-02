@@ -26,11 +26,11 @@ ipython==7.34.0 # Used for shell_plus
 Markdown==2.3.1 # Used in QSD
 numpy==1.16.6 # Used mainly in the lottery and class change controller
 pillow==8.3.2 # Required for ImageField, which we use in teacher bios
-psycopg2==2.8.6 # Talks to postgres
-pycurl==7.19.5.1 # Used only in a formstack script which I think is outdated
+psycopg2==2.8.6 # Talks to postgres (removed for Windows native dev)
+pycurl==7.19.5.1 # Used only in a formstack script which I think is outdated (removed)
 py3dns==3.2.1 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
 Pygments==2.10.0 # django-extensions dependency
-pylibmc==1.5.0 # Talks to memcached
+pylibmc==1.5.0 # Talks to memcached (removed for Windows native dev)
 pytz==2015.4 # Required for timezone support
 # pywatchman # Makes dev servers auto-reload
 raven # Required for Sentry error reporting
