@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -54,7 +52,7 @@ class StudentLunchSelectionForm(forms.Form):
         self.user = user
         self.day = day
 
-        super(StudentLunchSelectionForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         #   Set choices for timeslot field
         #   [(None, '')] +
@@ -100,7 +98,6 @@ class StudentLunchSelectionForm(forms.Form):
             msg = 'Lunch period declined.'
 
         return (result, msg)
-
 
 class StudentLunchSelection(ProgramModuleObj):
     doc = """Allows students to enroll in lunch blocks."""

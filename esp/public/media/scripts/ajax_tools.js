@@ -186,7 +186,7 @@ var register_link = function(link_attrs)
 var register_fragment = function(fragment_attrs)
 {
     registered_fragments.push(fragment_attrs);
-    //  console.log('Registered Ajax page fragement with attributes: ' + JSON.stringify(fragment_attrs, null, '\t'));
+    //  console.log('Registered Ajax page fragment with attributes: ' + JSON.stringify(fragment_attrs, null, '\t'));
 }
 
 $j(document).ready(function()
