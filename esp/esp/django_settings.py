@@ -251,6 +251,7 @@ INSTALLED_APPS = (
     'reversion',
     'captcha',
     'form_utils',
+    'widget_tweaks',
     'phonenumber_field',
     'django.contrib.redirects',
     'debug_toolbar',
