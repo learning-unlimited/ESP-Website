@@ -11,18 +11,19 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Cleanup
         run: |
-          echo "Fetching list of cache keys"
-          cacheKeysForPR=$(gh cache list --ref $BRANCH --limit 100 --json id --jq '.[].id')
-
-          ## Setting this to not fail the workflow while deleting cache keys.
+          ## Setting this to not fail the workflow while listing and deleting cache keys.
           set +e
+          echo "Fetching list of cache IDs"
+          cacheIdsForPR=$(gh cache list --ref $BRANCH --limit 100 --json id --jq '.[].id' || echo "")
+
           echo "Deleting caches..."
-          for cacheKey in $cacheKeysForPR
+          for cacheId in $cacheIdsForPR
           do
-              gh cache delete $cacheKey
+              gh cache delete $cacheId
           done
           echo "Done"
         env:
