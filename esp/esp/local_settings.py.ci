@@ -78,8 +78,8 @@ MIDDLEWARE_LOCAL = []
 
 # Set DB name for this site
 DATABASE_NAME = 'test_django'
-DATABASE_USER = 'testuser'
-DATABASE_PASSWORD = 'testpassword'
+DATABASE_USER = 'postgres'
+DATABASE_PASSWORD = 'postgres'
 
 ############
 # Selenium #
