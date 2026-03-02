@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import
-from __future__ import print_function
 from esp.users.models import User, ESPUser, PersistentQueryFilter
 from django.db.models.query import Q
 from io import open

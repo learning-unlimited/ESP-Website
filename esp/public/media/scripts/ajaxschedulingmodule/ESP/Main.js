@@ -19,7 +19,6 @@ var data = {};
 json_get('lunch_timeslots', {}, function(lunch_timeslots) {
     $j.getJSON('ajax_section_details', function(section_details) {
         json_fetch(['sections_admin', 'lunch_timeslots', 'timeslots', 'rooms', 'schedule_assignments', 'resource_types', 'categories', 'moderators'], function(){
-            console.log(data)
             resizeElements();
 
             $j("div#side-panel").tabs();
