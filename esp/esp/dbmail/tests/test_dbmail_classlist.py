@@ -55,7 +55,7 @@ class ClassListTest(ProgramFrameworkTest):
         handler = _make_handler()
         handler.process_nomailman(None, -9999, 'class')
         self.assertFalse(handler.send,
-                         "send should remain False for an invalid class ID")
+                         "send should remain False for an invalid class identifier")
 
     @override_settings(USE_MAILMAN=False)
     def test_user_type_teachers(self):
@@ -157,7 +157,7 @@ class ClassListTest(ProgramFrameworkTest):
         handler = _make_handler()
         handler.process_mailman(None, -9999, 'class')
         self.assertFalse(handler.send,
-                         "send should remain False for invalid class ID in mailman mode")
+                         "send should remain False for an invalid class identifier in mailman mode")
 
     @override_settings(
         USE_MAILMAN=True,
