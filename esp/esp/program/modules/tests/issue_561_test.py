@@ -29,7 +29,7 @@ class Issue561Test(ProgramFrameworkTest):
     def test_ajax_addclass_conflict_resolution(self):
         # 1. Enroll in class 1
         self.sec1.preregister_student(self.student)
-        self.assertEqual(self.student.getEnrolledSections(self.program).count(), 1)
+        self.assertEqual(len(list(self.student.getEnrolledSections(self.program))), 1)
 
         # 2. Attempt to enroll in class 2 via AJAX (should return script for confirmation)
         url = '/learn/%s/ajax_addclass' % self.program.url
@@ -44,7 +44,7 @@ class Issue561Test(ProgramFrameworkTest):
         # Verify it returns a script with a confirmation message
         self.assertIn('script', resp_json)
         self.assertIn('confirm', resp_json['script'])
-        self.assertIn(str(self.class1.title()), resp_json['script'])
+        self.assertIn(str(self.class1.title), resp_json['script'])
 
         # 3. Simulate confirmation by sending force_replace=true
         data['force_replace'] = 'true'
