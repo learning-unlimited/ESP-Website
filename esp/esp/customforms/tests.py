@@ -104,6 +104,12 @@ class CustomFormsTest(TestCase):
         #   - Make sure you can get /customforms/create/
         response = self.client.get("/customforms/create/")
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<label for="input_form_title">')
+        self.assertContains(response, '<label for="input_form_description">')
+        self.assertContains(response, '<label for="cat_selector">')
+        self.assertContains(response, '<label for="id_question">')
+        self.assertContains(response, '<label for="id_main_perm">')
+        self.assertContains(response, '<label for="links_id_main">')
 
         #   - Submit an example form
         #     (Note that this bypasses a *lot* of front-end stuff, that will
