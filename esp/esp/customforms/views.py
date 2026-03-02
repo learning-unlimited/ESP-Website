@@ -4,7 +4,6 @@ import json
 from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
 from django.http import Http404, HttpResponseRedirect, JsonResponse
-from django.core.exceptions import PermissionDenied
 from django.db import connection
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -20,14 +19,16 @@ from django.contrib.auth.decorators import user_passes_test
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
 from esp.utils.web import render_to_response, zip_download
+from esp.middleware.threadlocalrequest import get_current_request
 
 def test_func(user):
-    return user.is_authenticated and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
+    request = get_current_request()
+    return user.is_authenticated and (user.is_morphed(request) or user.isTeacher() or user.isAdministrator())
 
 @user_passes_test(test_func)
 def landing(request):
     forms = Form.objects.all().order_by('-link_type', '-link_id', '-id')
-    if not (request.user.isAdministrator() or request.user.is_morphed()):
+    if not (request.user.isAdministrator() or request.user.is_morphed(request)):
         forms = forms.filter(created_by=request.user)
     for form in forms:
         if form.link_type in list(cf_cache.only_fkey_models.keys()):
@@ -41,7 +42,7 @@ def landing(request):
 def formBuilder(request):
     prog_list = Program.objects.all()
     form_list = Form.objects.all().order_by('-id')
-    if not (request.user.isAdministrator() or request.user.is_morphed()):
+    if not (request.user.isAdministrator() or request.user.is_morphed(request)):
         form_list = form_list.filter(created_by=request.user)
     context = {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': list(cf_cache.only_fkey_models.keys())}
     if 'edit' in request.GET and request.GET.get('edit'):
@@ -354,8 +355,8 @@ def viewResponse(request, form_id):
         except ValueError:
             raise Http404
         form = Form.objects.get(id=form_id)
-        if not request.user.isAdministrator() and not request.user.is_morphed() and form.created_by != request.user:
-            raise PermissionDenied
+        if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+            return HttpResponse(status=403)
         return render_to_response('customforms/view_results.html', request, {'form': form})
     else:
         return HttpResponseRedirect('/')
@@ -372,8 +373,8 @@ def getExcelData(request, form_id):
         return HttpResponse(status=400)
 
     form = Form.objects.get(pk=form_id)
-    if not request.user.isAdministrator() and not request.user.is_morphed() and form.created_by != request.user:
-        raise PermissionDenied
+    if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+        return HttpResponse(status=403)
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
     response = HttpResponse(wbk.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -392,8 +393,8 @@ def getData(request):
             except ValueError:
                 return HttpResponse(status=400)
             form = Form.objects.get(pk=form_id)
-            if not request.user.isAdministrator() and not request.user.is_morphed() and form.created_by != request.user:
-                raise PermissionDenied
+            if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+                return HttpResponse(status=403)
             fh = FormHandler(form=form, request=request)
             resp_data = json.dumps(fh.getResponseData(form), cls=DjangoJSONEncoder)
             return HttpResponse(resp_data)
@@ -411,8 +412,8 @@ def bulkDownloadFiles(request):
         except (ValueError, KeyError):
             return HttpResponse(status=400)
         form = Form.objects.get(pk=form_id)
-        if not request.user.isAdministrator() and not request.user.is_morphed() and form.created_by != request.user:
-            raise PermissionDenied
+        if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+            return HttpResponse(status=403)
         dmh = DMH(form=form)
         dyn = dmh.createDynModel()
         filenames = [resp[question_name] for resp in dyn.objects.all().values()]
