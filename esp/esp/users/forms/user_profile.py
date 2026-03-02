@@ -265,14 +265,16 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     def repress_studentrep_expl_error(self):
         self.studentrep_error = False
-
+    
     def clean_graduation_year(self):
-        gy = self.cleaned_data['graduation_year'].strip()
+        gy = self.cleaned_data.get('graduation_year', '').strip()
+        if not gy:
+            raise forms.ValidationError("Grade / Graduation Year is required.")
         try:
             gy = str(abs(int(gy)))
-        except (ValueError, TypeError):
+        except ValueError:
             if gy != 'G':
-                gy = 'N/A'
+                raise forms.ValidationError("Invalid grade value.")
         return gy
 
     def clean_heard_about(self):
