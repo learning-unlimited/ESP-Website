@@ -1,4 +1,4 @@
-{% ifequal open_section "equipment" %}
+{% if open_section == "equipment" %}
 <button class="dsphead active">
    <b>Step 4: Floating Resources</b> (click to expand/contract)
 </button>
@@ -10,7 +10,7 @@
 </button>
 
 <div class="dspcont">
-{% endifequal %}
+{% endif %}
 
 <p>The following are resources that {{ settings.ORGANIZATION_SHORT_NAME }} administrators or teachers can carry from room to room (LCD projectors, art supplies, etc).</p>
 

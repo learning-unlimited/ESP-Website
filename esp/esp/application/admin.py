@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from django.contrib import admin
 from django.utils import html
+from django.utils.safestring import mark_safe
 
 from esp.admin import admin_site
 
@@ -62,8 +63,7 @@ class FormstackAppSettingsAdmin(admin.ModelAdmin):
         for form in get_forms_for_api_key(fsas.api_key):
             line = '{0}: {1}'.format(form.id, form.name)
             lines.append(line)
-        return '<br />'.join(map(html.escape, lines))
-    forms_for_api_key.allow_tags = True
+        return mark_safe('<br />'.join(map(html.escape, lines)))
 
     def form_fields(self, fsas):
         if fsas.api_key == '' or fsas.form_id is None:
@@ -74,8 +74,7 @@ class FormstackAppSettingsAdmin(admin.ModelAdmin):
             if field['label']:
                 line = '{0}: {1}'.format(field['id'], field['label'])
                 lines.append(line)
-        return '<br />'.join(map(html.escape, lines))
-    form_fields.allow_tags = True
+        return mark_safe('<br />'.join(map(html.escape, lines)))
 
     def finaid_form_fields(self, fsas):
         if fsas.api_key == '' or fsas.finaid_form_id is None:
@@ -86,8 +85,7 @@ class FormstackAppSettingsAdmin(admin.ModelAdmin):
             if field['label']:
                 line = '{0}: {1}'.format(field['id'], field['label'])
                 lines.append(line)
-        return '<br />'.join(map(html.escape, lines))
-    finaid_form_fields.allow_tags = True
+        return mark_safe('<br />'.join(map(html.escape, lines)))
 
 admin_site.register(FormstackAppSettings, FormstackAppSettingsAdmin)
 
@@ -118,8 +116,7 @@ class FormstackStudentProgramAppAdmin(admin.ModelAdmin):
         for pair in app.choices().items():
             line = '{0}: {1}'.format(*pair)
             lines.append(line)
-        return '<br />'.join(map(html.escape, lines))
-    choices_pretty.allow_tags = True
+        return mark_safe('<br />'.join(map(html.escape, lines)))
     choices_pretty.short_description = 'Class choices'
 
     def responses_pretty(self, app):
@@ -127,8 +124,7 @@ class FormstackStudentProgramAppAdmin(admin.ModelAdmin):
         for pair in app.get_responses():
             line = '{0}: {1}'.format(*pair)
             lines.append(line)
-        return '<br />'.join(map(html.escape, lines))
-    responses_pretty.allow_tags = True
+        return mark_safe('<br />'.join(map(html.escape, lines)))
     responses_pretty.short_description = 'Responses'
 
     def admissions_pretty(self, app):
@@ -140,8 +136,7 @@ class FormstackStudentProgramAppAdmin(admin.ModelAdmin):
         for cls in app.waitlisted_to_class():
             line = 'Waitlisted: {0}'.format(cls)
             lines.append(line)
-        return '<br />'.join(map(html.escape, lines))
-    admissions_pretty.allow_tags = True
+        return mark_safe('<br />'.join(map(html.escape, lines)))
     admissions_pretty.short_description = 'Admission status'
 
     inlines = [
@@ -185,8 +180,7 @@ class FormstackStudentClassAppAdmin(admin.ModelAdmin):
         for pair in classapp.get_responses():
             line = '{0}: {1}'.format(*pair)
             lines.append(line)
-        return '<br />'.join(map(html.escape, lines))
-    responses_pretty.allow_tags = True
+        return mark_safe('<br />'.join(map(html.escape, lines)))
     responses_pretty.short_description = 'Responses'
 
     def admissions_pretty(self, classapp):
@@ -198,8 +192,7 @@ class FormstackStudentClassAppAdmin(admin.ModelAdmin):
         for cls in classapp.app.waitlisted_to_class():
             line = 'Waitlisted: {0}'.format(cls)
             lines.append(line)
-        return '<br />'.join(map(html.escape, lines))
-    admissions_pretty.allow_tags = True
+        return mark_safe('<br />'.join(map(html.escape, lines)))
     admissions_pretty.short_description = 'Admission status'
 
     actions = ['admit', 'unadmit', 'waitlist']

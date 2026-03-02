@@ -80,7 +80,7 @@ class DynamicModelHandler:
         'pronoun': {'typeMap': models.CharField, 'attrs': {'max_length': 50}, 'args': []},
         'radio_yesno': {'typeMap': models.CharField, 'attrs':{'max_length': 1,}, 'args':[]},
         'boolean': {'typeMap': models.BooleanField, 'attrs':{'default': False}, 'args':[]},
-        'null_boolean': {'typeMap': models.NullBooleanField, 'attrs':{'default': None}, 'args':[]},
+        'null_boolean': {'typeMap': models.BooleanField, 'attrs':{'default': None, 'null': True}, 'args':[]},
         'instructions': {'typeMap': None},
     }
 
