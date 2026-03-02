@@ -35,10 +35,11 @@ class FormstackAppModuleTest(ProgramFrameworkTest):
     def test_resolve_empty_string_value(self):
         """Expressions resolving to empty string return '' not None."""
         user = self.students[0]
-        # Patch a field to be empty to verify empty string is preserved
         original = user.username
-        user.username = ''
-        context = {'user': user}
-        result = resolve_field_expression('user.username', context)
-        self.assertEqual(result, '')
-        user.username = original
+        try:
+            user.username = ''
+            context = {'user': user}
+            result = resolve_field_expression('user.username', context)
+            self.assertEqual(result, '')
+        finally:
+            user.username = original
