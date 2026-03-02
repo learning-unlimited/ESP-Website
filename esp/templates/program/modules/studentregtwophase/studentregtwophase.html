@@ -161,6 +161,12 @@ recommend you have at least {{num_star}} classes starred for every priority slot
     If you would like to receive a confirmation email with a summary of your selections, click the button below.
 </p>
 
+{% if min_classes > 0 %}
+<div class="alert alert-warning">
+    <strong>Note:</strong> You must star at least {{ min_classes }} classes before you can confirm your preferences.
+</div>
+{% endif %}
+
 <center>
     <form method="post" action="/learn/{{program.getUrlBase}}/confirm_registration">{% csrf_token %}
         <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 10px 30px;">

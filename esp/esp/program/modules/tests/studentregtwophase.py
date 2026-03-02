@@ -186,3 +186,130 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             '/learn/%s/studentreg2phase' % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Send Me a Confirmation Email')
+
+    # ---------------------------------------------------------------
+    # Test: Minimum class requirement - rejection
+    # ---------------------------------------------------------------
+    def test_min_classes_rejects(self):
+        """With min_classes set, confirmation should be rejected if too few classes starred."""
+        Tag.objects.get_or_create(
+            key='twophase_min_classes', value='5',
+            content_type=self.program_content_type,
+            object_id=self.program.id
+        )
+
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        # Star only 2 classes (below minimum of 5)
+        self._star_classes(student, 2)
+
+        # Try to confirm - should be rejected (redirect back)
+        response = self.client.post(
+            '/learn/%s/confirm_registration' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 302,
+                         "Expected redirect when below min_classes")
+
+        # Verify no Record was created
+        rt = RecordType.objects.get(name='twophase_reg_done')
+        self.assertFalse(
+            Record.objects.filter(
+                user=student, event=rt, program=self.program).exists(),
+            "Record should not be created when below min_classes")
+
+    # ---------------------------------------------------------------
+    # Test: Minimum class requirement - passes when met
+    # ---------------------------------------------------------------
+    def test_min_classes_passes(self):
+        """With min_classes set, confirmation should succeed when enough classes starred."""
+        Tag.objects.get_or_create(
+            key='twophase_min_classes', value='2',
+            content_type=self.program_content_type,
+            object_id=self.program.id
+        )
+
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        # Star 3 classes (above minimum of 2)
+        self._star_classes(student, 3)
+
+        # Confirm - should succeed
+        response = self.client.post(
+            '/learn/%s/confirm_registration' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+        # Verify Record was created
+        rt = RecordType.objects.get(name='twophase_reg_done')
+        self.assertTrue(
+            Record.objects.filter(
+                user=student, event=rt, program=self.program).exists(),
+            "Record should be created when at/above min_classes")
+
+    # ---------------------------------------------------------------
+    # Test: No min_classes tag means no restriction
+    # ---------------------------------------------------------------
+    def test_no_min_classes_no_restriction(self):
+        """Without twophase_min_classes tag, any number of classes should work."""
+        Tag.objects.filter(key='twophase_min_classes').delete()
+
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        # Star just 1 class
+        self._star_classes(student, 1)
+
+        # Confirm - should succeed (no minimum)
+        response = self.client.post(
+            '/learn/%s/confirm_registration' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+        rt = RecordType.objects.get(name='twophase_reg_done')
+        self.assertTrue(
+            Record.objects.filter(
+                user=student, event=rt, program=self.program).exists())
+
+    # ---------------------------------------------------------------
+    # Test: min_classes=0 means no restriction
+    # ---------------------------------------------------------------
+    def test_min_classes_zero_no_restriction(self):
+        """twophase_min_classes=0 should behave like no restriction."""
+        Tag.objects.get_or_create(
+            key='twophase_min_classes', value='0',
+            content_type=self.program_content_type,
+            object_id=self.program.id
+        )
+
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        # Star just 1 class
+        self._star_classes(student, 1)
+
+        response = self.client.post(
+            '/learn/%s/confirm_registration' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+    # ---------------------------------------------------------------
+    # Test: Main page displays min_classes requirement text
+    # ---------------------------------------------------------------
+    def test_main_page_shows_min_classes(self):
+        """When min_classes is set, the main page should show the requirement."""
+        Tag.objects.get_or_create(
+            key='twophase_min_classes', value='3',
+            content_type=self.program_content_type,
+            object_id=self.program.id
+        )
+
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        response = self.client.get(
+            '/learn/%s/studentreg2phase' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'You must star at least 3 classes')

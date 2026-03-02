@@ -146,6 +146,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         context['num_priority'] = prog.priorityLimit()
         context['num_star'] = int(Tag.getProgramTag("num_stars", program = prog))
+        context['min_classes'] = int(Tag.getProgramTag("twophase_min_classes", program=prog, default=0))
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
@@ -487,6 +488,16 @@ class StudentRegTwoPhase(ProgramModuleObj):
             user=request.user, subject__parent_program=prog)
         interests = interests.select_related('subject')
         starred_classes = [interest.subject.title for interest in interests]
+
+        # Check optional minimum class requirement
+        min_classes = int(Tag.getProgramTag("twophase_min_classes", program=prog, default=0))
+        total_classes = len(starred_classes)
+        if min_classes > 0 and total_classes < min_classes:
+            from django.contrib import messages
+            messages.error(request,
+                'You must star at least %d classes before confirming your preferences. '
+                'You currently have %d starred.' % (min_classes, total_classes))
+            return self.goToCore(tl)
 
         # Build sorted schedule for display
         num_priority = prog.priorityLimit()
