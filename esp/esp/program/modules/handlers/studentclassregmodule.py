@@ -452,7 +452,7 @@ class StudentClassRegModule(ProgramModuleObj):
                         if conflicts:
                             conflict_titles = ", ".join([str(c.title()) for c in conflicts])
                             confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
-                            
+
                             # Return JS confirming and then re-submitting with force_replace=true
                             form_id = "prereg_%s" % sectionid
                             js_script = (
