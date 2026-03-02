@@ -27,6 +27,11 @@ class FormstackAppModuleTest(ProgramFrameworkTest):
         result = resolve_field_expression('', {'user': user})
         self.assertIsNone(result)
 
+    def test_resolve_whitespace_expression(self):
+        """Whitespace-only expressions return None."""
+        result = resolve_field_expression('   ', {'user': self.students[0]})
+        self.assertIsNone(result)
+
     def test_resolve_empty_string_value(self):
         """Expressions resolving to empty string return '' not None."""
         user = self.students[0]

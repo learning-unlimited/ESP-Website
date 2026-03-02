@@ -49,6 +49,8 @@ logger = logging.getLogger(__name__)
 
 
 def resolve_field_expression(expression, context_vars):
+    if not expression or not expression.strip():
+        return None
     try:
         return str(Variable(expression).resolve(Context(context_vars)))
     except VariableDoesNotExist:
