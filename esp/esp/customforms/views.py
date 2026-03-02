@@ -4,6 +4,7 @@ import json
 from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
 from django.http import Http404, HttpResponseRedirect, JsonResponse
+from django.core.exceptions import PermissionDenied
 from django.db import connection
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -353,6 +354,8 @@ def viewResponse(request, form_id):
         except ValueError:
             raise Http404
         form = Form.objects.get(id=form_id)
+        if not request.user.isAdministrator() and not request.user.is_morphed() and form.created_by != request.user:
+            raise PermissionDenied
         return render_to_response('customforms/view_results.html', request, {'form': form})
     else:
         return HttpResponseRedirect('/')
@@ -369,6 +372,8 @@ def getExcelData(request, form_id):
         return HttpResponse(status=400)
 
     form = Form.objects.get(pk=form_id)
+    if not request.user.isAdministrator() and not request.user.is_morphed() and form.created_by != request.user:
+        raise PermissionDenied
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
     response = HttpResponse(wbk.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -387,6 +392,8 @@ def getData(request):
             except ValueError:
                 return HttpResponse(status=400)
             form = Form.objects.get(pk=form_id)
+            if not request.user.isAdministrator() and not request.user.is_morphed() and form.created_by != request.user:
+                raise PermissionDenied
             fh = FormHandler(form=form, request=request)
             resp_data = json.dumps(fh.getResponseData(form), cls=DjangoJSONEncoder)
             return HttpResponse(resp_data)
@@ -404,6 +411,8 @@ def bulkDownloadFiles(request):
         except (ValueError, KeyError):
             return HttpResponse(status=400)
         form = Form.objects.get(pk=form_id)
+        if not request.user.isAdministrator() and not request.user.is_morphed() and form.created_by != request.user:
+            raise PermissionDenied
         dmh = DMH(form=form)
         dyn = dmh.createDynModel()
         filenames = [resp[question_name] for resp in dyn.objects.all().values()]
