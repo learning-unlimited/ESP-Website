@@ -57,7 +57,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             }
 
     def isCompleted(self):
-        """ Whether the user has fully paid for this program or its parent program. """
+        """ Whether the user has fully paid for this program. """
         if hasattr(self, 'user'):
             user = self.user
         else:

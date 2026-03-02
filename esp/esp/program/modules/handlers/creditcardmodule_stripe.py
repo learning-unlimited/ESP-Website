@@ -87,7 +87,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return donate_type
 
     def isCompleted(self):
-        """ Whether the user has fully paid for this program or its parent program. """
+        """ Whether the user has fully paid for this program. """
         if hasattr(self, 'user'):
             user = self.user
         else:
@@ -165,7 +165,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         modules = prog.getModules(request.user, tl)
         completedAll = True
         for module in modules:
-            if module.module_id == self.module_id:
+            if module.id == self.id:
                 continue
             if not module.isCompleted() and module.isRequired():
                 completedAll = False

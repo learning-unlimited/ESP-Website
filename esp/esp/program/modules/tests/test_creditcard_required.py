@@ -27,13 +27,7 @@ def _setup_roles():
 def _get_cc_module(program, module_cls_name='CreditCardModule_Stripe'):
     """Get a credit card module object for the given program."""
     pm = ProgramModule.objects.get(handler=module_cls_name)
-    pmo, _ = ProgramModuleObj.objects.get_or_create(
-        program=program, module=pm,
-        defaults={'seq': pm.seq, 'required': pm.required},
-    )
-    mod = pm.getPythonClass()()
-    mod.__dict__.update(pmo.__dict__)
-    return mod
+    return ProgramModuleObj.getFromProgModule(program, pm)
 
 
 class CreditCardRequiredTest(TestCase):
@@ -317,45 +311,40 @@ class CreditCardSelfBlockingTest(TestCase):
         modules = self.program.getModules(self.student, 'learn')
         completedAll = True
         for module in modules:
-            if module.module_id == self.cc_module.module_id:
+            if module.id == self.cc_module.id:
                 continue  # This is the fix being tested
             if not module.isCompleted() and module.isRequired():
                 completedAll = False
 
-        # The loop should complete without the CC module blocking itself.
-        # Other required modules may or may not be completed, but the
-        # important thing is that the CC module didn't block itself.
-        # We just verify the loop ran without including the CC module.
-        cc_was_checked = False
-        for module in modules:
-            if module.module_id == self.cc_module.module_id:
-                cc_was_checked = True
-                break
-        self.assertTrue(cc_was_checked, "CC module should be in the modules list")
+        # The CC module is the only required module in this minimal program,
+        # so after skipping it, completedAll should remain True.
+        self.assertTrue(completedAll,
+            "With the CC module skipped, no other required modules should block")
 
     def test_payonline_still_checks_other_modules(self):
         """Other incomplete required modules still block payment (not just self)."""
         Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
 
+        # Explicitly register StudentRegCore as a required module for this program
+        reg_pm = ProgramModule.objects.get(handler='StudentRegCore')
+        self.program.program_modules.add(reg_pm)
+        reg_pmo, _ = ProgramModuleObj.objects.get_or_create(
+            program=self.program, module=reg_pm,
+            defaults={'seq': reg_pm.seq, 'required': True},
+        )
+        reg_pmo.required = True
+        reg_pmo.save()
+
         modules = self.program.getModules(self.student, 'learn')
 
-        # Find a non-CC module and force it to be required + incomplete
-        other_incomplete = False
-        for module in modules:
-            if module.module_id == self.cc_module.module_id:
-                continue
-            if module.isRequired() and not module.isCompleted():
-                other_incomplete = True
-                break
-
-        # The payonline loop (excluding self) should detect other incomplete modules
+        # The payonline loop (excluding CC self) should detect the other incomplete module
         completedAll = True
         for module in modules:
-            if module.module_id == self.cc_module.module_id:
+            if module.id == self.cc_module.id:
                 continue
             if not module.isCompleted() and module.isRequired():
                 completedAll = False
 
-        # If there are other incomplete required modules, completedAll should be False
-        if other_incomplete:
-            self.assertFalse(completedAll)
+        # StudentRegCore is required but not completed, so completedAll should be False
+        self.assertFalse(completedAll,
+            "Other incomplete required modules should block payment")
