@@ -190,7 +190,7 @@ class SectionListTest(ProgramFrameworkTest):
 
         self.assertTrue(handler.send)
         expected_list_name = f"{self.section.emailcode()}-students"
-        
+
         mock_create.assert_called_once_with(expected_list_name, 'mod@example.com')
         mock_load.assert_called_once_with(expected_list_name, "lists/class_mailman.config")
         self.assertTrue(mock_add_members.called)
@@ -219,9 +219,9 @@ class SectionListTest(ProgramFrameworkTest):
 
         self.assertTrue(handler.send)
         expected_list_name = f"{self.section.emailcode()}-teachers"
-        
+
         mock_create.assert_called_once_with(expected_list_name, 'mod@example.com')
-        
+
         apply_calls = [call[0][1] for call in mock_apply.call_args_list]
         self.assertTrue(any('default_member_moderation' in settings for settings in apply_calls))
         self.assertTrue(any('generic_nonmember_action' in settings for settings in apply_calls))

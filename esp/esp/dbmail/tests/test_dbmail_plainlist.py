@@ -60,19 +60,19 @@ class PlainListTest(CacheFlushTestCase):
 
     def test_empty_user_match(self):
         PlainRedirect.objects.create(original='test', destination='test@example.com')
-        
+
         handler = _make_handler()
         handler.process('', None)
-        
+
         self.assertFalse(handler.send)
 
     def test_recipients_list_structure(self):
         PlainRedirect.objects.create(original='test', destination='a@example.com')
         PlainRedirect.objects.create(original='test', destination='b@example.com')
-        
+
         handler = _make_handler()
         handler.process('test', None)
-        
+
         self.assertIsInstance(handler.recipients, list)
         self.assertEqual(len(handler.recipients), 2)
         self.assertIn('a@example.com', handler.recipients)
