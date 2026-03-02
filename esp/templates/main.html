@@ -6,25 +6,46 @@
   {{ block.super }}
   {#  Default stylesheets, no customization   #}
   <link rel="stylesheet" type="text/css" href="/media/theme_editor/bootstrap_initial.css"/>
+  <style>
+    .skip-nav {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #000;
+      color: #fff;
+      padding: 8px;
+      text-decoration: none;
+      z-index: 100;
+    }
+    .skip-nav:focus {
+      top: 0;
+    }
+  </style>
 {% endblock stylesheets %}
 
 {% block body %}
+
+  <a href="#main-content" class="skip-nav">Skip to main content</a>
 
   {% block main %}
 
     <div class="container">
       <div class="row-fluid">
-        {% block sidebar %}
-          <h3>Navigation</h3>
-          {% load navbar %}
-          {% navbar_gen request.path None navbar_list %}
-          {% include "users/loginbox_content.html" %}
-        {% endblock sidebar %}
+        <aside aria-label="Sidebar">
+          {% block sidebar %}
+            <nav aria-label="Main navigation">
+              <h3>Navigation</h3>
+              {% load navbar %}
+              {% navbar_gen request.path None navbar_list %}
+            </nav>
+            {% include "users/loginbox_content.html" %}
+          {% endblock sidebar %}
+        </aside>
 
-        <div id="main" class="span12 resizable">
+        <main id="main-content" class="span12 resizable">
           {% block content %}
           {% endblock content %}
-        </div>
+        </main>
       </div>
     </div>
   {% endblock main %}
