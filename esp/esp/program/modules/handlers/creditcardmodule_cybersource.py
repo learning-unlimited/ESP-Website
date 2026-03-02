@@ -37,9 +37,11 @@ from esp.utils.web       import render_to_response
 from django.conf         import settings
 from django.db.models.query     import Q
 from esp.users.models    import ESPUser
+from esp.tagdict.models  import Tag
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
+from decimal import Decimal
 
 class CreditCardModule_Cybersource(ProgramModuleObj):
     doc = """Accept credit card payments via Cybersource."""
@@ -55,13 +57,32 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             }
 
     def isCompleted(self):
-        """ Whether the user has paid for this program or its parent program. """
+        """ Whether the user has fully paid for this program or its parent program. """
         if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user
-        return IndividualAccountingController(self.program, user).has_paid()
+        return IndividualAccountingController(self.program, user).has_paid(in_full=True)
     have_paid = isCompleted
+
+    def isRequired(self):
+        """Conditionally require credit card payment when student has an outstanding balance.
+
+        Returns True if:
+        - An admin explicitly marked the module as required, OR
+        - The 'creditcard_required_if_amount_due' tag is enabled for the program
+          AND the current user has an outstanding balance >= $0.50 (minimum
+          gateway charge amount; sub-$0.50 micro-balances from fractional
+          financial aid are safely ignored).
+        """
+        if super(CreditCardModule_Cybersource, self).isRequired():
+            return True
+        if Tag.getBooleanTag('creditcard_required_if_amount_due', self.program, default=False):
+            request = get_current_request()
+            user = getattr(self, 'user', request.user if request else None)
+            if user and user.is_authenticated:
+                return IndividualAccountingController(self.program, user).amount_due() >= Decimal('0.50')
+        return False
 
     def students(self, QObject = False):
         #   This query represented students who have a payment transfer from the outside

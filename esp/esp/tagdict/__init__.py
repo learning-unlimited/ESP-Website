@@ -1336,6 +1336,16 @@ all_program_tags = {
         'category': 'learn',
         'is_setting': True,
     },
+    'creditcard_required_if_amount_due': {
+        'is_boolean': True,
+        'help_text': 'Make the Credit Card module required if the student has an outstanding balance >= $0.50. '
+                     'Balances under $0.50 are ignored to avoid gateway minimum charge rejections. '
+                     'The Credit Card module should remain at a high sequence number (e.g. 10000) '
+                     'so students complete other registration steps before paying.',
+        'default': False,
+        'category': 'learn',
+        'is_setting': True,
+    },
     'student_schedule_format': {
         'is_boolean': False,
         'help_text': 'The formatting settings for PDF student schedules (in json format).',
