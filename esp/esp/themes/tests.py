@@ -6,6 +6,7 @@ import os
 import random
 import re
 import shutil
+import tempfile
 
 from django.conf import settings
 
@@ -262,3 +263,42 @@ class ThemesTest(TestCase):
             tc.unset_current_customization()
             shutil.rmtree(themes_settings.themes_dir, ignore_errors=True)
             themes_settings.themes_dir = original_themes_dir
+
+
+class SafeCustomizationPathTest(TestCase):
+    """Tests for the _safe_customization_path security helper."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+        # Use a temporary directory so tests don't touch working tree
+        self._original_themes_dir = themes_settings.themes_dir
+        self._tmpdir = tempfile.mkdtemp()
+        themes_settings.themes_dir = self._tmpdir
+
+    def tearDown(self):
+        themes_settings.themes_dir = self._original_themes_dir
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def test_normal_name_returns_path_inside_themes_dir(self):
+        """A simple alphanumeric name should resolve inside themes_dir."""
+        path = self.tc._safe_customization_path('my_theme')
+        self.assertTrue(path.startswith(os.path.realpath(self._tmpdir) + os.sep))
+        self.assertTrue(path.endswith('.less'))
+
+    def test_traversal_with_dotdot_raises(self):
+        """Names containing '..' that escape themes_dir must raise."""
+        from django.core.exceptions import SuspiciousFileOperation
+        with self.assertRaises(SuspiciousFileOperation):
+            self.tc._safe_customization_path('../../etc/passwd')
+
+    def test_absolute_path_raises(self):
+        """An absolute path like '/tmp/evil' must raise."""
+        from django.core.exceptions import SuspiciousFileOperation
+        with self.assertRaises(SuspiciousFileOperation):
+            self.tc._safe_customization_path('/tmp/evil')
+
+    def test_name_with_slash_raises(self):
+        """A name with embedded slashes that escapes themes_dir must raise."""
+        from django.core.exceptions import SuspiciousFileOperation
+        with self.assertRaises(SuspiciousFileOperation):
+            self.tc._safe_customization_path('subdir/../../../etc/shadow')
