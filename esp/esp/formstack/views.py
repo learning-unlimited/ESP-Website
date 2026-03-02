@@ -1,3 +1,5 @@
+import hmac
+
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.http import (
@@ -22,8 +24,9 @@ def formstack_webhook(request):
 
         # Verify the handshake key if one is configured in settings.
         expected_key = getattr(settings, 'FORMSTACK_HANDSHAKE_KEY', None)
-        if expected_key and handshake_key != expected_key:
-            return HttpResponseForbidden("Invalid handshake key")
+        if expected_key is not None:
+            if not hmac.compare_digest(handshake_key or '', expected_key):
+                return HttpResponseForbidden("Invalid handshake key")
 
         formstack_post_signal.send(sender=None, form_id=form_id, submission_id=submission_id, fields=data)
         return HttpResponse()

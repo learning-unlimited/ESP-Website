@@ -99,3 +99,12 @@ class FormstackWebhookTest(TestCase):
         self.assertEqual(response.status_code, 403)
         mock_signal.send.assert_not_called()
 
+    @override_settings(FORMSTACK_HANDSHAKE_KEY='')
+    @patch('esp.formstack.views.formstack_post_signal')
+    def test_empty_string_key_still_enforces_verification(self, mock_signal):
+        """An empty-string key should still enforce verification, not silently skip it."""
+        request = self._make_request({'HandshakeKey': 'some-key'})
+        response = formstack_webhook(request)
+        self.assertEqual(response.status_code, 403)
+        mock_signal.send.assert_not_called()
+
