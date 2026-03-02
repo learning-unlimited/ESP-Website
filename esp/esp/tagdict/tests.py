@@ -1,3 +1,7 @@
+import ast
+import os
+import re
+
 from django.test import TestCase
 from django.contrib.auth.models import User
 from esp.tagdict import all_global_tags, all_program_tags
@@ -301,3 +305,124 @@ class ProgramTagTest(ProgramFrameworkTest):
             for b in [True, False]:
                 self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
                 self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
+
+
+class TagRegistrationTest(TestCase):
+    """
+    Statically scan the codebase for Tag.getTag(), Tag.getProgramTag(), and
+    Tag.getBooleanTag() calls and verify that every string-literal tag key
+    is registered in all_global_tags or all_program_tags (issue #2481).
+    """
+
+    # Paths (relative to the esp/ root) to skip when scanning, because they
+    # use test-only tags that are registered in the test module itself.
+    _skip_paths = [
+        os.path.join('esp', 'tagdict', 'tests.py'),
+    ]
+
+    # The set of all valid tag names from tagdict/__init__.py
+    _all_known_tags = set(all_global_tags.keys()) | set(all_program_tags.keys())
+
+    # ---- helpers for scanning Python files ----
+
+    class _TagCallVisitor(ast.NodeVisitor):
+        """AST visitor that collects string-literal first arguments to
+        Tag.getTag(), Tag.getProgramTag(), and Tag.getBooleanTag()."""
+
+        TARGET_METHODS = {'getTag', 'getProgramTag', 'getBooleanTag'}
+
+        def __init__(self):
+            self.found = []  # list of (tag_key, lineno)
+
+        def visit_Call(self, node):
+            if self._is_tag_call(node) and node.args:
+                first_arg = node.args[0]
+                if isinstance(first_arg, ast.Str):  # Python 3.7 compat
+                    self.found.append((first_arg.s, node.lineno))
+            self.generic_visit(node)
+
+        @classmethod
+        def _is_tag_call(cls, node):
+            """Return True if *node* looks like Tag.<method>(...)."""
+            func = node.func
+            if isinstance(func, ast.Attribute) and func.attr in cls.TARGET_METHODS:
+                if isinstance(func.value, ast.Name) and func.value.id == 'Tag':
+                    return True
+            return False
+
+    @classmethod
+    def _scan_python_file(cls, filepath):
+        """Return [(tag_key, lineno), ...] found in *filepath*."""
+        with open(filepath, 'r', encoding='utf-8', errors='replace') as fh:
+            source = fh.read()
+        try:
+            tree = ast.parse(source, filename=filepath)
+        except SyntaxError:
+            return []
+        visitor = cls._TagCallVisitor()
+        visitor.visit(tree)
+        return visitor.found
+
+    # ---- helpers for scanning Django template files ----
+
+    # Matches filter syntax:  "tag_name"|getBooleanTag  or  "tag_name"|getProgramTag
+    _TEMPLATE_FILTER_RE = re.compile(
+        r"""["']([A-Za-z_][A-Za-z0-9_]*)["']\s*\|\s*(?:getBooleanTag|getProgramTag)"""
+    )
+
+    # Matches tag syntax:  {% getProgramTag "tag_name" ... %}
+    _TEMPLATE_TAG_RE = re.compile(
+        r"""\{%\s*(?:getProgramTag|getBooleanTag)\s+["']([A-Za-z_][A-Za-z0-9_]*)["']"""
+    )
+
+    @classmethod
+    def _scan_template_file(cls, filepath):
+        """Return [(tag_key, lineno), ...] found in *filepath*."""
+        results = []
+        with open(filepath, 'r', encoding='utf-8', errors='replace') as fh:
+            for lineno, line in enumerate(fh, start=1):
+                for m in cls._TEMPLATE_FILTER_RE.finditer(line):
+                    results.append((m.group(1), lineno))
+                for m in cls._TEMPLATE_TAG_RE.finditer(line):
+                    results.append((m.group(1), lineno))
+        return results
+
+    # ---- the actual test ----
+
+    def test_all_tags_are_registered(self):
+        """Every tag key used in the codebase must exist in tagdict."""
+        esp_root = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)
+        )))  # …/esp
+
+        undefined_tags = []  # [(filepath, lineno, tag_key), ...]
+
+        for dirpath, _dirnames, filenames in os.walk(esp_root):
+            for fname in filenames:
+                filepath = os.path.join(dirpath, fname)
+                relpath = os.path.relpath(filepath, esp_root)
+
+                # Skip files in the exclusion list
+                if relpath in self._skip_paths:
+                    continue
+
+                if fname.endswith('.py'):
+                    for tag_key, lineno in self._scan_python_file(filepath):
+                        if tag_key not in self._all_known_tags:
+                            undefined_tags.append((relpath, lineno, tag_key))
+
+                elif fname.endswith('.html'):
+                    for tag_key, lineno in self._scan_template_file(filepath):
+                        if tag_key not in self._all_known_tags:
+                            undefined_tags.append((relpath, lineno, tag_key))
+
+        if undefined_tags:
+            tag_list = "\n".join(
+                "  %s (line %d): %s" % (fp, ln, key)
+                for fp, ln, key in sorted(undefined_tags)
+            )
+            self.fail(
+                "The following tag(s) are used in code but not defined in "
+                "esp.tagdict.__init__ (all_global_tags or all_program_tags):\n"
+                + tag_list
+            )
