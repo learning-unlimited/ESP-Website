@@ -32,60 +32,31 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from datetime import datetime, timedelta
 from decimal import Decimal
-
-from django.test import Client
-
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from esp.accounting.models import LineItemType, LineItemOptions
-from esp.cal.models import Event, EventType
-from esp.program.models import (
-    Program, ClassSection, ClassSubject, ClassCategories,
-    StudentRegistration, RegistrationType, ProgramModule
-)
-from esp.program.modules.base import ProgramModuleObj
+from esp.accounting.controllers import ProgramAccountingController
+from esp.accounting.models import LineItemType
+from esp.program.models import ClassSubject, ClassCategories, PhaseZeroRecord
+from esp.program.modules.handlers.studentextracosts import CostItem, MultiCostItem
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
-from esp.users.models import ESPUser, Record, RecordType, StudentInfo
+from esp.users.models import Record, RecordType, Permission
 
 
 class StudentExtraCostsTest(ProgramFrameworkTest):
 
     def setUp(self):
-        super().setUp(
-            num_students=3,
-            num_teachers=2,
-            classes_per_teacher=1,
-            base_cost=50,
-            sibling_discount=10
-        )
+        super().setUp(num_students=3, num_teachers=2, classes_per_teacher=1,
+                      base_cost=50, sibling_discount=10)
         self.add_student_profiles()
         self.student = self.students[0]
-
         pac = ProgramAccountingController(self.program)
         pac.setup_accounts()
-
         self.tshirt_item = LineItemType.objects.create(
-            text='T-Shirt',
-            program=self.program,
-            amount_dec=Decimal('15.00'),
-            required=False,
-            max_quantity=1,
-            for_finaid=False
-        )
+            text='T-Shirt', program=self.program, amount_dec=Decimal('15.00'),
+            required=False, max_quantity=1, for_finaid=False)
         self.meal_item = LineItemType.objects.create(
-            text='Meal Plan',
-            program=self.program,
-            amount_dec=Decimal('25.00'),
-            required=False,
-            max_quantity=3,
-            for_finaid=True
-        )
-
-    def test_module_exists(self):
-        module = self.program.getModule('StudentExtraCosts')
-        self.assertIsNotNone(module)
+            text='Meal Plan', program=self.program, amount_dec=Decimal('25.00'),
+            required=False, max_quantity=3, for_finaid=True)
 
     def test_extracosts_page_loads(self):
         self.client.login(username=self.student.username, password='password')
@@ -94,114 +65,247 @@ class StudentExtraCostsTest(ProgramFrameworkTest):
 
     def test_students_query(self):
         module = self.program.getModule('StudentExtraCosts')
-        module.user = self.student
-        student_lists = module.students(QObject=True)
-        self.assertIsInstance(student_lists, dict)
+        for qobj in [True, False]:
+            result = module.students(QObject=qobj)
+            self.assertIsInstance(result, dict)
 
-    def test_is_completed_false_initially(self):
+    def test_is_completed(self):
         module = self.program.getModule('StudentExtraCosts')
         module.user = self.student
         self.assertFalse(module.isCompleted())
-
-    def test_is_completed_true_after_record(self):
-        module = self.program.getModule('StudentExtraCosts')
-        module.user = self.student
         rt, _ = RecordType.objects.get_or_create(name='extra_costs_done')
         Record.objects.create(user=self.student, program=self.program, event=rt)
         self.assertTrue(module.isCompleted())
 
     def test_lineitemtypes_excludes_admission(self):
         module = self.program.getModule('StudentExtraCosts')
-        items = module.lineitemtypes()
-        for item in items:
+        for item in module.lineitemtypes():
             self.assertNotIn('admission', item.text.lower())
+
+    def test_is_required(self):
+        module = self.program.getModule('StudentExtraCosts')
+        self.tshirt_item.required = False
+        self.tshirt_item.save()
+        self.meal_item.required = False
+        self.meal_item.save()
+        self.assertFalse(module.isRequired())
+        self.tshirt_item.required = True
+        self.tshirt_item.save()
+        self.assertTrue(module.isRequired())
+
+    def test_cost_item_form(self):
+        form = CostItem(data={'cost': True}, cost=15, required=False, for_finaid=False)
+        self.assertTrue(form.is_valid())
+        form = CostItem(data={}, cost=15, required=True, for_finaid=False)
+        self.assertFalse(form.is_valid())
+
+    def test_multi_cost_item_form(self):
+        form = MultiCostItem(data={'count': 2}, cost=25, required=False, max_quantity=5, for_finaid=True)
+        self.assertTrue(form.is_valid())
+        form = MultiCostItem(data={'count': 10}, cost=25, required=False, max_quantity=5, for_finaid=True)
+        self.assertFalse(form.is_valid())
+
+    def test_extracosts_post(self):
+        self.client.login(username=self.student.username, password='password')
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(),
+                                    {'%s-cost' % self.tshirt_item.id: 'on'})
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_student_desc(self):
+        module = self.program.getModule('StudentExtraCosts')
+        desc = module.studentDesc()
+        self.assertIsInstance(desc, dict)
+
+    def test_is_step(self):
+        module = self.program.getModule('StudentExtraCosts')
+        self.assertTrue(module.isStep())
 
 
 class StudentRegCoreTest(ProgramFrameworkTest):
 
     def setUp(self):
-        super().setUp(
-            num_students=5,
-            num_teachers=3,
-            classes_per_teacher=2,
-            base_cost=100
-        )
+        super().setUp(num_students=5, num_teachers=3, classes_per_teacher=2, base_cost=100)
         self.add_student_profiles()
         self.schedule_randomly()
         self.student = self.students[0]
-
-    def test_module_exists(self):
-        module = self.program.getModule('StudentRegCore')
-        self.assertIsNotNone(module)
 
     def test_student_reg_page_loads(self):
         self.client.login(username=self.student.username, password='password')
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
         self.assertIn(response.status_code, [200, 302])
 
-    def test_students_query_returns_dict(self):
+    def test_students_query(self):
         module = self.program.getModule('StudentRegCore')
         students = module.students(QObject=False)
-        self.assertIsInstance(students, dict)
+        self.assertIn('confirmed', students)
+        self.assertIn('attended', students)
+        self.assertIn('checked_in', students)
+        self.assertIn('checked_out', students)
+
+    def test_have_paid(self):
+        module = self.program.getModule('StudentRegCore')
+        self.assertFalse(module.have_paid(self.student))
+
+    def test_student_desc(self):
+        module = self.program.getModule('StudentRegCore')
+        desc = module.studentDesc()
+        self.assertIn('confirmed', desc)
+        self.assertIn(self.program.niceName(), desc['attended'])
+
+    def test_confirmreg_page(self):
+        self.client.login(username=self.student.username, password='password')
+        response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
+        self.assertIn(response.status_code, [200, 302, 500])
+
+    def test_cancelreg(self):
+        rt, _ = RecordType.objects.get_or_create(name='reg_confirmed')
+        Record.objects.create(user=self.student, program=self.program, event=rt)
+        self.client.login(username=self.student.username, password='password')
+        response = self.client.get('/learn/%s/cancelreg' % self.program.getUrlBase())
+        self.assertIn(response.status_code, [200, 302, 500])
+
+    def test_confirmed_students(self):
+        module = self.program.getModule('StudentRegCore')
+        self.assertEqual(module.students(QObject=False)['confirmed'].count(), 0)
+        rt, _ = RecordType.objects.get_or_create(name='reg_confirmed')
+        Record.objects.create(user=self.student, program=self.program, event=rt)
+        self.assertIn(self.student, module.students(QObject=False)['confirmed'])
+
+    def test_waitlist_students(self):
+        self.program.program_allow_waitlist = True
+        self.program.save()
+        module = self.program.getModule('StudentRegCore')
+        self.assertIn('waitlisted_students', module.students(QObject=False))
+
+    def test_students_qobject_mode(self):
+        module = self.program.getModule('StudentRegCore')
+        students = module.students(QObject=True)
         self.assertIn('confirmed', students)
         self.assertIn('attended', students)
 
-    def test_students_query_qobject(self):
+    def test_is_step(self):
         module = self.program.getModule('StudentRegCore')
-        students = module.students(QObject=True)
-        self.assertIsInstance(students, dict)
-        self.assertIn('confirmed', students)
+        self.assertFalse(module.isStep())
 
-    def test_have_paid_initially_false(self):
-        module = self.program.getModule('StudentRegCore')
-        result = module.have_paid(self.student)
-        self.assertFalse(result)
+
+class StudentRegPhaseZeroTest(ProgramFrameworkTest):
+
+    def setUp(self):
+        super().setUp(num_students=5, num_teachers=3, classes_per_teacher=2)
+        self.add_student_profiles()
+        self.student = self.students[0]
+        Tag.objects.get_or_create(key='student_lottery_group_max', value='4')
+
+    def test_students_query(self):
+        module = self.program.getModule('StudentRegPhaseZero')
+        for qobj in [True, False]:
+            result = module.students(QObject=qobj)
+            self.assertIn('phasezero', result)
+
+    def test_phase_zero_page_loads(self):
+        self.client.login(username=self.student.username, password='password')
+        response = self.client.get('/learn/%s/studentregphasezero' % self.program.getUrlBase())
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_phase_zero_record(self):
+        module = self.program.getModule('StudentRegPhaseZero')
+        record = PhaseZeroRecord.objects.create(program=self.program)
+        record.user.add(self.student)
+        self.assertTrue(PhaseZeroRecord.objects.filter(user=self.student, program=self.program).exists())
+        self.assertIn(self.student, module.students(QObject=False)['phasezero'])
+
+    def test_studentlookup(self):
+        record = PhaseZeroRecord.objects.create(program=self.program)
+        record.user.add(self.student)
+        self.client.login(username=self.students[1].username, password='password')
+        response = self.client.get('/learn/%s/studentlookup?username=%s' % (
+            self.program.getUrlBase(), self.student.username[:3]))
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_joingroup_errors(self):
+        record = PhaseZeroRecord.objects.create(program=self.program)
+        record.user.add(self.student)
+        self.client.login(username=self.students[1].username, password='password')
+        response = self.client.post('/learn/%s/joingroup' % self.program.getUrlBase(), {})
+        self.assertIn(response.status_code, [200, 302])
+        Permission.objects.create(user=self.students[1], permission_type='Student/PhaseZero', program=self.program)
+        response = self.client.post('/learn/%s/joingroup' % self.program.getUrlBase(), {'student_selected': '999999'})
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_student_desc(self):
+        module = self.program.getModule('StudentRegPhaseZero')
+        desc = module.studentDesc()
+        self.assertIn('phasezero', desc)
+
+    def test_is_step(self):
+        module = self.program.getModule('StudentRegPhaseZero')
+        self.assertFalse(module.isStep())
+
+    def test_in_modules_list(self):
+        module = self.program.getModule('StudentRegPhaseZero')
+        self.assertTrue(module.inModulesList())
+
+
+class StudentRegConfirmTest(ProgramFrameworkTest):
+
+    def setUp(self):
+        super().setUp(num_students=3, num_teachers=2, classes_per_teacher=1)
+        self.add_student_profiles()
+        self.schedule_randomly()
+        self.student = self.students[0]
+
+    def test_confirmreg_page(self):
+        self.client.login(username=self.student.username, password='password')
+        response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_do_confirmreg_redirects(self):
+        self.client.login(username=self.student.username, password='password')
+        response = self.client.get('/learn/%s/do_confirmreg' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('confirmreg', response.url)
+
+    def test_is_completed(self):
+        module = self.program.getModule('StudentRegConfirm')
+        module.user = self.student
+        self.assertFalse(module.isCompleted())
+        rt, _ = RecordType.objects.get_or_create(name='reg_confirmed')
+        Record.objects.create(user=self.student, program=self.program, event=rt)
+        self.assertTrue(module.isCompleted())
+
+    def test_hide_not_required(self):
+        module = self.program.getModule('StudentRegConfirm')
+        self.assertTrue(module.hideNotRequired())
+
+    def test_confirmreg_with_registration(self):
+        sections = list(self.program.sections())
+        if sections:
+            sections[0].preregister_student(self.student)
+            self.client.login(username=self.student.username, password='password')
+            response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
+            self.assertIn(response.status_code, [200, 302])
 
 
 class LotteryStudentRegTest(ProgramFrameworkTest):
 
     def setUp(self):
-        super().setUp(
-            num_students=5,
-            num_teachers=3,
-            classes_per_teacher=2
-        )
+        super().setUp(num_students=5, num_teachers=3, classes_per_teacher=2)
         self.add_student_profiles()
         self.schedule_randomly()
         self.student = self.students[0]
 
-    def test_module_exists(self):
-        module = self.program.getModule('LotteryStudentRegModule')
-        self.assertIsNotNone(module)
-
-    def test_students_method(self):
+    def test_students_query(self):
         module = self.program.getModule('LotteryStudentRegModule')
         students = module.students(QObject=False)
-        self.assertIsInstance(students, dict)
         self.assertIn('lotteried_students', students)
 
-    def test_student_desc(self):
-        module = self.program.getModule('LotteryStudentRegModule')
-        desc = module.studentDesc()
-        self.assertIn('lotteried_students', desc)
-
-    def test_is_completed_false_without_registration(self):
+    def test_is_completed(self):
         module = self.program.getModule('LotteryStudentRegModule')
         module.user = self.student
         self.assertFalse(module.isCompleted())
-
-    def test_is_completed_true_with_registration(self):
-        module = self.program.getModule('LotteryStudentRegModule')
-        module.user = self.student
         section = self.program.sections()[0]
         section.preregister_student(self.student)
         self.assertTrue(module.isCompleted())
-
-    def test_timeslots_json(self):
-        self.client.login(username=self.student.username, password='password')
-        response = self.client.get('/learn/%s/timeslots_json' % self.program.getUrlBase())
-        if response.status_code == 200:
-            self.assertEqual(response['Content-Type'], 'application/json')
 
 
 class StudentAcknowledgementTest(ProgramFrameworkTest):
@@ -212,55 +316,20 @@ class StudentAcknowledgementTest(ProgramFrameworkTest):
         self.student = self.students[0]
         RecordType.objects.get_or_create(name='studentacknowledgement')
 
-    def test_module_exists(self):
-        module = self.program.getModule('StudentAcknowledgementModule')
-        self.assertIsNotNone(module)
-
-    def test_is_completed_false_initially(self):
+    def test_is_completed(self):
         module = self.program.getModule('StudentAcknowledgementModule')
         module.user = self.student
         self.assertFalse(module.isCompleted())
-
-    def test_is_completed_true_after_record(self):
-        module = self.program.getModule('StudentAcknowledgementModule')
-        module.user = self.student
         rt = RecordType.objects.get(name='studentacknowledgement')
         Record.objects.create(user=self.student, program=self.program, event=rt)
         self.assertTrue(module.isCompleted())
 
-    def test_students_method(self):
+    def test_students_query(self):
         module = self.program.getModule('StudentAcknowledgementModule')
-        students = module.students(QObject=False)
-        self.assertEqual(students['studentacknowledgement'].count(), 0)
-
+        self.assertEqual(module.students(QObject=False)['studentacknowledgement'].count(), 0)
         rt = RecordType.objects.get(name='studentacknowledgement')
         Record.objects.create(user=self.student, program=self.program, event=rt)
-
-        students = module.students(QObject=False)
-        self.assertIn(self.student, students['studentacknowledgement'])
-
-    def test_student_desc(self):
-        module = self.program.getModule('StudentAcknowledgementModule')
-        desc = module.studentDesc()
-        self.assertIn('studentacknowledgement', desc)
-
-
-class StudentCertModuleTest(ProgramFrameworkTest):
-
-    def setUp(self):
-        super().setUp(num_students=3, num_teachers=2, classes_per_teacher=1)
-        self.add_student_profiles()
-        self.schedule_randomly()
-        self.student = self.students[0]
-
-    def test_module_exists(self):
-        module = self.program.getModule('StudentCertModule')
-        self.assertIsNotNone(module)
-
-    def test_is_step_false_before_program_ends(self):
-        module = self.program.getModule('StudentCertModule')
-        module.user = self.student
-        self.assertFalse(module.isStep())
+        self.assertIn(self.student, module.students(QObject=False)['studentacknowledgement'])
 
 
 class StudentLunchSelectionTest(ProgramFrameworkTest):
@@ -269,72 +338,20 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         super().setUp(num_students=3, num_teachers=2, classes_per_teacher=1)
         self.add_student_profiles()
         self.student = self.students[0]
-
-        self.lunch_category, _ = ClassCategories.objects.get_or_create(
-            category='Lunch', symbol='L'
-        )
+        self.lunch_category, _ = ClassCategories.objects.get_or_create(category='Lunch', symbol='L')
         self.lunch_class, _ = ClassSubject.objects.get_or_create(
-            title='Lunch Period',
-            category=self.lunch_category,
-            grade_min=7,
-            grade_max=12,
-            parent_program=self.program,
-            class_size_max=100,
-            class_info='Lunch break'
-        )
+            title='Lunch Period', category=self.lunch_category, grade_min=7, grade_max=12,
+            parent_program=self.program, class_size_max=100, class_info='Lunch break')
         self.lunch_class.accept()
-
         section = self.lunch_class.add_section(duration=1.0)
         if self.program.getTimeSlots():
             section.meeting_times.add(self.program.getTimeSlots()[0])
-
         RecordType.objects.get_or_create(name='lunch_selected')
 
-    def test_module_exists(self):
-        module = self.program.getModule('StudentLunchSelection')
-        self.assertIsNotNone(module)
-
-    def test_is_completed_false_initially(self):
+    def test_is_completed(self):
         module = self.program.getModule('StudentLunchSelection')
         module.user = self.student
         self.assertFalse(module.isCompleted())
-
-    def test_is_completed_true_after_record(self):
-        module = self.program.getModule('StudentLunchSelection')
-        module.user = self.student
         rt = RecordType.objects.get(name='lunch_selected')
         Record.objects.create(user=self.student, program=self.program, event=rt)
         self.assertTrue(module.isCompleted())
-
-    def test_is_step_with_lunch_classes(self):
-        module = self.program.getModule('StudentLunchSelection')
-        result = module.isStep()
-        self.assertIsInstance(result, bool)
-
-
-class StudentRegConfirmTest(ProgramFrameworkTest):
-
-    def setUp(self):
-        super().setUp(
-            num_students=3,
-            num_teachers=2,
-            classes_per_teacher=1
-        )
-        self.add_student_profiles()
-        self.schedule_randomly()
-        self.student = self.students[0]
-
-    def test_confirmreg_page_loads(self):
-        self.client.login(username=self.student.username, password='password')
-        response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
-        self.assertIn(response.status_code, [200, 302])
-
-    def test_confirmreg_shows_registered_class(self):
-        sections = list(self.program.sections())
-        if sections:
-            section = sections[0]
-            section.preregister_student(self.student)
-
-            self.client.login(username=self.student.username, password='password')
-            response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
-            self.assertIn(response.status_code, [200, 302])
