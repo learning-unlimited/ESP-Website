@@ -94,11 +94,11 @@ class ViewUserInfoTest(TestCase):
 
     def assertStringContains(self, string, contents):
         if not (contents in string):
-            self.assert_(False, "'%s' not in '%s'" % (contents, string))
+            self.fail("'%s' not in '%s'" % (contents, string))
 
     def assertNotStringContains(self, string, contents):
         if contents in string:
-            self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
+            self.fail("'%s' are in '%s' and shouldn't be" % (contents, string))
 
     def testIssue1448UsernameMatchesFirstName(self):
         """
@@ -226,10 +226,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'].id, self.user.id)
-        self.assert_(self.user.username in str(response.content, encoding='UTF-8'))
-        self.assert_(self.user.first_name in str(response.content, encoding='UTF-8'))
-        self.assert_(self.user.last_name in str(response.content, encoding='UTF-8'))
-        self.assert_(str(self.user.id) in str(response.content, encoding='UTF-8'))
+        self.assertTrue(self.user.username in str(response.content, encoding='UTF-8'))
+        self.assertTrue(self.user.first_name in str(response.content, encoding='UTF-8'))
+        self.assertTrue(self.user.last_name in str(response.content, encoding='UTF-8'))
+        self.assertTrue(str(self.user.id) in str(response.content, encoding='UTF-8'))
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
