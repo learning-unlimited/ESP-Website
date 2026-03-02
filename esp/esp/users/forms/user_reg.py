@@ -33,11 +33,25 @@ class ValidHostEmailField(forms.EmailField):
         return email
 
 class EmailUserRegForm(forms.Form):
-    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>", max_length=75, widget=forms.EmailInput(attrs={'class': 'form-control', 'id': 'id_email', 'data-validation': 'email-availability'}))
-    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>", max_length=75)
+    email = ValidHostEmailField(
+        help_text="<i>Please provide an email address that you check regularly.</i>",
+        max_length=75,
+        widget=forms.EmailInput(
+            attrs={
+                'class': 'form-control',
+                'id': 'id_email',
+                'data-validation': 'email-availability'
+            }
+        )
+    )
+    confirm_email = ValidHostEmailField(
+        label="Confirm email",
+        help_text="<i>Please type your email address again.</i>",
+        max_length=75
+    )
 
     #   The choices for this field will be set later in __init__()
-    initial_role = forms.ChoiceField(choices = [])
+    initial_role = forms.ChoiceField(choices=[])
 
     def clean_email(self):
         """Check for existing email addresses during form validation"""
@@ -50,7 +64,7 @@ class EmailUserRegForm(forms.Form):
                 if active_users.exists():
                     # Only raise error if user hasn't confirmed they want to proceed
                     # with duplicate account (do_reg_no_really flag not present)
-                    if not (self.request and 'do_reg_no_really' in self.request):
+                    if not (self.request and 'do_reg_no_really' in self.request.POST):
                         raise forms.ValidationError(
                             'An account with this email address already exists. '
                             'Try signing in instead, or use a different email address.'
@@ -68,14 +82,16 @@ class EmailUserRegForm(forms.Form):
             raise forms.ValidationError('Please select an initial role')
         return data
 
-    def __init__(self, *args, **kwargs):        # Extract request from kwargs if provided
+    def __init__(self, *args, **kwargs):
+        # Extract request from kwargs if provided
         self.request = kwargs.pop('request', None)
-        
+
         #   Set up the default form
         super(EmailUserRegForm, self).__init__(*args, **kwargs)
 
         #   Adjust initial_role choices
-        role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
+        role_choices = [(item[0], item[1]['label'])
+                       for item in ESPUser.getAllUserTypes()]
         self.fields['initial_role'].choices = [('', 'Pick one...')] + role_choices
 
 class UserRegForm(forms.Form):
@@ -83,21 +99,44 @@ class UserRegForm(forms.Form):
     A form for users to register for the ESP web site.
     """
     first_name = StrippedCharField(max_length=30)
-    last_name  = StrippedCharField(max_length=30)
+    last_name = StrippedCharField(max_length=30)
 
-    username = forms.CharField(min_length=5, max_length=30, widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'id_username', 'data-validation': 'username-availability'}))
+    username = forms.CharField(
+        min_length=5,
+        max_length=30,
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'id': 'id_username',
+                'data-validation': 'username-availability'
+            }
+        )
+    )
 
-    password = forms.CharField(widget = forms.PasswordInput(),
-                               min_length=5)
+    password = forms.CharField(
+        widget=forms.PasswordInput(),
+        min_length=5
+    )
 
-    confirm_password = forms.CharField(widget = forms.PasswordInput(),
-                                       min_length=5)
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(),
+        min_length=5
+    )
 
     #   The choices for this field will be set later in __init__()
-    initial_role = forms.ChoiceField(choices = [], widget=HiddenInput)
+    initial_role = forms.ChoiceField(choices=[], widget=HiddenInput)
 
-    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>", max_length=75, widget=HiddenInput)
-    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>", max_length=75, widget=HiddenInput)
+    email = ValidHostEmailField(
+        help_text="<i>Please provide an email address that you check regularly.</i>",
+        max_length=75,
+        widget=HiddenInput
+    )
+    confirm_email = ValidHostEmailField(
+        label="Confirm email",
+        help_text="<i>Please type your email address again.</i>",
+        max_length=75,
+        widget=HiddenInput
+    )
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
@@ -115,27 +154,38 @@ class UserRegForm(forms.Form):
         good_chars = set(string.ascii_letters + string.digits)
 
         set_of_data = set(data)
-        if not(good_chars & set_of_data == set_of_data):
+        if not (good_chars & set_of_data == set_of_data):
             raise forms.ValidationError('Username contains invalid characters.')
 
         #   Check for duplicate accounts, but avoid triggering for users that are:
         #   - awaiting initial activation
         #   - currently on the email list only (they can be 'upgraded' to a full account)
         awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
-        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).exists():
+        if (ESPUser.objects.filter(username__iexact=data)
+                           .exclude(password='emailuser')
+                           .exclude(awaiting_activation).exists()):
             raise forms.ValidationError('Username already in use.')
 
         data = data.strip()
         return data
 
     def clean_confirm_password(self):
-        if not (('confirm_password' in self.cleaned_data) and ('password' in self.cleaned_data)) or (self.cleaned_data['confirm_password'] != self.cleaned_data['password']):
-            raise forms.ValidationError('Ensure the password and password confirmation are equal.')
+        if (not (('confirm_password' in self.cleaned_data) and
+                 ('password' in self.cleaned_data)) or
+                (self.cleaned_data['confirm_password'] !=
+                 self.cleaned_data['password'])):
+            raise forms.ValidationError(
+                'Ensure the password and password confirmation are equal.'
+            )
         return self.cleaned_data['confirm_password']
 
     def clean_confirm_email(self):
-        if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
-            raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
+        if (not (('confirm_email' in self.cleaned_data) and
+                 ('email' in self.cleaned_data)) or
+                (self.cleaned_data['confirm_email'] != self.cleaned_data['email'])):
+            raise forms.ValidationError(
+                'Ensure that you have correctly typed your email both times.'
+            )
         return self.cleaned_data['confirm_email']
 
     def __init__(self, *args, **kwargs):
@@ -148,10 +198,14 @@ class UserRegForm(forms.Form):
 
 class SinglePhaseUserRegForm(UserRegForm):
     def __init__(self, *args, **kwargs):
-        #email field not hidden
+        # email field not hidden
         super(SinglePhaseUserRegForm, self).__init__(*args, **kwargs)
-        self.fields['email'].widget = TextInput(attrs=self.fields['email'].widget.attrs)
-        self.fields['confirm_email'].widget = TextInput(attrs=self.fields['confirm_email'].widget.attrs)
+        self.fields['email'].widget = TextInput(
+            attrs=self.fields['email'].widget.attrs
+        )
+        self.fields['confirm_email'].widget = TextInput(
+            attrs=self.fields['confirm_email'].widget.attrs
+        )
 
 class AwaitingActivationEmailForm(forms.Form):
     """Form used to verify a user is yet to be activated"""
@@ -160,8 +214,12 @@ class AwaitingActivationEmailForm(forms.Form):
     def clean_username(self):
         data = self.cleaned_data['username']
         awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
-        if not ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).exists():
-            raise forms.ValidationError('That username isn\'t waiting to be activated.')
+        if not (ESPUser.objects.filter(username__iexact=data)
+                              .exclude(password='emailuser')
+                              .filter(awaiting_activation).exists()):
+            raise forms.ValidationError(
+                'That username isn\'t waiting to be activated.'
+            )
 
         data = data.strip()
         return data
@@ -174,4 +232,4 @@ class GradeChangeRequestForm(forms.ModelForm):
     class Meta:
         model = GradeChangeRequest
         exclude = ('acknowledged_by', 'acknowledged_time', 'requesting_student',
-                   'approved', 'grade_before_request',)
+                   'approved', 'grade_before_request')
