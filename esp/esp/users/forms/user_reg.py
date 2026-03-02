@@ -48,10 +48,13 @@ class EmailUserRegForm(forms.Form):
             if existing_users.exists():
                 active_users = existing_users.filter(is_active=True)
                 if active_users.exists():
-                    raise forms.ValidationError(
-                        'An account with this email address already exists. '
-                        'Try signing in instead, or use a different email address.'
-                    )
+                    # Only raise error if user hasn't confirmed they want to proceed
+                    # with duplicate account (do_reg_no_really flag not present)
+                    if not (self.request and 'do_reg_no_really' in self.request):
+                        raise forms.ValidationError(
+                            'An account with this email address already exists. '
+                            'Try signing in instead, or use a different email address.'
+                        )
         return email
 
     def clean_confirm_email(self):
@@ -66,6 +69,9 @@ class EmailUserRegForm(forms.Form):
         return data
 
     def __init__(self, *args, **kwargs):
+        # Extract request from kwargs if provided
+        self.request = kwargs.pop('request', None)
+        
         #   Set up the default form
         super(EmailUserRegForm, self).__init__(*args, **kwargs)
 

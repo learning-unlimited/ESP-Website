@@ -95,7 +95,7 @@ The method user_registration_phase1 calls this function when it's given a POST r
 When the form isn't valid, re-render the same template but with the form errors.
 When there are already accounts with this email address (depending on some tags), give the user information about them before proceeding.
 """
-    form = EmailUserRegForm(request.POST)
+    form = EmailUserRegForm(request.POST, request=request.POST)
 
     if form.is_valid():
         ## First, check to see if we have any users with the same email
