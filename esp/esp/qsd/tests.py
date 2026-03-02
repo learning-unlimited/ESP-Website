@@ -142,6 +142,241 @@ class QSDCorrectnessTest(TestCase):
             #   Delete the new QSD so we can start again.
             qsd_rec_new.delete()
 
+
+class QSDImageUploadTest(TestCase):
+    """Tests for the ajax_qsd_image_upload endpoint (#2679)."""
+
+    UPLOAD_URL = '/admin/ajax_qsd_image_upload/'
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='upload_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='upload_student')
+        self.student.set_password('password')
+        self.student.save()
+
+        # Track files created during tests for cleanup
+        self._created_files = []
+
+    def tearDown(self):
+        import os
+        for path in self._created_files:
+            if os.path.exists(path):
+                os.remove(path)
+
+    def _make_image_file(self, name='test.png', size=100, content_type='image/png'):
+        """Create a minimal in-memory image file for upload testing."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        # Minimal valid 1x1 PNG (67 bytes)
+        png_header = (
+            b'\x89PNG\r\n\x1a\n'  # PNG signature
+            b'\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01'
+            b'\x08\x02\x00\x00\x00\x90wS\xde'
+            b'\x00\x00\x00\x0cIDATx'
+            b'\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05'
+            b'\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82'
+        )
+        content = png_header
+        if size > len(png_header):
+            # Pad to desired size (file won't be valid PNG but extension check is what matters)
+            content = png_header + b'\x00' * (size - len(png_header))
+        return SimpleUploadedFile(name, content, content_type=content_type)
+
+    def _track_response_files(self, response):
+        """Extract file paths from successful upload response for cleanup."""
+        import json
+        import os
+        from django.conf import settings
+        if response.status_code == 200:
+            data = json.loads(response.content)
+            if data.get('success') and data.get('data', {}).get('files'):
+                for url in data['data']['files']:
+                    # Convert URL to filesystem path
+                    rel_path = url.lstrip('/')
+                    if rel_path.startswith('media/'):
+                        rel_path = rel_path[len('media/'):]
+                    full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+                    self._created_files.append(full_path)
+
+    def test_upload_requires_authentication(self):
+        """Anonymous users get 401."""
+        self.client.logout()
+        f = self._make_image_file()
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 401)
+
+    def test_upload_requires_admin(self):
+        """Non-admin users get 403."""
+        self.client.login(username='upload_student', password='password')
+        f = self._make_image_file()
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 403)
+
+    def test_upload_rejects_get(self):
+        """GET requests get 405."""
+        self.client.login(username='upload_admin', password='password')
+        response = self.client.get(self.UPLOAD_URL)
+        self.assertEqual(response.status_code, 405)
+
+    def test_upload_rejects_no_files(self):
+        """POST with no files gets 400."""
+        self.client.login(username='upload_admin', password='password')
+        response = self.client.post(self.UPLOAD_URL, {})
+        self.assertEqual(response.status_code, 400)
+
+    def test_upload_rejects_invalid_extension(self):
+        """Files with disallowed extensions are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='malicious.exe', content_type='application/x-executable')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('.exe', data['data']['messages'][0])
+
+    def test_upload_rejects_non_image_content_type(self):
+        """Files with non-image content type are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='script.png', content_type='text/html')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('does not appear to be an image', data['data']['messages'][0])
+
+    def test_upload_rejects_oversized_file(self):
+        """Files exceeding 5MB are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(size=6 * 1024 * 1024)  # 6 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('size limit', data['data']['messages'][0])
+
+    def test_upload_valid_png(self):
+        """A valid PNG upload succeeds and returns correct JSON."""
+        import json
+        import os
+        from django.conf import settings
+
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='photo.png')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['data']['files']), 1)
+        self.assertEqual(data['data']['isImages'], [True])
+
+        # Verify the URL looks correct
+        image_url = data['data']['files'][0]
+        self.assertTrue(image_url.startswith('/media/uploaded/qsd_images/'))
+        self.assertTrue(image_url.endswith('.png'))
+
+        # Verify file actually exists on disk
+        rel_path = image_url.lstrip('/')[len('media/'):]  # strip /media/
+        full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+        self.assertTrue(os.path.exists(full_path))
+
+    def test_upload_valid_jpg(self):
+        """A valid JPG upload succeeds."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='photo.jpg', content_type='image/jpeg')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['data']['files'][0].endswith('.jpg'))
+
+    def test_upload_valid_gif(self):
+        """A valid GIF upload succeeds."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='animated.gif', content_type='image/gif')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['data']['files'][0].endswith('.gif'))
+
+    def test_upload_valid_webp(self):
+        """A valid WebP upload succeeds."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='modern.webp', content_type='image/webp')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['data']['files'][0].endswith('.webp'))
+
+    def test_upload_generates_uuid_filename(self):
+        """Uploaded files get UUID filenames, not the original name."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='../../etc/passwd.png')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        image_url = data['data']['files'][0]
+        filename = image_url.split('/')[-1]
+        # UUID hex is 32 chars + .png = should not contain original name
+        self.assertNotIn('passwd', filename)
+        self.assertNotIn('..', filename)
+        self.assertEqual(len(filename), 32 + 4)  # uuid hex + .png
+
+    def test_upload_rejects_no_extension(self):
+        """Files without extensions are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='noextension')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+
+    def test_multi_file_bad_second_no_orphan(self):
+        """When one file in a batch fails validation, no files are saved.
+
+        Uses non-'files[0]' keys to trigger the fallback collection path
+        that gathers files from all request.FILES keys.
+        """
+        import os
+        from django.conf import settings
+
+        upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploaded/qsd_images')
+        # Snapshot existing files before the request
+        before = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
+
+        self.client.login(username='upload_admin', password='password')
+        good = self._make_image_file(name='valid.png')
+        bad = self._make_image_file(name='evil.exe', content_type='application/x-executable')
+        # Use keys other than 'files[0]' so the fallback loop collects both
+        response = self.client.post(self.UPLOAD_URL, {
+            'upload_a': good,
+            'upload_b': bad,
+        })
+        self.assertEqual(response.status_code, 400)
+
+        # Verify no NEW files were created on disk
+        after = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
+        new_files = after - before
+        self.assertEqual(new_files, set(), "Orphaned files found after failed batch upload: %s" % new_files)
 class QSDAdminAuthorTest(TestCase):
 
     def setUp(self):
