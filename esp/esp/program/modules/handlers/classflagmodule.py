@@ -121,7 +121,7 @@ class ClassFlagModule(ProgramModuleObj):
             if form.cleaned_data['subject'].parent_program != prog:
                 return HttpResponseBadRequest('')
             # IDOR protection: ensure flag_type is associated with this program
-            if form.cleaned_data['flag_type'] not in prog.flag_types.all():
+            if not prog.flag_types.filter(pk=form.cleaned_data['flag_type'].pk).exists():
                 return HttpResponseBadRequest('')
             flag = form.save()
             context = { 'flag' : flag }

@@ -1,6 +1,6 @@
 <span class="flag-header active{% if flag.comment %} flag-has-comment{% endif %}{% if flag.resolved %} flag-resolved{% endif %}"
       id="fqr-flag-header-{{flag.id}}"
-      style="background: {{flag.flag_type.getColor}};{% if flag.resolved %} opacity: 0.5;{% endif %}">
+      style="background: {{flag.flag_type.getColor}};">
     <span class="flag-name"
           title="Click to toggle flag details"
           onclick="$j('#flag-detail-{{flag.id}}').toggle('blink');$j('#fqr-flag-header-{{flag.id}}').toggleClass('active');">

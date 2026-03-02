@@ -2,7 +2,6 @@
 
 from django.db import migrations
 import django.db.models.deletion
-import django.db.models.fields
 import esp.db.fields
 
 
@@ -22,15 +21,5 @@ class Migration(migrations.Migration):
             model_name='classflag',
             name='modified_by',
             field=esp.db.fields.AjaxForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='classflags_modified', to='users.ESPUser'),
-        ),
-        migrations.AlterField(
-            model_name='classsection',
-            name='attending_students',
-            field=django.db.models.fields.IntegerField(default=0),
-        ),
-        migrations.AlterField(
-            model_name='classsection',
-            name='enrolled_students',
-            field=django.db.models.fields.IntegerField(default=0),
         ),
     ]

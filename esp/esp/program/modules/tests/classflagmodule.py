@@ -1,6 +1,5 @@
 import json
 
-from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ClassFlag, ClassFlagType
 from esp.middleware.threadlocalrequest import _threading_local
@@ -13,8 +12,10 @@ class ClassFlagModuleTest(ProgramFrameworkTest):
         if hasattr(_threading_local, 'request'):
             del _threading_local.request
 
-        super(ClassFlagModuleTest, self).setUp(
-            num_students=0, num_teachers=1, num_admins=1, *args, **kwargs)
+        kwargs.setdefault('num_students', 0)
+        kwargs.setdefault('num_teachers', 1)
+        kwargs.setdefault('num_admins', 1)
+        super(ClassFlagModuleTest, self).setUp(*args, **kwargs)
 
         self.program.getModules()
 
