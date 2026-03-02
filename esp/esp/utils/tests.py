@@ -9,11 +9,14 @@ try:
     import pylibmc as memcache
 except:
     import memcache
+import hashlib
 import logging
 logger = logging.getLogger(__name__)
 import os
 import subprocess
 import sys
+import threading
+from unittest.mock import patch, MagicMock
 from reversion import revisions as reversion
 from reversion.models import Version
 import unittest
@@ -522,6 +525,155 @@ class StripBase64ImagesTest(DjangoTestCase):
         result, count = self.strip(html)
         self.assertEqual(result, html)
         self.assertEqual(count, 0)
+
+
+class CacheClassSubclassTest(DjangoTestCase):
+    """Tests for the proxy-to-subclass refactoring of CacheClass in memcached_multikey."""
+
+    def setUp(self):
+        from esp.utils.memcached_multikey import CacheClass
+        from django.core.cache.backends.memcached import PyLibMCCache
+        self.CacheClass = CacheClass
+        self.PylibmcCacheClass = PyLibMCCache
+        # _cache is a @cached_property in PyLibMCCache; __init__ does not connect.
+        self.cache = CacheClass('127.0.0.1:11211', {})
+        # Pre-populate the cached_property so pylibmc.Client is never called.
+        self.mock_client = MagicMock()
+        self.cache.__dict__['_cache'] = self.mock_client
+
+    # --- Inheritance ---
+
+    def test_is_subclass_of_pylibmccache(self):
+        """CacheClass must subclass PyLibMCCache directly, not just BaseCache."""
+        self.assertTrue(issubclass(self.CacheClass, self.PylibmcCacheClass))
+
+    def test_no_wrapped_cache_attribute(self):
+        """Proxy attribute _wrapped_cache must not exist after refactoring."""
+        self.assertFalse(hasattr(self.cache, '_wrapped_cache'))
+
+    # --- make_key ---
+
+    def test_make_key_short_key_has_no_hash_prefix(self):
+        with self.settings(CACHE_PREFIX=''):
+            result = self.cache.make_key('mykey')
+        self.assertTrue(result.startswith('NH_'))
+        self.assertIn('mykey', result)
+
+    def test_make_key_includes_cache_prefix_setting(self):
+        with self.settings(CACHE_PREFIX='pfx_'):
+            result = self.cache.make_key('mykey')
+        self.assertIn('pfx_', result)
+
+    def test_make_key_long_key_uses_hash_prefix(self):
+        with self.settings(CACHE_PREFIX=''):
+            result = self.cache.make_key('k' * 300)
+        self.assertTrue(result.startswith('H_'))
+
+    def test_make_key_long_key_embeds_md5_hash(self):
+        long_key = 'k' * 300
+        with self.settings(CACHE_PREFIX=''):
+            result = self.cache.make_key(long_key)
+        self.assertIn(hashlib.md5(long_key.encode('UTF-8')).hexdigest(), result)
+
+    def test_make_key_never_exceeds_max_length(self):
+        from esp.utils.memcached_multikey import MAX_KEY_LENGTH
+        with self.settings(CACHE_PREFIX=''):
+            for length in [1, 100, 200, 250, 300, 500, 1000]:
+                result = self.cache.make_key('x' * length)
+                self.assertLessEqual(len(result), MAX_KEY_LENGTH,
+                    msg='make_key(%d-char key) returned key of length %d' % (length, len(result)))
+
+    # --- __init__ ---
+
+    def test_init_sets_cache_prefix_to_empty_string_if_missing(self):
+        from django.conf import settings as django_settings
+        if hasattr(django_settings, 'CACHE_PREFIX'):
+            del django_settings.CACHE_PREFIX
+        self.CacheClass('127.0.0.1:11211', {})
+        self.assertEqual(django_settings.CACHE_PREFIX, '')
+
+    # --- _failfast_test ---
+
+    def test_failfast_logs_warning_for_large_value_in_debug(self):
+        with self.settings(DEBUG=True):
+            large_value = b'x' * (2 * 1024 ** 2)  # 2 MB, above 1 MB threshold
+            with self.assertLogs('esp.utils.memcached_multikey', level='WARNING') as cm:
+                self.cache._failfast_test('key', large_value)
+        self.assertTrue(any('dangerously large' in msg for msg in cm.output))
+
+    def test_failfast_logs_warning_for_unpicklable_value_in_debug(self):
+        with self.settings(DEBUG=True):
+            # threading.Lock raises TypeError when pickled, matching the except clause
+            unpicklable = threading.Lock()
+            with self.assertLogs('esp.utils.memcached_multikey', level='WARNING') as cm:
+                self.cache._failfast_test('key', unpicklable)
+        self.assertTrue(any('TypeError' in msg for msg in cm.output))
+
+    def test_failfast_does_not_log_outside_debug(self):
+        with self.settings(DEBUG=False):
+            large_value = b'x' * (2 * 1024 ** 2)
+            with patch('esp.utils.memcached_multikey.logger') as mock_logger:
+                self.cache._failfast_test('key', large_value)
+                mock_logger.warning.assert_not_called()
+
+    # --- CRUD methods: _failfast_test is called only on writes ---
+
+    def test_add_calls_failfast_test(self):
+        self.cache._failfast_test = MagicMock()
+        self.cache.add('mykey', 'myvalue')
+        self.cache._failfast_test.assert_called_once_with('mykey', 'myvalue')
+
+    def test_set_calls_failfast_test(self):
+        self.cache._failfast_test = MagicMock()
+        self.cache.set('mykey', 'myvalue')
+        self.cache._failfast_test.assert_called_once_with('mykey', 'myvalue')
+
+    def test_get_does_not_call_failfast_test(self):
+        self.cache._failfast_test = MagicMock()
+        self.cache.get('mykey')
+        self.cache._failfast_test.assert_not_called()
+
+    def test_delete_does_not_call_failfast_test(self):
+        self.cache._failfast_test = MagicMock()
+        self.cache.delete('mykey')
+        self.cache._failfast_test.assert_not_called()
+
+    # --- try_multi: transient failures are retried ---
+
+    def test_get_retries_on_transient_failure(self):
+        """@try_multi(8) on get() must retry after a transient exception."""
+        self.mock_client.get = MagicMock(
+            side_effect=[RuntimeError('transient'), RuntimeError('transient'), None]
+        )
+        # Should not raise; third attempt returns None (cache miss)
+        self.cache.get('mykey')
+        self.assertEqual(self.mock_client.get.call_count, 3)
+
+    def test_set_retries_on_transient_failure(self):
+        """@try_multi(8) on set() must retry after a transient exception."""
+        self.mock_client.set = MagicMock(
+            side_effect=[RuntimeError('transient'), True]
+        )
+        self.cache.set('mykey', 'myvalue')
+        self.assertEqual(self.mock_client.set.call_count, 2)
+
+    def test_delete_retries_on_transient_failure(self):
+        """@try_multi(8) on delete() must retry after a transient exception."""
+        self.mock_client.delete = MagicMock(
+            side_effect=[RuntimeError('transient'), True]
+        )
+        self.cache.delete('mykey')
+        self.assertEqual(self.mock_client.delete.call_count, 2)
+
+    def test_get_many_retries_on_transient_failure(self):
+        """@try_multi(8) on get_many() must retry after a transient exception."""
+        # Django's PyLibMCCache.get_many calls self._cache.get_multi internally
+        self.mock_client.get_multi = MagicMock(
+            side_effect=[RuntimeError('transient'), {}]
+        )
+        result = self.cache.get_many(['key1', 'key2'])
+        self.assertEqual(result, {})
+        self.assertEqual(self.mock_client.get_multi.call_count, 2)
 
 
 def suite():
