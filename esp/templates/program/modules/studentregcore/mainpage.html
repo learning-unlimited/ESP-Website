@@ -4,20 +4,42 @@
 
 {% block xtrajs %}
 <script type="text/javascript">
-<!--
-  function submit_cancel() {
-     // prereg for a class
-     {% if scrmi.cancel_button_dereg %}
-     var confirm_note = 'Are you sure you want to cancel your registration and remove yourself from any classes you have signed up for?';
-     {% else %}
-     var confirm_note = 'Are you sure you want to cancel your registration?';
-     {% endif %}
-     if (confirm(confirm_note)) {
-        return true;
-     }
-     return false;
-  }
-//-->
+    <!--
+      function submit_cancel() {
+         // prereg for a class
+         {% if scrmi.cancel_button_dereg %}
+         var confirm_note = 'Are you sure you want to cancel your registration and remove yourself from any classes you have signed up for?';
+         {% else %}
+         var confirm_note = 'Are you sure you want to cancel your registration?';
+         {% endif %}
+         if (confirm(confirm_note)) {
+            return true;
+         }
+         return false;
+      }
+    
+      function toggle_paper_schedule_optout(checkbox) {
+         // Toggle paper schedule opt-out preference via AJAX
+         var opt_out = checkbox.checked;
+         $j.post(
+            '/learn/{{one}}/{{two}}/optout_paper_schedule',
+            { opt_out: opt_out, csrfmiddlewaretoken: '{{ csrf_token }}' },
+            function(data) {
+               var label = $j('#paper-schedule-optout-label');
+               if (data.opted_out) {
+                  label.text('You have opted out of paper schedule printing.');
+               } else {
+                  label.text('I do not need a paper schedule printed for me.');
+               }
+            },
+            'json'
+         ).fail(function() {
+            // Revert checkbox on failure
+            checkbox.checked = !opt_out;
+            alert('Could not save your preference. Please try again.');
+         });
+      }
+    //-->
 </script>
 {% endblock %}
 
@@ -27,9 +49,10 @@
 {% if not request.user.onsite_local %}
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 {% if program.isFull %}{% if program.program_allow_waitlist %}
-<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
+<div class="errormsg">This program is now full! Click below to add yourself to the waitlist.</div>
 {% else %}{% if not canRegToFullProgram %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+<div class="errormsg">This program is now full! You can no longer register for it; you may only use this page to update
+    currently-existing registrations.</div>
 {% endif %}
 {% endif %}
 {% endif %}
@@ -46,37 +69,40 @@
 
 {% render_inline_program_qsd program "learn:studentregheader" %}
 <div class="alert alert-block">
-<span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-<big><b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.</big>
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+    <big><b>Parents:</b> You should not be at this page! Please let your kids fill out the registration forms.</big>
 </div>
 
 {% ifequal scrmi.progress_mode 1 %}
-    {% include "program/modules/checkboxes.html" %}
+{% include "program/modules/checkboxes.html" %}
 {% endifequal %}
 {% ifequal scrmi.progress_mode 2 %}
-    {% include "program/modules/progressbar.html" %}
+{% include "program/modules/progressbar.html" %}
 {% endifequal %}
 
 {% if records %}
 {% render_inline_program_qsd program record_steps %}
 <div class="row-fluid">
-<div class="span10 offset1">
-<table class="table table-condensed" align="center" width="400">
-<tr class="well"><th>Other Registration Requirements</th><th>Done?</th></tr>
-{% for record in records %}
-    <tr>
-        <td>{{ record.full_event }}</td>
-        <td>
-            {% if record.isCompleted %}
-                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
-            {% else %}
-                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
-            {% endif %}
-        </td>
-    </tr>
-{% endfor %}
-</table>
-</div>
+    <div class="span10 offset1">
+        <table class="table table-condensed" align="center" width="400">
+            <tr class="well">
+                <th>Other Registration Requirements</th>
+                <th>Done?</th>
+            </tr>
+            {% for record in records %}
+            <tr>
+                <td>{{ record.full_event }}</td>
+                <td>
+                    {% if record.isCompleted %}
+                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                    {% else %}
+                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
 </div>
 {% endif %}
 
@@ -95,13 +121,14 @@
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 <center>
 
-{% if program.isFull %}{% if program.program_allow_waitlist %}
-<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
-{% else %}{% if not canRegToFullProgram %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
-{% endif %}
-{% endif %}
-{% endif %}
+    {% if program.isFull %}{% if program.program_allow_waitlist %}
+    <div class="errormsg">This program is now full! Click below to add yourself to the waitlist.</div>
+    {% else %}{% if not canRegToFullProgram %}
+    <div class="errormsg">This program is now full! You can no longer register for it; you may only use this page to
+        update currently-existing registrations.</div>
+    {% endif %}
+    {% endif %}
+    {% endif %}
 
 </center>
 {% endif %}
@@ -110,56 +137,80 @@
 {% render_inline_program_qsd program "learn:studentregfooter" %}
 
 {% if not request.user.onsite_local and not no_confirm %}
-    <center>
+<center>
     <a name="confirmreg"></a>
     {% if program.isFull and program.program_allow_waitlist and not isConfirmed %}
-        <form action="/learn/{{one}}/{{two}}/waitlist_subscribe" method="post">
-        <input class="button" type="submit" value="Join Waiting List"/>
-        </form>
+    <form action="/learn/{{one}}/{{two}}/waitlist_subscribe" method="post">
+        <input class="button" type="submit" value="Join Waiting List" />
+    </form>
     {% else %}
-        {% if can_confirm %}
-            <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
-            {# disable if (you haven't completed all requirements) OR (you can't register for the program because it's full) #}
-            {% if not completedAll or program.isFull and not canRegToFullProgram and not isConfirmed %}
-                <button id="confirmbutton" type="submit"
-                        class="btn btn-default btn-large"
-                        disabled="disabled" />
-                    <span class="glyphicon glyphicon-ban-circle" aria-hidden="true"></span>
-                    {{ scrmi.confirm_button_text }}
-                </button>
-            {% else %}
-                <button id="confirmbutton" type="submit"
-                        class="btn btn-primary btn-large" />
-                    {% if isConfirmed %}
-                        <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
-                        {{ scrmi.view_button_text }}
-                    {% else %}
-                        <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
-                        {{ scrmi.confirm_button_text }}
-                    {% endif %}
-                </button>
-            {% endif %}
-            </form>
-            {% if isConfirmed or scrmi.cancel_button_dereg %}
-
-                {# Hide button for CC payments (has_external_payment) but keep for financial aid #}
-                {% if has_external_payment %}
-                    <p style="margin-top: 15px; font-style: italic; color: #555;">
-                        You have already paid for this program. If you want to cancel, please <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">contact us</a> directly to request a refund.
-                    </p>
-                {% else %}
-                    <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
-                        <button type="submit" id="cancelbutton" class="btn btn-danger btn-large">
-                            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                            {{ scrmi.cancel_button_text }}
-                        </button>
-                    </form>
-                {% endif %}
-
-            {% endif %}
+    {% if can_confirm %}
+    <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
+        {# disable if (you haven't completed all requirements) OR (you can't register for the program because it's full)
+        #}
+        {% if not completedAll or program.isFull and not canRegToFullProgram and not isConfirmed %}
+        <button id="confirmbutton" type="submit" class="btn btn-default btn-large" disabled="disabled" />
+        <span class="glyphicon glyphicon-ban-circle" aria-hidden="true"></span>
+        {{ scrmi.confirm_button_text }}
+        </button>
+        {% else %}
+        <button id="confirmbutton" type="submit" class="btn btn-primary btn-large" />
+        {% if isConfirmed %}
+        <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+        {{ scrmi.view_button_text }}
+        {% else %}
+        <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+        {{ scrmi.confirm_button_text }}
         {% endif %}
+        </button>
+        {% endif %}
+    </form>
+    {% if isConfirmed or scrmi.cancel_button_dereg %}
+
+    {# Hide button for CC payments (has_external_payment) but keep for financial aid #}
+    {% if has_external_payment %}
+    <p style="margin-top: 15px; font-style: italic; color: #555;">
+        You have already paid for this program. If you want to cancel, please <a
+            href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">contact us</a> directly to request a refund.
+    </p>
+    {% else %}
+    <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();">
+        <button type="submit" id="cancelbutton" class="btn btn-danger btn-large">
+            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+            {{ scrmi.cancel_button_text }}
+        </button>
+    </form>
     {% endif %}
-    </center>
+
+    {% endif %}
+
+    {# Paper schedule opt-out toggle #}
+    <div style="margin-top: 12px;">
+        <label>
+            <input type="checkbox" id="paper-schedule-optout" {% if opt_out_paper_schedule %}checked{% endif %}
+                onchange="toggle_paper_schedule_optout(this)" />
+            <span id="paper-schedule-optout-label">
+                {% if opt_out_paper_schedule %}
+                You have opted out of paper schedule printing.
+                {% else %}
+                I do not need a paper schedule printed for me.
+                {% endif %}
+            </span>
+        </label>
+    </div>
+
+    {# Barcode fallback for students who opt out of a paper schedule #}
+    {% if opt_out_paper_schedule and invoice_id %}
+    <div style="margin-top: 12px;">
+        <p><strong>Your check-in barcode:</strong></p>
+        <img src="https://esp.scripts.mit.edu/barcodegen/html/image.php?code=code39&amp;o=1&amp;t=50&amp;r=1&amp;text={{ invoice_id }}&amp;f1=Arial.ttf&amp;f2=8&amp;a1=&amp;a2=&amp;a3="
+            alt="Check-in barcode for {{ invoice_id }}" />
+        <p><small>Show this barcode to check in on-site if you do not have a printed schedule.</small></p>
+    </div>
+    {% endif %}
+
+    {% endif %}
+    {% endif %}
+</center>
 {% endif %}
 {% endblock %}
-
