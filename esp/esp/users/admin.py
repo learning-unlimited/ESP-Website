@@ -9,6 +9,10 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
 import datetime
+from esp.themes.models import AdminToolbarLink
+
+
+
 
 class UserForwarderAdmin(admin.ModelAdmin):
     list_display = ('source', 'target')
@@ -169,3 +173,14 @@ admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 #   Include admin pages for Django group
 admin_site.register(Group, GroupAdmin)
 
+
+
+
+class AdminToolbarLinkAdmin(admin.ModelAdmin):
+    list_display = ('title', 'url', 'order', 'is_active')
+    list_editable = ('order', 'is_active')
+    ordering = ('order',)
+    search_fields = ('title', 'url')
+
+# 3. Register AFTER the class
+admin_site.register(AdminToolbarLink, AdminToolbarLinkAdmin)
