@@ -21,6 +21,7 @@ git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends D
 bleach==6.0.0 # For sanitizing QSD content
 dill # For migrating Python 2 pickles in the database
 docutils==0.12 # Needed for django.contrib.admindocs
+Faker==18.13.0 # For generating dummy/seed data
 flake8==3.9.2 # Required for linter
 ipython==7.34.0 # Used for shell_plus
 Markdown==2.3.1 # Used in QSD

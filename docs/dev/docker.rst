@@ -76,6 +76,9 @@ Quick Start
 
     docker compose exec web python esp/manage.py createsuperuser
 
+   Or seed the database with dummy data (programs, teachers, students, etc.) — see
+   :ref:`seed-dummy-data` below.
+
 Stopping & Starting
 --------------------
 
@@ -123,6 +126,46 @@ Examples::
 
     # Connect to the PostgreSQL database
     docker compose exec db psql -U esp devsite_django
+
+    # Seed dummy data (programs, teachers, students, volunteers)
+    docker compose exec web python esp/manage.py seed_dummy_data
+
+.. _seed-dummy-data:
+
+Seeding Dummy Data
+------------------
+
+Instead of loading a database dump, you can populate the database with consistent
+dummy data using the ``seed_dummy_data`` management command. This creates programs,
+users, classes, and related data via the ORM, so it stays in sync with the current
+schema.
+
+**Run the seeder** (after migrations have run)::
+
+    docker compose exec web python esp/manage.py seed_dummy_data
+
+This creates:
+
+- **Programs:** Splash Dev and Spark Dev, each with 5 timeslots and classroom
+  resources
+- **Users:** admin, teacher1–5, student1–15, volunteer1–3 (all password: ``password``)
+- **Teachers:** With availabilities, classes, and room assignments across both programs
+- **Students:** Enrolled in 2–3 classes each, with profiles and guardian info
+- **Volunteers:** With sign-ups for program timeslots
+- **Pages:** QSD content for learn/teach/volunteer flows and printables
+
+**Options:**
+
+- ``--flush`` — Clear existing seeded data first, then re-seed. Use when you want
+  a fresh start::
+
+    docker compose exec web python esp/manage.py seed_dummy_data --flush
+
+**Idempotent:** Safe to run multiple times. Existing records are skipped via
+``get_or_create``. Use ``--flush`` only when you want to wipe and recreate.
+
+**Reproducible:** Uses fixed Faker and random seeds, so all devs get identical data
+for reproducible bug reports and testing.
 
 Loading a Database Dump
 -----------------------
