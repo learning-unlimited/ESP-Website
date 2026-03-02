@@ -1636,7 +1636,7 @@ class ConfirmationEmailControllerTest(TestCase):
 
 
 class ManageDocsViewTest(TestCase):
-    """Tests for the /manage/docs documentation viewer (issue #2042)."""
+    """Tests for the /manage/docs documentation viewer."""
 
     def setUp(self):
         user_role_setup()
@@ -1723,4 +1723,4 @@ class ManageDocsViewTest(TestCase):
             response = self.client.get('/manage/docs/test_image.png')
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response['Content-Type'], 'image/png')
-            self.assertEqual(response.content, b'fakeimage')
+            self.assertEqual(b''.join(response.streaming_content), b'fakeimage')

@@ -86,7 +86,7 @@ ESP.registerAdminModule({
     (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
     '<a href="/admin/filebrowser/browse/">Manage media files</a><br />' +
     '<a href="/themes/">Manage theme settings</a><br />' +
-    '<a href="/manage/docs/">Documentation</a>',
+    '<a href="/manage/docs/">Website Documentation</a>',
   name: 'Other',
   displayName: 'Other Important Links'
 });

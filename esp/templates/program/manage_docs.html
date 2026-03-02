@@ -1,6 +1,9 @@
 {% extends "main.html" %}
 
-{% block title %}{{ doc_title }} &mdash; Admin Documentation{% endblock %}
+{% block title %}
+    {% if not doc_path %}Overview &mdash; Admin Documentation
+    {% else %}{{ doc_title }} &mdash; Admin Documentation{% endif %}
+{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}

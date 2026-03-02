@@ -1,5 +1,5 @@
 
-from functools import reduce
+from functools import lru_cache, reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -126,20 +126,20 @@ def _rst_to_html(rst_text):
             'raw_enabled': False,
         },
     )
-    raw_html = parts['body']
+    raw_html = parts['html_body']
 
     # Sanitize using bleach to prevent XSS (CodeQL robustness)
     allowed_tags = [
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'img', 'ul', 'ol', 'li',
         'strong', 'em', 'code', 'pre', 'blockquote', 'table', 'tr', 'td', 'th',
-        'tbody', 'thead', 'span', 'div', 'br', 'hr', 'dl', 'dt', 'dd'
+        'tbody', 'thead', 'span', 'div', 'br', 'hr', 'dl', 'dt', 'dd', 'tt'
     ]
     allowed_attributes = {
         '*': ['class', 'id', 'title'],
         'a': ['href', 'target'],
         'img': ['src', 'alt', 'width', 'height'],
     }
-    allowed_protocols = ['http', 'https', 'mailto', 'data']
+    allowed_protocols = ['http', 'https', 'mailto']
 
     return bleach.clean(
         raw_html,
@@ -161,18 +161,16 @@ def _extract_rst_title(fpath):
             source=rst_text,
             settings_overrides={'file_insertion_enabled': False, 'raw_enabled': False}
         )
-        if doctree.get('title'):
-            return doctree['title']
-        # Fallback to the first text element
-        elif len(doctree.children) > 0 and hasattr(doctree.children[0], 'astext'):
-            text = doctree.children[0].astext().split('\n')[0]
-            if len(text) < 100:
-                return text
+        from docutils import nodes
+        titles = doctree.traverse(nodes.title)
+        if titles:
+            return titles[0].astext()
         return None
     except Exception:
         return None
 
 
+@lru_cache(maxsize=1)
 def _docs_nav():
     """Return a list of {'title', 'url_path'} dicts for the docs sidebar."""
 
@@ -1325,12 +1323,16 @@ def template_preview(request):
 @admin_required
 def manage_docs(request, doc_path=None):
     """Render admin documentation pages embedded within the website."""
-    from django.http import Http404, HttpResponse
+    from django.http import Http404, FileResponse
 
     doc_html = None
     doc_title = 'Admin Documentation'
 
     if doc_path:
+        # Strip trailing slash so /releases/16/ is treated as /releases/16
+        doc_path = doc_path.rstrip('/')
+        if not doc_path:
+            raise Http404
         # Security: validate path only contains safe characters (whitelist)
         # before joining with DOCS_ADMIN_ROOT to prevent path traversal.
         if not re.match(r'^[A-Za-z0-9_./-]+$', doc_path) or '..' in doc_path:
@@ -1339,6 +1341,8 @@ def manage_docs(request, doc_path=None):
         requested = os.path.realpath(os.path.join(DOCS_ADMIN_ROOT, doc_path))
         if not requested.startswith(DOCS_ADMIN_ROOT + os.sep):
             raise Http404
+        if os.path.isdir(requested):
+            requested = os.path.join(requested, 'README.rst')
         if not os.path.isfile(requested):
             raise Http404
 
@@ -1348,8 +1352,7 @@ def manage_docs(request, doc_path=None):
             if not content_type:
                 content_type = 'application/octet-stream'
             try:
-                with open(requested, 'rb') as f:
-                    return HttpResponse(f.read(), content_type=content_type)
+                return FileResponse(open(requested, 'rb'), content_type=content_type)
             except OSError:
                 raise Http404
 
