@@ -37,6 +37,8 @@ import json
 from esp.customforms.models import Form, Field, Page, Section
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.views import hasPerm
+from esp.program.models import Program, ProgramModule
+from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, AnonymousESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 
@@ -858,3 +860,226 @@ class FormOwnershipAccessTest(TestCase):
             {'form_id': 999999, 'question_name': self.question_name},
         )
         self.assertEqual(response.status_code, 404)
+
+
+class LinkModuleValidationTest(TestCase):
+    """Tests for link_module handling in onSubmit and onModify.
+
+    Covers:
+      * Missing or null link_module is accepted (the form is simply unlinked).
+      * Program lookup, module-enabled check, and known-module check all run
+        BEFORE any tag deletion, so a rejected request leaves the existing
+        form-to-module Tag rows and the form's link_id untouched.
+      * On any failure, the @transaction.atomic block rolls back so partial
+        state is never committed.
+    """
+
+    SUBMIT_URL = '/customforms/submit/'
+    MODIFY_URL = '/customforms/modify/'
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='link_module_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        # Two minimal programs: one with the StudentCustomFormModule registered,
+        # one without (so prog.hasModule('StudentCustomFormModule') is False).
+        self.prog_with_module = Program.objects.create(
+            url='link_test_with/2026', name='Link Test With Module',
+            grade_min=7, grade_max=12)
+        self.prog_without_module = Program.objects.create(
+            url='link_test_without/2026', name='Link Test Without Module',
+            grade_min=7, grade_max=12)
+        self.student_module, _ = ProgramModule.objects.get_or_create(
+            handler='StudentCustomFormModule',
+            defaults={'admin_title': 'Student custom form (test)',
+                      'module_type': 'learn', 'seq': 0, 'required': False})
+        self.prog_with_module.program_modules.add(self.student_module)
+
+        self.client.login(username='link_module_admin', password='password')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def _post_json(self, url, payload):
+        return self.client.post(
+            url, json.dumps(payload),
+            content_type='application/json',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def _build_submit_payload(self, **overrides):
+        payload = {
+            'title': 'Link Module Test',
+            'desc': 'Test',
+            'link_type': 'Program',
+            'link_id': self.prog_with_module.id,
+            'anonymous': False,
+            'perms': '',
+            'success_message': 'OK',
+            'success_url': '/',
+            'pages': [],
+        }
+        payload.update(overrides)
+        return payload
+
+    def _build_modify_payload(self, form, **overrides):
+        payload = {
+            'form_id': form.id,
+            'title': form.title,
+            'desc': form.description,
+            'perms': form.perms,
+            'success_message': form.success_message,
+            'success_url': form.success_url,
+            'link_type': form.link_type,
+            'link_id': form.link_id,
+            'pages': [],
+        }
+        payload.update(overrides)
+        return payload
+
+    # --- onSubmit ---------------------------------------------------------
+
+    def test_submit_omitting_link_module_succeeds(self):
+        """No link_module in payload -> form created, no Tag attached."""
+        response = self._post_json(self.SUBMIT_URL, self._build_submit_payload())
+        self.assertEqual(response.status_code, 200)
+        form = Form.objects.get(title='Link Module Test')
+        self.assertFalse(Tag.objects.filter(
+            value=str(form.id),
+            key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id']
+        ).exists())
+
+    def test_submit_with_null_link_module_succeeds(self):
+        """Defensive check for the JS payload that previously sent null."""
+        response = self._post_json(
+            self.SUBMIT_URL,
+            self._build_submit_payload(link_module=None))
+        self.assertEqual(response.status_code, 200)
+        form = Form.objects.get(title='Link Module Test')
+        self.assertFalse(Tag.objects.filter(
+            value=str(form.id),
+            key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id']
+        ).exists())
+
+    def test_submit_with_missing_program_returns_400_and_rolls_back(self):
+        response = self._post_json(self.SUBMIT_URL, self._build_submit_payload(
+            link_id=999999, link_module='StudentCustomFormModule'))
+        self.assertEqual(response.status_code, 400)
+        # Whole transaction rolled back: no orphan form left behind.
+        self.assertFalse(Form.objects.filter(title='Link Module Test').exists())
+
+    def test_submit_with_module_not_enabled_returns_400_and_rolls_back(self):
+        """Target program is real but does not have the requested module
+        installed: the request must fail cleanly with no partial form created."""
+        response = self._post_json(self.SUBMIT_URL, self._build_submit_payload(
+            link_id=self.prog_without_module.id,
+            link_module='StudentCustomFormModule'))
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('does not have', json.loads(response.content)['message'])
+        self.assertFalse(Form.objects.filter(title='Link Module Test').exists())
+        self.assertFalse(Tag.objects.filter(
+            object_id=self.prog_without_module.id,
+            key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id']
+        ).exists())
+
+    def test_submit_with_unknown_module_returns_400_and_rolls_back(self):
+        response = self._post_json(self.SUBMIT_URL, self._build_submit_payload(
+            link_module='NotARealModule'))
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Form.objects.filter(title='Link Module Test').exists())
+
+    def test_submit_with_valid_link_module_creates_tag(self):
+        response = self._post_json(self.SUBMIT_URL, self._build_submit_payload(
+            link_module='StudentCustomFormModule'))
+        self.assertEqual(response.status_code, 200)
+        form = Form.objects.get(title='Link Module Test')
+        self.assertTrue(Tag.objects.filter(
+            key='learn_extraform_id', value=str(form.id)).exists())
+
+    # --- onModify ---------------------------------------------------------
+
+    def _create_linked_form(self):
+        """Helper: a form already linked to prog_with_module with the tag set."""
+        form = Form.objects.create(
+            title='Existing Form', description='Test', created_by=self.admin,
+            link_type='Program', link_id=self.prog_with_module.id,
+            anonymous=False, perms='',
+            success_message='OK', success_url='/')
+        Tag.setTag(key='learn_extraform_id', value=form.id,
+                   target=self.prog_with_module)
+        return form
+
+    def test_relink_to_program_without_module_succeeds_when_unlinking(self):
+        """Re-linking to a program with no custom form modules. The frontend
+        sends no link_module in this case; the server must drop the old Tag,
+        update link_id, and return 200 so the form's registration page does
+        not break for the unlucky student who hits it next."""
+        form = self._create_linked_form()
+        response = self._post_json(
+            self.MODIFY_URL,
+            self._build_modify_payload(form, link_id=self.prog_without_module.id))
+        self.assertEqual(response.status_code, 200)
+        form.refresh_from_db()
+        self.assertEqual(form.link_id, self.prog_without_module.id)
+        # Old tag is gone, no new one was created.
+        self.assertFalse(Tag.objects.filter(
+            value=str(form.id),
+            key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id']
+        ).exists())
+
+    def test_relink_with_invalid_link_module_rolls_back_completely(self):
+        """The destructive-before-validate bug: tags must NOT be deleted and
+        link_id must NOT be reassigned when validation rejects link_module."""
+        form = self._create_linked_form()
+        response = self._post_json(
+            self.MODIFY_URL,
+            self._build_modify_payload(
+                form,
+                link_id=self.prog_without_module.id,
+                link_module='StudentCustomFormModule'))
+        self.assertEqual(response.status_code, 400)
+        form.refresh_from_db()
+        # link_id unchanged: rollback worked.
+        self.assertEqual(form.link_id, self.prog_with_module.id)
+        # Original tag still there: validation ran BEFORE the delete.
+        self.assertTrue(Tag.objects.filter(
+            key='learn_extraform_id', value=str(form.id),
+            object_id=self.prog_with_module.id).exists())
+
+    def test_relink_with_unknown_module_rolls_back(self):
+        form = self._create_linked_form()
+        response = self._post_json(
+            self.MODIFY_URL,
+            self._build_modify_payload(form, link_module='NotARealModule'))
+        self.assertEqual(response.status_code, 400)
+        form.refresh_from_db()
+        self.assertEqual(form.link_id, self.prog_with_module.id)
+        self.assertTrue(Tag.objects.filter(
+            key='learn_extraform_id', value=str(form.id)).exists())
+
+    def test_relink_with_missing_program_rolls_back(self):
+        form = self._create_linked_form()
+        response = self._post_json(
+            self.MODIFY_URL,
+            self._build_modify_payload(
+                form, link_id=999999,
+                link_module='StudentCustomFormModule'))
+        self.assertEqual(response.status_code, 400)
+        form.refresh_from_db()
+        self.assertEqual(form.link_id, self.prog_with_module.id)
+        self.assertTrue(Tag.objects.filter(
+            key='learn_extraform_id', value=str(form.id)).exists())
+
+    def test_modify_validation_error_returns_400_not_500(self):
+        """Validation errors must surface as a clean JSON 400 from the except
+        block, not as an HTTP 500 from Django trying to render an ESPError
+        instance as if it were a response."""
+        form = self._create_linked_form()
+        response = self._post_json(
+            self.MODIFY_URL,
+            self._build_modify_payload(form, link_module='NotARealModule'))
+        self.assertNotEqual(response.status_code, 500)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('message', json.loads(response.content))
