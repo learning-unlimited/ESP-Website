@@ -1,0 +1,73 @@
+{% extends "main.html" %}
+
+{% block title %} Confirmation Email Sent — {{program.niceName}} {% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>Confirmation Email Sent</h1>
+
+<div class="alert alert-success" style="border: 1px solid #3c763d; padding: 15px; background-color: #dff0d8;">
+    <strong>Success!</strong> A confirmation email with your lottery preferences for <strong>{{program.niceName}}</strong> has been sent to you.
+</div>
+
+<p>Your preferences have been automatically saved. You may update them at any time before the lottery deadline by returning to the
+    <a href="/learn/{{program.getUrlBase}}/studentreg2phase">registration page</a>.
+</p>
+
+<hr>
+
+<h2>Your Priority Rankings</h2>
+
+{% if schedule %}
+<table class="fullwidth" cellpadding="5" style="border-collapse: collapse;">
+    <thead>
+        <tr style="background-color: #f5f5f5;">
+            <th style="border: 1px solid #ddd; padding: 8px;">Time Block</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">Your Rankings</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for timeslot, priorities in schedule %}
+        <tr>
+            <td style="border: 1px solid #ddd; padding: 8px; vertical-align: top;">
+                {{ timeslot.short_description }}
+            </td>
+            <td style="border: 1px solid #ddd; padding: 8px;">
+                {% for label, title in priorities %}
+                <span style="color: {% if title == '(not set)' %}red{% else %}green{% endif %};">
+                    {{ label }}: {{ title }}
+                </span><br>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p><em>You have not set any priority rankings yet.</em></p>
+{% endif %}
+
+<hr>
+
+<h2>Your Starred Classes ({{ num_starred }})</h2>
+
+{% if starred_classes %}
+<ul>
+    {% for title in starred_classes %}
+    <li>{{ title }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p><em>You have not starred any classes yet.</em></p>
+{% endif %}
+
+<hr>
+<p>
+    <a href="/learn/{{program.getUrlBase}}/studentreg2phase" class="btn btn-primary">Back to Registration</a>
+</p>
+
+{% endblock %}
