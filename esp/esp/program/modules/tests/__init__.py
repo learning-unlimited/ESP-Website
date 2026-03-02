@@ -53,3 +53,4 @@ from esp.program.modules.tests.classflagmodule import ClassFlagModuleTest
 from esp.program.modules.tests.auth import ProgramModuleAuthTest
 from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest
 from esp.program.modules.tests.testallviews import AllViewsTest
+from esp.program.modules.tests.admintestingmodule import AdminTestingModuleTest

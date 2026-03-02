@@ -1724,3 +1724,93 @@ class ManageDocsViewTest(TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response['Content-Type'], 'image/png')
             self.assertEqual(b''.join(response.streaming_content), b'fakeimage')
+
+
+class GradeCacheInvalidationTest(TestCase):
+    """Tests for issue #1601: Changing a user's grade must invalidate cache."""
+
+    def setUp(self):
+        user_role_setup()
+        self.student = ESPUser.objects.create_user(
+            username='gradecachetest',
+            email='gradecache@test.com',
+            password='test123'
+        )
+        self.student.makeRole('Student')
+
+        # Create a future program
+        self.program = Program.objects.create(
+            name='GradeCache Test',
+            url='gradecachetest',
+            grade_min=7,
+            grade_max=12
+        )
+        prog_type, _ = EventType.objects.get_or_create(description='Program')
+        Event.objects.create(
+            program=self.program,
+            event_type=prog_type,
+            start=datetime.now() + timedelta(days=30),
+            end=datetime.now() + timedelta(days=31),
+            short_description='Test event'
+        )
+
+        initial_yog = ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.program))
+        self.student_info = StudentInfo.objects.create(
+            user=self.student,
+            graduation_year=initial_yog,
+            dob=datetime.now() - timedelta(days=365*15)
+        )
+
+        self.reg_profile = RegistrationProfile.objects.create(
+            user=self.student,
+            program=self.program,
+            student_info=self.student_info,
+            most_recent_profile=True
+        )
+
+    def test_grade_change_invalidates_cache(self):
+        """Changing StudentInfo.graduation_year should invalidate grade lookup."""
+        initial_grade = self.student.getGrade(self.program)
+        self.assertEqual(initial_grade, 10)
+
+        # Change the grade via StudentInfo (as admin would do)
+        new_yog = ESPUser.YOGFromGrade(11, ESPUser.program_schoolyear(self.program))
+        self.student_info.graduation_year = new_yog
+        self.student_info.save()
+
+        # Grade should now reflect the change without manual cache flush
+        updated_grade = self.student.getGrade(self.program)
+        self.assertEqual(updated_grade, 11, "Grade should update after StudentInfo change")
+
+    def test_getLastForProgram_invalidates_on_studentinfo_change(self):
+        """getLastForProgram should return updated student_info after change."""
+        profile1 = RegistrationProfile.getLastForProgram(self.student, self.program)
+        initial_yog = profile1.student_info.graduation_year
+
+        # Modify graduation_year
+        new_yog = ESPUser.YOGFromGrade(9, ESPUser.program_schoolyear(self.program))
+        self.student_info.graduation_year = new_yog
+        self.student_info.save()
+
+        # Fetch again - should get fresh data
+        profile2 = RegistrationProfile.getLastForProgram(self.student, self.program)
+        self.assertEqual(
+            profile2.student_info.graduation_year, new_yog,
+            "getLastForProgram should return updated graduation_year"
+        )
+
+    def test_getLastProfile_invalidates_on_studentinfo_change(self):
+        """getLastProfile should return updated student_info after change."""
+        profile1 = RegistrationProfile.getLastProfile(self.student)
+        initial_yog = profile1.student_info.graduation_year
+
+        new_yog = ESPUser.YOGFromGrade(11, ESPUser.program_schoolyear(self.program))
+        self.student_info.graduation_year = new_yog
+        self.student_info.save()
+
+        profile2 = RegistrationProfile.getLastProfile(self.student)
+        self.assertEqual(
+            profile2.student_info.graduation_year, new_yog,
+            "getLastProfile should return updated graduation_year"
+        )
+
