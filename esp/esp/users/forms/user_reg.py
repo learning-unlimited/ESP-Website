@@ -68,8 +68,7 @@ class EmailUserRegForm(forms.Form):
             raise forms.ValidationError('Please select an initial role')
         return data
 
-    def __init__(self, *args, **kwargs):
-        # Extract request from kwargs if provided
+    def __init__(self, *args, **kwargs):        # Extract request from kwargs if provided
         self.request = kwargs.pop('request', None)
         
         #   Set up the default form
