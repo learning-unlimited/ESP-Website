@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTest
 from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
+from esp.program.modules.tests.onsitecheckinmodule import OnSiteCheckinModuleTest
 from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest
 from esp.program.modules.tests.studentreg import StudentRegTest
 from esp.program.modules.tests.survey import SurveyTest
