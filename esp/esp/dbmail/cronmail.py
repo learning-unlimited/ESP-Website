@@ -39,7 +39,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 import math
-import time
 
 from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail
 from datetime import datetime, timedelta
