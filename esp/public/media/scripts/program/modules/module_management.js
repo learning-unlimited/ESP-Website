@@ -7,24 +7,35 @@ $j(document).ready(function() {
     // Issue #3656.
     var constraints = JSON.parse(document.getElementById('module-constraints-data').textContent);
 
-    // Collect constrained module IDs for the cancel selector.
-    // The module-locked class is already applied server-side in the template.
+    // Show a brief dismissible notice when a cross-list drop is rejected.
+    function showConstraintMessage(msg) {
+        var $msg = $j('#module-constraint-msg');
+        $msg.text(msg).stop(true, true).fadeIn(150).delay(3000).fadeOut(400);
+    }
+
+    // Only position-locked modules are excluded from drag initiation entirely.
+    // Modules that are only required_locked or not_required_locked can still be
+    // reordered within their own list; they are blocked from crossing lists in
+    // makeReceiveHandler below.  The module-locked CSS class (greyed-out, lock
+    // icon) is applied server-side only to position_locked modules.
     var lockedSelectors = [];
     $j('.connectedSortable li').each(function() {
         var id = $j(this).attr('id');
-        if (constraints.hasOwnProperty(id)) {
+        var c = constraints[id];
+        if (c && c.position_locked) {
             lockedSelectors.push('#' + id);
         }
     });
 
-    // Extend jQuery UI's default cancel selector so constrained modules cannot
-    // be initiated as drag sources.
+    // Extend jQuery UI's default cancel selector so position-locked modules
+    // cannot be initiated as drag sources.
     var cancelSelector = 'input,textarea,button,select,option' +
         (lockedSelectors.length ? ',' + lockedSelectors.join(',') : '');
 
-    // Reject cross-section drops as defense-in-depth.
-    // (These modules are also non-draggable via cancelSelector, but this guard
-    // ensures correctness if that ever changes.)
+    // Reject cross-list drops for modules whose required status is enforced.
+    // Position-locked modules are already non-draggable via cancelSelector, but
+    // this guard also covers modules that are only required/not_required locked
+    // (e.g. AvailabilityModule) and can be freely reordered within their list.
     function makeReceiveHandler(isRequiredList) {
         return function(event, ui) {
             var id = ui.item.attr('id');
@@ -32,9 +43,11 @@ $j(document).ready(function() {
             if (!c) { return; }
             if (!isRequiredList && c.required_locked) {
                 ui.sender.sortable('cancel');
+                showConstraintMessage('This module must always be required and cannot be moved here.');
             }
             if (isRequiredList && c.not_required_locked) {
                 ui.sender.sortable('cancel');
+                showConstraintMessage('This module cannot be required and cannot be moved here.');
             }
         };
     }

@@ -650,7 +650,10 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     'position_locked': position_locked,
                 }
         context['module_constraints'] = module_constraints
-        context['locked_module_ids'] = {int(k) for k in module_constraints}
+        # position_locked_ids: modules that cannot be dragged at all (fully frozen).
+        # Modules that are only required/not_required locked can still be reordered
+        # within their list; cross-list drops are blocked in the JS receive handler.
+        context['position_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['position_locked']}
 
         context['one'] = one
         context['two'] = two

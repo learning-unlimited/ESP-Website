@@ -39,6 +39,9 @@
   </ul>
 </div>
 
+{# Notification shown when a cross-list drop is rejected (required <-> not-required). #}
+<div id="module-constraint-msg" class="alert alert-warning" role="alert" style="display:none; position:fixed; top:15px; right:15px; z-index:9999; max-width:320px; box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>
+
 <form action="/manage/{{ program.getUrlBase }}/modules/" method="post">
     <input type='hidden' name='learn_req' id='learn_req'>
     <input type='hidden' name='learn_not_req' id='learn_not_req'>
@@ -55,8 +58,8 @@
                 </h3>
                 <ol id="sortable1" class="connectedSortable">
                 {% for mod in learn_modules.required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in locked_module_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {% if mod.id in locked_module_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position or required status is enforced and cannot be changed."></span><span class="sr-only">Locked: position or required status is enforced.</span> {% endif %}{{ mod.module.admin_title }}<br/>
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                        {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position is enforced and cannot be changed."></span> {% endif %}{{ mod.module.admin_title }}<br/>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
@@ -67,8 +70,8 @@
                 </h3>
                 <ol id="sortable2" class="connectedSortable">
                 {% for mod in learn_modules.not_required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in locked_module_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {% if mod.id in locked_module_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position or required status is enforced and cannot be changed."></span><span class="sr-only">Locked: position or required status is enforced.</span> {% endif %}{{ mod.module.admin_title }}<br/>
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                        {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position is enforced and cannot be changed."></span> {% endif %}{{ mod.module.admin_title }}<br/>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
@@ -86,8 +89,8 @@
                 </h3>
                 <ol id="sortable3" class="connectedSortable">
                 {% for mod in teach_modules.required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in locked_module_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {% if mod.id in locked_module_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position or required status is enforced and cannot be changed."></span><span class="sr-only">Locked: position or required status is enforced.</span> {% endif %}{{ mod.module.admin_title }}<br/>
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                        {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position is enforced and cannot be changed."></span> {% endif %}{{ mod.module.admin_title }}<br/>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
@@ -98,8 +101,8 @@
                 </h3>
                 <ol id="sortable4" class="connectedSortable">
                 {% for mod in teach_modules.not_required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in locked_module_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {% if mod.id in locked_module_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position or required status is enforced and cannot be changed."></span><span class="sr-only">Locked: position or required status is enforced.</span> {% endif %}{{ mod.module.admin_title }}<br/>
+                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                        {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock module-lock-icon" aria-hidden="true" title="This module's position is enforced and cannot be changed."></span> {% endif %}{{ mod.module.admin_title }}<br/>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>

@@ -173,6 +173,42 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
                 self.assertTrue(constraints[key]['not_required_locked'])
                 self.assertTrue(constraints[key]['position_locked'])
 
+    def test_context_includes_position_locked_ids_set(self):
+        """The modules view includes a position_locked_ids set in the template context."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('position_locked_ids', r.context)
+        self.assertIsInstance(r.context['position_locked_ids'], (set, frozenset))
+
+    def test_reg_profile_in_position_locked_ids(self):
+        """RegProfileModule (position_locked) appears in position_locked_ids."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        position_locked_ids = r.context['position_locked_ids']
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+            if pmo.inModulesList():
+                self.assertIn(pmo.id, position_locked_ids)
+
+    def test_availability_not_in_position_locked_ids(self):
+        """AvailabilityModule is required_locked only; it must NOT appear in position_locked_ids
+        so admins can still reorder it within its list."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        constraints = r.context['module_constraints']
+        position_locked_ids = r.context['position_locked_ids']
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='AvailabilityModule'):
+            if pmo.inModulesList():
+                # Should be in constraints (required_locked) but not position-frozen.
+                self.assertIn(str(pmo.id), constraints)
+                self.assertTrue(constraints[str(pmo.id)]['required_locked'])
+                self.assertFalse(constraints[str(pmo.id)]['position_locked'])
+                self.assertNotIn(pmo.id, position_locked_ids)
+
 
 class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
     """Tests for the per-program link_title override on the Module Management page."""
