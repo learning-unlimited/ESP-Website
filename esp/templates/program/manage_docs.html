@@ -20,7 +20,7 @@
     <nav class="docs-sidebar">
         <h3>Contents</h3>
         <ul>
-            <li><a href="/manage/docs"{% if not doc_path %} class="active"{% endif %}>Overview</a></li>
+            <li><a href="/manage/docs/"{% if not doc_path %} class="active"{% endif %}>Overview</a></li>
             {% for item in doc_nav %}
             <li>
                 <a href="/manage/docs/{{ item.url_path }}"
@@ -57,6 +57,9 @@
         {% else %}
             {# Individual doc page #}
             <div class="doc-body">
+                {% if doc_title and doc_title != 'Admin Documentation' %}
+                    <h1>{{ doc_title }}</h1>
+                {% endif %}
                 {{ doc_html|safe }}
             </div>
         {% endif %}

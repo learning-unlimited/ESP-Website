@@ -126,7 +126,7 @@ def _rst_to_html(rst_text):
             'raw_enabled': False,
         },
     )
-    raw_html = parts['html_body']
+    raw_html = parts['body']
 
     # Sanitize using bleach to prevent XSS (CodeQL robustness)
     allowed_tags = [
@@ -1323,7 +1323,7 @@ def template_preview(request):
 @admin_required
 def manage_docs(request, doc_path=None):
     """Render admin documentation pages embedded within the website."""
-    from django.http import Http404, FileResponse
+    from django.http import Http404, FileResponse, HttpResponseRedirect
 
     doc_html = None
     doc_title = 'Admin Documentation'
@@ -1333,6 +1333,9 @@ def manage_docs(request, doc_path=None):
         doc_path = doc_path.rstrip('/')
         if not doc_path:
             raise Http404
+        # Redirect index.html to the docs root
+        if doc_path == 'index.html':
+            return HttpResponseRedirect('/manage/docs/')
         # Security: validate path only contains safe characters (whitelist)
         # before joining with DOCS_ADMIN_ROOT to prevent path traversal.
         if not re.match(r'^[A-Za-z0-9_./-]+$', doc_path) or '..' in doc_path:
