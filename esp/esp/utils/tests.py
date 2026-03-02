@@ -211,9 +211,13 @@ class TemplateOverrideTest(DjangoTestCase):
         total_buggy = (diff_buggy.count('class="diff_chg"') +
                        diff_buggy.count('class="diff_sub"') +
                        diff_buggy.count('class="diff_add"'))
-        self.assertGreaterEqual(total_buggy, len(lines),
-                                "Sanity check: old line-ending mismatch should "
-                                "show many lines as changed (this test validates the bug).")
+        # The old approach should produce *at least some* spurious diff
+        # markers due to the trailing-newline mismatch.  We don't require
+        # every line to be flagged because HtmlDiff uses sequence-matching
+        # heuristics and the exact count depends on file content.
+        self.assertGreater(total_buggy, 0,
+                           "Sanity check: old line-ending mismatch should "
+                           "produce at least some diff markers.")
 
         # FIXED: use the same normalized lines (no trailing newlines) for both.
         original_lines = _normalize_lines_for_diff(original_content)
@@ -232,6 +236,12 @@ class TemplateOverrideTest(DjangoTestCase):
                         "only the modified line(s) should be highlighted. "
                         "Got {} diff markers for {} lines.".format(
                             total_diff_lines, len(lines)))
+
+        # The fixed approach must produce fewer diff markers than the old
+        # buggy approach (or at most the same if HtmlDiff is smart enough).
+        self.assertLessEqual(total_diff_lines, total_buggy,
+                             "Fixed diff should not produce more markers "
+                             "than the buggy diff.")
 
         # Clean up
         TemplateOverride.objects.filter(name=template_name).delete()
