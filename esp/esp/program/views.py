@@ -55,7 +55,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.redirects.models import Redirect
 from django.contrib.sites.models import Site
 from django.db.models.query import Q
-from django.db.models import Min
+from django.db.models import Min, Max
+from django.utils import timezone
 from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
@@ -596,6 +597,26 @@ def userview(request):
     change_grade_form.fields['graduation_year'].initial = user.getYOG()
     change_grade_form.fields['graduation_year'].choices = [choice for choice in change_grade_form.fields['graduation_year'].choices if bool(choice[0])]
 
+    now = timezone.now()
+    all_enrolled = user.getEnrolledSections().order_by('parent_class__parent_program', 'id')
+    enrolled_program_ids = all_enrolled.values('parent_class__parent_program')
+    past_prog_ids = set(
+        Program.objects
+        .filter(id__in=enrolled_program_ids)
+        .annotate(last_end=Max(
+            'event__end',
+            filter=Q(event__event_type__description='Class Time Block')
+        ))
+        .filter(last_end__lt=now)
+        .values_list('id', flat=True)
+    )
+    current_enrolled = all_enrolled.exclude(
+        parent_class__parent_program_id__in=past_prog_ids
+    )
+    past_enrolled = all_enrolled.filter(
+        parent_class__parent_program_id__in=past_prog_ids
+    )
+
     # Get StudentSubjectInterests (starred classes) for this user
     starred_classes = []
     if program:
@@ -608,7 +629,8 @@ def userview(request):
     context = {
         'user': user,
         'taught_classes': user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
-        'enrolled_classes': user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
+        'current_enrolled': current_enrolled,
+        'past_enrolled': past_enrolled,
         'taken_classes': user.getSections().order_by('parent_class__parent_program', 'id'),
         'starred_classes': starred_classes,
         'teacherbio': teacherbio,
