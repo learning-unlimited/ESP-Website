@@ -19,7 +19,7 @@ def get_rt_choices():
     choices = [("All", "All")]
     for rt in RegistrationType.objects.all().order_by('name'):
         if rt.displayName:
-            choices.append((rt.name, '%s (displayed as "%s")' % (rt.name, rt.displayName)))
+            choices.append((rt.name, f'{rt.name} (displayed as "{rt.displayName}")'))
         else:
             choices.append((rt.name, rt.name))
     return choices
@@ -92,7 +92,8 @@ class ProgramSettingsForm(ProgramCreationForm):
             'flag_types': forms.CheckboxSelectMultiple(),
         }
         model = Program
-ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.'))})
+_ESCAPED_SITE_DOMAIN = settings.SITE_INFO[1].replace('.', '\\.')
+ProgramSettingsForm.base_fields["director_email"].widget = forms.EmailInput(attrs={"pattern": rf"(^.+@{_ESCAPED_SITE_DOMAIN}$)|(^.+@(\w+\.)?learningu\.org$)"})
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """

@@ -131,7 +131,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         #   Populate context with variables to show which program module views are available
         for (tl, view_name) in prog.getModuleViews():
-            context['%s_%s' % (tl, view_name)] = True
+            context[f'{tl}_{view_name}'] = True
 
         context['manage_refund'] = prog.hasModule('CreditCardModule_Stripe')
 
@@ -170,7 +170,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         new_prog.save()
                         #If the url for the program is now different, redirect to the new settings page
                         if new_prog.url is not old_url:
-                            return HttpResponseRedirect( '/manage/%s/settings/program' % (new_prog.url))
+                            return HttpResponseRedirect( f'/manage/{new_prog.url}/settings/program')
                     else:
                         forms['program'] = form
                     context['open_section'] = "program"
@@ -339,15 +339,15 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     perms[0].unexpire()
                 else:
                     Permission.objects.create(role = group, permission_type = request.GET['perm'], start_date = datetime.now(), program = prog)
-                message_good = 'Deadline opened for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
+                message_good = f'Deadline opened for {group}s: {Permission.nice_name_lookup(request.GET["perm"])}.'
             elif 'perm_id' in request.GET:
                 perms = Permission.objects.filter(id=request.GET['perm_id'])
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.unexpire()
-                    message_good = 'Permission opened for %s: %s.' % (perm.user, perm.nice_name())
+                    message_good = f'Permission opened for {perm.user}: {perm.nice_name()}.'
                 else:
-                    message_bad = 'No permission with ID %s.' % (request.GET['perm_id'])
+                    message_bad = f'No permission with ID {request.GET["perm_id"]}.'
 
         elif extra == 'close':
             #   If there are open permission(s) for this type, close them all
@@ -355,15 +355,15 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 group = Group.objects.get(id = request.GET['group'])
                 perms = Permission.valid_objects().filter(permission_type = request.GET['perm'], program = prog, role = group)
                 perms.update(end_date = datetime.now())
-                message_good = 'Deadline closed for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
+                message_good = f'Deadline closed for {group}s: {Permission.nice_name_lookup(request.GET["perm"])}.'
             if 'perm_id' in request.GET:
                 perms = Permission.objects.filter(id=request.GET['perm_id'])
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.expire()
-                    message_good = 'Permission closed for %s: %s.' % (perm.user, perm.nice_name())
+                    message_good = f'Permission closed for {perm.user}: {perm.nice_name()}.'
                 else:
-                    message_bad = 'No permission with ID %s.' % (request.GET['perm_id'])
+                    message_bad = f'No permission with ID {request.GET["perm_id"]}.'
 
         elif extra == 'delete' and 'perm_id' in request.GET:
             #   Delete the specified permission if it exists
@@ -371,9 +371,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
             if perms.count() == 1:
                 perm = perms[0]
                 if 'deadline' in request.GET:
-                    message_good = 'Deadline deleted for %ss: %s.' % (perm.role, perm.nice_name())
+                    message_good = f'Deadline deleted for {perm.role}s: {perm.nice_name()}.'
                 else:
-                    message_good = 'Permission deleted for %s: %s.' % (perm.user, perm.nice_name())
+                    message_good = f'Permission deleted for {perm.user}: {perm.nice_name()}.'
                 perm.delete()
             else:
                 if 'deadline' in request.GET:
@@ -389,7 +389,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     perm = Permission.objects.create(user=None, permission_type=create_form.cleaned_data['deadline_type'],
                                                      role=Group.objects.get(name=create_form.cleaned_data['role']), program=prog,
                                                      start_date = create_form.cleaned_data['start_date'], end_date = create_form.cleaned_data['end_date'])
-                    message_good = 'Deadline created for %ss: %s.' % (create_form.cleaned_data['role'], perm.nice_name())
+                    message_good = f'Deadline created for {create_form.cleaned_data["role"]}s: {perm.nice_name()}.'
                     create_form = NewDeadlineForm()
                 else:
                     message_bad = 'Error(s) while creating deadline (see below)'
@@ -398,7 +398,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if perm_form.is_valid():
                     perm = Permission.objects.create(user=perm_form.cleaned_data['user'], permission_type=perm_form.cleaned_data['permission_type'], program=prog,
                                                      start_date = perm_form.cleaned_data['perm_start_date'], end_date = perm_form.cleaned_data['perm_end_date'])
-                    message_good = 'Permission created for %s: %s.' % (perm_form.cleaned_data['user'], perm.nice_name())
+                    message_good = f'Permission created for {perm_form.cleaned_data["user"]}: {perm.nice_name()}.'
                     perm_form = NewPermissionForm()
                 else:
                     message_bad = 'Error(s) while creating permission (see below)'

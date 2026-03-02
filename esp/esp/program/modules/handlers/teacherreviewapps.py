@@ -65,7 +65,7 @@ class TeacherReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError('Cannot find class with ID {}).'.format(extra), log=False)
+            raise ESPError(f'Cannot find class with ID {extra}).', log=False)
 
         if not request.user.canEdit(cls):
             raise ESPError('You cannot edit class "%s"' % cls, log=False)
@@ -112,7 +112,7 @@ class TeacherReviewApps(ProgramModuleObj):
             for current in students[1:]:
                 if prev.id == prev_id and current.app_completed:
                     from django.shortcuts import redirect
-                    url = "/%s/%s/%s/review_student/%s/?student=%s" % (tl, one, two, extra, current.id)
+                    url = f"/{tl}/{one}/{two}/review_student/{extra}/?student={current.id}"
                     return redirect(url)
                 if prev.id != prev_id:
                     prev = current
@@ -227,7 +227,7 @@ class TeacherReviewApps(ProgramModuleObj):
             if form.is_valid():
                 form.target.update(form)
                 if 'submit_next' in request.POST or 'submit_return' in request.POST:
-                    url = '/%s/%s/%s/review_students/%s/' % (tl, one, two, extra)
+                    url = f'/{tl}/{one}/{two}/review_students/{extra}/'
                     if 'submit_next' in request.POST:
                         url += '?prev=%s' % student.id
                     from django.shortcuts import redirect

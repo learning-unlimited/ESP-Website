@@ -108,10 +108,10 @@ class AdmissionsDashboard(ProgramModuleObj):
                 decision_status_lines = []
                 cls = classapp.app.admitted_to_class()
                 if cls is not None:
-                    line = 'Admitted: {0}'.format(cls.title)
+                    line = f'Admitted: {cls.title}'
                     decision_status_lines.append(line)
                 for cls in classapp.app.waitlisted_to_class():
-                    line = 'Waitlisted: {0}'.format(cls.title)
+                    line = f'Waitlisted: {cls.title}'
                     decision_status_lines.append(line)
                 result['decision_status'] = '\n'.join(decision_status_lines)
             results.append(result)

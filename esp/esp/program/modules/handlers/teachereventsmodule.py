@@ -133,7 +133,7 @@ class TeacherEventsModule(ProgramModuleObj):
                         send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
                               """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
                               (request.user.first_name, request.user.last_name, event_name), \
-                              '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER), \
+                              f'{self.program.program_type} Registration System <server@{settings.EMAIL_HOST_SENDER}>', \
                               [self.program.getDirectorCCEmail()], True, extra_headers = {'Reply-To': request.user.get_email_sendto_address()})
 
                 # Register for training

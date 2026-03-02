@@ -128,44 +128,30 @@ class FinancialAidAppModule(ProgramModuleObj):
 
                 # Send an email announcing the application
                 date_str = str(datetime.now())
-                subj_str = '%s %s applied for Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
-                msg_str = "\n%s %s applied for Financial Aid for %s on %s."
+                subj_str = f'{request.user.first_name} {request.user.last_name} applied for Financial Aid for {prog.niceName()}'
+                msg_str = f"\n{request.user.first_name} {request.user.last_name} applied for Financial Aid for {prog.niceName()} on {date_str}."
                 send_mail(subj_str, (msg_str +
-                """
+                f"""
 
 Here is their form data:
 
 ========================================
-Program:  %s
-User:  %s %s <%s>
-Approved:  %s
-Has Reduced Lunch:  %s
-Household Income:  $%s
-Form Was Filled Out by Non-Student:  %s
+Program:  {app.program}
+User:  {request.user.first_name} {request.user.last_name} <{app.user}>
+Approved:  {date_str}
+Has Reduced Lunch:  {app.reduced_lunch}
+Household Income:  ${app.household_income}
+Form Was Filled Out by Non-Student:  {app.student_prepare}
 Extra Explanation:
-%s
+{app.extra_explaination}
 
 ========================================
 
 This request can be (re)viewed at:
-<http://%s/admin/program/financialaidrequest/%s/>
+<http://{settings.DEFAULT_HOST}/admin/program/financialaidrequest/{app.id}/>
 
 
-""") % (request.user.first_name,
-    request.user.last_name,
-    prog.niceName(),
-    date_str,
-    str(app.program),
-    request.user.first_name,
-    request.user.last_name,
-    str(app.user),
-    date_str,
-    str(app.reduced_lunch),
-    str(app.household_income),
-    str(app.student_prepare),
-    app.extra_explaination,
-    settings.DEFAULT_HOST, # server hostname
-    str(app.id)),
+"""),
                             settings.SERVER_EMAIL,
                             [ prog.getDirectorConfidentialEmail() ] )
                 # Automatically accept apps for people with subsidized lunches

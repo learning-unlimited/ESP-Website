@@ -63,7 +63,7 @@ class DBReceipt(models.Model):
     receipt = models.TextField()
 
     def __str__(self):
-        return 'Registration (%s) receipt for %s' % (self.action, self.program)
+        return f'Registration ({self.action}) receipt for {self.program}'
 
 @python_2_unicode_compatible
 class StudentClassRegModuleInfo(models.Model):
@@ -134,7 +134,7 @@ class StudentClassRegModuleInfo(models.Model):
 
         if self.use_priority:
             for i in range(0, self.priority_limit):
-                name = 'Priority/%d' % (i + 1)
+                name = f'Priority/{i + 1}'
                 verb_list.append(RegistrationType.get_map(include=[name], category='student')[name])
 
         #   Require that the /Applied bit is in the list, since students cannot enroll
