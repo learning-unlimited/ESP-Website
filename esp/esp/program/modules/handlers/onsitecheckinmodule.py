@@ -304,11 +304,14 @@ class OnSiteCheckinModule(ProgramModuleObj):
         json_data = {}
         if request.method == 'POST' and 'code' in request.POST:
             code = request.POST['code']
-            students = ESPUser.objects.filter(id=code)
-            if not students.exists():
+            try:
+                student = ESPUser.objects.get(id=code)
+            except ValueError:
+                json_data['message'] = '%s is not a valid user ID (must be numeric)!' % code
+                return HttpResponse(json.dumps(json_data), content_type='text/json')
+            except ESPUser.DoesNotExist:
                 json_data['message'] = '%s is not a user!' % code
             else:
-                student = students[0]
                 info_string = student.name() + " (" + str(code) + ")"
                 if student.isStudent():
                     self.student = student
