@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Prevent Python from creating .pyc files (avoids stale bytecode issues)
+export PYTHONDONTWRITEBYTECODE=1
+
 # Copy Docker-specific settings if local_settings.py doesn't exist
 if [ ! -f /app/esp/esp/local_settings.py ]; then
     echo ">>> Creating local_settings.py from Docker template..."
