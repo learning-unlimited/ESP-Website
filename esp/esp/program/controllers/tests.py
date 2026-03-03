@@ -176,8 +176,11 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
 
     # --- happy-path: no walk-in registrations ---
 
-    def test_no_walkin_registrations_returns_empty_report(self):
-        """When there are no walk-in registrations, report is an empty list."""
+    def test_no_walkin_registrations_report_has_zero_counts(self):
+        """
+        When there are no walk-in registrations, sanitize_walkin() returns one
+        (section, count) entry per walk-in section, but all counts must be 0.
+        """
         report = self.controller.sanitize_walkin(fake=True)
         # Each entry is (section, count).  All counts should be 0.
         section_counts = [count for _, count in report]
@@ -400,11 +403,13 @@ class SanitizeLunchTest(StudentRegSanityFrameworkTest):
 
     def test_report_entries_are_class_and_int(self):
         """Each entry is a (ClassSubject, int) pair."""
+        from esp.program.models.class_ import ClassSubject
         self._enrol_student(self.students[0], self.lunch_section)
         report = self.controller.sanitize_lunch(fake=True)
         for entry in report:
             self.assertEqual(len(entry), 2)
             cls_obj, count = entry
+            self.assertIsInstance(cls_obj, ClassSubject)
             self.assertIsInstance(count, int)
 
 
