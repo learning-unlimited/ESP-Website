@@ -321,7 +321,10 @@ class TagRegistrationTest(TestCase):
     ]
 
     # The set of all valid tag names from tagdict/__init__.py
-    _all_known_tags = set(all_global_tags.keys()) | set(all_program_tags.keys())
+    _all_known_tags = (set(all_global_tags.keys()) | set(all_program_tags.keys())) - {
+        'test',
+        'test_bool',
+    }
 
     # ---- helpers for scanning Python files ----
 
