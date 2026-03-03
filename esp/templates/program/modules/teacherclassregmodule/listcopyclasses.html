@@ -35,7 +35,18 @@
   </tr>
   {% endif %}
   {% load class_render_row %}
+  <tr>
+    <th class="clsleft" colspan="5" style="padding-top: 8px; color: #555; font-weight: normal; font-style: italic;">Class title &amp; program</th>
+    <th colspan="2"></th>
+  </tr>
   {% for cls in all_class_list %}
+    {% if not forloop.first %}
+    <tr>
+      <td colspan="7" style="padding: 0; border: none;">
+        <hr style="margin: 4px 0; border: none; border-top: 1px solid #ccc;" />
+      </td>
+    </tr>
+    {% endif %}
     {% render_class_copy_row cls %}
   {% endfor %}
 
