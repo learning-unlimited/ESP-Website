@@ -107,7 +107,8 @@ class StudentExtraCostsTest(ProgramFrameworkTest):
         self.assertFalse(form.is_valid())
 
     def test_extracosts_post(self):
-        self.client.login(username=self.student.username, password='password')
+        logged_in = self.client.login(username=self.student.username, password='password')
+        self.assertTrue(logged_in)
         response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(),
                                     {'%s-cost' % self.tshirt_item.id: 'on'})
         self.assertIn(response.status_code, [200, 302])
@@ -131,7 +132,8 @@ class StudentRegCoreTest(ProgramFrameworkTest):
         self.student = self.students[0]
 
     def test_student_reg_page_loads(self):
-        self.client.login(username=self.student.username, password='password')
+        logged_in = self.client.login(username=self.student.username, password='password')
+        self.assertTrue(logged_in)
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
         self.assertIn(response.status_code, [200, 302])
 
@@ -154,14 +156,16 @@ class StudentRegCoreTest(ProgramFrameworkTest):
         self.assertIn(self.program.niceName(), desc['attended'])
 
     def test_confirmreg_page(self):
-        self.client.login(username=self.student.username, password='password')
+        logged_in = self.client.login(username=self.student.username, password='password')
+        self.assertTrue(logged_in)
         response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
         self.assertIn(response.status_code, [200, 302])
 
     def test_cancelreg(self):
         rt, _ = RecordType.objects.get_or_create(name='reg_confirmed')
         Record.objects.create(user=self.student, program=self.program, event=rt)
-        self.client.login(username=self.student.username, password='password')
+        logged_in = self.client.login(username=self.student.username, password='password')
+        self.assertTrue(logged_in)
         response = self.client.get('/learn/%s/cancelreg' % self.program.getUrlBase())
         self.assertIn(response.status_code, [200, 302])
 
@@ -204,7 +208,8 @@ class StudentRegPhaseZeroTest(ProgramFrameworkTest):
             self.assertIn('phasezero', result)
 
     def test_phase_zero_page_loads(self):
-        self.client.login(username=self.student.username, password='password')
+        logged_in = self.client.login(username=self.student.username, password='password')
+        self.assertTrue(logged_in)
         response = self.client.get('/learn/%s/studentregphasezero' % self.program.getUrlBase())
         self.assertIn(response.status_code, [200, 302])
 
@@ -218,7 +223,8 @@ class StudentRegPhaseZeroTest(ProgramFrameworkTest):
     def test_studentlookup(self):
         record = PhaseZeroRecord.objects.create(program=self.program)
         record.user.add(self.student)
-        self.client.login(username=self.students[1].username, password='password')
+        logged_in = self.client.login(username=self.students[1].username, password='password')
+        self.assertTrue(logged_in)
         response = self.client.get('/learn/%s/studentlookup?username=%s' % (
             self.program.getUrlBase(), self.student.username[:3]))
         self.assertIn(response.status_code, [200, 302])
@@ -226,7 +232,8 @@ class StudentRegPhaseZeroTest(ProgramFrameworkTest):
     def test_joingroup_errors(self):
         record = PhaseZeroRecord.objects.create(program=self.program)
         record.user.add(self.student)
-        self.client.login(username=self.students[1].username, password='password')
+        logged_in = self.client.login(username=self.students[1].username, password='password')
+        self.assertTrue(logged_in)
         response = self.client.post('/learn/%s/joingroup' % self.program.getUrlBase(), {})
         self.assertIn(response.status_code, [200, 302])
         Permission.objects.create(user=self.students[1], permission_type='Student/PhaseZero', program=self.program)
@@ -256,12 +263,14 @@ class StudentRegConfirmTest(ProgramFrameworkTest):
         self.student = self.students[0]
 
     def test_confirmreg_page(self):
-        self.client.login(username=self.student.username, password='password')
+        logged_in = self.client.login(username=self.student.username, password='password')
+        self.assertTrue(logged_in)
         response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
         self.assertIn(response.status_code, [200, 302])
 
     def test_do_confirmreg_redirects(self):
-        self.client.login(username=self.student.username, password='password')
+        logged_in = self.client.login(username=self.student.username, password='password')
+        self.assertTrue(logged_in)
         response = self.client.get('/learn/%s/do_confirmreg' % self.program.getUrlBase())
         self.assertEqual(response.status_code, 302)
         self.assertIn('confirmreg', response.url)
@@ -282,7 +291,8 @@ class StudentRegConfirmTest(ProgramFrameworkTest):
         sections = list(self.program.sections())
         if sections:
             sections[0].preregister_student(self.student)
-            self.client.login(username=self.student.username, password='password')
+            logged_in = self.client.login(username=self.student.username, password='password')
+            self.assertTrue(logged_in)
             response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
             self.assertIn(response.status_code, [200, 302])
 
