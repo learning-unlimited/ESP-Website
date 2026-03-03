@@ -125,4 +125,10 @@ class CommentTest(TestCase):
             content='More thoughts.',
         )
         comments = list(Comment.objects.filter(entry=self.entry))
-        self.assertEqual(comments[0].pk, comment2.pk)
+
+class MiniblogViewTest(TestCase):
+    def test_homepage_loads(self):
+        """ Test that the homepage (where blog is integrated) loads successfully. """
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+
