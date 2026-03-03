@@ -9,7 +9,6 @@ on:
       - 'LICENSE'
       - '.gitattributes'
       - '.gitignore'
-      - 'Vagrantfile'
   pull_request:
     branches: [main]
     paths-ignore:
@@ -18,7 +17,6 @@ on:
       - 'LICENSE'
       - '.gitattributes'
       - '.gitignore'
-      - 'Vagrantfile'
   workflow_dispatch:
 
 concurrency:
@@ -33,14 +31,14 @@ jobs:
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         python-version: [3.7]
     services:
       postgres:
-        image: postgres:10.8
+        image: postgres:14
         env:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpassword
@@ -71,17 +69,14 @@ jobs:
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
     - name: Get apt packages list
-      if: ${{ matrix.ci_job == 'test' }}
       id: apt-action
       run: |
         PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
         echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
-      if: ${{ matrix.ci_job == 'test' }}
-      uses: awalsh128/cache-apt-pkgs-action@latest
+      uses: Eeems-Org/apt-cache-action@v1
       with:
         packages: ${{ steps.apt-action.outputs.packages }}
-        version: 1.0
     - name: Prepare for Installing Dependencies
       run: deploy/ci/before_install
       env:
