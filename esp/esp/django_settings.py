@@ -376,6 +376,9 @@ CYBERSOURCE_CONFIG = {
     'merchant_id': '',
 }
 
+# Setting for Formstack webhook handshake key verification
+FORMSTACK_HANDSHAKE_KEY = ''
+
 FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'
 
 #   Allow Filebrowser to edit anything under media/
