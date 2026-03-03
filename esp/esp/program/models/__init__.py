@@ -515,6 +515,22 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return lists
 
+    def get_test_user_ids(self):
+        """Return PKs of the designated test accounts for this program.
+
+        Test accounts are stored as program-scoped Tags so that no migration
+        is needed.  Keys: 'test_student_id', 'test_teacher_id'.
+        """
+        ids = set()
+        for key in ('test_student_id', 'test_teacher_id'):
+            val = Tag.getTag(key, target=self)
+            if val:
+                try:
+                    ids.add(int(val))
+                except (ValueError, TypeError):
+                    pass
+        return ids
+
     def students_union(self, QObject = False):
         import operator
         if len(list(self.students().values())) == 0:
@@ -527,7 +543,11 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return ESPUser.objects.filter(union).distinct()
+            test_ids = self.get_test_user_ids()
+            qs = ESPUser.objects.filter(union).distinct()
+            if test_ids:
+                qs = qs.exclude(id__in=test_ids)
+            return qs
 
     def teachers_union(self, QObject = False):
         import operator
@@ -540,7 +560,11 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return ESPUser.objects.filter(union).distinct()
+            test_ids = self.get_test_user_ids()
+            qs = ESPUser.objects.filter(union).distinct()
+            if test_ids:
+                qs = qs.exclude(id__in=test_ids)
+            return qs
 
     def volunteers_union(self, QObject = False):
         import operator
@@ -1474,6 +1498,7 @@ class RegistrationProfile(models.Model):
 
         return regProf
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
+    getLastProfile.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
 
     @cache_function
@@ -1551,6 +1576,7 @@ class RegistrationProfile(models.Model):
     # Thanks to our attempts to be smart and steal profiles from other programs,
     # the cache can't depend only on profiles with the same (user, program).
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
+    getLastForProgram.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastForProgram = staticmethod(getLastForProgram)
 
     def __str__(self):
