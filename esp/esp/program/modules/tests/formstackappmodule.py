@@ -37,6 +37,12 @@ class FormstackAppModuleTest(ProgramFrameworkTest):
         result = resolve_field_expression('  user.username  ', {'user': user})
         self.assertEqual(result, user.username)
 
+    def test_resolve_expression_with_leading_whitespace(self):
+        """Expressions with leading whitespace (e.g. from '123: user.username') resolve correctly."""
+        user = self.students[0]
+        result = resolve_field_expression(' user.username', {'user': user})
+        self.assertEqual(result, user.username)
+
     def test_resolve_empty_string_value(self):
         """Expressions resolving to empty string return '' not None."""
         user = self.students[0]
