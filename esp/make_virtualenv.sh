@@ -104,12 +104,12 @@ if ! "$PYTHON" -c "import virtualenv" >/dev/null 2>&1; then
             echo "This can happen on systems where Python is 'externally managed' (PEP 668), e.g. Homebrew Python on macOS."
             echo ""
             echo "Try one of the following:"
-            echo "  1) Install virtualenv via pipx (recommended):"
-            echo "       pipx install virtualenv"
+            echo "  1) Install virtualenv into this interpreter, allowing pip to modify an externally-managed environment (not recommended):"
+            echo "       $PYTHON -m pip install --user --break-system-packages \"virtualenv>=1.10\""
             echo "  2) Install a different Python (e.g. python.org installer or pyenv) and rerun with:"
             echo "       PYTHON=python3.x bash esp/make_virtualenv.sh"
-            echo "  3) If you know what you're doing, you may allow pip to modify an externally-managed env (not recommended):"
-            echo "       $PYTHON -m pip install --user --break-system-packages virtualenv"
+            echo "  3) Alternatively, you can create a virtual environment using the built-in venv module, for example:"
+            echo "       $PYTHON -m venv \"$VENVDIR\""
             echo ""
             exit 1
         fi
