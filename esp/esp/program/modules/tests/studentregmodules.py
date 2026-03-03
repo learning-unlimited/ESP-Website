@@ -59,7 +59,8 @@ class StudentExtraCostsTest(ProgramFrameworkTest):
             required=False, max_quantity=3, for_finaid=True)
 
     def test_extracosts_page_loads(self):
-        self.client.login(username=self.student.username, password='password')
+        logged_in = self.client.login(username=self.student.username, password='password')
+        self.assertTrue(logged_in)
         response = self.client.get('/learn/%s/extracosts' % self.program.getUrlBase())
         self.assertIn(response.status_code, [200, 302])
 
