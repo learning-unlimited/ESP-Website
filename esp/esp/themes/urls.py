@@ -1,14 +1,14 @@
 
 from esp.themes.views import editor, selector, configure, confirm_overwrite, landing, recompile, logos
 
-from django.conf.urls import url
+from django.urls import path, re_path
 
 urlpatterns = [
-    url(r'^/?$', landing),
-    url(r'^/select', selector),
-    url(r'^/setup', configure),
-    url(r'^/confirm_overwrite', confirm_overwrite),
-    url(r'^/logos', logos),
-    url(r'^/customize', editor),
-    url(r'^/recompile', recompile),
+    re_path(r'^/?$', landing),
+    path('/select', selector),
+    path('/setup', configure),
+    path('/confirm_overwrite', confirm_overwrite),
+    path('/logos', logos),
+    path('/customize', editor),
+    path('/recompile', recompile),
 ]
