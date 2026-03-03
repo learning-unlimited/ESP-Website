@@ -24,13 +24,13 @@ from esp.web.views.main import DefaultQSDView
 def HttpMetaRedirect(location='/'):
     response = HttpResponse()
     response.status = 200
-    response.content = """
+    response.content = f"""
     <html><head>
-    <meta http-equiv="refresh" content="0; url=%s">
+    <meta http-equiv="refresh" content="0; url={location}">
     </head>
-    <body>Thank you for logging in.  Please click <a href="%s">here</a> if you are not redirected.</body>
+    <body>Thank you for logging in.  Please click <a href="{location}">here</a> if you are not redirected.</body>
     </html>
-    """ % (location, location)
+    """
     return response
 
 mask_locations = ['/', '/myesp/signout', '/myesp/signout/', '/admin/logout/']
@@ -234,7 +234,7 @@ def unsubscribe(request, username, token, oneclick = False):
     # so show the login page (with a custom alert message)
     else:
         next_url = reverse('unsubscribe', kwargs={'username': username, 'token': token,})
-        return HttpResponseRedirect('%s?next=%s' % (reverse('login'), next_url))
+        return HttpResponseRedirect(f'{reverse("login")}?next={next_url}')
 
 # have an email client (etc) POST to this view to process a
 # "oneclick" unsubscribe
@@ -258,7 +258,7 @@ def morph_into_user(request):
                                 onsite is not None)
 
     if onsite is not None:
-        return HttpResponseRedirect('/learn/%s/studentreg' % onsite.getUrlBase())
+        return HttpResponseRedirect(f'/learn/{onsite.getUrlBase()}/studentreg')
     else:
         return HttpResponseRedirect('/')
 

@@ -36,7 +36,7 @@ def initial_passwd_request(request, success=None):
             for user in users:
                 user.recoverPassword()
 
-            return HttpResponseRedirect('/%s/success/' % request.path.strip('/'))
+            return HttpResponseRedirect(f'/{request.path.strip("/")}/success/')
 
 
     else:
@@ -76,7 +76,7 @@ def email_passwd_followup(request,success=None):
                 auth_user = authenticate(username = form.cleaned_data['username'],
                                          password = form.cleaned_data['password'])
                 login(request, auth_user)
-                return HttpResponseRedirect('%ssuccess/' % request.path)
+                return HttpResponseRedirect(f'{request.path}success/')
             else:
                 return render_to_response('users/recovery_invalid_code.html',
                                   request, {})

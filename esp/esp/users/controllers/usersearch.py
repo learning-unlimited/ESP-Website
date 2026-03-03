@@ -144,9 +144,9 @@ class UserSearchController(object):
                     try:
                         rc = re.compile(criteria[field])
                     except:
-                        raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
-                    filter_dict = {'%s__iregex' % field: criteria[field]}
-                    if '%s__not' % field in criteria:
+                        raise ESPError(f'Invalid search expression, please check your syntax: {criteria[field]}', log=False)
+                    filter_dict = {f'{field}__iregex': criteria[field]}
+                    if f'{field}__not' in criteria:
                         Q_exclude |= Q(**filter_dict)
                     else:
                         Q_include &= Q(**filter_dict)
@@ -157,7 +157,7 @@ class UserSearchController(object):
                 try:
                     zipc = ZipCode.objects.get(zip_code = criteria['zipcode'])
                 except:
-                    raise ESPError('Zip code not found.  This may be because you didn\'t enter a valid US zipcode.  Tried: "%s"' % criteria['zipcode'], log=False)
+                    raise ESPError(f'Zip code not found.  This may be because you didn\'t enter a valid US zipcode.  Tried: "{criteria["zipcode"]}"', log=False)
                 zipcodes = zipc.close_zipcodes(criteria['zipdistance'])
                 # Excludes zipcodes within a certain radius, giving an annulus; can fail to exclude people who used to live outside the radius.
                 # This may have something to do with the Q_include line below taking more than just the most recent profile. -ageng, 2008-01-15
@@ -398,7 +398,7 @@ class UserSearchController(object):
         filterObj = PersistentQueryFilter.create_from_Q(ESPUser, query)
 
         if 'base_list' in data and 'recipient_type' in data:
-            filterObj.useful_name = 'Program list: %s' % data['base_list']
+            filterObj.useful_name = f'Program list: {data["base_list"]}'
         elif 'combo_base_list' in data:
             filterObj.useful_name = 'Custom user list'
         filterObj.save()
@@ -441,7 +441,7 @@ class UserSearchController(object):
             key = user_type.lower() + 's'
             if user_type not in category_lists:
                 category_lists[user_type] = []
-            category_lists[user_type].insert(0, {'name': 'all_%s' % user_type, 'list': ESPUser.getAllOfType(user_type), 'description': 'All %s in the database' % key, 'preferred': True, 'all_flag': True})
+            category_lists[user_type].insert(0, {'name': f'all_{user_type}', 'list': ESPUser.getAllOfType(user_type), 'description': f'All {key} in the database', 'preferred': True, 'all_flag': True})
 
         #   Add in mailing list accounts
         category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
@@ -453,7 +453,7 @@ class UserSearchController(object):
                 context['all_list_names'].append(item['name'])
 
         if target_path is None:
-            target_path = '/manage/%s/commpanel' % program.getUrlBase()
+            target_path = f'/manage/{program.getUrlBase()}/commpanel'
         context['action_path'] = target_path
         context['groups'] = Group.objects.all()
         context['regtypes'] = RegistrationType.objects.all().order_by("name")

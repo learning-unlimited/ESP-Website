@@ -43,7 +43,7 @@ class TestUserSearchController(TestCase):
             'gradyear_max': '',
             'userid': '',
             'zipcode': '',
-            'combo_base_list': '%s:%s'%(list_a, list_b),
+            'combo_base_list': f'{list_a}:{list_b}',
             'email': '',
             'states': '',
             'zipdistance': '',

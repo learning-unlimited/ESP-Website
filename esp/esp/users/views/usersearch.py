@@ -83,7 +83,7 @@ def get_user_list(request, listDict2, extra=''):
             getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
                 if isinstance(getUser, User):
-                    newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, 'User %s' % getUser.username)
+                    newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, f'User {getUser.username}')
                 else:
                     newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')
                 return (newfilterObj, True)
@@ -126,7 +126,7 @@ def get_user_list(request, listDict2, extra=''):
         if request.POST['base_list'] in listDict:
             curList = listDict[request.POST['base_list']]['list']
         else:
-            raise ESPError('I do not know of list "%s".' % request.POST['base_list'])
+            raise ESPError(f'I do not know of list "{request.POST["base_list"]}".')
 
         # we start with all the separated lists, and apply the and'd lists onto the or'd lists before
         # we or. This closely represents the sentence (it's not as powerful, but makes "sense")
@@ -161,7 +161,7 @@ def get_user_list(request, listDict2, extra=''):
             getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
                 if isinstance(getUser, User):
-                    newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, 'User %s' % getUser.username)
+                    newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, f'User {getUser.username}')
                 else:
                     newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')
                 return (newfilterObj, True)
@@ -184,7 +184,7 @@ def get_user_list(request, listDict2, extra=''):
         getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
         if found:
             if isinstance(getUser, ESPUser):
-                newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, 'User %s' % getUser.username)
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, f'User {getUser.username}')
             else:
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')
 
@@ -262,7 +262,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False, add_
     elif isinstance(user_type, QuerySet):
         QSUsers = usc.filter_from_criteria(user_type, request.GET)
     else:
-        raise ESPError('Invalid user_type: %s' % type(user_type), log=True)
+        raise ESPError(f'Invalid user_type: {type(user_type)}', log=True)
 
     #   We need to ask for more user input if no filtering options were selected
     if not usc.updated:
