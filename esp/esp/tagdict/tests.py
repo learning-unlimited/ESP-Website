@@ -373,14 +373,14 @@ class TagRegistrationTest(TestCase):
 
     # ---- helpers for scanning Django template files ----
 
-    # Matches filter syntax:  "tag_name"|getBooleanTag  or  "tag_name"|getProgramTag
+    # Matches filter syntax:  "tag_name"|getBooleanTag, "tag_name"|getProgramTag, or "tag_name"|getTag
     _TEMPLATE_FILTER_RE = re.compile(
-        r"""["']([A-Za-z_][A-Za-z0-9_]*)["']\s*\|\s*(?:getBooleanTag|getProgramTag)"""
+        r"""["']([A-Za-z_][A-Za-z0-9_]*)["']\s*\|\s*(?:getBooleanTag|getProgramTag|getTag)"""
     )
 
-    # Matches tag syntax:  {% getProgramTag "tag_name" ... %}
+    # Matches tag syntax:  {% getProgramTag "tag_name" ... %}, {% getBooleanTag "tag_name" ... %}, or {% getTag "tag_name" ... %}
     _TEMPLATE_TAG_RE = re.compile(
-        r"""\{%\s*(?:getProgramTag|getBooleanTag)\s+["']([A-Za-z_][A-Za-z0-9_]*)["']"""
+        r"""\{%\s*(?:getProgramTag|getBooleanTag|getTag)\s+["']([A-Za-z_][A-Za-z0-9_]*)["']"""
     )
 
     @classmethod
