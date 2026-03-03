@@ -61,8 +61,23 @@ class ClassChangeTestBase(ProgramFrameworkTest):
         kwargs.setdefault("num_rooms", 2)
         super().setUp(*args, **kwargs)
 
-        # Grab the first available section for registration fixtures.
-        self.first_section = self.program.sections().order_by("id").first()
+        # Assign meeting_times to sections so they pass the controller's
+        # ``meeting_times__isnull=False`` filter; without this the sections
+        # queryset inside ClassChangeController.__init__ is empty, and
+        # ``get_index_array`` raises ValueError on ``numpy.max([])``.
+        self.schedule_randomly()
+
+        # Grab the first *scheduled* section for registration fixtures.
+        self.first_section = self.program.sections().filter(
+            meeting_times__isnull=False,
+        ).order_by("id").first()
+
+        # The controller's ``initialize()`` requires at least one student
+        # with a 'Request' registration; otherwise the ``students`` queryset
+        # is empty and ``get_ids_and_indices`` again calls ``numpy.max``
+        # on an empty array.  Register the first student so every test
+        # class gets a usable controller.
+        self._create_request_registration(self.students[0])
 
     def _create_request_registration(self, student, section=None):
         """Give *student* a 'Request' StudentRegistration on *section*."""
@@ -113,7 +128,7 @@ class ClassChangeControllerInitTest(ClassChangeTestBase):
 
     def test_numpy_arrays_initialised_with_correct_student_axis(self):
         ctrl = _make_controller(self.program)
-        # No 'Request' registrations → num_students == 0
+        # setUp creates a Request registration, so num_students >= 1.
         self.assertEqual(ctrl.enroll_orig.shape[0], ctrl.num_students)
         self.assertEqual(ctrl.request.shape[0], ctrl.num_students)
 
@@ -140,11 +155,13 @@ class ClassChangeControllerInitTest(ClassChangeTestBase):
         expected = self.program.getTimeSlots().order_by("id").distinct().count()
         self.assertEqual(ctrl.num_timeslots, expected)
 
-    def test_with_request_students_num_students_nonzero(self):
-        student = self.students[0]
-        self._create_request_registration(student)
-        ctrl = _make_controller(self.program)
-        self.assertGreater(ctrl.num_students, 0)
+    def test_with_additional_request_students_increases_count(self):
+        """Adding a second student's Request increases num_students."""
+        ctrl_before = _make_controller(self.program)
+        count_before = ctrl_before.num_students
+        self._create_request_registration(self.students[1])
+        ctrl_after = _make_controller(self.program)
+        self.assertGreater(ctrl_after.num_students, count_before)
 
 
 # ===========================================================================
@@ -277,8 +294,7 @@ class ComputeAssignmentsTest(ClassChangeTestBase):
 
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
-        # Create a Request registration so the controller has ≥1 student.
-        self._create_request_registration(self.students[0])
+        # Base setUp already creates a Request registration for students[0].
         self.ctrl = _make_controller(self.program)
 
     def test_compute_does_not_raise(self):
@@ -334,7 +350,7 @@ class EmailTextTest(ClassChangeTestBase):
 
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
-        self._create_request_registration(self.students[0])
+        # Base setUp already creates a Request registration for students[0].
         self.ctrl = _make_controller(self.program)
         # Student at index 0 in the controller's student list.
         self.student_idx = 0
