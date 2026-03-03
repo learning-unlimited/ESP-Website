@@ -40,6 +40,7 @@
 </div>
 
 <form action="/manage/{{ program.getUrlBase }}/modules/" method="post">
+    {% csrf_token %}
     <input type='hidden' name='learn_req' id='learn_req'>
     <input type='hidden' name='learn_not_req' id='learn_not_req'>
     <input type='hidden' name='teach_req' id='teach_req'>
@@ -118,6 +119,7 @@
 
 <div class="dspcont">
 <form action="/manage/{{ program.getUrlBase }}/modules/" method="post">
+    {% csrf_token %}
     <center>
         <input type='checkbox' name='default_seq' id='default_seq' checked><label for="default_seq">Reset the sequence values of all modules to their defaults</label><br/>
         <input type='checkbox' name='default_req' id='default_req' checked><label for="default_req">Reset the required status of all modules to their defaults</label><br/>
