@@ -1,6 +1,5 @@
 from django import template
-
-from esp.program.modules.base import CoreModule
+from django.core.exceptions import ObjectDoesNotExist
 
 register = template.Library()
 
@@ -44,7 +43,7 @@ def registration_progress(context):
             scrmi = program.studentclassregmoduleinfo
         else:
             scrmi = program.classregmoduleinfo
-    except Exception:
+    except (AttributeError, ObjectDoesNotExist):
         return {}
 
     if scrmi.progress_mode == 0:

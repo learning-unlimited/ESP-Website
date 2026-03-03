@@ -110,11 +110,14 @@ class RegistrationProgressTagTest(ProgramFrameworkTest):
 
     def test_returns_correct_extra_steps_for_teach_tl(self):
         """Tag uses 'teach:extra_steps' for the teacher registration tl."""
+        crmi = self.program.classregmoduleinfo
+        crmi.progress_mode = 1
+        crmi.save()
         request = self._make_request(tl='teach')
         result = registration_progress({'request': request})
-        # If classregmoduleinfo exists and progress_mode != 0, we get context
-        if result:
-            self.assertEqual(result['extra_steps'], 'teach:extra_steps')
+        self.assertNotEqual(result, {})
+        self.assertIn('extra_steps', result)
+        self.assertEqual(result['extra_steps'], 'teach:extra_steps')
 
     def test_completedAll_false_when_required_module_incomplete(self):
         """completedAll is False when a required module has not been completed."""
@@ -198,10 +201,10 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, self.CHECKLIST_MARKER)
 
-    def test_no_checklist_when_force_show_disabled_and_on_mainpage(self):
+    def test_mainpage_shows_checklist_when_force_show_disabled(self):
         """When force_show_required_modules is False, hitting studentreg shows
         the regular mainpage (which has its own checkboxes via context['modules']).
-        The required module page itself should still show the checklist if visited
+        The required module page itself should also show the checklist when visited
         directly (because registration_progress reads request.tl and request.program)."""
         self.scrmi.force_show_required_modules = False
         self.scrmi.save()
@@ -210,6 +213,10 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         # The mainpage has its own checkboxes section (not from module_base.html)
         self.assertContains(response, self.CHECKLIST_MARKER)
+        # Direct visit to the required module page also shows the checklist
+        ack_response = self.client.get('/learn/%s/acknowledgement' % self.program.url)
+        self.assertEqual(ack_response.status_code, 200)
+        self.assertContains(ack_response, self.CHECKLIST_MARKER)
 
     def test_progress_bar_mode_shows_no_checkbox_table(self):
         """When progress_mode is 2 (progress bar), the checkbox table is absent."""
