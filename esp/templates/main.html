@@ -13,6 +13,13 @@
   {% block main %}
 
     <div class="container">
+      {% if request.COOKIES.esp_testing_role %}
+      <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+        <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
+        You are logged in as a test account.
+        <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
+      </div>
+      {% endif %}
       <div class="row-fluid">
         {% block sidebar %}
           <h3>Navigation</h3>

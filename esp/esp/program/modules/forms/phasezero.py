@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -47,7 +46,7 @@ class SubmitForm(forms.Form):
             del kwargs['program']
         else:
             raise KeyError('Need to supply program as named argument to SubmitForm')
-        super(SubmitForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def save(self, user, program):
         #Create new lottery record and add user to record

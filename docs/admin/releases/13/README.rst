@@ -165,7 +165,7 @@ Minor new features
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
-- Fixed an error that occured when trying to access the profile form when morphed as a teacher.
+- Fixed an error that occurred when trying to access the profile form when morphed as a teacher.
 - Fixed a bug on the phase zero management page that would prevent the graph from being plotted.
 - Fixed a bug that had broken the credit card module.
 - Fixed a bug where students that had yet to fill out a profile would cause the phase zero management page to break. If such students are in the phase zero lottery, they are now reported on the management page.
@@ -188,7 +188,7 @@ Development changes
 
 Development server changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-- The development server VM has been upgraded to Ubuntu 20.04 (from Ubuntu 14.04). LU web developers will need to upgrade their local development servers by following the instructions in `vagrant.rst <https://github.com/learning-unlimited/ESP-Website/blob/main/docs/dev/vagrant.rst#upgrading-your-personal-dev-vm>`_.
+- The development server VM has been upgraded to Ubuntu 20.04 (from Ubuntu 14.04). LU web developers will need to upgrade their local development servers by following the instructions in `docker.rst <https://github.com/learning-unlimited/ESP-Website/blob/main/docs/dev/docker.rst>`_.
 
 Dependency changes
 ~~~~~~~~~~~~~~~~~~
