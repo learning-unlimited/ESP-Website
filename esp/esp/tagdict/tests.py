@@ -337,8 +337,13 @@ class TagRegistrationTest(TestCase):
         def visit_Call(self, node):
             if self._is_tag_call(node) and node.args:
                 first_arg = node.args[0]
+                tag_key = None
                 if isinstance(first_arg, ast.Str):  # Python 3.7 compat
-                    self.found.append((first_arg.s, node.lineno))
+                    tag_key = first_arg.s
+                elif isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):  # Python 3.8+ compat
+                    tag_key = first_arg.value
+                if tag_key is not None:
+                    self.found.append((tag_key, node.lineno))
             self.generic_visit(node)
 
         @classmethod
