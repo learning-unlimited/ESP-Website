@@ -217,6 +217,15 @@ LOGGING = {
     }
 }
 
+# Ensure root logger is configured when running scripts/shells so that
+# root-level calls like logging.error(...) are visible in interactive shells
+# without enabling a root logger for the webserver (avoids duplicated output).
+if IS_IN_SCRIPT:
+    LOGGING['root'] = {
+        'handlers': ['consolescript', 'filescript'],
+        'level': LOG_LEVEL,
+    }
+
 #   Search directories for LESS (customizable stylesheet) files
 LESS_SEARCH_PATH = [
     os.path.join(MEDIA_ROOT, 'less'),
