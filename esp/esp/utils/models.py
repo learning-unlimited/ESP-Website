@@ -84,10 +84,10 @@ class PrintRequest(models.Model):
         indexes = [
             models.Index(
                 fields=['time_executed', 'time_requested'],
-                name='printreq_executed_requested_idx'
+                name='pr_exec_req_idx'
             ),
             models.Index(
                 fields=['printer', 'time_executed', 'time_requested'],
-                name='printreq_printer_executed_requested_idx'
+                name='pr_printer_exec_req_idx'
             ),
         ]
