@@ -163,7 +163,7 @@ class StudentRegCoreTest(ProgramFrameworkTest):
         Record.objects.create(user=self.student, program=self.program, event=rt)
         self.client.login(username=self.student.username, password='password')
         response = self.client.get('/learn/%s/cancelreg' % self.program.getUrlBase())
-        self.assertIn(response.status_code, [200, 302, 500])
+        self.assertIn(response.status_code, [200, 302])
 
     def test_confirmed_students(self):
         module = self.program.getModule('StudentRegCore')
