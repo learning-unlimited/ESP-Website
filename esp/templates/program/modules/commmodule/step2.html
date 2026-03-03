@@ -5,6 +5,7 @@
 {% block xtrajs %}
 {{block.super}}
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
+<script src="/media/scripts/jodit_base64_upload.js"></script>
 {% endblock %}
 {% block stylesheets %}
 {{block.super}}
@@ -104,11 +105,11 @@ var editor = new Jodit("#emailbody", {
     },
     "defaultHandlerSuccess": function(data) {
       for (var i = 0; i < data.files.length; i++) {
-        this.selection.insertImage(data.files[i]);
+        editor.selection.insertImage(data.files[i]);
       }
     },
     "error": function(e) {
-      this.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
+      editor.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
     }
   },
   extraButtons: [
@@ -148,5 +149,6 @@ var editor = new Jodit("#emailbody", {
     }
   ],
 });
+espHandleBase64Paste(editor);
 </script>
 {% endblock %}
