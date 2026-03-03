@@ -1,10 +1,5 @@
-from __future__ import with_statement
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
 from io import open
-from six.moves import range
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -72,12 +67,12 @@ class LotteryException(Exception):
 class LotterySectionException(LotteryException):
     """ Something is wrong with a class section.    """
     def __init__(self, section, msg, **kwargs):
-        super(LotteryException, self).__init__('Class section %d (%s) %s' % (section.id, section.emailcode(), msg), **kwargs)
+        super().__init__('Class section %d (%s) %s' % (section.id, section.emailcode(), msg), **kwargs)
 
 class LotterySubjectException(LotteryException):
     """ Something is wrong with a class subject.    """
     def __init__(self, subject, msg, **kwargs):
-        super(LotteryException, self).__init__('Class subject %s %s' % (subject.emailcode(), msg), **kwargs)
+        super().__init__('Class subject %s %s' % (subject.emailcode(), msg), **kwargs)
 
 class LotteryAssignmentController(object):
 
@@ -343,8 +338,6 @@ class LotteryAssignmentController(object):
                         if len(possible_classes):
                             choice = numpy.random.choice(possible_classes)
                             self.priority[i][student, choice]=True
-
-
 
 
     def fill_section(self, si, priority=False, rank=10):

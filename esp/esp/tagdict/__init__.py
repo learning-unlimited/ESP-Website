@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from collections import OrderedDict
 from django import forms
 from django.forms import widgets
@@ -8,7 +7,6 @@ from decimal import Decimal
 import datetime
 
 from esp.users.forms import _states
-from six.moves import zip
 
 import json
 
@@ -1350,6 +1348,20 @@ all_program_tags = {
         'is_boolean': False,
         'help_text': 'The text that is included right above the schedule in PDF student schedules (LaTeX is supported).',
         'default': '',
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'test_student_id': {
+        'is_boolean': False,
+        'help_text': 'PK of the designated test student account for this program (managed by Admin Testing Mode; do not edit manually)',
+        'default': None,
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'test_teacher_id': {
+        'is_boolean': False,
+        'help_text': 'PK of the designated test teacher account for this program (managed by Admin Testing Mode; do not edit manually)',
+        'default': None,
         'category': 'manage',
         'is_setting': False,
     },
