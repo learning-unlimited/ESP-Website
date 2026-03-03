@@ -18,7 +18,7 @@ def formstack_webhook(request):
 
 from django.contrib.auth import authenticate
 from django.http import HttpResponse, Http404, HttpResponseServerError, \
-    HttpResponseForbidden, HttpResponseNotFound
+    HttpResponseForbidden, HttpResponseNotFound, HttpResponseBadRequest
 from django.dispatch import receiver
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
@@ -45,16 +45,24 @@ def medicalsyncapi(request):
     if not request.is_secure():
         return HttpResponseServerError("HTTPS is required when accessing this view")
 
+    # Validate required fields
+    username = request.POST.get('username')
+    password = request.POST.get('password')
+    program = request.POST.get('program')
+
+    if not username or not password:
+        return HttpResponseBadRequest("Missing credentials")
+    if not program:
+        return HttpResponseBadRequest("Missing program")
+
     # Authenticate
-    username = request.POST['username']
-    password = request.POST['password']
 
     user = authenticate(username=username, password=password)
     if user is None or not user.isAdministrator():
         return HttpResponseForbidden("Authentication failed")
 
     # Find Program
-    chunks = request.POST['program'].split(' ')
+    chunks = program.split(' ')
     if len(chunks) == 2:
         url = chunks[0] + '/' + chunks[1]
     elif len(chunks) == 3:
