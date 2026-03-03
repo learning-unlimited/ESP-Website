@@ -40,7 +40,7 @@ from esp.middleware import ESPError
 from esp.resources.models import ResourceType, Resource
 from esp.program.models import ClassSection
 
-class ResourceController(object):
+class ResourceController:
     """ Controller for managing program resources.
 
     This is merely a framework, and most functionality will be added

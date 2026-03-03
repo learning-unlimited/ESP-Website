@@ -69,7 +69,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         resp_data = json.loads(str(response.content, encoding='UTF-8'))
         self.assertTrue('student_schedule_html' in resp_data)
         search_str = 'Your schedule for %s is empty.  Please add classes below!' % self.program.niceName()
-        self.assertTrue(search_str in resp_data['student_schedule_html'], 'Could not find empty fragment "%s" in response "%s"' % (search_str, resp_data['student_schedule_html']))
+        self.assertTrue(search_str in resp_data['student_schedule_html'], 'Could not find empty fragment "{}" in response "{}"'.format(search_str, resp_data['student_schedule_html']))
 
     def expect_sections_in_schedule(self, response, sections=[]):
         resp_data = json.loads(str(response.content, encoding='UTF-8'))
@@ -101,7 +101,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
             error_msg = response_dict['error']
 
         self.assertTrue(error_received)
-        self.assertTrue(error_msg == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (error_msg, error_str))
+        self.assertTrue(error_msg == error_str, 'Unexpected Ajax error: "{}", expected "{}"'.format(error_msg, error_str))
 
     def test_ajax_schedule(self):
         program = self.program

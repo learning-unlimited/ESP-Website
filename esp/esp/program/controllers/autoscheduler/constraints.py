@@ -39,7 +39,7 @@ import esp.program.controllers.autoscheduler.config as config
 logger = logging.getLogger(__name__)
 
 
-class ConstraintViolation(object):
+class ConstraintViolation:
     """A constraint violation. Contains help text."""
     def __init__(self, constraint_name, reason):
         self.constraint_name = constraint_name
@@ -50,7 +50,7 @@ class ConstraintViolation(object):
             self.constraint_name, self.reason)
 
 
-class BaseConstraint(object):
+class BaseConstraint:
     """Abstract class for constraints. A Constraint can check whether a schedule
     satisfies a constraint, as well as whether a schedule would continue to
     satisfy a constraint after a hypothetical schedule manipulation."""
@@ -106,7 +106,7 @@ class CompositeConstraint(BaseConstraint):
         else:
             constraints_to_use = set(constraint_names + required_constraints)
         for constraint in constraints_to_use:
-            logger.info("Using constraint {}".format(constraint))
+            logger.info(f"Using constraint {constraint}")
             self.constraints.append(
                 available_constraints[constraint](**kwargs))
 

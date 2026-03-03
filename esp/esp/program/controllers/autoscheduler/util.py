@@ -10,7 +10,7 @@ from esp.program.controllers.autoscheduler import config
 TIMES = {}
 
 
-class Timer(object):
+class Timer:
     def __init__(self):
         self.stack = []
         self.times = []

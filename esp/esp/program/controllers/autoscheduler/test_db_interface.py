@@ -172,7 +172,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         capacity = settings["room_capacity"]
         for i in range(settings["num_rooms"]):
             classrooms.append(data_model.AS_Classroom(
-                "Room {}".format(str(i)), capacity, timeslots[:-1]))
+                f"Room {str(i)}", capacity, timeslots[:-1]))
         restype_id = ResourceType.objects.get(
             name=extra_settings["extra_resource_type_name"]).id
         extra_resource_type = data_model.AS_ResourceType(
@@ -275,8 +275,8 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         self.assertEqual(section1.parent_class, section2.parent_class)
         self.assertAlmostEqual(section1.duration, section2.duration, places=2)
         self.assertEqual(
-            set(t.id for t in section1.teachers),
-            set(t.id for t in section2.teachers))
+            {t.id for t in section1.teachers},
+            {t.id for t in section2.teachers})
         self.assertEqual(section1.grade_min, section2.grade_min)
         self.assertEqual(section1.grade_max, section2.grade_max)
         self.assertEqual(section1.category, section2.category)
