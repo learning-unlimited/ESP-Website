@@ -621,6 +621,44 @@ class AdminCore(ProgramModuleObj, CoreModule):
         teach_modules = [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]
         context['teach_modules'] = {'required': [mod for mod in teach_modules if mod.required],
                                     'not_required': [mod for mod in teach_modules if not mod.required]}
+
+        # Build per-module constraint metadata for the UI.  The JS uses this to
+        # prevent illegal drags instead of silently undoing them on save.
+        # This mirrors the hard-override block at the end of the POST branch above.
+        module_constraints = {}
+        for mod in learn_modules + teach_modules:
+            handler = mod.module.handler
+            required_locked = (
+                handler == 'RegProfileModule' or
+                handler == 'AvailabilityModule' or
+                'AcknowledgementModule' in handler or
+                handler == 'StudentRegTwoPhase'
+            )
+            not_required_locked = (
+                'CreditCardModule_' in handler or
+                handler == 'StudentRegConfirm'
+            )
+            position_locked = (
+                handler == 'RegProfileModule' or
+                'CreditCardModule_' in handler or
+                handler == 'StudentRegConfirm'
+            )
+            if required_locked or not_required_locked or position_locked:
+                module_constraints[str(mod.id)] = {
+                    'required_locked': required_locked,
+                    'not_required_locked': not_required_locked,
+                    'position_locked': position_locked,
+                }
+        context['module_constraints'] = module_constraints
+        # position_locked_ids: modules that cannot be dragged at all (fully frozen).
+        # Modules that are only required/not_required locked can still be reordered
+        # within their list; cross-list drops are blocked in the JS receive handler.
+        context['position_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['position_locked']}
+        # required_locked_ids / not_required_locked_ids: used by the template to
+        # render per-module constraint icons and the icon legend.
+        context['required_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['required_locked']}
+        context['not_required_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['not_required_locked']}
+
         context['one'] = one
         context['two'] = two
         context['program'] = prog
