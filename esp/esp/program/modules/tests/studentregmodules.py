@@ -194,7 +194,7 @@ class StudentRegPhaseZeroTest(ProgramFrameworkTest):
         super().setUp(num_students=5, num_teachers=3, classes_per_teacher=2)
         self.add_student_profiles()
         self.student = self.students[0]
-        Tag.objects.get_or_create(key='student_lottery_group_max', value='4')
+        Tag.setTag('student_lottery_group_max', target=self.program, value='4')
 
     def test_students_query(self):
         module = self.program.getModule('StudentRegPhaseZero')
