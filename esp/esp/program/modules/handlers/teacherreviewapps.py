@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -119,7 +117,6 @@ class TeacherReviewApps(ProgramModuleObj):
                 if prev.id != prev_id:
                     prev = current
 
-
         return render_to_response(self.baseDir()+'roster.html',
                                   request,
                                   {'class': cls,
@@ -165,13 +162,14 @@ class TeacherReviewApps(ProgramModuleObj):
                 q = f.app_question
                 form = f.app_question.get_form(data, form_prefix=f.prefix)
 
-                #   If the form is valid, save the question.  If not, delete it.
-                if form.is_valid():
+                #   If the form is valid and has question text, save the question.
+                #   Otherwise, if it's an existing question (with an ID), delete it.
+                #   This prevents empty records for unfilled classes and deletes cleared questions.
+                if form.is_valid() and form.cleaned_data.get('question', '').strip():
                     q.update(form)
                     q.save()
-                else:
-                    if hasattr(q, 'id') and q.id:
-                        q.delete()
+                elif hasattr(q, 'id') and q.id:
+                    q.delete()
 
             return self.goToCore(tl)
 
@@ -236,7 +234,6 @@ class TeacherReviewApps(ProgramModuleObj):
                     from django.shortcuts import redirect
                     return redirect(url) # self.review_students(request, tl, one, two, module, extra, prog)
 
-
         else:
             form = this_review.get_form()
 
@@ -256,7 +253,6 @@ class TeacherReviewApps(ProgramModuleObj):
 
     def isStep(self):
         return True
-
 
     class Meta:
         proxy = True

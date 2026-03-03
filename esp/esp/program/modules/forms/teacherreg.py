@@ -1,7 +1,4 @@
 
-from __future__ import absolute_import
-import six
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -115,7 +112,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
 
-
     def __init__(self, crmi, *args, **kwargs):
         from esp.program.controllers.classreg import get_custom_fields
 
@@ -128,7 +124,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             if len(field.choices) == 1:
                 hide_field(field, default=field.choices[0][0])
 
-        super(TeacherClassRegForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         prog = crmi.program
 
@@ -268,7 +264,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             grade_min = int(grade_min)
             grade_max = int(grade_max)
             if grade_min > grade_max:
-                msg = six.u('Minimum grade must be less than the maximum grade.')
+                msg = 'Minimum grade must be less than the maximum grade.'
                 self.add_error('grade_min', msg)
                 self.add_error('grade_max', msg)
 
@@ -279,7 +275,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             class_size_optimal = int(class_size_optimal)
             class_size_max = int(class_size_max)
             if class_size_optimal > class_size_max:
-                msg = six.u('Optimal class size must be less than or equal to the maximum class size.')
+                msg = 'Optimal class size must be less than or equal to the maximum class size.'
                 self.add_error('class_size_optimal', msg)
                 self.add_error('class_size_max', msg)
 
@@ -297,7 +293,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
         """ Get total time requested. Do not call before validation. """
         return float(self.cleaned_data['duration']) * int(self.cleaned_data['num_sections'])
 
-
 class TeacherOpenClassRegForm(TeacherClassRegForm):
 
     def __init__(self, crmi, *args, **kwargs):
@@ -307,7 +302,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
             if default is not None:
                 field.initial = default
 
-        super(TeacherOpenClassRegForm, self).__init__(crmi, *args, **kwargs)
+        super().__init__(crmi, *args, **kwargs)
         program = crmi.program
         open_class_category = program.open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
@@ -336,7 +331,6 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 self.fields[field].required = False
                 hide_field(self.fields[field], default)
 
-
 class TeacherEventSignupForm(FormWithRequiredCss):
     """ Form for teachers to pick interview and teacher training times. """
     interview = forms.ChoiceField( label='Interview', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick an interview timeslot...')) )
@@ -360,7 +354,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         return self._slot_is_mine(event) or (not self._slot_is_taken(event) and not self._slot_too_late(event))
 
     def __init__(self, module, *args, **kwargs):
-        super(TeacherEventSignupForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.module = module
         self.user = get_current_request().user
 

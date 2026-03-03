@@ -14,7 +14,7 @@ class FormstackMedliabTest(ProgramFrameworkTest):
         """Test that the completion indicator appears only when the user has completed the form."""
         # Pick a student and log in
         student = random.choice(self.students)
-        self.assertTrue(self.client.login(username=student.username, password='password'), 
+        self.assertTrue(self.client.login(username=student.username, password='password'),
                         "Couldn't log in as student %s" % student.username)
 
         # 1. Check BEFORE completion
