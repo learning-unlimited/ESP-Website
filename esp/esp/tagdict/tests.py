@@ -2,7 +2,7 @@ import ast
 import os
 import re
 
-from django.test import TestCase
+from django.test import TestCase, SimpleTestCase
 from django.contrib.auth.models import User
 from esp.tagdict import all_global_tags, all_program_tags
 from esp.tagdict.models import Tag
@@ -307,7 +307,7 @@ class ProgramTagTest(ProgramFrameworkTest):
                 self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
 
 
-class TagRegistrationTest(TestCase):
+class TagRegistrationTest(SimpleTestCase):
     """
     Statically scan the codebase for Tag.getTag(), Tag.getProgramTag(), and
     Tag.getBooleanTag() calls and verify that every string-literal tag key
