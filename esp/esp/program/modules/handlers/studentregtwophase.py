@@ -216,8 +216,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         category_choices = []
         for category in prog.class_categories.all():
-            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
-            if category.category == 'Lunch':
+            if category.is_lunch:
                 continue
             category_choices.append((category.id, category.category))
         context['category_choices'] = group_columns(category_choices)
@@ -258,8 +257,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         category_choices = []
         for category in prog.class_categories.all():
-            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
-            if category.category == 'Lunch':
+            if category.is_lunch:
                 continue
             category_choices.append((category.id, category.category))
         context['category_choices'] = group_columns(category_choices)

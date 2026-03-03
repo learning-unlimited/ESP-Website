@@ -74,7 +74,7 @@ class StudentLunchSelectionForm(forms.Form):
 
         #   Clear existing lunch periods for this day
         for section in self.user.getSections(self.program):
-            if section.parent_class.category.category == 'Lunch':
+            if section.parent_class.category.is_lunch:
                 if section.get_meeting_times()[0].start.day == self.day.day:
                     section.unpreregister_student(self.user)
 
