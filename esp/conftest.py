@@ -30,9 +30,13 @@ import pytest
 
 
 collect_ignore = [
-    # Class-level DB call (Program.objects.get(id=88)) fires at import time.
-    # This test requires a live DB with a specific fixture — not suitable for
-    # the standard pytest test database. See issue #3917 for remediation notes.
+    # These tests query Program.objects.get(id=88) at class level, which fires
+    # at import time before the test DB exists. More importantly, the tests
+    # depend on a specific live database with real students/teachers registered
+    # to that program — they cannot run against a clean test DB regardless of
+    # where the query is placed. One test also contains an unconditional
+    # `assert False` (marked TODO by a prior developer). These are integration
+    # tests for a specific deployment, not portable unit tests.
     "esp/users/controllers/tests/test_usersearch.py",
 ]
 
