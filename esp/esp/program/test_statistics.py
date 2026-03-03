@@ -19,9 +19,7 @@ them.
 
 from types import SimpleNamespace
 
-from django.test import TestCase
-
-from esp.program.models import Program, StudentRegistration, RegistrationType
+from esp.program.models import Program
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.statistics import (
     zipcodes,
@@ -60,6 +58,9 @@ class StatisticsTestBase(ProgramFrameworkTest):
         kwargs.setdefault("sections_per_class", 1)
         kwargs.setdefault("num_rooms", 3)
         super().setUp(*args, **kwargs)
+        # Ensure RegistrationProfile rows exist for all users so that stats
+        # functions which filter on profiles exercise real data paths.
+        self.add_user_profiles()
 
         # Build QuerySets from the list fixtures set by ProgramFrameworkTest.
         self.programs = Program.objects.filter(pk=self.program.pk)
@@ -233,7 +234,7 @@ class SchoolsTest(StatisticsTestBase):
 # startreg()
 # ===========================================================================
 
-class StartregTest(StatisticsTestBase):
+class StartRegTest(StatisticsTestBase):
 
     def _call(self, students=None, profiles=None, rd=None):
         if students is None:
@@ -301,7 +302,7 @@ class RepeatsTest(StatisticsTestBase):
 # heardabout()
 # ===========================================================================
 
-class HeardaboutTest(StatisticsTestBase):
+class HeardAboutTest(StatisticsTestBase):
 
     def _call(self, form=None, profiles=None, rd=None):
         if form is None:
