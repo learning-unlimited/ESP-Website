@@ -858,9 +858,18 @@ class ClassSection(models.Model):
     def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False, webapp=False):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
 
+        # If already waitlisted, show waitlisted state in UI
+        if StudentRegistration.valid_objects().filter(
+                user=user,
+                section=self,
+                relationship__name='Waitlisted').exists():
+            return 'WAITLISTED'
+
         # Check if section is full
         if checkFull and self.isFull(webapp=webapp):
             scrmi = self.parent_class.parent_program.studentclassregmoduleinfo
+            if scrmi.enable_class_waitlist and Tag.getBooleanTag('class_waitlist_enabled', self.parent_class.parent_program, default=True):
+                return 'WAITLIST_AVAILABLE'
             return scrmi.temporarily_full_text
 
         # Test any scheduling constraints
@@ -1301,6 +1310,12 @@ class ClassSection(models.Model):
 
         now = datetime.datetime.now()
 
+        enrolled_was_active = StudentRegistration.valid_objects(now).filter(
+            relationship__name='Enrolled',
+            section=self,
+            user=user
+        ).exists()
+
         #   Stop all active or pending registrations
         if prereg_verbs:
             qs = StudentRegistration.valid_objects(now).filter(relationship__name__in=prereg_verbs, section=self, user=user)
@@ -1327,6 +1342,17 @@ class ClassSection(models.Model):
         list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
         for list_name in list_names:
             remove_list_member(list_name, user.email)
+        
+        # After an enrolled student drops, promote the next waitlisted student
+        # if space is available.
+        if enrolled_was_active:
+            try:
+                scrmi = self.parent_program.studentclassregmoduleinfo
+                if scrmi.enable_class_waitlist and Tag.getBooleanTag('class_waitlist_enabled', self.parent_program, default=True):
+                    self.promote_from_waitlist()
+            except Exception:
+                # If StudentClassRegModuleInfo doesn't exist, skip waitlist promotion
+                pass
 
     @transaction.atomic
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
@@ -1384,6 +1410,144 @@ class ClassSection(models.Model):
         else:
             #    Registration failed because the class is full.
             return False
+    
+    def add_to_waitlist(self, user):
+        """Add a student to this section's waitlist.
+        This uses StudentRegistration with a 'Waitlisted' RegistrationType and relies
+        on ExpirableModel.start_date for FIFO ordering (earliest start_date first).
+        Returns True on success, otherwise a string error message.
+        """
+        scrmi = self.parent_program.studentclassregmoduleinfo
+        if not scrmi or not scrmi.enable_class_waitlist:
+            return 'Waitlisting is not enabled for this program.'
+        # Must be full to waitlist
+        if not self.isFull():
+            return 'This class is not full. You can register directly.'
+        # Avoid duplicate waitlist entries
+        if StudentRegistration.valid_objects().filter(
+                user=user,
+                section=self,
+                relationship__name='Waitlisted').exists():
+            return 'You are already on the waitlist for this class.'
+        # Avoid waitlisting if already enrolled
+        if StudentRegistration.valid_objects().filter(
+                user=user,
+                section=self,
+                relationship__name='Enrolled').exists():
+            return 'You are already enrolled in this class.'
+        # Enforce: max waitlist per timeslot
+        my_timeslot_ids = list(self.timeslot_ids())
+        if my_timeslot_ids:
+            existing_waitlists = StudentRegistration.valid_objects().filter(
+                user=user,
+                relationship__name='Waitlisted',
+                section__meeting_times__id__in=my_timeslot_ids
+            ).distinct()
+            if existing_waitlists.count() >= scrmi.max_waitlist_per_timeslot:
+                return ('You have already waitlisted the maximum number of classes (%d) '
+                        'in this time block.' % scrmi.max_waitlist_per_timeslot)
+        # Respect registration open/cancel status
+        if hasattr(self, 'isRegOpen') and not self.isRegOpen():
+            return 'Registration for this section is not currently open.'
+        if hasattr(self, 'isCancelled') and self.isCancelled():
+            return 'This section has been cancelled.'
+        rt = RegistrationType.get_cached(name='Waitlisted', category='student')
+        sr = StudentRegistration(user=user, section=self, relationship=rt)
+        sr.save()
+        return True
+    def remove_from_waitlist(self, user):
+        """Remove a student from this section's waitlist by expiring the registration."""
+        entries = StudentRegistration.valid_objects().filter(
+            user=user,
+            section=self,
+            relationship__name='Waitlisted')
+        if not entries.exists():
+            return 'You are not on the waitlist for this class.'
+        now = datetime.datetime.now()
+        entries.update(end_date=now)
+        return True
+    @transaction.atomic
+    def promote_from_waitlist(self):
+        """Promote the next waitlisted student into this section if space exists."""
+        if self.isFull():
+            return
+        scrmi = getattr(self.parent_program, 'studentclassregmoduleinfo', None)
+        if not scrmi or not scrmi.enable_class_waitlist:
+            return
+        next_entry = StudentRegistration.valid_objects().filter(
+            section=self,
+            relationship__name='Waitlisted'
+        ).order_by('start_date').select_related('user').first()
+        if next_entry is None:
+            return
+        user = next_entry.user
+        # Auto-drop conflicting enrolled classes
+        my_timeslot_ids = set(self.timeslot_ids())
+        dropped_sections = []
+        try:
+            enrolled_sections = list(user.getSections(self.parent_program, verbs=['Enrolled']))
+        except Exception:
+            enrolled_sections = []
+        for sec in enrolled_sections:
+            try:
+                if set(sec.timeslot_ids()) & my_timeslot_ids:
+                    sec.unpreregister_student(user, ['Enrolled'])
+                    dropped_sections.append(sec)
+            except Exception:
+                logger.exception('Error auto-dropping conflicting section for %s', user)
+        # Expire the waitlist registration and enroll the student
+        next_entry.expire()
+        success = self.preregister_student(user, overridefull=False, prereg_verb='Enrolled')
+        if not success:
+            return
+        try:
+            self._send_waitlist_promotion_email(user, dropped_sections)
+        except Exception:
+            logger.exception('Failed to send waitlist promotion email to %s for %s', user, self)
+    def _send_waitlist_promotion_email(self, user, dropped_sections=None):
+        program = self.parent_program
+        subject = "[%s] You've been enrolled from the waitlist!" % program.niceName()
+        from_email = ESPUser.email_sendto_address(
+            program.director_email,
+            program.niceName() + " Directors"
+        )
+        message_lines = [
+            "Hi %s," % user.first_name,
+            "",
+            "A spot has opened up in a class you were waitlisted for, and you have been automatically enrolled.",
+            "",
+            "Class: %s" % self.parent_class.title,
+            "Section: %s" % self.emailcode(),
+            "Time: %s" % ', '.join(self.friendly_times()),
+            "Room: %s" % ', '.join(self.prettyrooms()),
+            "",
+        ]
+        if dropped_sections:
+            message_lines.append("To avoid a schedule conflict, you were automatically removed from:")
+            for sec in dropped_sections:
+                message_lines.append("  - %s (%s)" % (sec.parent_class.title, ', '.join(sec.friendly_times())))
+            message_lines.append("")
+        message_lines.extend([
+            "If you no longer wish to take this class, please log in and update your schedule.",
+            "",
+            "Thanks,",
+            "%s Team" % program.niceName(),
+        ])
+        send_mail(subject, "\n".join(message_lines), from_email, [user.email], fail_silently=True)
+    def waitlist_count(self):
+        return StudentRegistration.valid_objects().filter(
+            section=self,
+            relationship__name='Waitlisted').count()
+    def get_waitlist_position(self, user):
+        waitlisted_ids = list(
+            StudentRegistration.valid_objects().filter(
+                section=self,
+                relationship__name='Waitlisted'
+            ).order_by('start_date').values_list('user_id', flat=True)
+        )
+        if user.id in waitlisted_ids:
+            return waitlisted_ids.index(user.id) + 1
+        return None
 
     def prettyDuration(self):
         if self.duration is None:
@@ -1801,6 +1965,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         if checkFull and self.isFull(webapp=webapp):
             scrmi = self.parent_program.studentclassregmoduleinfo
+            if which_section and scrmi.enable_class_waitlist and Tag.getBooleanTag('class_waitlist_enabled', self.parent_program, default=True):
+                if StudentRegistration.valid_objects().filter(
+                        user=user,
+                        section=which_section,
+                        relationship__name='Waitlisted').exists():
+                    return 'WAITLISTED'
+                return 'WAITLIST_AVAILABLE'
             return scrmi.temporarily_full_text
 
         if user.getGrade(self.parent_program) < self.grade_min or \
