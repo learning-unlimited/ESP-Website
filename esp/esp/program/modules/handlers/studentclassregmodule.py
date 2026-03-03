@@ -51,7 +51,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, m
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
-from esp.middleware      import ESPError, AjaxError, ESPError_NoLog
+from esp.middleware      import ESPError, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission
 from esp.tagdict.models  import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
@@ -357,7 +357,8 @@ class StudentClassRegModule(ProgramModuleObj):
                 json_data['addbutton_fillslot_sec%d_html' % sec_id] = addbutton_str1
                 json_data['addbutton_catalog_sec%d_html' % sec_id] = addbutton_str2
             except Exception as inst:
-                raise AjaxError('Encountered an error retrieving updated buttons: %s' % inst)
+                # Manually return the JSON error after the removal of middleware
+                return HttpResponse(json.dumps({'status' : 200, 'error': 'Encountered an error retrieving updated buttons: %s' % inst}))
 
         return HttpResponse(json.dumps(json_data))
 
@@ -431,8 +432,8 @@ class StudentClassRegModule(ProgramModuleObj):
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
-            # TODO(benkraft): we shouldn't need to do this.  find a better way.
-            raise AjaxError(inst)
+            # Manually return the JSON error after removal of middleware
+            return HttpResponse(json.dumps({'status' : 200, 'error': str(inst)}))
 
     @staticmethod
     def sort_categories(classes, prog):
