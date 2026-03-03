@@ -15,14 +15,13 @@ class FormstackAppModuleTest(ProgramFrameworkTest):
 
     def test_resolve_invalid_expression(self):
         """Unknown attributes return None instead of raising."""
-        user = self.students[0]
         result = resolve_field_expression(
-            'user.nonexistent_field_xyz', {'user': user}
+            'user.nonexistent_field_xyz', {'user': self.students[0]}
         )
         self.assertIsNone(result)
 
     def test_resolve_empty_expression(self):
-        """Empty string expressions return None."""
+        """Empty string expressions return None instead of raising."""
         result = resolve_field_expression('', {'user': self.students[0]})
         self.assertIsNone(result)
 
