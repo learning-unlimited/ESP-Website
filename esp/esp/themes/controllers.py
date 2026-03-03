@@ -406,7 +406,8 @@ class ThemeController(object):
             if os.path.isdir(full_filename):
                 result += self.get_file_summaries(full_filename)
             else:
-                file_data = open(full_filename, 'rb').read()
+                with open(full_filename, 'rb') as f:
+                    file_data = f.read()
                 result.append((full_filename, os.path.getsize(full_filename), hashlib.sha1(file_data).hexdigest()))
         return result
 
