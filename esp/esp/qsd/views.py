@@ -62,9 +62,19 @@ from esp.utils.sanitize import strip_base64_images
 
 import logging
 import os
+import re
 import uuid
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_html_comments(value):
+    """Remove nested comment markers that break HTML parsing."""
+    def fix_comment(match):
+        content = match.group(1).replace('<!--', '').replace('-->', '')
+        return '<!--' + content + '-->'
+    return re.sub(r'<!--(.*?)-->', fix_comment, value, flags=re.DOTALL)
+
 
 # Image upload constraints
 QSD_IMAGE_MAX_SIZE = 25 * 1024 * 1024  # 25 MB
@@ -299,7 +309,7 @@ def ajax_qsd(request):
             purge_page(qsd.url+".html")
 
         result['status'] = 1
-        result['content'] = markdown(qsd.content)
+        result['content'] = markdown(_sanitize_html_comments(qsd.content))
         result['url'] = qsd.url
 
     return HttpResponse(json.dumps(result))
@@ -319,6 +329,7 @@ def ajax_qsd_preview(request):
     if len(path_parts) > 3 and path_parts[3] == "Classes":
         data = clean(data, strip = True)
     data, _ = strip_base64_images(data)
+    data = _sanitize_html_comments(data)
 
     # We don't necessarily need to wrap it in JSON, but this seems more
     # future-proof.
