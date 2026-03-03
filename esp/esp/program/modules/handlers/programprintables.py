@@ -831,7 +831,7 @@ class ProgramPrintables(ProgramModuleObj):
         from esp.users.controllers.usersearch import UserSearchController
         from esp.users.models import ESPUser
         import datetime
-        
+
         filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context={'module': title})
         if not found:
             return filterObj
@@ -849,12 +849,12 @@ class ProgramPrintables(ProgramModuleObj):
                 class_objects = teacher.getTaughtSectionsFromProgram(self.program)
             else:
                 class_objects = teacher.getModeratingSectionsFromProgram(self.program)
-                
+
             classes = sorted([cls for cls in class_objects
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0])
-            
+
             # now we sort them by time/title
             for cls in classes:
                 if role_teachers and role_moderators:
@@ -887,9 +887,9 @@ class ProgramPrintables(ProgramModuleObj):
 
             # Sort by teacher's earliest class time, then teacher name, then specific class time
             scheditems.sort(key=lambda item: (
-                teacher_starts[item['teacher']], 
-                item['teacher'].last_name.lower(), 
-                item['teacher'].first_name.lower(), 
+                teacher_starts[item['teacher']],
+                item['teacher'].last_name.lower(),
+                item['teacher'].first_name.lower(),
                 min((mt.start for mt in item['cls'].meeting_times.all()), default=datetime.datetime.max)
             ))
 
