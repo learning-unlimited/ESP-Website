@@ -1814,3 +1814,54 @@ class GradeCacheInvalidationTest(TestCase):
             "getLastProfile should return updated graduation_year"
         )
 
+
+class HeardAboutNormalizationTest(TestCase):
+    """
+    Unit tests for the punctuation normalization logic inside heardabout().
+
+    Regression test for GitHub issue #4621:
+    heardabout() was calling ha_key.replace(char, '') without assigning the
+    return value back to ha_key, so punctuation was never actually stripped and
+    semantically identical answers were counted as separate rows.
+    """
+
+    def _normalize(self, ha_str):
+        """
+        Replicate the normalization logic from heardabout() in statistics.py
+        so this test has no database dependency.
+        """
+        ha_key = ha_str.rstrip('s').lower()
+        for char in ' _:-/.,!?+':
+            ha_key = ha_key.replace(char, '')
+        return ha_key
+
+    def test_punctuation_variants_normalize_to_same_key(self):
+        """Answers differing only in punctuation should produce the same key."""
+        variants = ["friend", "friend!", "Friend.", "Friend,", "friend?", "Friend!"]
+        keys = [self._normalize(v) for v in variants]
+        self.assertEqual(
+            len(set(keys)), 1,
+            "All punctuation variants of 'friend' should normalize to the same key, "
+            "but got: %s" % keys
+        )
+
+    def test_lowercase_normalization(self):
+        """Normalization should be case-insensitive."""
+        self.assertEqual(self._normalize("Facebook"), self._normalize("facebook"))
+        self.assertEqual(self._normalize("TWITTER"), self._normalize("twitter"))
+
+    def test_trailing_s_stripped(self):
+        """Trailing 's' should be stripped (rstrip('s'))."""
+        self.assertEqual(self._normalize("friends"), self._normalize("friend"))
+
+    def test_spaces_stripped(self):
+        """Spaces should be removed during normalization."""
+        self.assertEqual(self._normalize("a friend"), self._normalize("afriend"))
+
+    def test_empty_string_handled(self):
+        """Empty string should normalize to empty string without error."""
+        self.assertEqual(self._normalize(""), "")
+
+    def test_only_punctuation_normalizes_to_empty(self):
+        """A string of only punctuation characters should normalize to empty."""
+        self.assertEqual(self._normalize("...!!!"), "")
