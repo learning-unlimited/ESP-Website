@@ -77,6 +77,11 @@ def esp_context_stuff():
 
 _PROGRAM_TLS = frozenset(['manage', 'learn', 'teach', 'onsite', 'volunteer'])
 
+# Paths that must not trigger session/cookie access (NoVaryOnCookieTest).
+# Accessing request.user would add Vary: Cookie; skip injection for these.
+_CACHEABLE_SUFFIXES = ('catalog', 'index.html')
+
+
 def _inject_active_program_tags(request, context):
     """
     For admin users viewing a program page, inject ``active_program_tags``
@@ -84,6 +89,9 @@ def _inject_active_program_tags(request, context):
     so the base template can show a banner listing non-default program tags.
     """
     try:
+        path = request.path.rstrip('/')
+        if any(path.endswith(s) for s in _CACHEABLE_SUFFIXES):
+            return  # Avoid request.user access; would add Vary: Cookie
         if not (hasattr(request, 'user') and request.user.is_authenticated):
             return
         parts = request.path.strip('/').split('/')
