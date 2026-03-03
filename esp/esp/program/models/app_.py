@@ -38,7 +38,6 @@ from esp.users.models import ESPUser
 from django.db import models
 from django import forms
 from django.utils.deconstruct import deconstructible
-from django.utils import timezone
 
 import datetime
 
@@ -111,8 +110,7 @@ class BaseAppElement(object):
         return form
 
     def update(self, form):
-        if hasattr(self, 'date'):
-            self.date = datetime.datetime.now()
+        self.date = datetime.datetime.now()
         for field_name in self._field_names:
             if field_name in form.cleaned_data:
                 setattr(self, field_name, form.cleaned_data[field_name])
@@ -164,7 +162,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     teacher of a class for which the student applied. """
 
     reviewer = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
-    date = models.DateTimeField(default=timezone.now, editable=False)
+    date = models.DateTimeField(default=datetime.datetime.now, editable=False)
     score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student', choices=((10, "Yes"), (5, "Maybe"), (1, "No")))
     comments = models.TextField()
     reject = models.BooleanField(default=False, editable=False)
@@ -183,8 +181,8 @@ class StudentApplication(models.Model):
     """ Student applications for Junction and any other programs that need them. """
     from esp.program.models import Program
 
-    program = models.ForeignKey(Program, editable=False, on_delete=models.CASCADE, null=True)
-    user    = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE, null=True)
+    program = models.ForeignKey(Program, editable=False, on_delete=models.CASCADE)
+    user    = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
 
     questions = models.ManyToManyField(StudentAppQuestion)
     responses = models.ManyToManyField(StudentAppResponse)
@@ -202,11 +200,10 @@ class StudentApplication(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.save()
+        self.set_questions()
 
     def set_questions(self):
-        """Set questions for this application based on program and applied classes."""
-        if not self.pk or not self.user_id or not self.program_id:
-            return  # Can't set questions without a saved instance with valid FKs
         new_user = self.user
         existing_list = self.questions.all().values_list('id', flat=True)
         new_list = list(StudentAppQuestion.objects.filter(program=self.program).values_list('id', flat=True))
@@ -219,12 +216,10 @@ class StudentApplication(models.Model):
         for i in to_add:
             self.questions.add(i)
 
-    def get_forms(self, data=None):
+    def get_forms(self, data={}):
         """ Get a list of forms for the student to fill out.
         This function sets a target attribute on each form so that
         the update function can be called directly on target. """
-        if data is None:
-            data = {}
 
         #   Get forms for already existing responses.
         forms = []
@@ -255,18 +250,3 @@ class StudentApplication(models.Model):
         app_label = 'program'
         db_table = 'program_junctionstudentapp'
 
-
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-
-@receiver(post_save, sender=StudentApplication)
-def student_application_post_save(sender, instance, created, **kwargs):
-    """Set questions for the student application after it's created or updated."""
-    if created and instance.user_id and instance.program_id:
-        # Disconnect signal to prevent recursive calls from M2M operations
-        post_save.disconnect(student_application_post_save, sender=StudentApplication)
-        try:
-            instance.set_questions()
-        finally:
-            # Always reconnect the signal
-            post_save.connect(student_application_post_save, sender=StudentApplication)
