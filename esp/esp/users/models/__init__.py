@@ -2157,7 +2157,7 @@ class PersistentQueryFilter(models.Model):
         else:
             foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                        q_filter = dumped_filter,
-                                                                       sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+                                                                       sha1_hash = hashlib.sha256(dumped_filter).hexdigest())
         foo.useful_name = description
         foo.save()
         return foo
@@ -2195,7 +2195,7 @@ class PersistentQueryFilter(models.Model):
 
         import hashlib
         dumped_filter = pickle.dumps(q_filter)
-        sha1_hash = hashlib.sha1(dumped_filter).hexdigest()
+        sha1_hash = hashlib.sha256(dumped_filter).hexdigest()
 
         self.q_filter = dumped_filter
         self.sha1_hash = sha1_hash
@@ -2237,7 +2237,7 @@ class PersistentQueryFilter(models.Model):
         except Exception:
             qobject_string = b''
         try:
-            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
+            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha256(qobject_string).hexdigest())#    pass
         except PersistentQueryFilter.DoesNotExist:
             filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
                                                             q_filter    = QObject,

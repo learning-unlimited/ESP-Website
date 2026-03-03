@@ -296,7 +296,7 @@ def histogram(answer_list, args='format=html'):
     HISTOGRAM_HTML_WIDTH_PX = int((context['bb_width'] * HISTOGRAM_DPI / 72) / HISTOGRAM_HTML_DOWNSCALE_FACTOR) # to achieve Nx downscale ratio -> (DEVICE_WIDTH_PT * DPI / 72) / N
 
     import hashlib
-    file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
+    file_base = hashlib.sha256(pickle.dumps(context)).hexdigest()
     file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
     template_file = os.path.join(settings.TEMPLATES[0]['DIRS'][0],
                                  'survey', 'histogram_base.eps')
