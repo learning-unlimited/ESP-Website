@@ -68,7 +68,7 @@ if [[ "$#" -lt "1" ]]
 then
     VENVDIR="$BASEDIR/env"
 else
-    VENVDIR=$1
+    VENVDIR="$1"
 fi
 
 PYTHON="${PYTHON:-python3.7}"
