@@ -58,7 +58,7 @@ class _EquityOutreachCohorts(object):
 
     TRANSPORTATION_SIGNAL_KEYWORDS = (
         "bus", "train", "public", "ride", "carpool",
-        "cannot", "can't", "difficult", "hard", "other",
+        "cannot", "can't", "difficult", "hard",
     )
 
     @classmethod
@@ -148,11 +148,29 @@ class _EquityOutreachCohorts(object):
     @classmethod
     def _low_hours_or_waitlisted_users(cls, program):
         waitlisted_ids = set(cls._waitlisted_student_ids(program))
+        enrolled_ids = list(cls._enrolled_student_ids(program))
         low_hour_ids = set()
-        for user in ESPUser.objects.filter(id__in=cls._enrolled_student_ids(program)).distinct():
-            class_hours = sum(section.meeting_times.count() for section in user.getEnrolledSections(program))
-            if class_hours <= 1:
-                low_hour_ids.add(user.id)
+        if enrolled_ids:
+            registrations = (
+                StudentRegistration.valid_objects()
+                .filter(
+                    user_id__in=enrolled_ids,
+                    section__parent_class__parent_program=program,
+                    relationship__name="Enrolled",
+                )
+                .select_related("section")
+                .prefetch_related("section__meeting_times")
+            )
+            user_hours = {}
+            for reg in registrations:
+                user_id = reg.user_id
+                section = reg.section
+                meeting_count = len(section.meeting_times.all())
+                if meeting_count:
+                    user_hours[user_id] = user_hours.get(user_id, 0) + meeting_count
+                else:
+                    user_hours.setdefault(user_id, 0)
+            low_hour_ids = {uid for uid, hours in user_hours.items() if hours <= 1}
         return ESPUser.objects.filter(id__in=(waitlisted_ids | low_hour_ids)).distinct()
 
 

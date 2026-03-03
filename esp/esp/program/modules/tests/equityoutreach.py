@@ -36,6 +36,21 @@ class EquityOutreachTest(ProgramFrameworkTest):
         self.assertIn(self.student, list(transportation_users))
         self.assertIn(self.student, list(finaid_users))
 
+        # Exercise remaining cohort queries (all five cohorts are tested)
+        incomplete_reg_users = EquityOutreachCohorts.users_for_cohort(
+            self.program, EquityOutreachCohorts.COHORT_INCOMPLETE_REGISTRATION
+        )
+        unconfirmed_reg_users = EquityOutreachCohorts.users_for_cohort(
+            self.program, EquityOutreachCohorts.COHORT_UNCONFIRMED_REGISTRATION
+        )
+        low_hours_or_waitlisted_users = EquityOutreachCohorts.users_for_cohort(
+            self.program, EquityOutreachCohorts.COHORT_LOW_HOURS_OR_WAITLISTED
+        )
+        # Ensure cohort querysets execute and return iterables (no query errors)
+        _ = list(incomplete_reg_users)
+        _ = list(unconfirmed_reg_users)
+        _ = list(low_hours_or_waitlisted_users)
+
     def test_equity_lists_in_program_lists(self):
         """Equity cohorts are exposed as student lists via RegProfileModule (comm panel, user records)."""
         pm = self.program.getModule("RegProfileModule")
