@@ -188,7 +188,7 @@ Development changes
 
 Development server changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-- The development server VM has been upgraded to Ubuntu 20.04 (from Ubuntu 14.04). LU web developers will need to upgrade their local development servers by following the instructions in `vagrant.rst <https://github.com/learning-unlimited/ESP-Website/blob/main/docs/dev/vagrant.rst#upgrading-your-personal-dev-vm>`_.
+- The development server VM has been upgraded to Ubuntu 20.04 (from Ubuntu 14.04). LU web developers will need to upgrade their local development servers by following the instructions in `docker.rst <https://github.com/learning-unlimited/ESP-Website/blob/main/docs/dev/docker.rst>`_.
 
 Dependency changes
 ~~~~~~~~~~~~~~~~~~
