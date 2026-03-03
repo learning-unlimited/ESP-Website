@@ -57,6 +57,18 @@ class CustomFormsTest(TestCase):
         new_student.makeRole('Student')
         self.student = new_student
 
+        new_teacher_owner, created = ESPUser.objects.get_or_create(username='forms_teacher_owner')
+        new_teacher_owner.set_password('password')
+        new_teacher_owner.save()
+        new_teacher_owner.makeRole('Teacher')
+        self.teacher_owner = new_teacher_owner
+
+        new_teacher_other, created = ESPUser.objects.get_or_create(username='forms_teacher_other')
+        new_teacher_other.set_password('password')
+        new_teacher_other.save()
+        new_teacher_other.makeRole('Teacher')
+        self.teacher_other = new_teacher_other
+
     def tearDown(self):
         for form in Form.objects.all():
             dmh = DynamicModelHandler(form)
@@ -209,3 +221,72 @@ class CustomFormsTest(TestCase):
             if entry[0] in ['user_id', 'user_display', 'user_email', 'username']:
                 continue
             self.assertTrue(entry[0] in responses_corrected)
+
+    def testOwnershipPermissions(self):
+        """ Test that teachers can only access response data for forms they created,
+            while admins retain access to all forms. """
+
+        # Create a form as teacher_owner
+        self.client.login(username=self.teacher_owner.username, password='password')
+        form_data = {
+            'title': 'Owner Test Form',
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Q1', 'seq': 0,
+                                  'required': False, 'parent_id': -1,
+                                  'attrs': {'correct_answer': '', 'charlimits': ','}, 'help_text': ''}},
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Ownership permission test'
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        form = Form.objects.get(title='Owner Test Form')
+
+        # teacher_owner can access their own form's response data
+        response = self.client.get("/customforms/responses/%d/" % form.id)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get("/customforms/getData/", {'form_id': form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get("/customforms/exceldata/%d/" % form.id)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get("/customforms/bulkdownloadfiles/",
+                                   {'form_id': form.id, 'question_name': 'q1'})
+        self.assertEqual(response.status_code, 200)
+
+        # teacher_other is denied access to teacher_owner's form response data
+        self.client.login(username=self.teacher_other.username, password='password')
+        response = self.client.get("/customforms/responses/%d/" % form.id)
+        self.assertEqual(response.status_code, 403)
+        response = self.client.get("/customforms/getData/", {'form_id': form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 403)
+        response = self.client.get("/customforms/exceldata/%d/" % form.id)
+        self.assertEqual(response.status_code, 403)
+        response = self.client.get("/customforms/bulkdownloadfiles/",
+                                   {'form_id': form.id, 'question_name': 'q1'})
+        self.assertEqual(response.status_code, 403)
+
+        # admin can access any form's response data regardless of ownership
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get("/customforms/responses/%d/" % form.id)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get("/customforms/getData/", {'form_id': form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get("/customforms/exceldata/%d/" % form.id)
+        self.assertEqual(response.status_code, 200)
