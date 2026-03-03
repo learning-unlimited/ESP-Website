@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 import random
 
+from django.contrib.auth.models import Group
 from django.db import transaction
 
 from esp.cal.models import Event
@@ -285,3 +286,53 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertTrue(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
         self.assertTrue(not self.moduleobj.deadline_met())
+
+
+class TeacherScheduleDeadlineTest(ProgramFrameworkTest):
+    """Tests for Teacher/Classes/Schedule permission gating room/time visibility."""
+
+    def setUp(self, *args, **kwargs):
+        super().setUp(*args, **kwargs)
+
+        pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
+        self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
+        self.moduleobj.user = self.teachers[0]
+
+    def _remove_all_teacher_perms(self):
+        Permission.objects.filter(
+            permission_type__startswith='Teacher',
+            program=self.program,
+        ).delete()
+
+    @transaction.atomic
+    def test_can_view_schedule_true_by_default(self):
+        """prepare() sets can_view_schedule=True when Teacher/All is active (implies Schedule)."""
+        context = self.moduleobj.prepare({})
+        self.assertTrue(context['can_view_schedule'])
+
+    @transaction.atomic
+    def test_can_view_schedule_true_with_specific_permission(self):
+        """prepare() sets can_view_schedule=True when only Teacher/Classes/Schedule is active."""
+        self._remove_all_teacher_perms()
+        Permission.objects.create(
+            permission_type='Teacher/Classes/Schedule',
+            program=self.program,
+            role=Group.objects.get(name='Teacher'),
+        )
+        context = self.moduleobj.prepare({})
+        self.assertTrue(context['can_view_schedule'])
+
+    @transaction.atomic
+    def test_can_view_schedule_false_without_permission(self):
+        """prepare() sets can_view_schedule=False when no Teacher/Classes/Schedule permission exists."""
+        self._remove_all_teacher_perms()
+        context = self.moduleobj.prepare({})
+        self.assertFalse(context['can_view_schedule'])
+
+    @transaction.atomic
+    def test_admin_always_sees_schedule(self):
+        """Admins bypass the deadline check and always see the schedule."""
+        self._remove_all_teacher_perms()
+        self.moduleobj.user = self.admins[0]
+        context = self.moduleobj.prepare({})
+        self.assertTrue(context['can_view_schedule'])
