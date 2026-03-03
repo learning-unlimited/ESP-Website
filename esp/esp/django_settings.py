@@ -203,6 +203,7 @@ FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
+    (  50, 'django.middleware.security.SecurityMiddleware'),
     ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
@@ -273,6 +274,22 @@ for app in ('django_evolution', 'django_command_extensions'):
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persistent storage
+
+# Security: ensure session and CSRF cookies are only sent over HTTPS in production.
+# These default to False; override to True in local_settings.py for production.
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = True
+
+# Security: HTTP Strict Transport Security (HSTS)
+# Tells browsers to only access the site via HTTPS for the specified duration.
+# Only active when SecurityMiddleware is installed and DEBUG is False.
+SECURE_HSTS_SECONDS = 0 if DEBUG else 31536000  # 1 year in production
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# Security: redirect all HTTP requests to HTTPS in production.
+SECURE_SSL_REDIRECT = not DEBUG
 
 ATOMIC_REQUESTS = True
 
