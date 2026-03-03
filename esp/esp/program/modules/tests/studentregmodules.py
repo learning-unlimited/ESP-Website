@@ -366,3 +366,86 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         rt = RecordType.objects.get(name='lunch_selected')
         Record.objects.create(user=self.student, program=self.program, event=rt)
         self.assertTrue(module.isCompleted())
+
+
+class StudentSurveyModuleTest(ProgramFrameworkTest):
+
+    def setUp(self):
+        super().setUp(num_students=3)
+        self.add_student_profiles()
+        self.student = self.students[0]
+
+    def test_students_query(self):
+        module = self.program.getModule('StudentSurveyModule')
+        for qobj in [True, False]:
+            result = module.students(QObject=qobj)
+            self.assertIn('student_survey', result)
+
+    def test_student_desc(self):
+        module = self.program.getModule('StudentSurveyModule')
+        desc = module.studentDesc()
+        self.assertIn('student_survey', desc)
+
+    def test_is_step_default(self):
+        module = self.program.getModule('StudentSurveyModule')
+        self.assertFalse(module.isStep())
+
+
+class StudentCertModuleTest(ProgramFrameworkTest):
+
+    def setUp(self):
+        super().setUp(num_students=3, num_teachers=2, classes_per_teacher=1)
+        self.add_student_profiles()
+        self.schedule_randomly()
+        self.student = self.students[0]
+
+    def test_is_step_before_program_ends(self):
+        module = self.program.getModule('StudentCertModule')
+        module.user = self.student
+        self.assertFalse(module.isStep())
+
+
+class StudentOnsiteTest(ProgramFrameworkTest):
+
+    def setUp(self):
+        super().setUp(num_students=3, num_teachers=2, classes_per_teacher=1)
+        self.add_student_profiles()
+        self.schedule_randomly()
+        self.student = self.students[0]
+
+    def test_studentonsite_page(self):
+        logged_in = self.client.login(username=self.student.username, password='password')
+        self.assertTrue(logged_in)
+        response = self.client.get('/learn/%s/studentonsite' % self.program.getUrlBase())
+        self.assertIn(response.status_code, [200, 302])
+
+
+class StudentClassRegModuleTest(ProgramFrameworkTest):
+
+    def setUp(self):
+        super().setUp(num_students=5, num_teachers=3, classes_per_teacher=2)
+        self.add_student_profiles()
+        self.schedule_randomly()
+        self.student = self.students[0]
+
+    def test_catalog_json(self):
+        response = self.client.get('/learn/%s/catalog_json' % self.program.getUrlBase())
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_class_info_page(self):
+        sections = list(self.program.sections())
+        if sections:
+            response = self.client.get('/learn/%s/classinfo/%s' % (
+                self.program.getUrlBase(), sections[0].parent_class.id))
+            self.assertIn(response.status_code, [200, 302, 404])
+
+    def test_students_query(self):
+        module = self.program.getModule('StudentClassRegModule')
+        students = module.students(QObject=False)
+        self.assertIn('enrolled', students)
+        self.assertIn('classreg', students)
+
+    def test_student_desc(self):
+        module = self.program.getModule('StudentClassRegModule')
+        desc = module.studentDesc()
+        self.assertIn('enrolled', desc)
