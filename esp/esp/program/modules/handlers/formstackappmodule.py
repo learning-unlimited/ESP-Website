@@ -57,6 +57,7 @@ def resolve_field_expression(expression, context_vars):
     if not expression or not expression.strip():
         return None
     expression = expression.strip()
+    expression = expression.strip()
     try:
         resolved = Variable(expression).resolve(Context(context_vars))
         if resolved is None:
