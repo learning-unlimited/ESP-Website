@@ -140,7 +140,7 @@ class CreditCardRequiredTest(TestCase):
         _create_extracost_transfer(self.student, self.program, 'Meal Ticket', 8.0)
         # Pay almost everything, leaving < $0.50
         total = self.iac.amount_due()
-        self.iac.submit_payment(total - Decimal('0.40'))
+        self.iac.submit_payment(total - Decimal('0.40'), link_transfers=False)
         self.assertTrue(self.iac.amount_due() < Decimal('0.50'))
         self.assertFalse(self.cc_module.isRequired())
 
