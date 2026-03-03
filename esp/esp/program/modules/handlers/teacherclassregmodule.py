@@ -1010,7 +1010,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.views.json_utils import JsonResponse
+        from django.http import JsonResponse
 
         Q_teacher = Q(groups__name="Teacher")
 
@@ -1057,7 +1057,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             obj_list = []
 
-        return JsonResponse(obj_list)
+        return JsonResponse(obj_list, safe=False)
 
     def get_msg_vars(self, user, key):
         if key == 'full_classes':
