@@ -84,6 +84,7 @@ urlpatterns += [
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
     url(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),
+    url(r'^admin/ajax_qsd_image_upload/?$', esp.qsd.views.ajax_qsd_image_upload),
     url(r'^admin/ajax_autocomplete/?', esp.db.views.ajax_autocomplete),
     url(r'^admin/filebrowser/', filebrowser_site.urls),
     url(r'^admin/', admin_site.urls),

@@ -40,6 +40,7 @@ urlpatterns += [
 
 urlpatterns += [
     url(r'^switchback/?$', myesp.myesp_switchback, name='myesp_switchback'),
+    url(r'^stop_testing/?$', myesp.myesp_stop_testing, name='myesp_stop_testing'),
     url(r'^onsite/?$', myesp.myesp_onsite, name='myesp_onsite'),
     url(r'^passwd/?$', myesp.myesp_passwd, name='myesp_passwd'),
     url(r'^accountmanage/?$', myesp.myesp_accountmanage, name='myesp_accountmanage'),
