@@ -155,7 +155,7 @@ class StudentRegCoreTest(ProgramFrameworkTest):
     def test_confirmreg_page(self):
         self.client.login(username=self.student.username, password='password')
         response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
-        self.assertIn(response.status_code, [200, 302, 500])
+        self.assertIn(response.status_code, [200, 302])
 
     def test_cancelreg(self):
         rt, _ = RecordType.objects.get_or_create(name='reg_confirmed')
