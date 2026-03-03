@@ -3,8 +3,8 @@
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
 {% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 {% block content %}
 <h1>Credit Card Payment for {{ program.niceName }}</h1>
@@ -22,30 +22,41 @@
 {% if itemizedcosttotal > 0 %}
 {% load render_qsd %}
 {% inline_program_qsd_block program "cybersource_header" %}
-<p>Please review the costs below and make sure they are correct, then click "Continue to Payment" to be taken to our payment processor's site.</p>
+<p>Please review the costs below and make sure they are correct, then click "Continue to Payment" to be taken to our
+  payment processor's site.</p>
 
-<p>We also accept payment by <b>cash or check</b> on the day of the program. To pay later, <a href="/learn/{{ program.getUrlBase }}/studentreg">return to the main registration page</a>.</p>
+<p>We also accept payment by <b>cash or check</b> on the day of the program. To pay later, <a
+    href="/learn/{{ program.getUrlBase }}/studentreg">return to the main registration page</a>.</p>
 {% end_inline_program_qsd_block %}
 {% else %}
-<p>You have no outstanding balance! <a href="/learn/{{ program.getUrlBase }}/studentreg">Return to the main registration page</a>.</p>
+<p>You have no outstanding balance! <a href="/learn/{{ program.getUrlBase }}/studentreg">Return to the main registration
+    page</a>.</p>
 {% endif %}
 
 <form>
-{% include "program/modules/creditcardmodule_cybersource/transaction_record.html" %}
+  {% include "program/modules/creditcardmodule_cybersource/transaction_record.html" %}
 </form>
 
 <br />
 {% if itemizedcosttotal > 0 %}
 <form action="{{ post_url }}" method="post" autocomplete="off">
-<input type="hidden" name="merchant_id" value="{{ merchant_id }}" />
-<input type="hidden" name="amount" value="{{ itemizedcosttotal|floatformat:2 }}" />
-<input type="hidden" name="merchantDefinedData1" value="{{ identifier }}" />
-<input type="hidden" name="comments" value="{{ settings.ORGANIZATION_SHORT_NAME }} Invoice {{ module.program.id }}/{{ user.id }} (for {{ program.niceName }})" />
-<input type="hidden" name="billTo_country" value="US" />
-<div class="alert alert-warning">
-    <strong>Note:</strong> This payment will appear on your credit card statement as <strong>SPLASH LEARNING UNLIMT</strong>.
-</div>
-<center><input id="submit_form" class="btn btn-primary" type="submit" value="Continue to Payment"></center>
+  {% if signed_fields %}
+  {% for key, value in signed_fields.items %}
+  <input type="hidden" name="{{ key }}" value="{{ value }}" />
+  {% endfor %}
+  {% else %}
+  <input type="hidden" name="merchant_id" value="{{ merchant_id }}" />
+  <input type="hidden" name="amount" value="{{ itemizedcosttotal|floatformat:2 }}" />
+  <input type="hidden" name="merchantDefinedData1" value="{{ identifier }}" />
+  {% endif %}
+  <input type="hidden" name="comments"
+    value="{{ settings.ORGANIZATION_SHORT_NAME }} Invoice {{ module.program.id }}/{{ user.id }} (for {{ program.niceName }})" />
+  <input type="hidden" name="billTo_country" value="US" />
+  <div class="alert alert-warning">
+    <strong>Note:</strong> This payment will appear on your credit card statement as <strong>SPLASH LEARNING
+      UNLIMT</strong>.
+  </div>
+  <center><input id="submit_form" class="btn btn-primary" type="submit" value="Continue to Payment"></center>
 </form>
 {% endif %}
 
