@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -115,7 +114,7 @@ class AjaxErrorMiddleware(MiddlewareMixin):
     def process_exception(self, request, exception):
         #   This line has been commented out for debugging so that requests
         #   can be made using a normal browser like Firefox with UrlParams.
-        if not request.is_ajax(): return
+        if request.headers.get('X-Requested-With') != 'XMLHttpRequest': return
 
         if isinstance(exception, (ObjectDoesNotExist, Http404)):
             return self.not_found(request, exception)
