@@ -54,11 +54,9 @@ def resolve_field_expression(expression, context_vars):
     Returns the string value, or None if the expression is empty,
     whitespace-only, unresolvable, or resolves to None.
     """
-    if not expression:
+    if not expression or not expression.strip():
         return None
     expression = expression.strip()
-    if not expression:
-        return None
     try:
         resolved = Variable(expression).resolve(Context(context_vars))
         if resolved is None:
