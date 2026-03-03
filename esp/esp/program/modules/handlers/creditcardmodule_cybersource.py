@@ -66,23 +66,37 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     have_paid = isCompleted
 
     def isRequired(self):
-        """Conditionally require credit card payment when student has an outstanding balance.
+        """Conditionally require credit card payment when student selects extra cost items.
 
-        Returns True if:
-        - An admin explicitly marked the module as required, OR
-        - The 'creditcard_required_if_amount_due' tag is enabled for the program
-          AND the current user has an outstanding balance >= $0.50 (minimum
-          gateway charge amount; sub-$0.50 micro-balances from fractional
-          financial aid are safely ignored).
+        Same logic as CreditCardModule_Stripe.isRequired(). See that class
+        for full documentation of the 'creditcard_required_for_extracosts' tag.
         """
         if super(CreditCardModule_Cybersource, self).isRequired():
             return True
-        if Tag.getBooleanTag('creditcard_required_if_amount_due', self.program, default=False):
-            request = get_current_request()
-            user = getattr(self, 'user', request.user if request else None)
-            if user and user.is_authenticated:
-                return IndividualAccountingController(self.program, user).amount_due() >= Decimal('0.50')
-        return False
+        return self._extracost_requires_payment()
+
+    def _extracost_requires_payment(self):
+        """Check if the student selected extra cost items that require CC payment."""
+        from esp.accounting.models import Transfer
+        tag_value = Tag.getTag('creditcard_required_for_extracosts', self.program, default='')
+        if not tag_value:
+            return False
+        request = get_current_request()
+        user = getattr(self, 'user', request.user if request else None)
+        if not user or not user.is_authenticated:
+            return False
+        iac = IndividualAccountingController(self.program, user)
+        if iac.amount_due() < Decimal('0.50'):
+            return False
+        pac = ProgramAccountingController(self.program)
+        extra_lits = pac.get_lineitemtypes(include_donations=False).exclude(
+            text__in=pac.admission_items)
+        if tag_value.strip() != '*':
+            item_names = [name.strip() for name in tag_value.split(',')]
+            extra_lits = extra_lits.filter(text__in=item_names)
+        return Transfer.objects.filter(
+            user=user, line_item__in=extra_lits,
+        ).exists()
 
     def students(self, QObject = False):
         #   This query represented students who have a payment transfer from the outside

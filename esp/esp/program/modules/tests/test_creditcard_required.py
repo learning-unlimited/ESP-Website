@@ -30,6 +30,18 @@ def _get_cc_module(program, module_cls_name='CreditCardModule_Stripe'):
     return ProgramModuleObj.getFromProgModule(program, pm)
 
 
+def _create_extracost_transfer(user, program, item_name, amount):
+    """Create a Transfer record simulating a student selecting an extra cost item."""
+    lit = LineItemType.objects.get(text=item_name, program=program)
+    account = Account.objects.get(program=program)
+    return Transfer.objects.create(
+        user=user,
+        line_item=lit,
+        amount_dec=Decimal(str(amount)),
+        destination=account,
+    )
+
+
 class CreditCardRequiredTest(TestCase):
     """Tests for CreditCardModule_Stripe.isRequired() conditional logic."""
 
@@ -39,14 +51,16 @@ class CreditCardRequiredTest(TestCase):
         self.program = Program.objects.create(
             url='cctest', name='CC Test Program', grade_min=7, grade_max=12)
 
-        # Set up accounting
         gac = GlobalAccountingController()
         gac.setup_accounts()
         self.pac = ProgramAccountingController(self.program)
         self.pac.setup_accounts()
-        self.pac.setup_lineitemtypes(50.0)  # $50 base cost
+        # $50 base cost + two optional extra cost items
+        self.pac.setup_lineitemtypes(
+            50.0,
+            [('Meal Ticket', 8.0, 1), ('T-Shirt', 15.0, 1)],
+        )
 
-        # Create a student
         self.student = ESPUser.objects.create_user(
             username='cc_test_student',
             password='password',
@@ -56,12 +70,11 @@ class CreditCardRequiredTest(TestCase):
 
         self.iac = IndividualAccountingController(self.program, self.student)
 
-        # Get the Stripe CC module
         self.cc_module = _get_cc_module(self.program, 'CreditCardModule_Stripe')
         self.cc_module.user = self.student
 
     def test_isRequired_default_false(self):
-        """CC module is not required by default (no tag, not admin-set)."""
+        """CC module is not required by default (no tag set)."""
         self.assertFalse(self.cc_module.isRequired())
 
     def test_isRequired_explicit_required_field(self):
@@ -69,79 +82,86 @@ class CreditCardRequiredTest(TestCase):
         self.cc_module.required = True
         self.assertTrue(self.cc_module.isRequired())
 
-    def test_isRequired_tag_enabled_with_balance(self):
-        """Tag enabled + student owes money -> module is required."""
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
-        # Student has $50 base cost, $0 paid -> amount_due = $50
-        self.assertTrue(self.iac.amount_due() > 0)
+    def test_tag_star_with_extracost_selected(self):
+        """Tag='*' + student selected any extra cost -> required."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
+        _create_extracost_transfer(self.student, self.program, 'Meal Ticket', 8.0)
         self.assertTrue(self.cc_module.isRequired())
 
-    def test_isRequired_tag_enabled_zero_balance(self):
-        """Tag enabled + student owes nothing -> module is not required."""
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
-        # Pay in full
-        self.iac.submit_payment(Decimal('50.00'))
-        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
-        self.assertFalse(self.cc_module.isRequired())
-
-    def test_isRequired_tag_disabled_with_balance(self):
-        """Tag not set + student owes money -> module is not required."""
+    def test_tag_star_without_extracost_selected(self):
+        """Tag='*' but student only has admission cost (no extras) -> not required."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
+        # Student owes $50 admission but hasn't selected any extra cost items
         self.assertTrue(self.iac.amount_due() > 0)
         self.assertFalse(self.cc_module.isRequired())
 
-    def test_isRequired_tag_explicitly_false(self):
-        """Tag explicitly set to False -> module is not required."""
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='False')
+    def test_tag_specific_item_matching(self):
+        """Tag lists specific item + student selected that item -> required."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='Meal Ticket')
+        _create_extracost_transfer(self.student, self.program, 'Meal Ticket', 8.0)
+        self.assertTrue(self.cc_module.isRequired())
+
+    def test_tag_specific_item_nonmatching(self):
+        """Tag lists specific item but student selected a different item -> not required."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='Meal Ticket')
+        _create_extracost_transfer(self.student, self.program, 'T-Shirt', 15.0)
+        self.assertFalse(self.cc_module.isRequired())
+
+    def test_tag_comma_separated_items(self):
+        """Tag lists multiple items comma-separated -> required if any match."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='Meal Ticket,T-Shirt')
+        _create_extracost_transfer(self.student, self.program, 'T-Shirt', 15.0)
+        self.assertTrue(self.cc_module.isRequired())
+
+    def test_admission_only_never_triggers(self):
+        """Even with tag='*', admission-only balance does NOT trigger CC requirement."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
+        # No extra cost transfers, only admission
+        self.assertEqual(self.iac.amount_due(), Decimal('50.00'))
+        self.assertFalse(self.cc_module.isRequired())
+
+    def test_tag_not_set(self):
+        """Tag not set at all -> not required regardless of balance."""
         self.assertTrue(self.iac.amount_due() > 0)
         self.assertFalse(self.cc_module.isRequired())
 
-    def test_isRequired_finaid_covers_full_cost(self):
-        """Financial aid covering entire cost -> amount_due = 0 -> not required."""
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
+    def test_finaid_covers_all_costs(self):
+        """Financial aid covering everything -> amount_due=0 -> not required."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
+        _create_extracost_transfer(self.student, self.program, 'Meal Ticket', 8.0)
         self.iac.grant_full_financial_aid()
-        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+        # Pay remaining admission via payment
+        self.iac.submit_payment(self.iac.amount_due())
         self.assertFalse(self.cc_module.isRequired())
 
-    def test_isRequired_partial_finaid_still_required(self):
-        """Partial financial aid -> amount_due >= $0.50 -> still required."""
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
-        self.iac.set_finaid_params(20.0, 0)  # $20 grant on $50 cost -> $30 due
-        self.assertTrue(self.iac.amount_due() >= Decimal('0.50'))
-        self.assertTrue(self.cc_module.isRequired())
-
-    def test_isRequired_micro_balance_ignored(self):
-        """Sub-$0.50 balance should NOT trigger required (Stripe minimum charge).
-
-        Prevents deadlock: Stripe rejects charges under $0.50, so forcing
-        students to pay micro-balances would permanently block registration.
-        """
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
-        # Grant finaid that leaves only $0.40 due (under Stripe's $0.50 minimum)
-        self.iac.set_finaid_params(49.60, 0)  # $49.60 grant on $50 cost -> $0.40 due
-        self.assertTrue(self.iac.amount_due() > 0)
+    def test_micro_balance_ignored(self):
+        """Sub-$0.50 balance should NOT trigger required (Stripe minimum charge)."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
+        _create_extracost_transfer(self.student, self.program, 'Meal Ticket', 8.0)
+        # Pay almost everything, leaving < $0.50
+        total = self.iac.amount_due()
+        self.iac.submit_payment(total - Decimal('0.40'))
         self.assertTrue(self.iac.amount_due() < Decimal('0.50'))
         self.assertFalse(self.cc_module.isRequired())
 
-    def test_isRequired_unauthenticated_user(self):
-        """Anonymous/unauthenticated user -> not required."""
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
+    def test_unauthenticated_user(self):
+        """Anonymous user -> not required."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
         self.cc_module.user = AnonymousUser()
         self.assertFalse(self.cc_module.isRequired())
 
-    def test_isRequired_free_program(self):
-        """Program with $0 cost -> amount_due = 0 -> not required."""
+    def test_free_program(self):
+        """Program with $0 cost -> amount_due=0 -> not required."""
         free_program = Program.objects.create(
             url='freeprogram', name='Free Program', grade_min=7, grade_max=12)
         free_pac = ProgramAccountingController(free_program)
         free_pac.setup_accounts()
-        free_pac.setup_lineitemtypes(0.0)  # $0 base cost
+        free_pac.setup_lineitemtypes(0.0)
 
-        Tag.setTag('creditcard_required_if_amount_due', target=free_program, value='True')
+        Tag.setTag('creditcard_required_for_extracosts', target=free_program, value='*')
 
         free_cc = _get_cc_module(free_program, 'CreditCardModule_Stripe')
         free_cc.user = self.student
-        free_iac = IndividualAccountingController(free_program, self.student)
-        self.assertEqual(free_iac.amount_due(), Decimal('0.00'))
         self.assertFalse(free_cc.isRequired())
 
     def test_tag_scoped_to_program(self):
@@ -150,10 +170,9 @@ class CreditCardRequiredTest(TestCase):
             url='programb', name='Program B', grade_min=7, grade_max=12)
         pac_b = ProgramAccountingController(program_b)
         pac_b.setup_accounts()
-        pac_b.setup_lineitemtypes(50.0)
+        pac_b.setup_lineitemtypes(50.0, [('Meal Ticket', 8.0, 1)])
 
-        # Set tag only on program A
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
 
         cc_b = _get_cc_module(program_b, 'CreditCardModule_Stripe')
         cc_b.user = self.student
@@ -174,55 +193,27 @@ class CreditCardRequiredTest(TestCase):
         self.assertTrue(self.iac.amount_due() > 0)
         self.assertFalse(self.cc_module.isCompleted())
 
-    def test_extra_cost_bypass_blocked(self):
-        """After paying admission, adding extra costs should make isCompleted() False.
+    def test_extracost_added_after_admission_payment(self):
+        """After paying admission, adding extra costs should re-trigger isRequired().
 
-        This is the 'Extra Cost Bypass' loophole fix: a student who paid $50
-        admission then adds a $15 t-shirt should NOT be considered 'completed'
-        because they still owe $15.
+        Student pays $50 admission, then selects a $15 t-shirt.
+        They still owe $15, and have an extra cost transfer -> CC required.
         """
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
 
-        # Student pays $50 admission in full
         self.iac.submit_payment(Decimal('50.00'))
         self.assertTrue(self.cc_module.isCompleted())
         self.assertFalse(self.cc_module.isRequired())
 
-        # Admin adds an optional extra cost (e.g. t-shirt)
-        LineItemType.objects.create(
-            text='T-shirt',
-            amount_dec=Decimal('15.00'),
-            required=False,
-            max_quantity=1,
-            program=self.program,
-            for_payments=False,
-            for_finaid=False,
-        )
-        # Student selects the extra cost item (creates a transfer)
-        program_account = Account.objects.get(program=self.program)
-        lit = LineItemType.objects.get(text='T-shirt', program=self.program)
-        Transfer.objects.create(
-            user=self.student,
-            line_item=lit,
-            amount_dec=Decimal('15.00'),
-            destination=program_account,
-        )
+        _create_extracost_transfer(self.student, self.program, 'T-Shirt', 15.0)
 
-        # Now amount_due should be $15
         self.assertEqual(self.iac.amount_due(), Decimal('15.00'))
-        # isRequired should be True (tag enabled + amount_due > 0)
         self.assertTrue(self.cc_module.isRequired())
-        # isCompleted must be False — the bypass loophole fix
         self.assertFalse(self.cc_module.isCompleted())
-
-    def test_getBooleanTag_default_false(self):
-        """Tag not set at all -> getBooleanTag returns False."""
-        result = Tag.getBooleanTag('creditcard_required_if_amount_due', self.program, default=False)
-        self.assertFalse(result)
 
 
 class CreditCardCybersourceRequiredTest(TestCase):
-    """Tests for CreditCardModule_Cybersource.isRequired() conditional logic."""
+    """Tests for CreditCardModule_Cybersource.isRequired() — same tag, same logic."""
 
     def setUp(self):
         super().setUp()
@@ -234,7 +225,7 @@ class CreditCardCybersourceRequiredTest(TestCase):
         gac.setup_accounts()
         self.pac = ProgramAccountingController(self.program)
         self.pac.setup_accounts()
-        self.pac.setup_lineitemtypes(50.0)
+        self.pac.setup_lineitemtypes(50.0, [('Meal Ticket', 8.0, 1)])
 
         self.student = ESPUser.objects.create_user(
             username='cc_cyber_student',
@@ -247,20 +238,20 @@ class CreditCardCybersourceRequiredTest(TestCase):
         self.cc_module = _get_cc_module(self.program, 'CreditCardModule_Cybersource')
         self.cc_module.user = self.student
 
-    def test_cybersource_isRequired_tag_enabled(self):
-        """Cybersource module also respects the tag."""
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
-        self.assertTrue(self.iac.amount_due() > 0)
+    def test_cybersource_tag_with_extracost(self):
+        """Cybersource module also respects the tag with extra cost items."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
+        _create_extracost_transfer(self.student, self.program, 'Meal Ticket', 8.0)
         self.assertTrue(self.cc_module.isRequired())
 
-    def test_cybersource_isRequired_default(self):
+    def test_cybersource_default(self):
         """Cybersource module not required by default."""
         self.assertFalse(self.cc_module.isRequired())
 
-    def test_cybersource_isRequired_paid(self):
-        """Cybersource module not required after full payment."""
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
-        self.iac.submit_payment(Decimal('50.00'))
+    def test_cybersource_admission_only_no_trigger(self):
+        """Cybersource: admission-only balance doesn't trigger CC requirement."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
+        self.assertTrue(self.iac.amount_due() > 0)
         self.assertFalse(self.cc_module.isRequired())
 
 
@@ -273,7 +264,6 @@ class CreditCardSelfBlockingTest(TestCase):
         self.program = Program.objects.create(
             url='ccselfblock', name='CC SelfBlock Program', grade_min=7, grade_max=12)
 
-        # Register the CC module with this program so getModules() finds it
         cc_pm = ProgramModule.objects.get(handler='CreditCardModule_Stripe')
         self.program.program_modules.add(cc_pm)
 
@@ -281,7 +271,7 @@ class CreditCardSelfBlockingTest(TestCase):
         gac.setup_accounts()
         self.pac = ProgramAccountingController(self.program)
         self.pac.setup_accounts()
-        self.pac.setup_lineitemtypes(50.0)
+        self.pac.setup_lineitemtypes(50.0, [('Meal Ticket', 8.0, 1)])
 
         self.student = ESPUser.objects.create_user(
             username='cc_selfblock_student',
@@ -297,13 +287,12 @@ class CreditCardSelfBlockingTest(TestCase):
     def test_payonline_skips_self_in_required_check(self):
         """The CC module should skip itself when checking required modules in payonline().
 
-        This verifies the fix for #3501: without it, making the CC module
-        required would create a circular dependency where the module blocks
-        access to its own payment page.
+        Verifies #3501 fix: without it, making CC required creates a circular
+        dependency — the module blocks access to its own payment page.
         """
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
+        _create_extracost_transfer(self.student, self.program, 'Meal Ticket', 8.0)
 
-        # CC module is now required (student owes $50) but not completed (hasn't paid)
         self.assertTrue(self.cc_module.isRequired())
         self.assertFalse(self.cc_module.isCompleted())
 
@@ -312,20 +301,18 @@ class CreditCardSelfBlockingTest(TestCase):
         completedAll = True
         for module in modules:
             if module.id == self.cc_module.id:
-                continue  # This is the fix being tested
+                continue
             if not module.isCompleted() and module.isRequired():
                 completedAll = False
 
-        # The CC module is the only required module in this minimal program,
-        # so after skipping it, completedAll should remain True.
         self.assertTrue(completedAll,
             "With the CC module skipped, no other required modules should block")
 
     def test_payonline_still_checks_other_modules(self):
-        """Other incomplete required modules still block payment (not just self)."""
-        Tag.setTag('creditcard_required_if_amount_due', target=self.program, value='True')
+        """Other incomplete required modules still block payment."""
+        Tag.setTag('creditcard_required_for_extracosts', target=self.program, value='*')
+        _create_extracost_transfer(self.student, self.program, 'Meal Ticket', 8.0)
 
-        # Explicitly register StudentRegCore as a required module for this program
         reg_pm = ProgramModule.objects.get(handler='StudentRegCore')
         self.program.program_modules.add(reg_pm)
         reg_pmo, _ = ProgramModuleObj.objects.get_or_create(
@@ -336,8 +323,6 @@ class CreditCardSelfBlockingTest(TestCase):
         reg_pmo.save()
 
         modules = self.program.getModules(self.student, 'learn')
-
-        # The payonline loop (excluding CC self) should detect the other incomplete module
         completedAll = True
         for module in modules:
             if module.id == self.cc_module.id:
@@ -345,6 +330,5 @@ class CreditCardSelfBlockingTest(TestCase):
             if not module.isCompleted() and module.isRequired():
                 completedAll = False
 
-        # StudentRegCore is required but not completed, so completedAll should be False
         self.assertFalse(completedAll,
             "Other incomplete required modules should block payment")

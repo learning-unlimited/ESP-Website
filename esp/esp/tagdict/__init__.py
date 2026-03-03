@@ -1336,13 +1336,14 @@ all_program_tags = {
         'category': 'learn',
         'is_setting': True,
     },
-    'creditcard_required_if_amount_due': {
-        'is_boolean': True,
-        'help_text': 'Make the Credit Card module required if the student has an outstanding balance >= $0.50. '
-                     'Balances under $0.50 are ignored to avoid gateway minimum charge rejections. '
-                     'The Credit Card module should remain at a high sequence number (e.g. 10000) '
-                     'so students complete other registration steps before paying.',
-        'default': False,
+    'creditcard_required_for_extracosts': {
+        'is_boolean': False,
+        'help_text': 'Make the Credit Card module required when a student selects specific extra cost items. '
+                     'Set to * to trigger on any extra cost item, or a comma-separated list of item names '
+                     '(e.g. "Meal Ticket,T-Shirt") to trigger only on those items. '
+                     'Does not trigger on program admission costs alone. '
+                     'Balances under $0.50 are ignored to avoid gateway minimum charge rejections.',
+        'default': '',
         'category': 'learn',
         'is_setting': True,
     },
