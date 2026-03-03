@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 import logging
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,6 @@ from esp.tagdict import all_global_tags, all_program_tags
 # documentation, as described at
 # http://www.djangoproject.com/documentation/models/generic_relations/
 
-@python_2_unicode_compatible
 class Tag(models.Model):
     """A tag on an item."""
     key = models.SlugField(db_index=True)
