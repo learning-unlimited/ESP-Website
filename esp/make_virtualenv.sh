@@ -94,8 +94,12 @@ if ! "$PYTHON" -c "import virtualenv" >/dev/null 2>&1; then
     fi
 
     if [[ "$EUID" -eq 0 ]]; then
-        echo "Installing virtualenv into system site-packages (running as root)."
-        "$PYTHON" -m pip install "virtualenv>=1.10"
+        echo "ERROR: This script must not be run as root, because it would install Python packages into system site-packages."
+        echo "Please rerun as a non-root user (without sudo)."
+        echo "If you need to use a different interpreter, you can do for example:"
+        echo "  PYTHON=python3 bash esp/make_virtualenv.sh"
+        echo "Aborting to avoid modifying system Python."
+        exit 1
     else
         echo "Installing virtualenv into user site-packages (no sudo)."
         if ! "$PYTHON" -m pip install --user "virtualenv>=1.10"; then
