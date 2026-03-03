@@ -132,16 +132,20 @@ program.niceName }}{% endblock %} {% block stylesheets %} {{ block.super }}
       </div>
       {% endif %}
       <div class="noclick">
-        {{ form.name.label_tag }} {{ form.name.errors }} {{ form.name }} {{
-        form.email.label_tag }} {{ form.email.errors }} {{ form.email }} {{
-        form.phone.label_tag }} {{ form.phone.errors }} {{ form.phone }} {% if
-        form.shirt_size %} {{ form.shirt_size.label_tag }} {{
-        form.shirt_size.errors }} {{ form.shirt_size }} {% endif %} {% if
-        form.shirt_type %} {{ form.shirt_type.label_tag }} {{
-        form.shirt_type.errors }} {{ form.shirt_type }} {% endif %} {% if
-        form.comments %} {{ form.comments.label_tag }}
-        <span style="font-size: smaller">{{ form.comments.help_text }}</span>
-        {{ form.comments.errors }} {{ form.comments }} {% endif %}
+        {{ form.name.label_tag }} {{ form.name.errors }} {{ form.name }}
+        {{ form.email.label_tag }} {{ form.email.errors }} {{ form.email }}
+        {{ form.phone.label_tag }} {{ form.phone.errors }} {{ form.phone }}
+        {% if form.shirt_size %}
+          {{ form.shirt_size.label_tag }} {{ form.shirt_size.errors }} {{ form.shirt_size }}
+        {% endif %}
+        {% if form.shirt_type %}
+          {{ form.shirt_type.label_tag }} {{ form.shirt_type.errors }} {{ form.shirt_type }}
+        {% endif %}
+        {% if form.comments %}
+          {{ form.comments.label_tag }}
+          <span style="font-size: smaller">{{ form.comments.help_text }}</span>
+          {{ form.comments.errors }} {{ form.comments }}
+        {% endif %}
       </div>
       <br />
       <div>
