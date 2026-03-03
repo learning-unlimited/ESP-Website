@@ -1,8 +1,8 @@
-from django.conf.urls import url
+from django.urls import path, re_path
 
 from esp.formstack import views
 
 urlpatterns = [
-    url(r'^medicalsyncapi$', views.medicalsyncapi),
-    url(r'^formstack_webhook/?$', views.formstack_webhook)
+    path('medicalsyncapi', views.medicalsyncapi),
+    re_path(r'^formstack_webhook/?$', views.formstack_webhook)
 ]

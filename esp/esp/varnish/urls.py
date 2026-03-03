@@ -1,7 +1,7 @@
-from django.conf.urls import url
+from django.urls import path
 
 from esp.varnish import views
 
 urlpatterns = [
-    url(r'^purge_page$', views.varnish_purge),
+    path('purge_page', views.varnish_purge),
 ]
