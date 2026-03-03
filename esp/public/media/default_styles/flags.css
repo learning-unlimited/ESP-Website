@@ -113,6 +113,10 @@ input.flag-submit-new {
     margin-right: 0px;
 }
 
+.flag-resolved {
+    opacity: 0.5;
+}
+
 .flag-remove:after {
     content: "\00d7";
     font-weight: 900;

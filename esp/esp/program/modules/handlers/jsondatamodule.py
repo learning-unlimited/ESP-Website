@@ -403,7 +403,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'requested_room': cls.requested_room,
                 'comments': cls.message_for_directors,
                 'special_requests': cls.requested_special_resources,
-                'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
+                'flags': ', '.join(cls.flags.filter(resolved=False).values_list('flag_type__name', flat=True)),
             }
             sections.append(section)
             section['index'] = s.index()
@@ -801,7 +801,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'comments': cls.message_for_directors,
             'special_requests': cls.requested_special_resources,
             'purchases': cls.purchase_requests,
-            'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
+            'flags': ', '.join(cls.flags.filter(resolved=False).values_list('flag_type__name', flat=True)),
         }
 
         return {return_key: [return_dict]}
@@ -847,7 +847,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         classes = prog.classes().select_related()
         flags_num_list = []
         for ft in ClassFlagType.get_flag_types(prog):
-            flags_num_list.append(('Total # of Classes with the <i><span style="color: %s;">%s</span></i> flag' % (ft.color, ft.name), classes.filter(flags__flag_type=ft).distinct().count()))
+            flags_num_list.append(('Total # of Classes with the <i><span style="color: %s;">%s</span></i> flag' % (ft.color, ft.name), classes.filter(flags__flag_type=ft, flags__resolved=False).distinct().count()))
         return flags_num_list
     flags_nums.depend_on_row(ClassFlag, lambda flag: {'prog': flag.subject.parent_program})
     flags_nums = staticmethod(flags_nums)

@@ -91,10 +91,17 @@ class ClassFlag(models.Model):
     flag_type = models.ForeignKey(ClassFlagType, on_delete=models.CASCADE)
     comment = models.TextField(blank=True)
 
+    resolved = models.BooleanField(default=False)
+    resolved_by = AjaxForeignKey(ESPUser, blank=True, null=True,
+        related_name='classflags_resolved', on_delete=models.SET_NULL)
+    resolved_time = models.DateTimeField(blank=True, null=True)
+
     #The following will normally be set automagically, but if you create a Flag via the shell or a script, you will need to set them manually.
-    modified_by = AjaxForeignKey(ESPUser, related_name='classflags_modified', on_delete=models.CASCADE)
+    modified_by = AjaxForeignKey(ESPUser, blank=True, null=True,
+        related_name='classflags_modified', on_delete=models.SET_NULL)
     modified_time = models.DateTimeField(auto_now=True)
-    created_by = AjaxForeignKey(ESPUser, related_name='classflags_created', on_delete=models.CASCADE)
+    created_by = AjaxForeignKey(ESPUser, blank=True, null=True,
+        related_name='classflags_created', on_delete=models.SET_NULL)
     created_time = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -113,5 +120,9 @@ class ClassFlag(models.Model):
             if self.id is None:
                 #We are creating, rather than modifying, so we don't yet have an id.
                 self.created_by = request.user
+        # Ensure audit fields are always persisted when update_fields is used
+        if 'update_fields' in kwargs and kwargs['update_fields'] is not None:
+            kwargs['update_fields'] = list(
+                set(kwargs['update_fields']) | {'modified_by', 'modified_time'})
         super().save(*args, **kwargs)
 

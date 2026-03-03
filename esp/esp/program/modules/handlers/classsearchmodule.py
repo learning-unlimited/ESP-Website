@@ -50,12 +50,17 @@ class ClassSearchModule(ProgramModuleObj):
             field_name='flags__flag_type',
             options={str(ft.id): ft.name for ft in flag_types})
         any_flag_input = ConstantInput(Q(flags__isnull=False))
+        flag_status_input = SelectQInput(options=OrderedDict([
+            ('any',        {'title': 'Any Status',  'Q': Q()}),
+            ('unresolved', {'title': 'Unresolved',  'Q': Q(flags__resolved=False)}),
+            ('resolved',   {'title': 'Resolved',    'Q': Q(flags__resolved=True)}),
+        ]))
         flag_filter = SearchFilter(name='flag', title='the flag',
                                    inputs=[flag_select_input] +
-                                   flag_datetime_inputs)
+                                   flag_datetime_inputs + [flag_status_input])
         any_flag_filter = SearchFilter(name='any_flag', title='any flag',
                                        inputs=[any_flag_input] +
-                                       flag_datetime_inputs)
+                                       flag_datetime_inputs + [flag_status_input])
 
         resource_types = ResourceType.objects.filter(program=self.program)
         resource_value_input = OptionalInput(name="desired value",
