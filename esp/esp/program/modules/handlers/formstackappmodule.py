@@ -49,6 +49,11 @@ logger = logging.getLogger(__name__)
 
 
 def resolve_field_expression(expression, context_vars):
+    """Safely resolve a dotted expression against the given context.
+
+    Returns the string value, or None if the expression is empty,
+    whitespace-only, unresolvable, or resolves to None.
+    """
     if not expression or not expression.strip():
         return None
     expression = expression.strip()
@@ -59,9 +64,9 @@ def resolve_field_expression(expression, context_vars):
         return str(resolved)
     except VariableDoesNotExist:
         return None
-    except Exception as e:
+    except Exception:
         logger.exception(
-            "Error resolving field expression '%s': %s", expression, e
+            "Error resolving field expression '%s'", expression
         )
         return None
 

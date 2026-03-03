@@ -5,26 +5,25 @@ from esp.program.tests import ProgramFrameworkTest
 
 
 class FormstackAppModuleTest(ProgramFrameworkTest):
+    """Tests for the resolve_field_expression helper."""
+
     def test_resolve_valid_expression(self):
-        """Valid user attribute expressions resolve correctly."""
+        """Valid dotted attribute expressions resolve correctly."""
         user = self.students[0]
-        context = {'user': user}
-        result = resolve_field_expression('user.username', context)
+        result = resolve_field_expression('user.username', {'user': user})
         self.assertEqual(result, user.username)
 
     def test_resolve_invalid_expression(self):
-        """Invalid expressions return None instead of raising."""
+        """Unknown attributes return None instead of raising."""
         user = self.students[0]
-        context = {'user': user}
         result = resolve_field_expression(
-            'user.nonexistent_field_xyz', context
+            'user.nonexistent_field_xyz', {'user': user}
         )
         self.assertIsNone(result)
 
-    def test_resolve_malformed_expression(self):
-        """Malformed expressions return None instead of 500ing."""
-        user = self.students[0]
-        result = resolve_field_expression('', {'user': user})
+    def test_resolve_empty_expression(self):
+        """Empty string expressions return None."""
+        result = resolve_field_expression('', {'user': self.students[0]})
         self.assertIsNone(result)
 
     def test_resolve_whitespace_expression(self):
@@ -32,11 +31,10 @@ class FormstackAppModuleTest(ProgramFrameworkTest):
         result = resolve_field_expression('   ', {'user': self.students[0]})
         self.assertIsNone(result)
 
-    def test_resolve_leading_whitespace_expression(self):
-        """Expressions with leading/trailing whitespace resolve correctly."""
+    def test_resolve_leading_trailing_whitespace(self):
+        """Leading/trailing whitespace around expressions is stripped."""
         user = self.students[0]
-        context = {'user': user}
-        result = resolve_field_expression('  user.username  ', context)
+        result = resolve_field_expression('  user.username  ', {'user': user})
         self.assertEqual(result, user.username)
 
     def test_resolve_empty_string_value(self):
