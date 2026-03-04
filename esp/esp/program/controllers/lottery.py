@@ -67,12 +67,12 @@ class LotteryException(Exception):
 class LotterySectionException(LotteryException):
     """ Something is wrong with a class section.    """
     def __init__(self, section, msg, **kwargs):
-        super().__init__('Class section %d (%s) %s' % (section.id, section.emailcode(), msg), **kwargs)
+        super().__init__(f'Class section {section.id} ({section.emailcode()}) {msg}', **kwargs)
 
 class LotterySubjectException(LotteryException):
     """ Something is wrong with a class subject.    """
     def __init__(self, subject, msg, **kwargs):
-        super().__init__('Class subject %s %s' % (subject.emailcode(), msg), **kwargs)
+        super().__init__(f'Class subject {subject.emailcode()} {msg}', **kwargs)
 
 class LotteryAssignmentController(object):
 
@@ -473,7 +473,7 @@ class LotteryAssignmentController(object):
                 if self.options['stats_display']:
                     logger.info('\n== Assigning priority%s students%s',
                                 str(i) if self.effective_priority_limit > 1 else '',
-                                ' with rank %s' % rank if self.options['use_student_apps'] else '')
+                                f' with rank {rank}' if self.options['use_student_apps'] else '')
                 #   Assign priority students to all sections in random order, grouped by duration
                 #   so that longer sections aren't disadvantaged by scheduling conflicts
                 #   Re-randomize for each priority level so that some sections don't keep getting screwed
@@ -488,7 +488,7 @@ class LotteryAssignmentController(object):
             sorted_section_indices = numpy.argsort(interested_counts.astype(numpy.float) / self.section_capacities)
             if self.options['stats_display']:
                 logger.info('\n== Assigning interested students%s',
-                            ' with rank %s' % rank if self.options['use_student_apps'] else '')
+                            f' with rank {rank}' if self.options['use_student_apps'] else '')
             for section_index in sorted_section_indices:
                 self.fill_section(section_index, priority=False, rank=rank)
 
@@ -658,24 +658,24 @@ class LotteryAssignmentController(object):
 
         distribution = []
         for i, count in stats['hist_timeslots_filled'].items():
-            distribution.append('%6d students got a schedule with %d filled slots' % (count, i))
+            distribution.append(f'{count:6d} students got a schedule with {i} filled slots')
         sections.append(('distribution', distribution))
 
         sections.append(('counts', [
-            '%6d students applied to the lottery' % stats['num_lottery_students'],
-            '%6d students were enrolled in at least 1 class' % stats['num_enrolled_students'],
-            '%6d total enrollments' % stats['num_registrations'],
-            '%6d available sections' % stats['num_sections'],
-            '%6d sections were filled to capacity' % stats['num_full_classes'],
+            f'{stats["num_lottery_students"]:6d} students applied to the lottery',
+            f'{stats["num_enrolled_students"]:6d} students were enrolled in at least 1 class',
+            f'{stats["num_registrations"]:6d} total enrollments',
+            f'{stats["num_sections"]:6d} available sections',
+            f'{stats["num_full_classes"]:6d} sections were filled to capacity',
         ]))
 
         ratios = []
         if self.effective_priority_limit>1:
             for i in range(1, self.effective_priority_limit+1):
-                ratios.append('%2.2f%% of priority %s classes were enrolled' % (stats['overall_priority_%s_ratio' % i] * 100.0, i))
+                ratios.append(f'{stats[f"overall_priority_{i}_ratio"] * 100.0:2.2f}% of priority {i} classes were enrolled')
         else:
-            ratios.append('%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0))
-        ratios.append('%2.2f%% of interested classes were enrolled' % (stats['overall_interest_ratio'] * 100.0))
+            ratios.append(f'{stats["overall_priority_ratio"] * 100.0:2.2f}% of priority classes were enrolled')
+        ratios.append(f'{stats["overall_interest_ratio"] * 100.0:2.2f}% of interested classes were enrolled')
         sections.append(('ratios', ratios))
 
         return sections
@@ -797,14 +797,14 @@ class LotteryAssignmentController(object):
 
     def update_mailman_lists(self, delete=True):
         if hasattr(settings, 'USE_MAILMAN') and settings.USE_MAILMAN:
-            program_list = "%s_%s-students" % (self.program.program_type, self.program.program_instance)
+            program_list = f"{self.program.program_type}_{self.program.program_instance}-students"
             self.clear_mailman_list(program_list)
             # Add all registered students into the program mailing list, even
             # if they didn't get enrolled into any classes.
             add_list_members(program_list, ESPUser.objects.filter(id__in=list(self.student_ids)).distinct())
             for i in range(self.num_sections):
                 section = ClassSection.objects.get(id=self.section_ids[i])
-                list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
+                list_names = [f"{section.emailcode()}-students", f"{section.parent_class.emailcode()}-students"]
                 student_ids = self.student_ids[numpy.nonzero(self.student_sections[:, i])]
                 students = ESPUser.objects.filter(id__in=student_ids).distinct()
                 for list_name in list_names:
