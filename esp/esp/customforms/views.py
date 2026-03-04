@@ -111,21 +111,22 @@ def onSubmit(request):
                     )
 
                 # Set up tag to associate form with registration module
-                if 'link_module' in metadata:
+                link_module = metadata.get('link_module')
+                if link_module:
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError('No program with ID %i' % (metadata['link_id']))
-                    if not prog.hasModule(metadata['link_module']):
-                        return ESPError('Program does not have %s enabled' % (metadata['link_module']))
-                    if metadata['link_module'] == 'StudentCustomFormModule':
+                        raise ESPError('No program with ID %s' % metadata['link_id'], log=False)
+                    if not prog.hasModule(link_module):
+                        raise ESPError('Program does not have %s enabled' % link_module, log=False)
+                    if link_module == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
-                    elif metadata['link_module'] == 'TeacherCustomFormModule':
+                    elif link_module == 'TeacherCustomFormModule':
                         Tag.setTag(key='teach_extraform_id', value=form.id, target=prog)
-                    elif metadata['link_module'] == 'TeacherQuizModule':
+                    elif link_module == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
+                        raise ESPError('Module %s does not use a custom form or is not implemented' % link_module, log=False)
 
                 # Inserting pages
                 for page in metadata['pages']:
@@ -155,6 +156,7 @@ def onSubmit(request):
 
                 return HttpResponse('OK')
             except Exception as err:
+                transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
 
 def get_or_create_altered_obj(model, initial_id, **attrs):
@@ -200,29 +202,32 @@ def onModify(request):
 
                 form.save()
 
-                # Delete old tags associated with this form
-                Tag.objects.filter(value=form.id, key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id']).delete()
-
-                # Set up tag to associate form with registration module
-                if 'link_module' in metadata:
+                # Validate link module before making destructive changes
+                link_module = metadata.get('link_module')
+                if link_module:
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError('No program with ID %i' % (metadata['link_id']))
-                    if not prog.hasModule(metadata['link_module']):
-                        return ESPError('Program does not have %s enabled' % (metadata['link_module']))
-                    if metadata['link_module'] == 'StudentCustomFormModule':
+                        raise ESPError('No program with ID %s' % metadata['link_id'], log=False)
+                    if not prog.hasModule(link_module):
+                        raise ESPError('Program does not have %s enabled' % link_module, log=False)
+                    if link_module not in ('StudentCustomFormModule', 'TeacherCustomFormModule', 'TeacherQuizModule'):
+                        raise ESPError('Module %s does not use a custom form or is not implemented' % link_module, log=False)
+
+                # Delete old tags and set up new ones
+                Tag.objects.filter(value=form.id, key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id']).delete()
+                if link_module:
+                    if link_module == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
-                    elif metadata['link_module'] == 'TeacherCustomFormModule':
+                    elif link_module == 'TeacherCustomFormModule':
                         Tag.setTag(key='teach_extraform_id', value=form.id, target=prog)
-                    elif metadata['link_module'] == 'TeacherQuizModule':
+                    elif link_module == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
-                    else:
-                        return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
 
                 # Check if only_fkey links have changed
-                if form.link_type != metadata['link_type'] or form.link_id != metadata['link_id']:
-                    dmh.change_only_fkey(form, form.link_type, metadata['link_type'], metadata['link_id'])
+                new_link_id = int(metadata['link_id'])
+                if form.link_type != metadata['link_type'] or form.link_id != new_link_id:
+                    dmh.change_only_fkey(form, form.link_type, metadata['link_type'], new_link_id)
 
                 curr_keys = {'pages': [], 'sections': [], 'fields': []}
                 old_pages = Page.objects.filter(form=form)
@@ -279,6 +284,7 @@ def onModify(request):
 
                 return HttpResponse('OK')
             except Exception as err:
+                transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
 
 def hasPerm(user, form):
