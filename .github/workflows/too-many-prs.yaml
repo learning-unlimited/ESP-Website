@@ -13,10 +13,10 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const maxOpenPRs = 10;
+            const maxOpenPRs = 5;
             const labelName = 'too-many-open-prs';
             const labelColor = 'e11d48';
-            const labelDescription = 'Author has more than 10 open PRs in this repo';
+            const labelDescription = 'Author has more than 5 open PRs in this repo';
 
             // Ensure the label exists
             try {
@@ -54,12 +54,16 @@ jobs:
 
             // Add or remove labels as needed
             for (const [author, prs] of Object.entries(prsByAuthor)) {
-              const overLimit = prs.length > maxOpenPRs;
+              // Sort oldest first so the newest PRs (beyond the limit) come last
+              prs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-              for (const pr of prs) {
+              const allowed = prs.slice(0, maxOpenPRs);
+              const excess = prs.slice(maxOpenPRs);
+
+              // Label the newer PRs beyond the limit
+              for (const pr of excess) {
                 const hasLabel = pr.labels.some(l => l.name === labelName);
-
-                if (overLimit && !hasLabel) {
+                if (!hasLabel) {
                   await github.rest.issues.addLabels({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
@@ -67,7 +71,13 @@ jobs:
                     labels: [labelName]
                   });
                   core.info(`Added label to PR #${pr.number} (${author}: ${prs.length} open)`);
-                } else if (!overLimit && hasLabel) {
+                }
+              }
+
+              // Remove the label from the older PRs within the limit
+              for (const pr of allowed) {
+                const hasLabel = pr.labels.some(l => l.name === labelName);
+                if (hasLabel) {
                   await github.rest.issues.removeLabel({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
