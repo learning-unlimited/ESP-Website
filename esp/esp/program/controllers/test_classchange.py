@@ -206,6 +206,13 @@ class GetIndexArrayTest(ClassChangeTestBase):
         for i in range(4):
             self.assertEqual(result[i], i)
 
+    def test_empty_array_raises_value_error(self):
+        """get_index_array uses numpy.max() internally, which raises
+        ValueError on a zero-size array.  This documents the known
+        limitation that callers must supply a non-empty array."""
+        with self.assertRaises(ValueError):
+            self.ctrl.get_index_array(numpy.array([], dtype=numpy.int32))
+
 
 # ===========================================================================
 # get_ids() and get_ids_and_indices()
