@@ -37,7 +37,6 @@ import warnings
 import tempfile
 import django
 
-
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 # Django expects BASE_DIR
 BASE_DIR = PROJECT_ROOT
