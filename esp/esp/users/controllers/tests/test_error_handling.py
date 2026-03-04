@@ -45,15 +45,16 @@ class UserSearchErrorHandlingTest(TestCase):
     @patch.object(UserSearchController, 'filter_from_postdata')
     @patch.object(UserSearchController, 'prepare_context')
     def test_listgen_selectlist_catches_esperror(self, mock_prepare, mock_filter, mock_process_post, mock_render):
-        # Setup
+        # Call the inner implementation (bypass @needs_admin) to avoid DB/request setup
+        inner_selectlist = ListGenModule.selectList.method
         module = ListGenModule(self.program, None)
         self.request.method = 'POST'
-        mock_process_post.return_value = {'some': 'data'}
+        mock_process_post.return_value = {'base_list': 'x', 'recipient_type': 'Student'}
         mock_filter.side_effect = ESPError("Calculation error", log=False)
         mock_prepare.return_value = {'prepared': 'context'}
         mock_render.return_value = "rendered_error_page"
-        # Execute
-        response = module.selectList(self.request, None, None, None, None, None, self.program)
+        # Execute (same signature as selectList: request, tl, one, two, module, extra, prog)
+        response = inner_selectlist(module, self.request, None, None, None, None, self.program)
         # Verify
         mock_render.assert_called()
         args, kwargs = mock_render.call_args
