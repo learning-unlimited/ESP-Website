@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install LESS via npm (from packages_base_manual_install.sh)
-RUN npm install --prefix /usr less@1.7.5 -g
+RUN npm install --prefix /usr less@3.13.1 -g
 
 # Copy requirements first for better Docker layer caching
 COPY esp/requirements.txt /app/esp/requirements.txt
