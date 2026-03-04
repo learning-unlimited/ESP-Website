@@ -141,7 +141,7 @@ class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
 
     Tokens are computed via HMAC from user data and are never stored in the
-    database (fixes issue #1195).
+    database.
     """
     def setUp(self):
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
