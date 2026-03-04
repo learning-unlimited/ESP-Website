@@ -1,0 +1,92 @@
+name: Label High-Volume PR Contributors
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Every day at 9:00 AM UTC
+  workflow_dispatch:        # Allow manual runs
+
+jobs:
+  label-high-volume-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add or remove labels based on open PR count
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const maxOpenPRs = 5;
+            const labelName = 'too-many-open-prs';
+            const labelColor = 'e11d48';
+            const labelDescription = 'Author has more than 5 open PRs in this repo';
+
+            // Ensure the label exists
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: labelName
+              });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: labelName,
+                color: labelColor,
+                description: labelDescription
+              });
+              core.info(`Created label "${labelName}"`);
+            }
+
+            // Fetch all open PRs
+            const openPRs = await github.paginate(github.rest.pulls.list, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            // Group PRs by author
+            const prsByAuthor = {};
+            for (const pr of openPRs) {
+              const author = pr.user.login;
+              if (!prsByAuthor[author]) prsByAuthor[author] = [];
+              prsByAuthor[author].push(pr);
+            }
+
+            // Add or remove labels as needed
+            for (const [author, prs] of Object.entries(prsByAuthor)) {
+              // Sort oldest first so the newest PRs (beyond the limit) come last
+              prs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+              const allowed = prs.slice(0, maxOpenPRs);
+              const excess = prs.slice(maxOpenPRs);
+
+              // Label the newer PRs beyond the limit
+              for (const pr of excess) {
+                const hasLabel = pr.labels.some(l => l.name === labelName);
+                if (!hasLabel) {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: pr.number,
+                    labels: [labelName]
+                  });
+                  core.info(`Added label to PR #${pr.number} (${author}: ${prs.length} open)`);
+                }
+              }
+
+              // Remove the label from the older PRs within the limit
+              for (const pr of allowed) {
+                const hasLabel = pr.labels.some(l => l.name === labelName);
+                if (hasLabel) {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: pr.number,
+                    name: labelName
+                  });
+                  core.info(`Removed label from PR #${pr.number} (${author}: ${prs.length} open)`);
+                }
+              }
+            }
+
+            core.info('Done. PR label check complete.');
