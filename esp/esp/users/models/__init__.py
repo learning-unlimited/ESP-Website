@@ -1398,6 +1398,76 @@ def update_email(**kwargs):
             for l in lists:
                 mailman.remove_list_member(l, old_email)
 
+
+@dispatch.receiver(signals.pre_save, sender=ESPUser,
+                   dispatch_uid='expire_upcoming_records_on_deactivation')
+def expire_upcoming_records_on_deactivation(**kwargs):
+    """Expire registrations/permissions for upcoming programs when user is deactivated."""
+    new_user = kwargs['instance']
+
+    if new_user.id is None:
+        return
+
+    old_user = ESPUser.objects.get(id=new_user.id)
+    if old_user.is_active and not new_user.is_active:
+        expire_user_records_for_upcoming_programs(new_user)
+
+
+def expire_user_records_for_upcoming_programs(user):
+    """Expire a user's registrations and permissions for programs that haven't ended yet."""
+    from esp.program.models import (
+        Program, StudentRegistration, StudentSubjectInterest, VolunteerOffer
+    )
+
+    now = datetime.now()
+
+    upcoming_program_ids = []
+    for program in Program.objects.all():
+        datetime_range = program.datetime_range()
+        if datetime_range is not None:
+            start, end = datetime_range
+            if end >= now:
+                upcoming_program_ids.append(program.id)
+        else:
+            upcoming_program_ids.append(program.id)
+
+    if not upcoming_program_ids:
+        return
+
+    sr_qs = StudentRegistration.valid_objects(now).filter(
+        section__parent_class__parent_program_id__in=upcoming_program_ids,
+        user=user
+    )
+    sr_count = sr_qs.update(end_date=now)
+
+    ssi_qs = StudentSubjectInterest.valid_objects(now).filter(
+        subject__parent_program_id__in=upcoming_program_ids,
+        user=user
+    )
+    ssi_count = ssi_qs.update(end_date=now)
+
+    permission_qs = Permission.valid_objects(now).filter(
+        program_id__in=upcoming_program_ids,
+        user=user
+    )
+    perm_count = permission_qs.update(end_date=now)
+
+    vol_qs = VolunteerOffer.objects.filter(
+        request__program_id__in=upcoming_program_ids,
+        user=user
+    )
+    vol_count = vol_qs.count()
+    vol_qs.delete()
+
+    if sr_count or ssi_count or perm_count or vol_count:
+        logger.info(
+            "Expired records for deactivated user %s (id=%d): "
+            "%d StudentRegistrations, %d StudentSubjectInterests, "
+            "%d Permissions, %d VolunteerOffers",
+            user.username, user.id, sr_count, ssi_count, perm_count, vol_count
+        )
+
+
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
