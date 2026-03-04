@@ -70,10 +70,22 @@ logger = logging.getLogger(__name__)
 
 def _sanitize_html_comments(value):
     """Remove nested comment markers that break HTML parsing."""
-    def fix_comment(match):
-        content = match.group(1).replace('<!--', '').replace('-->', '')
-        return '<!--' + content + '-->'
-    return re.sub(r'<!--(.*?)-->', fix_comment, value, flags=re.DOTALL)
+    result = []
+    i = 0
+    while i < len(value):
+        start = value.find('<!--', i)
+        if start == -1:
+            result.append(value[i:])
+            break
+        result.append(value[i:start])
+        end = value.find('-->', start + 4)
+        if end == -1:
+            result.append(value[start:])
+            break
+        content = value[start + 4:end].replace('<!--', '').replace('-->', '')
+        result.append('<!--' + content + '-->')
+        i = end + 3
+    return ''.join(result)
 
 
 # Image upload constraints
