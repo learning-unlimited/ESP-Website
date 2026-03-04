@@ -1,3 +1,8 @@
+import re
+
+from django.conf import settings
+from django.test import Client
+
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
@@ -350,3 +355,88 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
             pmo = ProgramModuleObj.objects.get(id=mid)
             # seq should be unchanged (not reset) because default_seq was not sent
             self.assertEqual(pmo.seq, 999)
+
+
+class ModuleManagementCsrfTest(ProgramFrameworkTest):
+    """Regression tests for module-management CSRF enforcement. Issue #4637."""
+
+    def setUp(self):
+        modules = []
+        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule'))
+        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule'))
+        modules.append(ProgramModule.objects.get(handler='AdminCore'))
+
+        super(ModuleManagementCsrfTest, self).setUp(modules=modules)
+
+        # Ensure ProgramModuleObj rows exist before posting sequence data.
+        self.program.getModules()
+
+        self.adminUser, created = ESPUser.objects.get_or_create(username='admin_modmgmt_csrf')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+
+        self.csrf_client = Client(enforce_csrf_checks=True)
+        self.assertTrue(
+            self.csrf_client.login(username='admin_modmgmt_csrf', password='password'),
+            "Couldn't log in csrf-checking admin client",
+        )
+
+    def _modules_url(self):
+        return '/manage/' + self.program.url + '/modules/'
+
+    def _build_save_post_data(self):
+        learn_mods = [m for m in self.program.getModules(tl='learn') if m.inModulesList()]
+        teach_mods = [m for m in self.program.getModules(tl='teach') if m.inModulesList()]
+
+        learn_req_ids = [str(m.id) for m in learn_mods if m.required]
+        learn_not_req_ids = [str(m.id) for m in learn_mods if not m.required]
+        teach_req_ids = [str(m.id) for m in teach_mods if m.required]
+        teach_not_req_ids = [str(m.id) for m in teach_mods if not m.required]
+
+        return {
+            'learn_req': ','.join(learn_req_ids),
+            'learn_not_req': ','.join(learn_not_req_ids),
+            'teach_req': ','.join(teach_req_ids),
+            'teach_not_req': ','.join(teach_not_req_ids),
+        }
+
+    def _get_csrf_token_from_modules_page(self):
+        response = self.csrf_client.get(self._modules_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(settings.CSRF_COOKIE_NAME, self.csrf_client.cookies)
+
+        html = str(response.content, encoding='UTF-8')
+        token_match = re.search(
+            r'name=["\']csrfmiddlewaretoken["\']\s+value=["\']([^"\']+)["\']',
+            html,
+        )
+        self.assertIsNotNone(token_match)
+        return token_match.group(1)
+
+    def test_module_management_page_renders_two_csrf_inputs(self):
+        self.assertTrue(self.client.login(username='admin_modmgmt_csrf', password='password'))
+        response = self.client.get(self._modules_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="csrfmiddlewaretoken"', count=2)
+
+    def test_module_management_save_post_without_csrf_is_rejected(self):
+        # Prime CSRF cookie via GET, then POST without token.
+        self._get_csrf_token_from_modules_page()
+        response = self.csrf_client.post(self._modules_url(), self._build_save_post_data())
+        self.assertEqual(response.status_code, 403)
+
+    def test_module_management_save_post_with_csrf_succeeds(self):
+        token = self._get_csrf_token_from_modules_page()
+        post_data = self._build_save_post_data()
+        post_data['csrfmiddlewaretoken'] = token
+
+        response = self.csrf_client.post(self._modules_url(), post_data)
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_module_management_reset_post_with_csrf_succeeds(self):
+        token = self._get_csrf_token_from_modules_page()
+        response = self.csrf_client.post(
+            self._modules_url(),
+            {'default_link_title': 'on', 'csrfmiddlewaretoken': token},
+        )
+        self.assertIn(response.status_code, [200, 302])
