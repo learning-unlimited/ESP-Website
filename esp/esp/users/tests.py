@@ -196,6 +196,7 @@ class PasswordRecoveryTest(TestCase):
         self.assertTrue(self.client.login(username='innocent', password='remembered_pw'),
                         "User innocent's old password no longer works")
 
+
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
         Tag.setTag('teacher_shirt_sizes', value='XS, S, M, L, XL, XXL')
