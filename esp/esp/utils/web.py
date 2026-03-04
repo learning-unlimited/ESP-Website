@@ -109,6 +109,12 @@ def error500(request, template_name='500.html'):
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
     context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER
     context['request'] = request
+    from datetime import datetime
+    context['error_type'] = '500'
+    context['error_title'] = 'Server Error'
+    context['error_description'] = 'An unexpected server error occurred. Please try again in a moment.'
+    context['error_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    context['error_url'] = request.build_absolute_uri()
     t = loader.get_template(template_name) # You need to create a 500.html template.
 
     # If possible, we want to render this page with our custom
