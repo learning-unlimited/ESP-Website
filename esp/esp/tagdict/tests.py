@@ -311,7 +311,7 @@ class TagRegistrationTest(SimpleTestCase):
     """
     Statically scan the codebase for Tag.getTag(), Tag.getProgramTag(), and
     Tag.getBooleanTag() calls and verify that every string-literal tag key
-    is registered in all_global_tags or all_program_tags (issue #2481).
+    is registered in all_global_tags or all_program_tags.
     """
 
     # Paths (relative to the esp/ root) to skip when scanning, because they
