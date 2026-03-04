@@ -37,14 +37,17 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
+from django.conf import settings
 from django.db.models import Min, Q
 from django.http import HttpResponse, HttpResponseBadRequest, Http404
+from django.template.loader import render_to_string
 
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
-from esp.users.models import Record, ESPUser
+from esp.users.models import Record, RecordType, ESPUser
+from esp.dbmail.models import send_mail
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 from esp.utils.query_utils import nest_Q
@@ -74,7 +77,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         records = Record.objects.filter(user=user,
                                         event__name="twophase_reg_done",
                                         program=self.program)
-        return records.count() != 0
+        return records.exists()
 
     @classmethod
     def module_properties(cls):
@@ -171,6 +174,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             prevTimeSlot = timeslot
 
         context['timeslots'] = schedule
+        context['is_confirmed'] = self.isCompleted()
 
         return render_to_response(
             self.baseDir()+'studentregtwophase.html', request, context)
@@ -438,6 +442,108 @@ class StudentRegTwoPhase(ProgramModuleObj):
             sr.save()
 
         return self.goToCore(tl)
+
+    @aux_call
+    @needs_student_in_grade
+    @meets_deadline('/Classes/Lottery')
+    @meets_cap
+    def confirm_registration(self, request, tl, one, two, module, extra, prog):
+        """
+        Confirms the student's lottery preferences. Creates a twophase_reg_done
+        Record, sends a confirmation email, and shows a confirmation page.
+        """
+        if request.method != 'POST':
+            return self.goToCore(tl)
+
+        # Gather the student's current preferences for the confirmation page/email
+        priority_regs = StudentRegistration.valid_objects().filter(
+            user=request.user,
+            relationship__name__startswith='Priority',
+            section__parent_class__parent_program=prog,
+        )
+        priority_regs = priority_regs.select_related(
+            'relationship', 'section', 'section__parent_class').prefetch_related('section__meeting_times')
+
+        # Build timeslot -> priority list mapping
+        timeslot_dict = {}
+        for student_reg in priority_regs:
+            rel = student_reg.relationship.name
+            title = student_reg.section.parent_class.title
+            sec = student_reg.section
+
+            # Using sorting to avoid an extra DB query per section.
+            times = list(sec.meeting_times.all())
+            times.sort(key=lambda t: t.start)
+
+            if len(times) == 0:
+                continue
+            timeslot = times[0]
+            if timeslot.id not in timeslot_dict:
+                timeslot_dict[timeslot.id] = {'timeslot': timeslot, 'priorities': {}}
+            timeslot_dict[timeslot.id]['priorities'][rel] = title
+
+        # Get starred classes
+        interests = StudentSubjectInterest.valid_objects().filter(
+            user=request.user, subject__parent_program=prog)
+        interests = interests.select_related('subject')
+        starred_classes = [interest.subject.title for interest in interests]
+
+        # Build sorted schedule for display
+        num_priority = prog.priorityLimit()
+        schedule = []
+        timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        for timeslot in timeslots:
+            # Get any existing priorities for this timeslot; default to none
+            entry = timeslot_dict.get(timeslot.id, {'priorities': {}})
+            priorities = []
+            for i in range(1, num_priority + 1):
+                priority_name = 'Priority/%s' % i
+                if priority_name in entry['priorities']:
+                    priorities.append(('Priority %s' % i, entry['priorities'][priority_name]))
+                else:
+                    priorities.append(('Priority %s' % i, '(not set)'))
+            schedule.append((timeslot, priorities))
+
+        # Create or update the twophase_reg_done Record
+        rt = RecordType.objects.get(name="twophase_reg_done")
+        Record.objects.get_or_create(
+            user=request.user,
+            event=rt,
+            program=prog,
+        )
+
+        # Send confirmation email
+        self.send_confirmation_email(request.user, schedule, starred_classes)
+
+        context = {
+            'program': prog,
+            'schedule': schedule,
+            'starred_classes': starred_classes,
+            'num_starred': len(starred_classes),
+        }
+
+        return render_to_response(
+            self.baseDir() + 'confirmation.html', request, context)
+
+    def send_confirmation_email(self, student, schedule, starred_classes):
+        """Send a confirmation email with the student's lottery preferences."""
+        email_title = 'Lottery Preferences Confirmation for %s: %s' % (
+            self.program.niceName(), student.name())
+        email_from = '%s Registration System <server@%s>' % (
+            self.program.program_type, settings.EMAIL_HOST_SENDER)
+        email_context = {
+            'student': student,
+            'program': self.program,
+            'schedule': schedule,
+            'starred_classes': starred_classes,
+            'curtime': datetime.datetime.now(),
+            'DEFAULT_HOST': settings.DEFAULT_HOST,
+        }
+        email_contents = render_to_string(
+            'program/modules/studentregtwophase/confirmation_email.txt',
+            email_context)
+        email_to = [student.get_email_sendto_address()]
+        send_mail(email_title, email_contents, email_from, email_to, False)
 
     class Meta:
         proxy = True
