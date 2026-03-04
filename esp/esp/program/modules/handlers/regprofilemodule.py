@@ -54,7 +54,7 @@ class _EquityOutreachCohorts(object):
         COHORT_UNCONFIRMED_REGISTRATION: "Students who are enrolled in classes but not confirmed",
         COHORT_INCOMPLETE_FINAID: "Students who started financial aid but incomplete",
         COHORT_TRANSPORTATION_BARRIER: "Students who have a potential transportation barrier",
-        COHORT_LOW_HOURS: "Students who have low class-hours (≤1 hour)",
+        COHORT_LOW_HOURS: "Students who have low class-hours (1 hour or less)",
         COHORT_WAITLISTED: "Students who are waitlisted",
     }
 

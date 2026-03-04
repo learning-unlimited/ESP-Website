@@ -32,22 +32,8 @@ class EquityOutreachTest(ProgramFrameworkTest):
         finaid_users = EquityOutreachCohorts.users_for_cohort(
             self.program, EquityOutreachCohorts.COHORT_INCOMPLETE_FINAID
         )
-        incomplete_reg_users = EquityOutreachCohorts.users_for_cohort(
-            self.program, EquityOutreachCohorts.COHORT_INCOMPLETE_REGISTRATION
-        )
-        unconfirmed_reg_users = EquityOutreachCohorts.users_for_cohort(
-            self.program, EquityOutreachCohorts.COHORT_UNCONFIRMED_REGISTRATION
-        )
-        low_hours_or_waitlisted_users = EquityOutreachCohorts.users_for_cohort(
-            self.program, EquityOutreachCohorts.COHORT_LOW_HOURS_OR_WAITLISTED
-        )
-
         self.assertIn(self.student, list(transportation_users))
         self.assertIn(self.student, list(finaid_users))
-        # Ensure remaining cohort queries execute and return iterable results.
-        list(incomplete_reg_users)
-        list(unconfirmed_reg_users)
-        list(low_hours_or_waitlisted_users)
 
         # Exercise remaining cohort queries (all six cohorts are tested)
         incomplete_reg_users = EquityOutreachCohorts.users_for_cohort(
