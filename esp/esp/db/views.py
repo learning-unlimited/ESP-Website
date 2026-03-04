@@ -54,7 +54,7 @@ def ajax_autocomplete(request):
     output = list(query_set[:limit])
     output2 = []
     for item in output:
-        output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
+        output2.append({'id': item['id'], 'ajax_str': f'{item["ajax_str"]} ({item["id"]})'})
 
     content = json.dumps({'result':output2})
 

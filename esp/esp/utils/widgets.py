@@ -40,7 +40,7 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         context.update({
-            'id': attrs['id'] if 'id' in attrs else '%s_id' % (name),
+            'id': attrs['id'] if 'id' in attrs else f'{name}_id',
             'jquerywidget': self.jquerywidget,
             'media_url': settings.MEDIA_URL,
             'date_format': self.dformat,
