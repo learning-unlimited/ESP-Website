@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 import logging
 logger = logging.getLogger(__name__)
 
@@ -89,7 +88,6 @@ field id.""")
     class Meta:
         verbose_name_plural = 'Formstack app settings'
 
-@python_2_unicode_compatible
 class StudentProgramApp(models.Model):
     """ A student's application to the program. """
 
@@ -157,7 +155,6 @@ class StudentProgramApp(models.Model):
             result.append(classapp.subject)
         return result
 
-@python_2_unicode_compatible
 class StudentClassApp(models.Model):
     """ A student's application to a particular class. """
 

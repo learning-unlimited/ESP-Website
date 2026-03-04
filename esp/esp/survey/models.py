@@ -1,6 +1,5 @@
 " Survey models for Educational Studies Program. "
 
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"
@@ -90,7 +89,6 @@ class ListField(object):
         data = self.separator.join(map(str, value))
         setattr(instance, self.field_name, data)
 
-@python_2_unicode_compatible
 class Survey(models.Model):
     """ A single survey. """
     name = models.CharField(max_length=255)
@@ -120,7 +118,6 @@ class Survey(models.Model):
         else:
             return 0
 
-@python_2_unicode_compatible
 class SurveyResponse(models.Model):
     """ A single survey taken by a person. """
     time_filled = models.DateTimeField(default=datetime.datetime.now)
@@ -195,7 +192,6 @@ class SurveyResponse(models.Model):
         return "Survey for %s filled out at %s" % (str(self.survey.program),
                                                    self.time_filled)
 
-@python_2_unicode_compatible
 class QuestionType(models.Model):
     """ A type of question.
     Examples:
@@ -222,7 +218,6 @@ class QuestionType(models.Model):
         else:
             return '%s' % (self.name)
 
-@python_2_unicode_compatible
 class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
@@ -313,7 +308,6 @@ class Question(models.Model):
     class Meta:
         ordering = ['seq']
 
-@python_2_unicode_compatible
 class Answer(models.Model):
     """ An answer for a single question for a single survey response. """
 

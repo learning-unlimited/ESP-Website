@@ -51,6 +51,12 @@ from .django_settings import *
 # Import system-specific settings
 from .local_settings import *
 
+# Preserve the pre-Django-3.2 AutoField behaviour to silence models.W042
+# warnings. Explicitly locking this in prevents unintended schema changes if
+# Django's default evolves further. Revisit when migrating to BigAutoField
+# as part of the Django upgrade
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 # Do this here so we have access to PROJECT_ROOT
 TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
 TEMPLATES[0]['DIRS'].append(django.__path__[0] + '/forms/templates')
