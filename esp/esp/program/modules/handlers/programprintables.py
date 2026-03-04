@@ -1210,43 +1210,37 @@ class ProgramPrintables(ProgramModuleObj):
             students = list(ESPUser.objects.filter(filterObj.get_Q(restrict_to_active=False)).distinct())
 
         students.sort()
-        
         if len(students) > 1 and file_type == 'pdf' and not onsite:
             from esp.program.models.printable_job import PrintableJob
             import threading
             from django.http import HttpResponseRedirect
             from django.db import connection
-            
             job = PrintableJob.objects.create(
                 program=prog,
                 user=request.user,
                 job_type='studentschedules'
             )
-            
             def run_job(job_id, student_ids, prog_id, file_type):
                 connection.close()
                 try:
                     job = PrintableJob.objects.get(id=job_id)
                     job.status = 'PROCESSING'
                     job.save()
-                    
+
+                    from esp.program.models import Program
                     prog = Program.objects.get(id=prog_id)
                     students = list(ESPUser.objects.filter(id__in=student_ids).order_by('id'))
-                    
                     class DummyRequest:
                         pass
                     dummy_req = DummyRequest()
                     dummy_req.GET = {}
                     dummy_req.session = {}
                     dummy_req.user = job.user
-                    
                     response = ProgramPrintables.get_student_schedules(dummy_req, students, prog, file_type, False)
                     pdf_content = response.content
-                    
                     from django.core.files.base import ContentFile
                     filename = "studentschedules_%s_%s.pdf" % (prog.url, job.id)
                     job.file.save(filename, ContentFile(pdf_content))
-                    
                     job.status = 'COMPLETED'
                     job.save()
                 except Exception as e:
@@ -1262,7 +1256,6 @@ class ProgramPrintables(ProgramModuleObj):
             thread = threading.Thread(target=run_job, args=(job.id, student_ids, prog.id, file_type))
             thread.daemon = True
             thread.start()
-            
             return HttpResponseRedirect('/manage/%s/%s/printable_job_status/%s/' % (prog.url, self.handler, job.id))
 
         return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
@@ -1456,11 +1449,9 @@ class ProgramPrintables(ProgramModuleObj):
             job = PrintableJob.objects.get(id=extra)
         except PrintableJob.DoesNotExist:
             raise ESPError("Job not found.")
-            
         if job.status == 'COMPLETED' and job.file:
             # We redirect to the file URL.  But maybe downloading is better.
             return HttpResponseRedirect(job.file.url)
-            
         context = {
             'module': self,
             'job': job,
