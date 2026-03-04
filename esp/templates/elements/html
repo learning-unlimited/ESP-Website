@@ -14,6 +14,11 @@
 
     {% block stylesheets %}
     <link rel="shortcut icon" href="/media/images/favicon.ico?v={{ current_favicon_version }}">
+    {% comment %}PNG/manifest URLs: 404 until theme favicon upload generates them (Pillow/favicons follow-up). Kept here so upload flow can update cache-busting.{% endcomment %}
+    <link rel="icon" type="image/png" sizes="32x32" href="/media/images/favicon-32x32.png?v={{ current_favicon_version }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="/media/images/favicon-16x16.png?v={{ current_favicon_version }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="/media/images/apple-touch-icon.png?v={{ current_favicon_version }}">
+    <link rel="manifest" href="/media/images/site.webmanifest?v={{ current_favicon_version }}">
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
