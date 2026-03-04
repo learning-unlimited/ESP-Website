@@ -14,7 +14,7 @@ def remove_adminmorph_programmodule(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('modules', '0047_programmoduleobj_link_title'),
+        ('modules', '0048_merge_20260226_0000'),
         ('program', '0001_initial'),
     ]
 
