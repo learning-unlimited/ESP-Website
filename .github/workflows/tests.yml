@@ -44,6 +44,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+        - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install Node dependencies
+      run: npm install
+
+    - name: Run Jest tests
+      run: npm test
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: deadsnakes/action@v3.2.0
       with:
