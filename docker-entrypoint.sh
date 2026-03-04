@@ -34,10 +34,10 @@ echo ">>> PostgreSQL is ready!"
 MARKER_FILE="/app/.docker-setup-done"
 if [ ! -f "$MARKER_FILE" ] || [ "${FORCE_SETUP:-0}" = "1" ]; then
     echo ">>> Running migrations..."
-    python /app/esp/manage.py migrate --noinput
+    uv run python /app/esp/manage.py migrate --noinput
 
     echo ">>> Collecting static files..."
-    python /app/esp/manage.py collectstatic --noinput -v 0
+    uv run python /app/esp/manage.py collectstatic --noinput -v 0
 
     touch "$MARKER_FILE"
 else

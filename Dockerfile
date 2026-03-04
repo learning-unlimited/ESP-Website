@@ -1,14 +1,19 @@
-FROM python:3.7-bullseye
+FROM ghcr.io/astral-sh/uv:python3.9-trixie
 
 # Prevent Python from writing .pyc files and enable unbuffered output
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV UV_SYSTEM_PYTHON=1
 
-# Skip manage.py's virtualenv activation hack
-ENV VIRTUAL_ENV=/usr
+RUN mkdir -p /etc/sudoers.d/
 
 # Set the working directory
 WORKDIR /app
+
+RUN groupadd --gid 1000 devuser \
+    && useradd --uid 1000 --gid devuser --shell /bin/bash --create-home devuser \
+    && echo devuser ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/devuser \
+    && chmod 0440 /etc/sudoers.d/devuser
 
 # Install system dependencies from packages_base.txt to avoid duplication.
 COPY esp/packages_base.txt /tmp/packages_base.txt
@@ -20,11 +25,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN npm install --prefix /usr less@3.13.1 -g
 
 # Copy requirements first for better Docker layer caching
-COPY esp/requirements.txt /app/esp/requirements.txt
+COPY esp/pyproject.toml /app/esp/pyproject.toml
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -U pip && \
-    pip install --no-cache-dir -r /app/esp/requirements.txt
+RUN uv pip install -r /app/esp/pyproject.toml --system
 
 # Copy the rest of the application code
 COPY . /app
@@ -34,8 +38,7 @@ COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && \
     chmod +x /app/docker-entrypoint.sh
 
-# Expose the Django development server port
-EXPOSE 8000
+USER devuser
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["python", "manage.py", "runserver_plus", "0.0.0.0:8000"]

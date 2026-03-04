@@ -14,7 +14,6 @@ Follow these steps to set it up for this project:
     * Host: 0.0.0.0   Port: 8000
     * Environment variables:
         * DJANGO_SETTINGS_MODULE=esp.settings
-        * VIRTUAL_ENV=/usr
 
 To get started, make sure your containers are built by running ``docker compose up --build`` once from a terminal.
 
