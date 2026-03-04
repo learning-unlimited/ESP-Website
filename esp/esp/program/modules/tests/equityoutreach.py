@@ -49,20 +49,24 @@ class EquityOutreachTest(ProgramFrameworkTest):
         list(unconfirmed_reg_users)
         list(low_hours_or_waitlisted_users)
 
-        # Exercise remaining cohort queries (all five cohorts are tested)
+        # Exercise remaining cohort queries (all six cohorts are tested)
         incomplete_reg_users = EquityOutreachCohorts.users_for_cohort(
             self.program, EquityOutreachCohorts.COHORT_INCOMPLETE_REGISTRATION
         )
         unconfirmed_reg_users = EquityOutreachCohorts.users_for_cohort(
             self.program, EquityOutreachCohorts.COHORT_UNCONFIRMED_REGISTRATION
         )
-        low_hours_or_waitlisted_users = EquityOutreachCohorts.users_for_cohort(
-            self.program, EquityOutreachCohorts.COHORT_LOW_HOURS_OR_WAITLISTED
+        low_hours_users = EquityOutreachCohorts.users_for_cohort(
+            self.program, EquityOutreachCohorts.COHORT_LOW_HOURS
+        )
+        waitlisted_users = EquityOutreachCohorts.users_for_cohort(
+            self.program, EquityOutreachCohorts.COHORT_WAITLISTED
         )
         # Ensure cohort querysets execute and return iterables (no query errors)
         _ = list(incomplete_reg_users)
         _ = list(unconfirmed_reg_users)
-        _ = list(low_hours_or_waitlisted_users)
+        _ = list(low_hours_users)
+        _ = list(waitlisted_users)
 
     def test_equity_lists_in_program_lists(self):
         """Equity cohorts are exposed as student lists via RegProfileModule (comm panel, user records)."""

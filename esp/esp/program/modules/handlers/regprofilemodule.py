@@ -46,14 +46,16 @@ class _EquityOutreachCohorts(object):
     COHORT_UNCONFIRMED_REGISTRATION = "unconfirmed_registration"
     COHORT_INCOMPLETE_FINAID = "incomplete_financial_aid"
     COHORT_TRANSPORTATION_BARRIER = "transportation_barrier"
-    COHORT_LOW_HOURS_OR_WAITLISTED = "low_hours_or_waitlisted"
+    COHORT_LOW_HOURS = "low_hours"
+    COHORT_WAITLISTED = "waitlisted"
 
     COHORT_LABELS = {
-        COHORT_INCOMPLETE_REGISTRATION: "Started profile but not confirmed",
-        COHORT_UNCONFIRMED_REGISTRATION: "Enrolled in classes but not confirmed",
-        COHORT_INCOMPLETE_FINAID: "Financial aid started but incomplete",
-        COHORT_TRANSPORTATION_BARRIER: "Potential transportation barrier",
-        COHORT_LOW_HOURS_OR_WAITLISTED: "Low class-hours or waitlisted",
+        COHORT_INCOMPLETE_REGISTRATION: "Students who started profile but not confirmed",
+        COHORT_UNCONFIRMED_REGISTRATION: "Students who are enrolled in classes but not confirmed",
+        COHORT_INCOMPLETE_FINAID: "Students who started financial aid but incomplete",
+        COHORT_TRANSPORTATION_BARRIER: "Students who have a potential transportation barrier",
+        COHORT_LOW_HOURS: "Students who have low class-hours (≤1 hour)",
+        COHORT_WAITLISTED: "Students who are waitlisted",
     }
 
     TRANSPORTATION_SIGNAL_KEYWORDS = (
@@ -68,7 +70,8 @@ class _EquityOutreachCohorts(object):
             cls.COHORT_UNCONFIRMED_REGISTRATION,
             cls.COHORT_INCOMPLETE_FINAID,
             cls.COHORT_TRANSPORTATION_BARRIER,
-            cls.COHORT_LOW_HOURS_OR_WAITLISTED,
+            cls.COHORT_LOW_HOURS,
+            cls.COHORT_WAITLISTED,
         ]
 
     @classmethod
@@ -82,7 +85,8 @@ class _EquityOutreachCohorts(object):
             cls.COHORT_UNCONFIRMED_REGISTRATION: cls._unconfirmed_registration_users,
             cls.COHORT_INCOMPLETE_FINAID: cls._incomplete_finaid_users,
             cls.COHORT_TRANSPORTATION_BARRIER: cls._transportation_barrier_users,
-            cls.COHORT_LOW_HOURS_OR_WAITLISTED: cls._low_hours_or_waitlisted_users,
+            cls.COHORT_LOW_HOURS: cls._low_hours_users,
+            cls.COHORT_WAITLISTED: cls._waitlisted_users,
         }
         if cohort_key not in dispatch:
             return ESPUser.objects.none()
@@ -146,8 +150,7 @@ class _EquityOutreachCohorts(object):
         ).distinct()
 
     @classmethod
-    def _low_hours_or_waitlisted_users(cls, program):
-        waitlisted_ids = set(cls._waitlisted_student_ids(program))
+    def _low_hours_users(cls, program):
         enrolled_ids = list(cls._enrolled_student_ids(program))
         low_hour_ids = set()
         if enrolled_ids:
@@ -171,7 +174,11 @@ class _EquityOutreachCohorts(object):
                 else:
                     user_hours.setdefault(user_id, 0)
             low_hour_ids = {uid for uid, hours in user_hours.items() if hours <= 1}
-        return ESPUser.objects.filter(id__in=(waitlisted_ids | low_hour_ids)).distinct()
+        return ESPUser.objects.filter(id__in=low_hour_ids).distinct()
+
+    @classmethod
+    def _waitlisted_users(cls, program):
+        return ESPUser.objects.filter(id__in=cls._waitlisted_student_ids(program)).distinct()
 
 
 # Public alias for tests and any external use
