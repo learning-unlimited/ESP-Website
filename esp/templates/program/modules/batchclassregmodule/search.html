@@ -1,0 +1,21 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}Batch Class Registration{% endblock %}
+
+{% block content %}
+
+<h1>Batch Class Registration</h1>
+
+<p>Use this tool to register a group of students to a specific class section.</p>
+
+<h2>Step 1:</h2>
+
+<p>Select students with the form below.</p>
+
+{% with include_common="True" %}
+{% include "users/usersearch/list_selector.html" %}
+{% endwith %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

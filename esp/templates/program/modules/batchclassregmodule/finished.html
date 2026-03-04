@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+
+{% block title %}Batch Class Registration - Results{% endblock %}
+
+{% block content %}
+
+<h1>Batch Class Registration</h1>
+<h2>Results</h2>
+
+<p>Registration to <strong>{{ section.emailcode }}: {{ section.title }}</strong> complete.</p>
+
+<pre style="white-space: pre-wrap; font-family: monospace; background: #f8f8f8; border: 1px solid #ddd; padding: 15px; max-height: 600px; overflow-y: auto;">{{ log }}</pre>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}
