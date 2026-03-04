@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -69,7 +68,6 @@ class CoreModule(object):
     """
     pass
 
-@python_2_unicode_compatible
 class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
