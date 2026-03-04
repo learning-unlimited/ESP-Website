@@ -58,6 +58,49 @@ from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
+MAX_UPDATE_SCHEDULE_SECTIONS = 500
+
+
+def parse_update_schedule_sections(raw_sections, max_len=MAX_UPDATE_SCHEDULE_SECTIONS):
+    if raw_sections is None:
+        raise ValueError('no sections specified')
+
+    try:
+        parsed = json.loads(raw_sections)
+    except (TypeError, ValueError):
+        raise ValueError('could not parse requested sections %s' % raw_sections)
+
+    if not isinstance(parsed, list):
+        raise ValueError('sections must be a JSON list')
+
+    if len(parsed) > max_len:
+        raise ValueError('too many sections requested')
+
+    cleaned = []
+    seen = set()
+
+    for item in parsed:
+        if isinstance(item, bool):
+            continue
+        try:
+            val = int(item)
+        except (TypeError, ValueError):
+            continue
+        if val <= 0:
+            continue
+        if val in seen:
+            continue
+        cleaned.append(val)
+        seen.add(val)
+        if len(cleaned) > max_len:
+            raise ValueError('too many sections requested')
+
+    if parsed and not cleaned:
+        raise ValueError('sections must contain at least one valid section id')
+
+    return cleaned
+
+
 class OnSiteClassList(ProgramModuleObj):
     doc = """Display lists of classes for onsite registration purposes."""
 
@@ -240,18 +283,27 @@ class OnSiteClassList(ProgramModuleObj):
     def update_schedule_json(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
         result = {'user': None, 'sections': [], 'messages': []}
-        try:
-            user = ESPUser.objects.get(id=int(request.GET['user']))
-        except:
-            user = None
-            result['messages'].append('Error: could not find user %s' % request.GET.get('user', None))
-        try:
-            desired_sections = json.loads(request.GET['sections'])
-        except:
-            result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
-            desired_sections = None
 
-        #   Check in student if not currently checked in, since if they're using this view they must be onsite
+        try:
+            desired_sections = parse_update_schedule_sections(request.GET.get('sections'))
+        except ValueError as e:
+            result['messages'].append('Error: %s' % str(e))
+            resp.status_code = 400
+            json.dump(result, resp, cls=DjangoJSONEncoder)
+            return resp
+
+        try:
+            user_id = int(request.GET['user'])
+            user = ESPUser.objects.get(id=user_id)
+        except (KeyError, ValueError, ESPUser.DoesNotExist):
+            user = None
+
+        if user is None:
+            result['messages'] = ['User not found']
+            resp.status_code = 400
+            json.dump(result, resp, cls=DjangoJSONEncoder)
+            return resp
+
         if not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
             rec = Record(user=user, program=prog, event='attended')
             rec.save()
@@ -280,11 +332,11 @@ class OnSiteClassList(ProgramModuleObj):
                 sec_times = sections_to_add.select_related('meeting_times__id').values_list('id', 'meeting_times__id').order_by('meeting_times__id').distinct()
                 sm = ScheduleMap(user, prog)
                 existing_sections = []
+                sections_to_add_ids = set(sections_to_add.values_list('id', flat=True))
                 for (sec, ts) in sec_times:
                     if ts and ts in sm.map and len(sm.map[ts]) > 0:
-                        #   We found something we need to remove
                         for sm_sec in sm.map[ts]:
-                            if sm_sec.id not in sections_to_add:
+                            if sm_sec.id not in sections_to_add_ids:
                                 sm_sec.unpreregister_student(user, verbs)
                                 result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
                             else:
@@ -308,7 +360,7 @@ class OnSiteClassList(ProgramModuleObj):
             result['user'] = user.id
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
 
-        json.dump(result, resp)
+        json.dump(result, resp, cls=DjangoJSONEncoder)
         return resp
 
     """ End of highly model-dependent JSON views    """
