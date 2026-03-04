@@ -301,6 +301,28 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
             self.assertIsInstance(sec, ClassSection)
             self.assertIsInstance(count, int)
 
+    def test_multiple_walkin_sections_independently_reported(self):
+        """When multiple Walk-in sections exist, each must get its own
+        independent count — enrolments in one section must not bleed
+        into the count for another."""
+        _, walkin_section_2 = self._create_special_class("Walk-in Activity")
+        # Enrol 2 students in the first section, 1 in the second.
+        self._enrol_student(self.students[0], self.walkin_section)
+        self._enrol_student(self.students[1], self.walkin_section)
+        self._enrol_student(self.students[2], walkin_section_2)
+
+        report = self.controller.sanitize_walkin(fake=True)
+        counts_by_id = {sec.id: count for sec, count in report}
+
+        self.assertEqual(
+            counts_by_id.get(self.walkin_section.id, 0), 2,
+            "First walk-in section should have 2 enrolments",
+        )
+        self.assertEqual(
+            counts_by_id.get(walkin_section_2.id, 0), 1,
+            "Second walk-in section should have 1 enrolment",
+        )
+
 
 # ---------------------------------------------------------------------------
 # 3.  sanitize_lunch tests
