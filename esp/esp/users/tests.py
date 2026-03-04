@@ -792,8 +792,6 @@ class PermissionTestCase(TestCase):
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
 
-
-
 class StudentInfoFormGradeTest(TestCase):
     """Registration Profile grade validation.
 
