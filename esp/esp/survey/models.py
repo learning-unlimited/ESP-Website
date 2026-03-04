@@ -100,7 +100,7 @@ class Survey(models.Model):
     category = models.CharField(max_length = 10, choices = survey_choices)
 
     def __str__(self):
-        return '%s (%s) for %s' % (self.name, self.category, str(self.program))
+        return f'{self.name} ({self.category}) for {self.program}'
 
     def num_participants(self):
         #   If there is a program for this survey, select the appropriate number
@@ -144,7 +144,7 @@ class SurveyResponse(models.Model):
             if len(value) == 1: value = value[0]
             str_list = key.split('_')
             if len(str_list) < 2 or len(str_list) > 3:
-                raise ESPError('Inappropriate question key: %s' % key)
+                raise ESPError(f'Inappropriate question key: {key}')
 
             new_answer = Answer()
             new_answer.survey_response = self
@@ -160,11 +160,11 @@ class SurveyResponse(models.Model):
                     question = Question.objects.get(id=qid)
                     sec = ClassSection.objects.get(id=cid)
                 except ClassSection.DoesNotExist:
-                    raise ESPError('Error finding class from %s' % key)
+                    raise ESPError(f'Error finding class from {key}')
                 except Question.DoesNotExist:
-                    raise ESPError('Error finding question from %s' % key)
+                    raise ESPError(f'Error finding question from {key}')
                 except ValueError:
-                    raise ESPError('Error getting IDs from %s' % key)
+                    raise ESPError(f'Error getting IDs from {key}')
 
                 new_answer.target = sec
 
@@ -173,9 +173,9 @@ class SurveyResponse(models.Model):
                     qid = int(str_list[1])
                     question = Question.objects.get(id=qid)
                 except Question.DoesNotExist:
-                    raise ESPError('Error finding question from %s' % key)
+                    raise ESPError(f'Error finding question from {key}')
                 except ValueError:
-                    raise ESPError('Error getting IDs from %s' % key)
+                    raise ESPError(f'Error getting IDs from {key}')
                 new_answer.target = self.survey.program
 
             new_answer.answer = value
@@ -189,8 +189,7 @@ class SurveyResponse(models.Model):
         return answers
 
     def __str__(self):
-        return "Survey for %s filled out at %s" % (str(self.survey.program),
-                                                   self.time_filled)
+        return f"Survey for {self.survey.program} filled out at {self.time_filled}"
 
 class QuestionType(models.Model):
     """ A type of question.
@@ -210,13 +209,13 @@ class QuestionType(models.Model):
 
     @property
     def template_file(self):
-        return 'survey/questions/%s.html' % self.name.replace(' ', '_').lower()
+        return f'survey/questions/{self.name.replace(" ", "_").lower()}.html'
 
     def __str__(self):
         if len(self.param_names) > 0:
-            return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
+            return f'{self.name}: includes {self._param_names.replace("|", ", ")}'
         else:
-            return '%s' % (self.name)
+            return str(self.name)
 
 class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions", on_delete=models.CASCADE)
@@ -240,10 +239,10 @@ class Question(models.Model):
         return params
 
     def __str__(self):
-        return '%s, %d: "%s" (%s)' % (self.survey.name, self.seq, self.name, self.question_type.name)
+        return f'{self.survey.name}, {self.seq}: "{self.name}" ({self.question_type.name})'
 
     def get_value(self, data_dict):
-        question_key = 'question_%s' % self.id
+        question_key = f'question_{self.id}'
 
         try:
             value = data_dict.getlist(question_key)
@@ -348,4 +347,4 @@ class Answer(models.Model):
     answer = property(_answer_getter, _answer_setter)
 
     def __str__(self):
-        return "Answer for question #%d: %s" % (self.question.id, self.value)
+        return f"Answer for question #{self.question.id}: {self.value}"
