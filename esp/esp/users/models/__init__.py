@@ -2616,7 +2616,12 @@ class Permission(ExpirableModel):
         # Match existing semantics: pick the latest closing time
         latest = sorted(
             perms,
-            key=lambda p: (p.end_date or datetime.max, p.start_date or datetime.min),
+            key=lambda p: (
+                p.end_date is None,
+                p.end_date,
+                p.start_date is None,
+                p.start_date
+            ),
             reverse=True,
         )[0]
         return latest.end_date

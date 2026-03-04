@@ -519,7 +519,13 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 details['implied_open'] = any([getattr(perm, "implied", False) and perm.is_valid() for perm in details['perms']])
                 details['recursive'] = perm_type in list(Permission.implications.keys())
                 # Sort by validity and start/end dates
-                group_perms[group][perm_type]['perms'].sort(key=lambda perm: (perm.is_valid(), perm.end_date or datetime.max, perm.start_date or datetime.min), reverse=True)
+                group_perms[group][perm_type]['perms'].sort(key=lambda perm: (
+                    perm.is_valid(),
+                    perm.end_date is None,
+                    perm.end_date,
+                    perm.start_date is None,
+                    perm.start_date
+                ), reverse=True)
 
         #   find all the existing user permissions for this program
         user_perms = Permission.objects.filter(program=self.program, user__isnull=False).order_by('user__username', 'permission_type')
