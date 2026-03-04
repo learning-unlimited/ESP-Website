@@ -356,6 +356,9 @@ class StudentClassRegModule(ProgramModuleObj):
                 addbutton_str2 = render_to_string(self.baseDir()+'addbutton_catalog.html', button_context)
                 json_data['addbutton_fillslot_sec%d_html' % sec_id] = addbutton_str1
                 json_data['addbutton_catalog_sec%d_html' % sec_id] = addbutton_str2
+            except ClassSection.DoesNotExist:
+                # Section doesn't exist, skip it
+                continue
             except Exception as inst:
                 # Manually return the JSON error after the removal of middleware
                 return HttpResponse(json.dumps({'status' : 200, 'error': 'Encountered an error retrieving updated buttons: %s' % inst}))
@@ -628,6 +631,9 @@ class StudentClassRegModule(ProgramModuleObj):
             clsid = extra
 
         classes = ClassSubject.objects.filter(id = clsid)
+
+        if not classes.exists():
+            raise Http404("Class not found")
 
         target_class = classes[0]
 
