@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -58,13 +56,13 @@ class TeacherCustomComboForm(ComboForm):
         rt = RecordType.objects.get(name = self.event)
         Record.objects.filter(user=self.curr_request.user, program=self.program, event=rt).delete()
         Record.objects.create(user=self.curr_request.user, program=self.program, event=rt)
-        return super(TeacherCustomComboForm, self).done(form_list=form_list, redirect_url = '/teach/'+self.program.getUrlBase()+'/teacherreg', **kwargs)
+        return super().done(form_list=form_list, redirect_url = '/teach/'+self.program.getUrlBase()+'/teacherreg', **kwargs)
 
 class TeacherCustomFormModule(ProgramModuleObj):
     doc = """Serve a custom form as part of teacher registration."""
 
     def __init__(self, *args, **kwargs):
-        super(TeacherCustomFormModule, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.event = "teacher_extra_form_done"
 
     @classmethod

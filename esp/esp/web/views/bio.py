@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -123,7 +122,6 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
                                                    'institution': settings.INSTITUTION_NAME,
                                                    'user':    founduser,
                                                    'picture_file': lastbio.picture})
-
 
 
 def bio_not_found(request, user=None, edit_url=None):

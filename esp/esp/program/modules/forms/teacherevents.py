@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
 from django import forms
 from django.utils.safestring import mark_safe
 

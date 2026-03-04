@@ -9,8 +9,6 @@
 #   Classroom: 1-115
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import EventType, ResourceType, Program, Event, Resource
 
 import csv
@@ -19,9 +17,7 @@ import re
 import argparse
 
 from datetime import datetime
-import six
 from io import open
-from six.moves import input
 
 
 ETYPE_CLASSBLOCK = EventType.objects.get(description='Class Time Block')
@@ -123,7 +119,7 @@ def do_match(items_to_match, possible_options, description,
             matching_idx[item] = match_attempt
         print("We have the following matchings:")
         print(matching_idx)
-        for item, match_idx in six.iteritems(matching_idx):
+        for item, match_idx in matching_idx.items():
             match_name = None if match_idx is None else \
                 possible_options[match_idx]
             print("{}: {} ({})".format(item, match_name, match_idx))
@@ -153,8 +149,8 @@ for rtype in RESOURCE_TYPES:
             resource_value_matching[rtype.name] = {
                     known: (possible_values[idx] if idx is not None else "")
                     for known, idx in
-                    six.iteritems(do_match(
-                        known_values, possible_values, rtype.name))}
+                    do_match(
+                        known_values, possible_values, rtype.name).items()}
 
 
 def parse_time(date, time):
