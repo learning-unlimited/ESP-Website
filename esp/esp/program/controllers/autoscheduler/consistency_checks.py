@@ -30,7 +30,7 @@ class ConsistencyChecker:
         which are named check_[something]_consistency."""
         for attr in dir(self):
             if attr.startswith("check_") and attr.endswith("_consistency"):
-                logger.info("Running: {}".format(attr))
+                logger.info(f"Running: {attr}")
                 getattr(self, attr)(schedule)
 
     def check_availability_dict_consistency(self, schedule):
@@ -40,24 +40,22 @@ class ConsistencyChecker:
             for time, roomslot in room.availability_dict.items():
                 if time != (roomslot.timeslot.start, roomslot.timeslot.end):
                     raise ConsistencyError(
-                        ("Room availability dict key/value mismatch for "
-                         "room {}").format(room.name))
+                        (f"Room availability dict key/value mismatch for "
+                         f"room {room.name}"))
             if set(room.availability) != set(
                     room.availability_dict.values()):
                 raise ConsistencyError(
-                    "Room {} availability list and dict don't match"
-                    .format(room.name))
+                    f"Room {room.name} availability list and dict don't match")
         for teacher in schedule.teachers.values():
             for time, timeslot in teacher.availability_dict.items():
                 if time != (timeslot.start, timeslot.end):
                     raise ConsistencyError(
-                        ("Teacher availability dict key/value mismatch for "
-                         "teacher {}").format(teacher.id))
+                        (f"Teacher availability dict key/value mismatch for "
+                         f"teacher {teacher.id}"))
             if set(t.id for t in teacher.availability) != set(
                     t.id for t in teacher.availability_dict.values()):
                 raise ConsistencyError(
-                    "Teacher {} availability list and dict don't match"
-                    .format(teacher.id))
+                    f"Teacher {teacher.id} availability list and dict don't match")
 
     def check_lunch_consistency(self, schedule):
         """Checks that lunch dictionary maps correctly,
@@ -96,14 +94,12 @@ class ConsistencyChecker:
             for restype_name, request in section.resource_requests.items():
                 if request.name != restype_name:
                     raise ConsistencyError(
-                        "Section {} had request {} listed under name {}"
-                        .format(section.id, request.name, restype_name))
+                        f"Section {section.id} had request {request.name} listed under name {restype_name}")
         for room in schedule.classrooms.values():
             for restype_name, furnishing in room.furnishings.items():
                 if furnishing.name != restype_name:
                     raise ConsistencyError(
-                        "Room {} had furnishing {} listed under name {}"
-                        .format(room.name, furnishing.name, restype_name))
+                        f"Room {room.name} had furnishing {furnishing.name} listed under name {restype_name}")
 
     def check_roomslots_consistency(self, schedule):
         """Check to make sure that roomslots, are consistent with timeslots,
@@ -163,19 +159,16 @@ class ConsistencyChecker:
         for room in schedule.classrooms.values():
             for i, roomslot in enumerate(room.availability):
                 if i != roomslot.index():
-                    raise ConsistencyError((
-                            "Roomslot index for room {} was {} instead of {}."
-                    ).format(room.name, roomslot.index(), i))
+                    raise ConsistencyError(
+                            f"Roomslot index for room {room.name} was {roomslot.index()} instead of {i}.")
                 if i < len(room.availability) - 1:
                     if room.availability[i + 1] != roomslot.next():
                         raise ConsistencyError(
-                            "Roomslot next for room {} was wrong.".format(
-                                room.name))
+                            f"Roomslot next for room {room.name} was wrong.")
                 else:
                     if roomslot.next() is not None:
-                        raise ConsistencyError((
-                                "Last roomslot next for room {} was not None."
-                        ).format(room.name))
+                        raise ConsistencyError(
+                                f"Last roomslot next for room {room.name} was not None.")
 
     def roomslot_sorting_helper(self, roomslots):
         """Returns True if the roomslots are sorted by timeslot, False
@@ -189,18 +182,15 @@ class ConsistencyChecker:
         for section_id, section in schedule.class_sections.items():
             if section.id != section_id:
                 raise ConsistencyError(
-                    "Section {} was listed under id {}".format(
-                        section.id, section_id))
+                    f"Section {section.id} was listed under id {section_id}")
         for teacher_id, teacher in schedule.teachers.items():
             if teacher.id != teacher_id:
                 raise ConsistencyError(
-                    "Teacher {} was listed under id {}".format(
-                        teacher.id, teacher_id))
+                    f"Teacher {teacher.id} was listed under id {teacher_id}")
         for room_name, room in schedule.classrooms.items():
             if room.name != room_name:
                 raise ConsistencyError(
-                    "Room {} was listed under name {}".format(
-                        room.name, room_name))
+                    f"Room {room.name} was listed under name {room_name}")
 
     def check_sorting_consistency(self, schedule):
         """Checks whether section assigned roomslots, classroom availability,
@@ -226,18 +216,16 @@ class ConsistencyChecker:
             for section_id, section in teacher.taught_sections.items():
                 if section_id != section.id:
                     raise ConsistencyError(
-                        "Teacher {} taught_sections had key/value mismatch"
-                        .format(teacher.id))
+                        f"Teacher {teacher.id} taught_sections had key/value mismatch")
                 if teacher not in section.teachers:
                     raise ConsistencyError(
-                        ("Teacher {} taught_sections listed a section the "
-                         "teacher wasn't teaching").format(teacher.id))
+                        (f"Teacher {teacher.id} taught_sections listed a section the "
+                         "teacher wasn't teaching"))
         for section in schedule.class_sections.values():
             for teacher in section.teachers:
                 if section.id not in teacher.taught_sections:
                     raise ConsistencyError(
-                        "Teacher{} is teaching section {} but didn't know it"
-                        .format(teacher.id, section.id))
+                        f"Teacher{teacher.id} is teaching section {section.id} but didn't know it")
 
     def check_timeslot_consistency(self, schedule):
         """Checks that timeslots are sorted and non-overlapping."""
@@ -259,8 +247,7 @@ class ConsistencyChecker:
                     timeslot.start, timeslot.end)
             if abs(timeslot.duration - actual_duration) > 1e-4:
                 raise ConsistencyError(
-                    "Timeslot actual duration {} didn't match advertised {}"
-                    .format(actual_duration, timeslot.duration))
+                    f"Timeslot actual duration {actual_duration} didn't match advertised {timeslot.duration}")
 
     def check_timeslot_span_consistency(self, schedule):
         """Ensure timeslots don't span multiple days."""
@@ -270,8 +257,7 @@ class ConsistencyChecker:
             if (start.year, start.month, start.day) != \
                     (end.year, end.month, end.day):
                 raise ConsistencyError(
-                    "Timeslot ({}, {}) spans multiple days".format(
-                        start, end))
+                    f"Timeslot ({start}, {end}) spans multiple days")
 
     def check_timeslots_list_and_dict_consistency(self, schedule):
         """Check that the timeslot dict has consistent keys and values,
