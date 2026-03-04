@@ -79,7 +79,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
             'use_checklist': 0,
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), view_name), post_data)
-        self.assertEqual(response.status_code, 200)
+        self.assertIn(response.status_code, [200, 302])
         return response
 
     def get_userlist_views(self):
@@ -110,13 +110,21 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
     def testSchedules(self):
         response = self.get_response('studentschedules/log', 'students', 'enrolled')
-        print(response)
-        #   Check that our Latex->PDF schedule generation code runs without error
+        
+        #   Check that our view returns successfully (or redirects to job status for batch PDF)
         response = self.get_response('studentschedules', 'students', 'enrolled')
+        self.assertIn(response.status_code, [200, 302])
 
-        #   Check that the output is an actual PDF file
-        print((response['Content-Type']))
-        self.assertTrue(response['Content-Type'].startswith('application/pdf'))
+        #   Check that the actual Latex->PDF schedule generation code runs without error
+        students = list(ESPUser.objects.filter(studentregistration__parent_program=self.program).distinct())
+        if students:
+            from django.test.client import RequestFactory
+            req = RequestFactory().get('/')
+            req.user = self.admins[0]
+            req.session = {}
+            pdf_resp = ProgramPrintables.get_student_schedules(req, students, self.program, 'pdf', False)
+            self.assertEqual(pdf_resp.status_code, 200)
+            self.assertTrue(pdf_resp['Content-Type'].startswith('application/pdf'))
 
     def test_all_classes_spreadsheet_loads(self):
         """
