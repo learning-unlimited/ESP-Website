@@ -32,6 +32,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from unittest.mock import patch
+
 from django.contrib.auth.models import Group
 from django.core import mail
 from django.core.exceptions import ValidationError
