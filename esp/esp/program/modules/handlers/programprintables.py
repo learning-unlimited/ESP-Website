@@ -1256,7 +1256,7 @@ class ProgramPrintables(ProgramModuleObj):
             thread = threading.Thread(target=run_job, args=(job.id, student_ids, prog.id, file_type))
             thread.daemon = True
             thread.start()
-            return HttpResponseRedirect('/manage/%s/%s/printable_job_status/%s/' % (prog.url, self.handler, job.id))
+            return HttpResponseRedirect('/manage/%s/%s/printable_job_status/%s/' % (prog.url, module, job.id))
 
         return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
 
