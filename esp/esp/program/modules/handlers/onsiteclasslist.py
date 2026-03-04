@@ -322,10 +322,16 @@ class OnSiteClassList(ProgramModuleObj):
 
         try:
             user = int(request.GET.get('user', None))
+        except (TypeError, ValueError):
+            result['message'] = "Invalid user ID: %r is not an integer." % request.GET.get('user', None)
+            json.dump(result, resp)
+            return resp
+        try:
             user_obj = ESPUser.objects.get(id=user)
-        except:
-            result['message'] = "Could not find user %s." % request.GET.get('user', None)
-
+        except ESPUser.DoesNotExist:
+            result['message'] = "Could not find user %s." % user
+            json.dump(result, resp)
+            return resp
         printer = request.GET.get('printer', None)
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
