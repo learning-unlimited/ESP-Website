@@ -20,6 +20,8 @@
 {% block content %}
 
 <h1>{{ addoredit }}ing a {{ classtype }} for {{ program.niceName }}</h1>
+{% load admin_tags %}
+{% admin_config_banner config_url="/manage/"|add:program.getUrlBase|add:"/main" link_text="Want to configure this form? Go to the admin portal." %}
 
 {% if manage %}
     <p>
