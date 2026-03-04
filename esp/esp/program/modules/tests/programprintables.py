@@ -110,13 +110,11 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
     def testSchedules(self):
         response = self.get_response('studentschedules/log', 'students', 'enrolled')
-        
         #   Check that our view returns successfully (or redirects to job status for batch PDF)
         response = self.get_response('studentschedules', 'students', 'enrolled')
         self.assertIn(response.status_code, [200, 302])
-
         #   Check that the actual Latex->PDF schedule generation code runs without error
-        students = list(ESPUser.objects.filter(studentregistration__parent_program=self.program).distinct())
+        students = getattr(self, 'students', [])
         if students:
             from django.test.client import RequestFactory
             req = RequestFactory().get('/')
