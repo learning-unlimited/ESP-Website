@@ -8,7 +8,16 @@ class UserSearchErrorHandlingTest(TestCase):
     def setUp(self):
         self.controller = UserSearchController()
         self.program = MagicMock()
+        self.program.url = 'testprog'
         self.request = MagicMock()
+        self.request.method = 'GET'
+        self.request.path = '/manage/testprog/selectList'
+        self.request.session = {}
+        self.request.user = MagicMock()
+        self.request.user.is_authenticated = True
+        self.request.user.id = 1
+        self.request.user.isAdmin = MagicMock(return_value=True)
+        self.request.user.other_user = None
 
     @patch('esp.users.controllers.usersearch.render_to_response')
     @patch('esp.program.modules.handlers.listgenmodule.ListGenModule.processPost')
