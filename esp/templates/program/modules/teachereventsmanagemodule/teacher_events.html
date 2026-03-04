@@ -29,7 +29,7 @@ function deleteEvent() {
 <h1>Manage Teacher Events for {{ prog.niceName }}</h1>
 
 <p>
-Teacher Events include (for now) <a href="#training">teacher training</a> and <a href="#interview">teacher interviews</a>. You can view and manage the timeslots here.
+You can view and manage teacher events and timeslots here.
 </p>
 
 <div id="program_form">
@@ -39,29 +39,32 @@ Teacher Events include (for now) <a href="#training">teacher training</a> and <a
 <input type="hidden" name="id" value="{{ editing_timeslot.id }}" />
 {% endif %}
 <table align="center" cellpadding="0" cellspacing="0" width="450">
-     <tr><th colspan="2" class="small">Add a Training or Interview</th></tr>
+    <tr><th colspan="2" class="small">Add a Teacher Event</th></tr>
     {{ timeslot_form }}
-    <tr><td colspan="2" align="center">{% if editing_timeslot %}<input class="btn btn-primary" type="submit" name = "submit_btn" value="Edit {{ editing_timeslot.event_type }}" />{% else %}<input class="btn btn-primary" type="submit" name = "submit_btn" value="Add Training" /> <input class="btn btn-primary" type="submit" name="submit_btn" value="Add Interview" />{% endif %}</td></tr>
+    <tr><td colspan="2" align="center">
+        {% if editing_timeslot %}
+            <input class="btn btn-primary" type="submit" name="submit_btn" value="Edit {{ editing_timeslot.event_type }}" />
+        {% else %}
+            <select name="event_type_id">
+                {% for event_type in teacher_event_types %}
+                    <option value="{{ event_type.id }}">{{ event_type.description }}</option>
+                {% endfor %}
+            </select>
+            <input class="btn btn-primary" type="submit" name="submit_btn" value="Add Event" />
+        {% endif %}
+    </td></tr>
 </table>
 </form>
 
-</br></br>
-
-<table align="center" cellpadding="4" cellspacing="0"> 
-    <tr><th colspan="5"><a name="interview"></a>Teacher Interviews</th></tr>
-    <tr><th style="width:25%">Description</th><th style="width:18%">Start</th><th style="width:7%">End</th><th style="width:45%">Teachers</th><th style="width:10%"></th></tr>
-    {% with interview_times as timeslots %}
-        {% include "program/modules/teachereventsmanagemodule/event_row.html" %}
-    {% endwith %}
-</table>
 <br><br>
+{% for event_type, timeslots in teacher_event_times.items %}
 <table align="center" cellpadding="4" cellspacing="0"> 
-    <tr><th colspan="5"><a name="training"></a>Teacher Training</th></tr>
+   <tr><th colspan="5"><a name="event_{{ event_type.id }}"></a>{{ event_type.description }}</th></tr>
     <tr><th style="width:25%">Description</th><th style="width:18%">Start</th><th style="width:7%">End</th><th style="width:40%">Teachers</th><th style="width:10%"></th></tr>
-    {% with training_times as timeslots %}
-        {% include "program/modules/teachereventsmanagemodule/event_row.html" %}
-    {% endwith %}
+    {% include "program/modules/teachereventsmanagemodule/event_row.html" %}
 </table>
+   <br><br>
+{% endfor %}
 </div>
 
 {% include "program/modules/admincore/returnlink.html" %}
