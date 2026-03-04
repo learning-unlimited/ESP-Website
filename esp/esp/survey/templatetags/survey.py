@@ -102,7 +102,7 @@ def intrange(min_val, max_val):
 
 @register.filter
 def field_width(min_val, max_val):
-    return '%d%%' % (70 // (int(max_val) - int(min_val) + 1))
+    return f'{70 // (int(max_val) - int(min_val) + 1)}%'
 
 @register.filter
 def substitute(input_str, item):
@@ -229,7 +229,7 @@ def histogram(answer_list, args='format=html'):
 
     #   We have the necessary EPS file, now we do any necessary conversions and include
     #   it into the output.
-    png_filename = "%s.png" % file_base
+    png_filename = f"{file_base}.png"
     if args_dict.get('format') == 'tex':
         image_path = os.path.join(tempfile.gettempdir(), png_filename)
     elif args_dict.get('format') == 'html':
@@ -240,9 +240,9 @@ def histogram(answer_list, args='format=html'):
                          '-sDEVICE=png16m', '-R96',
                          '-sOutputFile=' + image_path, file_name])
     if args_dict.get('format') == 'tex':
-        return '\includegraphics[width=%fin]{%s}' % (image_width, image_path)
+        return f'\\includegraphics[width={image_width}in]{{{image_path}}}'
     if args_dict.get('format') == 'html':
-        return '<img src="%s" />' % ('/media/' + HISTOGRAM_PATH + png_filename)
+        return f'<img src="/media/{HISTOGRAM_PATH}{png_filename}" />'
 
 @register.filter
 def answer_to_list(ans):
@@ -283,7 +283,7 @@ def favorite_classes(answer_list, limit=20):
     for key in key_list[:max_count]:
         cl = ClassSubject.objects.filter(id=key)
         if cl.count() == 1:
-            result_list.append({'title': '%s: %s' % (cl[0].emailcode(), cl[0].title), 'votes': class_dict[key]})
+            result_list.append({'title': f'{cl[0].emailcode()}: {cl[0].title}', 'votes': class_dict[key]})
 
     return result_list
 

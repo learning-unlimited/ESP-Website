@@ -235,8 +235,15 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         from esp.program.modules.module_ext import DBReceipt
 
-        if self.have_paid(request.user):
-            raise ESPError("You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund.", log=False)
+        # Block cancellation only if the user has made an actual payment via credit card.
+        from esp.accounting.controllers import IndividualAccountingController
+        iac = IndividualAccountingController(prog, request.user)
+
+        if iac.get_transfers().exclude(transaction_id='').exists():
+            raise ESPError(
+                "You have already paid for this program. If you want to cancel, please contact us directly to request a refund.",
+                log=False
+            )
 
         recs = Record.objects.filter(user=request.user,
                                      event__name="reg_confirmed",
@@ -315,6 +322,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['have_paid'] = self.have_paid(request.user)
         context['extra_steps'] = "learn:extra_steps"
         context['printers'] = self.printer_names()
+
+        # Pass flag to frontend to hide the cancel button if a real CC payment exists
+        iac = IndividualAccountingController(prog, request.user)
+        context['has_external_payment'] = iac.get_transfers().exclude(transaction_id='').exists()
 
         if context['scrmi'] and context['scrmi'].use_priority:
             context['no_confirm'] = True

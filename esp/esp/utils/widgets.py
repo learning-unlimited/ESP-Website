@@ -221,7 +221,15 @@ function {{ name }}_save()
 
 function {{ name }}_setup()
 {
-    var {{ name }}_data = JSON.parse($j("#id_{{ name }}").val());
+    var {{ name }}_data = [];
+    try {
+        var raw_data = $j("#id_{{ name }}").val();
+        if (raw_data) {
+            {{ name }}_data = JSON.parse(raw_data);
+        }
+    } catch (e) {
+        console.error("Failed to parse {{ name }} init data:", e);
+    }
     var anchor_ul = $j("#{{ name }}_entries");
     for (var i = 0; i < {{ name }}_data.length; i++)
     {
@@ -373,7 +381,15 @@ function {{ name }}_save()
 
 function {{ name }}_setup()
 {
-    var {{ name }}_data = JSON.parse($j("#id_{{ name }}").val());
+    var {{ name }}_data = [];
+    try {
+        var raw_data = $j("#id_{{ name }}").val();
+        if (raw_data) {
+            {{ name }}_data = JSON.parse(raw_data);
+        }
+    } catch (e) {
+        console.error("Failed to parse {{ name }} init data:", e);
+    }
     var anchor_ul = $j("#{{ name }}_entries");
     for (var i = 0; i < {{ name }}_data.length; i++)
     {

@@ -47,6 +47,7 @@
     <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}">Morph into this user</a>
     <a class="sidelink" href="/admin/users/espuser/{{user.id}}/">View on admin panel</a>
     <a class="sidelink" href="/admin/program/registrationprofile/?user__id={{user.id}}">View registration profiles</a>
+    <a class="sidelink" href="/admin/program/studentsubjectinterest/?user__id={{user.id}}">Manage starred classes</a>
     {% if "Student" in user.getUserTypes %}
         <a id="biolink" class="sidelink" href="/accounting/user?target_user={{user.id}}">View accounting info</a>
     {% endif %}
@@ -370,6 +371,18 @@
     {% for class in classes %}
     {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
     {% include "users/userview_class_entry.html" %}
+    {% if forloop.last %}</ul>{% endif %}
+    {% endfor %}
+{% endif %}{% endwith %}
+
+{% with starred_classes as classes %}{% if classes %}
+    <h2>Starred Classes:</h2>
+    <br />
+    {% for interest in classes %}
+    {% ifchanged interest.subject.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ interest.subject.parent_program.niceName }}<br /><ul>{% endifchanged %}
+    {% with interest.subject as class %}
+    {% include "users/userview_class_entry.html" %}
+    {% endwith %}
     {% if forloop.last %}</ul>{% endif %}
     {% endfor %}
 {% endif %}{% endwith %}

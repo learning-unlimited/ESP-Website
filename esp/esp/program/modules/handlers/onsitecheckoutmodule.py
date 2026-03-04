@@ -81,7 +81,7 @@ class OnSiteCheckoutModule(ProgramModuleObj):
             if target_id:
                 try:
                     student = ESPUser.objects.get(id=target_id)
-                except ESPUser.DoesNotExist:
+                except (ESPUser.DoesNotExist, ValueError):
                     try:
                         student = ESPUser.objects.get(username=target_id)
                     except ESPUser.DoesNotExist:

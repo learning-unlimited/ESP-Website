@@ -162,13 +162,14 @@ class TeacherReviewApps(ProgramModuleObj):
                 q = f.app_question
                 form = f.app_question.get_form(data, form_prefix=f.prefix)
 
-                #   If the form is valid, save the question.  If not, delete it.
-                if form.is_valid():
+                #   If the form is valid and has question text, save the question.
+                #   Otherwise, if it's an existing question (with an ID), delete it.
+                #   This prevents empty records for unfilled classes and deletes cleared questions.
+                if form.is_valid() and form.cleaned_data.get('question', '').strip():
                     q.update(form)
                     q.save()
-                else:
-                    if hasattr(q, 'id') and q.id:
-                        q.delete()
+                elif hasattr(q, 'id') and q.id:
+                    q.delete()
 
             return self.goToCore(tl)
 
