@@ -20,10 +20,12 @@ class UserSearchErrorHandlingTest(TestCase):
         self.request.user.other_user = None
 
     @patch('esp.users.controllers.usersearch.render_to_response')
+    @patch.object(UserSearchController, 'prepare_context')
     @patch('esp.program.modules.handlers.listgenmodule.ListGenModule.processPost')
     @patch.object(UserSearchController, 'filter_from_postdata')
-    def test_create_filter_catches_esperror(self, mock_filter, mock_process_post, mock_render):
-        # Setup
+    def test_create_filter_catches_esperror(self, mock_filter, mock_process_post, mock_prepare, mock_render):
+        # Setup: patch prepare_context so we don't hit DB when create_filter renders after catching ESPError
+        mock_prepare.return_value = {}
         self.request.method = 'POST'
         mock_process_post.return_value = {'base_list': 'test', 'recipient_type': 'Student'}
         mock_filter.side_effect = ESPError("Invalid user ID", log=False)
