@@ -24,9 +24,9 @@ DATABASES = {'default':
 # Memcached — connects to the 'memcached' Docker Compose service
 CACHES = {
     'default': {
-        'BACKEND': 'esp.utils.memcached_multikey.CacheClass',
-        'LOCATION': 'memcached:11211',
-        'TIMEOUT': 0,
+        "BACKEND": "django.core.cache.backends.memcached.PyLibMCCache",
+        "KEY_PREFIX": CACHE_PREFIX,
+        "KEY_FUNCTION": "esp.utils.cache_key.esp_cache_key_function",
     }
 }
 

@@ -234,10 +234,12 @@ for (key, value) in CONTACTFORM_EMAIL_CHOICES:
 
 if 'CACHES' not in locals():
     CACHES = {
-        'default': {
-            'BACKEND': 'esp.utils.memcached_multikey.CacheClass',
-            'LOCATION': '127.0.0.1:11211',
-            'TIMEOUT': DEFAULT_CACHE_TIMEOUT,
+        "default": {
+            "BACKEND": "django.core.cache.backends.memcached.PyLibMCCache",
+            "LOCATION": "127.0.0.1:11211",
+            "TIMEOUT": DEFAULT_CACHE_TIMEOUT,
+            "KEY_PREFIX": CACHE_PREFIX,
+            "KEY_FUNCTION": "esp.utils.cache_key.esp_cache_key_function",
         }
     }
 
