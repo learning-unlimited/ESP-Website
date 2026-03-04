@@ -321,11 +321,11 @@ class UserSearchController(object):
 
             for or_list_name in or_keys:
                 user_type = get_recipient_type(or_list_name)
-                
+
                 if user_type:
                     qobject = getattr(program, user_type)(QObjects=True)[or_list_name]
                     subquery_qs = ESPUser.objects.filter(qobject).values_list('id', flat=True)
-                    
+
                     if or_list_name not in not_keys:
                         q_program = q_program | Q(pk__in=subquery_qs)
                     else:

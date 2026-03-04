@@ -125,10 +125,10 @@ class TestUserSearchController(TestCase):
             'student_sendto_self': '1',
             'zipdistance_exclude': '',
         }
-        
+
         query = self.controller.query_from_postdata(self.program, post_data)
         qobject = ESPUser.objects.filter(query)
-        # Simply verifying the query executes sequentially rather than asserting count, 
+        # Simply verifying the query executes sequentially rather than asserting count,
         # since we don't have database fixture setup for populated records in this scope.
         list(qobject)
 
