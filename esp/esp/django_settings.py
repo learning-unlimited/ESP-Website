@@ -206,6 +206,7 @@ MIDDLEWARE_GLOBAL = [
     ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
+    ( 450, 'esp.middleware.loginratelimit.LoginRateLimitMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
