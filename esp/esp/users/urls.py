@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.conf.urls import url
 
 from esp.users import views
@@ -15,21 +14,24 @@ urlpatterns = [
     url(r'^activate/?$', views.registration.activate_account),
     url(r'^passwdrecover/(success)?/?$', views.initial_passwd_request),
     url(r'^passwdrecover/?$', views.initial_passwd_request),
-    url(r'^recoveremail/(success)?/?$', views.email_passwd_followup),
-    url(r'^recoveremail/?$', views.email_passwd_followup),
-    url(r'^cancelrecover/?$', views.email_passwd_cancel),
+    url(r'^resetpassword/done/?$', views.password_reset_done),
+    url(r'^resetpassword/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+        views.password_reset_confirm, name='password_reset_confirm'),
     url(r'^resend/?$', views.resend_activation_view,
         name='esp.users.views.resend_activation_view'),
     url(r'^signout/?$', views.signout),
     url(r'^signedout/?$', views.signed_out_message),
     url(r'^login/?$', views.CustomLoginView.as_view(), name="login"),
     url(r'^disableaccount/?$', views.disable_account),
-    url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
+    url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(),
+        name='grade_change_request'),
     url(r'^makeadmin/?$', views.make_admin),
     url(r'^loginhelp', views.LoginHelpView.as_view(), name='Login Help'),
     url(r'^morph/?$', views.morph_into_user),
-    url(r'^unsubscribe/(?P<username>[\w.@+-]+)/(?P<token>[\w.:\-_=]+)/$', views.unsubscribe, name="unsubscribe"),
-    url(r'^unsubscribe_oneclick/(?P<username>[\w.@+-]+)/(?P<token>[\w.:\-_=]+)/$', views.unsubscribe_oneclick, name="unsubscribe_oneclick"),
+    url(r'^unsubscribe/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$',
+        views.unsubscribe, name="unsubscribe"),
+    url(r'^unsubscribe_oneclick/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$',
+        views.unsubscribe_oneclick, name="unsubscribe_oneclick"),
 ]
 
 urlpatterns += [
@@ -38,6 +40,7 @@ urlpatterns += [
 
 urlpatterns += [
     url(r'^switchback/?$', myesp.myesp_switchback),
+    url(r'^stop_testing/?$', myesp.myesp_stop_testing),
     url(r'^onsite/?$', myesp.myesp_onsite),
     url(r'^passwd/?$', myesp.myesp_passwd),
     url(r'^accountmanage/?$', myesp.myesp_accountmanage),

@@ -5,7 +5,6 @@ import logging
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, HttpResponseServerError
-from django.dispatch import receiver
 from django.utils.crypto import constant_time_compare
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
@@ -13,7 +12,6 @@ from django.views.decorators.http import require_POST
 
 from esp.formstack.signals import formstack_post_signal
 from esp.program.models import Program
-from esp.users.models import ESPUser
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +26,10 @@ def formstack_webhook(request):
 
     if not expected_handshake:
         logger.warning('Blocked Formstack webhook because FORMSTACK_HANDSHAKE_KEY is not configured.')
-        return HttpResponseForbidden("Formstack webhook is not configured.")
+        return HttpResponseForbidden("Forbidden.")
     if not handshake_key or not constant_time_compare(str(handshake_key), str(expected_handshake)):
-        return HttpResponseForbidden("Invalid handshake key.")
+        logger.warning('Blocked Formstack webhook due to invalid or missing handshake key.')
+        return HttpResponseForbidden("Forbidden.")
 
     form_id = data.pop('FormID', None)
     submission_id = data.pop('UniqueID', None)
