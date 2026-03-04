@@ -59,7 +59,8 @@ from django.utils.html import strip_tags
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.validators import validate_email
 
 # `user` is required for marketing and subscribed messages to add unsubscribe headers
 # this includes all comm panel emails
@@ -622,6 +623,26 @@ class PlainRedirect(models.Model):
     original = models.CharField(max_length=512, help_text='A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@&lt;yourdomain&gt; will be redirected to the destination email address(es).')
 
     destination = models.CharField(max_length=512, help_text='A comma-separated list of one or more real email address(es) that will receive the redirected email(s)')
+
+    def clean(self):
+        super().clean()
+
+        invalid_emails = []
+        for item in self.destination.split(','):
+            email = item.strip()
+            if not email:
+                invalid_emails.append('<empty>')
+                continue
+
+            try:
+                validate_email(email)
+            except ValidationError:
+                invalid_emails.append(email)
+
+        if invalid_emails:
+            raise ValidationError({
+                'destination': 'Invalid email address(es): %s' % ', '.join(invalid_emails)
+            })
 
     def __str__(self):
         return '%s --> %s'  % (self.original, self.destination)
