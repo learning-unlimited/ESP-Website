@@ -53,3 +53,4 @@ from esp.program.modules.tests.auth import ProgramModuleAuthTest
 from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest
 from esp.program.modules.tests.testallviews import AllViewsTest
 from esp.program.modules.tests.admintestingmodule import AdminTestingModuleTest
+from esp.program.modules.tests.test_get_hours import GetHoursQueryCountTest, GetHoursApprovedFilterTest, GetHoursScheduledFilterTest, StaticHoursTest
