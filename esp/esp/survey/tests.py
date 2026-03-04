@@ -1,15 +1,17 @@
 """
-Tests for esp.survey.models
-Source: esp/esp/survey/models.py
-
-Tests ListField descriptor, Survey, SurveyResponse, QuestionType,
-Question, and Answer models.
+Tests for esp.survey
+- Model tests: ListField descriptor, Survey, SurveyResponse, QuestionType, Question, Answer
+- View tests: Cross-program teacher survey responses page
 """
 import datetime
 
 from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
+from unittest.mock import MagicMock, patch
 
 from esp.program.models import Program
+from esp.program.tests import ProgramFrameworkTest
+from esp.program.modules.base import ProgramModuleObj
 from esp.survey.models import (
     Answer,
     ListField,
@@ -25,6 +27,8 @@ def _setup_roles():
     for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
         Group.objects.get_or_create(name=name)
 
+
+# ===== Model Tests (from main) =====
 
 class ListFieldTest(TestCase):
     """Test the ListField descriptor used in QuestionType."""
@@ -78,16 +82,9 @@ class SurveyTest(TestCase):
         self.assertEqual(self.survey.num_participants(), 0)
 
     def test_num_participants_with_responses(self):
-        # num_participants looks at the associated program's students() or teachers() method
-        # based on the tag filters. We can mock students() to return a dictionary with a user.
-        from unittest.mock import MagicMock
         self.program.students = MagicMock(return_value={'test_filter': ['user1']})
-
-        # We need to mock Tag.getProgramTag as well so it returns 'test_filter'
-        from unittest.mock import patch
         with patch('esp.tagdict.models.Tag.getProgramTag', return_value='test_filter'):
             count = self.survey.num_participants()
-
         self.assertGreaterEqual(count, 1)
 
 
@@ -213,3 +210,253 @@ class AnswerTest(TestCase):
         self.answer.save()
         self.answer.refresh_from_db()
         self.assertEqual(self.answer.answer, 'New answer')
+
+
+# ===== View Tests (cross-program teacher survey page, #3228) =====
+
+class TeacherSurveyAllTest(ProgramFrameworkTest):
+    """Tests for the cross-program teacher survey responses page."""
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 3, 'classes_per_teacher': 1, 'sections_per_class': 1,
+            'num_rooms': 6,
+        })
+        super().setUp(*args, **kwargs)
+
+        self.add_student_profiles()
+        self.schedule_randomly()
+
+        for pmo in self.program.getModules():
+            pmo.__class__ = ProgramModuleObj
+            pmo.required = False
+            pmo.save()
+
+        # Create a student survey with per-class questions
+        self.survey, _ = Survey.objects.get_or_create(
+            name='Test Student Survey', program=self.program, category='learn')
+        text_qtype, _ = QuestionType.objects.get_or_create(
+            name='yes-no response')
+        number_qtype, _ = QuestionType.objects.get_or_create(
+            name='numeric rating', is_numeric=True, is_countable=True,
+            _param_names="Number of ratings|Lower text|Middle text|Upper text")
+
+        self.question_perclass, _ = Question.objects.get_or_create(
+            survey=self.survey, name='Was this class good?',
+            question_type=text_qtype, per_class=True, seq=0)
+        self.question_rating, _ = Question.objects.get_or_create(
+            survey=self.survey, name='Rate this class',
+            question_type=number_qtype, per_class=True, seq=1,
+            _param_values="5|Terrible|Okay|Awesome")
+
+        # Pick a teacher and a section they teach
+        self.teacher = self.teachers[0]
+        self.section = self.teacher.getTaughtSections(self.program)[0]
+
+        # Create a survey response with answers targeting this section
+        self.response = SurveyResponse.objects.create(survey=self.survey)
+        section_ct = ContentType.objects.get_for_model(self.section)
+        Answer.objects.create(
+            survey_response=self.response,
+            question=self.question_perclass,
+            content_type=section_ct,
+            object_id=self.section.id,
+            value='Yes', value_type="<class 'str'>")
+        Answer.objects.create(
+            survey_response=self.response,
+            question=self.question_rating,
+            content_type=section_ct,
+            object_id=self.section.id,
+            value='4', value_type="<class 'str'>")
+
+    def test_teacher_sees_own_responses(self):
+        """A teacher can view their own aggregated survey responses."""
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/myesp/survey_responses')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('All Survey Responses', content)
+        self.assertIn(self.teacher.name(), content)
+        self.assertIn(self.program.niceName(), content)
+        self.assertIn('Was this class good?', content)
+
+    def test_anonymous_user_redirected(self):
+        """Anonymous users should be redirected to login."""
+        self.client.logout()
+        response = self.client.get('/myesp/survey_responses')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response.url.lower())
+
+    def test_admin_sees_teacher_search(self):
+        """An admin sees the teacher search form."""
+        admin = self.admins[0]
+        self.client.login(username=admin.username, password='password')
+        response = self.client.get('/myesp/survey_responses')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('Search for a teacher', content)
+
+    def test_admin_search_for_teacher(self):
+        """Admin can search for a specific teacher via teacher_id GET param."""
+        admin = self.admins[0]
+        self.client.login(username=admin.username, password='password')
+        response = self.client.get(
+            '/myesp/survey_responses?teacher_id=%d' % self.teacher.id)
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn(self.teacher.name(), content)
+        self.assertIn(self.program.niceName(), content)
+
+    def test_teacher_no_surveys(self):
+        """A teacher with no surveys sees a 'no responses' message."""
+        other_teacher = self.teachers[2]
+        # Delete all surveys for this teacher's sections
+        self.survey.delete()
+        self.client.login(
+            username=other_teacher.username, password='password')
+        response = self.client.get('/myesp/survey_responses')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('No survey responses found', content)
+
+    def test_student_gets_error(self):
+        """A student (non-teacher) should get an error."""
+        student = self.students[0]
+        self.client.login(username=student.username, password='password')
+        response = self.client.get('/myesp/survey_responses')
+        # ESPError returns 500
+        self.assertEqual(response.status_code, 500)
+
+    def test_admin_search_invalid_teacher_id(self):
+        """Invalid teacher_id is gracefully ignored."""
+        admin = self.admins[0]
+        self.client.login(username=admin.username, password='password')
+        response = self.client.get(
+            '/myesp/survey_responses?teacher_id=notanumber')
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_search_nonexistent_teacher(self):
+        """Non-existent teacher_id is gracefully ignored."""
+        admin = self.admins[0]
+        self.client.login(username=admin.username, password='password')
+        response = self.client.get(
+            '/myesp/survey_responses?teacher_id=999999')
+        self.assertEqual(response.status_code, 200)
+
+    def test_summary_table_and_accordion_present(self):
+        """The page includes the summary table and accordion elements."""
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/myesp/survey_responses')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('Overview', content)
+        self.assertIn('summary-table', content)
+        self.assertIn('Detailed Responses', content)
+        self.assertIn('accordion-header', content)
+        self.assertIn('Expand All', content)
+
+    def test_summary_shows_rating_and_responses(self):
+        """The summary table shows avg rating and response count."""
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/myesp/survey_responses')
+        content = str(response.content, encoding='UTF-8')
+        # Our test setup created 1 response with rating 4
+        self.assertIn('4.0', content)
+        # Response count should be visible
+        self.assertIn('1', content)
+
+    def test_admin_post_search_for_teacher(self):
+        """Admin can search for a teacher via POST form."""
+        admin = self.admins[0]
+        self.client.login(username=admin.username, password='password')
+        response = self.client.post(
+            '/myesp/survey_responses',
+            {'target_user': self.teacher.id})
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn(self.teacher.name(), content)
+        self.assertIn(self.program.niceName(), content)
+
+    def test_admin_post_invalid_form(self):
+        """Admin POST with invalid data shows form errors, not crash."""
+        admin = self.admins[0]
+        self.client.login(username=admin.username, password='password')
+        response = self.client.post(
+            '/myesp/survey_responses',
+            {'target_user': 'not-a-valid-id'})
+        self.assertEqual(response.status_code, 200)
+
+    def test_teacher_no_responses_but_survey_exists(self):
+        """A teacher with sections and a survey but zero responses doesn't crash."""
+        self.response.delete()
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/myesp/survey_responses')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('N/A', content)
+        self.assertIn('0', content)
+
+
+class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
+    """Tests for multi-section class aggregation in the survey page."""
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 2, 'classes_per_teacher': 1, 'sections_per_class': 2,
+            'num_rooms': 6,
+        })
+        super().setUp(*args, **kwargs)
+
+        self.add_student_profiles()
+        self.schedule_randomly()
+
+        for pmo in self.program.getModules():
+            pmo.__class__ = ProgramModuleObj
+            pmo.required = False
+            pmo.save()
+
+        self.survey, _ = Survey.objects.get_or_create(
+            name='Multi-Section Survey', program=self.program, category='learn')
+        number_qtype, _ = QuestionType.objects.get_or_create(
+            name='numeric rating', is_numeric=True, is_countable=True,
+            _param_names="Number of ratings|Lower text|Middle text|Upper text")
+        self.question_rating, _ = Question.objects.get_or_create(
+            survey=self.survey, name='Rate this class',
+            question_type=number_qtype, per_class=True, seq=1,
+            _param_values="5|Bad|OK|Great")
+
+        self.teacher = self.teachers[0]
+        self.sections = list(self.teacher.getTaughtSections(self.program).order_by('id'))
+        assert len(self.sections) >= 2, "Need at least 2 sections for this test"
+
+        section_ct = ContentType.objects.get_for_model(self.sections[0])
+        # Section 1: rating 3
+        resp1 = SurveyResponse.objects.create(survey=self.survey)
+        Answer.objects.create(
+            survey_response=resp1, question=self.question_rating,
+            content_type=section_ct, object_id=self.sections[0].id,
+            value='3', value_type="<class 'str'>")
+        # Section 2: rating 5
+        resp2 = SurveyResponse.objects.create(survey=self.survey)
+        Answer.objects.create(
+            survey_response=resp2, question=self.question_rating,
+            content_type=section_ct, object_id=self.sections[1].id,
+            value='5', value_type="<class 'str'>")
+
+    def test_summary_aggregates_across_sections(self):
+        """Summary shows one row per class with aggregated data, not per-section."""
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/myesp/survey_responses')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        # Should show aggregated avg: (3+5)/2 = 4.0
+        self.assertIn('4.0', content)
+        # Should show total 2 responses
+        self.assertIn('2', content)
+        # The class emailcode should appear only once in summary table
+        emailcode = self.sections[0].parent_class.emailcode()
+        summary_section = content.split('Detailed Responses')[0]
+        self.assertEqual(summary_section.count(emailcode), 1,
+                         "Class should appear exactly once in summary table")
