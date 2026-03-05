@@ -67,6 +67,28 @@ import random
 import re
 import unicodedata
 
+
+class _StatsDummy(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+class DemographicsStatisticsTest(TestCase):
+    def test_null_graduation_year_is_ignored(self):
+        from esp.program.statistics import demographics
+
+        form = _StatsDummy(cleaned_data={})
+        profiles = [
+            _StatsDummy(student_info=_StatsDummy(graduation_year=None, dob=None)),
+            _StatsDummy(student_info=_StatsDummy(graduation_year=2030, dob=None)),
+        ]
+        result_dict = {}
+
+        demographics(form, [], [], profiles, result_dict)
+
+        self.assertEqual(result_dict['gradyear_data'], [(2030, 1)])
+
+
 class ViewUserInfoTest(TestCase):
     def setUp(self):
 
@@ -1633,27 +1655,6 @@ class ConfirmationEmailControllerTest(TestCase):
             self.controller.send_confirmation_email(self.user, self.program, repeat=True, override=True)
 
         self.assertEqual(mock_send_mail.call_count, 2)
-
-
-class _StatsDummy(object):
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-
-class DemographicsStatisticsTest(TestCase):
-    def test_null_graduation_year_is_ignored(self):
-        from esp.program.statistics import demographics
-
-        form = _StatsDummy(cleaned_data={})
-        profiles = [
-            _StatsDummy(student_info=_StatsDummy(graduation_year=None, dob=None)),
-            _StatsDummy(student_info=_StatsDummy(graduation_year=2030, dob=None)),
-        ]
-        result_dict = {}
-
-        demographics(form, [], [], profiles, result_dict)
-
-        self.assertEqual(result_dict['gradyear_data'], [(2030, 1)])
 
 
 class ManageDocsViewTest(TestCase):
