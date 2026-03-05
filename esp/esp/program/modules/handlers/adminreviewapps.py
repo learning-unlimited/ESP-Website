@@ -1,6 +1,5 @@
 
 
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -38,7 +37,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, a
 from esp.middleware.esperrormiddleware import ESPError
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject, StudentRegistration, RegistrationType
+from esp.program.models import ClassSubject, StudentRegistration, RegistrationType, StudentApplication
 from django.db.models.query import Q
 
 __all__ = ['AdminReviewApps']
@@ -94,7 +93,7 @@ class AdminReviewApps(ProgramModuleObj):
             student.added_class = student.studentregistration_set.filter(section__parent_class=cls)[0].start_date
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
-            except:
+            except StudentApplication.DoesNotExist:
                 student.app = None
 
             if student.app:
@@ -123,7 +122,7 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
             student = ESPUser.objects.get(id = request.GET.get('student', ''))
-        except:
+        except (ValueError, TypeError, ClassSubject.DoesNotExist, ESPUser.DoesNotExist):
             raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
@@ -141,7 +140,7 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
             student = ESPUser.objects.get(id = request.GET.get('student', ''))
-        except:
+        except (ClassSubject.DoesNotExist, ESPUser.DoesNotExist):
             raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
@@ -178,7 +177,7 @@ class AdminReviewApps(ProgramModuleObj):
 
         try:
             student.app = student.studentapplication_set.get(program = self.program)
-        except:
+        except StudentApplication.DoesNotExist:
             student.app = None
             assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
@@ -199,11 +198,10 @@ class AdminReviewApps(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
 
-        schedule = six.u("""
+        schedule = """
 Student schedule for %s:
 
- Time               | Class                   | Room""") % student.name()
-
+ Time               | Class                   | Room""" % student.name()
 
         regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted')
         classes = sorted([x.section.parent_class for x in regs])
@@ -213,12 +211,12 @@ Student schedule for %s:
         for cls in classes:
             rooms = cls.prettyrooms()
             if len(rooms) == 0:
-                rooms = six.u('N/A')
+                rooms = 'N/A'
             else:
-                rooms = six.u(", ").join(rooms)
+                rooms = ", ".join(rooms)
 
-            schedule += six.u("""
-%s|%s|%s""") % (six.u(",").join(cls.friendly_times()).ljust(20),
+            schedule += """
+%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
                cls.title.ljust(25),
                rooms)
 

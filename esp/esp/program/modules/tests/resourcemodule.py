@@ -36,7 +36,6 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
 import re
-import six
 
 class ResourceModuleTest(ProgramFrameworkTest):
     ## This test is very incomplete.
@@ -65,7 +64,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
 
         #   Search for matching items in the response and ensure they are consistent
-        results = re.findall(regexp, six.text_type(response.content, encoding='UTF-8'))
+        results = re.findall(regexp, str(response.content, encoding='UTF-8'))
         displayed_names = {x[index] for x in results}
 
         return displayed_names

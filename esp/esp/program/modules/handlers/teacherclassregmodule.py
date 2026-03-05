@@ -1,7 +1,4 @@
 
-import six
-from six.moves import map
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -101,7 +98,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['open_class_category'] = self.program.open_class_category.category
         return context
 
-
     def noclasses(self):
         """ Returns true of there are no classes in this program """
         if hasattr(self, 'user'):
@@ -177,7 +173,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 result[key] = additional_qs[key]
         else:
             result = {k: ESPUser.objects.filter(v).distinct()
-                      for k, v in six.iteritems(qobjects)}
+                      for k, v in qobjects.items()}
             for key in additional_qs:
                 result[key] = ESPUser.objects.filter(additional_qs[key]).distinct()
 
@@ -735,7 +731,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     def editclass(self, request, tl, one, two, module, extra, prog):
         try:
             int(extra)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Invalid integer for class ID! Got `{}`".format(extra), log=False)
 
         classes = ClassSubject.objects.filter(id = extra)
@@ -810,7 +806,6 @@ class TeacherClassRegModule(ProgramModuleObj):
     )
     def makeopenclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None, action = 'createopenclass')
-
 
     def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None, action = 'create', populateonly = False):
         """
@@ -994,6 +989,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['qsd_name'] = 'classedit_' + context['classtype']
 
         context['manage'] = False
+        context['sectionNums'] = prog.countTimeSlots()
+
         if ((request.method == "POST" and request.POST.get('manage') == 'manage') or
             (request.method == "GET" and request.GET.get('manage') == 'manage') or
             (tl == 'manage' and 'class' in context)) and request.user.isAdministrator():
@@ -1003,7 +1000,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                 context['flag_types'] = ClassFlagType.get_flag_types(self.program)
 
         return render_to_response(self.baseDir() + 'classedit.html', request, context)
-
 
     @aux_call
     @needs_teacher
@@ -1018,7 +1014,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.views.json_utils import JsonResponse
+        from django.http import JsonResponse
 
         Q_teacher = Q(groups__name="Teacher")
 
@@ -1065,13 +1061,13 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             obj_list = []
 
-        return JsonResponse(obj_list)
+        return JsonResponse(obj_list, safe=False)
 
     def get_msg_vars(self, user, key):
         if key == 'full_classes':
             return user.getFullClasses_pretty(self.program)
 
-        return six.u('')
+        return ''
 
     class Meta:
         proxy = True

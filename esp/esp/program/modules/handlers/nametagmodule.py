@@ -1,5 +1,4 @@
 
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,7 +45,6 @@ from esp.utils.web import render_to_response
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
-
 
 class NameTagModule(ProgramModuleObj):
     doc = """This module allows you to generate a bunch of IDs for users that match specific criteria."""
@@ -184,7 +182,6 @@ class NameTagModule(ProgramModuleObj):
                                   'name' : arruser[0].strip(),
                                   'id'   : ''})
 
-
         elif idtype == 'blank':
             users = []
             user_title = request.POST['blanktitle']
@@ -197,9 +194,7 @@ class NameTagModule(ProgramModuleObj):
                    'programname': request.POST['progname']
                    }
 
-
         numperpage = 6
-
 
         expanded = [[] for i in range(numperpage)]
 
