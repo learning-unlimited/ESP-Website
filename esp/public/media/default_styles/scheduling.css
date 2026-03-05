@@ -78,6 +78,17 @@ td.selected-moderator {
     opacity: .9;
 }
 
+.moderator-only-unavailable-cell {
+    background: repeating-linear-gradient(
+                45deg,
+                #555555,
+                #555555 10px,
+                #5b9bd5 10px,
+                #5b9bd5 15px
+    );
+    opacity: .9;
+}
+
 td.moderator-available-cell, th.moderator-available-cell {
     background: #32cd32 !important;
     opacity: .9 !important;
