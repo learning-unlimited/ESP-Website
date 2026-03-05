@@ -1,9 +1,9 @@
 name: Label High-Volume PR Contributors
 
 on:
-  schedule:
-    - cron: '0 9 * * *'  # Every day at 9:00 AM UTC
-  workflow_dispatch:        # Allow manual runs
+  pull_request:
+    types: [opened, closed]
+  workflow_dispatch:
 
 jobs:
   label-high-volume-prs:
@@ -16,7 +16,7 @@ jobs:
             const maxOpenPRs = 5;
             const labelName = 'too-many-open-prs';
             const labelColor = 'e11d48';
-            const labelDescription = 'Author has more than 5 open PRs in this repo';
+            const labelDescription = 'This is over the 5 PRs per contributor limit';
 
             // Ensure the label exists
             try {
@@ -36,7 +36,10 @@ jobs:
               core.info(`Created label "${labelName}"`);
             }
 
-            // Fetch all open PRs
+            // Only check the author who triggered the event
+            const author = context.payload.pull_request.user.login;
+
+            // Fetch all open PRs by this author
             const openPRs = await github.paginate(github.rest.pulls.list, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -44,49 +47,38 @@ jobs:
               per_page: 100
             });
 
-            // Group PRs by author
-            const prsByAuthor = {};
-            for (const pr of openPRs) {
-              const author = pr.user.login;
-              if (!prsByAuthor[author]) prsByAuthor[author] = [];
-              prsByAuthor[author].push(pr);
-            }
+            const authorPRs = openPRs.filter(pr => pr.user.login === author);
+            authorPRs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-            // Add or remove labels as needed
-            for (const [author, prs] of Object.entries(prsByAuthor)) {
-              // Sort oldest first so the newest PRs (beyond the limit) come last
-              prs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            const allowed = authorPRs.slice(0, maxOpenPRs);
+            const excess = authorPRs.slice(maxOpenPRs);
 
-              const allowed = prs.slice(0, maxOpenPRs);
-              const excess = prs.slice(maxOpenPRs);
-
-              // Label the newer PRs beyond the limit
-              for (const pr of excess) {
-                const hasLabel = pr.labels.some(l => l.name === labelName);
-                if (!hasLabel) {
-                  await github.rest.issues.addLabels({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: pr.number,
-                    labels: [labelName]
-                  });
-                  core.info(`Added label to PR #${pr.number} (${author}: ${prs.length} open)`);
-                }
-              }
-
-              // Remove the label from the older PRs within the limit
-              for (const pr of allowed) {
-                const hasLabel = pr.labels.some(l => l.name === labelName);
-                if (hasLabel) {
-                  await github.rest.issues.removeLabel({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: pr.number,
-                    name: labelName
-                  });
-                  core.info(`Removed label from PR #${pr.number} (${author}: ${prs.length} open)`);
-                }
+            // Label the newer PRs beyond the limit
+            for (const pr of excess) {
+              const hasLabel = pr.labels.some(l => l.name === labelName);
+              if (!hasLabel) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  labels: [labelName]
+                });
+                core.info(`Added label to PR #${pr.number} (${author}: ${authorPRs.length} open)`);
               }
             }
 
-            core.info('Done. PR label check complete.');
+            // Remove the label from the older PRs within the limit
+            for (const pr of allowed) {
+              const hasLabel = pr.labels.some(l => l.name === labelName);
+              if (hasLabel) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name: labelName
+                });
+                core.info(`Removed label from PR #${pr.number} (${author}: ${authorPRs.length} open)`);
+              }
+            }
+
+            core.info(`Done. ${author} has ${authorPRs.length} open PR(s).`);
