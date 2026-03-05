@@ -41,7 +41,7 @@
             <input type="hidden" name="section_id" value="{{ section.id }}" />
             {% if not errormsg %}
                 <div id="addbutton_fillslot_sec{{ section.id }}"><button type="submit" class="btn" name="action" id="submitbutton{{ class.id }}">
-                    Click here to add this class
+                    Add this class
                 </button></div>
             {% else %}
               <input type="submit" class="btn-disabled" name="action" value="{{ errormsg }}" id="submitbutton{{ sec.id }}" disabled />

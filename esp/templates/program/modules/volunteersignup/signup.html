@@ -33,21 +33,20 @@ $j(document).ready(function () {
 
     $j("#confirm_cancellation_dialog").dialog({
         autoOpen: false,
-        buttons: [ { text: "Confirm", click: confirm_cancellation }, {text: "Cancel", click: decline_cancellation} ]
+        buttons: [
+            { text: "Confirm", click: confirm_cancellation },
+            { text: "Cancel", click: decline_cancellation }
+        ]
     });
+
     $j("#volunteer_form_submit").click(function (event) {   
-        //  Check if the user has previous requests and is asking to clear all of them
         var checkboxes_checked = $j("input[name=requests]:checked");
         if (($j("input[name=has_previous_requests]").val() == "True") &&
             (checkboxes_checked.length == 0)) {
-            //  If so, prevent the form from being submitted - we want a confirmation
             event.preventDefault();
-            
-            //  Show the confirmation dialog
             $j("#confirm_cancellation_dialog").dialog("open");
         }
         else {
-            //  They are not cancelling all shifts; submit the form normally
             $j("#volunteer_shift_form").submit();
         }
     });
@@ -56,7 +55,6 @@ $j(document).ready(function () {
         $j(this).prev("label").addClass("required");
     });
 });
-
 </script>
 {% endblock %}
 
@@ -67,13 +65,15 @@ $j(document).ready(function () {
 <div class="alert alert-success">
 <h3>Thanks!</h3>
 <p>
-Thank you, {{ complete_name }}, for volunteering! You will receive reminder emails on {{ complete_email }} as the program nears. (And, we have your phone number, {{ complete_phone }}, in case there are any emergencies or we need to contact you urgently.)
+Thank you, {{ complete_name }}, for volunteering! You will receive reminder emails on {{ complete_email }} as the program nears.
+(And, we have your phone number, {{ complete_phone }}, in case there are any emergencies or we need to contact you urgently.)
 </p>
 <p>If you would like to change your volunteer commitments, please fill out the form below again.</p>
 </div>
 {% load render_qsd %}
 {% render_inline_program_qsd program "volunteer_complete" %}
 {% endif %}
+
 {% if cancelled %}
 <div class="alert alert-info">
 <h3>Volunteer Shifts Cancelled</h3>
@@ -94,66 +94,108 @@ The directors have been notified that you are no longer able to volunteer at {{ 
         {{ hidden }}
     {% endfor %}
     <center>
-      <p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</p>
+      <p>
+      {% if request.user.email %}
+        Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.
+      {% else %}
+        If you have an account, please 
+        <a href="/myesp/login?next={{ request.path }}">log in and return to this page</a>.
+      {% endif %}
+      </p>
+
       {% if form.errors %}
         <div class="alert alert-danger">
             <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-                Please correct the errors in the form.
+            Please correct the errors in the form.
         </div>
       {% endif %}
+
       <div class="noclick">
         {{ form.name.label_tag }}
         {{ form.name.errors }}
         {{ form.name }}
+
         {{ form.email.label_tag }}
         {{ form.email.errors }}
         {{ form.email }}
+
         {{ form.phone.label_tag }}
         {{ form.phone.errors }}
         {{ form.phone }}
+
         {% if form.shirt_size %}
-        {{ form.shirt_size.label_tag }}
-        {{ form.shirt_size.errors }}
-        {{ form.shirt_size }}
+          {{ form.shirt_size.label_tag }}
+          {{ form.shirt_size.errors }}
+          {{ form.shirt_size }}
         {% endif %}
+
         {% if form.shirt_type %}
-        {{ form.shirt_type.label_tag }}
-        {{ form.shirt_type.errors }}
-        {{ form.shirt_type }}
+          {{ form.shirt_type.label_tag }}
+          {{ form.shirt_type.errors }}
+          {{ form.shirt_type }}
         {% endif %}
+
         {% if form.comments %}
-        {{ form.comments.label_tag }}
-        <span style="font-size: smaller">{{ form.comments.help_text }}</span>
-        {{ form.comments.errors }}
-        {{ form.comments }}
+          {{ form.comments.label_tag }}
+          <span style="font-size: smaller">{{ form.comments.help_text }}</span>
+          {{ form.comments.errors }}
+          {{ form.comments }}
         {% endif %}
       </div>
+
       <br>
+
       <div>
-        Please sign up to volunteer for specific timeslots by selecting them below. Hovering over a timeslot will display details for that timeslot.
+        Please sign up to volunteer for specific timeslots by selecting them below.
+        Hovering over a timeslot will display details for that timeslot.
         <br><br>
+
         {% include "program/modules/availability.html" %}
+
         <div hidden id="checkboxes">
-          {% for request in form.requests %}
-            <input {% if request.data.selected %}checked {% endif %}id="{{ request.id_for_label }}" name="{{ request.data.name }}" type="checkbox" value="{{ request.data.value }}" data-hover="{{ request.data.label }}">
+          {% for shift in form.requests %}
+            <input
+              {% if shift.data.selected %}checked{% endif %}
+              id="{{ shift.id_for_label }}"
+              name="{{ shift.data.name }}"
+              type="checkbox"
+              value="{{ shift.data.value }}"
+              data-hover="{{ shift.data.label }}">
           {% endfor %}
         </div>
+
         {{ form.requests.errors }}
+
         <br><br>
+
         <div class="noclick">
-        {{ form.confirm }} {{ form.confirm.help_text }}
+          {{ form.confirm }} {{ form.confirm.help_text }}
         </div>
+
         {{ form.non_field_errors }}
+
         <br><br>
-        <input style="display: block" id="volunteer_form_submit" type="button" value="Submit" class="btn btn-primary" />
+
+        <input
+          style="display: block"
+          id="volunteer_form_submit"
+          type="button"
+          value="Submit"
+          class="btn btn-primary" />
       </div>
     </center>
   </form>
 </div>
-<div id="confirm_cancellation_dialog" title="Confirm Cancellation">You have unchecked all volunteer shifts.  If you must cancel your volunteer commitments, please click "Confirm" to notify the directors.  Otherwise, click "Cancel".</div>
+
+<div id="confirm_cancellation_dialog" title="Confirm Cancellation">
+You have unchecked all volunteer shifts.
+If you must cancel your volunteer commitments, please click "Confirm" to notify the directors.
+Otherwise, click "Cancel".
+</div>
 
 <div class="summary_div" hidden>
   <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
   <span class="summary" style="background-color: #00FF00;">Available</span>
 </div>
-{% endblock %}
+
+{% endblock %}  
