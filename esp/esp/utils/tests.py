@@ -7,7 +7,7 @@ import datetime
 import doctest
 try:
     import pylibmc as memcache
-except:
+except ImportError:
     import memcache
 import logging
 logger = logging.getLogger(__name__)
@@ -91,7 +91,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
         self.tryImport("openpyxl")  # Used in our giant statistics spreadsheet-generating code
         self.tryImport("form_utils")     #Used to create better forms.
-        self.assert_(not self._failed_import)
+        self.assertFalse(self._failed_import)
 
         # Make sure that we're actually using pylibmc.
         # Note that this requires a patch to Django (or Django version 1.3 or later).
@@ -99,9 +99,9 @@ class DependenciesTestCase(unittest.TestCase):
         from pylibmc import Client
         from django.core.cache import cache
         if hasattr(cache, "_cache"):
-            self.assert_(isinstance(cache._cache, Client))
+            self.assertTrue(isinstance(cache._cache, Client))
         elif hasattr(cache, "_wrapped_cache") and hasattr(cache._wrapped_cache, "_cache"):
-            self.assert_(isinstance(cache._wrapped_cache._cache, Client))
+            self.assertTrue(isinstance(cache._wrapped_cache._cache, Client))
 
         self.tryExecutable("latex")  # Used for a whole pile of program printables, as well as inline LaTeX
         self.tryExecutable("dvips")  # Used to convert LaTeX output (.dvi) to .ps files
@@ -110,7 +110,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryExecutable("ps2pdf")  # Used to convert LaTeX output (.dvi) to .pdf files (must go to .ps first because we use some LaTeX packages that depend on Postscript)
         self.tryExecutable("inkscape")  # Used to render LaTeX output (once converted to .pdf) to .svg image files
 
-        self.assert_(not self._exe_not_found)
+        self.assertFalse(self._exe_not_found)
 
 class MemcachedTestCase(unittest.TestCase):
     """
@@ -159,7 +159,7 @@ class TemplateOverrideTest(DjangoTestCase):
             self.get_response_for_template(template_name)
         except TemplateDoesNotExist:
             template_error = True
-        except:
+        except Exception:
             logger.info('Unexpected error fetching nonexistent template')
             raise
         self.assertTrue(template_error)
@@ -439,6 +439,89 @@ class QueryBuilderTest(DjangoTestCase):
                          {'reactClass': 'TextInput', 'name': 'a db field'})
         self.assertEqual(str(text_input.as_q("foo bar baz")),
                          str(Q(a_db_field="foo bar baz")))
+
+
+class StripBase64ImagesTest(DjangoTestCase):
+    """Tests for esp.utils.sanitize.strip_base64_images (#3612)."""
+
+    def setUp(self):
+        from esp.utils.sanitize import strip_base64_images
+        self.strip = strip_base64_images
+
+    def test_no_images_unchanged(self):
+        html = '<p>Hello world</p><img src="/media/photo.png">'
+        result, count = self.strip(html)
+        self.assertEqual(result, html)
+        self.assertEqual(count, 0)
+
+    def test_none_returns_none(self):
+        result, count = self.strip(None)
+        self.assertIsNone(result)
+        self.assertEqual(count, 0)
+
+    def test_empty_returns_empty(self):
+        result, count = self.strip('')
+        self.assertEqual(result, '')
+        self.assertEqual(count, 0)
+
+    def test_single_base64_stripped(self):
+        html = '<p>Before</p><img src="data:image/png;base64,iVBORw0KGgo"/><p>After</p>'
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertNotIn('data:', result)
+        self.assertIn('Before', result)
+        self.assertIn('After', result)
+
+    def test_multiple_base64_stripped(self):
+        html = (
+            '<img src="data:image/png;base64,AAA"/>'
+            '<img src="data:image/jpeg;base64,BBB"/>'
+            '<img src="data:image/gif;base64,CCC"/>'
+        )
+        result, count = self.strip(html)
+        self.assertEqual(count, 3)
+        self.assertNotIn('data:', result)
+
+    def test_normal_images_preserved(self):
+        html = '<img src="/media/photo.png"><img src="https://example.com/img.jpg">'
+        result, count = self.strip(html)
+        self.assertEqual(result, html)
+        self.assertEqual(count, 0)
+
+    def test_mixed_normal_and_base64(self):
+        html = '<img src="/media/photo.png"><img src="data:image/png;base64,AAA"/><img src="https://example.com/img.jpg">'
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertIn('/media/photo.png', result)
+        self.assertIn('https://example.com/img.jpg', result)
+        self.assertNotIn('data:', result)
+
+    def test_single_quoted_src(self):
+        html = "<img src='data:image/png;base64,AAA'/>"
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertNotIn('data:', result)
+
+    def test_img_with_extra_attributes(self):
+        html = '<img width="300" src="data:image/png;base64,AAA" alt="screenshot" style="border:1px solid">'
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertNotIn('data:', result)
+        self.assertNotIn('width', result)
+
+    def test_css_background_data_uri_stripped(self):
+        html = '<div style="background-image: url(data:image/png;base64,AAA)">text</div>'
+        result, count = self.strip(html)
+        self.assertEqual(count, 1)
+        self.assertNotIn('data:image', result)
+        self.assertIn('url()', result)
+        self.assertIn('text', result)
+
+    def test_fast_path_no_data_colon(self):
+        html = '<p>No images at all, just some text with a colon: here.</p>'
+        result, count = self.strip(html)
+        self.assertEqual(result, html)
+        self.assertEqual(count, 0)
 
 
 def suite():
