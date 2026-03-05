@@ -156,8 +156,49 @@ form.form_stacked fieldset{
     margin-left: 5px;
 }
 
-form input[type="text"], form input[type="url"], form input[type="email"], form input[type="number"], form input[type="password"], form textarea, form select, form .uneditable-input {
+/* Improved form field visibility (issue #1110) */
+form input[type="text"],
+form input[type="url"],
+form input[type="email"],
+form input[type="number"],
+form input[type="password"],
+form textarea,
+form select,
+form .uneditable-input {
 	width: auto;
+	border: 1px solid #767676;
+	background-color: #fff;
+	color: #222;
+	padding: 6px 8px;
+	border-radius: 3px;
+	transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+form input[type="text"]:focus,
+form input[type="url"]:focus,
+form input[type="email"]:focus,
+form input[type="number"]:focus,
+form input[type="password"]:focus,
+form textarea:focus,
+form select:focus {
+	border-color: #333;
+	box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+	outline: 2px solid transparent;
+	outline-offset: 1px;
+}
+
+@media (forced-colors: active) {
+	form input[type="text"]:focus,
+	form input[type="url"]:focus,
+	form input[type="email"]:focus,
+	form input[type="number"]:focus,
+	form input[type="password"]:focus,
+	form textarea:focus,
+	form select:focus {
+		box-shadow: none;
+		outline: 2px solid CanvasText;
+		outline-offset: 1px;
+	}
 }
 
 div.required {
