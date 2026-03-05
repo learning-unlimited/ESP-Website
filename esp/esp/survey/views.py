@@ -446,7 +446,6 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
     return render_to_response(template, request, context)
 
 # To be replaced with something more useful, eventually.
-@login_required
 def top_classes(request, tl, program, instance):
     try:
         prog = Program.by_prog_inst(program, instance)
@@ -473,55 +472,191 @@ def top_classes(request, tl, program, instance):
                                                                                     in locals() else ''), log=False)
 
     if len(surveys) > 1:
-        return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
+        # if request.POST, then we shouldn't have more than one survey
+        return render_to_response(
+            'survey/choose_survey.html',
+            request,
+            {'surveys': surveys, 'error': request.POST}
+        )
 
     survey = surveys[0]
 
     if tl == 'manage':
         classes = prog.classes()
-        rating_questions = survey.questions.filter(name__contains='overall rating')
-        if len(rating_questions) < 1:
-            raise ESPError('Couldn\'t find an "overall rating" question in this survey.', log=False)
-        rating_question = rating_questions[0]
 
-        rating_cut = 0.0
-        try:
-            rating_cut = float( rating_question.get_params()['number_of_ratings'] ) - 1
-        except ValueError:
-            pass
-        if 'rating_cut' in request.GET:
+        # Try to find an "overall rating" question first
+        rating_questions = survey.questions.filter(
+            name__contains='overall rating'
+        )
+
+        # If no rating question, try to find a "Favorite Class" question
+        favorite_questions = survey.questions.filter(
+            question_type__name='Favorite Class'
+        )
+
+        if len(rating_questions) < 1 and len(favorite_questions) < 1:
+            raise ESPError(
+                'Couldn\'t find an "overall rating" or '
+                '"Favorite Class" question in this survey.',
+                log=False
+            )
+
+        # Determine which type of question we're working with
+        use_favorite_class = (
+            len(rating_questions) < 1 and len(favorite_questions) >= 1
+        )
+
+        if use_favorite_class:
+            # Handle Favorite Class questions
+            favorite_question = favorite_questions[0]
+
+            num_cut = 1
+            if 'num_cut' in request.GET:
+                try:
+                    num_cut = int(request.GET['num_cut'])
+                except ValueError:
+                    pass
+
+            categories = prog.class_categories.all().order_by(
+                'category'
+            )
+
+            # Count votes for each class
+            class_votes = {}
+            for answer in Answer.objects.filter(
+                question=favorite_question
+            ):
+                # Favorite Class answers store class IDs
+                if isinstance(answer.answer, list):
+                    class_ids = answer.answer
+                else:
+                    class_ids = [answer.answer]
+
+                for class_id in class_ids:
+                    try:
+                        class_id = int(class_id)
+                        if class_id in class_votes:
+                            class_votes[class_id] += 1
+                        else:
+                            class_votes[class_id] = 1
+                    except (ValueError, TypeError):
+                        continue
+
+            # Build perclass_data from vote counts
+            perclass_data = []
+            for cls in classes:
+                votes = class_votes.get(cls.id, 0)
+                if votes < num_cut:
+                    continue
+
+                teachers = list(cls.get_teachers())
+                class_data = {
+                    'class': cls,
+                    'numratings': votes,
+                    # For favorite class, "avg" is the vote count
+                    'avg': votes,
+                    'teacher': (
+                        teachers[0] if len(teachers) > 0 else None
+                    ),
+                    'numteachers': max(len(teachers), 1)
+                }
+                if len(teachers) > 1:
+                    class_data['coteachers'] = teachers[1:]
+                perclass_data.append(class_data)
+
+            # Sort by vote count (descending)
+            perclass_data.sort(key=lambda x: x['avg'], reverse=True)
+
+            context = {
+                'survey': survey,
+                'program': prog,
+                'perclass_data': perclass_data,
+                # Not applicable for favorite class
+                'rating_cut': 0,
+                'num_cut': num_cut,
+                'categories': categories,
+                'is_favorite_class': True
+            }
+        else:
+            # Handle overall rating questions (original logic)
+            rating_question = rating_questions[0]
+
+            rating_cut = 0.0
             try:
-                rating_cut = float( request.GET['rating_cut'] )
+                rating_cut = float(
+                    rating_question.get_params()['number_of_ratings']
+                ) - 1
             except ValueError:
                 pass
+            if 'rating_cut' in request.GET:
+                try:
+                    rating_cut = float(request.GET['rating_cut'])
+                except ValueError:
+                    pass
 
-        num_cut = 1
-        if 'num_cut' in request.GET:
-            try:
-                num_cut = int( request.GET['num_cut'] )
-            except ValueError:
-                pass
+            num_cut = 1
+            if 'num_cut' in request.GET:
+                try:
+                    num_cut = int(request.GET['num_cut'])
+                except ValueError:
+                    pass
 
-        categories = prog.class_categories.all().order_by('category')
+            categories = prog.class_categories.all().order_by(
+                'category'
+            )
 
-        section_ct=ContentType.objects.get(app_label="program", model="classsection")
+            section_ct = ContentType.objects.get(
+                app_label="program",
+                model="classsection"
+            )
 
-        perclass_data = []
-        initclass_data = [ { 'class': cls, 'ratings': [ float(x.answer) for sec in cls.get_sections() for x in Answer.objects.filter(object_id=sec.id, content_type=section_ct, question=rating_question)] } for cls in classes ]
-        for c in initclass_data:
-            c['numratings'] = len(c['ratings'])
-            if c['numratings'] < num_cut:
-                continue
-            c['avg'] = sum(c['ratings']) * 1.0 / c['numratings']
-            if c['avg'] < rating_cut:
-                continue
-            teachers = list(c['class'].get_teachers())
-            c['teacher'] = teachers[0] if len(teachers) > 0 else None
-            c['numteachers'] = max(len(teachers), 1) #in case there are no teachers
-            if c['numteachers'] > 1:
-                c['coteachers'] = teachers[1:]
-            del c['ratings']
-            perclass_data.append(c)
-    context = { 'survey': survey, 'program': prog, 'perclass_data': perclass_data, 'rating_cut': rating_cut, 'num_cut': num_cut, 'categories': categories }
+            perclass_data = []
+            initclass_data = [
+                {
+                    'class': cls,
+                    'ratings': [
+                        float(x.answer)
+                        for sec in cls.get_sections()
+                        for x in Answer.objects.filter(
+                            object_id=sec.id,
+                            content_type=section_ct,
+                            question=rating_question
+                        )
+                    ]
+                }
+                for cls in classes
+            ]
+            for c in initclass_data:
+                c['numratings'] = len(c['ratings'])
+                if c['numratings'] < num_cut:
+                    continue
+                c['avg'] = sum(c['ratings']) * 1.0 / c['numratings']
+                if c['avg'] < rating_cut:
+                    continue
+                teachers = list(c['class'].get_teachers())
+                c['teacher'] = (
+                    teachers[0] if len(teachers) > 0 else None
+                )
+                # in case there are no teachers
+                c['numteachers'] = max(len(teachers), 1)
+                if c['numteachers'] > 1:
+                    c['coteachers'] = teachers[1:]
+                del c['ratings']
+                perclass_data.append(c)
 
-    return render_to_response('survey/top_classes.html', request, context)
+            context = {
+                'survey': survey,
+                'program': prog,
+                'perclass_data': perclass_data,
+                'rating_cut': rating_cut,
+                'num_cut': num_cut,
+                'categories': categories,
+                'is_favorite_class': False
+            }
+
+    return render_to_response(
+        'survey/top_classes.html',
+        request,
+        context
+    )
+
