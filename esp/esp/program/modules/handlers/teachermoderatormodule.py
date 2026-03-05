@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.program.models import ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline, needs_admin, aux_call
 from esp.program.modules.forms.moderate import ModeratorForm
@@ -86,7 +85,7 @@ class TeacherModeratorModule(ProgramModuleObj):
     @staticmethod
     def moderatorlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.views.json_utils import JsonResponse
+        from django.http import JsonResponse
 
         queryset = prog.teachers()['will_moderate']
 
@@ -131,7 +130,7 @@ class TeacherModeratorModule(ProgramModuleObj):
         else:
             obj_list = []
 
-        return JsonResponse(obj_list)
+        return JsonResponse(obj_list, safe=False)
 
     class Meta:
         proxy = True

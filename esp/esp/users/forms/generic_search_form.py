@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import forms
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.users.models import ESPUser
@@ -16,7 +15,7 @@ class ApprovedTeacherSearchForm(forms.Form):
         help_text='Select a teacher.', ajax_func='ajax_autocomplete_approved_teacher')
     def __init__(self,*args,**kwargs):
         prog = kwargs.pop('prog', None)
-        super(ApprovedTeacherSearchForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if prog:
             self.fields['target_user'].widget.prog = prog.id
 

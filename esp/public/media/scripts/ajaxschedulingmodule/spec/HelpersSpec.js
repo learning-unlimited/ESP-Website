@@ -11,7 +11,7 @@ describe("Helpers", function(){
             });
 
         describe("helpers_hex_string_to_color", function() {
-            it("returns the corect color", function() {
+            it("returns the correct color", function() {
                 var hex_string = "#55ff33";
                 var color = helpers_hex_string_to_color(hex_string);
                 expect(color[0]).toEqual(85);

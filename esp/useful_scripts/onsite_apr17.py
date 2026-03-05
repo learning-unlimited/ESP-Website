@@ -1,12 +1,9 @@
-from __future__ import absolute_import
-from __future__ import print_function
 from esp.program.models import *
 from esp.datatree.models import *
 from esp.users.models import *
 
 import string
 from io import open
-from six.moves import range
 
 def ascii_sanitize(s):
     return [x for x in s if x in string.printable]

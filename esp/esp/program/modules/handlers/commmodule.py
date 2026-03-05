@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,8 +45,33 @@ from django.template import Template
 from django.template import Context as DjangoContext
 from django.template.loader import render_to_string
 from esp.middleware import ESPError
+from esp.utils.sanitize import strip_base64_images
 
 import re
+
+# Match /learn/, /teach/, or /volunteer/ + ProgramName/Instance (program url = two path segments)
+_PROGRAM_URL_PATTERN = re.compile(
+    r'(?:/learn|/teach|/volunteer)/([^/\s\'"<>]+/[^/\s\'"<>]+)',
+    re.IGNORECASE
+)
+
+
+def _program_urls_in_text(text, current_program_url):
+    """
+    Find program URLs in text (e.g. /learn/Splash/2024_Winter/...) that refer to
+    a different program than current_program_url (e.g. "Splash/2025_Spring").
+    Returns a list of unique program url strings (e.g. ["Splash/2024_Winter"]).
+    """
+    if not text or not current_program_url:
+        return []
+    current = current_program_url.strip().rstrip('/')
+    found = set()
+    for match in _PROGRAM_URL_PATTERN.finditer(text):
+        prog_url = match.group(1).strip().rstrip('/')
+        if prog_url != current:
+            found.add(prog_url)
+    return sorted(found)
+
 
 class CommModule(ProgramModuleObj):
     doc = """Email users that match specific search criteria."""
@@ -76,6 +100,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['listcount'],
                                               request.POST['subject'],
                                               request.POST['body']    ]
+        body, _ = strip_base64_images(body)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
@@ -104,7 +129,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             filterid = int(filterid)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Corrupted POST data!  Please contact us at" +
             "websupport@learningu.org and tell us how you got this error," +
             "and we'll look into it.")
@@ -113,7 +138,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             firstuser = userlist[0]
-        except:
+        except IndexError:
             raise ESPError("You seem to be trying to email 0 people!  " +
             "Please go back, edit your search, and try again.")
 
@@ -134,6 +159,12 @@ class CommModule(ProgramModuleObj):
                        'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
         rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
+        current_program_url = self.program.getUrlBase()
+        other_program_urls = _program_urls_in_text(
+            (subject or '') + ' ' + (body or ''),
+            current_program_url
+        )
+
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
                                                'sendto_fn_name': sendto_fn_name,
@@ -145,7 +176,8 @@ class CommModule(ProgramModuleObj):
                                                'public_view': public_view,
                                                'body': body,
                                                'template': template,
-                                               'rendered_text': rendered_text})
+                                               'rendered_text': rendered_text,
+                                               'other_program_urls': other_program_urls})
 
     @staticmethod
     def approx_num_of_recipients(filterObj, sendto_fn):
@@ -183,17 +215,45 @@ class CommModule(ProgramModuleObj):
                                     request.POST['replyto'],
                                     request.POST['subject'],
                                     request.POST['body']    ]
+        body, _ = strip_base64_images(body)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
+        template = request.POST.get('template', 'default')
+
+        current_program_url = self.program.getUrlBase()
+        other_program_urls = _program_urls_in_text(
+            (subject or '') + ' ' + (body or ''),
+            current_program_url
+        )
+        if other_program_urls and not request.POST.get('confirm_send_with_other_program_links'):
+            rendered_text = render_to_string('email/{}_email.html'.format(template),
+                                             {'msgbody': body})
+            listcount = request.POST.get('listcount', '')
+            selected = request.POST.get('selected', '')
+            return render_to_response(self.baseDir() + 'preview.html', request, {
+                'filterid': filterid,
+                'sendto_fn_name': sendto_fn_name,
+                'listcount': listcount,
+                'selected': selected,
+                'subject': subject,
+                'from': fromemail,
+                'replyto': replytoemail,
+                'public_view': public_view,
+                'body': body,
+                'template': template,
+                'rendered_text': rendered_text,
+                'other_program_urls': other_program_urls,
+                'confirm_send_required': True,
+                'program': self.program,
+            })
 
         # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
-        template = request.POST.get('template', 'default')
         rendered_text = render_to_string('email/{}_email.html'.format(template),
                                         {'msgbody': body})
 
         try:
             filterid = int(filterid)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Corrupted POST data!  Please contact us at " +
             "websupport@learningu and tell us how you got this error, " +
             "and we'll look into it.")
