@@ -315,6 +315,14 @@ class TeacherBioUrlTest(ProgramFrameworkTest):
     def setUp(self):
         super().setUp()
         self.teacher = self.teachers[0]
+        # Create TeacherBio objects for testing
+        from esp.program.models import TeacherBio
+        for teacher in self.teachers:
+            bio = TeacherBio.objects.create(
+                user=teacher,
+                bio='Test bio for ' + teacher.username,
+                slugbio='Test Teacher'
+            )
 
     def test_canonical_bio_view(self):
         """Canonical /teach/teachers/<username>/bio.html should return 200."""
