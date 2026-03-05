@@ -41,6 +41,21 @@ import os.path
 from django.conf import settings
 from django.http import Http404
 
+def _normalize_lines_for_diff(text):
+    """Normalize text to a list of lines without trailing newlines for reliable diff.
+
+    Uses splitlines() so that both file content and DB content are compared
+    the same way. This avoids the bug where original lines had '\\n' (from
+    list(file)) and override lines did not (from content.split('\\n')), making
+    every line appear changed.
+    """
+    if text is None:
+        return []
+    # Normalize line endings so \r\n and \r are treated like \n
+    normalized = text.replace('\r\n', '\n').replace('\r', '\n')
+    return normalized.splitlines()
+
+
 @admin_required
 def diff_templateoverride(request, template_id):
     template_dir = os.path.join(settings.PROJECT_ROOT, 'templates')
@@ -50,16 +65,20 @@ def diff_templateoverride(request, template_id):
     else:
         raise Http404
 
-    override_lines = override_obj.content.split('\n')
+    # Use normalized lines (no trailing newlines) so the diff compares logical
+    # lines and does not show the whole file as changed due to line-ending mismatch.
+    override_lines = _normalize_lines_for_diff(override_obj.content)
 
     original_path = os.path.join(template_dir, override_obj.name)
-    with open(original_path) as original_file:
-        original_lines = list(original_file)
+    if not os.path.isfile(original_path):
+        raise Http404('Original template file not found: %s' % override_obj.name)
+    with open(original_path, encoding='utf-8', errors='replace') as original_file:
+        original_lines = _normalize_lines_for_diff(original_file.read())
 
     context = {}
     context['name'] = override_obj.name
     context['version'] = override_obj.version
     context['diff'] = HtmlDiff().make_table(
             original_lines, override_lines,
-            'original', 'override (version {})'.format(template_id))
+            'original', 'override (id {}, version {})'.format(template_id, override_obj.version))
     return render_to_response('utils/diff_templateoverride.html', request, context)
