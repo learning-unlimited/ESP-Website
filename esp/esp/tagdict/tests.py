@@ -70,6 +70,31 @@ class TagTest(TestCase):
         self.assertTrue(Tag.getTag("test"), "Error:  Setting a tag with an unspecified value must yield a tag whose value evaluates to True!")
         self.assertNotEqual(Tag.getTag("test", default="the default"), "the default", "If the tag is set, even to EMPTY_TAG, we shouldn't return the default.")
 
+    def testTagCleanValidation(self):
+        '''Test that Tag.clean() raises ValidationError if GenericForeignKey is partial.'''
+        from django.core.exceptions import ValidationError
+        
+        # Both set -> OK
+        user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(user)
+        t1 = Tag(key="test1", value="val1", content_type=ct, object_id=user.id)
+        t1.clean()  # Should not raise
+
+        # Both null -> OK
+        t2 = Tag(key="test2", value="val2", content_type=None, object_id=None)
+        t2.clean()  # Should not raise
+
+        # content_type set, object_id null -> ValidationError
+        t3 = Tag(key="test3", value="val3", content_type=ct, object_id=None)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            t3.clean()
+
+        # content_type null, object_id set -> ValidationError
+        t4 = Tag(key="test4", value="val4", content_type=None, object_id=user.id)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            t4.clean()
+
     def testTagWithTarget(self):
         '''Test getting and setting of tags with targets.'''
         # Delete any existing tags that might interfere

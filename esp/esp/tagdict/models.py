@@ -34,6 +34,12 @@ class Tag(models.Model):
         # Django can't currently do this, so it's enforced by custom SQL.
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
 
+    def clean(self):
+        super().clean()
+        if (self.content_type_id is None) != (self.object_id is None):
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Both parts of the GenericForeignKey (content_type and object_id) must be either both null or both set.")
+
     def __str__(self):
         return "%s: %s (%s)" % (self.key, self.value, self.target)
 
