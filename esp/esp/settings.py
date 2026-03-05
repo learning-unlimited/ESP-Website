@@ -51,6 +51,14 @@ from .django_settings import *
 # Import system-specific settings
 from .local_settings import *
 
+# Allow env to override DB settings (CI sets these to match the PostgreSQL service)
+if os.environ.get('DATABASE_USER'):
+    DATABASE_USER = os.environ.get('DATABASE_USER')
+if os.environ.get('DATABASE_PASSWORD'):
+    DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD')
+if os.environ.get('DATABASE_NAME'):
+    DATABASE_NAME = os.environ.get('DATABASE_NAME')
+
 # Preserve the pre-Django-3.2 AutoField behaviour to silence models.W042
 # warnings. Explicitly locking this in prevents unintended schema changes if
 # Django's default evolves further. Revisit when migrating to BigAutoField

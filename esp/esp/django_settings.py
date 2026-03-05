@@ -118,7 +118,10 @@ DATABASES = {'default':
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
+try:
+    SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
+except AttributeError:
+    SERVER_EMAIL = 'server@localhost'  # os.uname() is Unix-only
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
 EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
