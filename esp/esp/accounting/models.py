@@ -270,7 +270,8 @@ class Transfer(models.Model):
     timestamp = models.DateTimeField(auto_now=True)
     paid_in = models.ForeignKey(
         'self', blank=True, null=True, on_delete=models.PROTECT,
-        help_text='If this transfer is for a fee that has been paid, references the transfer for the payment transaction.')
+        help_text='If this transfer is for a fee that has been paid, references the transfer for the payment transaction.'
+                  ' PROTECT prevents deleting a payment transfer while fee transfers still reference it.')
 
     def set_amount(self, amount):
         if self.paid_in:
