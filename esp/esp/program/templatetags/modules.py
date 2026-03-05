@@ -64,4 +64,5 @@ def registration_progress(context):
         'completedAll': completedAll,
         'program': program,
         'extra_steps': extra_steps,
+        'is_module_page': True,
     }

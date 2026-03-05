@@ -20,8 +20,8 @@
 </a>
 {% if module.useTemplate %}
 <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
-    {{ module.module.link_title }} 
-    </a> <em>(below)</em>
+    {{ module.module.link_title }}
+    </a>{% if not is_module_page %} <em>(below)</em>{% endif %}
 {% else %}
     {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
 {% endif %}
