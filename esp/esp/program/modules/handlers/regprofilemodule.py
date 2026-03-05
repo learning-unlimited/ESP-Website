@@ -33,10 +33,157 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, main_call, meets_deadline
-from esp.program.models import RegistrationProfile
+from esp.program.models import FinancialAidRequest, RegistrationProfile, StudentRegistration
 from esp.users.models   import ESPUser
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
+
+
+class _EquityOutreachCohorts(object):
+    """At-risk student cohorts exposed as user lists (equity_*) in students()/studentDesc()."""
+
+    COHORT_INCOMPLETE_REGISTRATION = "incomplete_registration"
+    COHORT_UNCONFIRMED_REGISTRATION = "unconfirmed_registration"
+    COHORT_INCOMPLETE_FINAID = "incomplete_financial_aid"
+    COHORT_TRANSPORTATION_BARRIER = "transportation_barrier"
+    COHORT_LOW_HOURS = "low_hours"
+    COHORT_WAITLISTED = "waitlisted"
+
+    COHORT_LABELS = {
+        COHORT_INCOMPLETE_REGISTRATION: "Students who started profile but not confirmed",
+        COHORT_UNCONFIRMED_REGISTRATION: "Students who are enrolled in classes but not confirmed",
+        COHORT_INCOMPLETE_FINAID: "Students who started financial aid but incomplete",
+        COHORT_TRANSPORTATION_BARRIER: "Students who have a potential transportation barrier",
+        COHORT_LOW_HOURS: "Students who have low class-hours (1 hour or less)",
+        COHORT_WAITLISTED: "Students who are waitlisted",
+    }
+
+    TRANSPORTATION_SIGNAL_KEYWORDS = (
+        "bus", "train", "public", "ride", "carpool",
+        "cannot", "can't", "difficult", "hard",
+    )
+
+    @classmethod
+    def all_cohort_keys(cls):
+        return [
+            cls.COHORT_INCOMPLETE_REGISTRATION,
+            cls.COHORT_UNCONFIRMED_REGISTRATION,
+            cls.COHORT_INCOMPLETE_FINAID,
+            cls.COHORT_TRANSPORTATION_BARRIER,
+            cls.COHORT_LOW_HOURS,
+            cls.COHORT_WAITLISTED,
+        ]
+
+    @classmethod
+    def cohort_label(cls, cohort_key):
+        return cls.COHORT_LABELS.get(cohort_key, cohort_key.replace("_", " ").title())
+
+    @classmethod
+    def users_for_cohort(cls, program, cohort_key):
+        dispatch = {
+            cls.COHORT_INCOMPLETE_REGISTRATION: cls._incomplete_registration_users,
+            cls.COHORT_UNCONFIRMED_REGISTRATION: cls._unconfirmed_registration_users,
+            cls.COHORT_INCOMPLETE_FINAID: cls._incomplete_finaid_users,
+            cls.COHORT_TRANSPORTATION_BARRIER: cls._transportation_barrier_users,
+            cls.COHORT_LOW_HOURS: cls._low_hours_users,
+            cls.COHORT_WAITLISTED: cls._waitlisted_users,
+        }
+        if cohort_key not in dispatch:
+            return ESPUser.objects.none()
+        return dispatch[cohort_key](program)
+
+    @classmethod
+    def _confirmed_ids(cls, program):
+        return ESPUser.objects.filter(
+            record__event__name="reg_confirmed",
+            record__program=program,
+        ).values_list("id", flat=True)
+
+    @classmethod
+    def _enrolled_student_ids(cls, program):
+        return StudentRegistration.valid_objects().filter(
+            section__parent_class__parent_program=program,
+            relationship__name="Enrolled",
+        ).values_list("user_id", flat=True).distinct()
+
+    @classmethod
+    def _waitlisted_student_ids(cls, program):
+        return StudentRegistration.valid_objects().filter(
+            section__parent_class__parent_program=program,
+            relationship__name__startswith="Waitlist",
+        ).values_list("user_id", flat=True).distinct()
+
+    @classmethod
+    def _program_students_with_profiles(cls, program):
+        return ESPUser.objects.filter(
+            registrationprofile__program=program,
+            registrationprofile__student_info__isnull=False,
+            registrationprofile__most_recent_profile=True,
+        ).distinct()
+
+    @classmethod
+    def _incomplete_registration_users(cls, program):
+        return cls._program_students_with_profiles(program).exclude(id__in=cls._confirmed_ids(program))
+
+    @classmethod
+    def _unconfirmed_registration_users(cls, program):
+        return ESPUser.objects.filter(id__in=cls._enrolled_student_ids(program)).exclude(
+            id__in=cls._confirmed_ids(program)
+        ).distinct()
+
+    @classmethod
+    def _incomplete_finaid_users(cls, program):
+        pending_users = FinancialAidRequest.objects.filter(program=program, done=False).values_list("user_id", flat=True)
+        return ESPUser.objects.filter(id__in=pending_users).distinct()
+
+    @classmethod
+    def _transportation_barrier_users(cls, program):
+        signal_q = Q()
+        for keyword in cls.TRANSPORTATION_SIGNAL_KEYWORDS:
+            signal_q |= Q(registrationprofile__student_info__transportation__icontains=keyword)
+        return ESPUser.objects.filter(
+            registrationprofile__program=program,
+            registrationprofile__student_info__isnull=False,
+            registrationprofile__most_recent_profile=True,
+        ).filter(signal_q).exclude(
+            registrationprofile__student_info__transportation=""
+        ).distinct()
+
+    @classmethod
+    def _low_hours_users(cls, program):
+        enrolled_ids = list(cls._enrolled_student_ids(program))
+        low_hour_ids = set()
+        if enrolled_ids:
+            registrations = (
+                StudentRegistration.valid_objects()
+                .filter(
+                    user_id__in=enrolled_ids,
+                    section__parent_class__parent_program=program,
+                    relationship__name="Enrolled",
+                )
+                .select_related("section")
+                .prefetch_related("section__meeting_times")
+            )
+            user_hours = {}
+            for reg in registrations:
+                user_id = reg.user_id
+                section = reg.section
+                meeting_count = len(section.meeting_times.all())
+                if meeting_count:
+                    user_hours[user_id] = user_hours.get(user_id, 0) + meeting_count
+                else:
+                    user_hours.setdefault(user_id, 0)
+            low_hour_ids = {uid for uid, hours in user_hours.items() if hours <= 1}
+        return ESPUser.objects.filter(id__in=low_hour_ids).distinct()
+
+    @classmethod
+    def _waitlisted_users(cls, program):
+        return ESPUser.objects.filter(id__in=cls._waitlisted_student_ids(program)).distinct()
+
+
+# Public alias for tests and any external use
+EquityOutreachCohorts = _EquityOutreachCohorts
+
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
@@ -62,13 +209,24 @@ class RegProfileModule(ProgramModuleObj):
 
     def students(self, QObject = False):
         if QObject:
-            return {'student_profile': Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False)
-                    }
-        students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
-        return {'student_profile': students }
+            result = {'student_profile': Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False)}
+        else:
+            students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
+            result = {'student_profile': students}
+        for key in _EquityOutreachCohorts.all_cohort_keys():
+            qs = _EquityOutreachCohorts.users_for_cohort(self.program, key)
+            list_name = "equity_" + key
+            if QObject:
+                result[list_name] = Q(id__in=qs.values_list("id", flat=True))
+            else:
+                result[list_name] = qs.distinct()
+        return result
 
     def studentDesc(self):
-        return {'student_profile': """Students who have filled out a profile"""}
+        result = {'student_profile': """Students who have filled out a profile"""}
+        for key in _EquityOutreachCohorts.all_cohort_keys():
+            result["equity_" + key] = _EquityOutreachCohorts.cohort_label(key)
+        return result
 
     def teachers(self, QObject = False):
         if QObject:
