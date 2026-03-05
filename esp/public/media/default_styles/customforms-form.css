@@ -183,7 +183,22 @@ form textarea:focus,
 form select:focus {
 	border-color: #333;
 	box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
-	outline: none;
+	outline: 2px solid transparent;
+	outline-offset: 1px;
+}
+
+@media (forced-colors: active) {
+	form input[type="text"]:focus,
+	form input[type="url"]:focus,
+	form input[type="email"]:focus,
+	form input[type="number"]:focus,
+	form input[type="password"]:focus,
+	form textarea:focus,
+	form select:focus {
+		box-shadow: none;
+		outline: 2px solid CanvasText;
+		outline-offset: 1px;
+	}
 }
 
 div.required {

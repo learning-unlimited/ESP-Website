@@ -98,11 +98,13 @@
 #divmaintext form input[type=url]:focus,
 #divmaintext form input[type=email]:focus,
 #divmaintext form input[type=number]:focus,
+#divmaintext form input[type=file]:focus,
 #divmaintext form input[type=password]:focus,
 #divmaintext form textarea:focus {
     border: 1px solid #333;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
-    outline: none;
+    outline: 2px solid transparent;
+    outline-offset: 1px;
 }
 
 #divmaintext form select:focus:required,
@@ -110,10 +112,26 @@
 #divmaintext form input[type=url]:focus:required,
 #divmaintext form input[type=email]:focus:required,
 #divmaintext form input[type=number]:focus:required,
+#divmaintext form input[type=file]:focus:required,
 #divmaintext form input[type=password]:focus:required,
 #divmaintext form textarea:focus:required {
     border: 1px solid #c00;
     box-shadow: 0 0 4px rgba(204, 0, 0, 0.2);
+}
+
+@media (forced-colors: active) {
+    #divmaintext form select:focus,
+    #divmaintext form input[type=text]:focus,
+    #divmaintext form input[type=url]:focus,
+    #divmaintext form input[type=email]:focus,
+    #divmaintext form input[type=number]:focus,
+    #divmaintext form input[type=file]:focus,
+    #divmaintext form input[type=password]:focus,
+    #divmaintext form textarea:focus {
+        box-shadow: none;
+        outline: 2px solid CanvasText;
+        outline-offset: 1px;
+    }
 }
 
 #divmaintext form table.plain

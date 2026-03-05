@@ -41,7 +41,23 @@ div.required label.control-label:after {
 .form-horizontal select:focus {
   border-color: #333;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
-  outline: none;
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+}
+
+@media (forced-colors: active) {
+  .form-horizontal input[type="text"]:focus,
+  .form-horizontal input[type="url"]:focus,
+  .form-horizontal input[type="email"]:focus,
+  .form-horizontal input[type="number"]:focus,
+  .form-horizontal input[type="password"]:focus,
+  .form-horizontal input[type="tel"]:focus,
+  .form-horizontal textarea:focus,
+  .form-horizontal select:focus {
+    box-shadow: none;
+    outline: 2px solid CanvasText;
+    outline-offset: 1px;
+  }
 }
 </style>
 {% endblock %}
