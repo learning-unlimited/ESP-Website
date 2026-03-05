@@ -48,15 +48,15 @@ def preview_email(request, message_request_id):
     Shows the email rendered with a sample user's data.
     """
     msg_req = get_object_or_404(MessageRequest, id=message_request_id)
-    
+
     # Get a sample user from the recipients list
     recipients = msg_req.recipients.getList(ESPUser)
     sample_user = recipients.first() if recipients.exists() else request.user
-    
+
     # Render the email template with sample user data
     subject = msg_req.parseSmartText(msg_req.subject, sample_user)
     msgtext = msg_req.parseSmartText(msg_req.msgtext, sample_user)
-    
+
     # Determine sender
     if msg_req.sender and len(msg_req.sender.strip()) > 0:
         send_from = msg_req.sender
@@ -64,7 +64,7 @@ def preview_email(request, message_request_id):
         send_from = msg_req.creator.get_email_sendto_address()
     else:
         send_from = 'ESP Web Site <esp@mit.edu>'
-    
+
     context = {
         'msg_req': msg_req,
         'subject': subject,
@@ -73,7 +73,7 @@ def preview_email(request, message_request_id):
         'sample_user': sample_user,
         'recipient_count': recipients.count(),
     }
-    
+
     return render(request, 'dbmail/preview_email.html', context)
 
 
@@ -85,7 +85,7 @@ def send_test_email(request, message_request_id):
     if request.method != 'POST':
         messages.error(request, 'Invalid request method.')
         return redirect('preview_email', message_request_id=message_request_id)
-    
+
     msg_req = get_object_or_404(MessageRequest, id=message_request_id)
     admin_user = request.user
 
@@ -104,7 +104,7 @@ def send_test_email(request, message_request_id):
     # Render email with sample recipient's data (but send to admin's address)
     subject = msg_req.parseSmartText(msg_req.subject, sample_recipient)
     msgtext = msg_req.parseSmartText(msg_req.msgtext, sample_recipient)
-    
+
     # Determine sender
     if msg_req.sender and len(msg_req.sender.strip()) > 0:
         send_from = msg_req.sender
@@ -112,7 +112,7 @@ def send_test_email(request, message_request_id):
         send_from = msg_req.creator.get_email_sendto_address()
     else:
         send_from = 'ESP Web Site <esp@mit.edu>'
-    
+
     try:
         # Send test email
         send_mail(
@@ -127,5 +127,5 @@ def send_test_email(request, message_request_id):
         messages.success(request, f'Test email sent successfully to {admin_user.email}')
     except Exception as e:
         messages.error(request, f'Failed to send test email: {str(e)}')
-    
+
     return redirect('preview_email', message_request_id=message_request_id)
