@@ -60,26 +60,21 @@ be supported as a type of query.
 
 def zipcodes(form, programs, students, profiles, result_dict={}):
 
-    #   Get zip codes
+    #   Get zip codes and filter out invalid ones
     zip_dict = {}
+    result_dict['invalid'] = 0
     for profile in profiles:
         if profile.contact_user:
-            if profile.contact_user.address_zip not in zip_dict:
-                zip_dict[profile.contact_user.address_zip] = 0
-            zip_dict[profile.contact_user.address_zip] += 1
+            zip_code = profile.contact_user.address_zip
+            if zip_code and len(zip_code) == 5 and zip_code.isnumeric():
+                if zip_code not in zip_dict:
+                    zip_dict[zip_code] = 0
+                zip_dict[zip_code] += 1
+            else:
+                result_dict['invalid'] += 1
         else:
-            if 'N/A' not in zip_dict:
-                zip_dict['N/A'] = 0
-            zip_dict['N/A'] += 1
+            result_dict['invalid'] += 1
     zip_codes = sorted(zip_dict.keys())
-
-    #   Filter out invalid zip codes
-    result_dict['invalid'] = 0
-    for code in zip_codes:
-        if not code or len(code) != 5 or not code.isnumeric():
-            result_dict['invalid'] += zip_dict[code]
-            del zip_dict[code]
-            zip_codes.remove(code)
     zip_counts = [zip_dict[x] for x in zip_codes]
 
     #   Compile and render
