@@ -316,7 +316,7 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
             # The length of sheet names is limited to 31 characters
             survey_index += 1
             if len(s.name) > 31:
-                ws = wb.create_sheet("%d %s... (%s)" % (survey_index, s.name[:17], s.category[:5]))
+                ws = wb.create_sheet(f"{survey_index} {s.name[:17]}... ({s.category[:5]})")
             else:
                 ws = wb.create_sheet(s.name)
 
@@ -345,7 +345,7 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
 
             # PER-CLASS QUESTIONS
             if len(s.name) > 19:
-                ws_perclass = wb.create_sheet("%d %s... (%s, per-class)" % (survey_index, s.name[:5], s.category[:5]))
+                ws_perclass = wb.create_sheet(f"{survey_index} {s.name[:5]}... ({s.category[:5]}, per-class)")
             else:
                 ws_perclass = wb.create_sheet(s.name + " (per-class)")
             ws_perclass.cell(row=1, column=1, value="Response ID")
@@ -393,7 +393,7 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
         wb.close()
         response = HttpResponse(out.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         out.close()
-        response['Content-Disposition'] = 'attachment; filename=dump-%s.xlsx' % (prog.name)
+        response['Content-Disposition'] = f'attachment; filename=dump-{prog.name}.xlsx'
         return response
     else:
         raise ESPError("You need to be an administrator to dump survey results.", log=False)
@@ -426,7 +426,7 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
         #raise Http404
-        raise ESPError("Can't find the program %s/%s" % (program, instance))
+        raise ESPError(f"Can't find the program {program}/{instance}")
 
     user = request.user
 
@@ -481,9 +481,7 @@ def top_classes(request, tl, program, instance):
             pass
 
     if len(surveys) < 1:
-        raise ESPError('Sorry, no student survey {}exists for this program!'.format('with any of the following IDs ['
-                                                                                    + ','.join(s_id) + '] ' if 's_id'
-                                                                                    in locals() else ''), log=False)
+        raise ESPError(f'Sorry, no student survey {"with any of the following IDs [" + ",".join(str(x) for x in [s_id]) + "] " if "s_id" in locals() else ""}exists for this program!', log=False)
 
     if len(surveys) > 1:
         return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...

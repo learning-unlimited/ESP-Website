@@ -515,6 +515,22 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return lists
 
+    def get_test_user_ids(self):
+        """Return PKs of the designated test accounts for this program.
+
+        Test accounts are stored as program-scoped Tags so that no migration
+        is needed.  Keys: 'test_student_id', 'test_teacher_id'.
+        """
+        ids = set()
+        for key in ('test_student_id', 'test_teacher_id'):
+            val = Tag.getTag(key, target=self)
+            if val:
+                try:
+                    ids.add(int(val))
+                except (ValueError, TypeError):
+                    pass
+        return ids
+
     def students_union(self, QObject = False):
         import operator
         if len(list(self.students().values())) == 0:
@@ -527,7 +543,11 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return ESPUser.objects.filter(union).distinct()
+            test_ids = self.get_test_user_ids()
+            qs = ESPUser.objects.filter(union).distinct()
+            if test_ids:
+                qs = qs.exclude(id__in=test_ids)
+            return qs
 
     def teachers_union(self, QObject = False):
         import operator
@@ -540,7 +560,11 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return ESPUser.objects.filter(union).distinct()
+            test_ids = self.get_test_user_ids()
+            qs = ESPUser.objects.filter(union).distinct()
+            if test_ids:
+                qs = qs.exclude(id__in=test_ids)
+            return qs
 
     def volunteers_union(self, QObject = False):
         import operator
@@ -995,9 +1019,7 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return None
 
-    def get_teacher_event_times(self, event_type):
-        """event_type should be 'interview' or 'training'"""
-        event_type_obj = EventType.teacher_event_types()[event_type]
+    def get_teacher_event_times(self, event_type_obj):
         return Event.objects.filter(
             program=self, event_type=event_type_obj).order_by('start')
 
@@ -1084,6 +1106,35 @@ class Program(models.Model, CustomFormsLinkModel):
         durationList = list(durationDict.items())
 
         return sorted(durationList, key=lambda x: x[0])
+
+    def countTimeSlots(self, round_15=False):
+        """Calculate the number of instances of each duration that can fit in a given block. Returns dictionary mapping timeslot length to number of timeslots"""
+        from decimal import Decimal
+
+        times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
+        durations = [x[0] for x in self.getDurations(round_15)]
+        numDurations = {}
+
+        #iterates over all durations
+        for duration in durations:
+            numDurations[str(duration.quantize(Decimal('.01')))] = 0
+            lenDuration = duration * 3600
+            #iterates over blocks
+            for block in times:
+                numSections = len(block)
+                i = 0
+                while i < numSections:
+                    #makes an increasing list of lengths for each block, section by section
+                    for j in range(i, numSections):
+                        time_option = Event.total_length([block[i], block[j]])
+                        #if enough time exists, increment
+                        if lenDuration <= time_option.seconds:
+                            numDurations[str(duration.quantize(Decimal('.01')))] += 1
+                            i = j
+                            break
+                    i += 1
+
+        return numDurations
 
     def getSurveys(self):
         from esp.survey.models import Survey
@@ -1474,6 +1525,7 @@ class RegistrationProfile(models.Model):
 
         return regProf
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
+    getLastProfile.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
 
     @cache_function
@@ -1551,6 +1603,7 @@ class RegistrationProfile(models.Model):
     # Thanks to our attempts to be smart and steal profiles from other programs,
     # the cache can't depend only on profiles with the same (user, program).
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
+    getLastForProgram.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastForProgram = staticmethod(getLastForProgram)
 
     def __str__(self):
@@ -1720,7 +1773,7 @@ def get_subclass_instance(cls, obj):
         result = None
         try:
             result = c.objects.get(id=obj.id)
-        except:
+        except c.DoesNotExist:
             pass
         if result:
             return get_subclass_instance(c, result)
