@@ -270,7 +270,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy
@@ -505,7 +505,7 @@ class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy
@@ -519,7 +519,7 @@ class AlumProfileForm(MinimalUserInfo, FormWithTagInitialValues):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy
