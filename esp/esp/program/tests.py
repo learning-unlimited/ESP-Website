@@ -1835,3 +1835,4 @@ class GradeCacheInvalidationTest(TestCase):
             profile2.student_info.graduation_year, new_yog,
             "getLastProfile should return updated graduation_year"
         )
+
