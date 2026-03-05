@@ -3,8 +3,11 @@ set -euf -o pipefail
 
 if [ "$CI_JOB" = "test" ]; then
     cd esp
+    printenv
+    ./manage.py shell -c "from django.conf import settings; print('ACTIVE DATABASES SETTING:', settings.DATABASES)"
     ./manage.py collectstatic --noinput -v 0
-    coverage run --source=. ./manage.py test
+    ./manage.py migrate
+    coverage run --source=. ./manage.py test -v 2
     coverage xml
 elif [ "$CI_JOB" = "lint" ]; then
     deploy/lint
