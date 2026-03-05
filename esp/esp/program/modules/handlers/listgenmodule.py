@@ -351,21 +351,24 @@ class ListGenModule(ProgramModuleObj):
                     lists.append({'users': users})
 
                 if output_type == 'csv':
-                    # properly speaking, this should be text/csv, but that
-                    # causes Chrome to open in an external editor, which is
-                    # annoying
-                    mimetype = 'text/plain'
+                    mimetype = 'text/csv'
                 elif output_type == 'html':
                     mimetype = 'text/html'
                 else:
                     # WTF?
                     mimetype = 'text/html'
-                return render_to_response(
+
+                response = render_to_response(
                     self.baseDir()+('list_%s.html' % output_type),
                     request,
                     {'users': users, 'lists': lists, 'fields': fields, 'listdesc': filterObj.useful_name},
                     content_type=mimetype,
                 )
+
+                if output_type == 'csv':
+                    response['Content-Disposition'] = 'attachment; filename="user_list.csv"'
+
+                return response
             else:
                 context = {
                     'form': form,
