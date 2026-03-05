@@ -266,7 +266,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context["request"] = request
             context["program"] = prog
             return HttpResponse( Template(receipt_text).render( Context(context) ) )
-        except:
+        except Exception:
             return self.goToCore(tl)
 
     @cache_function

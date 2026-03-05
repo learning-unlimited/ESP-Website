@@ -225,7 +225,7 @@ class TeacherInfo__validationtest(TestCase):
             try:
                 int(i)
                 return True
-            except:
+            except (ValueError, TypeError):
                 return False
 
         # There's some data-cleaning going on here, so
@@ -791,8 +791,6 @@ class PermissionTestCase(TestCase):
         implications = ['Teacher/Classes/Create/OpenClass']
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
-
-
 
 class StudentInfoFormGradeTest(TestCase):
     """Registration Profile grade validation.
