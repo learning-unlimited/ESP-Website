@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
 from django.template import RequestContext
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -17,7 +17,6 @@ from esp.users.views.registration import *
 from esp.users.views.usersearch import *
 from esp.utils.web import render_to_response
 from esp.web.views.main import DefaultQSDView
-
 
 #   This is a huge hack while we figure out what to do about logins and cookies.
 #   - Michael P 12/28/2011
@@ -246,9 +245,15 @@ def unsubscribe_oneclick(request, username, token):
 
 @admin_required
 def morph_into_user(request):
-    morph_user = ESPUser.objects.get(id=request.GET['morph_user'])
+    user_id = request.POST.get('morph_user')
+    if not user_id:
+        return HttpResponseBadRequest("Missing morph_user parameter.")
     try:
-        onsite = Program.objects.get(id=request.GET['onsite'])
+        morph_user = ESPUser.objects.get(id=user_id)
+    except (ValueError, ESPUser.DoesNotExist):
+        return HttpResponseBadRequest("Invalid morph_user parameter.")
+    try:
+        onsite = Program.objects.get(id=request.POST.get('onsite'))
     except (KeyError, ValueError, Program.DoesNotExist):
         onsite = None
     request.user.switch_to_user(request,
