@@ -64,6 +64,13 @@ class OnsitePrintSchedules(ProgramModuleObj):
                                     request, {'printers': printers})
 
         if 'sure' in request.GET:
+            if 'expire_old' in request.GET:
+                # Clear all pending (unexecuted) print requests for this session.
+                # Scoped to the selected printer when a printer name is in the URL.
+                old_requests = PrintRequest.objects.filter(time_executed__isnull=True)
+                if extra and Printer.objects.filter(name=extra).exists():
+                    old_requests = old_requests.filter(printer__name=extra)
+                old_requests.delete()
             return render_to_response(self.baseDir()+'studentschedulesrenderer.html',
                             request, {})
 
