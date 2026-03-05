@@ -129,7 +129,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             filterid = int(filterid)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Corrupted POST data!  Please contact us at" +
             "websupport@learningu.org and tell us how you got this error," +
             "and we'll look into it.")
@@ -138,7 +138,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             firstuser = userlist[0]
-        except:
+        except IndexError:
             raise ESPError("You seem to be trying to email 0 people!  " +
             "Please go back, edit your search, and try again.")
 
@@ -253,7 +253,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             filterid = int(filterid)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Corrupted POST data!  Please contact us at " +
             "websupport@learningu and tell us how you got this error, " +
             "and we'll look into it.")
