@@ -194,7 +194,7 @@ def qsd(request, url):
 
         if not have_edit:
             messages.error(request, "Sorry, you do not have permission to edit this page.")
-            return redirect('../' + page_name_base + '.html')
+            return redirect('/' + base_url + '.html')
 
         nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
 
@@ -238,7 +238,7 @@ def qsd(request, url):
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
             messages.error(request, "You don't have permission to edit this page.")
-            return redirect('../' + page_name_base + '.html')
+            return redirect('/' + base_url + '.html')
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
