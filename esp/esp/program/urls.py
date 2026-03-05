@@ -10,6 +10,7 @@ urlpatterns = [
     url(r'^manage/submit_transaction/?$', views.submit_transaction),
     url(r'^manage/pages/?$', views.manage_pages),
     url(r'^manage/userview/?$', views.userview),
+    url(r'^manage/userview_edit/?$', views.userview_edit),
     url(r'^manage/deactivate_user/?$', views.deactivate_user),
     url(r'^manage/activate_user/?$', views.activate_user),
     url(r'^manage/unenroll_student/?$', views.unenroll_student),
