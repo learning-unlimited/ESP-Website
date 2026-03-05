@@ -1,0 +1,76 @@
+:root {
+  --chakra-colors-bg-canvas: #f7fafc;
+  --chakra-colors-bg-surface: #ffffff;
+  --chakra-colors-fg-default: #1a202c;
+  --chakra-colors-fg-muted: #4a5568;
+  --chakra-colors-border-default: #cbd5e0;
+  --chakra-colors-accent: #2b6cb0;
+}
+
+:root[data-theme="dark"] {
+  --chakra-colors-bg-canvas: #111827;
+  --chakra-colors-bg-surface: #1f2937;
+  --chakra-colors-fg-default: #f7fafc;
+  --chakra-colors-fg-muted: #cbd5e0;
+  --chakra-colors-border-default: #4a5568;
+  --chakra-colors-accent: #63b3ed;
+}
+
+body {
+  background-color: var(--chakra-colors-bg-canvas);
+  color: var(--chakra-colors-fg-default);
+}
+
+#main,
+.well,
+.modal-content,
+.dropdown-menu,
+input,
+select,
+textarea {
+  background-color: var(--chakra-colors-bg-surface);
+  color: var(--chakra-colors-fg-default);
+  border-color: var(--chakra-colors-border-default);
+}
+
+p,
+label,
+li,
+td,
+th,
+small {
+  color: var(--chakra-colors-fg-default);
+}
+
+a,
+a:link,
+a:visited {
+  color: var(--chakra-colors-accent);
+}
+
+.navbar,
+.navbar-inner,
+.nav-list > li > a,
+.breadcrumb,
+.pagination ul > li > a,
+.pagination ul > li > span {
+  background-color: var(--chakra-colors-bg-surface);
+  color: var(--chakra-colors-fg-default);
+}
+
+.table-bordered,
+.table-bordered th,
+.table-bordered td,
+.table th,
+.table td {
+  border-color: var(--chakra-colors-border-default);
+}
+
+[data-theme-toggle] {
+  margin-left: 6px;
+}
+
+.theme-toggle-wrap {
+  text-align: right;
+  margin-bottom: 6px;
+}
