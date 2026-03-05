@@ -50,11 +50,15 @@ from django.views.decorators.cache import cache_control
 from esp.varnish.varnish import purge_page
 from urllib.parse import urlparse
 from bleach import clean
+from django.contrib import messages
 
 from django.conf import settings
+from django.utils.html import escape as html_escape
 from django.views.decorators.http import require_POST
 
 from reversion import revisions as reversion
+
+from esp.utils.sanitize import strip_base64_images
 
 import logging
 import os
@@ -63,7 +67,7 @@ import uuid
 logger = logging.getLogger(__name__)
 
 # Image upload constraints
-QSD_IMAGE_MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+QSD_IMAGE_MAX_SIZE = 25 * 1024 * 1024  # 25 MB
 QSD_IMAGE_ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 QSD_IMAGE_UPLOAD_DIR = 'uploaded/qsd_images'
 
@@ -85,6 +89,7 @@ def _sanitize_image_extension(raw_ext):
     elif raw_ext == 'webp':
         return 'webp'
     return None
+
 
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
@@ -193,6 +198,11 @@ def qsd(request, url):
         data = request.POST['content']
         if class_qsd:
             data = clean(data, strip = True)
+        data, n_stripped = strip_base64_images(data)
+        if n_stripped > 0:
+            messages.warning(request,
+                '%d embedded image(s) were removed. '
+                'Please use the image upload button in the toolbar to add images.' % n_stripped)
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
@@ -276,6 +286,7 @@ def ajax_qsd(request):
         # Sanitize if this is for a class QSD
         if len(path_parts) > 3 and path_parts[3] == "Classes":
             data = clean(data, strip = True)
+        data, _ = strip_base64_images(data)
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
@@ -307,6 +318,7 @@ def ajax_qsd_preview(request):
     # Sanitize if this is for a class QSD
     if len(path_parts) > 3 and path_parts[3] == "Classes":
         data = clean(data, strip = True)
+    data, _ = strip_base64_images(data)
 
     # We don't necessarily need to wrap it in JSON, but this seems more
     # future-proof.
@@ -347,11 +359,11 @@ def ajax_qsd_image_upload(request):
         )
 
     # Collect uploaded files — Jodit sends them as FILES values
-    uploaded_files = request.FILES.getlist('files[0]')
-    if not uploaded_files:
-        # Jodit may also send files under other keys; collect all FILES
-        for key in request.FILES:
-            uploaded_files.extend(request.FILES.getlist(key))
+    # We unconditionally collect all files because Jodit can send multiple files
+    # spread across keys like 'files[0]', 'files[1]', etc.
+    uploaded_files = []
+    for key in request.FILES:
+        uploaded_files.extend(request.FILES.getlist(key))
     if not uploaded_files:
         return JsonResponse(
             {'success': False, 'data': {'messages': ['No files were uploaded.']}},
@@ -372,27 +384,30 @@ def ajax_qsd_image_upload(request):
 
     # Phase 1: Validate ALL files before writing any to disk.
     # This prevents orphaned files when a multi-file upload partially fails.
+
     validated_files = []
     for uploaded_file in uploaded_files:
-        # Validate file size
+
+        # Per-file size limit
         if uploaded_file.size > QSD_IMAGE_MAX_SIZE:
+            # HTML-escape the filename because Jodit renders error messages
+            # via innerHTML; a crafted filename could otherwise inject markup.
+            safe_name = html_escape(uploaded_file.name or 'unknown')
             return JsonResponse(
                 {'success': False, 'data': {'messages': [
-                    'File exceeds the %d MB size limit.' % (QSD_IMAGE_MAX_SIZE // (1024 * 1024))
+                    'File "%s" exceeds the %d MB per-file size limit.'
+                    % (safe_name, QSD_IMAGE_MAX_SIZE // (1024 * 1024))
                 ]}},
                 status=400,
             )
 
         # Validate file extension — _sanitize_image_extension returns a
         # string literal so CodeQL cannot trace user input into file paths.
-        original_name = uploaded_file.name
+        original_name = uploaded_file.name or ''
         raw_ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
         safe_ext = _sanitize_image_extension(raw_ext)
         if safe_ext is None:
-            if raw_ext == '':
-                msg = 'Files must have an extension. Allowed types: %s' % ', '.join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS))
-            else:
-                msg = 'File type ".%s" is not allowed. Allowed types: %s' % (raw_ext, ', '.join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS)))
+            msg = 'Invalid file type. Allowed types: %s' % ', '.join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS))
             return JsonResponse(
                 {'success': False, 'data': {'messages': [msg]}},
                 status=400,
@@ -419,7 +434,10 @@ def ajax_qsd_image_upload(request):
         # Normalize the path and verify it stays inside the upload
         # directory (CodeQL barrier-guard for py/path-injection CWE-022).
         file_path = os.path.normpath(os.path.join(upload_dir, safe_filename))
-        if not file_path.startswith(real_upload_dir):
+
+        # Resolve symlinks in file_path before comparing to real_upload_dir
+        # to ensure compatibility when settings.MEDIA_ROOT contains a symlink.
+        if os.path.commonpath([real_upload_dir, os.path.realpath(file_path)]) != real_upload_dir:
             raise ValueError("Path traversal detected")
 
         try:
@@ -427,10 +445,11 @@ def ajax_qsd_image_upload(request):
                 for chunk in uploaded_file.chunks():
                     dest.write(chunk)
         except IOError:
+            logger.error("Failed to write uploaded image to %s", file_path, exc_info=True)
             # Clean up any files already written in this batch
             for path in saved_paths:
                 safe_path = os.path.normpath(path)
-                if safe_path.startswith(real_upload_dir):
+                if os.path.commonpath([real_upload_dir, os.path.realpath(safe_path)]) == real_upload_dir:
                     try:
                         os.remove(safe_path)
                     except OSError:

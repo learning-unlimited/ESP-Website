@@ -396,6 +396,10 @@ FILEBROWSER_SELECT_FORMATS = {
     'media': ['Video', 'Audio'],
 }
 
+# Custom file storage backend that lowercases file extensions
+# This ensures consistent handling of file extensions regardless of upload method
+DEFAULT_FILE_STORAGE = 'esp.web.storage.LowercaseExtensionStorage'
+
 #   Default imports for shell_plus, for convenience.
 SHELL_PLUS_POST_IMPORTS = (
         ('esp.utils.shell_utils', '*'),

@@ -192,9 +192,16 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
       {% endblock %}
 
       <div id="content">
-        {% if request.mod_required %}
-        <div class="alert alert-danger">
-          <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+          {% if request.COOKIES.esp_testing_role %}
+          <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+            <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
+            You are logged in as a test account.
+            <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
+          </div>
+          {% endif %}
+          {% if request.mod_required %}
+          <div class="alert alert-danger">
+              <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
               This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
         </div>
         {% endif %}
