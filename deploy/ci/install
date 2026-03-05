@@ -1,12 +1,15 @@
 #!/bin/bash
 set -euf -o pipefail
 
-sudo apt-get remove -y libhashkit2 || true
-sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev | grep -v ^.*pip)
-# always run this — npm install is not covered by apt cache
-esp/packages_base_manual_install.sh
-
-if [ "${PIP_CACHE_HIT:-}" != "true" ]; then
+if [ "$CI_JOB" = "test" ]; then
+    sudo apt-get remove -y libhashkit2
+    sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev | grep -v ^.*pip)
+    esp/packages_base_manual_install.sh
     pip3 install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
     pip3 install coverage
+elif [ "$CI_JOB" = "lint" ]; then
+    pip3 install flake8
+else
+    echo "Unknown CI_JOB: $CI_JOB"
+    exit 1
 fi
