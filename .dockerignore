@@ -1,0 +1,19 @@
+.git
+.github
+.vagrant
+.venv
+env
+__pycache__
+*.pyc
+*.pyo
+node_modules
+*.egg-info
+dist
+build
+*.box
+deploy/vagrant_boxes
+docs
+
+# Symlinks created by the entrypoint — Docker can't follow these during build
+esp/public/media/images
+esp/public/media/styles
