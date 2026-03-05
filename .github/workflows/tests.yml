@@ -4,6 +4,21 @@ on:
   push:
     branches: [main]
     paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "LICENSE"
+      - ".gitattributes"
+      - ".gitignore"
+      - "Vagrantfile"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "LICENSE"
+      - ".gitattributes"
+      - ".gitignore"
+      - "Vagrantfile"
       - 'docs/**'
       - '*.md'
       - 'LICENSE'
@@ -25,7 +40,6 @@ concurrency:
 
 permissions:
   contents: read
-
 
 jobs:
   test:
@@ -55,6 +69,103 @@ jobs:
       DJANGO_SETTINGS_MODULE: esp.settings
 
     steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: deadsnakes/action@v3.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip packages
+        id: pip-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - name: Prepare for Installing Dependencies
+        run: deploy/ci/before_install
+        env:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+      - name: Install Dependencies
+        env:
+          CI_JOB: test
+          PYTHON_VERSION: ${{ matrix.python-version }}
+          PIP_CACHE_HIT: ${{ steps.pip-cache.outputs.cache-hit }}
+        run: deploy/ci/install
+      - name: Prepare for Test
+        env:
+          CI_JOB: test
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: deploy/ci/before_script
+      - name: Run Tests
+        env:
+          CI_JOB: test
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: deploy/ci/script
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  migrations:
+    name: Migration Consistency Check
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:10.8
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: test_django
+        ports:
+          - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DJANGO_SETTINGS_MODULE: esp.settings
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.7
+        uses: deadsnakes/action@v3.2.0
+        with:
+          python-version: "3.7"
+      - name: Install Dependencies
+        run: |
+          # We need full dependencies for makemigrations to initialize apps
+          sudo apt-get update
+          sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev | grep -v ^.*pip)
+          esp/packages_base_manual_install.sh
+          pip install -r esp/requirements.txt
+      - name: Create local_settings.py
+        run: |
+          cp esp/esp/local_settings.py.ci esp/esp/local_settings.py
+      - name: Run Migration Check
+        run: |
+          cd esp
+          python manage.py makemigrations --check --dry-run
+
+  security:
+    name: Security Checks (Bandit & pip-audit)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: deadsnakes/action@v3.2.0
+        with:
+          python-version: "3.11"
+      - name: Install Security Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit
+      - name: Run Bandit
+        continue-on-error: true
+        run: bandit -r esp/ -ll
+      - name: Run pip-audit
+        continue-on-error: true
+        run: pip-audit -r esp/requirements.txt
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
       uses: deadsnakes/action@v3.2.0
