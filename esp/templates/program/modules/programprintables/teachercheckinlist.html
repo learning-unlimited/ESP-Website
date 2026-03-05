@@ -1,0 +1,81 @@
+<html>
+<head>
+<title>Teacher Check-In List (Compact)</title>
+<style type="text/css" media="print,screen">
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0.25in;
+    font-size: 11px;
+}
+h2 {
+    font-size: 14px;
+    margin: 12px 0 4px 0;
+    padding: 3px 6px;
+    background: #333;
+    color: #fff;
+    page-break-after: avoid;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+}
+th, td {
+    border: 1px solid #999;
+    padding: 2px 5px;
+    text-align: left;
+}
+th {
+    background-color: #eee;
+    font-size: 10px;
+}
+td.check {
+    width: 28px;
+    text-align: center;
+}
+@media print {
+    h2 { background: #333 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
+    th { background-color: #eee !important; -webkit-print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+
+{% if not scheditems %}
+<p>No scheduled class sections with teachers were found.</p>
+{% endif %}
+
+{% for scheditem in scheditems %}
+{% ifchanged scheditem.cls.friendly_times.0 %}
+{% if not forloop.first %}
+</tbody>
+</table>
+{% endif %}
+<h2>{{ scheditem.cls.friendly_times.0 }}</h2>
+<table>
+<thead>
+<tr>
+    <th style="width: 28px;">&check;</th>
+    <th>Teacher</th>
+    <th>Phone</th>
+    <th>Class</th>
+    <th>Room</th>
+</tr>
+</thead>
+<tbody>
+{% endifchanged %}
+<tr>
+    <td class="check">&#9744;</td>
+    <td>{{ scheditem.user.last_name }}, {{ scheditem.user.first_name }}</td>
+    <td>{{ scheditem.phone_cell }}</td>
+    <td>{{ scheditem.cls.title }}</td>
+    <td>{{ scheditem.cls.prettyrooms|join:", " }}</td>
+</tr>
+{% endfor %}
+{% if scheditems %}
+</tbody>
+</table>
+{% endif %}
+
+</body>
+</html>
