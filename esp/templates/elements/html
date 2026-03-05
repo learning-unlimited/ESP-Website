@@ -25,6 +25,7 @@
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
+    <link rel="stylesheet" type="text/css" href="/media/default_styles/form_loading.css" media="all" />
     {% block jquery_ui_stylesheet_version %}
     <link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
     {% endblock jquery_ui_stylesheet_version %}
@@ -86,12 +87,46 @@
     <script text="text/javascript">
       $j(function() {
         $j('[type=submit]:not(.stripe-button-el):not(.save):not(.custom-action)').on('click', function(event){
+          function setSubmittingState(buttonElem) {
+            var $button = $j(buttonElem);
+            if (!$button.data('original-html')) {
+              $button.data('original-html', $button.html());
+            }
+
+            $button
+              .addClass('is-submitting')
+              .attr('aria-busy', 'true')
+              .prop('disabled', true);
+
+            if (!$button.attr('data-loading-text')) {
+              $button.attr('data-loading-text', 'Submitting...');
+            }
+
+            $button.html(
+              '<span class="button-loading-indicator" aria-hidden="true"></span>' +
+              '<span class="button-loading-text">' + $button.attr('data-loading-text') + '</span>'
+            );
+          }
+
+          function clearSubmittingState(buttonElem) {
+            var $button = $j(buttonElem);
+            $button
+              .removeClass('is-submitting')
+              .removeAttr('aria-busy')
+              .prop('disabled', false);
+
+            var originalHtml = $button.data('original-html');
+            if (originalHtml) {
+              $button.html(originalHtml);
+            }
+          }
+
           <!-- prevent any other behaviors -->
           event.preventDefault();
           event.stopPropagation();
           
           <!-- disable the submit button -->
-          $j(this).prop('disabled', true);
+          setSubmittingState(this);
           var form = $j(this).parents('form');
           <!-- this adds a hidden field in case we care what the button name/value are -->
           $j('<input>', {
@@ -117,7 +152,7 @@
           }
           <!-- if we didn't end up submitting the form, re-enable the submit button -->
           if(!submitted) {
-            $j(this).prop('disabled', false);
+            clearSubmittingState(this);
           }
         });
       });

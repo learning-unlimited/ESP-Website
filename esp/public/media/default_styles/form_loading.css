@@ -1,0 +1,26 @@
+.is-submitting {
+  opacity: 0.85;
+  cursor: wait;
+}
+
+.button-loading-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  vertical-align: text-bottom;
+  animation: submit-button-spin 0.8s linear infinite;
+}
+
+.button-loading-text {
+  display: inline-block;
+}
+
+@keyframes submit-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
