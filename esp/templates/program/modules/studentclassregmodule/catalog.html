@@ -1,5 +1,5 @@
 
-{% extends "program/modules/module_base.html" %}
+{% extends "main.html" %}
 {% load getTag %}
 
 {% block title %}{{program.niceName}}{% endblock %}
@@ -36,7 +36,7 @@ const hide_empty_cats = {{ "hide_empty_categories"|getBooleanTag|yesno:"true,fal
 
 {% endblock %}
 
-{% block module_content %}
+{% block content %}
 <br />
 
 <h1>
