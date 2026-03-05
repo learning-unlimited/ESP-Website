@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response
-from esp.middleware import ESPError
 from django.http          import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from datetime             import datetime
@@ -50,7 +49,7 @@ def bio_edit(request, tl='', username='', progid=None):
             founduser = request.user
         else:
             founduser = ESPUser.objects.get(username=username)
-    except (ESPUser.DoesNotExist, ESPError):
+    except ESPUser.DoesNotExist:
         return bio_not_found(request)
 
     foundprogram = get_from_id(progid, Program, 'program', False)
@@ -122,7 +121,7 @@ def bio(request, tl, username=''):
 
     try:
         founduser = ESPUser.objects.get(username=username)
-    except (ESPUser.DoesNotExist, ESPError):
+    except ESPUser.DoesNotExist:
         return bio_not_found(request)
 
     return bio_user(request, founduser)
