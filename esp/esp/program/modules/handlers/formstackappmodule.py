@@ -86,10 +86,13 @@ class FormstackAppModule(ProgramModuleObj):
         context['username'] = request.user.username
         context['app_is_open'] = fsas.app_is_open or request.user.isAdmin(prog)
         context['autopopulated'] = autopopulated = []
+        from django.template import Template, Context
         for line in fsas.autopopulated_fields.strip().split('\n'):
             field, _, expr = line.partition(':')
             try:
-                value = eval(expr, {'user': request.user})
+                template = Template(expr)
+                context_dict = Context({'user': request.user})
+                value = template.render(context_dict)
             except Exception as e:
                 logger.exception("Error in FormstackAppSettings: %s", e)
                 continue
