@@ -224,6 +224,7 @@ APPEND_SLASH=False
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'esp.tagdict',  # Early so Tag table exists before other esp apps' migrations
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
@@ -242,7 +243,6 @@ INSTALLED_APPS = (
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
-    'esp.tagdict',
     'esp.seltests',
     'esp.themes',
     'esp.varnish',
