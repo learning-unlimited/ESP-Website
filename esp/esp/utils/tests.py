@@ -5,6 +5,7 @@ Test cases for Django-ESP utilities
 
 import datetime
 import doctest
+import json
 try:
     import pylibmc as memcache
 except:
@@ -188,6 +189,50 @@ class TemplateOverrideTest(DjangoTestCase):
         #   Delete the original template override and make sure you see nothing
         TemplateOverride.objects.filter(name='BLAARG.TEMPLATEOVERRIDE').delete()
         self.expect_template_error('BLAARG.TEMPLATEOVERRIDE')
+
+
+class DefaultTemplateContentViewTest(DjangoTestCase):
+    """Tests for the get_default_template_content admin view (issue #2879)."""
+
+    URL = '/manage/templateoverride/default_content/'
+    # A template that is guaranteed to exist on disk
+    KNOWN_TEMPLATE = 'utils/diff_templateoverride.html'
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='test_admin_dtcv')
+        self.admin.set_password('password')
+        self.admin.makeAdmin()
+        self.admin.save()
+
+    def test_unauthenticated_redirected(self):
+        r = self.client.get(self.URL, {'name': self.KNOWN_TEMPLATE})
+        self.assertEqual(r.status_code, 302)
+
+    def test_no_name_returns_400(self):
+        self.client.login(username='test_admin_dtcv', password='password')
+        r = self.client.get(self.URL)
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('error', json.loads(r.content))
+
+    def test_valid_template_returns_content(self):
+        self.client.login(username='test_admin_dtcv', password='password')
+        r = self.client.get(self.URL, {'name': self.KNOWN_TEMPLATE})
+        self.assertEqual(r.status_code, 200)
+        data = json.loads(r.content)
+        self.assertIn('content', data)
+        self.assertTrue(len(data['content']) > 0)
+
+    def test_missing_template_returns_404(self):
+        self.client.login(username='test_admin_dtcv', password='password')
+        r = self.client.get(self.URL, {'name': 'nonexistent/template_xyz.html'})
+        self.assertEqual(r.status_code, 404)
+        self.assertIn('error', json.loads(r.content))
+
+    def test_path_traversal_blocked(self):
+        self.client.login(username='test_admin_dtcv', password='password')
+        r = self.client.get(self.URL, {'name': '../../etc/passwd'})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('error', json.loads(r.content))
 
 
 class QueryBuilderTest(DjangoTestCase):
