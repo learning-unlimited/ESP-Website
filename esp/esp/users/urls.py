@@ -12,9 +12,6 @@ urlpatterns = [
     url(r'^register/information/?$', views.user_registration_phase2,
         name='esp.users.views.user_registration_phase2'),
     url(r'^activate/?$', views.registration.activate_account),
-    url(r'^recoveremail/(success)?/?$', views.email_passwd_followup),
-    url(r'^recoveremail/?$', views.email_passwd_followup),
-    url(r'^cancelrecover/?$', views.email_passwd_cancel),
     url(r'^passwdrecover/(success)?/?$', views.initial_passwd_request),
     url(r'^passwdrecover/?$', views.initial_passwd_request),
     url(r'^resetpassword/done/?$', views.password_reset_done),
@@ -33,7 +30,6 @@ urlpatterns = [
     url(r'^morph/?$', views.morph_into_user),
     # username uses [^/]+ (not the narrower [\w.@+-]+) to preserve routing for
     # legacy usernames that may contain characters outside that charset.
-    url(r'^$', RedirectView.as_view(url='/myesp/profile/', permanent=False)),
     url(r'^unsubscribe/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$',
         views.unsubscribe, name="unsubscribe"),
     url(r'^unsubscribe_oneclick/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$',
@@ -45,6 +41,7 @@ urlpatterns += [
 ]
 
 urlpatterns += [
+    url(r'^$', RedirectView.as_view(url='/myesp/profile/', permanent=False)),
     url(r'^switchback/?$', myesp.myesp_switchback),
     url(r'^stop_testing/?$', myesp.myesp_stop_testing),
     url(r'^onsite/?$', myesp.myesp_onsite),
