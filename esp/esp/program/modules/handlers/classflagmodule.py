@@ -114,7 +114,14 @@ class ClassFlagModule(ProgramModuleObj):
         if form.is_valid():
             flag = form.save()
             if flag.flag_type.notify_teacher_by_email:
-                flag.send_teacher_notification()
+                try:
+                    flag.send_teacher_notification()
+                except Exception:
+                    import logging
+                    logging.getLogger(__name__).error(
+                        "Failed to send teacher notification for flag %s",
+                        flag.id, exc_info=True
+                    )
             context = { 'flag' : flag }
             response = json.dumps({
                 'flag_name': render_to_string(self.baseDir()+'flag_name.html', context = context, request = request),

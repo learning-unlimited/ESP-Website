@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -67,7 +66,6 @@ Procedures:
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
 
-@python_2_unicode_compatible
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
     # TODO: this model can almost certainly be cleaned up. It is probably possible to delete the caching and dumping
@@ -95,7 +93,7 @@ class ResourceType(models.Model):
         if self.attributes_dumped:
             try:
                 self._attributes_cached = json.loads(self.attributes_dumped)
-            except:
+            except (ValueError, TypeError):
                 self._attributes_cached = None
         else:
             self._attributes_cached = None
@@ -141,9 +139,8 @@ class ResourceType(models.Model):
         return ret
 
     def __str__(self):
-        return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
+        return f'Resource Type "{self.name}", priority={self.priority_default}'
 
-@python_2_unicode_compatible
 class ResourceRequest(models.Model):
     """ A request for a particular type of resource associated with a particular clas section. """
 
@@ -153,16 +150,14 @@ class ResourceRequest(models.Model):
     desired_value = models.TextField()
 
     def __str__(self):
-        return 'Resource request of %s for %s: %s' % (str(self.res_type), self.target.emailcode(), self.desired_value)
+        return f'Resource request of {self.res_type} for {self.target.emailcode()}: {self.desired_value}'
 
-@python_2_unicode_compatible
 class ResourceGroup(models.Model):
     """ A hack to make the database handle resource group ID creation """
 
     def __str__(self):
-        return 'Resource group %d' % (self.id,)
+        return f'Resource group {self.id}'
 
-@python_2_unicode_compatible
 class Resource(models.Model):
     """ An individual resource, such as a class room or piece of equipment.  Categorize by
     res_type, attach to a user if necessary. """
@@ -184,12 +179,12 @@ class Resource(models.Model):
 
     def __str__(self):
         if self.user is not None:
-            return 'For %s: %s (%s)' % (str(self.user), self.name, str(self.res_type))
+            return f'For {self.user}: {self.name} ({self.res_type})'
         else:
             if self.num_students != -1:
-                return 'For %d students: %s (%s)' % (self.num_students, self.name, str(self.res_type))
+                return f'For {self.num_students} students: {self.name} ({self.res_type})'
             else:
-                return '%s (%s)' % (self.name, str(self.res_type))
+                return f'{self.name} ({self.res_type})'
 
     def save(self, *args, **kwargs):
         if self.res_group is None:
@@ -271,7 +266,7 @@ class Resource(models.Model):
                 new_ra.assignment_group = group
             new_ra.save()
         else:
-            raise ESPError('Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id, log=True)
+            raise ESPError(f'Attempted to assign class section {section.id} to conflicted resource; and constraint check was on.', log=True)
         return new_ra
 
     assign_to_class = assign_to_section
@@ -348,14 +343,12 @@ class Resource(models.Model):
             collision = ResourceAssignment.objects.filter(resource=self)
             return collision.exists()
 
-@python_2_unicode_compatible
 class AssignmentGroup(models.Model):
     """ A hack to make the database handle assignment group ID creation """
 
     def __str__(self):
-        return 'Assignment group %d' % (self.id,)
+        return f'Assignment group {self.id}'
 
-@python_2_unicode_compatible
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
@@ -369,7 +362,7 @@ class ResourceAssignment(models.Model):
     assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        result = 'Resource assignment for %s' % str(self.getTargetOrSubject())
+        result = f'Resource assignment for {self.getTargetOrSubject()}'
         if self.lock_level > 0:
             result += ' (locked)'
         return result
