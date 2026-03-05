@@ -279,12 +279,10 @@ def ajax_qsd(request):
         data = post_dict['data']
 
         # Get the URL from the request information
-        referer = request.META.get('HTTP_REFERER')
-        path = urlparse(referer).path
-        path_parts = [el for el in path.split('/') if el != '']
+        url_parts = qsd.url.split('/')
 
         # Sanitize if this is for a class QSD
-        if len(path_parts) > 3 and path_parts[3] == "Classes":
+        if len(url_parts) > 3 and url_parts[3] == "Classes":
             data = clean(data, strip = True)
         data, _ = strip_base64_images(data)
 
@@ -311,12 +309,11 @@ def ajax_qsd_preview(request):
     data = request.POST['data']
 
     # Get the URL from the request information
-    referer = request.META.get('HTTP_REFERER')
-    path = urlparse(referer).path
-    path_parts = [el for el in path.split('/') if el != '']
+    url = request.POST.get('url', '')
+    url_parts = url.split('/')
 
     # Sanitize if this is for a class QSD
-    if len(path_parts) > 3 and path_parts[3] == "Classes":
+    if len(url_parts) > 3 and url_parts[3] == "Classes":
         data = clean(data, strip = True)
     data, _ = strip_base64_images(data)
 
