@@ -25,6 +25,7 @@ def reverse_migration(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('tagdict', '0001_initial'),  # command iterates all models; Tag table must exist
         ('web', '0002_auto_20210526_1921'),
     ]
 
