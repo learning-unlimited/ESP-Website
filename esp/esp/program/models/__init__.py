@@ -57,7 +57,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from argcache import cache_function, cache_function_for, wildcard
-from esp.cal.models import Event, EventType
+from esp.cal.models import Event
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
