@@ -42,6 +42,7 @@ from esp.themes.controllers import ThemeController
 
 from esp.utils.web import render_to_response
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.conf import settings
 
 from datetime import datetime
@@ -253,7 +254,7 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
                 tc.load_theme(form.cleaned_data['theme'], backup_info=backup_info)
 
             form.save_to_tag()
-            return HttpResponseRedirect('/themes/')
+            return HttpResponseRedirect(reverse('themes_landing'))
     else:
         form = form_class.load_from_tag(theme_name=current_theme, just_selected=force_display)
 
@@ -358,5 +359,5 @@ def recompile(request, keep_files=None):
         return confirm_overwrite(request, current_theme=theme_name, differences=differences, orig_view='recompile')
 
     tc.recompile_theme(keep_files=keep_files)
-    return HttpResponseRedirect('/themes/')
+    return HttpResponseRedirect(reverse('themes_landing'))
 
