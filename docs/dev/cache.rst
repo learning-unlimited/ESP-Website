@@ -15,11 +15,11 @@ in one place. The framework handles boring things such as key
 creation, cache lookup, etc.
 
 Caches are applied on a function-level granularity. So, split off
-functions as-need. Also, such functions really shouldn't have
+functions as-needed. Also, such functions really shouldn't have
 side-effects. Split up your functions if needed. Conceptually, each
 cache maps keys to values, where keys correspond to function
 arguments. The caches can invalidate keys in bulk by sets of keys, and
-propagate invalidations up to dependant caches. We limit the types of
+propagate invalidations up to dependent caches. We limit the types of
 key sets that may be expressed so that this is implementable.
 
 
@@ -30,7 +30,7 @@ Internally, invalidations are done by maintaining a signature along
 with each cache entry. Before returning a value, we check that this
 signature is current. If not, we pretend the value was never there in
 the first place. This signature is computed from other cache values
-called tokens which are shared so that, by reseting a particular
+called tokens which are shared so that, by resetting a particular
 token, we can implicitly bulk-invalidate a chosen subset of the keys,
 notably the subset which depends on that token. Currently the stored
 value is wrapped into a tuple with the signature. This is likely to
@@ -46,13 +46,13 @@ ArgCache
 
 The core class in esp.cache is ArgCache. It handles a crapload of
 stuff and is very much in need of splitting up. An ArgCache contains a
-cache paramterized by a list of arguments. It exports a similar API to
+cache parameterized by a list of arguments. It exports a similar API to
 Django's cache objects, but the keys are lists of Python objects
 rather than strings. The marinade module (as a pun a Python's pickle)
 handles stringifying these objects. In addition, ArgCache provides
 methods to register dependencies and delete_key_set, which takes a
 key_set and deletes everything in it. It may fallback on deleting more
-if needbe (in the case that it lacks a Token for the job). Upon
+if need be (in the case that it lacks a Token for the job). Upon
 deletion, it emits a signal with the key_set, so that other ArgCaches
 may listen and react appropriately.
 
@@ -64,7 +64,7 @@ Key sets are represented by dictionaries. (We could use lists, but for
 convenience, the names of the arguments are incorporated.) They map
 the arguments of an ArgCache (by name) to sets of objects. You can
 think of them as Cartesian products of these sets by
-argument. Currently, the only expressable sets are wildcard (that is,
+argument. Currently, the only expressible sets are wildcard (that is,
 everything) and a specific object, and the API is a little iffy. If a
 (key,value) pair is missing for an argument, it should be assumed to
 be wildcard (we may explicitly add them later). Exact objects are

@@ -33,7 +33,7 @@ Setup
 
 
 - Note: You will need version 1.3.1 of LESS (the one that comes with Ubuntu 13.04). You can install LESS from https://github.com/less/less.js (git clone, then git checkout v1.3.1) or, in Ubuntu, by adding this PPA: https://launchpad.net/~george-edison55/+archive/less
-- Note: You will need version 0.10 or higher of Node.js.  You can install Node.js from https://github.com/joyent/node.git (git clonse, then git checkout v0.11.9-release).
+- Note: You will need version 0.10 or higher of Node.js.  You can install Node.js from https://github.com/joyent/node.git (git clone, then git checkout v0.11.9-release).
 
 2) Back up your database, or at least the template overrides.
 3) Make sure the Web server user has execute and write permission on all of the directories under esp/public/media.  (The theme editor will be copying images and generating style files.)    

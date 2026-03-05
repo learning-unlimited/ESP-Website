@@ -384,7 +384,7 @@ FILEBROWSER_DIRECTORY = ''
 
 FILEBROWSER_EXTENSIONS = {
     'Image': ['.jpg', '.jpeg', '.gif', '.png', '.tif', '.tiff', '.ico'],
-    'Document': ['.pdf', '.doc', '.rtf', '.txt', '.xls', '.csv'],
+    'Document': ['.pdf', '.doc', '.rtf', '.txt', '.xls', '.xlsx', '.csv'],
     'Video': ['.mov', '.wmv', '.mpeg', '.mpg', '.avi', '.rm'],
     'Audio': ['.mp3', '.mp4', '.wav', '.aiff', '.midi', '.m4p'],
 }
@@ -395,6 +395,10 @@ FILEBROWSER_SELECT_FORMATS = {
     'document': ['Document'],
     'media': ['Video', 'Audio'],
 }
+
+# Custom file storage backend that lowercases file extensions
+# This ensures consistent handling of file extensions regardless of upload method
+DEFAULT_FILE_STORAGE = 'esp.web.storage.LowercaseExtensionStorage'
 
 #   Default imports for shell_plus, for convenience.
 SHELL_PLUS_POST_IMPORTS = (
