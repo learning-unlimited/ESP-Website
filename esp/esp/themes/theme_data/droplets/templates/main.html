@@ -5,9 +5,9 @@
 {% block stylesheets %}
 {{ block.super }}
 <style>
-  .jumbotron {
+.jumbotron {
     background-image: url(/media/images/theme/header.png?v={{ current_header_version }});
-  }
+}
 </style>
 {% endblock stylesheets %}
 
@@ -16,7 +16,7 @@
 {% block navbar %}
 <div class="container navbar-container">
   <div class="navbar navbar-fixed-top navbar-inverse">
-    <div id="navbar" class="navbar-inner">
+    <div id ="navbar" class="navbar-inner">
       <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
       <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
         <span class="icon-bar"></span>
@@ -25,8 +25,7 @@
       </a>
       <!-- Be sure to leave the brand out there if you want it shown -->
       {% if theme.show_logo_navbar %}
-      <a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}"
-          class="logo nav"></a>
+      <a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo nav"></a>
       {% endif %}
       {% if theme.show_group_name %}
       <a class="brand" href="/">{{ theme.full_group_name }}</a>
@@ -50,8 +49,7 @@
     {% if theme.show_logo_header %}
     <div class="header-cell">
       <a href="/">
-        <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}"
-          class="logo">
+          <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo">
       </a>
     </div>
     {% endif %}
@@ -70,40 +68,29 @@
 <div class="container">
   <div id="main" class="resizable">
     {% if request.COOKIES.esp_testing_role %}
-    <div
-      style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+    <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
       <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
       You are logged in as a test account.
-      <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to
-        Admin</a>
+      <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
     </div>
     {% endif %}
     {% if request.mod_required %}
     <div class="alert alert-danger">
-      <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-      This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{%
-      elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
     </div>
     {% endif %}
     {% if request.show_perm_info %}
     <div class="alert alert-info">
-      <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-      <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to
-      view this page: {{ request.perm_names|join:", " }}
-      <br />
-      {% if request.roles_with_perm %}
-      Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
-      {% else %}
-      <strong>No (non-admin) roles have permission to view this page!</strong>
-      {% endif %}
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
+        <br />
+        {% if request.roles_with_perm %}
+            Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
+        {% else %}
+            <strong>No (non-admin) roles have permission to view this page!</strong>
+        {% endif %}
     </div>
-    {% endif %}
-    {% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }}">
-      {{ message }}
-    </div>
-    {% endfor %}
     {% endif %}
     {% block content %}
     {% endblock content %}
@@ -113,52 +100,52 @@
 </br>
 </br>
 <script>
-  function footerResize() {
-    if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))) {
-      $j('body').css('padding-bottom', $j("#footer").innerHeight());
-    } else {
-      $j('body').css('padding-bottom', "inherit");
-    }
-  };
-  window.addEventListener("resize", footerResize);
-  $j(function () { footerResize() });
+	function footerResize() {
+		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
+			$j('body').css('padding-bottom', $j("#footer").innerHeight());
+		} else {
+			$j('body').css('padding-bottom', "inherit");
+		}
+	};
+	window.addEventListener("resize", footerResize);
+	$j(function() { footerResize() });
+	
+	function headerResize() {
+		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
+			$j('body').css('padding-top', $j("#navbar").innerHeight());
+		} else {
+			$j('body').css('padding-top', "inherit");
+		}
+	};
+	window.addEventListener("resize", headerResize);
+	$j(function() { headerResize() });
 
-  function headerResize() {
-    if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))) {
-      $j('body').css('padding-top', $j("#navbar").innerHeight());
-    } else {
-      $j('body').css('padding-top', "inherit");
-    }
-  };
-  window.addEventListener("resize", headerResize);
-  $j(function () { headerResize() });
-
-  {# TODO(benkraft): this is ugly, find a better way # }
-  $j('.button').addClass('btn').removeClass('button');
-  $j('.fancybutton').addClass('btn').addClass('btn-primary');
+	{# TODO(benkraft): this is ugly, find a better way #}
+	$j('.button').addClass('btn').removeClass('button');
+	$j('.fancybutton').addClass('btn').addClass('btn-primary');
 </script>
 {% endblock main %}
 
 {% block footer %}
 <div class="container footer-container">
   <div class="navbar navbar-fixed-bottom navbar-inverse">
-    <div id="footer" class="navbar-inner">
-      {% if theme.show_footer_textbox %}
-      <div>
-        {% load render_qsd %}
-        {% inline_qsd_block "footer_text" %}
-        {% end_inline_qsd_block %}
-      </div>
-      {% endif %}
-      <ul class="nav" style="width: 100%">
-        <li style="width: 100%" class="text-center">
-          <a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
-          <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
-        </li>
+    <div id = "footer" class="navbar-inner">
+		{% if theme.show_footer_textbox %}
+		<div>
+			{% load render_qsd %}
+			{% inline_qsd_block "footer_text" %}
+			{% end_inline_qsd_block %}
+		</div>
+		{% endif %}
+		<ul class="nav" style="width: 100%">
+		<li style="width: 100%" class="text-center">
+			<a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
+			<a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
+       </li>
       </ul>
     </div>
   </div>
 </div>
 {% endblock footer %}
-
+  
 {% endblock body %}
