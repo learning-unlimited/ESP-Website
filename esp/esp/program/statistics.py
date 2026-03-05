@@ -1,5 +1,4 @@
 
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,11 +36,11 @@ import json
 from collections import Counter, OrderedDict, defaultdict
 from numpy import mean
 
-from django.db.models import Min, Max
+from django.db.models import Count, Sum, F, DecimalField, Min, Max
 from django.template.loader import render_to_string
 
 from esp.accounting.models import FinancialAidGrant
-from esp.program.models import FinancialAidRequest, Program, StudentRegistration
+from esp.program.models import ClassSection, FinancialAidRequest, Program, StudentRegistration
 from esp.cal.models import Event
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
@@ -61,26 +60,21 @@ be supported as a type of query.
 
 def zipcodes(form, programs, students, profiles, result_dict={}):
 
-    #   Get zip codes
+    #   Get zip codes and filter out invalid ones
     zip_dict = {}
+    result_dict['invalid'] = 0
     for profile in profiles:
         if profile.contact_user:
-            if profile.contact_user.address_zip not in zip_dict:
-                zip_dict[profile.contact_user.address_zip] = 0
-            zip_dict[profile.contact_user.address_zip] += 1
+            zip_code = profile.contact_user.address_zip
+            if zip_code and len(zip_code) == 5 and zip_code.isnumeric():
+                if zip_code not in zip_dict:
+                    zip_dict[zip_code] = 0
+                zip_dict[zip_code] += 1
+            else:
+                result_dict['invalid'] += 1
         else:
-            if 'N/A' not in zip_dict:
-                zip_dict['N/A'] = 0
-            zip_dict['N/A'] += 1
+            result_dict['invalid'] += 1
     zip_codes = sorted(zip_dict.keys())
-
-    #   Filter out invalid zip codes
-    result_dict['invalid'] = 0
-    for code in zip_codes:
-        if not code or len(code) != 5 or not code.isnumeric():
-            result_dict['invalid'] += zip_dict[code]
-            del zip_dict[code]
-            zip_codes.remove(code)
     zip_counts = [zip_dict[x] for x in zip_codes]
 
     #   Compile and render
@@ -89,20 +83,29 @@ def zipcodes(form, programs, students, profiles, result_dict={}):
         result_dict['zip_data'] = result_dict['zip_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/zip_codes.html', result_dict)
 
-
 def demographics(form, programs, students, profiles, result_dict={}):
 
-    #   Get aggregate 'vitals' info
-    result_dict['num_classes'] = result_dict['num_sections'] = 0
-    result_dict['num_class_hours'] = result_dict['num_student_class_hours'] = 0
-    for program in programs:
-        result_dict['num_classes'] += program.classes().select_related().filter(status=ClassStatus.ACCEPTED).count()
-        result_dict['num_sections'] += program.sections().select_related().filter(status=ClassStatus.ACCEPTED).count()
-        for section in program.sections().select_related().filter(status=ClassStatus.ACCEPTED):
-            result_dict['num_class_hours'] += section.duration
-            result_dict['num_student_class_hours'] += section.duration*section.parent_class.class_size_max
-    result_dict['num_class_hours'] = int(result_dict['num_class_hours'])
-    result_dict['num_student_class_hours'] = int(result_dict['num_student_class_hours'])
+    #   Get aggregate 'vitals' info via cross-program SQL aggregation.
+    agg = (
+        ClassSection.objects
+        .filter(
+            parent_class__parent_program__in=programs,
+            status=ClassStatus.ACCEPTED,
+        )
+        .aggregate(
+            num_classes=Count('parent_class', distinct=True),
+            num_sections=Count('id'),
+            num_class_hours=Sum('duration'),
+            num_student_class_hours=Sum(
+                F('duration') * F('parent_class__class_size_max'),
+                output_field=DecimalField(),
+            ),
+        )
+    )
+    result_dict['num_classes'] = agg['num_classes'] or 0
+    result_dict['num_sections'] = agg['num_sections'] or 0
+    result_dict['num_class_hours'] = int(agg['num_class_hours'] or 0)
+    result_dict['num_student_class_hours'] = int(agg['num_student_class_hours'] or 0)
 
     #   Get grade/age info
     gradyear_dict = {}
@@ -163,7 +166,6 @@ def demographics(form, programs, students, profiles, result_dict={}):
     result_dict['finaid_approved'] = len(set(finaid_approved))
     return render_to_string('program/statistics/demographics.html', result_dict)
 
-
 def schools(form, programs, students, profiles, result_dict={}):
 
     #   Count by name of every student's school
@@ -190,7 +192,6 @@ def schools(form, programs, students, profiles, result_dict={}):
     if form.cleaned_data['limit']:
         result_dict['school_data'] = result_dict['school_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/schools.html', result_dict)
-
 
 def startreg(form, programs, students, profiles, result_dict={}):
 
@@ -243,7 +244,6 @@ def startreg(form, programs, students, profiles, result_dict={}):
 
     return render_to_string('program/statistics/startreg.html', result_dict)
 
-
 def repeats(form, programs, students, profiles, result_dict={}):
 
     #   For each student, find out what other programs they registered for and bin by quantity in each program type.
@@ -285,7 +285,6 @@ def repeats(form, programs, students, profiles, result_dict={}):
         repeat_counts.append(repeat_count[key_map[label]])
     result_dict['repeat_data'] = list(zip(repeat_labels, repeat_counts))
     return render_to_string('program/statistics/repeats.html', result_dict)
-
 
 def heardabout(form, programs, students, profiles, result_dict={}):
 

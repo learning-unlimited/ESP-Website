@@ -13,8 +13,6 @@ from esp.program.models.class_ import \
 from esp.program.modules import module_ext
 from esp.program.tests import ProgramFrameworkTest
 from esp.resources.models import Resource, ResourceType, ResourceRequest
-from six.moves import range
-from six.moves import zip
 
 
 class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
@@ -599,7 +597,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                                  "Section was assigned to wrong timeslot")
             db_interface.check_can_schedule_sections = \
                 db_interface_can_schedule
-        except:
+        except BaseException:
             db_interface.check_can_schedule_sections = \
                 db_interface_can_schedule
             raise

@@ -1,4 +1,3 @@
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,7 +36,7 @@ from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration
+from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
 from datetime import datetime
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
@@ -82,7 +81,7 @@ class TeacherReviewApps(ProgramModuleObj):
             student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
-            except:
+            except StudentApplication.DoesNotExist:
                 student.app = None
 
             if student.app:
@@ -117,7 +116,6 @@ class TeacherReviewApps(ProgramModuleObj):
                     return redirect(url)
                 if prev.id != prev_id:
                     prev = current
-
 
         return render_to_response(self.baseDir()+'roster.html',
                                   request,
@@ -164,13 +162,14 @@ class TeacherReviewApps(ProgramModuleObj):
                 q = f.app_question
                 form = f.app_question.get_form(data, form_prefix=f.prefix)
 
-                #   If the form is valid, save the question.  If not, delete it.
-                if form.is_valid():
+                #   If the form is valid and has question text, save the question.
+                #   Otherwise, if it's an existing question (with an ID), delete it.
+                #   This prevents empty records for unfilled classes and deletes cleared questions.
+                if form.is_valid() and form.cleaned_data.get('question', '').strip():
                     q.update(form)
                     q.save()
-                else:
-                    if hasattr(q, 'id') and q.id:
-                        q.delete()
+                elif hasattr(q, 'id') and q.id:
+                    q.delete()
 
             return self.goToCore(tl)
 
@@ -210,7 +209,7 @@ class TeacherReviewApps(ProgramModuleObj):
 
         try:
             student.app = student.studentapplication_set.get(program = self.program)
-        except:
+        except StudentApplication.DoesNotExist:
             student.app = None
             raise ESPError('Error: Student did not start an application.', log=False)
 
@@ -235,7 +234,6 @@ class TeacherReviewApps(ProgramModuleObj):
                     from django.shortcuts import redirect
                     return redirect(url) # self.review_students(request, tl, one, two, module, extra, prog)
 
-
         else:
             form = this_review.get_form()
 
@@ -255,7 +253,6 @@ class TeacherReviewApps(ProgramModuleObj):
 
     def isStep(self):
         return True
-
 
     class Meta:
         proxy = True

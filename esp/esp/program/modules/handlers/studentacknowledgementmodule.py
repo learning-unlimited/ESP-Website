@@ -4,13 +4,12 @@ from esp.users.models   import ESPUser, Record, RecordType
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
-import six
 
 def studentacknowledgementform_factory(prog):
     name = "StudentAcknowledgementForm"
     bases = (forms.Form,)
 
-    label = six.u("By checking this box, I acknowledge that I have read and understood the above contract, and agree to abide by it. I understand that should I break this contract, I may be asked to leave the program.")
+    label = "By checking this box, I acknowledge that I have read and understood the above contract, and agree to abide by it. I understand that should I break this contract, I may be asked to leave the program."
 
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)

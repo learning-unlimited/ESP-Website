@@ -1,5 +1,4 @@
 
-import six
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -45,7 +44,6 @@ from esp.program.modules.forms.mailinglabels_schools import SchoolSelectForm
 from esp.program.modules.forms.mailinglabels_banzips import BanZipsForm
 import operator
 
-
 class MailingLabels(ProgramModuleObj):
     doc = """This allows one to generate Mailing Labels for both schools and users. You have the option of either creating a file which can be sent to MIT mailing services or actually create printable files.
     """
@@ -81,7 +79,6 @@ class MailingLabels(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+"mailinglabel_badzips.html", request, {'form': form})
 
-
     @main_call
     @needs_admin
     def mailinglabel(self, request, tl, one, two, module, extra, prog):
@@ -112,7 +109,7 @@ class MailingLabels(ProgramModuleObj):
                     if form.is_valid():
                         try:
                             zipc = ZipCode.objects.get(zip_code = form.cleaned_data['zip_code'])
-                        except:
+                        except ZipCode.DoesNotExist:
                             raise ESPError('Please enter a valid US zipcode. "%s" is not valid.' % form.cleaned_data['zip_code'], log=False)
 
                         zipcodes = zipc.close_zipcodes(form.cleaned_data['proximity'])
@@ -167,7 +164,6 @@ class MailingLabels(ProgramModuleObj):
             response = HttpResponse('\n'.join(output), content_type = 'text/plain')
             return response
 
-
     @staticmethod
     def gen_addresses(infos, combine = True):
         """ Takes a iterable list of infos and returns a list of addresses. """
@@ -177,9 +173,7 @@ class MailingLabels(ProgramModuleObj):
         import re
         import time
 
-
         regex = re.compile(r""""background:url\(images\/table_gray.gif\); padding\:5px 10px;">\s*(.*?)<br \/>\s*(.*?)&nbsp;(.{2})&nbsp;&nbsp;(\d{5}\-\d{4})""")
-
 
         addresses = {}
         ids_zipped = []
@@ -225,14 +219,13 @@ class MailingLabels(ProgramModuleObj):
                               'submit_y' : '',
                               'submit':    'Find ZIP Code'}
 
-
                 post_data.update({'address2': info.address_street.title(),
                                   'state': info.address_state,
                                   'city': info.address_city.title(),
                                   'zip5': info.address_zip,
                                   })
 
-                post_string = '&'.join(['%s=%s' % (key, urlencode(value)) for key, value in six.iteritems(post_data)])
+                post_string = '&'.join(['%s=%s' % (key, urlencode(value)) for key, value in post_data.items()])
 
                 c = pycurl.Curl()
 
@@ -241,7 +234,6 @@ class MailingLabels(ProgramModuleObj):
                 c.setopt(pycurl.POST, 1)
                 c.setopt(pycurl.REFERER, 'http://zip4.usps.com/zip4/welcome.jsp')
                 #c.setopt(pycurl.RETURNTRANSFER, True)
-
 
                 from io import StringIO
                 b = StringIO()
@@ -258,7 +250,7 @@ class MailingLabels(ProgramModuleObj):
                                                    ma.group(3),
                                                    ma.group(4))
                     info.address_postal = key
-                except:
+                except AttributeError:
                     key = False
                     info.address_postal = 'FAILED'
 
@@ -272,7 +264,6 @@ class MailingLabels(ProgramModuleObj):
                 else:
                     addresses[key] = [name]
 
-
                 #time.sleep(1)
         if use_title:
             output = ["'Num','Name','Title','Street','City','State','Zip'"]
@@ -280,7 +271,7 @@ class MailingLabels(ProgramModuleObj):
             output = ["'Num','Name','Street','City','State','Zip'"]
         #output.append(','.join(ids_zipped))
         i = 1
-        for key, value in six.iteritems(addresses):
+        for key, value in addresses.items():
             if key != False:
                 if combine:
                     if use_title:
