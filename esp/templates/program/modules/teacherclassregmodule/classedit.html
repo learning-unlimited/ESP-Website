@@ -13,6 +13,7 @@
 {% block xtrajs %}
     {{ block.super }}
     {% include "load_ajax_scripts.html" %}
+	{{ sectionNums|json_script:"section-numbers-per-duration"}}
     <script type="text/javascript" src="/media/scripts/program/modules/teacherclassregmodule.js"></script>
     <script type="text/javascript" src="/media/scripts/program/modules/flag-edit.js"></script>
 {% endblock %}
