@@ -1398,3 +1398,59 @@ def manage_docs(request, doc_path=None):
         'latest_release_html': latest_release_html,
     }
     return render_to_response('program/manage_docs.html', request, context)
+
+# --- Class Resources and Check-In ---
+
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from esp.program.models.checkin import ClassCheckIn
+
+@login_required
+def class_resources(request, section_id):
+    section = get_object_or_404(ClassSection, id=section_id)
+    # Check permissions if desired (e.g. only students/teachers enrolled/teaching the class, plus superusers)
+    if not request.user.isSuperUser() and not request.user.isEnrolledInClass(section) and request.user not in section.get_teachers():
+        raise ESPError("You do not have permission to view this page.", log=False)
+    
+    return render_to_response('program/class_resources.html', request, {'section': section})
+
+@csrf_exempt
+@login_required
+def auto_checkin_api(request):
+    if request.method != 'POST':
+        return HttpResponseBadRequest("Must be POST")
+    
+    section_id = request.POST.get('section_id')
+    if not section_id:
+        return HttpResponseBadRequest("Missing section_id")
+    
+    section = get_object_or_404(ClassSection, id=section_id)
+    
+    # Verify student is enrolled
+    if not request.user.isEnrolledInClass(section):
+        return HttpResponse(json.dumps({'error': 'Not enrolled in this class.'}), status=403, content_type='application/json')
+    
+    # Verify session is currently active (date/time validation)
+    now = timezone.now()
+    active = False
+    for timeblock in section.meeting_times.all():
+        start = timeblock.start - datetime.timedelta(minutes=30)
+        end = timeblock.end
+        if start <= now <= end:
+            active = True
+            break
+            
+    if not active:
+        return HttpResponse(json.dumps({'error': 'Class is not currently active. You can only check in between 30 mins before start and the class end time.'}), status=400, content_type='application/json')
+        
+    # Prevent duplicate check-ins
+    checkin, created = ClassCheckIn.objects.get_or_create(
+        student=request.user,
+        class_section=section,
+        status='checked-in' # Based on my earlier implementation model
+    )
+    
+    if not created:
+        return HttpResponse(json.dumps({'message': 'Already checked in.'}), content_type='application/json')
+        
+    return HttpResponse(json.dumps({'message': 'Check-in successful.'}), content_type='application/json')

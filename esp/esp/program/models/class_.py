@@ -306,6 +306,12 @@ class ClassSection(models.Model):
 
     registrations = models.ManyToManyField(ESPUser, through='StudentRegistration')
 
+    # Class Resource fields
+    course_materials_url = models.URLField(blank=True, null=True, help_text="Link to course materials")
+    course_website = models.URLField(blank=True, null=True, help_text="Link to the course website")
+    instructor_email = models.EmailField(blank=True, null=True, help_text="Instructor contact email")
+    instructor_phone = models.CharField(max_length=32, blank=True, null=True, help_text="Instructor contact phone")
+
     @classmethod
     def ajax_autocomplete(cls, data):
         clsname = data.strip().split(':')
@@ -903,8 +909,8 @@ class ClassSection(models.Model):
         # check to see if there's a conflict:
         my_timeslots = self.timeslot_ids()
         for sec in section_list:
-            if sec.parent_class == self.parent_class:
-                return 'You are already signed up for a section of this class!'
+            if sec.id == self.id:
+                return 'You are already signed up for this exact section!'
             if hasattr(sec, '_timeslot_ids'):
                 timeslot_ids = sec._timeslot_ids
             else:
@@ -1825,10 +1831,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                user.getGrade(self.parent_program) > self.grade_max:
             if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
                 return 'You are not in the requested grade range for this class.'
-
-        for section in self.get_sections():
-            if user.isEnrolledInClass(section):
-                return 'You are already signed up for a section of this class!'
 
         if which_section:
             sections = [which_section]

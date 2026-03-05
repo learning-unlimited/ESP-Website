@@ -24,4 +24,8 @@ urlpatterns = [
     url(r'^manage/docs/?$', views.manage_docs),
     url(r'^manage/docs/(?P<doc_path>.+)/?$', views.manage_docs),
     url(r'^manage/mergeaccounts/?$', esp.users.views.merge.merge_accounts),
+
+    # student endpoints
+    url(r'^class_resources/(?P<section_id>\d+)/?$', views.class_resources),
+    url(r'^auto_checkin/?$', views.auto_checkin_api),
 ]

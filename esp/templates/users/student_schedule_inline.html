@@ -14,97 +14,141 @@
     </p>
 </div>
 <div id='program_form' class='program_form_small'>
-<table cellpadding='3' style='width: 500px; margin: auto' border=1>
-<tr>
-    <td colspan='3'>
-    <b>Your schedule for {{ prog.niceName }} {% ifequal num_classes 0 %}is empty.  Please add classes below!{% endifequal %}</b>
-    </td>
-</tr>
-{% for timeslot in timeslots %}
-    {% if not timeslot.1|length_is:0 %}
+    <table cellpadding='3' style='width: 500px; margin: auto' border=1>
+        <tr>
+            <td colspan='3'>
+                <b>Your schedule for {{ prog.niceName }} {% ifequal num_classes 0 %}is empty. Please add classes
+                    below!{% endifequal %}</b>
+            </td>
+        </tr>
+        {% for timeslot in timeslots %}
+        {% if not timeslot.1|length_is:0 %}
 
-    {% ifchanged timeslot.0.start.day %}
-        <tr><th class='program_form_small' colspan='3' style='text-align: center;'>{{ timeslot.0.pretty_date }}</th></tr>
-    {% endifchanged %}
-    <!-- {% ifchanged timeslot.2 %}
+        {% ifchanged timeslot.0.start.day %}
+        <tr>
+            <th class='program_form_small' colspan='3' style='text-align: center;'>{{ timeslot.0.pretty_date }}</th>
+        </tr>
+        {% endifchanged %}
+        <!-- {% ifchanged timeslot.2 %}
         <tr><th class='small' colspan='3' height='3'>Block {{ timeslot.2 }}</th></tr> 
     {% endifchanged %} -->
-    {% ifequal timeslot.0.event_type.description 'Compulsory' %}
-    <tr>
-        <td width='35%' valign='top' align='center' class='compulsory_event_time'>{{ timeslot.0.short_description }}</td>
-        <td colspan='2' class='compulsory_event_desc'>{{ timeslot.0.description }}</td>
-    </tr>
-    {% else %}
-    {% ifchanged timeslot.1 %}
-    <tr>
-        <td width='25%' valign='top' align='center'> {% with timeslot.1.0.section.friendly_times as times %}{% for ts in times %}{{ ts }}{% endfor %}{% endwith %}</td>
-        
-        <td style='vertical-align: top !important;'>
-        {% for cls in timeslot.1 %}
-	{% comment %}{% if use_priority %}{% endcomment %}
-            <!-- Commented out for simplicity (Splash Fall 2009)
+        {% ifequal timeslot.0.event_type.description 'Compulsory' %}
+        <tr>
+            <td width='35%' valign='top' align='center' class='compulsory_event_time'>{{ timeslot.0.short_description }}
+            </td>
+            <td colspan='2' class='compulsory_event_desc'>{{ timeslot.0.description }}</td>
+        </tr>
+        {% else %}
+        {% ifchanged timeslot.1 %}
+        <tr>
+            <td width='25%' valign='top' align='center'> {% with timeslot.1.0.section.friendly_times as times %}{% for
+                ts in times %}{{ ts }}{% endfor %}{% endwith %}</td>
+
+            <td style='vertical-align: top !important;'>
+                {% for cls in timeslot.1 %}
+                {% comment %}{% if use_priority %}{% endcomment %}
+                <!-- Commented out for simplicity (Splash Fall 2009)
             {% if not cls.section.verbs|length_is:0 %}
                 <i>{% for v in cls.section.verbs %}{{ v.friendly_name }}{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
             {% endif %}
             -->
-	{% comment %}{% endif %}{% endcomment %}
-	{{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %} 
-            
-            {% if request.user.onsite_local %}
+                {% comment %}{% endif %}{% endcomment %}
+                {{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %}
+
+                {% if request.user.onsite_local %}
                 ({{ cls.section.prettyrooms|join:', ' }})
-            {% endif %}
-            {% if not forloop.last %}<br />{% endif %}
-        {% endfor %}
-        {% if timeslot.1|length_is:0 %}
-            No classes
-        {% endif %}
-        </td>
-        
-        {% if not timeslot.1|length_is:0 %}
+                {% endif %}
+                {% if not forloop.last %}<br />{% endif %}
+                {% endfor %}
+                {% if timeslot.1|length_is:0 %}
+                No classes
+                {% endif %}
+            </td>
+
+            {% if not timeslot.1|length_is:0 %}
             {% if module.deadline_met %}
             <td width='20%' align='center' style='vertical-align: top !important;'>
-            {% for cls in timeslot.1 %}
+                {% for cls in timeslot.1 %}
                 {% if cls.first_meeting_time %}
-                    <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}' href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}' class='remove' data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}' data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>
-                    {% comment %}<a href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}' class='remove' data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}' data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>{% endcomment %}
+                <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}'
+                    href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}'
+                    class='remove'
+                    data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}'
+                    data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>
+                <a href="/class_resources/{{ cls.section.id }}/" target="_blank">[resources]</a>
+                <a href="#" class="auto-checkin-btn" data-section-id="{{ cls.section.id }}">[check-in]</a>
+                {% comment %}<a href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}'
+                    class='remove'
+                    data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}'
+                    data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>{% endcomment %}
                 {% endif %}
                 <br />
-            {% endfor %}
-            {% if timeslot.3 %}
+                {% endfor %}
+                {% if timeslot.3 %}
                 <a href='/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}'>[add class]</a>
                 {% if not timeslot.1|length_is:1 %}
-                    <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}' href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}'>[clear slot]</a>
-                    {% comment %}<a id='clearslotlink' href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}'>[clear slot]</a>{% endcomment %}
+                <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}'
+                    href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}'>[clear slot]</a>
+                {% comment %}<a id='clearslotlink' href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}'>[clear
+                    slot]</a>{% endcomment %}
                 {% endif %}
-            {% endif %}
+                {% endif %}
             </td>
             {% else %}
             <!-- Allow removal of classes if the appropriate flag is set -->
             {% if allow_removal %}
             <td width='15%' align='center' style='vertical-align: top !important;'>
-            {% for cls in timeslot.1 %}
+                {% for cls in timeslot.1 %}
                 {% if cls.first_meeting_time %}
-                    <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}' href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}' class='remove' data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}' data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>
-                    {% comment %}<a id='clearslotlink' href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}' class='remove' data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}' data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>{% endcomment %}
+                <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}'
+                    href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}'
+                    class='remove'
+                    data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}'
+                    data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>
+                <a href="/class_resources/{{ cls.section.id }}/" target="_blank">[resources]</a>
+                <a href="#" class="auto-checkin-btn" data-section-id="{{ cls.section.id }}">[check-in]</a>
+                {% comment %}<a id='clearslotlink'
+                    href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}' class='remove'
+                    data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}'
+                    data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>{% endcomment %}
                 {% endif %}
                 <br />
-            {% endfor %}
+                {% endfor %}
             </td>
             {% endif %}
             {% endif %}
-        {% else %}
+            {% else %}
             {% if module.deadline_met %}
-                <td width='20%' align='center'>
+            <td width='20%' align='center'>
                 <a href='/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}'>[add class]</a>
-                </td>
-            {% endif %}	
+            </td>
+            {% endif %}
+            {% endif %}
+        </tr>
+        {% endifchanged %}
+        {% endifequal %}
         {% endif %}
-    </tr>
-    {% endifchanged %}
-    {% endifequal %}
-    {% endif %}
-{% endfor %}
-</table> 
+        {% endfor %}
+    </table>
 </div>
-<br/>
+<br />
+<br />
+<script type="text/javascript">
+    $j(function () {
+        // Only bind if not already bound via document to avoid duplicates, 
+        // but the safest generic way given the possibility of multiple loads is just simple unbind first
+        $j(document).off('click', '.auto-checkin-btn').on('click', '.auto-checkin-btn', function (e) {
+            e.preventDefault();
+            var btn = $j(this);
+            var secId = btn.data('section-id');
+            $j.post("/auto_checkin/", { section_id: secId }, function (response) {
+                alert(response.message || "Check-in successful!");
+            }).fail(function (xhr) {
+                var msg = "Check-in failed.";
+                try { msg = JSON.parse(xhr.responseText).error || msg; } catch (e) { }
+                alert(msg);
+            });
+        });
+    });
+</script>
 {% endspaceless %}

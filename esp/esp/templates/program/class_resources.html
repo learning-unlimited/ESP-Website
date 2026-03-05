@@ -1,0 +1,61 @@
+{% extends "program/base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div class="panel panel-default" style="margin-top: 20px;">
+            <div class="panel-heading">
+                <h3 class="panel-title">Class Resources: {{ section.parent_class.title }} ({{ section.emailcode }})</h3>
+            </div>
+            <div class="panel-body">
+                <h4>Description</h4>
+                <p>{{ section.parent_class.description|linebreaksbr }}</p>
+
+                <hr/>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Course Materials</h4>
+                        {% if section.course_materials_url %}
+                            <p><a href="{{ section.course_materials_url }}" target="_blank" class="btn btn-primary">Go to Course Materials</a></p>
+                        {% else %}
+                            <p class="text-muted">No course materials linked by instructor.</p>
+                        {% endif %}
+                        
+                        <h4>Course Website</h4>
+                        {% if section.course_website %}
+                            <p><a href="{{ section.course_website }}" target="_blank">{{ section.course_website }}</a></p>
+                        {% else %}
+                            <p class="text-muted">No course website provided.</p>
+                        {% endif %}
+                    </div>
+                
+                    <div class="col-md-6">
+                        <h4>Instructor Contact Info</h4>
+                        <p><strong>Email:</strong> 
+                            {% if section.instructor_email %}
+                                <a href="mailto:{{ section.instructor_email }}">{{ section.instructor_email }}</a>
+                            {% else %}
+                                <span class="text-muted">Not provided</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Phone:</strong> 
+                            {% if section.instructor_phone %}
+                                {{ section.instructor_phone }}
+                            {% else %}
+                                <span class="text-muted">Not provided</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <hr/>
+                
+                <div class="text-center" style="margin-top: 15px;">
+                    <a href="javascript:history.back()" class="btn btn-default">Return to Schedule</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
