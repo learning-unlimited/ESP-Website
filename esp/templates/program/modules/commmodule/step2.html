@@ -5,6 +5,7 @@
 {% block xtrajs %}
 {{block.super}}
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
+<script src="/media/scripts/jodit_base64_upload.js"></script>
 {% endblock %}
 {% block stylesheets %}
 {{block.super}}
@@ -52,7 +53,7 @@ Both email address fields also support named "mailboxes", such as "{{ default_fr
   <td>
   <label for="from">
   <strong>From:</strong>
-  <small>(If blank: {{ default_from }}</small>)</small>
+  <small>(If blank: {{ default_from }})</small>
   </label>
   <input type="text" size="30" name="from" id="from" value="{{from}}" pattern="(^.+@{{ current_site.domain|regexsite }}$)|(^.+<.+@{{ current_site.domain|regexsite }}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)"/>
   <br /><br />
@@ -91,6 +92,26 @@ var editor = new Jodit("#emailbody", {
   "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall,|",
   "toolbarAdaptive": false,
   "saveModeInStorage": true,
+  "uploader": {
+    "url": "/admin/ajax_qsd_image_upload/",
+    "format": "json",
+    "headers": { "X-CSRFToken": csrf_token() },
+    "isSuccess": function(resp) { return resp.success; },
+    "getMessage": function(resp) {
+      return resp.data && resp.data.messages ? resp.data.messages.join("\n") : "";
+    },
+    "process": function(resp) {
+      return { files: resp.data.files || [], baseurl: "", error: resp.success ? 0 : 1, msg: "" };
+    },
+    "defaultHandlerSuccess": function(data) {
+      for (var i = 0; i < data.files.length; i++) {
+        editor.selection.insertImage(data.files[i]);
+      }
+    },
+    "error": function(e) {
+      editor.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
+    }
+  },
   extraButtons: [
     {
       name: 'insertDate',
@@ -128,5 +149,6 @@ var editor = new Jodit("#emailbody", {
     }
   ],
 });
+espHandleBase64Paste(editor);
 </script>
 {% endblock %}
