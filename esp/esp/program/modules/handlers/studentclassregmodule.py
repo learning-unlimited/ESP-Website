@@ -420,6 +420,16 @@ class StudentClassRegModule(ProgramModuleObj):
         if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
             return self.addclass(request, tl, one, two, module, extra, prog)
         try:
+            # Handle force replace
+            if request.POST.get('force_replace') == 'true':
+                sectionid = request.POST.get('section_id')
+                if sectionid:
+                    section = ClassSection.objects.get(id=sectionid)
+                    conflicts = section.get_conflicts(request.user)
+                    verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                    for conflict in conflicts:
+                        conflict.unpreregister_student(request.user, verbs)
+
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
             if 'no_schedule' in request.POST:
                 resp = HttpResponse(content_type='application/json')
@@ -434,6 +444,36 @@ class StudentClassRegModule(ProgramModuleObj):
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
+            # Check for schedule conflicts
+            error_msg = str(inst)
+            if 'conflict' in error_msg.lower():
+                sectionid = request.POST.get('section_id')
+                if sectionid:
+                    try:
+                        section = ClassSection.objects.get(id=sectionid)
+                        conflicts = section.get_conflicts(request.user)
+                        if conflicts:
+                            conflict_titles = ", ".join([str(c.title()) for c in conflicts])
+                            confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
+
+                            # Return JS confirming and then re-submitting with force_replace=true
+                            form_id = "prereg_%s" % sectionid
+                            js_script = (
+                                "if (confirm('%s')) {"
+                                "  var form = $j('#%s');"
+                                "  if (form.length > 0) {"
+                                "    form.append('<input type=\"hidden\" name=\"force_replace\" value=\"true\">');"
+                                "    form.submit();"
+                                "    form.find('input[name=\"force_replace\"]').remove();"
+                                "  }"
+                                "}"
+                            ) % (confirm_msg, form_id)
+                            resp = HttpResponse(content_type='application/json')
+                            resp.content = json.dumps({'script': js_script})
+                            return resp
+                    except:
+                        pass
+
             # TODO(benkraft): we shouldn't need to do this.  find a better way.
             raise AjaxError(inst)
 
