@@ -81,8 +81,23 @@ jobs:
               const assignees = issue.assignees.map(a => a.login);
 
               if (assignees.length === 0) {
-                console.log(`Issue #${issueNumber} is unassigned — allowing through.`);
-                continue;
+                // Issue is unassigned — close the PR
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: `👋 Hi @${prAuthor}, thanks for your interest in contributing!\n\nHowever, issue #${issueNumber} is not yet assigned to anyone. To avoid duplicate work, this PR has been automatically closed.\n\nPlease:\n1. Comment on the issue asking to be assigned\n2. Wait for a maintainer to assign you\n3. Reopen this PR\n\nWe appreciate your enthusiasm and look forward to your contributions! 🙌`,
+                });
+
+                await github.rest.pulls.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                  state: 'closed',
+                });
+
+                console.log(`Closed PR #${prNumber} — issue #${issueNumber} is unassigned.`);
+                return;
               }
 
               console.log(`Issue #${issueNumber} is assigned to: ${assignees.join(', ')}`);
@@ -95,7 +110,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: prNumber,
-                  body: `👋 Hi @${prAuthor}, thanks for your interest in contributing!\n\nHowever, issue #${issueNumber} is currently assigned to ${assigneeMentions}. To avoid duplicate work, this PR has been automatically closed.\n\nIf you'd like to work on this issue, please:\n1. Comment on the issue asking to be assigned\n2. Wait for a maintainer to assign you\n3. Then open a new PR\n\nWe appreciate your enthusiasm and look forward to your contributions! 🙌`,
+                  body: `👋 Hi @${prAuthor}, thanks for your interest in contributing!\n\nHowever, issue #${issueNumber} is currently assigned to ${assigneeMentions}. To avoid duplicate work, this PR has been automatically closed.\n\nIf you'd like to work on this issue, please:\n1. Comment on the issue asking to be assigned\n2. Wait for a maintainer to assign you\n3. Reopen this PR\n\nWe appreciate your enthusiasm and look forward to your contributions! 🙌`,
                 });
 
                 await github.rest.pulls.update({
