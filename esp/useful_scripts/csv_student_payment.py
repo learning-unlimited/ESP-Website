@@ -18,7 +18,6 @@ import csv
 import os
 import argparse
 
-from datetime import datetime
 from io import open
 
 def main():

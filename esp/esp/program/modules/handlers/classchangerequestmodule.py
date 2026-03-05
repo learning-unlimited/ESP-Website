@@ -37,7 +37,7 @@ from esp.program.models import StudentRegistration, RegistrationType
 from esp.program.models.class_ import ClassSubject
 from esp.program.class_status import ClassStatus
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.base import main_call, aux_call, needs_admin, needs_student_in_grade, meets_grade
+from esp.program.modules.base import main_call, needs_student_in_grade
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.utils.query_utils import nest_Q

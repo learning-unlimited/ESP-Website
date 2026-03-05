@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import codecs
 from esp.program.models import VolunteerRequest
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.forms.volunteer import VolunteerRequestForm, VolunteerImportForm
@@ -193,7 +192,6 @@ class VolunteerManage(ProgramModuleObj):
         elif 'user' in request.POST:
             target_id = request.POST['user']
         else:
-            context = {}
             return HttpResponseRedirect( '/manage/%s/%s/volunteering' % (one, two) )
 
         try:

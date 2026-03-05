@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.utils.forms import FormWithRequiredCss
 
 class StanfordTeacherQuestionsForm(FormWithRequiredCss):
     schedule_acknowledgement = forms.BooleanField(label='Acknowledgement', help_text='Splash will be on Halloween weekend (Oct. 29-30)!  Please acknowledge that you are aware of this and commit to teaching at one of the times you have specified for your availability.')

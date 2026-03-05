@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-from django.utils.translation import gettext_lazy as _
 from esp.web.forms import ResizeImageField
 
 class BioEditForm(forms.Form):

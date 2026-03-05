@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from esp.program.models import FinancialAidRequest, SplashInfo
 from esp.accounting.models import FinancialAidGrant, LineItemType
 
-from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 

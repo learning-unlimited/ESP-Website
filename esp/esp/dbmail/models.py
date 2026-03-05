@@ -42,7 +42,6 @@ import sys
 
 from django.db import models, transaction
 from django.db.models import Q
-from argcache import cache_function
 from esp.middleware import ESPError
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
@@ -274,9 +273,7 @@ class MessageRequest(models.Model):
 
         context = MessageVars.getContext(self, user)
 
-        newtext = ''
         template = Template(text)
-
         return template.render(context)
 
     @classmethod
@@ -662,7 +659,7 @@ class CustomSMTPBackend(SMTPEmailBackend):
         """A helper method that does the actual sending."""
         if not email_message.recipients():
             return False
-        from_email = sanitize_address(email_message.from_email, email_message.encoding)
+        sanitize_address(email_message.from_email, email_message.encoding)
         recipients = [sanitize_address(addr, email_message.encoding)
                       for addr in email_message.recipients()]
         try:

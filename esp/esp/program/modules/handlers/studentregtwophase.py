@@ -339,7 +339,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
         try:
             timeslot = Event.objects.get(pk=int(extra), program=prog)
-        except (TypeError, ValueError, Event.DoesNotExist) as e:
+        except (TypeError, ValueError, Event.DoesNotExist):
             raise Http404
         context = dict()
         context['timeslot'] = timeslot

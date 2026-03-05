@@ -55,15 +55,12 @@ from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import signals, Min
-from django.db.models.base import ModelState
-from django.db.models.manager import Manager
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
 from django.template import loader
 from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
-from django.utils.functional import SimpleLazyObject
 from django.utils.safestring import mark_safe
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.urls import reverse
@@ -79,7 +76,7 @@ from esp.middleware.threadlocalrequest import get_current_request, AutoRequestCo
 from esp.tagdict.models import Tag
 from esp.utils.decorators import enable_with_setting
 from esp.utils.expirable_model import ExpirableModel
-from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
+from esp.utils.widgets import NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
 from esp.program.class_status import ClassStatus
 from esp.utils import cmp
@@ -345,7 +342,7 @@ class BaseESPUser(object):
             return -1
         lastname = cmp(self.last_name.upper(), other.last_name.upper())
         if lastname == 0:
-           return cmp(self.first_name.upper(), other.first_name.upper())
+            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
     def __lt__(self, other):
         return self.__cmp__(other) < 0
@@ -2284,7 +2281,7 @@ class DBList(object):
         """
         cache_id = urlencode('DBListCount: %s' % (self.key))
 
-        retVal   = cache.get(cache_id) # get the cached result
+        cache.get(cache_id) # get the cached result (side-effect: warm up cache)
         if self.QObject: # if there is a q object we can just
             if not self.totalnum:
                 if override:
@@ -2818,8 +2815,7 @@ def install():
     """
     logger.info("Installing esp.users initial data...")
     install_groups()
-    if ESPUser.objects.count() == 1: # We just did a syncdb;
-                                     # the one account is the admin account
+    if ESPUser.objects.count() == 1: # We just did a syncdb; the one account is the admin account
         user = ESPUser.objects.all()[0]
         user.makeAdmin()
 
@@ -2932,6 +2928,6 @@ class GradeChangeRequest(TimeStampedModel):
         return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else "")
 
 # We can't import these earlier because of circular stuff...
-from esp.users.models.forwarder import UserForwarder # Don't delete, needed for app loading
+from esp.users.models.forwarder import UserForwarder  # noqa: F401 - needed for app loading
 from esp.cal.models import Event
 from esp.resources.models import Resource

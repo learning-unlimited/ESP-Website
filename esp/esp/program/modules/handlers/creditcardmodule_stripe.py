@@ -348,15 +348,15 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             except stripe.error.CardError as e:
                 context['error_type'] = 'declined'
                 context['error_info'] = e.json_body['error']
-            except stripe.error.InvalidRequestError as e:
+            except stripe.error.InvalidRequestError:
                 #   While this is a generic error meaning invalid parameters were supplied
                 #   to Stripe's API, we will usually see it because of a duplicate request.
                 context['error_type'] = 'invalid'
-            except stripe.error.AuthenticationError as e:
+            except stripe.error.AuthenticationError:
                 context['error_type'] = 'auth'
-            except stripe.error.APIConnectionError as e:
+            except stripe.error.APIConnectionError:
                 context['error_type'] = 'api'
-            except stripe.error.StripeError as e:
+            except stripe.error.StripeError:
                 context['error_type'] = 'generic'
 
         if 'error_type' in context:

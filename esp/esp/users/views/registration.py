@@ -21,7 +21,6 @@ from vanilla import CreateView
 from esp.dbmail.models import send_mail
 from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
-from esp.users.controllers.usersearch import UserSearchController
 from esp.users.forms.user_reg import UserRegForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response

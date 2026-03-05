@@ -34,13 +34,12 @@ Learning Unlimited, Inc.
 """
 import json
 from collections import Counter, OrderedDict, defaultdict
-from numpy import mean
 
 from django.db.models import Count, Sum, F, DecimalField, Min, Max
 from django.template.loader import render_to_string
 
 from esp.accounting.models import FinancialAidGrant
-from esp.program.models import ClassSection, FinancialAidRequest, Program, StudentRegistration
+from esp.program.models import ClassSection, FinancialAidRequest, StudentRegistration
 from esp.cal.models import Event
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record

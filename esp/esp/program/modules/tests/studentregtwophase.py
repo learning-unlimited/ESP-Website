@@ -8,7 +8,7 @@ import random
 from django.core import mail
 
 from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
-from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.users.models import Record, RecordType

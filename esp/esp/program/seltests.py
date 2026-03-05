@@ -32,5 +32,4 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.tests.ajaxstudentreg import AjaxStudentRegTest
 

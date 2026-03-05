@@ -1,4 +1,3 @@
-import re
 import os
 
 from django.db import models
@@ -8,11 +7,8 @@ from django.db.models.fields import NOT_PROVIDED
 from esp.customforms.models import Field
 from argcache import cache_function
 from esp.users.models import ESPUser
-from esp.program.models import ClassSubject
 from esp.customforms.linkfields import cf_cache
-from esp.qsdmedia.models import root_file_path
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 
 def get_file_upload_path(instance, filename):
     """

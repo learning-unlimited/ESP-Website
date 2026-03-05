@@ -45,7 +45,6 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from argcache import cache_function
 from collections import OrderedDict
 
-from esp.db.fields import AjaxForeignKey
 
 # Models to depend on.
 from esp.middleware import ESPError

@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 import json
 
-from esp.customforms.models import Form, Field
+from esp.customforms.models import Form
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.views import hasPerm
 from esp.users.models import ESPUser, AnonymousESPUser

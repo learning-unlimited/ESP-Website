@@ -5,14 +5,12 @@ Source: esp/esp/survey/models.py
 Tests ListField descriptor, Survey, SurveyResponse, QuestionType,
 Question, and Answer models.
 """
-import datetime
 
 from django.contrib.auth.models import Group
 
 from esp.program.models import Program
 from esp.survey.models import (
     Answer,
-    ListField,
     Question,
     QuestionType,
     Survey,

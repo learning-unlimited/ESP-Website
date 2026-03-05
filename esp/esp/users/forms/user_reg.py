@@ -4,7 +4,6 @@ from django.forms.fields import HiddenInput, TextInput
 
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import StrippedCharField
-from phonenumber_field.formfields import PhoneNumberField
 
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """

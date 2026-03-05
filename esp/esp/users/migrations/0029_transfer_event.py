@@ -20,7 +20,7 @@ def link_event(apps, schema_editor):
 
 def unlink_event(apps, schema_editor):
     Record = apps.get_model('users', 'Record')
-    RecordType = apps.get_model('users', 'RecordType')
+    RecordType = apps.get_model('users', 'RecordType')  # noqa: F841
     for rec in Record.objects.all():
         if rec.event_link is not None:
             rec.event = rec.event_link.name

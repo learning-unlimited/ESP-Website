@@ -3,7 +3,6 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
-from django.template import RequestContext
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 

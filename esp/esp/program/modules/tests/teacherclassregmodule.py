@@ -37,13 +37,10 @@ import random
 
 from django.db import transaction
 
-from esp.cal.models import Event
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.class_status import ClassStatus
-from esp.program.models import ClassSubject, RegistrationType
-from esp.program.setup import prepare_program, commit_program
-from esp.program.forms import ProgramCreationForm
+from esp.program.models import ClassSubject
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, Permission
@@ -182,7 +179,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
     @transaction.atomic
     def test_get_resource_pairs(self):
-        prog = self.program
         new_res_type1 = ResourceType.get_or_create('NewResource1', program = self.program)
         new_res_type2 = ResourceType.get_or_create('NewResource2', program = self.program)
         sec = random.choice(self.cls.sections.all())

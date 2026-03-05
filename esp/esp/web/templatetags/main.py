@@ -2,8 +2,6 @@ from esp.themes.controllers import ThemeController
 
 from django import template
 
-import os.path
-import json
 
 register = template.Library()
 
@@ -92,7 +90,7 @@ def extract_theme(url):
 def get_nav_category(path):
     tc = ThemeController()
     settings = tc.get_template_settings()
-                #   Search for current nav category based on request path
+    #   Search for current nav category based on request path
     first_level = ''.join(path.lstrip('/').split('/')[:1])
     for category in settings['nav_structure']:
         if category['header_link'].lstrip('/').startswith(first_level):

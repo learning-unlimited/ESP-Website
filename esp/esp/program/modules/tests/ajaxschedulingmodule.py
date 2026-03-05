@@ -36,11 +36,10 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.tests.support import TestProgramManager
 from esp.program.modules.module_ext import AJAXChangeLog
 import json
-import time
 
 class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        from esp.program.modules.base import ProgramModule, ProgramModuleObj
+        pass
         # Set up the program -- we want to be sure of these parameters
         kwargs.update({
             'num_rooms': 4,

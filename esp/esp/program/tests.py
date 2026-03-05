@@ -46,7 +46,6 @@ from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 
 from django.contrib.auth.models import Group
-from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
 
@@ -1729,7 +1728,6 @@ and repeat sending logic.
 from unittest.mock import patch, MagicMock
 
 from django.contrib.auth.models import Group
-from django.core import mail
 
 from esp.cal.models import install as install_cal
 from esp.program.controllers.confirmation import ConfirmationEmailController

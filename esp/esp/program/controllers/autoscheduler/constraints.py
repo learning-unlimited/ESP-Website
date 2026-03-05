@@ -233,10 +233,10 @@ class LunchConstraint(BaseConstraint):
                 end_section = section.assigned_roomslots[-1].timeslot.end
                 if start_section <= start_lunch \
                         and end_section >= end_lunch:
-                            return ConstraintViolation(
-                                self.__class__.__name__,
-                                "Section id {} is scheduled over lunch"
-                                .format(section.id))
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        "Section id {} is scheduled over lunch"
+                        .format(section.id))
         return None
 
     def check_schedule_section(self, section, start_roomslot, schedule):
@@ -252,9 +252,9 @@ class LunchConstraint(BaseConstraint):
             end_section = roomslots[-1].timeslot.end
             if start_section <= start_lunch and \
                     end_section >= end_lunch:
-                        return ConstraintViolation(
-                            self.__class__.__name__,
-                            "Section would be scheduled over lunch")
+                return ConstraintViolation(
+                    self.__class__.__name__,
+                    "Section would be scheduled over lunch")
         return None
 
     def check_move_section(self, section, start_roomslot, schedule):
@@ -590,9 +590,9 @@ class TeacherAvailabilityConstraint(BaseConstraint):
                 end_time = roomslot.timeslot.end
                 if (start_time, end_time) not in \
                         teacher.availability_dict:
-                            return ConstraintViolation(
-                                self.__class__.__name__,
-                                "Teacher isn't available")
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        "Teacher isn't available")
         return None
 
     def check_move_section(self, section, start_roomslot, schedule):
@@ -612,9 +612,9 @@ class TeacherAvailabilityConstraint(BaseConstraint):
                 if (start_time, end_time) not in teacher.availability_dict \
                         and (start_time, end_time) not in \
                         existing_timeslots:
-                            return ConstraintViolation(
-                                self.__class__.__name__,
-                                "Teacher isn't available")
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        "Teacher isn't available")
         return None
 
     def check_unschedule_section(self, section, schedule):
@@ -643,10 +643,10 @@ class TeacherAvailabilityConstraint(BaseConstraint):
                 end_time = roomslot.timeslot.end
                 if (start_time, end_time) not in teacher.availability_dict \
                         and (start_time, end_time) not in timeslots1:
-                            return ConstraintViolation(
-                                self.__class__.__name__,
-                                ("Teacher from first section won't "
-                                 "be available"))
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        ("Teacher from first section won't "
+                         "be available"))
 
         for teacher in teachers2:
             for roomslot in roomslots1:
@@ -654,10 +654,10 @@ class TeacherAvailabilityConstraint(BaseConstraint):
                 end_time = roomslot.timeslot.end
                 if (start_time, end_time) not in teacher.availability_dict \
                         and (start_time, end_time) not in timeslots2:
-                            return ConstraintViolation(
-                                self.__class__.__name__,
-                                ("Teacher from second section won't "
-                                 "be available"))
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        ("Teacher from second section won't "
+                         "be available"))
 
         return None
 
@@ -703,9 +703,9 @@ class TeacherConcurrencyConstraint(BaseConstraint):
             for roomslot in assigned_roomslots:
                 if (roomslot.timeslot.start, roomslot.timeslot.end) \
                         in already_teaching:
-                            return ConstraintViolation(
-                                self.__class__.__name__,
-                                "Teacher is already teaching")
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        "Teacher is already teaching")
         return None
 
     def check_move_section(self, section, start_roomslot, schedule):
@@ -723,9 +723,9 @@ class TeacherConcurrencyConstraint(BaseConstraint):
             for roomslot in assigned_roomslots:
                 if (roomslot.timeslot.start, roomslot.timeslot.end) \
                         in already_teaching:
-                            return ConstraintViolation(
-                                self.__class__.__name__,
-                                "Teacher is already teaching")
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        "Teacher is already teaching")
 
         return None
 

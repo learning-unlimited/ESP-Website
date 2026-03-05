@@ -220,8 +220,6 @@ def registration_redirect(request):
         - A redirect to the currently open registration if exactly one registration is open
         - A list of open registration links otherwise
     """
-    from esp.users.models import ESPUser
-    from esp.program.models import Program
 
     user = request.user
 

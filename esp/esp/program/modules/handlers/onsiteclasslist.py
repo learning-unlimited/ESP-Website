@@ -48,7 +48,7 @@ from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student_in_grade, main_call, aux_call
-from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
+from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
@@ -418,10 +418,10 @@ class OnSiteClassList(ProgramModuleObj):
                     begin_time__gte=curtime.start, begin_time__lte=endtime.start
                     )
             else:
-                 classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                     status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
-                     begin_time__gte=curtime.start
-                     )
+                classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
+                    status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
+                    begin_time__gte=curtime.start
+                    )
             if sort_spec == 'unsorted':
                 classes = classes.order_by('begin_time', 'id').distinct()
             elif sort_spec == 'by_time':

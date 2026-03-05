@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-from django.utils.translation import gettext_lazy as _
 
 class FileUploadForm(forms.Form):
     title = forms.CharField(widget = forms.TextInput({'size': 50}))

@@ -37,7 +37,7 @@ from esp.program.modules import module_ext
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
-from datetime import datetime
+from datetime import datetime  # noqa: F401
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -77,7 +77,6 @@ class TeacherReviewApps(ProgramModuleObj):
             students += students_dict[key]
 
         for student in students:
-            now = datetime.now()
             student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
@@ -180,8 +179,6 @@ class TeacherReviewApps(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/AppReview")
     def review_student(self, request, tl, one, two, module, extra, prog):
-        scrmi = prog.studentclassregmoduleinfo
-        reg_nodes = scrmi.reg_verbs()
 
         if not extra:
             return self.goToCore(tl)

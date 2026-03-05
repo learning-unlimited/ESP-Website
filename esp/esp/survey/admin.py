@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
-from django.conf import settings
 from esp.admin import admin_site
 from esp.survey.models import Survey, SurveyResponse, QuestionType, Question, Answer
 

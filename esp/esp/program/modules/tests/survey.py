@@ -38,7 +38,6 @@ from esp.survey.models import Survey, Question, QuestionType, SurveyResponse, An
 from esp.users.models import Record
 
 import random
-import re
 
 class SurveyTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -110,7 +109,7 @@ class SurveyTest(ProgramFrameworkTest):
 
         #   Check that we have a SurveyRecord with the right answers associated with it
         self.assertEqual(SurveyResponse.objects.filter(survey=survey).count(), 1)
-        record = SurveyResponse.objects.filter(survey=survey)[0]
+        SurveyResponse.objects.filter(survey=survey)[0]  # Assert exists
         self.assertEqual(Answer.objects.filter(question=question_base).count(), 1)
         answer_base = Answer.objects.filter(question=question_base)[0]
         self.assertEqual(answer_base.answer, 'Yes')
