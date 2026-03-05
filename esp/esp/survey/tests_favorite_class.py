@@ -1,5 +1,5 @@
 """
-Tests for Favorite Class survey functionality (Issue #3942)
+Tests for Favorite Class survey functionality
 """
 
 from django.test import TestCase

@@ -484,29 +484,21 @@ def top_classes(request, tl, program, instance):
     if tl == 'manage':
         classes = prog.classes()
 
-        # Try to find an "overall rating" question first
         rating_questions = survey.questions.filter(
             name__contains='overall rating'
         )
 
-        # If no rating question, try to find a "Favorite Class" question
-        favorite_questions = survey.questions.filter(
-            question_type__name='Favorite Class'
-        )
-
-        if len(rating_questions) < 1 and len(favorite_questions) < 1:
-            raise ESPError(
-                'Couldn\'t find an "overall rating" or '
-                '"Favorite Class" question in this survey.',
-                log=False
+        if len(rating_questions) < 1:
+            # Try to find a "Favorite Class" question as fallback
+            favorite_questions = survey.questions.filter(
+                question_type__name='Favorite Class'
             )
-
-        # Determine which type of question we're working with
-        use_favorite_class = (
-            len(rating_questions) < 1 and len(favorite_questions) >= 1
-        )
-
-        if use_favorite_class:
+            if len(favorite_questions) < 1:
+                raise ESPError(
+                    'Couldn\'t find an "overall rating" or '
+                    '"Favorite Class" question in this survey.',
+                    log=False
+                )
             # Handle Favorite Class questions
             favorite_question = favorite_questions[0]
 
