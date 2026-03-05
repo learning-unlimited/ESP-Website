@@ -31,9 +31,28 @@ You will also see references to other data structures that store configuration s
 
 * [Teacher] module control (ClassRegModuleInfo): http://[hostname]/admin/modules/classregmoduleinfo/
 * Student module control (StudentClassRegModuleInfo): http://[hostname]/admin/modules/studentclassregmoduleinfo/
+* Teacher Email Rules: Configured per program under **Manage → [program] → Settings → Teacher Email Rules**. See :ref:`teacher-email-rules` below.
 * Tags: http://[hostname]/admin/tagdict/tag/ - Very powerful, but more advanced; see [[Customize behavior with Tags]] for more information.
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
+
+.. _teacher-email-rules:
+
+Teacher Email Rules (program settings)
+--------------------------------------
+
+Optional per-program rules for teacher contact email addresses (e.g. requiring *@school.edu). Only applies to teacher accounts; affects new teacher signups and when teachers update their email in their profile for that program. Existing accounts are not changed.
+
+**Where to configure:** Manage → [program] → Settings → **Teacher Email Rules**.
+
+* **Enabled:** Turn on validation for this program. Default is off.
+* **Allowed domains:** Comma-separated list of allowed email domains (e.g. ``school.edu, university.edu``). Case-insensitive.
+* **Regex pattern:** Optional regex the full email must match (e.g. ``.*@school\\.edu$``). If both domains and regex are set, the email must match either.
+* **Mode:**
+  * **Block:** Reject the signup or profile save if the email does not match.
+  * **Warn only:** Show a notice but allow the email (so teachers can still use personal addresses if your policy allows).
+
+Blocked attempts and warnings are logged for audit. This feature is backwards-compatible: leave it disabled if you do not need it.
 
 Student modules
 ===============

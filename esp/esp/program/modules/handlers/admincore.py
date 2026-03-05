@@ -140,11 +140,16 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def settings(self, request, tl, one, two, module, extra, prog):
-        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm, ReceiptsForm
+        from esp.program.modules.forms.admincore import (
+            ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm,
+            ReceiptsForm, TeacherEmailRulesForm,
+        )
+        from esp.program.modules.module_ext import TeacherEmailRules
         context = {}
         submitted_form = ""
         crmi = ClassRegModuleInfo.objects.get(program=prog)
         scrmi = StudentClassRegModuleInfo.objects.get(program=prog)
+        teacher_email_rules, _ = TeacherEmailRules.objects.get_or_create(program=prog)
         old_url = prog.url
         context['open_section'] = extra
         forms = {}
@@ -195,6 +200,13 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     else:
                         forms['receipts'] = form
                     context['open_section'] = "receipts"
+                elif submitted_form == "teacher_email_rules":
+                    form = TeacherEmailRulesForm(request.POST, instance=teacher_email_rules)
+                    if form.is_valid():
+                        form.save()
+                    else:
+                        forms['teacher_email_rules'] = form
+                    context['open_section'] = "teacher_email_rules"
 
         #Set up any other forms on the page
         if "program" not in forms:
@@ -219,6 +231,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
         if "receipts" not in forms:
             forms['receipts'] = ReceiptsForm(program = prog)
 
+        if "teacher_email_rules" not in forms:
+            forms['teacher_email_rules'] = TeacherEmailRulesForm(instance=teacher_email_rules)
+
         context['one'] = one
         context['two'] = two
         context['program'] = prog
@@ -226,7 +241,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                             ("Program Settings", "program", forms['program']),
                             ("Teacher Registration Settings", "crmi", forms['crmi']),
                             ("Student Registration Settings", "scrmi", forms['scrmi']),
-                            ("Registration Receipts", "receipts", forms['receipts'])
+                            ("Registration Receipts", "receipts", forms['receipts']),
+                            ("Teacher Email Rules", "teacher_email_rules", forms['teacher_email_rules']),
                            ]
 
         return render_to_response(self.baseDir()+'settings.html', request, context)
