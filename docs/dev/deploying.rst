@@ -48,4 +48,37 @@ TODO(benkraft): write a quick script for this.
 Setting up a new server
 -----------------------
 
-TODO
+When replacing the production host, the safest approach is:
+
+#. Build the new machine with the same Ubuntu major version we support for
+   development/production (currently Ubuntu 22.04).
+#. Install system dependencies used by our stack: PostgreSQL, Apache with
+   mod_wsgi, Exim4, Python, git, and cron.
+#. Copy chapter site directories into ``/lu/sites`` from the old server,
+   preserving permissions and ownership.
+#. Copy and review host-level config files:
+
+   * ``/etc/apache2/sites-available/esp_sites.conf``
+   * ``/etc/crontab``
+   * ``/etc/exim4/update-exim4.conf.conf``
+   * any custom files under ``/etc/exim4/conf.d`` used for mailgates
+
+#. Enable/reload services and validate configs:
+
+   * run Apache config checks and reload Apache
+   * run Exim config update/reload
+   * ensure cron is running
+
+#. For each chapter site, run migrations and a quick smoke test:
+
+   * ``python manage.py migrate``
+   * test login/admin, a representative page, and outbound email
+
+#. Verify DNS, TLS certificates, and MX records point at the new host before
+   final cutover.
+#. Do a staged cutover (low-traffic window), monitor logs, and keep the old
+   server available for rollback until stable.
+
+The key idea is that app code and per-site settings live in ``/lu/sites``,
+while Apache/cron/Exim routing lives in ``/etc``; both must be migrated
+together for a working production setup.
