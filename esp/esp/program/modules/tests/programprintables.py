@@ -62,7 +62,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         """
         Login admin user
         """
-        self.failUnless(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
     def get_response(self, view_name, user_type, list_name):
         #   Log in an administrator
