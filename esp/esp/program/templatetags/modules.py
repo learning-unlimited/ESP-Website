@@ -49,6 +49,9 @@ def registration_progress(context):
     if scrmi.progress_mode == 0:
         return {}
 
+    if not request.user.is_authenticated:
+        return {}
+
     modules = program.getModules(request.user, tl)
 
     completedAll = not any(
