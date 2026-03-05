@@ -1,7 +1,6 @@
-from django.conf import settings
 from django import template
 from django.core.cache import cache
-from esp.users.models import ESPUser, AnonymousUser
+from esp.users.models import AnonymousUser
 from urllib.parse import quote as urlencode
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 register = template.Library()

@@ -36,8 +36,7 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 
-from esp.program.modules.handlers import * # Needed for app loading, don't delete
-from django.db.models import Q
+from esp.program.modules.handlers import *  # noqa: F401 - Needed for app loading, don't delete
 
 def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model=None):
     """
@@ -111,4 +110,3 @@ def install(model=None):
 
     updateModules(table_data, deleteExtra=True, model=model)
 
-from esp.program.modules.module_ext import *

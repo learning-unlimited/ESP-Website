@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 from django.db import models
-from reversion import revisions as reversion
 
 from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey

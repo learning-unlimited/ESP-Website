@@ -5,7 +5,6 @@ from django.db import models, transaction
 from django.apps import apps
 from django.template import Template, Context
 from django.dispatch import receiver
-from argcache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import Program, ClassSubject
 from esp.formstack.api import Formstack

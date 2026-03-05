@@ -36,7 +36,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
-from datetime import datetime, timedelta
+from datetime import timedelta
 from argcache import cache_function
 from esp.utils import cmp
 
@@ -105,7 +105,6 @@ class Event(models.Model):
         return self.start.strftime('%a %b %d: ') + self.short_time()
 
     def short_time(self):
-        day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
         start_minutes = ''
         end_minutes = ''

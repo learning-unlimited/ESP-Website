@@ -38,7 +38,7 @@ from datetime import datetime
 from django.db.models.query import Q
 
 from esp.miniblog.models import Entry, AnnouncementLink
-from esp.users.models import ESPUser, AnonymousESPUser
+from esp.users.models import AnonymousESPUser
 
 from argcache import cache_function
 

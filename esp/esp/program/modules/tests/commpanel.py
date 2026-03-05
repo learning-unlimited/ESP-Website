@@ -45,7 +45,7 @@ from django.template import Template
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 
 class CommunicationsPanelTest(ProgramFrameworkTest):
@@ -57,7 +57,6 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
     """
 
     def setUp(self, *args, **kwargs):
-        from esp.program.models import Program
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
         # Set up the program -- we want to be sure of these parameters
@@ -91,7 +90,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         s = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', response.content.decode('UTF-8'))
         filterid = s.groups()[0]
         s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content.decode('UTF-8'))
-        listcount = s.groups()[0]
+        s.groups()[0]  # validate match exists but value unused
 
         #   Enter email information
         post_data = {
@@ -110,7 +109,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertFalse(m[0].processed)
 
         #   Send out email
-        msgs = process_messages()
+        process_messages()
         send_email_requests()
 
         #   Check that the email was sent to all students

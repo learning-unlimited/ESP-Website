@@ -69,7 +69,7 @@ class MultiSelectCostItem(forms.Form):
     def __init__(self, *args, **kwargs):
         choices = kwargs.pop('choices')
         required = kwargs.pop('required')
-        for_finaid = kwargs.pop('for_finaid', False)
+        kwargs.pop('for_finaid', False)
         is_custom = kwargs.pop('is_custom', False)
         option_data = kwargs.pop('option_data', {})
         super().__init__(*args, **kwargs)

@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 from esp.qsdmedia.models import Media
 from django.http import HttpResponse, Http404
 from django.core.exceptions import MultipleObjectsReturned
-from django.conf import settings
 import fnmatch
 
 

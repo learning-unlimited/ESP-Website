@@ -38,7 +38,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from esp.cal.models import Event
-from esp.users.models import User, ESPUser
+from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from argcache import cache_function
@@ -46,7 +46,6 @@ from esp.tagdict.models          import Tag
 
 from django.db import models
 from django.db.models.query import Q
-from django.core.cache import cache
 
 import json
 
@@ -379,8 +378,8 @@ class AssignmentGroup(models.Model):
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
-    resource = models.ForeignKey(Resource, on_delete=models.CASCADE)     #   Note: this really points to a bunch of Resources.
-                                                                         #   See resources() below.
+    resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
+    # Note: this really points to a bunch of Resources. See resources() below.
 
     target = models.ForeignKey('program.ClassSection', null=True, on_delete=models.CASCADE)
     target_subj = models.ForeignKey('program.ClassSubject', null=True, on_delete=models.CASCADE)

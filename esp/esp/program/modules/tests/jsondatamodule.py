@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 import json
 from collections import Counter
 
-from django.utils.html import escape
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj

@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 
 import datetime
 from datetime import timedelta
-import time
 from collections import defaultdict
 import logging
 logger = logging.getLogger(__name__)
@@ -50,8 +49,6 @@ from django.db.models import signals, Sum
 from django.db.models.manager import Manager
 from collections import OrderedDict
 from django.template.loader import render_to_string
-from django.template import Template, Context
-from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
@@ -169,10 +166,6 @@ class ClassManager(Manager):
         queries for the category's title (cls.category_txt)
         and the total # of media.
         """
-        now = datetime.datetime.now()
-
-        enrolled_type = RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
-
         if initial_queryset:
             classes = initial_queryset
         else:
@@ -264,8 +257,7 @@ class ClassManager(Manager):
             for s in c._sections:
                 s.parent_class = c
             c._sections.sort(key=lambda s:s.id)
-            c.parent_program = p # So that if we set attributes on one instance of the program,
-                                 # they show up for all instances.
+            c.parent_program = p  # So that if we set attributes on one instance of the program, they show up for all instances.
 
         return classes
     catalog_cached.depend_on_model('program.ClassSubject')
@@ -767,7 +759,6 @@ class ClassSection(models.Model):
 
             base_list = list_of_lists[0]
             for other_list in list_of_lists[1:]:
-                i = 0
                 for elt in base_list:
                     if elt not in other_list:
                         base_list.remove(elt)
@@ -818,7 +809,6 @@ class ClassSection(models.Model):
 
         #   Start with all rooms the program has.
         #   Filter the ones that are available at all times needed by the class.
-        filter_qs = []
         ordered_times = self.meeting_times.order_by('start')
         first_time = ordered_times[0]
         possible_rooms = self.parent_program.getAvailableClassrooms(first_time)
@@ -979,7 +969,6 @@ class ClassSection(models.Model):
          ...
         }
         """
-        now = datetime.datetime.now()
 
         rmap = RegistrationType.get_map()
         result = {}
@@ -1260,7 +1249,6 @@ class ClassSection(models.Model):
         )
 
         txtTimes = []
-        eventList = []
 
         # For now, use meeting times lookup instead of resource assignments.
         """
@@ -1588,7 +1576,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def add_section(self, duration=None, status=None):
         """ Add a ClassSection belonging to this class. Can be run multiple times. """
 
-        section_index = self.sections.count() + 1
 
         if duration is None:
             duration = self.duration

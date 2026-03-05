@@ -9,7 +9,7 @@ import sys
 sys.path.insert(0, sys.argv[1]+'/esp/useful_scripts')
 
 try:
-    from script_setup import *
+    pass
 except:
     print("ERROR: no script_setup.py")
     sys.exit(1)

@@ -33,42 +33,37 @@ Learning Unlimited, Inc.
 """
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import Group
 from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
-from esp.miniblog.models import AnnouncementLink, Entry
-from esp.miniblog.views import preview_miniblog
-from esp.program.models import Program, RegistrationProfile, ClassSubject
+from esp.program.models import RegistrationProfile
 from esp.tagdict.models import Tag
-from django.http import Http404, HttpResponseRedirect
-import datetime
+from django.http import HttpResponseRedirect
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.utils.web import render_to_response
-from django.db.models.query import Q
 
 @login_required
 def myesp_passwd(request):
-        """ Change password """
-        if request.user.username == 'onsite':
-                raise ESPError("Sorry, you're not allowed to change the password of this user. It's special.", log=False)
+    """ Change password """
+    if request.user.username == 'onsite':
+        raise ESPError("Sorry, you're not allowed to change the password of this user. It's special.", log=False)
 
-        if request.method == "POST":
-                form = UserPasswdForm(user=request.user, data=request.POST)
-                if form.is_valid():
-                        new_data = form.cleaned_data
-                        user = authenticate(username=request.user.username,
-                                            password=new_data['password'])
+    if request.method == "POST":
+        form = UserPasswdForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            new_data = form.cleaned_data
+            user = authenticate(username=request.user.username,
+                                password=new_data['password'])
 
-                        user.set_password(new_data['newpasswd'])
-                        user.save()
-                        login(request, user)
-                        return render_to_response('users/passwd.html', request, {'Success': True})
-        else:
-                form = UserPasswdForm(user=request.user)
+            user.set_password(new_data['newpasswd'])
+            user.save()
+            login(request, user)
+            return render_to_response('users/passwd.html', request, {'Success': True})
+    else:
+        form = UserPasswdForm(user=request.user)
 
-        return render_to_response('users/passwd.html', request, {'Problem': False,
-                                                    'form': form,
-                                                    'Success': False})
+    return render_to_response('users/passwd.html', request, {'Problem': False,
+                                                'form': form,
+                                                'Success': False})
 
 @login_required
 def myesp_accountmanage(request):
@@ -143,7 +138,6 @@ def edit_profile(request):
 def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
     """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
-    from esp.users.models import K12School
     from esp.web.views.main import registration_redirect
 
     if prog_input is None:
@@ -193,9 +187,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 regProf = RegistrationProfile.getLastForProgram(curUser, prog)
 
             if regProf.id is None:
-                old_regProf = RegistrationProfile.getLastProfile(curUser)
-            else:
-                old_regProf = regProf
+                pass  # no prior profile to preserve
 
             regProf.contact_user = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_user, '')
 

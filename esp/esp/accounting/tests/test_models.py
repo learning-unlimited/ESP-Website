@@ -10,12 +10,11 @@ from django.contrib.auth.models import Group
 
 from esp.accounting.models import (
     Account,
-    FinancialAidGrant,
     LineItemOptions,
     LineItemType,
     Transfer,
 )
-from esp.program.models import FinancialAidRequest, Program
+from esp.program.models import Program
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser
 

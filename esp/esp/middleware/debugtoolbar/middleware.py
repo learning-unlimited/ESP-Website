@@ -1,4 +1,3 @@
-from django import http
 from debug_toolbar.middleware import DebugToolbarMiddleware
 
 class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):

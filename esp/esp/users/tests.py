@@ -2,12 +2,10 @@ import datetime
 
 from django import forms
 from django.core import mail
-from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth import login
 from django.contrib.auth.models import Group
 from django.test.client import Client, RequestFactory
-from django.http import HttpRequest
 from django.conf import settings
-from django.utils.functional import SimpleLazyObject
 
 from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program

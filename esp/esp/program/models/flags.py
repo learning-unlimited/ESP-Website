@@ -39,7 +39,6 @@ from esp.middleware.threadlocalrequest import get_current_request
 from argcache import cache_function
 
 from esp.users.models import ESPUser
-from esp.program.models import Program
 
 class ClassFlagType(models.Model):
     name = models.CharField(max_length=255, unique=True, help_text='The name of the flag type')

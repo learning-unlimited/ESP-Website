@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, a
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest, PlainRedirect
-from esp.users.models   import ESPUser, PersistentQueryFilter
+from esp.users.models   import ESPUser
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
 from esp.dbmail.models import ActionHandler
@@ -117,7 +117,7 @@ class CommModule(ProgramModuleObj):
             # Use the info redirect (make one for the default email address if it doesn't exist)
             prs = PlainRedirect.objects.filter(original = "info")
             if not prs.exists():
-                redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+                PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
             fromemail = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
                                         "info", settings.SITE_INFO[1])
 
@@ -260,7 +260,7 @@ class CommModule(ProgramModuleObj):
 
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
 
-        sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
+        MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
         variable_modules = {'user': request.user, 'program': self.program}
 
@@ -309,7 +309,7 @@ class CommModule(ProgramModuleObj):
         prs = PlainRedirect.objects.filter(original = "info")
 
         if not prs.exists():
-           redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+            PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
 
         return render_to_response(self.baseDir()+'step2.html', request, context)
 
@@ -348,7 +348,7 @@ class CommModule(ProgramModuleObj):
                 # Use the info redirect (make one for the default email address if it doesn't exist)
                 prs = PlainRedirect.objects.filter(original = "info")
                 if not prs.exists():
-                    redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+                    PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
                 context['from'] = context['default_from']
                 return render_to_response(self.baseDir()+'step2.html', request, context)
 

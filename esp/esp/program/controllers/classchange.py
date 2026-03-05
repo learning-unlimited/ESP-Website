@@ -50,7 +50,7 @@ import time
 
 from esp.cal.models import Event
 from esp.users.models import ESPUser
-from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, Program, ClassSection
+from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, Program
 from esp.dbmail.models import send_mail
 from esp.utils.query_utils import nest_Q
 

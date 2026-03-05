@@ -229,7 +229,6 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
 
         #   Create a QSD page associated with the program
         from esp.qsd.models import QuasiStaticData
-        from esp.web.models import NavBarCategory
 
         qsd_rec_new = QuasiStaticData()
         qsd_rec_new.name = "learn:index"

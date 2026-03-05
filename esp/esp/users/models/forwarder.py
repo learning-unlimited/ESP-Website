@@ -44,7 +44,6 @@ class UserForwarder(models.Model):
         """
         # Prepare rewrites
         rewrites = []
-        deletes = []
         if not save:
             flatten = False
         if flatten:
