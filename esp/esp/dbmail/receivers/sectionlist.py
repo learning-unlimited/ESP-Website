@@ -9,8 +9,6 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.sites.models import Site
-DEBUG=True
-DEBUG=False
 
 class SectionList(BaseHandler):
 
@@ -24,7 +22,7 @@ class SectionList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
             section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
-        except:
+        except (ClassSubject.DoesNotExist, IndexError, ValueError):
             return
 
         self.emailcode = section.emailcode()
@@ -51,7 +49,7 @@ class SectionList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
             section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
-        except:
+        except (ClassSubject.DoesNotExist, IndexError, ValueError):
             return
 
         # Create a section list in Mailman,

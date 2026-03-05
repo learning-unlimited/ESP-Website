@@ -55,10 +55,12 @@ class ResizeImageField(forms.ImageField):
         """ gets the image and resizes it """
         file = super(forms.ImageField, self).clean(file, initial)
         if file and self.size is not None:
+            import os
             from PIL import Image
             from io import BytesIO
 
-            filename = file.name
+            filename_root, filename_ext = os.path.splitext(file.name)
+            filename = filename_root + filename_ext.lower()
 
             picturefile = BytesIO()
             if hasattr(file, 'temporary_file_path'):
