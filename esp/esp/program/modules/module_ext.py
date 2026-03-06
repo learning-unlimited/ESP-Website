@@ -119,6 +119,10 @@ class StudentClassRegModuleInfo(models.Model):
     #   (They still have to fill them out before confirming their registration, regardless of this setting)
     force_show_required_modules = models.BooleanField(default=True, help_text = "Check this box to require that users see and fill out \"required\" modules before they can see the main StudentReg page")
 
+     #   Waitlist settings
+    enable_class_waitlist = models.BooleanField(default=True, help_text='Uncheck this box to disable per-section waitlisting when classes are full. When enabled, students can join a waitlist and be auto-enrolled when a spot opens.')
+    max_waitlist_per_timeslot = models.IntegerField(default=1, help_text='Maximum number of classes a student can waitlist per time block.')
+    
     @property
     def module(self):
         """Deprecated; you probably shouldn't need this."""

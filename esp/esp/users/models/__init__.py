@@ -2411,6 +2411,7 @@ class Permission(ExpirableModel):
             ("Student/PhaseZero", "Enter Phase Zero"),
             ("Student/Applications", "Apply for classes"),
             ("Student/Classes", "Register for classes"),
+            ("Student/Classes/Waitlist", "Join class waitlists"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
             ("Student/Classes/Lottery/View", "View lottery results"),

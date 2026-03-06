@@ -60,7 +60,18 @@ from django.conf import settings
 @disable_csrf_cookie_update
 def home(request):
     #   Get navbars corresponding to the 'home' category
-    nav_category, created = NavBarCategory.objects.get_or_create(name='home')
+    try:
+        nav_category, created = NavBarCategory.objects.get_or_create(name='home')
+    except NavBarCategory.MultipleObjectsReturned:
+        # If there are duplicate rows with the same name, pick the first one
+        # and remove the extras to avoid repeated crashes. Log a warning.
+        logger.warning("Multiple NavBarCategory objects found with name='home' — deduplicating.")
+        qs = NavBarCategory.objects.filter(name='home').order_by('id')
+        nav_category = qs.first()
+        # delete duplicates, keep the first
+        dupes = qs.exclude(pk=nav_category.pk)
+        if dupes.exists():
+            dupes.delete()
     context = {'navbar_list': makeNavBar('', nav_category)}
     return render_to_response('index.html', request, context)
 
