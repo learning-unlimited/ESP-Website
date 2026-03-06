@@ -7,7 +7,7 @@ import datetime
 import doctest
 try:
     import pylibmc as memcache
-except:
+except ImportError:
     import memcache
 import logging
 logger = logging.getLogger(__name__)
@@ -159,7 +159,7 @@ class TemplateOverrideTest(DjangoTestCase):
             self.get_response_for_template(template_name)
         except TemplateDoesNotExist:
             template_error = True
-        except:
+        except Exception:
             logger.info('Unexpected error fetching nonexistent template')
             raise
         self.assertTrue(template_error)

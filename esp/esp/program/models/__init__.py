@@ -1019,9 +1019,7 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return None
 
-    def get_teacher_event_times(self, event_type):
-        """event_type should be 'interview' or 'training'"""
-        event_type_obj = EventType.teacher_event_types()[event_type]
+    def get_teacher_event_times(self, event_type_obj):
         return Event.objects.filter(
             program=self, event_type=event_type_obj).order_by('start')
 
@@ -1108,6 +1106,35 @@ class Program(models.Model, CustomFormsLinkModel):
         durationList = list(durationDict.items())
 
         return sorted(durationList, key=lambda x: x[0])
+
+    def countTimeSlots(self, round_15=False):
+        """Calculate the number of instances of each duration that can fit in a given block. Returns dictionary mapping timeslot length to number of timeslots"""
+        from decimal import Decimal
+
+        times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
+        durations = [x[0] for x in self.getDurations(round_15)]
+        numDurations = {}
+
+        #iterates over all durations
+        for duration in durations:
+            numDurations[str(duration.quantize(Decimal('.01')))] = 0
+            lenDuration = duration * 3600
+            #iterates over blocks
+            for block in times:
+                numSections = len(block)
+                i = 0
+                while i < numSections:
+                    #makes an increasing list of lengths for each block, section by section
+                    for j in range(i, numSections):
+                        time_option = Event.total_length([block[i], block[j]])
+                        #if enough time exists, increment
+                        if lenDuration <= time_option.seconds:
+                            numDurations[str(duration.quantize(Decimal('.01')))] += 1
+                            i = j
+                            break
+                    i += 1
+
+        return numDurations
 
     def getSurveys(self):
         from esp.survey.models import Survey
@@ -1746,7 +1773,7 @@ def get_subclass_instance(cls, obj):
         result = None
         try:
             result = c.objects.get(id=obj.id)
-        except:
+        except c.DoesNotExist:
             pass
         if result:
             return get_subclass_instance(c, result)
