@@ -78,6 +78,22 @@ class UnenrollModule(ProgramModuleObj):
                 registrations = StudentRegistration.objects.filter(id__in=ids)
                 registrations.update(end_date=None)
                 logger.info("Unexpired student registrations: %s", ids)
+                for reg in registrations:
+                    signals.post_save.send(sender=StudentRegistration, instance=reg)
+                
+                # Update mailman lists for unexpired registrations
+                from esp.mailman import add_list_member
+                for reg in registrations:
+                    user = reg.user
+                    section = reg.section
+                    # Add to class and section mailman lists
+                    list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
+                    for list_name in list_names:
+                        add_list_member(list_name, user)
+                    
+                    # Add to program list
+                    add_list_member("%s_%s-students" % (prog.program_type, prog.program_instance), user)
+                
                 context['undo'] = True
             else:
                 selected_enrollments = request.POST['selected_enrollments']
@@ -85,14 +101,22 @@ class UnenrollModule(ProgramModuleObj):
                 registrations = StudentRegistration.objects.filter(id__in=ids)
                 registrations.update(end_date=datetime.datetime.now())
                 logger.info("Expired student registrations: %s", ids)
-            # send signal to expire caches
-            # XXX: sending all of them is actually kind of
-            # expensive and mostly redundant; it would be
-            # preferable to have a way to say "just invalidate the
-            # whole table".
-            for reg in registrations:
-                signals.post_save.send(
-                    sender=StudentRegistration, instance=reg)
+                for reg in registrations:
+                    signals.post_save.send(sender=StudentRegistration, instance=reg)
+                
+                # Update mailman lists for expired registrations
+                from esp.mailman import remove_list_member
+                for reg in registrations:
+                    user = reg.user
+                    section = reg.section
+                    # Remove from class and section mailman lists
+                    list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
+                    for list_name in list_names:
+                        remove_list_member(list_name, user.email)
+                    
+                    # If they are no longer enrolled in any sections in the program, remove from program list
+                    if not user.getEnrolledSections(prog):
+                        remove_list_member("%s_%s-students" % (prog.program_type, prog.program_instance), user.email)
             context['ids'] = ids
             return render_to_response(
                 self.baseDir()+'result.html', request, context)
