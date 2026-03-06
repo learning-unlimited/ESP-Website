@@ -161,7 +161,7 @@ jobs:
             if (count >= max) {
               // Over limit — decline and explain
               const issueList = openIssues
-                .map(i => `- #${i.number}: ${i.title}`)
+                .map(i => `- #${i.number}`)
                 .join('\n');
 
               await github.rest.issues.createComment({
@@ -400,7 +400,7 @@ jobs:
 
               const issueList = openIssues
                 .filter(i => i.number !== issueNumber)
-                .map(i => `- #${i.number}: ${i.title}`)
+                .map(i => `- #${i.number}`)
                 .join('\n');
 
               await github.rest.issues.createComment({
