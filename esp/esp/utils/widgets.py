@@ -474,7 +474,26 @@ class RadioSelectWithData(forms.RadioSelect):
         context = super().get_context(name, value, attrs)
         for optgroup in context['widget'].get('optgroups', []):
             for option in optgroup[1]:
-                for k, v in self.option_data.get(option['value'], {}).items():
+                val = option['value']
+                data = self.option_data.get(val) or self.option_data.get(str(val)) or {}
+                for k, v in data.items():
+                    option['attrs']['data-' + k] = v
+        return context
+
+
+class CheckboxSelectMultipleWithData(forms.CheckboxSelectMultiple):
+    def __init__(self, *args, **kwargs):
+        self.option_data = kwargs.pop('option_data', {})
+        super().__init__(*args, **kwargs)
+
+    # mirrors RadioSelectWithData, but for checkboxes
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        for optgroup in context['widget'].get('optgroups', []):
+            for option in optgroup[1]:
+                val = option['value']
+                data = self.option_data.get(val) or self.option_data.get(str(val)) or {}
+                for k, v in data.items():
                     option['attrs']['data-' + k] = v
         return context
 

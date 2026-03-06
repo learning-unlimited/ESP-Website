@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import FinancialAidRequest, SplashInfo
-from esp.accounting.models import FinancialAidGrant, LineItemType
+from esp.accounting.models import FinancialAidGrant, LineItemType, LineItemOptions, Transfer
 
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -290,6 +290,37 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 7)
+
+        #   Check that selecting multiple options for a multi-select extra item works (including custom amount)
+        lit4 = LineItemType.objects.create(
+            program=self.program,
+            text='Workshops',
+            required=False,
+            max_quantity=1,
+            amount_dec=Decimal('0.00'),
+            selection_type='multiple',
+            for_finaid=True,
+        )
+        opt_a = LineItemOptions.objects.create(lineitem_type=lit4, description='AI', amount_dec=Decimal('12.00'), is_custom=False)
+        opt_b = LineItemOptions.objects.create(lineitem_type=lit4, description='Robotics', amount_dec=Decimal('8.00'), is_custom=False)
+        opt_c = LineItemOptions.objects.create(lineitem_type=lit4, description='Other', amount_dec=None, is_custom=True)
+
+        post_data = {
+            '%d-count' % lit2.id: '0',
+            'multi%d-option' % lit3.id: str(lio[0]),
+            'multi%s-options' % lit4.id: [str(opt_a.id), str(opt_c.id)],
+            'multi%s-custom_amount_%s' % (lit4.id, opt_c.id): '5.50',
+            '%d-siblingdiscount' % sd_lit.id: 'False',
+        }
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
+        #   Ensure that two Transfers exist for the multi-select item (one per selected option)
+        workshop_transfers = Transfer.objects.filter(user=student, line_item=lit4).order_by('id')
+        self.assertEqual(workshop_transfers.count(), 2)
+        self.assertEqual(set(workshop_transfers.values_list('option_id', flat=True)), {opt_a.id, opt_c.id})
 
         #   Check that financial aid applies to the "full" cost including the extra items
         #   (e.g. we are not forcing financial aid students to pay for food)

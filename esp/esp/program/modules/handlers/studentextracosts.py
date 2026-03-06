@@ -44,7 +44,7 @@ from esp.program.modules.forms.splashinfo import SiblingDiscountForm
 from esp.tagdict.models import Tag
 from esp.users.models    import Record, RecordType, ESPUser
 from esp.utils.web import render_to_response
-from esp.utils.widgets import ChoiceWithOtherField, RadioSelectWithData
+from esp.utils.widgets import ChoiceWithOtherField, RadioSelectWithData, CheckboxSelectMultipleWithData
 from esp.utils.query_utils import nest_Q
 
 class CostItem(forms.Form):
@@ -77,6 +77,64 @@ class MultiSelectCostItem(forms.Form):
             self.fields['option'] = ChoiceWithOtherField(required=required, label='', choices=choices, option_data=option_data)
         else:
             self.fields['option'] = forms.ChoiceField(required=required, label='', choices=choices, widget=RadioSelectWithData(option_data=option_data))
+
+
+class MultiOptionCostItem(forms.Form):
+    """
+    Multiple-option selection for a single line item type.
+
+    Stores the selected option IDs in `options`, and custom amounts (for options
+    marked `is_custom`) in fields named `custom_amount_<optionId>`.
+    """
+
+    def __init__(self, *args, **kwargs):
+        lineitem_type = kwargs.pop('lineitem_type')
+        required = kwargs.pop('required')
+        choices = kwargs.pop('choices')
+        option_data = kwargs.pop('option_data', {})
+        custom_option_ids = kwargs.pop('custom_option_ids', set())
+        super().__init__(*args, **kwargs)
+        self._required = required
+        self._custom_option_ids = {str(x) for x in custom_option_ids}
+
+        self.fields['options'] = forms.MultipleChoiceField(
+            required=required,
+            label='',
+            choices=choices,
+            widget=CheckboxSelectMultipleWithData(option_data=option_data),
+        )
+
+        for opt_id in custom_option_ids:
+            self.fields[f'custom_amount_{opt_id}'] = forms.DecimalField(
+                required=False,
+                min_value=0,
+                max_digits=9,
+                decimal_places=2,
+                widget=forms.NumberInput(
+                    attrs={
+                        'class': 'option-custom-amount input-mini',
+                        'data-option-id': str(opt_id),
+                    }
+                ),
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        selected = set(cleaned.get('options') or [])
+
+        # When required=False, Django will allow empty selections; when required=True,
+        # `MultipleChoiceField` will raise the required error, but we also guard here
+        # because we set required on the field and still want consistent behavior.
+        if self._required and not selected:
+            self.add_error('options', forms.ValidationError(self.fields['options'].error_messages['required']))
+            return cleaned
+
+        for opt_id in sorted(self._custom_option_ids & selected):
+            amount = cleaned.get(f'custom_amount_{opt_id}')
+            if amount in (None, ''):
+                self.add_error(f'custom_amount_{opt_id}', 'Please enter an amount for this selection.')
+        return cleaned
+
 
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
@@ -173,6 +231,8 @@ class StudentExtraCosts(ProgramModuleObj):
         costs_list = self.lineitemtypes().filter(max_quantity__lte=1, lineitemoptions__isnull=True)
         multicosts_list = self.lineitemtypes().filter(max_quantity__gt=1, lineitemoptions__isnull=True)
         multiselect_list = self.lineitemtypes().filter(lineitemoptions__isnull=False)
+        multiselect_single_list = multiselect_list.filter(selection_type='single')
+        multiselect_multi_list = multiselect_list.filter(selection_type='multiple')
         if prog.sibling_discount:
             sibling_line_item = iac.default_siblingdiscount_lineitemtype()
             sibling_form = SiblingDiscountForm(prefix="%s" % sibling_line_item.id, program=prog)
@@ -185,6 +245,17 @@ class StudentExtraCosts(ProgramModuleObj):
         forms_all_valid = True
         error_custom = False
         preserve_items = {}
+
+        def option_data_for_lineitem(lineitem_type):
+            option_data = {}
+            for option in lineitem_type.lineitemoptions_set.all():
+                option_data[str(option.id)] = {
+                    'cost': option.amount_dec_inherited,
+                    'is_custom': 'true' if option.is_custom else 'false',
+                    'for_finaid': 'true' if lineitem_type.for_finaid else 'false',
+                    'option_id': str(option.id),
+                }
+            return option_data
 
         ## Another dirty hack, left as an exercise to the reader
         if request.method == 'POST':
@@ -203,11 +274,25 @@ class StudentExtraCosts(ProgramModuleObj):
                                                            for_finaid=(x.for_finaid)) }
                              for x in multicosts_list ] + \
                            [ { 'LineItemType': x,
-                               'CostChoice': MultiSelectCostItem(request.POST, prefix="multi%s" % x.id,
-                                                                 choices=x.option_choices,
-                                                                 required=(x.required),
-                                                                 is_custom=(x.has_custom_options)) }
-                             for x in multiselect_list ]
+                               'CostChoice': MultiSelectCostItem(
+                                   request.POST,
+                                   prefix="multi%s" % x.id,
+                                   choices=x.option_choices,
+                                   required=(x.required),
+                                   is_custom=(x.has_custom_options),
+                               ) }
+                             for x in multiselect_single_list ] + \
+                           [ { 'LineItemType': x,
+                               'CostChoice': MultiOptionCostItem(
+                                   request.POST,
+                                   prefix="multi%s" % x.id,
+                                   lineitem_type=x,
+                                   choices=x.option_choices,
+                                   required=(x.required),
+                                   option_data=option_data_for_lineitem(x),
+                                   custom_option_ids=set(x.lineitemoptions_set.filter(is_custom=True).values_list('id', flat=True)),
+                               ) }
+                             for x in multiselect_multi_list ]
             if prog.sibling_discount:
                 sibling_form = SiblingDiscountForm(request.POST, prefix="%s" % sibling_line_item.id, program=prog)
                 costs_db.append({'LineItemType': sibling_line_item, 'CostChoice': sibling_form})
@@ -239,7 +324,7 @@ class StudentExtraCosts(ProgramModuleObj):
                                 option = LineItemOptions.objects.get(id=option_id)
                                 #   Give error if no amount was typed in
                                 if option.is_custom and not option_amount:
-                                    preserve_items.append(lineitem_type.text)
+                                    preserve_items[lineitem_type.text] = form
                                     forms_all_valid = False
                                     error_custom = True
                                 else:
@@ -247,6 +332,21 @@ class StudentExtraCosts(ProgramModuleObj):
                                     if not option.is_custom:
                                         option_amount = option.amount_dec_inherited
                                     form_prefs.append((lineitem_type.text, 1, float(option_amount), int(option_id)))
+
+                    elif isinstance(form, MultiOptionCostItem):
+                        selected = form.cleaned_data.get('options') or []
+                        for opt_id in selected:
+                            option = LineItemOptions.objects.get(id=opt_id)
+                            if option.is_custom:
+                                opt_amount = form.cleaned_data.get(f'custom_amount_{opt_id}')
+                                if opt_amount in (None, ''):
+                                    preserve_items[lineitem_type.text] = form
+                                    forms_all_valid = False
+                                    error_custom = True
+                                    continue
+                            else:
+                                opt_amount = option.amount_dec_inherited
+                            form_prefs.append((lineitem_type.text, 1, float(opt_amount), int(opt_id)))
 
                     elif isinstance(form, SiblingDiscountForm):
                         form.save(spi)
@@ -313,11 +413,11 @@ class StudentExtraCosts(ProgramModuleObj):
         ]
 
         multiselect_costitems = []
-        for x in multiselect_list:
+        for x in multiselect_single_list:
             new_entry = {'type': 'select', 'LineItem': x}
             option_data = {}
             for option in x.lineitemoptions_set.all():
-                option_data[option.id] = {'cost': option.amount_dec_inherited,
+                option_data[str(option.id)] = {'cost': option.amount_dec_inherited,
                                           'is_custom': 'true' if option.is_custom else 'false',
                                           'for_finaid': 'true' if x.for_finaid else 'false'}
             form_kwargs = {'prefix': "multi%s" % x.id, 'choices': x.option_choices, 'required': x.required, 'option_data': option_data}
@@ -337,7 +437,56 @@ class StudentExtraCosts(ProgramModuleObj):
             new_entry['form'] = preserve_items.get(x.text) or MultiSelectCostItem(**form_kwargs)
             multiselect_costitems.append(new_entry)
 
-        forms = cost_items + multi_cost_items + multiselect_costitems
+        multiselect_multi_costitems = []
+        for x in multiselect_multi_list:
+            new_entry = {'type': 'multiselect', 'LineItem': x}
+            option_data = {}
+            custom_option_ids = set()
+            custom_options = []
+            for option in x.lineitemoptions_set.all():
+                option_data[str(option.id)] = {
+                    'cost': option.amount_dec_inherited,
+                    'is_custom': 'true' if option.is_custom else 'false',
+                    'for_finaid': 'true' if x.for_finaid else 'false',
+                    'option_id': str(option.id),
+                }
+                if option.is_custom:
+                    custom_option_ids.add(option.id)
+                    custom_options.append(option)
+
+            # Determine initial selections + custom amounts from saved preferences.
+            selected_ids = []
+            custom_amount_initials = {}
+            for item in iac.get_preferences(self.lineitemtypes()):
+                if item[0] != x.text:
+                    continue
+                opt_id = item[3]
+                if opt_id:
+                    selected_ids.append(str(opt_id))
+                    # For custom options, restore entered amount if it differs from inherited.
+                    if opt_id in custom_option_ids:
+                        custom_amount_initials[f'custom_amount_{opt_id}'] = item[2]
+
+            initial = {'options': selected_ids}
+            initial.update(custom_amount_initials)
+
+            form = preserve_items.get(x.text) or MultiOptionCostItem(
+                prefix="multi%s" % x.id,
+                lineitem_type=x,
+                choices=x.option_choices,
+                required=x.required,
+                option_data=option_data,
+                custom_option_ids=custom_option_ids,
+                initial=initial,
+            )
+            new_entry['form'] = form
+            new_entry['custom_amount_fields'] = [
+                (opt, form[f'custom_amount_{opt.id}'])
+                for opt in custom_options
+            ]
+            multiselect_multi_costitems.append(new_entry)
+
+        forms = cost_items + multi_cost_items + multiselect_costitems + multiselect_multi_costitems
         if prog.sibling_discount:
             forms.append({
                     'form': sibling_form,
