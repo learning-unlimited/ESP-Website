@@ -5,7 +5,7 @@ var amount_finaid = 0;
 var amount_due = 0;
 var prog_cost = 0;
 
-$j(function() {
+$j(function () {
     // the amount that has already been paid
     amount_paid = parseFloat($j("#amount_paid").data("total")) || 0;
     // the amount of donations that were promised
@@ -22,27 +22,54 @@ $j(function() {
     $j("input[name*='-cost']").on('change', updateTotalCost);
     $j("input[name*='-count']").on('change', updateTotalCost);
     $j("input[name*='-option']").on('change', updateTotalCost);
+    $j(".option-custom-amount").on('input change', updateTotalCost);
+    $j("input[name*='-options']").on('change', function () {
+        updateCustomAmountEnabled();
+        updateTotalCost();
+    });
     $j("input[name*='-siblingdiscount']").on('change', updateTotalCost);
+
+    updateCustomAmountEnabled();
 });
+
+function updateCustomAmountEnabled() {
+    $j("input.option-custom-amount").each(function () {
+        var optId = String($j(this).data("option-id"));
+        var checked = $j("input[name*='-options'][value='" + optId + "']").prop("checked");
+        $j(this).prop("disabled", !checked);
+    });
+}
+
+function getCustomAmountForOptionId(optionId) {
+    var $custom = $j("input.option-custom-amount[data-option-id='" + optionId + "']");
+    if ($custom.length) return parseFloat($custom.val()) || 0;
+    return null;
+}
 
 function updateTotalCost() {
     var cost = 0;
     var total_extras = 0;
     // only items marked as such are covered by financial aid
     var finaid_covered = 0;
-    $j("input.cost:checked").each(function() {
+    $j("input.cost:checked").each(function () {
         cost = parseFloat($j(this).data('cost'));
         total_extras += cost;
         if ($j(this).data('for_finaid')) finaid_covered += cost;
     });
-    $j("input.multicost").each(function() {
+    $j("input.multicost").each(function () {
         cost = parseInt($j(this).val()) * parseFloat($j(this).data('cost'))
         total_extras += cost;
         if ($j(this).data('for_finaid')) finaid_covered += cost;
     });
-    $j("input[name*='-option']:checked, input[name*='-siblingdiscount']:checked").each(function() {
+    $j("input[name*='-option']:checked, input[name*='-options']:checked, input[name*='-siblingdiscount']:checked").each(function () {
         if ($j(this).data('is_custom')) {
-            cost = parseFloat($j(this).parent().next().val()) || 0;
+            var optId = String($j(this).val());
+            var customAmt = getCustomAmountForOptionId(optId);
+            if (customAmt === null) {
+                // fallback for legacy single-select custom option layout
+                customAmt = parseFloat($j(this).parent().next().val()) || 0;
+            }
+            cost = customAmt;
             total_extras += cost;
             if ($j(this).data('for_finaid')) finaid_covered += cost;
         } else {
@@ -80,6 +107,6 @@ function updateTotalCost() {
  * button.
  **/
 function remove_item(button) {
-    $j("input[name="+button.name+"]").prop("checked", false);
+    $j("input[name=" + button.name + "]").prop("checked", false);
     updateTotalCost();
 }
