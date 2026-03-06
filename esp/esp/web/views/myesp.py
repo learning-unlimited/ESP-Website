@@ -111,7 +111,7 @@ def edit_profile(request):
 
 @admin_required
 def admin_edit_profile(request, username):
-    """Admin interface to edit a user's profile. Accessible at /users/profile/<username>/"""
+    """Admin interface to edit a user's profile. Accessible at /myesp/profile/<username>/"""
     try:
         target_user = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
@@ -132,9 +132,6 @@ def admin_edit_profile(request, username):
         user_types = target_user.groups.all().order_by('-id')
         role = user_types[0].name if user_types else ''
 
-    # Check if there's a 'next' parameter to redirect after save
-    next_url = request.GET.get('next', '/manage/userview?username=' + username)
-    
     # Call profile_editor with the target_user
     return profile_editor(request, None, True, role, target_user=target_user)
 
@@ -151,8 +148,11 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         prog = prog_input
 
     # Handle admin editing another user's profile
+    # Note: We check admin permission twice - once via @admin_required decorator on the
+    # view and again here in profile_editor. This provides defense in depth in case
+    # profile_editor is called directly from other code paths.
     if target_user is not None:
-        # Verify admin permission
+        # Verify admin permission (defense in depth)
         if not request.user.isAdmin():
             raise ESPError("Only administrators can edit other users' profiles.", log=False)
         curUser = target_user
@@ -161,6 +161,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     context = {'logged_in': request.user.is_authenticated }
     context['user'] = curUser  # Show the target user in the context
+    context['request_user'] = request.user  # Keep the logged-in user available for templates
     context['program'] = prog
     context['admin_editing_user'] = (target_user is not None)  # Flag for template to adjust display
 
