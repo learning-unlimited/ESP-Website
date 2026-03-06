@@ -146,7 +146,7 @@ class ThemeController(object):
             for filename in filenames:
                 if re.search(file_regexp, filename):
                     if mask_base:
-                        full_name = ('%s/%s' % (dirpath[bd_len:], filename))[1:]
+                        full_name = (f'{dirpath[bd_len:]}/{filename}')[1:]
                     else:
                         full_name = dirpath + '/' + filename
                     #   Hack needed for Windows - may not be necessary for other OS
@@ -163,7 +163,7 @@ class ThemeController(object):
         #   There are two steps; if either fails, we return None and the form is skipped.
         #   Step 1: Try to get the Python module containing the form class.
         try:
-            theme_form_module = __import__('esp.themes.theme_data.%s.config_form' % theme_name, (), (), 'ConfigForm')
+            theme_form_module = __import__(f'esp.themes.theme_data.{theme_name}.config_form', (), (), 'ConfigForm')
         except ImportError:
             return None
         #   Step 2: Try to get the form class from the module.
@@ -240,12 +240,12 @@ class ThemeController(object):
         logger.debug('LESS search path is "%s"', less_search_path)
 
         #   Compile to CSS
-        lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
+        lessc_args = ['lessc', f'--include-path="{less_search_path}"', '-']
         lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         css_data = lessc_process.communicate(less_data.encode())[0]
 
         if lessc_process.returncode != 0:
-            raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
+            raise ESPError(f'The stylesheet compiler (lessc) returned error code {lessc_process.returncode}.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:{settings.DEFAULT_EMAIL_ADDRESSES["support"]}">Web support team</a>.<br />LESS compile command was: <pre>{" ".join(lessc_args)}</pre>', log=True)
 
         return css_data
 
@@ -293,11 +293,11 @@ class ThemeController(object):
 
         #   Make icon image path load from the CDN by default
         if 'iconSpritePath' not in variable_data:
-            variable_data['iconSpritePath'] = '"%s/bootstrap/img/glyphicons-halflings.png"' % settings.CDN_ADDRESS
+            variable_data['iconSpritePath'] = f'"{settings.CDN_ADDRESS}/bootstrap/img/glyphicons-halflings.png"'
 
         #   Replace all variable declarations for which we have a value defined
         for (variable_name, variable_value) in variable_data.items():
-            less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
+            less_data = re.sub(rf'@{variable_name}:(\s*)(.*?);', f'@{variable_name}: {variable_value};', less_data)
 
         #   Compile to CSS
         css_data = self.compile_less(less_data)
@@ -529,13 +529,13 @@ class ThemeController(object):
         context['save_name'] = save_name
         context['palette'] = palette
 
-        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")), 'w')
+        f = open(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe = "")}.less'), 'w')
         f.write(render_to_string('themes/custom_vars.less', context))
         f.close()
 
     def load_customizations(self, save_name):
 
-        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")), 'r')
+        f = open(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe = "")}.less'), 'r')
         data = f.read()
         f.close()
 
@@ -569,7 +569,7 @@ class ThemeController(object):
         return (vars, palette)
 
     def delete_customizations(self, save_name):
-        os.remove(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")))
+        os.remove(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe = "")}.less'))
 
     def get_customization_names(self):
         result = []

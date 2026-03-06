@@ -87,7 +87,7 @@ def selector(request, keep_files=None):
             if tc.get_config_form_class(theme_name) is not None:
                 return configure(request, current_theme=theme_name, force_display=True, keep_files=keep_files)
 
-            tc.save_customizations('%s-last' % tc.get_current_theme())
+            tc.save_customizations(f'{tc.get_current_theme()}-last')
             backup_info = tc.clear_theme(keep_files=keep_files)
             tc.load_theme(theme_name, backup_info=backup_info)
 
@@ -200,7 +200,7 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
 
         #   Build a list of filenames that we are not supposed to overwrite.
         for entry in diffs_current:
-            post_key = 'overwrite_%s' % entry['filename_hash']
+            post_key = f'overwrite_{entry["filename_hash"]}'
             post_val = request.POST.get(post_key, None)
             if post_val is not None:
                 if post_val != 'overwrite':
@@ -281,7 +281,7 @@ def editor(request):
                 if theme_name == 'None':
                     #   Generate a temporary theme name
                     random_slug  = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
-                    theme_name = 'theme-%s-%s' % (datetime.now().strftime('%Y%m%d'), random_slug)
+                    theme_name = f'theme-{datetime.now().strftime("%Y%m%d")}-{random_slug}'
             else:
                 theme_name = request.POST['saveThemeName']
             vars = request.POST.dict()
