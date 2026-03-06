@@ -102,12 +102,16 @@ class BatchClassRegModule(ProgramModuleObj):
         filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         override_full = 'override_full' in request.POST
 
-        log = self.batch_register(filterObj, section, override_full)
+        result = self.batch_register(filterObj, section, override_full)
 
         context = {
-            'log': log,
             'section': section,
             'program': prog,
+            'results': result['results'],
+            'success_count': result['success_count'],
+            'fail_count': result['fail_count'],
+            'skip_count': result['skip_count'],
+            'total': result['total'],
         }
         return render_to_response(self.baseDir()+'finished.html', request, context)
 
@@ -167,22 +171,11 @@ class BatchClassRegModule(ProgramModuleObj):
         # Materialize once — reuse for count and iteration
         user_list = list(users)
 
-        log_lines = []
-        log_lines.append(
-            "Batch registering %d users for %s: %s" % (
-                len(user_list), section.emailcode(), section.title()
-            )
-        )
-        log_lines.append(
-            "Section capacity: %d, Current enrollment: %d, Override full: %s"
-            % (section.capacity, section.num_students(), override_full)
-        )
-        log_lines.append("")
-
         program = section.parent_class.parent_program
         success_count = 0
         fail_count = 0
         skip_count = 0
+        results = []
 
         # Hoist out of loop — same for every user
         section_times = set(section.meeting_times.values_list('id', flat=True))
@@ -199,10 +192,12 @@ class BatchClassRegModule(ProgramModuleObj):
                         s.id == section.id for s in already_enrolled
                     )
                     if already_in_section:
-                        log_lines.append(
-                            "[SKIP] %s (ID %d): Already registered in this section"
-                            % (user.name(), user.id)
-                        )
+                        results.append({
+                            'status': 'skip',
+                            'name': user.name(),
+                            'user_id': user.id,
+                            'detail': 'Already registered in this section',
+                        })
                         skip_count += 1
                         continue
 
@@ -218,34 +213,34 @@ class BatchClassRegModule(ProgramModuleObj):
                         conflict_names = ', '.join(
                             s.emailcode() for s in conflict_sections
                         )
-                        log_lines.append(
-                            "[CONFLICT] %s (ID %d): Time conflict with %s"
-                            % (user.name(), user.id, conflict_names)
-                        )
+                        results.append({
+                            'status': 'conflict',
+                            'name': user.name(),
+                            'user_id': user.id,
+                            'detail': 'Time conflict with %s' % conflict_names,
+                        })
                         fail_count += 1
                         continue
 
-                    result = section.preregister_student(
+                    reg_result = section.preregister_student(
                         user, overridefull=override_full
                     )
-                    if result:
-                        log_lines.append(
-                            "[OK] %s (ID %d): Successfully registered"
-                            % (user.name(), user.id)
-                        )
+                    if reg_result:
+                        results.append({
+                            'status': 'ok',
+                            'name': user.name(),
+                            'user_id': user.id,
+                            'detail': 'Successfully registered',
+                        })
                         success_count += 1
                     else:
-                        log_lines.append(
-                            "[FULL] %s (ID %d): Section is full"
-                            % (user.name(), user.id)
-                        )
+                        results.append({
+                            'status': 'full',
+                            'name': user.name(),
+                            'user_id': user.id,
+                            'detail': 'Section is full',
+                        })
                         fail_count += 1
-
-        log_lines.append("")
-        log_lines.append(
-            "Summary: %d succeeded, %d failed, %d skipped (already enrolled)"
-            % (success_count, fail_count, skip_count)
-        )
 
         logger.info(
             "Batch class registration: %d users -> section %s (ID %d): "
@@ -254,7 +249,13 @@ class BatchClassRegModule(ProgramModuleObj):
             success_count, fail_count, skip_count
         )
 
-        return "\n".join(log_lines)
+        return {
+            'total': len(user_list),
+            'success_count': success_count,
+            'fail_count': fail_count,
+            'skip_count': skip_count,
+            'results': results,
+        }
 
     def isStep(self):
         return False

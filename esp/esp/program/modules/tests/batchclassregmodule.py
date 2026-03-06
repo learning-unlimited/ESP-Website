@@ -49,11 +49,11 @@ class BatchClassRegModuleTest(ProgramFrameworkTest):
         filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q)
         filterObj.save()
 
-        log = BatchClassRegModule.batch_register(
+        result = BatchClassRegModule.batch_register(
             filterObj, section, override_full=True
         )
-        self.assertIn('succeeded', log)
-        self.assertIn('Summary', log)
+        self.assertGreater(result['success_count'], 0)
+        self.assertEqual(result['total'], 3)
 
     def test_batch_register_skip_already_enrolled(self):
         from esp.program.modules.handlers.batchclassregmodule import BatchClassRegModule
@@ -72,15 +72,15 @@ class BatchClassRegModuleTest(ProgramFrameworkTest):
         filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q)
         filterObj.save()
 
-        log = BatchClassRegModule.batch_register(
+        result = BatchClassRegModule.batch_register(
             filterObj, section, override_full=True
         )
-        self.assertIn('[SKIP]', log)
-        self.assertIn('0 succeeded', log)
-        self.assertIn('1 skipped', log)
+        self.assertEqual(result['success_count'], 0)
+        self.assertEqual(result['skip_count'], 1)
+        self.assertEqual(result['results'][0]['status'], 'skip')
 
     def test_batch_register_time_conflict(self):
-        """A student enrolled in a conflicting timeslot gets [CONFLICT]."""
+        """A student enrolled in a conflicting timeslot gets 'conflict' status."""
         from esp.program.modules.handlers.batchclassregmodule import BatchClassRegModule
 
         sections = list(ClassSection.objects.filter(
@@ -109,14 +109,14 @@ class BatchClassRegModuleTest(ProgramFrameworkTest):
         filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q)
         filterObj.save()
 
-        log = BatchClassRegModule.batch_register(
+        result = BatchClassRegModule.batch_register(
             filterObj, section_b, override_full=True
         )
-        self.assertIn('[CONFLICT]', log)
-        self.assertIn('1 failed', log)
+        self.assertEqual(result['fail_count'], 1)
+        self.assertEqual(result['results'][0]['status'], 'conflict')
 
     def test_batch_register_full_section(self):
-        """When section is full and override_full=False, student gets [FULL]."""
+        """When section is full and override_full=False, student gets 'full' status."""
         from esp.program.modules.handlers.batchclassregmodule import BatchClassRegModule
 
         section = ClassSection.objects.filter(
@@ -132,8 +132,8 @@ class BatchClassRegModuleTest(ProgramFrameworkTest):
         filterObj.save()
 
         with patch.object(type(section), 'isFull', return_value=True):
-            log = BatchClassRegModule.batch_register(
+            result = BatchClassRegModule.batch_register(
                 filterObj, section, override_full=False
             )
-        self.assertIn('[FULL]', log)
-        self.assertIn('1 failed', log)
+        self.assertEqual(result['fail_count'], 1)
+        self.assertEqual(result['results'][0]['status'], 'full')

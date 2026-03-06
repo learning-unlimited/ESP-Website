@@ -21,6 +21,13 @@ function filterSections() {
 <h1>Batch Class Registration</h1>
 
 <h2>Step 2:</h2>
+
+{% if num_users == 0 %}
+<div class="alert alert-warning">
+    <p>You've selected 0 users. Please go back and amend your search in order to batch register students.</p>
+    <p><a href="javascript:history.go(-1);" class="btn btn-default">Go back</a></p>
+</div>
+{% else %}
 <p>You have selected <strong>{{ num_users }}</strong> students. Choose a class section to register them in.</p>
 
 <form action="/manage/{{ program.getUrlBase }}/batchclassregfinal?filterid={{ filterid }}" method="post" name="batchclassreg">
@@ -64,6 +71,7 @@ function filterSections() {
 
 <input type="submit" value="Register Students" />
 </form>
+{% endif %}
 
 {% include "program/modules/admincore/returnlink.html" %}
 

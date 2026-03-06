@@ -2,6 +2,19 @@
 
 {% block title %}Batch Class Registration{% endblock %}
 
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript">
+$j(document).ready(function() {
+    // Auto-advance past recipient type selection to the list selection step,
+    // so the basic list options are visible immediately on page load.
+    setTimeout(function() {
+        $j("#recipient_type_next").click();
+    }, 0);
+});
+</script>
+{% endblock %}
+
 {% block content %}
 
 <h1>Batch Class Registration</h1>
