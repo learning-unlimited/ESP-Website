@@ -217,7 +217,7 @@ class AnswerTest(TestCase):
     def testAnswerCleanValidation(self):
         '''Test that Answer.clean() raises ValidationError if GenericForeignKey is partial.'''
         from django.core.exceptions import ValidationError
-        
+
         # Both null -> OK
         ans_null = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=None)
         ans_null.clean()  # Should not raise

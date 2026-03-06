@@ -73,7 +73,7 @@ class TagTest(TestCase):
     def testTagCleanValidation(self):
         '''Test that Tag.clean() raises ValidationError if GenericForeignKey is partial.'''
         from django.core.exceptions import ValidationError
-        
+
         # Both set -> OK
         user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
         from django.contrib.contenttypes.models import ContentType
