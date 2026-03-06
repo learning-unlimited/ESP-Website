@@ -732,7 +732,7 @@ class CustomSMTPBackend(SMTPEmailBackend):
             self.connection.sendmail(sanitize_address(return_path, email_message.encoding),
                     recipients,
                     email_message.message().as_string())
-        except:
+        except Exception:
             if not self.fail_silently:
                 raise
             return False
