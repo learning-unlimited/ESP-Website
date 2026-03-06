@@ -1427,7 +1427,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     message_for_directors = models.TextField(blank=True)
     class_size_optimal = models.IntegerField(blank=True, null=True)
     optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True, on_delete=models.CASCADE)
-    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True, null=True)
+    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)

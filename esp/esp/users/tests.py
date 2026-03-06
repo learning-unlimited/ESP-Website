@@ -282,7 +282,7 @@ class UserForwarderTest(TestCase):
         self.users = [self.ua, self.ub, self.uc]
     def runTest(self):
         def fwd_info(user):
-            return '%s forwards by: %s' % (user.username, user.forwarders_out.all())
+            return '%s forwards by: %s' % (user.username, UserForwarder.get_outgoing_forwarder(user))
         # Ensure that users have no forwarders by default
         for user in self.users:
             self.assertTrue(UserForwarder.follow(user) == (user, False), fwd_info(user))

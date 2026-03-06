@@ -14,7 +14,7 @@ class UserForwarder(models.Model):
     Links source user to target user, to make all login sessions under target.
 
     """
-    source = AjaxForeignKey(ESPUser, related_name='forwarders_out', unique=True, on_delete=models.CASCADE)
+    source = models.OneToOneField(ESPUser, related_name='forwarders_out', on_delete=models.CASCADE)
     target = AjaxForeignKey(ESPUser, related_name='forwarders_in', on_delete=models.CASCADE)
 
     # Django tries to figure out the correct app label by going one level up.
@@ -22,6 +22,10 @@ class UserForwarder(models.Model):
     # So we need to specify this explicitly.
     class Meta:
         app_label = 'users'
+
+    @staticmethod
+    def get_outgoing_forwarder(user):
+        return UserForwarder.objects.filter(source=user).first()
 
     def updateTarget(self, target, flatten = True, save = True):
         """
@@ -55,9 +59,9 @@ class UserForwarder(models.Model):
         original_target = target
         for i in range(MAX_DEPTH):
             # Get the next forwarder if it exists
-            if not target.forwarders_out.exists():
+            f = UserForwarder.get_outgoing_forwarder(target)
+            if f is None:
                 break
-            f = target.forwarders_out.get()
             # Check for circular references
             if f.target == self.source:
                 target = original_target
@@ -82,9 +86,8 @@ class UserForwarder(models.Model):
     @staticmethod
     def forward(source, target):
         """Forward from source to target, creating a forwarder if needed."""
-        if source.forwarders_out.exists():
-            f = source.forwarders_out.get()
-        else:
+        f = UserForwarder.get_outgoing_forwarder(source)
+        if f is None:
             f = UserForwarder()
             f.source = source
         f.updateTarget(target)
@@ -100,8 +103,9 @@ class UserForwarder(models.Model):
         (with forward() or updateTarget()), to save computation.
 
         """
-        if user.forwarders_out.exists():
-            ans = user.forwarders_out.get().target
+        f = UserForwarder.get_outgoing_forwarder(user)
+        if f:
+            ans = f.target
             for extra in ['backend']:
                 if hasattr(user, extra):
                     ans.__dict__[extra] = user.__dict__[extra]
