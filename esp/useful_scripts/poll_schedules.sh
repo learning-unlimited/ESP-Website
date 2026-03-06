@@ -20,8 +20,11 @@ echo
 CURL_COOKIE_STORE="curl_cookies.txt"
 
 echo "Logging in..."
-curl -c "${CURL_COOKIE_STORE}" "https://esp.mit.edu/admin/" >/dev/null 2>&1
-curl -b "${CURL_COOKIE_STORE}" -c "${CURL_COOKIE_STORE}" -d "username=${USERNAME}&password=${PASSWORD}&this_is_the_login_form=1" "https://esp.mit.edu/admin/" >/dev/null 2>&1
+curl -s -c "${CURL_COOKIE_STORE}" "https://esp.mit.edu/admin/" >/dev/null 2>&1
+CSRF_TOKEN=$(grep csrftoken "${CURL_COOKIE_STORE}" | awk '{print $NF}')
+curl -b "${CURL_COOKIE_STORE}" -c "${CURL_COOKIE_STORE}" -H "Referer: https://esp.mit.edu/admin/" \
+    -d "username=${USERNAME}&password=${PASSWORD}&this_is_the_login_form=1&csrfmiddlewaretoken=${CSRF_TOKEN}" \
+    "https://esp.mit.edu/admin/" >/dev/null 2>&1
 echo "Logged in!"
 
 while (true); do
