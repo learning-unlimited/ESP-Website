@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, connection
-from django.db.utils import DatabaseError
+from django.db.utils import DatabaseError, ProgrammingError
 from esp.users.models import ESPUser
 from esp.program.models import Program
 
@@ -94,7 +94,7 @@ def create_schema(db):
     transaction.set_autocommit(False)
     try:
         db.execute("CREATE SCHEMA customforms")
-    except:
+    except (DatabaseError, ProgrammingError):
         transaction.rollback()
     else:
         transaction.commit()
