@@ -75,8 +75,11 @@ class PageTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Make sure that we've gotten an HTML document, and not a Django error
-        self.assertStringContains(str(response.content, encoding='UTF-8'), "<html")
-        self.assertNotStringContains(str(response.content, encoding='UTF-8'), "You're seeing this error because you have <code>DEBUG = True</code>")
+        content = str(response.content, encoding='UTF-8')
+        self.assertStringContains(content, "<html")
+        self.assertNotStringContains(content, "You're seeing this error because you have <code>DEBUG = True</code>")
+        self.assertStringContains(content, '<a class="skip-link" href="#main-content">Skip to main content</a>')
+        self.assertStringContains(content, '<div id="main-content" role="main" tabindex="-1">')
 
 class NavbarTest(TestCase):
 
@@ -307,5 +310,4 @@ class JavascriptSyntaxTest(TestCase):
                 logger.info(line)
 
             self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
-
 
