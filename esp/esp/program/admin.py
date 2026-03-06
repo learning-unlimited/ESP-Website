@@ -61,7 +61,12 @@ class ProgramModuleAdmin(admin.ModelAdmin):
                     'link_title_is_customized', 'seq_is_customized', 'required_is_customized')
     list_filter = ('module_type',)
     search_fields = ['admin_title', 'handler']
-    readonly_fields = ('handler', 'module_type')
+    def get_readonly_fields(self, request, obj=None):
+        if obj is not None:
+            # Existing module: handler and module_type are immutable.
+            return ('handler', 'module_type')
+        # New module: all fields editable.
+        return ()
 
     def link_title_is_customized(self, obj):
         return obj.link_title is not None and obj.link_title != ''
