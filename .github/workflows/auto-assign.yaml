@@ -83,6 +83,18 @@ jobs:
               return;
             }
 
+            // Reject if the issue is closed
+            if (context.payload.issue.state === 'closed') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `⚠️ Sorry @${requester}, this issue is closed and is not available for assignment.` + WIKI_LINKS,
+              });
+              core.info(`Rejected /assign from @${requester} on #${issueNumber} — issue is closed.`);
+              return;
+            }
+
             // Check if the issue has a blocked label
             const blockedRaw = process.env.NO_ASSIGN_LABELS || '';
             const blockedLabels = blockedRaw
@@ -248,6 +260,17 @@ jobs:
             if (matched) {
               core.info(`Informal assignment request detected from @${commenter} on #${issueNumber}`);
 
+              // Reject if the issue is closed
+              if (context.payload.issue.state === 'closed') {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: `⚠️ Sorry @${commenter}, this issue is closed and is not available for assignment.` + WIKI_LINKS,
+                });
+                return;
+              }
+
               // Check if user is a maintainer (admin or maintain permission)
               const { data: permData } = await github.rest.repos.getCollaboratorPermissionLevel({
                 owner: context.repo.owner,
@@ -308,6 +331,26 @@ jobs:
             const isMaintainer = ['admin', 'maintain'].includes(permData.permission);
             if (isMaintainer) {
               core.info(`@${assignee} is a maintainer — no restrictions apply.`);
+              return;
+            }
+
+            // Reject if the issue is closed
+            if (context.payload.issue.state === 'closed') {
+              await github.rest.issues.removeAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                assignees: [assignee],
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `⚠️ Sorry @${assignee}, this issue is closed and is not available for assignment.` + WIKI_LINKS,
+              });
+
+              core.info(`Removed @${assignee} from #${issueNumber} — issue is closed.`);
               return;
             }
 
