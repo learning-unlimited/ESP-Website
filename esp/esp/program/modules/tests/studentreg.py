@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.program.models import FinancialAidRequest, SplashInfo
 from esp.accounting.models import FinancialAidGrant, LineItemType
+from esp.users.models import Permission
 
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -316,4 +317,20 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(iac.amount_due(), program_cost - 20)
         spi = SplashInfo.getForUser(student, self.program)
         self.assertEqual(spi.siblingname, 'Test Name')
+
+    def test_catalog_deadline(self):
+        """Test that catalog respects Student/Catalog deadline."""
+        program = self.program
+
+        # Catalog should be accessible when deadline is open
+        Permission.objects.create(permission_type='Student/Catalog', program=program, user=None)
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+        # Remove the deadline permission
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # Catalog should now show deadline error
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
 

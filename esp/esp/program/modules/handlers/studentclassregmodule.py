@@ -46,7 +46,7 @@ from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth, render_deadline_for_tl
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
@@ -568,6 +568,9 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
+        if not Permission.null_user_has_perm('Student/Catalog', prog):
+            return HttpResponse(json.dumps({'error': 'Catalog is closed'}),
+                                content_type='application/json', status=403)
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
 
@@ -605,6 +608,10 @@ class StudentClassRegModule(ProgramModuleObj):
     @no_auth
     @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        # Respect Student/Catalog deadline without breaking cache (no user check)
+        if not Permission.null_user_has_perm('Student/Catalog', prog):
+            return render_deadline_for_tl('learn', request,
+                    {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
     @disable_csrf_cookie_update
@@ -612,6 +619,9 @@ class StudentClassRegModule(ProgramModuleObj):
     @no_auth
     @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
+        if not Permission.null_user_has_perm('Student/Catalog', prog):
+            return render_deadline_for_tl('learn', request,
+                    {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
         #   Get the ProgramPrintables module for the program
         from esp.program.modules.handlers.programprintables import ProgramPrintables
         for module in prog.getModules():
