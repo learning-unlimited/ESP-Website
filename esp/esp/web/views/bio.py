@@ -118,10 +118,17 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
                     'bio': lastbio.bio, 'picture': lastbio.picture}
         form = BioEditForm(formdata)
 
+    # Fetch all classes the teacher has taught and gather documents
+    previous_classes = founduser.getTaughtClasses()
+    previous_docs = []
+    for p_cls in previous_classes:
+        previous_docs.extend(list(p_cls.getDocuments()))
+
     return render_to_response('users/teacherbioedit.html', request, {'form':    form,
                                                    'institution': settings.INSTITUTION_NAME,
                                                    'user':    founduser,
-                                                   'picture_file': lastbio.picture})
+                                                   'picture_file': lastbio.picture,
+                                                   'previous_docs': previous_docs})
 
 
 def bio_not_found(request, user=None, edit_url=None):
