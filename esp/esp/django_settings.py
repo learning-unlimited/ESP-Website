@@ -377,6 +377,7 @@ STRIPE_CONFIG = {
 CYBERSOURCE_CONFIG = {
     'post_url': '',
     'merchant_id': '',
+    'secret_key': '',   # HMAC secret from Cybersource Secure Acceptance dashboard
 }
 
 FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'

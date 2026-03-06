@@ -146,6 +146,32 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         if (not context['post_url']) or (not context['merchant_id']):
             raise ESPError("The Cybersource module is not configured")
 
+        # Build signed fields for outgoing form submission to Cybersource
+        secret_key = settings.CYBERSOURCE_CONFIG.get('secret_key', '')
+        if secret_key:
+            import time
+            import uuid
+            from esp.program.cybersource_utils import sign_fields
+
+            fields = {
+                'access_key': settings.CYBERSOURCE_CONFIG.get('access_key', ''),
+                'profile_id': settings.CYBERSOURCE_CONFIG.get('profile_id', ''),
+                'transaction_uuid': str(uuid.uuid4()),
+                'signed_field_names': '',   # filled below
+                'unsigned_field_names': '',
+                'signed_date_time': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                'locale': 'en',
+                'transaction_type': 'sale',
+                'reference_number': iac.get_id(),
+                'amount': str(context['itemizedcosttotal']),
+                'currency': 'usd',
+                'merchant_defined_data1': context['identifier'],
+            }
+            signed_field_names = ','.join(fields.keys())
+            fields['signed_field_names'] = signed_field_names
+            fields['signature'] = sign_fields(fields, signed_field_names, secret_key)
+            context['signed_fields'] = fields
+
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     def isStep(self):
