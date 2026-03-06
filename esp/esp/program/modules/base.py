@@ -415,6 +415,17 @@ class ProgramModuleObj(models.Model):
         return self.isStep()
 
     @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        """
+        Optional: return an AdminSearchEntry for this module's view so it
+        appears in the Admin Dashboard search. Return None to use the default
+        (title from link_title, category "Other", keywords from title).
+        Define this in each module with title, category, and keywords so
+        new modules are discoverable and keywords stay next to the code.
+        """
+        return None
+
+    @classmethod
     def module_properties(cls):
         """
         Specify the properties of the ProgramModule row corresponding

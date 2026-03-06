@@ -47,6 +47,7 @@ from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
+from esp.program.modules.admin_search import AdminSearchEntry
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
@@ -137,6 +138,19 @@ class StudentClassRegModule(ProgramModuleObj):
             "required": True,
             "choosable": 1
             }]
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if tl != "learn" or view_name != "catalog":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="learn_catalog",
+            url="/learn/%s/catalog" % base,
+            title="Student Catalog",
+            category="Quick Links",
+            keywords=["catalog", "classes", "student view"],
+        )
 
     @property
     def scrmi(self):

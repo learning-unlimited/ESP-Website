@@ -49,6 +49,7 @@ from esp.program.models import ClassSection
 from esp.middleware import ESPError
 
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 
 from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, FurnishingFormForProgram, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm
 
@@ -68,6 +69,19 @@ class ResourceModule(ProgramModuleObj):
             "seq": -99999,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "resources":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_resources",
+            url="/manage/%s/resources" % base,
+            title="Resources",
+            category="Configure",
+            keywords=["rooms", "classrooms", "spaces", "timeslots", "resources"],
+        )
 
     """
     Resource module handler functions
