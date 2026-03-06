@@ -1,5 +1,5 @@
 from django.conf.urls import url
-
+from django.views.generic.base import RedirectView
 from esp.users import views
 from esp.users.views.registration import GradeChangeRequestView
 from esp.web.views import bio
@@ -41,6 +41,7 @@ urlpatterns += [
 ]
 
 urlpatterns += [
+    url(r'^$', RedirectView.as_view(url='/myesp/profile/', permanent=False)),
     url(r'^switchback/?$', myesp.myesp_switchback),
     url(r'^stop_testing/?$', myesp.myesp_stop_testing),
     url(r'^onsite/?$', myesp.myesp_onsite),
