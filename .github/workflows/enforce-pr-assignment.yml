@@ -21,6 +21,8 @@ jobs:
             const prAuthor = pr.user.login;
             const prNumber = pr.number;
             const body = pr.body || '';
+            // Strip HTML comments so PR template hints don't trigger the check
+            const cleanBody = body.replace(/<!--[\s\S]*?-->/g, '');
 
             console.log(`Checking PR #${prNumber} by @${prAuthor}`);
 
@@ -52,12 +54,26 @@ jobs:
             const issuePattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
             const issueNumbers = [];
             let match;
-            while ((match = issuePattern.exec(body)) !== null) {
+            while ((match = issuePattern.exec(cleanBody)) !== null) {
               issueNumbers.push(parseInt(match[1], 10));
             }
 
             if (issueNumbers.length === 0) {
-              console.log('No linked issues found in PR body — allowing through.');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `👋 Hi @${prAuthor}, thanks for your interest in contributing!\n\nThis PR doesn't appear to link to any issue. All PRs must reference an issue using a keyword like "Closes #123" in the PR description.\n\nPlease:\n1. Find or create an issue for the work you're doing\n2. Comment on the issue asking to be assigned\n3. Wait for a maintainer to assign you\n4. Update this PR's description to link the issue, then reopen it\n\nWe appreciate your enthusiasm and look forward to your contributions! 🙌`,
+              });
+
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                state: 'closed',
+              });
+
+              console.log(`Closed PR #${prNumber} — no linked issues found.`);
               return;
             }
 
