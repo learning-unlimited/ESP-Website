@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -69,18 +68,19 @@ class CoreModule(object):
     """
     pass
 
-@python_2_unicode_compatible
 class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
     required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=False, default="")
+    link_title = models.CharField(max_length=64, blank=True, null=False, default="",
+                                  help_text="Override the default link title for this program. Leave blank to use the module's default.")
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
             return self.doc
-        return self.module.get_effective_link_title()
+        return self.get_link_title()
 
     def __str__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
@@ -275,13 +275,17 @@ class ProgramModuleObj(models.Model):
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
     get_full_path.depend_on_model('program.Program')
 
+    def get_link_title(self):
+        return self.link_title or self.module.get_effective_link_title()
+
     def makeLink(self):
+        title = self.get_link_title()
         if not self.module.module_type == 'manage':
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                (self.get_full_path(), self.module.get_effective_link_title(), self.module.get_effective_link_title())
+                (self.get_full_path(), title, title)
         else:
             link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.module.get_effective_link_title(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.get_effective_link_title())
+               (self.get_full_path(), title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
 
         return mark_safe(link)
 
@@ -291,7 +295,7 @@ class ProgramModuleObj(models.Model):
     def get_setup_title(self):
         if hasattr(self, 'setup_title') and self.setup_title is not None and str(self.setup_title).strip() != '':
             return self.setup_title
-        return self.module.get_effective_link_title()
+        return self.get_link_title()
 
     def get_setup_path(self):
         if hasattr(self, 'setup_path') and self.setup_path is not None and str(self.setup_path).strip() != '':
@@ -306,15 +310,16 @@ class ProgramModuleObj(models.Model):
         return mark_safe('<a href="%s" title="%s">%s</a>' % (link, title, title))
 
     def makeButtonLink(self):
+        title = self.get_link_title()
         if not self.module.module_type == 'manage':
             link = """<div class="module_button">\
                                 <a href="%s"><button type="button" class="module_link_large">
                                     <div class="module_link_main">%s</div>
                                 </button></a>
-                            </div>""" % (self.get_full_path(), self.module.get_effective_link_title())
+                            </div>""" % (self.get_full_path(), title)
         else:
             link = '<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.get_effective_link_title(), self.module.handler)
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title, self.module.handler)
 
         return mark_safe(link)
 
@@ -325,7 +330,7 @@ class ProgramModuleObj(models.Model):
     def isAdminPortalFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""
-        return self.module.handler in ['AdminCore', 'AdminMorph', 'AdminMaterials',
+        return self.module.handler in ['AdminCore', 'AdminMaterials',
                                        'ListGenModule', 'ResourceModule', 'CommModule',
                                        'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
                                        'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsManageModule',
