@@ -5,16 +5,16 @@
             <tbody>
                 <tr>
                     <th> Created: </th>
-                    <td> {% if flag.created_by %}{{flag.created_by.name}}{% else %}Deleted User{% endif %} on {{flag.created_time.date}} at {{flag.created_time.time}} </td>
+                    <td> {% if flag.created_by %}{{flag.created_by.name}}{% else %}Deleted User{% endif %} on {{flag.created_time|date}} at {{flag.created_time|time}} </td>
                 </tr>
                 <tr>
                     <th> Last modified: </th>
-                    <td class="lastmod"> {% if flag.modified_by %}{{flag.modified_by.name}}{% else %}Deleted User{% endif %} on {{flag.modified_time.date}} at {{flag.modified_time.time}} </td>
+                    <td class="lastmod"> {% if flag.modified_by %}{{flag.modified_by.name}}{% else %}Deleted User{% endif %} on {{flag.modified_time|date}} at {{flag.modified_time|time}} </td>
                 </tr>
                 {% if flag.resolved %}
                 <tr>
                     <th> Resolved: </th>
-                    <td> {% if flag.resolved_by %}{{ flag.resolved_by.name }}{% else %}Deleted User{% endif %} on {{flag.resolved_time.date}} at {{flag.resolved_time.time}} </td>
+                    <td> {% if flag.resolved_by %}{{ flag.resolved_by.name }}{% else %}Deleted User{% endif %} on {{flag.resolved_time|date}} at {{flag.resolved_time|time}} </td>
                 </tr>
                 {% endif %}
                 <tr>

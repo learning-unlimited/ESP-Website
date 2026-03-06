@@ -40,7 +40,7 @@
     </tr>
     {% for item in start_times %}
         <tr>
-            <td>{% if item.time %}{{ item.time }}{% else %}No Classes{% endif %}</td>
+            <td>{% if item|time %}{{ item|time }}{% else %}No Classes{% endif %}</td>
             <td>{{ item.num_students }}</td>
         </tr>
     {% endfor %}
