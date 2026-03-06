@@ -5,36 +5,36 @@
 
 {% if not user.getGrade or form.allow_change_grade_level %}
 <div class="alert">
-<button type="button" class="close" data-dismiss="alert">x</button>
-Please fill out your current age and grade accurately and honestly.
-We trust our students to represent themselves honestly, but
-students have abused this trust in the past to circumvent grade
-requirements for higher-level classes. Lying about your age is fraud
-and is extremely frustrating for our teachers, who set these grade
-requirements with full knowledge of the outstanding students in the
-program. Please be honest and support the community.
-<br /> <br />
-{% if not user.getGrade and not form.allow_change_grade_level %}
-You will only be able to set your age and grade level ONCE. 
-After you click "Update Your Information!" below, you will not be
-able to change your age or grade level.
-<br /> <br />
-{% endif %}
-Your grade level will update automatically every August.
+    <button type="button" class="close" data-dismiss="alert">x</button>
+    Please fill out your current age and grade accurately and honestly.
+    We trust our students to represent themselves honestly, but
+    students have abused this trust in the past to circumvent grade
+    requirements for higher-level classes. Lying about your age is fraud
+    and is extremely frustrating for our teachers, who set these grade
+    requirements with full knowledge of the outstanding students in the
+    program. Please be honest and support the community.
+    <br /> <br />
+    {% if not user.getGrade and not form.allow_change_grade_level %}
+    You will only be able to set your age and grade level ONCE.
+    After you click "Update Your Information!" below, you will not be
+    able to change your age or grade level.
+    <br /> <br />
+    {% endif %}
+    Your grade level will update automatically every August.
 </div>
 {% endif %}
 
 {% if user.getGrade and not form.allow_change_grade_level %}
-    {% include "users/profiles/gradechangerequestinfo.html" %}
+{% include "users/profiles/gradechangerequestinfo.html" %}
 {% endif %}
 
 {% if form.dob %}
 <div class="control-group">
     <label for="id_dob_0" class="control-label">Date of Birth:</label>
     <div class="controls controls-row">
-    {{ form.dob }} {% if form.dob.errors %}
-    <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>
-    {% endif %}
+        {{ form.dob }} {% if form.dob.errors %}
+        <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
@@ -43,32 +43,34 @@ Your grade level will update automatically every August.
 <div class="control-group">
     <label for="id_graduation_year" class="control-label">Grade / Graduation Year:</label>
     <div class="controls">
-    {{ form.graduation_year }} {% if form.graduation_year.errors %}
-    <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
-    {% endif %}
+        {{ form.graduation_year }} {% if form.graduation_year.errors %}
+        <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
 
 {% if form.gender %}
 <div class="control-group">
-    <label for="id_dob"  class="control-label">Gender:</label>
+    <label for="id_dob" class="control-label">Gender:</label>
     <div class="controls">
-    {{ form.gender }} {% if form.gender.errors %}
-    <br /><span class="form_error">{{ form.gender.errors|join:", " }}</span>
-    {% endif %}
+        {{ form.gender }} {% if form.gender.errors %}
+        <br /><span class="form_error">{{ form.gender.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
 
 {% if form.pronoun %}
 <div class="control-group">
-    <label for="id_pronoun"  class="control-label">Preferred pronouns:</label>
+    <label for="id_pronoun" class="control-label">Preferred pronouns:</label>
     <div class="controls">
-    <p style="font-size: 0.8em; font-style: italic;">(Anyone with access to your account will be able to see this on your profile. Teachers and administrators will also have access to this information. This field is not required.)</p>
-    {{ form.pronoun }} {% if form.pronoun.errors %}
-    <br /><span class="form_error">{{ form.pronoun.errors|join:", " }}</span>
-    {% endif %}
+        <p style="font-size: 0.8em; font-style: italic;">(Anyone with access to your account will be able to see this on
+            your profile. Teachers and administrators will also have access to this information. This field is not
+            required.)</p>
+        {{ form.pronoun }} {% if form.pronoun.errors %}
+        <br /><span class="form_error">{{ form.pronoun.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
@@ -77,10 +79,11 @@ Your grade level will update automatically every August.
 <div class="control-group">
     <label for="id_k12school" class="control-label">School:</label>
     <div class="controls controls-row">
-    <p style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school if it comes up, otherwise enter the full school name.)</p>
-    {{ form.k12school }} {% if form.k12school.errors %}
-    <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
-    {% endif %}
+        <p style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school if it
+            comes up, otherwise enter the full school name.)</p>
+        {{ form.k12school }} {% if form.k12school.errors %}
+        <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
@@ -89,11 +92,12 @@ Your grade level will update automatically every August.
 <div class="control-group">
     <label for="id_unmatched_school" class="control-label"></label>
     <div class="controls">
-    {{ form.unmatched_school }} {% if form.unmatched_school.errors %}
-    <br /><span class="form_error">{{ form.unmatched_school.errors|join:", " }}</span>
-    {% endif %}
+        {{ form.unmatched_school }} {% if form.unmatched_school.errors %}
+        <br /><span class="form_error">{{ form.unmatched_school.errors|join:", " }}</span>
+        {% endif %}
     </div>
     <span style="font-size: 0.8em;">Check this box only if you've tried searching but could not find your school.</span>
+    <br />
 </div>
 {% endif %}
 
@@ -102,34 +106,36 @@ Your grade level will update automatically every August.
     <label for="id_heardofesp" class="control-label">How did you hear of this program?
     </label>
     <div class="controls controls-row">
-    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
-    {{ form.heard_about }} {% if form.heard_about.errors %}
-    <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
-    {% endif %}
+        <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower
+            box.)</span><br />
+        {{ form.heard_about }} {% if form.heard_about.errors %}
+        <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
 
 {% if form.fields.studentrep %}
 <div class="control-group">
-    <label for="id_studentrep" class="control-label">I want to be a <a href="/getinvolved/studentreps.html" target="_blank">Student Rep</a>:</label>
+    <label for="id_studentrep" class="control-label">I want to be a <a href="/getinvolved/studentreps.html"
+            target="_blank">Student Rep</a>:</label>
     <div class="controls">
-    {{ form.studentrep }} 
-    {% if form.studentrep.errors %}
-    <br /><span class="form_error">{{ form.studentrep.errors|join:", " }}</span>
-    {% endif %}
+        {{ form.studentrep }}
+        {% if form.studentrep.errors %}
+        <br /><span class="form_error">{{ form.studentrep.errors|join:", " }}</span>
+        {% endif %}
     </div>
     {% if form.fields.studentrep_expl %}
     <i>For new student reps:</i>
     Please enter a short explanation of why you would <br />
     like to be a student representative and any ideas you <br />
-    may have for us.  Our membership coordinator will <br />
+    may have for us. Our membership coordinator will <br />
     contact you soon! <br />
     <div class="controls">
-    {{ form.studentrep_expl }}
-    {% if form.studentrep_expl.errors %}
-    <br /><span class="form_error">{{ form.studentrep_expl.errors|join:", " }}</span>
-    {% endif %}
+        {{ form.studentrep_expl }}
+        {% if form.studentrep_expl.errors %}
+        <br /><span class="form_error">{{ form.studentrep_expl.errors|join:", " }}</span>
+        {% endif %}
     </div>
     {% endif %}
 </div>
@@ -139,34 +145,35 @@ Your grade level will update automatically every August.
 <div class="control-group">
     <label for="id_food_preference" class="control-label">Food preference: </label>
     <div class="controls">
-    {{ form.food_preference }} {% if form.food_preference.errors %}
-    <br /><span class="form_error">{{ form.food_preference.errors|join:", " }}</span>
-    {% endif %}
+        {{ form.food_preference }} {% if form.food_preference.errors %}
+        <br /><span class="form_error">{{ form.food_preference.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
 
 {% if form.shirt_size %}
 <div class="alert">
-<button type="button" class="close" data-dismiss="alert">x</button>
-T-shirts are available at some of our programs. When you reserve a t-shirt, this is the shirt size and type that will be ordered. Note that choosing a shirt size and type here does <b>not</b> reserve a t-shirt for you!
+    <button type="button" class="close" data-dismiss="alert">x</button>
+    T-shirts are available at some of our programs. When you reserve a t-shirt, this is the shirt size and type that
+    will be ordered. Note that choosing a shirt size and type here does <b>not</b> reserve a t-shirt for you!
 </div>
 
 <div class="control-group">
     <label for="id_shirt_size" class="control-label">Shirt size:</label>
     <div class="controls">
-    {{ form.shirt_size }} {% if form.shirt_size.errors %}
-    <br /><span class="form_error">{{ form.shirt_size.errors|join:", " }}</span>
-    {% endif %}
+        {{ form.shirt_size }} {% if form.shirt_size.errors %}
+        <br /><span class="form_error">{{ form.shirt_size.errors|join:", " }}</span>
+        {% endif %}
     </div>
-</div> 
+</div>
 
 <div class="control-group">
     <label for="id_shirt_type" class="control-label">Shirt type:</label>
     <div class="controls">
-    {{ form.shirt_type }} {% if form.shirt_type.errors %}
-    <br /><span class="form_error">{{ form.shirt_type.errors|join:", " }}</span>
-    {% endif %}
+        {{ form.shirt_type }} {% if form.shirt_type.errors %}
+        <br /><span class="form_error">{{ form.shirt_type.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
@@ -175,9 +182,9 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
 <div class="control-group">
     <label for="id_medical_needs" class="control-label">(Optional) Medical needs:</label>
     <div class="controls">
-    {{ form.medical_needs }} {% if form.medical_needs.errors %}
-    <br /><span class="form_error">{{ form.medical_needs.errors|join:", " }}</span>
-    {% endif %}
+        {{ form.medical_needs }} {% if form.medical_needs.errors %}
+        <br /><span class="form_error">{{ form.medical_needs.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}
@@ -186,10 +193,11 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
 <div class="control-group">
     <label for="id_transportation" class="control-label">How do you plan to get to/from the program?</label>
     <div class="controls controls-row">
-    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
-    {{ form.transportation }} {% if form.transportation.errors %}
-    <br /><span class="form_error">{{ form.transportation.errors|join:", " }}</span>
-    {% endif %}
+        <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower
+            box.)</span><br />
+        {{ form.transportation }} {% if form.transportation.errors %}
+        <br /><span class="form_error">{{ form.transportation.errors|join:", " }}</span>
+        {% endif %}
     </div>
 </div>
 {% endif %}

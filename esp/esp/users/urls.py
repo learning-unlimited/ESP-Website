@@ -2,6 +2,7 @@ from django.conf.urls import url
 
 from esp.users import views
 from esp.users.views.registration import GradeChangeRequestView
+from esp.users.views import k12school_view
 from esp.web.views import bio
 from esp.web.views import main
 from esp.web.views import myesp
@@ -34,6 +35,7 @@ urlpatterns = [
         views.unsubscribe, name="unsubscribe"),
     url(r'^unsubscribe_oneclick/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$',
         views.unsubscribe_oneclick, name="unsubscribe_oneclick"),
+    url(r'^k12school/add/?$', k12school_view.k12school_create, name="k12school_create"),
 ]
 
 urlpatterns += [
@@ -46,7 +48,7 @@ urlpatterns += [
     url(r'^onsite/?$', myesp.myesp_onsite),
     url(r'^passwd/?$', myesp.myesp_passwd),
     url(r'^accountmanage/?$', myesp.myesp_accountmanage),
-    url(r'^profile/?$', myesp.edit_profile),
+    url(r'^profile/?$', myesp.edit_profile, name='myesp-profile'),
 ]
 
 urlpatterns += [
