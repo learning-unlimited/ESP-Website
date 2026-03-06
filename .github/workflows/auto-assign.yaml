@@ -136,38 +136,24 @@ jobs:
               return;
             }
 
-            // Query open issues assigned to this user, with linked PR info
-            const query = `
-              query($searchQuery: String!) {
-                search(query: $searchQuery, type: ISSUE, first: 100) {
-                  nodes {
-                    ... on Issue {
-                      number
-                      title
-                      closingPullRequestsReferences(first: 1) {
-                        totalCount
-                      }
-                    }
-                  }
-                }
-              }
-            `;
-
-            const searchQuery = [
+            // Count open issues assigned to this user
+            const countLinkedPRs = (process.env.COUNT_LINKED_PRS || 'false').toLowerCase() === 'true';
+            const searchParts = [
               `repo:${context.repo.owner}/${context.repo.repo}`,
               `is:issue`,
               `is:open`,
               `assignee:${requester}`,
-            ].join(' ');
+            ];
+            if (!countLinkedPRs) {
+              searchParts.push('-linked:pr');
+            }
 
-            const result = await github.graphql(query, { searchQuery });
+            const { data: searchResult } = await github.rest.search.issuesAndPullRequests({
+              q: searchParts.join(' '),
+              per_page: 100,
+            });
 
-            const countLinkedPRs = (process.env.COUNT_LINKED_PRS || 'false').toLowerCase() === 'true';
-            const openIssues = countLinkedPRs
-              ? result.search.nodes
-              : result.search.nodes.filter(
-                  i => i.closingPullRequestsReferences.totalCount === 0
-                );
+            const openIssues = searchResult.items;
             const count = openIssues.length;
 
             core.info(`@${requester} has ${count} countable open issue(s) (COUNT_LINKED_PRS: ${countLinkedPRs}).`);
@@ -382,37 +368,24 @@ jobs:
               return;
             }
 
-            const query = `
-              query($searchQuery: String!) {
-                search(query: $searchQuery, type: ISSUE, first: 100) {
-                  nodes {
-                    ... on Issue {
-                      number
-                      title
-                      closingPullRequestsReferences(first: 1) {
-                        totalCount
-                      }
-                    }
-                  }
-                }
-              }
-            `;
-
-            const searchQuery = [
+            // Count open issues assigned to this user
+            const countLinkedPRs = (process.env.COUNT_LINKED_PRS || 'false').toLowerCase() === 'true';
+            const searchParts = [
               `repo:${context.repo.owner}/${context.repo.repo}`,
               `is:issue`,
               `is:open`,
               `assignee:${assignee}`,
-            ].join(' ');
+            ];
+            if (!countLinkedPRs) {
+              searchParts.push('-linked:pr');
+            }
 
-            const result = await github.graphql(query, { searchQuery });
+            const { data: searchResult } = await github.rest.search.issuesAndPullRequests({
+              q: searchParts.join(' '),
+              per_page: 100,
+            });
 
-            const countLinkedPRs = (process.env.COUNT_LINKED_PRS || 'false').toLowerCase() === 'true';
-            const openIssues = countLinkedPRs
-              ? result.search.nodes
-              : result.search.nodes.filter(
-                  i => i.closingPullRequestsReferences.totalCount === 0
-                );
+            const openIssues = searchResult.items;
             const count = openIssues.length;
 
             core.info(`@${assignee} has ${count} countable open issue(s) (COUNT_LINKED_PRS: ${countLinkedPRs}).`);
