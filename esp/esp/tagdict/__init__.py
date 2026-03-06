@@ -1336,6 +1336,17 @@ all_program_tags = {
         'category': 'learn',
         'is_setting': True,
     },
+    'creditcard_required_for_extracosts': {
+        'is_boolean': False,
+        'help_text': 'Make the Credit Card module required when a student selects specific extra cost items. '
+                     'Set to * to trigger on any extra cost item, or a comma-separated list of item names '
+                     '(e.g. "Meal Ticket,T-Shirt") to trigger only on those items. '
+                     'Does not trigger on program admission costs alone. '
+                     'Balances under $0.50 are ignored to avoid gateway minimum charge rejections.',
+        'default': '',
+        'category': 'learn',
+        'is_setting': True,
+    },
     'student_schedule_format': {
         'is_boolean': False,
         'help_text': 'The formatting settings for PDF student schedules (in json format).',
