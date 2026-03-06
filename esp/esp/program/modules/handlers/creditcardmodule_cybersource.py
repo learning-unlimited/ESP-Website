@@ -37,9 +37,11 @@ from esp.utils.web       import render_to_response
 from django.conf         import settings
 from django.db.models.query     import Q
 from esp.users.models    import ESPUser
+from esp.tagdict.models  import Tag
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
+from decimal import Decimal
 
 class CreditCardModule_Cybersource(ProgramModuleObj):
     doc = """Accept credit card payments via Cybersource."""
@@ -55,13 +57,46 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             }
 
     def isCompleted(self):
-        """ Whether the user has paid for this program or its parent program. """
+        """ Whether the user has fully paid for this program. """
         if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user
-        return IndividualAccountingController(self.program, user).has_paid()
+        return IndividualAccountingController(self.program, user).has_paid(in_full=True)
     have_paid = isCompleted
+
+    def isRequired(self):
+        """Conditionally require credit card payment when student selects extra cost items.
+
+        Same logic as CreditCardModule_Stripe.isRequired(). See that class
+        for full documentation of the 'creditcard_required_for_extracosts' tag.
+        """
+        if super(CreditCardModule_Cybersource, self).isRequired():
+            return True
+        return self._extracost_requires_payment()
+
+    def _extracost_requires_payment(self):
+        """Check if the student selected extra cost items that require CC payment."""
+        from esp.accounting.models import Transfer
+        tag_value = Tag.getTag('creditcard_required_for_extracosts', self.program, default='')
+        if not tag_value:
+            return False
+        request = get_current_request()
+        user = getattr(self, 'user', request.user if request else None)
+        if not user or not user.is_authenticated:
+            return False
+        iac = IndividualAccountingController(self.program, user)
+        if iac.amount_due() < Decimal('0.50'):
+            return False
+        pac = ProgramAccountingController(self.program)
+        extra_lits = pac.get_lineitemtypes(include_donations=False).exclude(
+            text__in=pac.admission_items)
+        if tag_value.strip() != '*':
+            item_names = [name.strip() for name in tag_value.split(',')]
+            extra_lits = extra_lits.filter(text__in=item_names)
+        return Transfer.objects.filter(
+            user=user, line_item__in=extra_lits,
+        ).exists()
 
     def students(self, QObject = False):
         #   This query represented students who have a payment transfer from the outside
