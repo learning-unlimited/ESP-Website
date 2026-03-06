@@ -79,3 +79,15 @@ class PrintRequest(models.Model):
     user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
     time_requested = models.DateTimeField(auto_now_add=True)
     time_executed = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=['time_executed', 'time_requested'],
+                name='pr_exec_req_idx'
+            ),
+            models.Index(
+                fields=['printer', 'time_executed', 'time_requested'],
+                name='pr_printer_exec_req_idx'
+            ),
+        ]
