@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
+from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission, UserPreferences
 from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSubject
@@ -217,6 +217,12 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             curUser.last_name  = new_data.get('last_name')
             curUser.email     = new_data.get('e_mail')
             curUser.save()
+
+            if new_data.get('timezone'):
+                pref, created = UserPreferences.objects.get_or_create(user=curUser)
+                pref.timezone = new_data['timezone']
+                pref.save()
+
             if responseuponCompletion == True:
                 return registration_redirect(request)
             else:
@@ -259,6 +265,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         new_data['first_name'] = curUser.first_name
         new_data['last_name']  = curUser.last_name
         new_data['e_mail']     = curUser.email
+        try:
+            new_data['timezone'] = curUser.preferences.timezone
+        except Exception:
+            new_data['timezone'] = 'America/New_York'
         new_data = regProf.updateForm(new_data, role)
 
         if regProf.student_info and regProf.student_info.dob:

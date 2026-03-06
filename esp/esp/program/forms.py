@@ -151,7 +151,7 @@ class ProgramCreationForm(BetterModelForm):
     class Meta:
         fieldsets = [
                      ('Program Title', {'fields': ['term', 'term_friendly'] }),
-                     ('Program Constraints', {'fields':['grade_min', 'grade_max', 'program_size_max', 'program_allow_waitlist']}),
+                     ('Program Constraints', {'fields':['grade_min', 'grade_max', 'is_online', 'program_size_max', 'program_allow_waitlist']}),
                      ('About Program Creator', {'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
                      ('Financial Details', {'fields':['base_cost', 'sibling_discount']}),
                      ('Program Internal Details', {'fields':['program_type', 'program_modules', 'program_module_questions', 'class_categories', 'flag_types']}),

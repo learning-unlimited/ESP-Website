@@ -4,11 +4,17 @@ from esp.admin import admin_site
 from django import forms
 from django.db import models
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, RecordType, Record, Permission, GradeChangeRequest
+from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, RecordType, Record, Permission, GradeChangeRequest, UserPreferences
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
 from django.utils import timezone
+
+class UserPreferencesAdmin(admin.ModelAdmin):
+    list_display = ['user', 'timezone']
+    search_fields = default_user_search('user')
+admin_site.register(UserPreferences, UserPreferencesAdmin)
+
 
 class UserForwarderAdmin(admin.ModelAdmin):
     list_display = ('source', 'target')

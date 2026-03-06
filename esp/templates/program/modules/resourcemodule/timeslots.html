@@ -47,7 +47,7 @@
         <th colspan="5" align="center"><b>{% if h.selections.0.group %}Group {{ h.selections.0.group }}{% else %}Unnumbered Group{% endif %}</b></th>
     </tr>
         {% for t in h.selections %}
-        {% ifchanged t.start.date %}
+        {% ifchanged t.start|date %}
         <tr>
             <th colspan="5" align="center">{{ t.pretty_date }}</th>
         </tr>
@@ -55,7 +55,7 @@
         <tr>
             <td>{{ t.short_description }}</td>
             <td>{{ t.event_type|cut:" Time Block" }}</td>
-            <td>{{ t.start.time }}</td>
+            <td>{{ t.start|time }}</td>
             <td>{{ t.duration_str }}</td>
             <td>
                 <a href="/manage/{{ prog.url }}/resources/timeslot?op=edit&id={{ t.id }}">[Edit]</a>

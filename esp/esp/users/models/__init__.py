@@ -2885,6 +2885,18 @@ class GradeChangeRequest(TimeStampedModel):
     def __str__(self):
         return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else "")
 
+
+class UserPreferences(models.Model):
+    user = models.OneToOneField('users.ESPUser', related_name='preferences', on_delete=models.CASCADE)
+    timezone = models.CharField(max_length=50, default='America/New_York')
+
+    def __str__(self):
+        return str(self.user) + " Preferences"
+
+    class Meta:
+        verbose_name_plural = 'User preferences'
+
+
 # We can't import these earlier because of circular stuff...
 from esp.users.models.forwarder import UserForwarder # Don't delete, needed for app loading
 from esp.cal.models import Event

@@ -44,9 +44,9 @@ You have chosen to import the timeslots from {{ past_program.niceName }} to {{ p
     </tr>
     {% for t in new_timeslots %}
     <tr>
-        <td class="underline">{{ t.start.date }}</td>
-        <td class="underline">{{ t.start.time }}</td>
-        <td class="underline">{{ t.end.time }}</td>
+        <td class="underline">{{ t.start|date }}</td>
+        <td class="underline">{{ t.start|time }}</td>
+        <td class="underline">{{ t.end|time }}</td>
         <td class="underline"><input type="checkbox" name="to_import" value="{{ t.old_id }}" checked></td>
     </tr>
     {% endfor %}
