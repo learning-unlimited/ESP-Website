@@ -80,7 +80,7 @@ class ProgramModuleObj(models.Model):
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
             return self.doc
-        return self.module.link_title
+        return self.get_link_title()
 
     def __str__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
@@ -226,8 +226,8 @@ class ProgramModuleObj(models.Model):
                 BaseModule.required = old_pmo[0].required
                 BaseModule.required_label = old_pmo[0].required_label
             else:
-                BaseModule.seq = mod.seq
-                BaseModule.required = mod.required
+                BaseModule.seq = mod.get_effective_seq()
+                BaseModule.required = mod.get_effective_required()
             BaseModule.save()
 
         elif len(BaseModuleList) > 1:
@@ -276,7 +276,7 @@ class ProgramModuleObj(models.Model):
     get_full_path.depend_on_model('program.Program')
 
     def get_link_title(self):
-        return self.link_title or self.module.link_title
+        return self.link_title or self.module.get_effective_link_title()
 
     def makeLink(self):
         title = self.get_link_title()
@@ -310,15 +310,16 @@ class ProgramModuleObj(models.Model):
         return mark_safe('<a href="%s" title="%s">%s</a>' % (link, title, title))
 
     def makeButtonLink(self):
+        title = self.get_link_title()
         if not self.module.module_type == 'manage':
             link = """<div class="module_button">\
                                 <a href="%s"><button type="button" class="module_link_large">
                                     <div class="module_link_main">%s</div>
                                 </button></a>
-                            </div>""" % (self.get_full_path(), self.module.link_title)
+                            </div>""" % (self.get_full_path(), title)
         else:
             link = '<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title, self.module.handler)
 
         return mark_safe(link)
 

@@ -237,7 +237,7 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
         pmo = ProgramModuleObj.objects.filter(program=self.program).first()
         pmo.link_title = ""
         pmo.save()
-        self.assertEqual(pmo.get_link_title(), pmo.module.link_title)
+        self.assertEqual(pmo.get_link_title(), pmo.module.get_effective_link_title())
 
     def test_get_link_title_override(self):
         """get_link_title() returns the per-program override when it is set."""

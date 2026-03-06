@@ -317,7 +317,7 @@ class CreditCardSelfBlockingTest(TestCase):
         self.program.program_modules.add(reg_pm)
         reg_pmo, _ = ProgramModuleObj.objects.get_or_create(
             program=self.program, module=reg_pm,
-            defaults={'seq': reg_pm.seq, 'required': True},
+            defaults={'seq': reg_pm.get_effective_seq(), 'required': True},
         )
         reg_pmo.required = True
         reg_pmo.save()

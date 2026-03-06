@@ -8,7 +8,7 @@
 {% if module.isStep %}
 <tr>
 <td>{% if module.useTemplate %}
-<a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">{{ module.module.link_title }}</a> <i>(below)</i>
+<a href="#module-{{ module.id }}" title="{{ module.module.get_effective_link_title }}">{{ module.module.get_effective_link_title }}</a> <i>(below)</i>
 {% else %}
     {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
 {% endif %}
