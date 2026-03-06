@@ -475,17 +475,25 @@ class AccountCreationTest(TestCase):
         if not Tag.getBooleanTag('require_email_validation'):
             return
 
+        import re
+        from esp.users.tokens import account_activation_token
+        from django.utils.encoding import force_str
+        from django.utils.http import urlsafe_base64_decode
+
         self.assertFalse(u.is_active)
-        self.assertTrue("_" in u.password)
+        # Token is no longer appended to password (HMAC token, not stored in DB)
+        self.assertFalse(re.search(r'_\d+$', u.password))
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(len(mail.outbox[0].to), 1)
         self.assertEqual(mail.outbox[0].to[0], u.email)
-        #note: will break if the activation email is changed too much
-        import re
-        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
-        self.assertEqual(match.group("user"), u.username)
-        self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
+        # Check new activation URL format: /myesp/activate/<uid>/<token>/
+        match = re.search(r'/myesp/activate/(?P<uid>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z\-]+)/', mail.outbox[0].body)
+        self.assertIsNotNone(match, "Activation email does not contain the expected /activate/<uid>/<token>/ URL")
+        # Verify the token is valid for this user
+        uid = force_str(urlsafe_base64_decode(match.group("uid")))
+        self.assertEqual(str(u.pk), uid)
+        self.assertTrue(account_activation_token.check_token(u, match.group("token")))
 
 from esp.users.models import GradeChangeRequest
 
