@@ -2147,6 +2147,9 @@ class PersistentQueryFilter(models.Model):
 
         #   Do not include users if they have disabled their account.
         if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
+            # Ensure QObj is a Q object before combining
+            if not isinstance(QObj, Q):
+                QObj = Q(pk__in=[])
             QObj = QObj & Q(is_active=True)
 
         return QObj
