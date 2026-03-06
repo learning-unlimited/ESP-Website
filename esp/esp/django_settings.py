@@ -417,6 +417,12 @@ TWILIO_ACCOUNT_SID = None
 TWILIO_AUTH_TOKEN = None
 TWILIO_ACCOUNT_NUMBERS = None
 
+# Formstack integration settings
+# Set FORMSTACK_HANDSHAKE_KEY in local_settings.py to an opaque secret string
+# to enable handshake key verification on the /formstack/webhook/ endpoint.
+# Leave as None (default) to skip verification (backward-compatible).
+FORMSTACK_HANDSHAKE_KEY = None
+
 # Default configuration for themes: set this to True to make recompile_theme
 # and the themes frontend refuse to do anything
 LOCAL_THEME = False
