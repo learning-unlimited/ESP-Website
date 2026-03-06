@@ -80,7 +80,7 @@ class UnenrollModule(ProgramModuleObj):
                 logger.info("Unexpired student registrations: %s", ids)
                 for reg in registrations:
                     signals.post_save.send(sender=StudentRegistration, instance=reg)
-                
+
                 # Update mailman lists for unexpired registrations
                 from esp.mailman import add_list_member
                 for reg in registrations:
@@ -90,10 +90,10 @@ class UnenrollModule(ProgramModuleObj):
                     list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
                     for list_name in list_names:
                         add_list_member(list_name, user)
-                    
+
                     # Add to program list
                     add_list_member("%s_%s-students" % (prog.program_type, prog.program_instance), user)
-                
+
                 context['undo'] = True
             else:
                 selected_enrollments = request.POST['selected_enrollments']
@@ -103,7 +103,7 @@ class UnenrollModule(ProgramModuleObj):
                 logger.info("Expired student registrations: %s", ids)
                 for reg in registrations:
                     signals.post_save.send(sender=StudentRegistration, instance=reg)
-                
+
                 # Update mailman lists for expired registrations
                 from esp.mailman import remove_list_member
                 for reg in registrations:
@@ -113,7 +113,7 @@ class UnenrollModule(ProgramModuleObj):
                     list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
                     for list_name in list_names:
                         remove_list_member(list_name, user.email)
-                    
+
                     # If they are no longer enrolled in any sections in the program, remove from program list
                     if not user.getEnrolledSections(prog):
                         remove_list_member("%s_%s-students" % (prog.program_type, prog.program_instance), user.email)

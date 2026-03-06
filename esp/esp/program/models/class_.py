@@ -1346,7 +1346,7 @@ class ClassSection(models.Model):
         list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
         for list_name in list_names:
             remove_list_member(list_name, user.email)
-            
+
         # If the student is no longer enrolled in any classes in this program, remove from the program mailing list
         if not user.getEnrolledSections(self.parent_program):
             remove_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user.email)
