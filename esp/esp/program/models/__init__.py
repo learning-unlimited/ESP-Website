@@ -258,8 +258,8 @@ class Program(models.Model, CustomFormsLinkModel):
 
     url = models.CharField(max_length=80, unique=True)
     name = models.CharField(max_length=80)
-    grade_min = models.IntegerField()
-    grade_max = models.IntegerField()
+    grade_min = models.IntegerField(help_text='Minimum grade level for student eligibility (e.g., 7 for 7th grade).')
+    grade_max = models.IntegerField(help_text='Maximum grade level for student eligibility (e.g., 12 for 12th grade).')
     # director contact email address used for from field and display
     director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
                                        validators=[validators.RegexValidator(r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.')))],
@@ -270,8 +270,8 @@ class Program(models.Model, CustomFormsLinkModel):
                                                            'You can create and manage your email redirects <a href="/manage/redirects/">here</a>.'))
     director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
     director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
-    program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
-    program_allow_waitlist = models.BooleanField(default=False)
+    program_size_max = models.IntegerField(null=True, help_text='Maximum number of students allowed. Set to 0 for no cap.')
+    program_allow_waitlist = models.BooleanField(default=False, help_text='If enabled, students can join a waitlist when the program is full.')
     program_modules = models.ManyToManyField(ProgramModule,
                          help_text='The set of enabled program functionalities. See ' +
                          '<a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">' +
