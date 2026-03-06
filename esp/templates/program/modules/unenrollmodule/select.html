@@ -23,6 +23,18 @@
   <button id="refresh">Refresh Data</button>
 </p>
 
+<div id="timer_controls" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; display: inline-block;">
+  <strong>Auto-Unenroll Timer</strong><br />
+  <label>
+    <input type="checkbox" id="timer_enabled" {% if timer_enabled %}checked{% endif %} />
+    Enable
+  </label>
+  &nbsp;every&nbsp;
+  <input type="number" id="timer_interval" min="1" value="{{ timer_interval }}" style="width: 60px;" />
+  &nbsp;minutes
+  &nbsp;&nbsp;<span id="timer_status" style="color: #666;"></span>
+</div>
+
 <form id="program_form" method="post" action="{{ request.path }}">
   <input type="hidden" name="selected_enrollments" value="" />
   <table cellpadding="4" cellspacing="0" align="center" width="300">
