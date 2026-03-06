@@ -310,7 +310,6 @@ def ajax_qsd_preview(request):
 
     # Get the URL
     url = request.POST.get('url', '')
-    
     # Validate URL corresponds to a real QSD in the database
     try:
         qsd = QuasiStaticData.objects.get_by_url(url)
@@ -320,7 +319,6 @@ def ajax_qsd_preview(request):
         url = qsd.url
     except QuasiStaticData.DoesNotExist:
         return HttpResponse('QSD not found', status=404)
-    
     url_parts = url.split('/')
 
     # Sanitize if this is for a class QSD
