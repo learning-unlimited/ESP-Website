@@ -472,8 +472,9 @@ class RequireCSRFFailureFilterTest(DjangoTestCase):
     def test_blocks_request_logger(self):
         """Filter should block django.request records"""
         record = self._make_record('django.request')
-        self.assertFalse(self.filter.filter(record))
-        
+        self.assertFalse(self.filter.filter(record)) 
+
+
 class StripBase64ImagesTest(DjangoTestCase):
     """Tests for esp.utils.sanitize.strip_base64_images (#3612)."""
 
