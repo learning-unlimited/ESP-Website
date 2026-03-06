@@ -122,7 +122,9 @@ $j(function() {
                 $status.text(msg).css("color", "red");
             },
             complete: function() {
-                $btn.prop("disabled", false);
+                // Client-side cooldown: keep button disabled for 5 seconds
+                // to prevent rapid clicks spawning many short-lived processes.
+                setTimeout(function() { $btn.prop("disabled", false); }, 5000);
             }
         });
     });
