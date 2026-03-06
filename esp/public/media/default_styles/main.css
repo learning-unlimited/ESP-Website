@@ -59,7 +59,7 @@ body {
 }
 
 #topleft {
-  //    background: #141414;
+  /*    background: #141414; */
   background: #00003C;
   width: 200px;
   height: 180px;
@@ -163,7 +163,7 @@ a.navbutton:hover {
   width: 200px;
   height: 30px;
   vertical-align: middle;
-  //    border-bottom: 1px dashed #497CCA;
+  /*    border-bottom: 1px dashed #497CCA; */
 }
 
 
@@ -183,7 +183,7 @@ a.navbutton:hover {
 #navbar p {
   color: #FFFFFF;
   margin: 0pt;
-//  margin-bottom: pt;
+  /*  margin-bottom: pt; */
 }
 
 #navbar a:link {
@@ -272,4 +272,27 @@ div.note, div.info, div.errormsg, div.question {
   margin: 10px;
   overflow: visible;
   width: 450px;
+}
+
+/* ===== Fix #4581 - Authentication Form Consistency ===== */
+
+.auth-form {
+    margin-top: 30px;
+    padding: 30px;
+}
+
+.auth-form-inner .control-group,
+.auth-form-inner table tr {
+    margin-bottom: 18px;
+}
+
+.auth-form input[type="text"],
+.auth-form input[type="password"],
+.auth-form input[type="email"] {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.auth-form .btn-block {
+    width: 100%;
 }

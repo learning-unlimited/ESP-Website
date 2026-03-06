@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "@chakra-ui/color-mode": "^2.2.0",
+    "@chakra-ui/icons": "^2.2.4",
+    "@chakra-ui/react": "^2.10.9",
+    "@chakra-ui/theme-tools": "^2.2.6",
+    "@chakra-ui/theme-utils": "^2.0.21",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "framer-motion": "^12.35.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3"
+  }
+}

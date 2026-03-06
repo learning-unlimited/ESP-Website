@@ -353,3 +353,23 @@ div.raw_id_admin {
 div.calendar {
     z-index: 10; /* 2 actually suffices, but I'm leaving a safety margin. -ageng 2009-02-02 */
 }
+
+/* ===== Fix #4581 - Authentication Form Consistency ===== */
+
+.auth-form {
+    margin-top: 30px;
+    padding: 30px;
+}
+
+.auth-form-inner .control-group {
+    margin-bottom: 20px;
+}
+
+.auth-form-inner .controls input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.auth-form-inner .errorlist {
+    margin-bottom: 10px;
+}

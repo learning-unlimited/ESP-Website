@@ -22,7 +22,11 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 </div>
 <div class="well span6 offset3 auth-form"></div>
 
-<form action="{{ request.action }}" class="form-horizontal auth-form-inner" method="post">
+<form action="{{ request.action }}" 
+class="form-horizontal auth-form-inner" 
+method="post"
+aria-labelledby="login-title"
+role="form">
 
 <div class="control-group">
     {% if form.username.errors %}
@@ -63,15 +67,43 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 
 <div class="form-actions">
 <input type="hidden" name="next" value="{{ next }}" />
-<input type="submit" class="btn btn-primary btn-large btn-block" value="Login" />
+<div id="loadingMessage" style="display:none; text-align:center; margin-bottom:10px;">
+    <strong> ⏳ Logging in...</strong>
+</div>
+
+<input 
+type="submit" 
+class="btn btn-primary btn-large btn-block" 
+value="Login" />
 </div>
 
 </form>
 
 <script type="text/javascript">
-<!--
+document.addEventListener("DOMContentLoaded", function () {
+    //focus username field
 document.getElementById('id_username').focus();
-//-->
+const form = document.querySelector(".auth-form-inner");
+const button = document.getElementById("loginButton");
+const loadingMessage = document.getElementById("loadingMessage");
+
+if  (form && button) {
+form.addEventListener("submit", function () {
+
+    // disable button
+    button.disabled = true;
+
+    // change button text
+    button.value = "Logging in...";
+
+    // show loading message
+    if (loadingMessage) {
+        loadingMessage.style.display = "block";
+    }
+});
+}
+
+});
 </script>
 
 </div>

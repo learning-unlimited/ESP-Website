@@ -408,7 +408,7 @@ function update_checkboxes()
         }
     }
 
-    //  console.log("Refreshed checkboxes");
+    //  log("Refreshed checkboxes");
 }
 
 function handle_schedule_response(new_data, text_status, jqxhr)
@@ -417,7 +417,7 @@ function handle_schedule_response(new_data, text_status, jqxhr)
     //  Save the new schedule
     state.student_schedule = new_data.sections;
     state.student_schedule.sort();
-    //  console.log("Updated schedule for student " + new_data.user);
+    //  log("Updated schedule for student " + new_data.user);
     for (var i in new_data.messages)
     {
         add_message(new_data.messages[i]);
@@ -493,14 +493,14 @@ function check_conflicts(event)
                     var conflict_div_id = "section_" + state.student_schedule[j] + "_" + data.sections[state.student_schedule[j]].timeslots[k];
                     $j("#" + conflict_div_id).addClass("section_conflict");
                     conflict_highlighted_list.push(conflict_div_id);
-                    //  console.log("Detected conflict between " + section_id + " and " + state.student_schedule[j] + " at " + data.sections[state.student_schedule[j]].timeslots[k]);
+                    //  log("Detected conflict between " + section_id + " and " + state.student_schedule[j] + " at " + data.sections[state.student_schedule[j]].timeslots[k]);
                 }
             }
         }
     }
     
     data.conflicts[event.target.id] = conflict_highlighted_list;
-    //  console.log("Hovering over section " +  + " at time " + );
+    //  log("Hovering over section " +  + " at time " + );
 }
 
 function clear_conflicts(event)
@@ -509,7 +509,7 @@ function clear_conflicts(event)
     {
         $j("#" + data.conflicts[event.target.id][i]).removeClass("section_highlight");
         $j("#" + data.conflicts[event.target.id][i]).removeClass("section_conflict");
-        //  console.log("Un-highlighted " + data.conflicts[event.target.id][i]);
+        //  log("Un-highlighted " + data.conflicts[event.target.id][i]);
     }
     delete data.conflicts[event.target.id];
 }
@@ -531,14 +531,14 @@ function unlock_schedule() {
 function add_student(student_id, section_id, size_override)
 {
     if (!lock_schedule()) {
-        console.log("Warning: schedule locked, refusing to add section " + section_id);
+        log("Warning: schedule locked, refusing to add section " + section_id);
         return;
     }
     disable_checkboxes();
 
     if (state.student_id != student_id)
     {
-        //  console.log("Warning: student " + student_id + " is not currently selected for updates.");
+        // log("Warning: student " + student_id + " is not currently selected for updates.");
     }
         
     var new_sections = state.student_schedule;
@@ -546,14 +546,14 @@ function add_student(student_id, section_id, size_override)
     
     //  TODO: Remove any conflicting classes [???]
     
-    //  console.log("add_student: Updated sections are " + new_sections.toString());
+    //  log("add_student: Updated sections are " + new_sections.toString());
     
     //  Add desired section to list if it isn't already there
     if (new_sections.indexOf(section_id) == -1)
         new_sections.push(section_id);
     else
     {
-        //  console.log("Section " + section_id + " already found in current schedule");
+        //  log("Section " + section_id + " already found in current schedule");
     }
     
     //  Commit changes to server
@@ -569,14 +569,14 @@ function add_student(student_id, section_id, size_override)
 function remove_student(student_id, section_id)
 {
     if (!lock_schedule()) {
-        console.log("Warning: schedule locked, refusing to remove section " + section_id);
+        log("Warning: schedule locked, refusing to remove section " + section_id);
         return;
     }
     disable_checkboxes();
 
     if (state.student_id != student_id)
     {
-        //  console.log("Warning: student " + student_id + " is not currently selected for updates.");
+        //  log("Warning: student " + student_id + " is not currently selected for updates.");
     }
         
     var new_sections = state.student_schedule;
@@ -587,10 +587,10 @@ function remove_student(student_id, section_id)
         new_sections = new_sections.slice(0, new_sections.indexOf(section_id)).concat(new_sections.slice(new_sections.indexOf(section_id) + 1));
     else
     {
-        //  console.log("Section " + section_id + " not found in current schedule");
+        //  log("Section " + section_id + " not found in current schedule");
     }
  
-    //  console.log("remove_student: Updated sections are " + new_sections.toString());
+    //  log("remove_student: Updated sections are " + new_sections.toString());
    
     //  Commit changes to server
     var schedule_resp = $j.ajax({
@@ -636,7 +636,7 @@ function register_student(student_id, dialog)
             },
 
             error: function (result) {
-                console.log(result);
+                log(result);
             }
     });
 }
@@ -652,7 +652,7 @@ function handle_checkbox(event)
     
     if (event.target.checked)
     {
-        //  console.log("Handling CHECKING of " + event.target.id);
+        //  log("Handling CHECKING of " + event.target.id);
         
         //  Check for conflicts
         var verified = true;
@@ -702,7 +702,7 @@ function handle_checkbox(event)
     }
     else
     {
-        //  console.log("Handling UN-CHECKING of " + event.target.id);
+        //  log("Handling UN-CHECKING of " + event.target.id);
         remove_student(target_info[2], target_info[1]);
     }
 }
@@ -735,7 +735,7 @@ function autocomplete_select_item(event, ui)
     }    
     else
     {
-        console.log("Invalid student selected: " + student_id);
+        log("Invalid student selected: " + student_id);
     }
 }
 
@@ -1254,7 +1254,7 @@ function populate_enrollments()
         var user_id = data.enrollments[i][0];
         if (!(user_id in data.students))
         {
-            //  console.log("Warning: student ID " + user_id + " was not found in initial list");
+            //  log("Warning: student ID " + user_id + " was not found in initial list");
             var new_user = {};
             new_user.id = user_id
             new_user.sections = [];
@@ -1269,7 +1269,7 @@ function populate_enrollments()
         }
         else
         {
-            //  console.log("Section " + data.enrollments[i][1] + " from enrollments is not present in catalog");
+            //  log("Section " + data.enrollments[i][1] + " from enrollments is not present in catalog");
         }
     }
 }
@@ -1291,7 +1291,7 @@ function populate_checkins()
         }
         else
         {
-            //  console.log("User " + user_id + " from checkins is not present");
+            //  log("User " + user_id + " from checkins is not present");
         }
     }
 }
@@ -1307,12 +1307,12 @@ function populate_counts()
 
         //  If we have a conflict, assume the larger number of students are enrolled.
         if (!data.sections[sec_id])
-            console.log("Could not find section " + sec_id);
+            log("Could not find section " + sec_id);
         else {
             data.sections[sec_id].num_students_attending = num_students_attending;
             if (data.sections[sec_id].num_students_enrolled != num_students)
             {
-                //  console.log("Warning: Section " + sec_id + " claims to have " + num_students + " students but " + data.sections[sec_id].num_students_enrolled + " are enrolled.");
+                //  log("Warning: Section " + sec_id + " claims to have " + num_students + " students but " + data.sections[sec_id].num_students_enrolled + " are enrolled.");
                 if (num_students > data.sections[sec_id].num_students_enrolled)
                     data.sections[sec_id].num_students_enrolled = num_students;
             }
@@ -1329,7 +1329,7 @@ function populate_full()
         var full = data.full[i][1];
 
         if (!data.sections[sec_id])
-            console.log("Could not find section " + sec_id);
+            log("Could not find section " + sec_id);
         else {
             data.sections[sec_id].full = full;
         }
@@ -1338,7 +1338,7 @@ function populate_full()
 
 function handle_completed()
 {
-    //  console.log("All data has been received.");
+    //  log("All data has been received.");
     populate_classes();
     populate_students();
     populate_rooms();
@@ -1347,7 +1347,7 @@ function handle_completed()
     populate_counts();
     populate_full();
 
-    //  console.log("All data has been processed.");
+    //  log("All data has been processed.");
     
     //  Re-draw the table of sections in the appropriate mode.
     if (state.display_mode == "status")

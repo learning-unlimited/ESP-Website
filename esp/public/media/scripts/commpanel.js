@@ -9,11 +9,11 @@ function set_step(base_div, step_name)
         $j("input[name=recipient_type]").button("refresh");
     }
 
-    //  console.log("Setting step in " + base_div + " to " + step_name);
+    //  log("Setting step in " + base_div + " to " + step_name);
     step_divs = $j("#" + base_div).children("div");
     for (var i = 0; i < step_divs.length; i++)
     {
-        //  console.log(step_divs[i]);
+        //  log(step_divs[i]);
         if (step_divs[i].id == step_name)
             $j("#" + step_divs[i].id).show();
         else
@@ -361,4 +361,4 @@ function initialize()
 
 $j(document).ready(initialize);
 
-console.log("Loaded comm panel JS");
+log("Loaded comm panel JS");

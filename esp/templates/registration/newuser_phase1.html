@@ -61,8 +61,8 @@ set forth by Learning Unlimited, the umbrella organization of which we are a mem
 {% end_inline_qsd_block %}
 {% endif %}
 
-<div id="program_form">
-<form action="{{ request.path }}" method="post" name="newuser_form">
+<div id="program_form" class="well span6 offset3 auth-form">
+<form action="{{ request.path }}" method="post" name="newuser_form" class="auth-form-inner">
 {% if accounts or awaitings %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 <table align="center">
 <thead>
@@ -89,7 +89,10 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 
 <tr>
   <th colspan="2" class="submit">
-    <input type="submit" value="Proceed to Account Creation" name="submit_btn" class="btn btn-default" />
+    <input type="submit" 
+          value="Proceed to Account Creation" 
+          name="submit_btn" 
+          class="btn btn-primary btn-large btn-block" />
   </th>
 </tr>
 </tbody>

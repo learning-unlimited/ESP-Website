@@ -56,7 +56,7 @@
 {% end_inline_qsd_block %}
 </div>
 <div>
-<form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well">
+<form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well span6 offset3 auth-form-inner">
   <fieldset>
     <h3>User Account Creation Form</h3>
 
@@ -74,8 +74,11 @@
     {% include "themes/bs_form.html" %}
     {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 
-    <div class="form-actions">
-    <input type="submit" value="{% if accounts %}Confirm: Create another account for this email{% else %}Create account{% endif %}" name="submit_btn" class="btn btn-primary" />
+    <div class="form-actions text-center">
+    <input type="submit" 
+          value="{% if accounts %}Confirm: Create another account for this email{% else %}Create account{% endif %}" 
+          name="submit_btn" 
+          class="btn btn-primary btn-large btn-block" />
     </div>
   </fieldset>
 </form>
