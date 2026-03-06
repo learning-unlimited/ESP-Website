@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django import forms
 from django.contrib import admin
 
 from esp.admin import admin_site
@@ -362,7 +363,19 @@ class ClassFlagAdmin(admin.ModelAdmin):
     list_filter = ['subject__parent_program', 'flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
 
+class PhaseZeroRecordAdminForm(forms.ModelForm):
+    class Meta:
+        model = PhaseZeroRecord
+        fields = '__all__'
+
+    def clean_program(self):
+        program = self.cleaned_data.get('program')
+        if not program:
+            raise forms.ValidationError("Program is required. Please select a program.")
+        return program
+
 class PhaseZeroRecordAdmin(admin.ModelAdmin):
+    form = PhaseZeroRecordAdminForm
     list_display = ('id', 'display_user', 'program')
     search_fields = ['user__username']
     list_filter = ['program']
