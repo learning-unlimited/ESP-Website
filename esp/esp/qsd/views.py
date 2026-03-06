@@ -308,8 +308,19 @@ def ajax_qsd_preview(request):
     from markdown import markdown
     data = request.POST['data']
 
-    # Get the URL from the request information
+    # Get the URL
     url = request.POST.get('url', '')
+    
+    # Validate URL corresponds to a real QSD in the database
+    try:
+        qsd = QuasiStaticData.objects.get_by_url(url)
+        if qsd is None or qsd.disabled:
+            return HttpResponse('Invalid QSD', status=404)
+        # Use the authoritative server-side URL for sanitization check
+        url = qsd.url
+    except QuasiStaticData.DoesNotExist:
+        return HttpResponse('QSD not found', status=404)
+    
     url_parts = url.split('/')
 
     # Sanitize if this is for a class QSD
