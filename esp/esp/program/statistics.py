@@ -112,9 +112,11 @@ def demographics(form, programs, students, profiles, result_dict={}):
     birthyear_dict = {}
     for profile in profiles:
         if profile.student_info:
-            if profile.student_info.graduation_year and profile.student_info.graduation_year not in gradyear_dict:
-                gradyear_dict[profile.student_info.graduation_year] = 0
-            gradyear_dict[profile.student_info.graduation_year] += 1
+            grad_year = profile.student_info.graduation_year
+            if grad_year is not None:
+                if grad_year not in gradyear_dict:
+                    gradyear_dict[grad_year] = 0
+                gradyear_dict[grad_year] += 1
 
             if profile.student_info.dob:
                 if profile.student_info.dob.year not in birthyear_dict:
