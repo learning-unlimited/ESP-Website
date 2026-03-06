@@ -35,20 +35,20 @@ class EmailPreviewViewTestCase(TestCase):
             last_name='Doe'
         )
 
-        # Create a recipient filter
+        # Create a recipient filter using the correct method
         self.filter = PersistentQueryFilter.create_from_Q(
-            ESPUser.objects.filter(id=self.recipient_user.id),
+            ESPUser.objects.filter(id=self.recipient_user.id).values_list('id', flat=True),
+            ESPUser,
             'Test Filter'
         )
 
         # Create a test message request with template variables
-        self.msg_req = MessageRequest.createRequest(
+        self.msg_req = MessageRequest.objects.create(
             subject='Welcome {{user.first_name}}!',
             msgtext='Hello {{user.first_name}} {{user.last_name}}, welcome to our program.',
             sender='noreply@example.com',
             creator=self.admin_user,
-            recipients=self.filter,
-            var_dict={'user': self.recipient_user},
+            recipients=self.filter
         )
 
     def test_preview_email_requires_login(self):
@@ -140,9 +140,10 @@ class SendTestEmailViewTestCase(TestCase):
             last_name='User'
         )
 
-        # Create recipient filter
+        # Create recipient filter using correct method
         self.filter = PersistentQueryFilter.create_from_Q(
-            ESPUser.objects.filter(id=self.admin_user.id),
+            ESPUser.objects.filter(id=self.admin_user.id).values_list('id', flat=True),
+            ESPUser,
             'Test Filter'
         )
 
@@ -264,9 +265,10 @@ class EmailPreviewIntegrationTestCase(TestCase):
             first_name='Bob'
         )
 
-        # Create filter with multiple recipients
+        # Create filter with multiple recipients using correct method
         self.filter = PersistentQueryFilter.create_from_Q(
-            ESPUser.objects.filter(username__in=['user1', 'user2']),
+            ESPUser.objects.filter(username__in=['user1', 'user2']).values_list('id', flat=True),
+            ESPUser,
             'Multiple Recipients'
         )
 
