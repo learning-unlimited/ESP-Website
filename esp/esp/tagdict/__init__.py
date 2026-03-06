@@ -1336,6 +1336,17 @@ all_program_tags = {
         'category': 'learn',
         'is_setting': True,
     },
+    'creditcard_required_for_extracosts': {
+        'is_boolean': False,
+        'help_text': 'Make the Credit Card module required when a student selects specific extra cost items. '
+                     'Set to * to trigger on any extra cost item, or a comma-separated list of item names '
+                     '(e.g. "Meal Ticket,T-Shirt") to trigger only on those items. '
+                     'Does not trigger on program admission costs alone. '
+                     'Balances under $0.50 are ignored to avoid gateway minimum charge rejections.',
+        'default': '',
+        'category': 'learn',
+        'is_setting': True,
+    },
     'student_schedule_format': {
         'is_boolean': False,
         'help_text': 'The formatting settings for PDF student schedules (in json format).',
@@ -1348,6 +1359,20 @@ all_program_tags = {
         'is_boolean': False,
         'help_text': 'The text that is included right above the schedule in PDF student schedules (LaTeX is supported).',
         'default': '',
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'test_student_id': {
+        'is_boolean': False,
+        'help_text': 'PK of the designated test student account for this program (managed by Admin Testing Mode; do not edit manually)',
+        'default': None,
+        'category': 'manage',
+        'is_setting': False,
+    },
+    'test_teacher_id': {
+        'is_boolean': False,
+        'help_text': 'PK of the designated test teacher account for this program (managed by Admin Testing Mode; do not edit manually)',
+        'default': None,
         'category': 'manage',
         'is_setting': False,
     },

@@ -1,5 +1,4 @@
 
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -60,7 +59,8 @@ from django.utils.html import strip_tags
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.validators import validate_email
 
 # `user` is required for marketing and subscribed messages to add unsubscribe headers
 # this includes all comm panel emails
@@ -164,7 +164,6 @@ _MESSAGE_CREATED_AT_HELP_TEXT = """
 """
 _MESSAGE_CREATED_AT_HELP_TEXT = re.sub(r'\s+', ' ', _MESSAGE_CREATED_AT_HELP_TEXT.strip())
 
-@python_2_unicode_compatible
 class MessageRequest(models.Model):
     """ An initial request to broadcast an email message """
 
@@ -407,7 +406,6 @@ class MessageRequest(models.Model):
 
         logger.info('Prepared emails to send for message request %d: %s', self.id, self.subject)
 
-@python_2_unicode_compatible
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
     messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
@@ -503,7 +501,6 @@ class TextOfEmail(models.Model):
     class Meta:
         verbose_name_plural = 'Email texts'
 
-@python_2_unicode_compatible
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
     messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
@@ -527,7 +524,7 @@ class MessageVars(models.Model):
         """ Get a variable from this object. """
         try:
             provider = pickle.loads(self.pickled_provider)
-        except:
+        except Exception:
             raise ESPError('Could not load variable provider object!')
 
         if hasattr(provider, 'get_msg_vars'):
@@ -569,7 +566,6 @@ class MessageVars(models.Model):
     class Meta:
         verbose_name_plural = 'Message variables'
 
-@python_2_unicode_compatible
 class EmailRequest(models.Model):
     """ Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
     target = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
@@ -579,7 +575,6 @@ class EmailRequest(models.Model):
     def __str__(self):
         return str(self.msgreq.subject) + ' <' + str(self.target.username) + '>'
 
-@python_2_unicode_compatible
 class EmailList(models.Model):
     """
     A list that gets handled when an email comes in to @esp.mit.edu.
@@ -620,7 +615,6 @@ class EmailList(models.Model):
     def __str__(self):
         return '%s (%s)' % (self.description, self.regex)
 
-@python_2_unicode_compatible
 class PlainRedirect(models.Model):
     """
     A simple catch-all for mail redirection.
@@ -629,6 +623,26 @@ class PlainRedirect(models.Model):
     original = models.CharField(max_length=512, help_text='A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@&lt;yourdomain&gt; will be redirected to the destination email address(es).')
 
     destination = models.CharField(max_length=512, help_text='A comma-separated list of one or more real email address(es) that will receive the redirected email(s)')
+
+    def clean(self):
+        super().clean()
+
+        invalid_emails = []
+        for item in self.destination.split(','):
+            email = item.strip()
+            if not email:
+                invalid_emails.append('<empty>')
+                continue
+
+            try:
+                validate_email(email)
+            except ValidationError:
+                invalid_emails.append(email)
+
+        if invalid_emails:
+            raise ValidationError({
+                'destination': 'Invalid email address(es): %s' % ', '.join(invalid_emails)
+            })
 
     def __str__(self):
         return '%s --> %s'  % (self.original, self.destination)
@@ -660,7 +674,7 @@ class CustomSMTPBackend(SMTPEmailBackend):
             self.connection.sendmail(sanitize_address(return_path, email_message.encoding),
                     recipients,
                     email_message.message().as_string())
-        except:
+        except Exception:
             if not self.fail_silently:
                 raise
             return False

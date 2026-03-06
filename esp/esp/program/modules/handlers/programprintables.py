@@ -192,7 +192,7 @@ class ProgramPrintables(ProgramModuleObj):
                 clsid = int(request.GET['clsid'])
                 cls   = ClassSubject.objects.get(parent_program = self.program,
                                           id             = clsid)
-            except:
+            except (ValueError, ClassSubject.DoesNotExist):
                 raise ESPError('Could not get the class object.')
 
             cls_dict = {}
@@ -571,7 +571,9 @@ class ProgramPrintables(ProgramModuleObj):
                       teaching = True, moderating = False, display_name = 'Teacher List'):
         from esp.users.models import ContactInfo
 
-        if sort_exp is None:
+        if extra and 'compact' in extra:
+            sort_exp = lambda x, y: self.cmpsorttime(x, y)
+        elif sort_exp is None:
             sort_exp = lambda x, y: self.cmpsortname(x, y)
 
         if extra and 'secondday' in extra:
@@ -669,6 +671,8 @@ class ProgramPrintables(ProgramModuleObj):
             t = loader.get_template(self.baseDir()+'teacherlist.csv')
             response.write(t.render(context))
             return response
+        elif extra and 'compact' in extra:
+            return render_to_response(self.baseDir()+'teachercheckinlist.html', request, context)
         else:
             return render_to_response(self.baseDir()+template_file, request, context)
 
@@ -1466,7 +1470,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         try:
             context['colors'] = request.GET['colors'].split(',')
-        except:
+        except KeyError:
             context['colors'] = ['Yellow', 'Blue', 'Pink', 'Green', 'Turquoise', 'Purple', 'Brown', 'Black']
 
         if extra:
