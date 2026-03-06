@@ -45,6 +45,7 @@ from django.template import Template
 from django.template import Context as DjangoContext
 from django.template.loader import render_to_string
 from esp.middleware import ESPError
+from esp.utils.sanitize import strip_base64_images
 
 import logging
 import os
@@ -104,6 +105,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['listcount'],
                                               request.POST['subject'],
                                               request.POST['body']    ]
+        body, _ = strip_base64_images(body)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
@@ -132,7 +134,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             filterid = int(filterid)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Corrupted POST data!  Please contact us at" +
             "websupport@learningu.org and tell us how you got this error," +
             "and we'll look into it.")
@@ -141,7 +143,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             firstuser = userlist[0]
-        except:
+        except IndexError:
             raise ESPError("You seem to be trying to email 0 people!  " +
             "Please go back, edit your search, and try again.")
 
@@ -218,6 +220,7 @@ class CommModule(ProgramModuleObj):
                                     request.POST['replyto'],
                                     request.POST['subject'],
                                     request.POST['body']    ]
+        body, _ = strip_base64_images(body)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
         template = request.POST.get('template', 'default')
@@ -255,7 +258,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             filterid = int(filterid)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Corrupted POST data!  Please contact us at " +
             "websupport@learningu and tell us how you got this error, " +
             "and we'll look into it.")

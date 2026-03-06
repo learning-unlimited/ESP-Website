@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -108,7 +107,6 @@ def admin_required(func):
         return func(request, *args, **kwargs)
     return wrapped
 
-@python_2_unicode_compatible
 class UserAvailability(models.Model):
     user = AjaxForeignKey('ESPUser', on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
@@ -406,10 +404,20 @@ class BaseESPUser(object):
         elif key == 'username':
             return otheruser.username
         elif key == 'recover_url':
-            return 'http://%s/myesp/recoveremail/?code=%s' % \
-                         (settings.DEFAULT_HOST, otheruser.password)
+            from django.contrib.auth.tokens import default_token_generator
+            from django.utils.http import urlsafe_base64_encode
+            from django.utils.encoding import force_bytes
+            uid = urlsafe_base64_encode(force_bytes(otheruser.pk))
+            token = default_token_generator.make_token(otheruser)
+            return 'http://%s/myesp/resetpassword/%s/%s/' % \
+                         (settings.DEFAULT_HOST, uid, token)
         elif key == 'recover_query':
-            return "?code=%s" % otheruser.password
+            from django.contrib.auth.tokens import default_token_generator
+            from django.utils.http import urlsafe_base64_encode
+            from django.utils.encoding import force_bytes
+            uid = urlsafe_base64_encode(force_bytes(otheruser.pk))
+            token = default_token_generator.make_token(otheruser)
+            return "?uid=%s&token=%s" % (uid, token)
         elif key == 'unsubscribe_link':
             return otheruser.unsubscribe_link_full()
         return ''
@@ -570,7 +578,7 @@ class BaseESPUser(object):
             num = 0
         try:
             num = int(num)
-        except:
+        except (ValueError, TypeError):
             raise ESPError('Could not find user "%s %s"' % (first, last))
         users = ESPUser.objects.filter(last_name__iexact = last,
                                     first_name__iexact = first).order_by('id')
@@ -853,9 +861,17 @@ class BaseESPUser(object):
         )
 
     def recoverPassword(self):
-        # generate the ticket, send the email.
+        """Send a password recovery email using Django's built-in token generator.
+
+        The token is generated via HMAC from the user's pk, password hash,
+        and last_login timestamp. Nothing is stored in the database, so even
+        if the DB leaks, the token cannot be extracted.
+        """
+        from django.contrib.auth.tokens import default_token_generator
         from django.contrib.sites.models import Site
         from django.conf import settings
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
 
         # we have a lot of users with no email (??)
         #  let's at least display a sensible error message
@@ -866,8 +882,9 @@ class BaseESPUser(object):
         to_email = [self.get_email_sendto_address()]
         from_email = settings.SERVER_EMAIL
 
-        # create the ticket
-        ticket = PasswordRecoveryTicket.new_ticket(self)
+        # generate token and uid (never stored in the DB)
+        token = default_token_generator.make_token(self)
+        uid = urlsafe_base64_encode(force_bytes(self.pk))
 
         # email subject
         domainname = Site.objects.get_current().domain
@@ -876,7 +893,8 @@ class BaseESPUser(object):
         # generate the email text
         t = loader.get_template('email/password_recover')
         msgtext = t.render({'user': self,
-                            'ticket': ticket,
+                            'uid': uid,
+                            'token': token,
                             'domainname': domainname,
                             'orgname': settings.ORGANIZATION_SHORT_NAME,
                             'institution': settings.INSTITUTION_NAME})
@@ -1022,7 +1040,7 @@ class BaseESPUser(object):
             # An error here can cause a good chunk of the site to break,
             # so we'll just catch this if it fails and fall back on the default
             d = datetime.strptime(Tag.getTag('grade_increment_date'), '%Y-%m-%d').date().replace(year=curyear)
-        except:
+        except (ValueError, TypeError):
             d = date(curyear, 7, 31)
         if d > now:
             schoolyear = curyear
@@ -1112,7 +1130,7 @@ class BaseESPUser(object):
             schoolyear = ESPUser.current_schoolyear()
         try:
             yog        = int(yog)
-        except:
+        except (ValueError, TypeError):
             return 0
         return schoolyear + 12 - yog
 
@@ -1122,7 +1140,7 @@ class BaseESPUser(object):
             schoolyear = ESPUser.current_schoolyear()
         try:
             grade = int(grade)
-        except:
+        except (ValueError, TypeError):
             return 0
 
         return schoolyear + 12 - grade
@@ -1380,7 +1398,6 @@ def update_email(**kwargs):
             for l in lists:
                 mailman.remove_list_member(l, old_email)
 
-@python_2_unicode_compatible
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
@@ -1484,7 +1501,7 @@ class StudentInfo(models.Model):
                 else:
                     studentInfo.k12school = K12School.objects.filter(name__icontains=new_data.get('k12school'))[0]
 
-        except:
+        except (K12School.DoesNotExist, IndexError, ValueError):
             logger.warning('Could not find k12school for "%s"', new_data.get('k12school'))
             studentInfo.k12school = None
 
@@ -1551,7 +1568,6 @@ AFFILIATION_POSTDOC = 'Postdoc'
 AFFILIATION_OTHER = 'Other'
 AFFILIATION_NONE = 'None'
 
-@python_2_unicode_compatible
 class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
 
@@ -1669,7 +1685,6 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     class Meta:
         app_label = 'users'
 
-@python_2_unicode_compatible
 class GuardianInfo(models.Model):
     """ ES Guardian-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
@@ -1730,7 +1745,6 @@ class GuardianInfo(models.Model):
     def get_absolute_url(self):
         return self.user.get_absolute_url()
 
-@python_2_unicode_compatible
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
@@ -1808,7 +1822,6 @@ class EducatorInfo(models.Model):
     def get_absolute_url(self):
         return self.user.get_absolute_url()
 
-@python_2_unicode_compatible
 class ZipCode(models.Model):
     """ Zip Code information """
     zip_code = models.CharField(max_length=5)
@@ -1848,7 +1861,7 @@ class ZipCode(models.Model):
         try:
             distance_decimal = Decimal(str(distance))
             distance_float = float(str(distance))
-        except:
+        except (ValueError, ArithmeticError):
             raise ESPError('%s should be a valid decimal number!' % distance)
 
         if distance < 0:
@@ -1878,7 +1891,6 @@ class ZipCode(models.Model):
                                 self.latitude)
 
 
-@python_2_unicode_compatible
 class ZipCodeSearches(models.Model):
     zip_code = models.ForeignKey(ZipCode, on_delete=models.CASCADE)
     distance = models.DecimalField(max_digits = 15, decimal_places = 3)
@@ -1893,7 +1905,6 @@ class ZipCodeSearches(models.Model):
         return '%s Zip Codes that are less than %s miles from %s' % \
                (len(self.zipcodes.split(',')), self.distance, self.zip_code)
 
-@python_2_unicode_compatible
 class ContactInfo(models.Model, CustomFormsLinkModel):
     """ ESP-specific contact information for (possibly) a specific user """
 
@@ -2021,7 +2032,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
                         old_self.address_state != self.address_state:
                     self.address_postal = None
                     self.undeliverable = False
-            except:
+            except ContactInfo.DoesNotExist:
                 pass
         if self.address_postal is not None:
             self.address_postal = str(self.address_postal)
@@ -2049,7 +2060,6 @@ class K12SchoolManager(models.Manager):
     def most(self):
         return self.exclude(name='Other').order_by('name')
 
-@python_2_unicode_compatible
 class K12School(models.Model):
     """
     All the schools that we know about.
@@ -2096,7 +2106,6 @@ class K12School(models.Model):
         lst.append( (o.id, o.name + other_help_text) )
         return lst
 
-@python_2_unicode_compatible
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
         to pass the query along to multiple pages and retrieval (et al). """
@@ -2133,7 +2142,7 @@ class PersistentQueryFilter(models.Model):
         """ This will return the Q object that was passed into it. """
         try:
             QObj = pickle.loads(self.q_filter)
-        except:
+        except Exception:
             raise ESPError('Invalid Q object stored in database.')
 
         #   Do not include users if they have disabled their account.
@@ -2184,7 +2193,7 @@ class PersistentQueryFilter(models.Model):
         """ This function will return a PQF object from the id given. """
         try:
             id = int(id)
-        except:
+        except (ValueError, TypeError):
             assert False, 'The query filter id given is invalid.'
         return PersistentQueryFilter.objects.get(id = id,
                                                  item_model = str(model))
@@ -2198,11 +2207,11 @@ class PersistentQueryFilter(models.Model):
         import hashlib
         try:
             qobject_string = pickle.dumps(QObject)
-        except:
+        except Exception:
             qobject_string = b''
         try:
             filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
-        except:
+        except PersistentQueryFilter.DoesNotExist:
             filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
                                                             q_filter    = QObject,
                                                             description = description)
@@ -2213,93 +2222,6 @@ class PersistentQueryFilter(models.Model):
     def __str__(self):
         return str(self.useful_name) + " (" + str(self.id) + ")"
 
-@python_2_unicode_compatible
-class PasswordRecoveryTicket(models.Model):
-    """ A ticket for changing your password. """
-    RECOVER_KEY_LEN = 30
-    RECOVER_EXPIRE = 2 # number of days before it expires
-    SYMBOLS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-
-    user = models.ForeignKey(ESPUser, on_delete=models.CASCADE)
-    recover_key = models.CharField(max_length=RECOVER_KEY_LEN)
-    expire = models.DateTimeField(null=True)
-
-    class Meta:
-        app_label = 'users'
-
-    def __str__(self):
-        return "Ticket for %s (expires %s): %s" % (self.user, self.expire, self.recover_key)
-
-    @staticmethod
-    def new_key():
-        """ Generates a new random key. """
-        import random
-        key = "".join([random.choice(PasswordRecoveryTicket.SYMBOLS) for x in range(PasswordRecoveryTicket.RECOVER_KEY_LEN)])
-        return key
-
-    @staticmethod
-    def new_ticket(user):
-        """ Returns a new (saved) ticket for a specified user. """
-
-        ticket = PasswordRecoveryTicket()
-        ticket.user = user
-        ticket.recover_key = PasswordRecoveryTicket.new_key()
-        ticket.expire = datetime.now() + timedelta(days = PasswordRecoveryTicket.RECOVER_EXPIRE)
-
-        ticket.save()
-        return ticket
-
-    @property
-    def recover_url(self):
-        """ The URL to recover the password. """
-        return 'myesp/recoveremail/?code=%s' % self.recover_key
-
-    @property
-    def cancel_url(self):
-        """ The URL to cancel the ticket. """
-        return 'myesp/cancelrecover/?code=%s' % self.recover_key
-
-    def change_password(self, username, password):
-        """ If the ticket is valid, saves the password. """
-        if not self.is_valid():
-            return False
-        if self.user.username != username:
-            return False
-
-        # Change the password, and activate the account
-        self.user.set_password(password)
-        self.user.is_active = True
-        self.user.save()
-
-        # Invalidate all other tickets
-        self.cancel_all(self.user)
-        return True
-    change_password.alters_data = True
-
-    def is_valid(self):
-        """ Check if the ticket is still valid, kill it if not. """
-        if self.id is not None and datetime.now() < self.expire:
-            return True
-        else:
-            self.cancel()
-            return False
-    ## technically alters data by calling cancel(), but templates
-    ## should be fine with calling this one I guess
-    # is_valid.alters_data = True
-
-    def cancel(self):
-        """ Cancel a ticket. """
-        if self.id is not None:
-            self.expire = datetime(1990, 8, 3)
-            self.delete()
-    cancel.alters_data = True
-
-    @staticmethod
-    def cancel_all(user):
-        """ Cancel all tickets belong to user. """
-        PasswordRecoveryTicket.objects.filter(user=user).delete()
-
-@python_2_unicode_compatible
 class DBList(object):
     """ Useful abstraction for the list of users.
         Not meant for anything but users_get_list...
@@ -2359,7 +2281,6 @@ class DBList(object):
     def __str__(self):
         return self.key
 
-@python_2_unicode_compatible
 class RecordType(models.Model):
     name = models.CharField(max_length=80, help_text = "A unique short name for the record type", unique=True)
     description = models.CharField(max_length=255, help_text = "A unique sentence case description for the record type", unique=True)
@@ -2388,7 +2309,6 @@ class RecordType(models.Model):
     class Meta:
         app_label = 'users'
 
-@python_2_unicode_compatible
 class Record(models.Model):
     event = models.ForeignKey("RecordType", blank=True, null=True, on_delete=models.CASCADE)
     program = models.ForeignKey("program.Program", blank=True, null=True, on_delete=models.CASCADE)
@@ -2463,7 +2383,6 @@ def flatten(choices):
         else: l=l+flatten(x[1])
     return l
 
-@python_2_unicode_compatible
 class Permission(ExpirableModel):
 
     #a permission can be assigned to a user, or a role
@@ -2864,7 +2783,6 @@ def install():
 #   but esp.dbmail.models imports ESPUser.
 from esp.dbmail.models import send_mail
 
-@python_2_unicode_compatible
 class GradeChangeRequest(TimeStampedModel):
     """
         A grade change request is issued by a student when it is felt
