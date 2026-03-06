@@ -279,12 +279,10 @@ def ajax_qsd(request):
         data = post_dict['data']
 
         # Get the URL from the request information
-        referer = request.META.get('HTTP_REFERER')
-        path = urlparse(referer).path
-        path_parts = [el for el in path.split('/') if el != '']
+        url_parts = qsd.url.split('/')
 
         # Sanitize if this is for a class QSD
-        if len(path_parts) > 3 and path_parts[3] == "Classes":
+        if len(url_parts) > 3 and url_parts[3] == "Classes":
             data = clean(data, strip = True)
         data, _ = strip_base64_images(data)
 
@@ -310,13 +308,21 @@ def ajax_qsd_preview(request):
     from markdown import markdown
     data = request.POST['data']
 
-    # Get the URL from the request information
-    referer = request.META.get('HTTP_REFERER')
-    path = urlparse(referer).path
-    path_parts = [el for el in path.split('/') if el != '']
+    # Get the URL
+    url = request.POST.get('url', '')
+    # Validate URL corresponds to a real QSD in the database
+    try:
+        qsd = QuasiStaticData.objects.get_by_url(url)
+        if qsd is None or qsd.disabled:
+            return HttpResponse('Invalid QSD', status=404)
+        # Use the authoritative server-side URL for sanitization check
+        url = qsd.url
+    except QuasiStaticData.DoesNotExist:
+        return HttpResponse('QSD not found', status=404)
+    url_parts = url.split('/')
 
     # Sanitize if this is for a class QSD
-    if len(path_parts) > 3 and path_parts[3] == "Classes":
+    if len(url_parts) > 3 and url_parts[3] == "Classes":
         data = clean(data, strip = True)
     data, _ = strip_base64_images(data)
 
