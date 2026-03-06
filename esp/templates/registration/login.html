@@ -20,10 +20,9 @@ You need to log in before you can access <tt>{{ next }}</tt>.
 <div class="alert span10">
 Both the username and password are <b>case-sensitive</b>: capitalization matters!
 </div>
+<div class="well span6 offset3 auth-form"></div>
 
-<div class="well span10">
-
-<form action="{{ request.action }}" class="form-horizontal" method="post">
+<form action="{{ request.action }}" class="form-horizontal auth-form-inner" method="post">
 
 <div class="control-group">
     {% if form.username.errors %}
@@ -64,7 +63,7 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 
 <div class="form-actions">
 <input type="hidden" name="next" value="{{ next }}" />
-<input type="submit" class="btn btn-primary btn-large" value="Login" />
+<input type="submit" class="btn btn-primary btn-large btn-block" value="Login" />
 </div>
 
 </form>
