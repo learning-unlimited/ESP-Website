@@ -69,7 +69,7 @@ Quick Start
 
     FORCE_SETUP=1 docker compose up
 
-  Windows::
+   Windows::
     $env:FORCE_SETUP=1; docker compose up
 
 4. Once you see ``Starting development server at http://0.0.0.0:8000/``,
