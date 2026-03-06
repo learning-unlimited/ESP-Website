@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import decimal
+import json
 
 import logging
 logger = logging.getLogger(__name__)
@@ -87,6 +88,45 @@ class DemographicsStatisticsTest(TestCase):
         demographics(form, [], [], profiles, result_dict)
 
         self.assertEqual(result_dict['gradyear_data'], [(2030, 1)])
+
+
+class StatisticsViewTest(TestCase):
+    def setUp(self):
+        self.password = "pass1234"
+        self.admin, created = ESPUser.objects.get_or_create(
+            first_name="Stats",
+            last_name="Admin",
+            username="statsadminuser",
+            email="statsadmin@example.com",
+        )
+        if created:
+            self.admin.set_password(self.password)
+            self.admin.save()
+        self.admin.makeRole('Administrator')
+        Program.objects.get_or_create(
+            url='splash/teststats',
+            defaults={
+                'name': 'Test Statistics Program',
+                'grade_min': 7,
+                'grade_max': 12,
+                'director_email': 'info@learningu.org',
+            },
+        )
+
+    def test_invalid_ajax_submission_returns_form_payload(self):
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+
+        response = c.post(
+            "/manage/statistics",
+            {},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(str(response.content, encoding='UTF-8'))
+        self.assertTrue('statistics_form_contents_html' in payload)
+        self.assertTrue('script' in payload)
 
 
 class ViewUserInfoTest(TestCase):
@@ -1835,4 +1875,3 @@ class GradeCacheInvalidationTest(TestCase):
             profile2.student_info.graduation_year, new_yog,
             "getLastProfile should return updated graduation_year"
         )
-
