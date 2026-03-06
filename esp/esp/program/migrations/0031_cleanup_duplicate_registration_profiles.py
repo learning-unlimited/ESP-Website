@@ -28,10 +28,10 @@ def cleanup_duplicate_profiles(apps, schema_editor):
     print("\n" + "="*70)
     print("Starting cleanup of duplicate registration profiles...")
     print("="*70)
-    
+
     for dup in duplicates:
         user_program_pairs += 1
-        
+
         # Get all profiles for this user-program pair, ordered by most recent first
         # We order by -last_ts (most recent timestamp first), then by -id as a tiebreaker
         # Use nulls_last=True to ensure NULL timestamps are treated as oldest
@@ -44,11 +44,11 @@ def cleanup_duplicate_profiles(apps, schema_editor):
         keep_profile = profiles.first()
         if keep_profile is None:
             continue
-        
+
         # Use the same queryset and exclude the kept profile for efficient bulk deletion
         profiles_to_delete_qs = profiles.exclude(pk=keep_profile.pk)
         deleted_for_pair, _ = profiles_to_delete_qs.delete()
-        
+
         if deleted_for_pair > 0:
             print(f"User {dup['user_id']}, Program {dup['program_id']}: "
                   f"Deleting {deleted_for_pair} duplicate profile(s), keeping most recent")
