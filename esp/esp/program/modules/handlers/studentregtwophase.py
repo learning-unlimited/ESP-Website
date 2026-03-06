@@ -536,7 +536,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             'program': self.program,
             'schedule': schedule,
             'starred_classes': starred_classes,
-            'curtime': datetime.datetime.now(),
+            'curtime': timezone.now(),
             'DEFAULT_HOST': settings.DEFAULT_HOST,
         }
         email_contents = render_to_string(

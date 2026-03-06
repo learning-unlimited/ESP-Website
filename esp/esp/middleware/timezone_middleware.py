@@ -11,17 +11,17 @@ class TimezoneMiddleware:
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         program = None
-        
+
         # Try to get program from view kwargs (passed by main.program)
         one = view_kwargs.get('one')
         two = view_kwargs.get('two')
-        
+
         if one and two:
             try:
                 program = Program.by_prog_inst(one, two)
             except Exception:
                 pass
-        
+
         # Fallback to request.program if set by other means
         if program is None:
             program = getattr(request, 'program', None)
@@ -34,10 +34,10 @@ class TimezoneMiddleware:
                     tzname = request.user.preferences.timezone
                 except Exception:
                     pass
-            
+
             if not tzname:
                 tzname = request.session.get('django_timezone')
-            
+
             if tzname:
                 try:
                     # Activate the timezone for the duration of the request
@@ -49,5 +49,5 @@ class TimezoneMiddleware:
         else:
             # For in-person programs, use the default TIME_ZONE (deactivate active tz)
             timezone.deactivate()
-            
+
         return None
