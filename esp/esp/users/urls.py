@@ -47,6 +47,7 @@ urlpatterns += [
     url(r'^passwd/?$', myesp.myesp_passwd),
     url(r'^accountmanage/?$', myesp.myesp_accountmanage),
     url(r'^profile/?$', myesp.edit_profile),
+    url(r'^profile/(?P<username>[^/]+)/?$', myesp.admin_edit_profile, name='admin_edit_profile'),
 ]
 
 urlpatterns += [
