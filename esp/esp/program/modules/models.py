@@ -94,15 +94,17 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
             for key in ('main_call', 'aux_calls'):
                 datum.pop(key, None)
             # Build defaults dict: populate identity + always-update fields,
-            # leave customizable fields as NULL (code default).
+            # and explicitly set customizable fields to NULL (code default).
             new_defaults = {k: v for k, v in datum.items()
                            if k not in CUSTOMIZABLE_FIELDS}
+            for field in CUSTOMIZABLE_FIELDS:
+                new_defaults[field] = None
             query_kwargs['defaults'] = new_defaults
             mods.append((datum, model.objects.get_or_create(**query_kwargs)))
 
     if deleteExtra:
         ids = [mod.id for (datum, (mod, created)) in mods]
-        ProgramModule.objects.exclude(id__in=ids).delete()
+        model.objects.exclude(id__in=ids).delete()
 
 def install(model=None):
     """ Install the initial ProgramModule table data for all currently-existing modules """
