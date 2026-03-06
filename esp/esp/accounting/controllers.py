@@ -350,6 +350,7 @@ class IndividualAccountingController(ProgramAccountingController):
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
         option = None
         if amount is not None and option_id:
+            option = LineItemOptions.objects.get(id=option_id)
             self.get_transfers().filter(line_item=line_item, amount_dec=amount, option__id=option_id).delete()
         elif option_id:
             self.get_transfers().filter(line_item=line_item, option__id=option_id).delete()
