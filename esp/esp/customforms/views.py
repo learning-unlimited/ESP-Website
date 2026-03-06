@@ -103,6 +103,10 @@ def onSubmit(request):
                 success_message = metadata['success_message'][0:Form._meta.get_field('success_message').max_length]
                 success_url = metadata['success_url'][0:Form._meta.get_field('success_url').max_length]
 
+                # Validate that title is not empty
+                if not title or not title.strip():
+                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
+
                 # Creating form
                 form = Form.objects.create(title=title,
                     description=metadata['desc'], created_by=request.user, link_type=link_type,
@@ -192,6 +196,10 @@ def onModify(request):
 
                 # Populating the old fields list
                 dmh._getModelFieldList()
+
+                # Validate that title is not empty
+                if not metadata['title'] or not metadata['title'].strip():
+                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
 
                 # NOT updating 'anonymous'
                 form.__dict__.update(title=metadata['title'], description=metadata['desc'], perms=metadata['perms'],
