@@ -128,12 +128,10 @@ def _send_refund_notification_email(program, refund_results, is_error=False):
     domain_name = Site.objects.get_current().domain
 
     if is_error:
-        subject = '[ ESP Refund ERROR ] Stripe refund error on %s for %s' % (
-            domain_name, program.niceName())
+        subject = f'[ ESP Refund ERROR ] Stripe refund error on {domain_name} for {program.niceName()}'
         template = 'accounting/refund_error_email.txt'
     else:
-        subject = '[ ESP Refund ] Stripe refunds issued on %s for %s' % (
-            domain_name, program.niceName())
+        subject = f'[ ESP Refund ] Stripe refunds issued on {domain_name} for {program.niceName()}'
         template = 'accounting/refund_success_email.txt'
 
     context = {
