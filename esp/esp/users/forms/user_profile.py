@@ -270,7 +270,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy
@@ -424,6 +424,24 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
                 del self.fields[field_name]
             if field_name == 'phone_cell' and 'receive_txt_message' in self.fields:
                 del self.fields['receive_txt_message']
+    def clean(self):
+        cleaned_data = super(StudentProfileForm, self).clean()
+
+        student_email = cleaned_data.get('e_mail', '').lower()
+        emerg_email = cleaned_data.get('emerg_e_mail', '').lower()
+        guard_email = cleaned_data.get('guard_e_mail', '').lower()
+
+        if student_email and emerg_email and student_email == emerg_email:
+            raise forms.ValidationError(
+                "Your emergency contact email address cannot be the same as your own email address."
+            )
+
+        if student_email and guard_email and student_email == guard_email:
+            raise forms.ValidationError(
+                "Your parent/guardian email address cannot be the same as your own email address."
+            )
+
+        return cleaned_data
 
 # A list of teacher fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_teachers = []
@@ -487,7 +505,7 @@ class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy
@@ -501,7 +519,7 @@ class AlumProfileForm(MinimalUserInfo, FormWithTagInitialValues):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy

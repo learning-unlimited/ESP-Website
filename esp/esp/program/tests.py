@@ -95,11 +95,11 @@ class ViewUserInfoTest(TestCase):
 
     def assertStringContains(self, string, contents):
         if not (contents in string):
-            self.assert_(False, "'%s' not in '%s'" % (contents, string))
+            self.fail("'%s' not in '%s'" % (contents, string))
 
     def assertNotStringContains(self, string, contents):
         if contents in string:
-            self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
+            self.fail("'%s' are in '%s' and shouldn't be" % (contents, string))
 
     def testIssue1448UsernameMatchesFirstName(self):
         """
@@ -227,10 +227,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'].id, self.user.id)
-        self.assert_(self.user.username in str(response.content, encoding='UTF-8'))
-        self.assert_(self.user.first_name in str(response.content, encoding='UTF-8'))
-        self.assert_(self.user.last_name in str(response.content, encoding='UTF-8'))
-        self.assert_(str(self.user.id) in str(response.content, encoding='UTF-8'))
+        self.assertTrue(self.user.username in str(response.content, encoding='UTF-8'))
+        self.assertTrue(self.user.first_name in str(response.content, encoding='UTF-8'))
+        self.assertTrue(self.user.last_name in str(response.content, encoding='UTF-8'))
+        self.assertTrue(str(self.user.id) in str(response.content, encoding='UTF-8'))
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
@@ -264,8 +264,8 @@ class ProfileTest(TestCase):
         self.group=Group(name='Test Group')
         self.group.save()
         self.u.groups.add(self.group)
-        self.assertEquals(ESPUser.objects.get(username='bjones'), self.u)
-        self.assertEquals(Group.objects.get(name='Test Group'), self.group)
+        self.assertEqual(ESPUser.objects.get(username='bjones'), self.u)
+        self.assertEqual(Group.objects.get(name='Test Group'), self.group)
 
 class ProgramHappenTest(TestCase):
     """
@@ -1634,3 +1634,184 @@ class ConfirmationEmailControllerTest(TestCase):
             self.controller.send_confirmation_email(self.user, self.program, repeat=True, override=True)
 
         self.assertEqual(mock_send_mail.call_count, 2)
+
+
+class ManageDocsViewTest(TestCase):
+    """Tests for the /manage/docs documentation viewer."""
+
+    def setUp(self):
+        user_role_setup()
+        password = 'testpass123'
+
+        self.admin = ESPUser.objects.create_user(
+            username='docstestadmin',
+            first_name='Docs',
+            last_name='Admin',
+            email='docsadmin@test.learningu.org',
+        )
+        self.admin.set_password(password)
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.regular_user = ESPUser.objects.create_user(
+            username='docstestuser',
+            first_name='Docs',
+            last_name='User',
+            email='docsuser@test.learningu.org',
+        )
+        self.regular_user.set_password(password)
+        self.regular_user.save()
+
+        self.password = password
+        self.client = Client()
+
+    def tearDown(self):
+        self.admin.delete()
+        self.regular_user.delete()
+
+    def test_index_accessible_by_admin(self):
+        """Admin user can access /manage/docs and gets a 200 response."""
+        self.client.login(username='docstestadmin', password=self.password)
+        response = self.client.get('/manage/docs')
+        self.assertEqual(response.status_code, 200)
+
+    def test_index_blocked_for_non_admin(self):
+        """Non-admin authenticated user is denied access (403)."""
+        self.client.login(username='docstestuser', password=self.password)
+        response = self.client.get('/manage/docs')
+        self.assertEqual(response.status_code, 403)
+
+    def test_index_redirects_anonymous(self):
+        """Anonymous user is redirected away from /manage/docs."""
+        response = self.client.get('/manage/docs')
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response['Location'].startswith('/accounts/login/'))
+
+    def test_path_traversal_blocked(self):
+        """Attempts to traverse outside DOCS_ADMIN_ROOT return 404."""
+        self.client.login(username='docstestadmin', password=self.password)
+        response = self.client.get('/manage/docs/../../../etc/passwd.rst')
+        self.assertEqual(response.status_code, 404)
+
+    def test_path_with_dotdot_blocked(self):
+        """doc_path containing '..' is rejected with 404."""
+        self.client.login(username='docstestadmin', password=self.password)
+        response = self.client.get('/manage/docs/..%2F..%2Fetc%2Fpasswd.rst')
+        self.assertEqual(response.status_code, 404)
+
+    def test_rst_to_html_basic(self):
+        """_rst_to_html converts RST text to a non-empty HTML fragment."""
+        from esp.program.views import _rst_to_html
+        html = _rst_to_html('Some text here.\n')
+        self.assertTrue(len(html) > 0)
+        self.assertIn('Some text here.', html)
+
+    def test_rst_to_html_paragraph(self):
+        """_rst_to_html converts a paragraph to a <p> tag."""
+        from esp.program.views import _rst_to_html
+        html = _rst_to_html('This is a paragraph.\n')
+        self.assertIn('<p>', html)
+        self.assertIn('This is a paragraph.', html)
+
+    @patch('esp.program.views.os.path.isfile')
+    def test_serve_image_file(self, mock_isfile):
+        """Image files are served natively by the manage_docs view."""
+        mock_isfile.return_value = True
+        self.client.login(username='docstestadmin', password=self.password)
+        # Mock open so it doesn't crash trying to open a fake image
+        from unittest.mock import mock_open
+        with patch('esp.program.views.open', mock_open(read_data=b'fakeimage')) as m:
+            response = self.client.get('/manage/docs/test_image.png')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'image/png')
+            self.assertEqual(b''.join(response.streaming_content), b'fakeimage')
+
+
+class GradeCacheInvalidationTest(TestCase):
+    """Tests for issue #1601: Changing a user's grade must invalidate cache."""
+
+    def setUp(self):
+        user_role_setup()
+        self.student = ESPUser.objects.create_user(
+            username='gradecachetest',
+            email='gradecache@test.com',
+            password='test123'
+        )
+        self.student.makeRole('Student')
+
+        # Create a future program
+        self.program = Program.objects.create(
+            name='GradeCache Test',
+            url='gradecachetest',
+            grade_min=7,
+            grade_max=12
+        )
+        prog_type, _ = EventType.objects.get_or_create(description='Program')
+        Event.objects.create(
+            program=self.program,
+            event_type=prog_type,
+            start=datetime.now() + timedelta(days=30),
+            end=datetime.now() + timedelta(days=31),
+            short_description='Test event'
+        )
+
+        initial_yog = ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.program))
+        self.student_info = StudentInfo.objects.create(
+            user=self.student,
+            graduation_year=initial_yog,
+            dob=datetime.now() - timedelta(days=365*15)
+        )
+
+        self.reg_profile = RegistrationProfile.objects.create(
+            user=self.student,
+            program=self.program,
+            student_info=self.student_info,
+            most_recent_profile=True
+        )
+
+    def test_grade_change_invalidates_cache(self):
+        """Changing StudentInfo.graduation_year should invalidate grade lookup."""
+        initial_grade = self.student.getGrade(self.program)
+        self.assertEqual(initial_grade, 10)
+
+        # Change the grade via StudentInfo (as admin would do)
+        new_yog = ESPUser.YOGFromGrade(11, ESPUser.program_schoolyear(self.program))
+        self.student_info.graduation_year = new_yog
+        self.student_info.save()
+
+        # Grade should now reflect the change without manual cache flush
+        updated_grade = self.student.getGrade(self.program)
+        self.assertEqual(updated_grade, 11, "Grade should update after StudentInfo change")
+
+    def test_getLastForProgram_invalidates_on_studentinfo_change(self):
+        """getLastForProgram should return updated student_info after change."""
+        profile1 = RegistrationProfile.getLastForProgram(self.student, self.program)
+        initial_yog = profile1.student_info.graduation_year
+
+        # Modify graduation_year
+        new_yog = ESPUser.YOGFromGrade(9, ESPUser.program_schoolyear(self.program))
+        self.student_info.graduation_year = new_yog
+        self.student_info.save()
+
+        # Fetch again - should get fresh data
+        profile2 = RegistrationProfile.getLastForProgram(self.student, self.program)
+        self.assertEqual(
+            profile2.student_info.graduation_year, new_yog,
+            "getLastForProgram should return updated graduation_year"
+        )
+
+    def test_getLastProfile_invalidates_on_studentinfo_change(self):
+        """getLastProfile should return updated student_info after change."""
+        profile1 = RegistrationProfile.getLastProfile(self.student)
+        initial_yog = profile1.student_info.graduation_year
+
+        new_yog = ESPUser.YOGFromGrade(11, ESPUser.program_schoolyear(self.program))
+        self.student_info.graduation_year = new_yog
+        self.student_info.save()
+
+        profile2 = RegistrationProfile.getLastProfile(self.student)
+        self.assertEqual(
+            profile2.student_info.graduation_year, new_yog,
+            "getLastProfile should return updated graduation_year"
+        )
+

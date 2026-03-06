@@ -202,14 +202,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             </button></a>
         </div>
         {% endif %}
-        {% if manage_admin_morph %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/admin_morph"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-user"></i> Morph into User</div>
-                <div class="module_link_caption">see the website from a user's point of view</div>
-            </button></a>
-        </div>
-        {% endif %}
+
         {% if manage_selectList %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/selectList"><button type="button" class="module_link_large">
@@ -274,6 +267,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
         {% if teach_teacherreg %}<li><a href="/teach/{{ program.getUrlBase }}/teacherreg">Teacher Reg</a></li>{% endif %}
         {% if volunteer_signup %}<li><a href="/volunteer/{{ program.getUrlBase }}/signup">Volunteer Reg</a></li>{% endif %}
         {% if onsite_main %}<li><a href="/onsite/{{ program.getUrlBase }}/main">Onsite</a></li>{% endif %}
+        {% if manage_refund %}<li><a href="/accounting/refund?program={{ program.id }}">Refunds</a></li>{% endif %}
     </ul>
     </div>
 </div>
