@@ -37,8 +37,8 @@ class EmailPreviewViewTestCase(TestCase):
 
         # Create a recipient filter using the correct method
         self.filter = PersistentQueryFilter.create_from_Q(
-            ESPUser.objects.filter(id=self.recipient_user.id).values_list('id', flat=True),
             ESPUser,
+            ESPUser.objects.filter(id=self.recipient_user.id),
             'Test Filter'
         )
 
@@ -142,8 +142,8 @@ class SendTestEmailViewTestCase(TestCase):
 
         # Create recipient filter using correct method
         self.filter = PersistentQueryFilter.create_from_Q(
-            ESPUser.objects.filter(id=self.admin_user.id).values_list('id', flat=True),
             ESPUser,
+            ESPUser.objects.filter(id=self.admin_user.id),
             'Test Filter'
         )
 
@@ -267,8 +267,8 @@ class EmailPreviewIntegrationTestCase(TestCase):
 
         # Create filter with multiple recipients using correct method
         self.filter = PersistentQueryFilter.create_from_Q(
-            ESPUser.objects.filter(username__in=['user1', 'user2']).values_list('id', flat=True),
             ESPUser,
+            ESPUser.objects.filter(username__in=['user1', 'user2']),
             'Multiple Recipients'
         )
 
