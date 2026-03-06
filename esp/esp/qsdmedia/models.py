@@ -64,6 +64,12 @@ class Media(models.Model):
     owner_id = models.PositiveIntegerField(blank=True, null=True)
     owner = GenericForeignKey(ct_field='owner_type', fk_field='owner_id')
 
+    def clean(self):
+        super().clean()
+        if (self.owner_type_id is None) != (self.owner_id is None):
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Both parts of the GenericForeignKey (owner_type and owner_id) must be either both null or both set.")
+
     def handle_file(self, file, filename):
         """ Saves a file from request.FILES. """
         import uuid
