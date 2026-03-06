@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -199,10 +198,10 @@ class VolunteerManage(ProgramModuleObj):
 
         try:
             volunteer = ESPUser.objects.get(id=target_id)
-        except:
+        except ESPUser.DoesNotExist:
             try:
                 volunteer = ESPUser.objects.get(username=target_id)
-            except:
+            except ESPUser.DoesNotExist:
                 raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
 
         vs = VolunteerSignup
