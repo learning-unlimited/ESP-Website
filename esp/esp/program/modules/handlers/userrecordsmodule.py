@@ -70,7 +70,15 @@ class UserRecordsModule(ProgramModuleObj):
             raise ESPError()("Your query did not match any users")
 
         records = request.POST.getlist('records')
-        Record.objects.bulk_create([Record(event=RecordType.objects.get(name=rec), program = prog, user=user) for rec in records for user in users])
+        record_type_map = {
+            rt.name: rt for rt in RecordType.objects.filter(name__in=set(records))
+        }
+
+        Record.objects.bulk_create([
+            Record(event=record_type_map[rec], program=prog, user=user)
+            for user in users
+            for rec in records
+        ])
 
         context = {'num_users': users.count(), 'records': records}
 
