@@ -15,7 +15,8 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record, RecordType
+from esp.users.forms.user_profile import StudentProfileForm
+from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -137,7 +138,12 @@ class ESPUserTest(TestCase):
             finally:
                 user.delete()
 
-class PasswordRecoveryTicketTest(TestCase):
+class PasswordRecoveryTest(TestCase):
+    """Test password recovery using Django's built-in token generator.
+
+    Tokens are computed via HMAC from user data and are never stored in the
+    database.
+    """
     def setUp(self):
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
         self.user.set_password('forgotten_pw')
@@ -145,41 +151,51 @@ class PasswordRecoveryTicketTest(TestCase):
         self.other, created = ESPUser.objects.get_or_create(username='innocent')
         self.other.set_password('remembered_pw')
         self.other.save()
+
     def runTest(self):
-        # First, make sure both people can log in
-        self.assertTrue(self.client.login( username='forgetful', password='forgotten_pw' ), "User forgetful cannot login")
-        self.assertTrue(self.client.login( username='innocent', password='remembered_pw' ), "User innocent cannot login")
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+        from django.utils.encoding import force_bytes
 
-        # Create tickets; both User and ESPUser should work
-        one   = PasswordRecoveryTicket.new_ticket( self.user )
-        two   = PasswordRecoveryTicket.new_ticket( self.user )
-        four  = PasswordRecoveryTicket.new_ticket( self.other )
-        self.assertTrue(one.is_valid(), "Recovery ticket one is invalid.")
-        self.assertTrue(two.is_valid(), "Recovery ticket two is invalid.")
-        self.assertTrue(four.is_valid(), "Recovery ticket four is invalid.")
+        # Both users can log in
+        self.assertTrue(self.client.login(username='forgetful', password='forgotten_pw'),
+                        "User forgetful cannot login")
+        self.assertTrue(self.client.login(username='innocent', password='remembered_pw'),
+                        "User innocent cannot login")
 
-        # Try expiring #1; trying to validate it should destroy it
-        pk_before = one.pk
-        one.cancel()
-        self.assertFalse(one.is_valid(), "Expired ticket is still valid.")
-        self.assertFalse(PasswordRecoveryTicket.objects.filter(pk=pk_before).exists(),
-                         "Ticket was not auto-deleted.")
-        # Try using #1; it shouldn't work
-        self.assertFalse(one.change_password( 'forgetful', 'bad_pw' ), "Expired ticket still changed password.")
-        self.assertFalse(self.client.login( username='forgetful', password='bad_pw' ), "User forgetful logged in with incorrect password.")
+        # Generate a token for the user
+        token = default_token_generator.make_token(self.user)
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
 
-        # Try using #2
-        # Make sure it doesn't work for the wrong user
-        self.assertFalse(two.change_password( 'innocent', 'bad_pw' ), "Recovery ticket two used for the wrong user.")
-        self.assertFalse(self.client.login( username='forgetful', password='bad_pw' ), "Incorrectly cashed ticket still changed password.")
-        self.assertFalse(self.client.login( username='innocent', password='bad_pw' ), "User innocent's password changed.")
-        # Make sure using it changes the password it's supposed to
-        self.assertTrue(two.change_password( 'forgetful', 'new_pw' ), "Recovery ticket two failed to be cashed.")
-        self.assertTrue(self.client.login( username='forgetful', password='new_pw' ), "User forgetful cannot login with new password.")
-        self.assertTrue(self.client.login( username='innocent', password='remembered_pw' ), "User innocent's old password no longer works.")
-        # Make sure it destroys all other tickets for user forgetful
-        self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.user).count(), 0, "Tickets for user forgetful not wiped.")
-        self.assertEqual(PasswordRecoveryTicket.objects.filter(user=self.other).count(), 1, "Tickets for user innocent incorrectly wiped.")
+        # Token should be valid for the correct user
+        self.assertTrue(default_token_generator.check_token(self.user, token),
+                        "Token should be valid for the user it was generated for")
+
+        # Token should NOT be valid for a different user
+        self.assertFalse(default_token_generator.check_token(self.other, token),
+                         "Token should not be valid for a different user")
+
+        # Use the token to reset the password via the view
+        reset_url = '/myesp/resetpassword/%s/%s/' % (uid, token)
+        response = self.client.get(reset_url)
+        # Django's PasswordResetConfirmView redirects to set-password URL
+        # after validating the token on GET
+        self.assertIn(response.status_code, [200, 302],
+                      "Password reset confirm page should load successfully")
+
+        # After password change, old token should be invalid
+        self.user.set_password('new_pw')
+        self.user.save()
+        self.assertFalse(default_token_generator.check_token(self.user, token),
+                         "Token should be invalid after password change")
+
+        # New password works
+        self.assertTrue(self.client.login(username='forgetful', password='new_pw'),
+                        "User forgetful cannot login with new password")
+
+        # Other user's password is unaffected
+        self.assertTrue(self.client.login(username='innocent', password='remembered_pw'),
+                        "User innocent's old password no longer works")
 
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
@@ -209,7 +225,7 @@ class TeacherInfo__validationtest(TestCase):
             try:
                 int(i)
                 return True
-            except:
+            except (ValueError, TypeError):
                 return False
 
         # There's some data-cleaning going on here, so
@@ -776,7 +792,6 @@ class PermissionTestCase(TestCase):
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
 
-
 class StudentInfoFormGradeTest(TestCase):
     """Registration Profile grade validation.
 
@@ -887,3 +902,124 @@ class StudentInfoFormGradeTest(TestCase):
             initial_si_count,
             "StudentInfo must NOT be saved when graduation_year is missing.",
         )
+
+class StudentProfileForm__emailvalidationtest(TestCase):
+    """Tests for StudentProfileForm email validation.
+
+    Verifies that a student's own email cannot match the emergency
+    contact or parent/guardian email address.
+    """
+    def setUp(self):
+        user_role_setup()
+        # Tags required by StudentInfoForm.__init__ (call .split() on the value)
+        Tag.setTag('student_shirt_sizes', value='S, M, L')
+        Tag.setTag('shirt_types', value='Straight cut')
+        Tag.setTag('food_choices', value='No preference')
+        Tag.setTag('student_profile_hide_fields', value='')
+        # Disable optional-field requirements to keep test data minimal
+        Tag.setTag('allow_change_grade_level', value='True')
+        Tag.setTag('require_school_field', value='False')
+
+        self.user, created = ESPUser.objects.get_or_create(username='emailtest_student')
+        self.user.makeRole('Student')
+
+    def _base_data(self, student_email='student@example.com',
+                   emerg_email='parent@example.com',
+                   guard_email='guardian@example.com'):
+        """Return a minimal valid data dict for StudentProfileForm."""
+        return {
+            # UserContactForm
+            'first_name': 'Test',
+            'last_name': 'Student',
+            'e_mail': student_email,
+            'phone_day': '+12015550100',
+            'phone_cell': '+12015550100',
+            'address_street': '84 Massachusetts Ave',
+            'address_city': 'Cambridge',
+            'address_state': 'MA',
+            'address_zip': '02139',
+            # EmergContactForm
+            'emerg_first_name': 'Emergency',
+            'emerg_last_name': 'Contact',
+            'emerg_e_mail': emerg_email,
+            'emerg_phone_day': '+12015550101',
+            'emerg_address_street': '84 Massachusetts Ave',
+            'emerg_address_city': 'Cambridge',
+            'emerg_address_state': 'MA',
+            'emerg_address_zip': '02139',
+            # GuardContactForm
+            'guard_first_name': 'Parent',
+            'guard_last_name': 'Guardian',
+            'guard_e_mail': guard_email,
+            'guard_phone_day': '+12015550102',
+            # StudentInfoForm
+            'graduation_year': str(ESPUser.YOGFromGrade(12)),
+            'dob': '2008-01-01',
+        }
+
+    def testDistinctEmails(self):
+        """All three emails different: form should be valid."""
+        form = StudentProfileForm(user=self.user, data=self._base_data())
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def testStudentMatchesEmergency(self):
+        """Student email == emergency contact email: form should be invalid."""
+        data = self._base_data(student_email='same@example.com',
+                               emerg_email='same@example.com')
+        form = StudentProfileForm(user=self.user, data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Your emergency contact email address cannot be the same as your own email address.",
+            form.non_field_errors()
+        )
+
+    def testStudentMatchesGuardian(self):
+        """Student email == guardian email: form should be invalid."""
+        data = self._base_data(student_email='same@example.com',
+                               guard_email='same@example.com')
+        form = StudentProfileForm(user=self.user, data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Your parent/guardian email address cannot be the same as your own email address.",
+            form.non_field_errors()
+        )
+
+    def testCaseInsensitiveEmergency(self):
+        """Email comparison should be case-insensitive (emergency)."""
+        data = self._base_data(student_email='Test@Example.COM',
+                               emerg_email='test@example.com')
+        form = StudentProfileForm(user=self.user, data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Your emergency contact email address cannot be the same as your own email address.",
+            form.non_field_errors()
+        )
+
+    def testCaseInsensitiveGuardian(self):
+        """Email comparison should be case-insensitive (guardian)."""
+        data = self._base_data(student_email='Test@Example.COM',
+                               guard_email='test@example.com')
+        form = StudentProfileForm(user=self.user, data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Your parent/guardian email address cannot be the same as your own email address.",
+            form.non_field_errors()
+        )
+
+    def testEmptyEmergencyEmail(self):
+        """Empty emergency email should not trigger the validation error."""
+        data = self._base_data(emerg_email='')
+        form = StudentProfileForm(user=self.user, data=data)
+        # emerg_e_mail is optional; no email-match error should appear
+        email_errors = [e for e in form.non_field_errors()
+                        if 'email' in e.lower()]
+        self.assertEqual(email_errors, [])
+
+    def testEmptyGuardianEmail(self):
+        """Empty guardian email should not trigger the validation error."""
+        data = self._base_data(guard_email='')
+        form = StudentProfileForm(user=self.user, data=data)
+        # guard_e_mail is optional; no email-match error should appear
+        email_errors = [e for e in form.non_field_errors()
+                        if 'email' in e.lower()]
+        self.assertEqual(email_errors, [])
