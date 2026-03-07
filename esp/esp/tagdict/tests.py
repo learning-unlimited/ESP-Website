@@ -6,6 +6,11 @@ from django.test import TestCase, SimpleTestCase
 from django.contrib.auth.models import User
 from esp.tagdict import all_global_tags, all_program_tags
 from esp.tagdict.models import Tag
+from esp.tagdict.validators import (
+    ALL_HIDE_FIELDS_TAG_KEYS,
+    get_valid_field_names_for_tag,
+    validate_hide_fields_value,
+)
 from esp.program.tests import ProgramFrameworkTest
 
 # Make test-only tags not raise warnings
@@ -434,3 +439,157 @@ class TagRegistrationTest(SimpleTestCase):
                 "esp.tagdict.__init__ (all_global_tags or all_program_tags):\n"
                 + tag_list
             )
+
+
+class HideFieldsValidatorTest(SimpleTestCase):
+    """Tests for the hide_fields tag validation utilities."""
+
+    def test_non_hide_fields_tag_returns_none(self):
+        """Tags that are not hide_fields tags should return None."""
+        self.assertIsNone(validate_hide_fields_value('some_other_tag', 'value'))
+        self.assertIsNone(get_valid_field_names_for_tag('some_other_tag'))
+
+    def test_all_hide_fields_tags_return_valid_fields(self):
+        """Every recognised hide_fields tag key should return a non-empty set of valid field names."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            valid_fields = get_valid_field_names_for_tag(tag_key)
+            self.assertIsNotNone(valid_fields, f"{tag_key} should be recognised")
+            self.assertIsInstance(valid_fields, set)
+            self.assertTrue(len(valid_fields) > 0, f"{tag_key} should have at least one valid field")
+
+    def test_empty_value_is_valid(self):
+        """An empty tag value should be accepted without errors."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, '')
+            self.assertEqual(valid, [])
+            self.assertEqual(invalid, [])
+
+    def test_whitespace_only_value_is_valid(self):
+        """A whitespace-only tag value should be accepted without errors."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, '   ')
+            self.assertEqual(valid, [])
+            self.assertEqual(invalid, [])
+
+    def test_valid_field_names_are_accepted(self):
+        """Known field names should appear in the valid list."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            all_fields = get_valid_field_names_for_tag(tag_key)
+            # Pick one field to test
+            sample_field = sorted(all_fields)[0]
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, sample_field)
+            self.assertIn(sample_field, valid)
+            self.assertEqual(invalid, [])
+
+    def test_invalid_field_names_are_rejected(self):
+        """Non-existent field names should appear in the invalid list."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, 'not_a_real_field')
+            self.assertEqual(valid, [])
+            self.assertIn('not_a_real_field', invalid)
+
+    def test_mixed_valid_and_invalid_fields(self):
+        """A mix of valid and invalid field names should be split correctly."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            all_fields = get_valid_field_names_for_tag(tag_key)
+            sample_field = sorted(all_fields)[0]
+            value = '%s,not_a_real_field' % sample_field
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, value)
+            self.assertIn(sample_field, valid)
+            self.assertIn('not_a_real_field', invalid)
+
+    def test_whitespace_around_field_names_is_stripped(self):
+        """Leading/trailing whitespace around field names should be ignored."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            all_fields = get_valid_field_names_for_tag(tag_key)
+            sample_field = sorted(all_fields)[0]
+            value = '  %s , not_a_real_field  ' % sample_field
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, value)
+            self.assertIn(sample_field, valid)
+            self.assertIn('not_a_real_field', invalid)
+
+    def test_trailing_comma_does_not_create_empty_entry(self):
+        """A trailing comma should not produce an empty invalid field name."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            all_fields = get_valid_field_names_for_tag(tag_key)
+            sample_field = sorted(all_fields)[0]
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, sample_field + ',')
+            self.assertIn(sample_field, valid)
+            self.assertEqual(invalid, [])
+
+    def test_case_insensitivity(self):
+        """Field name matching should be case-insensitive (values are lowered)."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            all_fields = get_valid_field_names_for_tag(tag_key)
+            sample_field = sorted(all_fields)[0]
+            # All declared field names are already lowercase in Django,
+            # so an uppercased version should still resolve correctly
+            # after the value is lowered by the validator.
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, sample_field.upper())
+            self.assertIn(sample_field, valid)
+            self.assertEqual(invalid, [])
+
+
+class TagAdminFormValidationTest(TestCase):
+    """Tests for the TagAdminForm used in the Django admin."""
+
+    def test_admin_form_rejects_invalid_hide_fields(self):
+        """Submitting an invalid field name via the admin form should fail validation."""
+        from esp.tagdict.admin import TagAdminForm
+
+        form = TagAdminForm(data={
+            'key': 'student_profile_hide_fields',
+            'value': 'not_a_real_field',
+        })
+        self.assertFalse(form.is_valid())
+        # The error should mention the invalid field name
+        error_text = str(form.errors)
+        self.assertIn('not_a_real_field', error_text)
+
+    def test_admin_form_accepts_valid_hide_fields(self):
+        """Submitting valid field names via the admin form should pass validation."""
+        from esp.tagdict.admin import TagAdminForm
+        from esp.users.forms.user_profile import StudentProfileForm
+
+        sample_field = sorted(StudentProfileForm.declared_fields.keys())[0]
+        form = TagAdminForm(data={
+            'key': 'student_profile_hide_fields',
+            'value': sample_field,
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_admin_form_accepts_empty_hide_fields(self):
+        """An empty value for a hide_fields tag should be accepted."""
+        from esp.tagdict.admin import TagAdminForm
+
+        form = TagAdminForm(data={
+            'key': 'student_profile_hide_fields',
+            'value': '',
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_admin_form_accepts_non_hide_fields_tags(self):
+        """Non-hide-fields tags should not be affected by the validation."""
+        from esp.tagdict.admin import TagAdminForm
+
+        form = TagAdminForm(data={
+            'key': 'some_random_tag',
+            'value': 'any_value',
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_admin_form_error_lists_valid_options(self):
+        """The validation error should list the valid field names."""
+        from esp.tagdict.admin import TagAdminForm
+        from esp.users.forms.user_profile import TeacherProfileForm
+
+        form = TagAdminForm(data={
+            'key': 'teacher_profile_hide_fields',
+            'value': 'bogus_field',
+        })
+        self.assertFalse(form.is_valid())
+        error_text = str(form.errors)
+        self.assertIn('bogus_field', error_text)
+        # Should mention at least one valid field
+        any_valid = sorted(TeacherProfileForm.declared_fields.keys())[0]
+        self.assertIn(any_valid, error_text)
