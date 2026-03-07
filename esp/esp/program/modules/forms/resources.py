@@ -5,7 +5,7 @@ from django.core.validators import MinValueValidator
 
 from datetime import timedelta
 
-from esp.resources.models import ResourceType, Resource, ResourceAssignment
+from esp.resources.models import ResourceType, Resource
 from esp.cal.models import EventType, Event
 from esp.program.models import Program
 from esp.utils.widgets import DateTimeWidget, DateWidget

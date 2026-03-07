@@ -106,8 +106,6 @@ class AdminMaterials(ProgramModuleObj):
 
         context = {'prog': self.program, 'module': self, 'uploadform': context_form, 'renameform': context_rename_form}
 
-        classes = ClassSubject.objects.filter(parent_program = prog)
-
         return render_to_response(self.baseDir()+'listmaterials.html', request, context)
 
     def isStep(self):

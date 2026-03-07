@@ -1,5 +1,4 @@
 from selenium.webdriver.support.ui import WebDriverWait
-import time
 
 def noActiveAjaxJQuery(driver):
     return driver.execute_script("return $j.active == 0")

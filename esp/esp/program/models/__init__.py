@@ -33,12 +33,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import copy
 import re
 from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
-import random
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -59,15 +57,14 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from argcache import cache_function, cache_function_for, wildcard
-from esp.cal.models import Event, EventType
+from esp.cal.models import Event
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
-from esp.middleware import ESPError, AjaxError
+from esp.middleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
-from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
 # Create your models here.
@@ -232,7 +229,6 @@ class ArchiveClass(models.Model):
         """ Get a list of archive classes for a specific user. """
         from django.db.models.query import Q
         Q_ClassTeacher = Q(teacher_ids__icontains = ('|%s|' % user.id))
-        Q_ClassStudent = Q(student_ids__icontains = ('|%s|' % user.id))
         #   We want to only show archive classes for teachers.  At least for now.
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
         return ArchiveClass.objects.filter(Q_Class).order_by('-year', '-date', 'title')
@@ -419,7 +415,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def checked_in_by_section_id(self):
         from esp.program.models.class_ import sections_in_program_by_id
-        section_ids = sections_in_program_by_id(self)
+        sections_in_program_by_id(self)
 
         counts = {}
         students = self.students(True)
@@ -437,7 +433,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def student_counts_by_section_id(self):
         from esp.program.models.class_ import sections_in_program_by_id
-        section_ids = sections_in_program_by_id(self)
+        sections_in_program_by_id(self)
 
         class_cachekey = "class_size_counter_%d"
         counts = cache.get_many([class_cachekey % x for x in section_ids])
@@ -478,9 +474,6 @@ class Program(models.Model, CustomFormsLinkModel):
         lists = self.students(QObjects)
         lists.update(self.teachers(QObjects))
         lists.update(self.volunteers(QObjects))
-        learnmodules = self.getModules(None)
-        teachmodules = self.getModules(None)
-
 
         for k, v in lists.items():
             lists[k] = {'list': v,
@@ -725,7 +718,7 @@ class Program(models.Model, CustomFormsLinkModel):
             try:
                 pk = int(pk)
                 cc = ClassCategories.objects.get(pk=pk)
-            except (ValueError, TypeError, ClassCategories.DoesNotExist) as e:
+            except (ValueError, TypeError, ClassCategories.DoesNotExist):
                 pass
         if cc is None:
             cc = ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
@@ -1092,7 +1085,6 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
-        from esp.program.modules.module_ext import ClassRegModuleInfo
         from decimal import Decimal
 
         times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
@@ -2030,7 +2022,7 @@ class ScheduleConstraint(models.Model):
             exec(func_str)
             result = _f(self.schedule_map)
             return result
-        except Exception as inst:
+        except Exception:
             #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
             pass
         #   If we got nothing from the on_failure function, just provide Nones.
@@ -2318,5 +2310,3 @@ def install():
 
 # The following are only so that we can refer to them in caching
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-from esp.resources.models import ResourceType

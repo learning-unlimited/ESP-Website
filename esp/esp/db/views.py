@@ -1,5 +1,4 @@
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core import serializers
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 import json
 
@@ -37,7 +36,7 @@ def ajax_autocomplete(request):
         ajax_func    = request.GET.get('ajax_func', 'ajax_autocomplete')
         data         = request.GET['ajax_data']
         prog         = request.GET['prog']
-    except KeyError as ValueError:
+    except (KeyError, ValueError):
         # bad request
         response = HttpResponse('Malformed Input')
         response.status_code = 400

@@ -36,7 +36,6 @@ from django.conf import settings
 
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.models import Form
-from esp.middleware import ESPError
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
@@ -119,7 +118,7 @@ class AllViewsTest(ProgramFrameworkTest):
             'desc': 'Test'
         }
 
-        response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         form = Form.objects.filter(title='Test Form')[0]
         Tag.setTag(key='learn_extraform_id', value=form.id, target=self.program)
         Tag.setTag(key='teach_extraform_id', value=form.id, target=self.program)

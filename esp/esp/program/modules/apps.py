@@ -7,4 +7,3 @@ class ModulesConfig(InstallConfig):
         super().ready()
         # TODO(benkraft): add a thing to InstallConfig that imports a signals
         # file if one exists.
-        import esp.program.modules.signals

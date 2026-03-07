@@ -1,4 +1,4 @@
-from esp.customforms.models import Field, Attribute, Section, Page, Form
+from esp.customforms.models import Field
 from django import forms
 from django.forms.models import fields_for_model
 from django.utils.safestring import mark_safe
@@ -6,15 +6,11 @@ from form_utils.forms import BetterForm
 from collections import OrderedDict
 from formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
-from django.shortcuts import redirect, HttpResponse
 from django.http import HttpResponseRedirect
-from localflavor.us.forms import USStateField, USStateSelect
-from phonenumber_field.formfields import PhoneNumberField
-from esp.customforms.forms import NameField, AddressField
 from esp.customforms.DynamicModel import DMH
 from esp.tagdict.models import Tag
 from esp.utils.forms import DummyField
-from esp.users.models import ContactInfo, ESPUser
+from esp.users.models import ESPUser
 from argcache import cache_function
 from esp.program.models import Program
 
@@ -309,7 +305,6 @@ class FormStorage(FileSystemStorage):
     """
     The Storage subclass used to temporarily store submitted files.
     """
-    pass
 
 class ComboForm(SessionWizardView):
     """
@@ -398,10 +393,9 @@ class ComboForm(SessionWizardView):
                 # TODO-> the following update won't work for fk fields.
                 v['instance'].__dict__.update(v['data'])
                 v['instance'].save()
-                curr_instance = v['instance']
             else:
                 try:
-                    new_instance = v['model'].objects.create(**v['data'])
+                    v['model'].objects.create(**v['data'])
                 except Exception:
                     # show some error message
                     pass

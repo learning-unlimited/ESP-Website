@@ -33,20 +33,14 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.qsd.models import QuasiStaticData
-from esp.users.models import ContactInfo, Permission
-from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
+from esp.users.models import Permission
+from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.utils.web import render_to_response
-from django.http import HttpResponse, Http404, HttpResponseNotAllowed, JsonResponse
-from esp.qsdmedia.models import Media
-from os.path import basename, dirname
+from django.http import HttpResponse, Http404, JsonResponse
 from datetime import datetime
-from django.core.cache import cache
-from django.template.defaultfilters import urlencode
 from esp.middleware import Http403
 from esp.utils.no_autocookie import disable_csrf_cookie_update
-from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
-from django.views.decorators.vary import vary_on_cookie
-from django.views.decorators.cache import cache_control
+from django.utils.cache import patch_cache_control
 from esp.varnish.varnish import purge_page
 from urllib.parse import urlparse
 from bleach import clean

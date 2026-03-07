@@ -1,14 +1,13 @@
 from esp.mailman import add_list_member
-from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
+from esp.program.models import ClassSubject, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.resources.forms import ResourceRequestFormSet
-from esp.resources.models import ResourceType, ResourceRequest
+from esp.resources.models import ResourceRequest
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 
 from esp.dbmail.models import send_mail
-from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from collections import OrderedDict
 from django.db import transaction

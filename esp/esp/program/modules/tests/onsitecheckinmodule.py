@@ -36,7 +36,7 @@ import json
 
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import ESPUser, Record
+from esp.users.models import Record
 
 
 class OnSiteCheckinModuleTest(ProgramFrameworkTest):

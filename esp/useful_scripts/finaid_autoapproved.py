@@ -7,7 +7,6 @@
 # PROGRAM_ID before running.
 #
 
-from script_setup import *
 from esp.program.models import FinancialAidRequest
 
 # CONFIGURATION

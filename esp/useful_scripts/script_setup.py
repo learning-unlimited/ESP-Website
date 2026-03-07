@@ -19,7 +19,6 @@ if os.environ.get('VIRTUAL_ENV') is None:
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "esp.settings")
 
 from django.apps import apps
-from django.conf import settings as S
 import django
 
 django.setup()
@@ -27,4 +26,3 @@ django.setup()
 for m in apps.get_models():
     globals()[m.__name__] = m
 
-from esp.utils.shell_utils import *

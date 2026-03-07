@@ -39,22 +39,18 @@ import datetime
 import openpyxl
 import re
 from io import BytesIO
-from django.db import models
-from django.db.models import Q
 from esp.users.models import ESPUser, Record, RecordType, admin_required
-from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
-from esp.survey.models import Question, Survey, SurveyResponse, Answer
+from esp.program.models import Program, StudentRegistration, RegistrationType, ClassSection
+from esp.survey.models import SurveyResponse, Answer
 from esp.utils.web import render_to_response
 from esp.utils.latex import render_to_latex
-from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.forms.generic_search_form import ApprovedTeacherSearchForm
 from django.http import Http404, HttpResponse
-from wsgiref.util import FileWrapper
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, Min
+from django.db.models import Min
 
 @login_required
 def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):
@@ -304,7 +300,7 @@ def delist(x):
 
 
 def dump_survey_xlsx(user, prog, surveys, request, tl):
-    from esp.program.models import ClassSubject, ClassSection
+    from esp.program.models import ClassSection
     if tl == 'manage' and not 'teacher_id' in request.GET and not 'classsection_id' in request.GET and not 'classsubject_id' in request.GET:
         wb = openpyxl.Workbook()
         wb.remove(wb.active)

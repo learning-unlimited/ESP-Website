@@ -41,7 +41,6 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 from django.utils.unittest.case import skipUnless
 from django_selenium.testcases import SeleniumTestCase
-from selenium import selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 

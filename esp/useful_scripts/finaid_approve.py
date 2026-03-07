@@ -5,7 +5,6 @@
 # Approves not-yet-approved requests where both answers are non-blank/None/whitespace
 # and prints the email address of these users to the screen.
 
-from script_setup import *
 
 from esp.program.models import FinancialAidRequest
 from esp.accounting.models import FinancialAidGrant

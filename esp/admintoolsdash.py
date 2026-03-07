@@ -11,10 +11,9 @@ And to activate the app index dashboard::
 """
 
 from django.utils.translation import ugettext as _
-from django.urls import reverse
 
 from admin_tools.dashboard import modules, Dashboard, AppIndexDashboard
-from admin_tools.utils import get_admin_site_name, get_avail_models
+from admin_tools.utils import get_avail_models
 from django.apps import apps as django_apps
 
 
@@ -23,7 +22,6 @@ class CustomIndexDashboard(Dashboard):
     Custom index dashboard for esp.
     """
     def init_with_context(self, context):
-        site_name = get_admin_site_name(context)
         # append a link list module for "quick links"
         self.children.append(modules.LinkList(
             _('Quick links'),

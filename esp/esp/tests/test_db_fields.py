@@ -6,7 +6,6 @@ Tests AjaxForeignKey custom field.
 """
 from django.contrib.auth.models import Group
 
-from esp.accounting.models import Account
 from esp.db.fields import AjaxForeignKey
 from esp.tests.util import CacheFlushTestCase as TestCase
 

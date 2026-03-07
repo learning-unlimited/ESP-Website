@@ -32,12 +32,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.users.models import ContactInfo, ESPUser
-from esp.program.models import ArchiveClass, ClassSubject, ClassCategories
+from esp.program.models import ArchiveClass, ClassCategories
 from esp.utils.web import render_to_response
-from django.db.models.query import QuerySet
-from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
-from django.contrib.auth.decorators import login_required
 from datetime import datetime
 
 #    Two inputs to each function:

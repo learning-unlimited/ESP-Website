@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-from esp.program.models import Program
 from esp.utils.widgets import RadioSelectWithData
 
 class SiblingDiscountForm(forms.Form):

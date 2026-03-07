@@ -3,7 +3,6 @@
 
 from django.db import migrations, models
 import django.db.models.deletion
-import math
 
 def fill_requests(apps, schema_editor):
     TextOfEmail = apps.get_model('dbmail', 'TextOfEmail')

@@ -4,7 +4,7 @@ Source: esp/esp/formstack/objects.py
 
 Tests FormstackForm and FormstackSubmission objects.
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from esp.formstack.objects import FormstackForm, FormstackSubmission
 from esp.tests.util import CacheFlushTestCase as TestCase

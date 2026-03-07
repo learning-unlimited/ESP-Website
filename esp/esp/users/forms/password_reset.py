@@ -2,7 +2,7 @@
 
 from django import forms
 from esp.users.models import ESPUser
-from django.utils.html import conditional_escape, mark_safe
+from django.utils.html import mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
 
 __all__ = ['PasswordResetForm', 'UserPasswdForm']
@@ -25,7 +25,7 @@ class PasswordResetForm(forms.Form):
         if self.cleaned_data['username'].strip() == '': return ''
 
         try:
-            user = ESPUser.objects.get(username=self.cleaned_data['username'])
+            ESPUser.objects.get(username=self.cleaned_data['username'])
         except ESPUser.DoesNotExist:
             raise forms.ValidationError("User '%s' does not exist." % self.cleaned_data['username'])
 

@@ -37,7 +37,6 @@ import re
 import unicodedata
 
 from django.conf import settings
-from esp.middleware import ESPError
 from esp.users.models import StudentInfo, K12School, RecordType
 from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
 from esp.dbmail.models import PlainRedirect

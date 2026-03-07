@@ -119,4 +119,3 @@ class Comment(models.Model):
         ordering = ['-post_ts']
 
 # This import is necessary to prevent argcache errors
-import esp.miniblog.views

@@ -2,9 +2,8 @@ from copy import deepcopy
 import json
 
 from django.db import transaction
-from django.shortcuts import redirect, HttpResponse
+from django.shortcuts import HttpResponse
 from django.http import Http404, HttpResponseRedirect, JsonResponse
-from django.db import connection
 from django.core.serializers.json import DjangoJSONEncoder
 
 from esp.customforms.models import *
@@ -13,7 +12,6 @@ from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.linkfields import cf_cache
 from esp.tagdict.models import Tag
-from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.decorators import user_passes_test, login_required
 
 from esp.users.models import ESPUser
@@ -148,7 +146,7 @@ def onSubmit(request):
 
                             # inserting other attributes, if any
                             for atype, aval in field['data']['attrs'].items():
-                                new_attr = Attribute.objects.create(field=new_field, attr_type=atype, value=aval)
+                                Attribute.objects.create(field=new_field, attr_type=atype, value=aval)
 
                 dynH = DMH(form=form, fields=fields)
                 dynH.createTable()

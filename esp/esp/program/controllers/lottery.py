@@ -45,9 +45,8 @@ import numpy.random
 from datetime import date, datetime
 
 from esp.cal.models import Event
-from esp.users.models import ESPUser, StudentInfo
+from esp.users.models import ESPUser
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile, ClassSection
-from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_members, remove_list_member, list_contents
 from esp.tagdict.models import Tag
 
@@ -62,7 +61,6 @@ from io import BytesIO
 
 class LotteryException(Exception):
     """ Top level exception class for lottery related problems.  """
-    pass
 
 class LotterySectionException(LotteryException):
     """ Something is wrong with a class section.    """
@@ -255,7 +253,6 @@ class LotteryAssignmentController(object):
             if ts_day not in dates:
                 dates.append(ts_day)
         lunch_by_day = [[] for x in dates]
-        ts_count = 0
         for ts in lunch_timeslots:
             d = date(ts.start.year, ts.start.month, ts.start.day)
             lunch_by_day[dates.index(d)].append(ts.id)
@@ -540,7 +537,7 @@ class LotteryAssignmentController(object):
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
         with numpy.errstate(divide=np_errstate, invalid=np_errstate):
-            interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
+            numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
 
         if self.effective_priority_limit > 1:
             for i in range(1, self.effective_priority_limit+1):

@@ -40,7 +40,6 @@ class MiniblogNode(template.Node):
 
 def parse_from_re(token, matching_rules):
 
-    tag = token.contents.split()[0]
     try:
         tag_name, arg = token.contents.split(None, 1)
     except ValueError:

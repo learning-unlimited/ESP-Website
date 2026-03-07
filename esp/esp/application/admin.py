@@ -37,7 +37,6 @@ from django.utils import html
 
 from esp.admin import admin_site
 
-from esp.program.models import ClassSubject
 from esp.formstack.objects import get_forms_for_api_key, get_form_by_id
 from esp.application.models import FormstackAppSettings, FormstackStudentProgramApp, FormstackStudentClassApp
 
