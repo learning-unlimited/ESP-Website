@@ -10,7 +10,7 @@ class CacheControlMiddlewareTest(TestCase):
     def test_adds_cache_control_when_missing(self):
         request = self.factory.get('/')
         response = HttpResponse()
-        
+
         processed_response = self.middleware.process_response(request, response)
 
         self.assertEqual(processed_response.get('Cache-Control'), 'private, no-cache')
@@ -19,7 +19,7 @@ class CacheControlMiddlewareTest(TestCase):
         request = self.factory.get('/')
         response = HttpResponse()
         response['Cache-Control'] = 'max-age=3600'
-        
+
         processed_response = self.middleware.process_response(request, response)
 
         self.assertEqual(processed_response.get('Cache-Control'), 'max-age=3600')
