@@ -1,8 +1,8 @@
-from django.utils.encoding import python_2_unicode_compatible
 import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
+from django.db.utils import ProgrammingError, OperationalError
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from argcache import cache_function
@@ -14,7 +14,6 @@ from esp.tagdict import all_global_tags, all_program_tags
 # documentation, as described at
 # http://www.djangoproject.com/documentation/models/generic_relations/
 
-@python_2_unicode_compatible
 class Tag(models.Model):
     """A tag on an item."""
     key = models.SlugField(db_index=True)
@@ -89,6 +88,13 @@ class Tag(models.Model):
                 return cls.objects.get(key=key, content_type__isnull=True, object_id__isnull=True).value
         except cls.DoesNotExist:
             return default
+        except (ProgrammingError, OperationalError) as e:
+            # Table may not exist yet (e.g. during migrations when another app's
+            # migration runs code that touches Tag before tagdict has been migrated).
+            err = str(e).lower()
+            if 'does not exist' in err or 'no such table' in err:
+                return default
+            raise
     _getTag.depend_on_row('tagdict.Tag', lambda tag: {'key': tag.key, 'target': tag.target})
     _getTag = classmethod(_getTag)
 

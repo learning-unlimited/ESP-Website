@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -72,7 +71,6 @@ from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
 # Create your models here.
-@python_2_unicode_compatible
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
@@ -137,7 +135,6 @@ class ProgramModule(models.Model):
     def __str__(self):
         return '{}'.format(self.admin_title)
 
-@python_2_unicode_compatible
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
     program = models.CharField(max_length=256)
@@ -254,7 +251,6 @@ def _get_type_url(type):
 
     return _really_get_type_url
 
-@python_2_unicode_compatible
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
@@ -519,6 +515,22 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return lists
 
+    def get_test_user_ids(self):
+        """Return PKs of the designated test accounts for this program.
+
+        Test accounts are stored as program-scoped Tags so that no migration
+        is needed.  Keys: 'test_student_id', 'test_teacher_id'.
+        """
+        ids = set()
+        for key in ('test_student_id', 'test_teacher_id'):
+            val = Tag.getTag(key, target=self)
+            if val:
+                try:
+                    ids.add(int(val))
+                except (ValueError, TypeError):
+                    pass
+        return ids
+
     def students_union(self, QObject = False):
         import operator
         if len(list(self.students().values())) == 0:
@@ -531,7 +543,11 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return ESPUser.objects.filter(union).distinct()
+            test_ids = self.get_test_user_ids()
+            qs = ESPUser.objects.filter(union).distinct()
+            if test_ids:
+                qs = qs.exclude(id__in=test_ids)
+            return qs
 
     def teachers_union(self, QObject = False):
         import operator
@@ -544,7 +560,11 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return ESPUser.objects.filter(union).distinct()
+            test_ids = self.get_test_user_ids()
+            qs = ESPUser.objects.filter(union).distinct()
+            if test_ids:
+                qs = qs.exclude(id__in=test_ids)
+            return qs
 
     def volunteers_union(self, QObject = False):
         import operator
@@ -999,9 +1019,7 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return None
 
-    def get_teacher_event_times(self, event_type):
-        """event_type should be 'interview' or 'training'"""
-        event_type_obj = EventType.teacher_event_types()[event_type]
+    def get_teacher_event_times(self, event_type_obj):
         return Event.objects.filter(
             program=self, event_type=event_type_obj).order_by('start')
 
@@ -1051,8 +1069,26 @@ class Program(models.Model, CustomFormsLinkModel):
             return [result[c] for c in result]
 
     def getAvailableResources(self, timeslot, queryset=False):
-        #   Filters down the floating resources to those that are not taken.
-        return [x for x in self.getFloatingResources(timeslot=timeslot, queryset=queryset) if x.is_available()]
+        from esp.resources.models import ResourceAssignment
+        #   Filters down the floating resources to those that are not taken
+        #   and that have been returned from any earlier assignment.
+        floating = list(self.getFloatingResources(timeslot=timeslot, queryset=queryset))
+        if not floating:
+            return []
+        floating_names = [r.name for r in floating]
+        floating_type_ids = set(r.res_type_id for r in floating)
+        unreturned_keys = set(
+            ResourceAssignment.objects.filter(
+                resource__name__in=floating_names,
+                resource__res_type_id__in=floating_type_ids,
+                resource__event__end__lte=timeslot.start,
+                resource__event__program=self,
+                resource__is_unique=True,
+                returned=False,
+            ).values_list('resource__name', 'resource__res_type_id')
+        )
+        return [x for x in floating
+                if x.is_available() and (x.name, x.res_type_id) not in unreturned_keys]
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
@@ -1088,6 +1124,35 @@ class Program(models.Model, CustomFormsLinkModel):
         durationList = list(durationDict.items())
 
         return sorted(durationList, key=lambda x: x[0])
+
+    def countTimeSlots(self, round_15=False):
+        """Calculate the number of instances of each duration that can fit in a given block. Returns dictionary mapping timeslot length to number of timeslots"""
+        from decimal import Decimal
+
+        times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
+        durations = [x[0] for x in self.getDurations(round_15)]
+        numDurations = {}
+
+        #iterates over all durations
+        for duration in durations:
+            numDurations[str(duration.quantize(Decimal('.01')))] = 0
+            lenDuration = duration * 3600
+            #iterates over blocks
+            for block in times:
+                numSections = len(block)
+                i = 0
+                while i < numSections:
+                    #makes an increasing list of lengths for each block, section by section
+                    for j in range(i, numSections):
+                        time_option = Event.total_length([block[i], block[j]])
+                        #if enough time exists, increment
+                        if lenDuration <= time_option.seconds:
+                            numDurations[str(duration.quantize(Decimal('.01')))] += 1
+                            i = j
+                            break
+                    i += 1
+
+        return numDurations
 
     def getSurveys(self):
         from esp.survey.models import Survey
@@ -1354,7 +1419,6 @@ class Program(models.Model, CustomFormsLinkModel):
 
 Program.setup_user_filters()
 
-@python_2_unicode_compatible
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
         a program.  Stanford has used this for lunch selection and a sibling discount.
@@ -1415,7 +1479,6 @@ class SplashInfo(models.Model):
         super().save()
         self.execute_sibling_discount()
 
-@python_2_unicode_compatible
 class RegistrationProfile(models.Model):
     """ A student registration form """
     user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
@@ -1480,6 +1543,7 @@ class RegistrationProfile(models.Model):
 
         return regProf
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
+    getLastProfile.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
 
     @cache_function
@@ -1557,6 +1621,7 @@ class RegistrationProfile(models.Model):
     # Thanks to our attempts to be smart and steal profiles from other programs,
     # the cache can't depend only on profiles with the same (user, program).
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
+    getLastForProgram.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastForProgram = staticmethod(getLastForProgram)
 
     def __str__(self):
@@ -1638,7 +1703,6 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
-@python_2_unicode_compatible
 class FinancialAidRequest(models.Model):
     """
     Student financial Aid Request
@@ -1727,14 +1791,13 @@ def get_subclass_instance(cls, obj):
         result = None
         try:
             result = c.objects.get(id=obj.id)
-        except:
+        except c.DoesNotExist:
             pass
         if result:
             return get_subclass_instance(c, result)
     #   If you couldn't find any, return the original object.
     return obj
 
-@python_2_unicode_compatible
 class BooleanToken(models.Model):
     """ A true/false value or Boolean operation.
         Meant to be extended to more meaningful Boolean functions operating on
@@ -1813,7 +1876,6 @@ class BooleanToken(models.Model):
         else:
             return False
 
-@python_2_unicode_compatible
 class BooleanExpression(models.Model):
     """ A combination of BooleanTokens that can be manipulated and evaluated.
         Arbitrary arguments can be supplied to the evaluate function in order
@@ -1874,7 +1936,6 @@ class BooleanExpression(models.Model):
         (value, post_stack) = BooleanToken.evaluate(stack, *args, **kwargs)
         return value
 
-@python_2_unicode_compatible
 class ScheduleMap:
     """ The schedule map is a dictionary mapping Event IDs to lists of class sections.
         It can be generated and cached for a user, then modified
@@ -1914,7 +1975,6 @@ class ScheduleMap:
     def __str__(self):
         return '%s' % self.map
 
-@python_2_unicode_compatible
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested:
         IF [condition] THEN [requirement]
@@ -2051,7 +2111,6 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
 
         return cls.objects.filter( reduce(operator.or_, q_list) )
 
-@python_2_unicode_compatible
 class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program, on_delete=models.CASCADE)
     timeslot = models.ForeignKey('cal.Event', on_delete=models.CASCADE)
@@ -2069,7 +2128,6 @@ class VolunteerRequest(models.Model):
     def __str__(self):
         return '%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
 
-@python_2_unicode_compatible
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest, on_delete=models.CASCADE)
     confirmed = models.BooleanField(default=False)
@@ -2108,7 +2166,6 @@ class VolunteerOffer(models.Model):
     Note: These models fit better in class_.py but cause validation errors
     due to Django's import scheme if they are placed there.
 """
-@python_2_unicode_compatible
 class RegistrationType(models.Model):
     #   The 'key' (not really the primary key since we may want duplicate names)
     name = models.CharField(max_length=32)
@@ -2157,7 +2214,6 @@ class RegistrationType(models.Model):
         else:
             return self.name
 
-@python_2_unicode_compatible
 class PhaseZeroRecord(models.Model):
     def __str__(self):
         return str(self.id)
@@ -2171,7 +2227,6 @@ class PhaseZeroRecord(models.Model):
         return ', '.join([user.username for user in self.user.all()])
     display_user.short_description = 'Username(s)'
 
-@python_2_unicode_compatible
 class ModeratorRecord(models.Model):
     def __str__(self):
         return str(self.id)
@@ -2186,7 +2241,6 @@ class ModeratorRecord(models.Model):
     class Meta:
         app_label = 'program'
 
-@python_2_unicode_compatible
 class StudentRegistration(ExpirableModel):
     """
     Model relating a student with a class section (interest, priority,
@@ -2202,7 +2256,6 @@ class StudentRegistration(ExpirableModel):
     def __str__(self):
         return '%s %s in %s' % (self.user, self.relationship, self.section)
 
-@python_2_unicode_compatible
 class StudentSubjectInterest(ExpirableModel):
     """
     Model indicating a student interest in a class section.
