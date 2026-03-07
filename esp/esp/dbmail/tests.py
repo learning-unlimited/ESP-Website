@@ -347,3 +347,73 @@ class PlainRedirectValidationTest(TestCase):
 
         self.assertIn('destination', error.exception.message_dict)
         self.assertIn('<empty>', error.exception.message_dict['destination'][0])
+
+
+class PlainListRecipientPrivacyTest(TestCase):
+    """Test that PlainList splits comma-separated destinations into individual
+    recipients so that each person receives their own email (protecting
+    recipient privacy).  Fixes #2393."""
+
+    def _make_handler(self):
+        """Return a PlainList instance with a minimal stub handler/message."""
+        from esp.dbmail.receivers.plainlist import PlainList
+        from esp.dbmail.base import BaseHandler
+
+        class _StubHandler:
+            cc_all = False
+        return PlainList(_StubHandler(), None)
+
+    def test_single_address_destination(self):
+        """A redirect with a single destination should produce one recipient."""
+        from esp.dbmail.receivers.plainlist import PlainList
+        PlainRedirect.objects.create(original='directors', destination='alice@example.com')
+        handler = self._make_handler()
+        handler.process('directors', 'directors')
+        self.assertEqual(handler.recipients, ['alice@example.com'])
+
+    def test_multi_address_destination_splits(self):
+        """A redirect whose destination contains multiple comma-separated
+        addresses must be split into individual recipients so that each
+        person's email is not exposed to the others (#2393)."""
+        from esp.dbmail.receivers.plainlist import PlainList
+        PlainRedirect.objects.create(
+            original='board',
+            destination='alice@example.com, bob@example.com, carol@example.com',
+        )
+        handler = self._make_handler()
+        handler.process('board', 'board')
+        self.assertEqual(handler.recipients, [
+            'alice@example.com',
+            'bob@example.com',
+            'carol@example.com',
+        ])
+
+    def test_multi_redirect_objects_combined(self):
+        """Multiple PlainRedirect rows for the same original should have all
+        their individual addresses collected."""
+        from esp.dbmail.receivers.plainlist import PlainList
+        PlainRedirect.objects.create(original='staff', destination='alice@example.com, bob@example.com')
+        PlainRedirect.objects.create(original='staff', destination='carol@example.com')
+        handler = self._make_handler()
+        handler.process('staff', 'staff')
+        self.assertIn('alice@example.com', handler.recipients)
+        self.assertIn('bob@example.com', handler.recipients)
+        self.assertIn('carol@example.com', handler.recipients)
+        self.assertEqual(len(handler.recipients), 3)
+
+    def test_whitespace_in_destinations_trimmed(self):
+        """Extra whitespace around addresses should be stripped."""
+        from esp.dbmail.receivers.plainlist import PlainList
+        PlainRedirect.objects.create(
+            original='test',
+            destination='  alice@example.com ,  bob@example.com  ',
+        )
+        handler = self._make_handler()
+        handler.process('test', 'test')
+        self.assertEqual(handler.recipients, ['alice@example.com', 'bob@example.com'])
+
+    def test_no_matching_redirect_does_not_send(self):
+        """If no PlainRedirect matches, send should remain False."""
+        handler = self._make_handler()
+        handler.process('nonexistent', 'nonexistent')
+        self.assertFalse(handler.send)
