@@ -28,6 +28,16 @@ from esp import utils
 from esp.utils import query_builder
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
+from django.test import TestCase, Client
+from django.contrib.auth.models import User
+from esp.utils.models import TemplateOverride
+
+from esp.utils.property import PropertyDict, FlatListItem
+from django.test import TestCase
+
+from django.http import HttpResponse
+from django.test import TestCase, RequestFactory
+from esp.middleware.fixiemiddleware import FixIEMiddleware
 
 # Code from <http://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
@@ -534,3 +544,170 @@ def suite():
     return s
 
 
+class DiffTemplateOverrideViewTests(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser(
+            username="admin",
+            email="admin@test.com",
+            password="pass"
+        )
+        self.user = User.objects.create_user(
+            username="user",
+            password="pass"
+        )
+        self.override = TemplateOverride.objects.create(
+            name="test_template.html",
+            content="Hello Override",
+            version=1
+        )
+
+    def test_admin_can_access_diff(self):
+        self.client.login(username="admin", password="pass")
+        response = self.client.get(
+            f"/manage/templateoverride/{self.override.id}"
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_non_admin_blocked(self):
+        self.client.login(username="user", password="pass")
+        response = self.client.get(
+            f"/manage/templateoverride/{self.override.id}"
+        )
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_invalid_template_id_404(self):
+        self.client.login(username="admin", password="pass")
+        response = self.client.get(
+            "/manage/templateoverride/9999"
+        )
+        self.assertEqual(response.status_code, 404)
+        
+
+
+class PropertyDictTests(TestCase):
+    def test_merge_adds_new_key(self):
+        base = PropertyDict({"a": 1})
+        base.merge({"b": 2})
+
+        self.assertEqual(base["a"], 1)
+        self.assertEqual(base["b"], 2)
+    
+    def test_merge_overwrites_scalar_value(self):
+        base = PropertyDict({"a": 1})
+        base.merge({"a": 4})
+
+        self.assertEqual(base["a"], 4)
+    
+    def test_merge_appends_list_values(self):
+        base = PropertyDict({"a": [1, 2]})
+        base.merge({"a": [3]})
+
+        self.assertEqual(base["a"], [1, 2, 3])
+        
+    def test_merge_dict_values(self):
+        base = PropertyDict({"a": {"x": 1}})
+        base.merge({"a": {"y": 2}})
+
+        self.assertEqual(base["a"]["x"], 1)
+        self.assertEqual(base["a"]["y"], 2)
+        
+    def test_flatten_returns_flatlistitems(self):
+        base = PropertyDict({"a": 1, "b": 2})
+        flat = base.flatten()
+
+        self.assertEqual(len(flat), 2)
+
+        keys = [item.key for item in flat]
+        values = [item.value for item in flat]
+
+        self.assertIn("a", keys)
+        self.assertIn("b", keys)
+        self.assertIn(1, values)
+        self.assertIn(2, values)
+    
+    def test_merge_propertydict_values(self):
+        base = PropertyDict({"a": PropertyDict({"x": 1})})
+        other = {"a": PropertyDict({"y": 2})}
+
+        base.merge(other)
+
+        self.assertEqual(base["a"]["x"], 1)
+        self.assertEqual(base["a"]["y"], 2)
+        
+
+
+class FixIEMiddlewareTests(TestCase):
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.middleware = FixIEMiddleware()
+        
+    def test_non_ie_user_agent_no_change(self):
+        request = self.factory.get("/")
+        request.META["User-Agent"] = "Mozilla Firefox"
+
+        response = HttpResponse("OK")
+        response.mimetype = "application/json"
+        response["Vary"] = "Cookie"
+
+        processed = self.middleware.process_response(request, response)
+
+        self.assertEqual(processed["Vary"], "Cookie")
+    
+    def test_ie_unsafe_mime_removes_vary_and_sets_cache_headers(self):
+        request = self.factory.get("/")
+        request.META["User-Agent"] = "MSIE 10.0"
+
+        response = HttpResponse("OK")
+        response.mimetype = "application/json"   # unsafe mime
+        response["Vary"] = "Cookie"
+
+        processed = self.middleware.process_response(request, response)
+
+        self.assertNotIn("Vary", processed)
+        self.assertEqual(processed["Pragma"], "no-cache")
+        self.assertEqual(
+            processed["Cache-Control"],
+            "no-cache, must-revalidate"
+        )
+    
+    def test_ie_safe_mime_no_change(self):
+        request = self.factory.get("/")
+        request.META["User-Agent"] = "MSIE 10.0"
+
+        response = HttpResponse("OK")
+        response.mimetype = "text/html"   # safe mime
+        response["Vary"] = "Cookie"
+
+        processed = self.middleware.process_response(request, response)
+
+        self.assertEqual(processed["Vary"], "Cookie")
+        self.assertNotIn("Pragma", processed)
+        self.assertNotIn("Cache-Control", processed)
+    
+    def test_missing_user_agent_no_crash(self):
+        request = self.factory.get("/")
+        # Do NOT set request.META["User-Agent"]
+
+        response = HttpResponse("OK")
+        response.mimetype = "application/json"
+        response["Vary"] = "Cookie"
+
+        processed = self.middleware.process_response(request, response)
+
+        self.assertEqual(processed["Vary"], "Cookie")
+        
+    def test_ie_unsafe_mime_without_vary_header(self):
+        request = self.factory.get("/")
+        request.META["User-Agent"] = "MSIE 10.0"
+
+        response = HttpResponse("OK")
+        response.mimetype = "application/json"
+        # Do NOT set response["Vary"]
+
+        processed = self.middleware.process_response(request, response)
+
+        # Should not crash and should return response
+        self.assertIsNotNone(processed)
