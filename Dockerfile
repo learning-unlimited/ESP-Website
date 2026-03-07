@@ -12,7 +12,9 @@ WORKDIR /app
 
 # Install system dependencies from packages_base.txt to avoid duplication.
 COPY esp/packages_base.txt /tmp/packages_base.txt
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Enable eatmydata to drastically speed up apt-get I/O operations
+RUN apt-get update && apt-get install -y --no-install-recommends eatmydata \
+    && eatmydata apt-get install -y --no-install-recommends \
     $(cat /tmp/packages_base.txt | grep -v '^python' | grep -v '^#' | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 

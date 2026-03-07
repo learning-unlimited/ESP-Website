@@ -5,14 +5,14 @@ texlive-latex-extra
 imagemagick
 dvipng
 python3.7
-postgresql
+postgresql-client
 libevent-dev
 python3.7-dev
 zlib1g-dev
 inkscape
 wamerican-large
 wget
-memcached
+
 libmemcached-dev
 libpq-dev
 libcurl4-openssl-dev
