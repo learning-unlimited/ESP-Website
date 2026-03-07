@@ -7,7 +7,7 @@ import django.db.models.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('program', '0030_auto_20260106_2204'),
+        ('program', '0031_classflagtype_teacher_visibility'),
     ]
 
     operations = [
