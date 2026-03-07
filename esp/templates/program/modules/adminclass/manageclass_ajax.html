@@ -17,7 +17,7 @@
  <td>
    {{ form.meeting_times }} {% if form.meeting_times.errors %}
    <br />
-   <span class="form_error">{{ form.meeting_times.errors|join:", " }}</span>
+   <span class="form_error" role="alert">{{ form.meeting_times.errors|join:", " }}</span>
    {% endif %}
    <br />
    Preferred Duration: {{class.prettyDuration }}
@@ -27,7 +27,7 @@
   <th><label>Change Room(s):</label></th>
   <td>
 {{ form.room}} {% if form.room.errors %}
-   <br /><span class="form_error">{{ form.room.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.room.errors|join:", " }}</span>
    {% endif %}
   (Assigned: {{class.prettyrooms|join:", "}})
   </td>
@@ -59,7 +59,7 @@
   <th><label>Resources Requested:</label></th>
   <td>
 {{ form.resources }} {% if form.resources.errors %}
-  <br /><span class="form_error">{{form.resources.errors|join:", " }}</span>
+  <br /><span class="form_error" role="alert">{{form.resources.errors|join:", " }}</span>
 {% endif %}
   </td>
 </tr>
@@ -67,7 +67,7 @@
   <th><label>Comments for Directors:</label></th>
   <td>
 {{ form.message_for_directors }} {% if form.message_for_directors.errors %}
-  <br /><span class="form_error">{{form.message_for_directors.errors|join:", " }}</span>
+  <br /><span class="form_error" role="alert">{{form.message_for_directors.errors|join:", " }}</span>
 {% endif %}
   </td>
 </tr>
@@ -92,7 +92,7 @@ Students: {{class.emailcode}}-students@{{ EMAIL_HOST_SENDER }}
   <th>Progress:</th>
   <td>
 {{ form.manage_progress }} {% if form.manage_progress.errors %}
-  <br /><span class="form_error">{{form.manage_progress.errors|join:", " }}</span>
+  <br /><span class="form_error" role="alert">{{form.manage_progress.errors|join:", " }}</span>
 {% endif %}
   </td>
 </tr>
@@ -102,7 +102,7 @@ Students: {{class.emailcode}}-students@{{ EMAIL_HOST_SENDER }}
   </th>
   <td>
 {{ form.directors_notes }} {% if form.directors_notes.errors %}
-   <br /><span class="form_error">{{ form.directors_notes.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.directors_notes.errors|join:", " }}</span>
    {% endif %}
   </td>
 </tr>

@@ -207,6 +207,7 @@ class CustomFormHandler():
                         # Add a class 'required' to the widget
                         form_field.widget.attrs['class'] += 'required '
                         form_field.widget.is_required = True
+                        form_field.widget.attrs['aria-required'] = 'true'
 
                     if not field_is_custom:
                         # Add in other classes for validation
@@ -230,6 +231,7 @@ class CustomFormHandler():
                 # Setting classes required for front-end validation
                 if field['required']:
                     widget_attrs['class'] += ' required'
+                    widget_attrs['aria-required'] = 'true'
                 if 'min_value' in field_attrs:
                     widget_attrs['min'] = field_attrs['min_value']
                 if 'max_value' in field_attrs:
