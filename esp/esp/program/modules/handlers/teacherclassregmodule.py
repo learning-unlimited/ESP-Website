@@ -731,7 +731,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     def editclass(self, request, tl, one, two, module, extra, prog):
         try:
             int(extra)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Invalid integer for class ID! Got `{}`".format(extra), log=False)
 
         classes = ClassSubject.objects.filter(id = extra)
@@ -989,6 +989,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['qsd_name'] = 'classedit_' + context['classtype']
 
         context['manage'] = False
+        context['sectionNums'] = prog.countTimeSlots()
+
         if ((request.method == "POST" and request.POST.get('manage') == 'manage') or
             (request.method == "GET" and request.GET.get('manage') == 'manage') or
             (tl == 'manage' and 'class' in context)) and request.user.isAdministrator():
