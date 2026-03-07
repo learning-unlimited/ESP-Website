@@ -86,6 +86,18 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
         # remove them.
         return HttpResponsePermanentRedirect(lastbio.edit_url())
 
+    # Handle the "Remove Photo" button
+    if request.method == 'POST' and 'remove_picture' in request.POST:
+        if foundprogram is not None:
+            progbio = TeacherBio.getLastForProgram(founduser, foundprogram)
+        else:
+            progbio = lastbio
+        progbio.picture = None
+        progbio.save()
+        if external:
+            return True
+        return HttpResponseRedirect(progbio.edit_url())
+
     # if we submitted a newly edited bio...
     from esp.web.forms.bioedit_form import BioEditForm
     if request.method == 'POST' and 'bio_submitted' in request.POST:
@@ -105,7 +117,9 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
 
             progbio.save()
             # save the image
-            if form.cleaned_data['picture'] is not None:
+            if form.cleaned_data.get('remove_picture'):
+                progbio.picture = None
+            elif form.cleaned_data['picture'] is not None:
                 progbio.picture = form.cleaned_data['picture']
             else:
                 progbio.picture = lastbio.picture
@@ -119,10 +133,17 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
                     'bio': lastbio.bio, 'picture': lastbio.picture}
         form = BioEditForm(formdata)
 
+    # Fetch all classes the teacher has taught and gather documents
+    previous_classes = founduser.getTaughtClasses()
+    previous_docs = []
+    for p_cls in previous_classes:
+        previous_docs.extend(list(p_cls.getDocuments()))
+
     return render_to_response('users/teacherbioedit.html', request, {'form':    form,
                                                    'institution': settings.INSTITUTION_NAME,
                                                    'user':    founduser,
-                                                   'picture_file': lastbio.picture})
+                                                   'picture_file': lastbio.picture,
+                                                   'previous_docs': previous_docs})
 
 
 def bio_not_found(request, user=None, edit_url=None):
