@@ -39,9 +39,9 @@ lock_file_path = os.path.join(tempfile.gettempdir(), 'espweb.dbmailcron.lock')
 lock_file_handle = open(lock_file_path, 'w')
 try:
     fcntl.lockf(lock_file_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-except IOError:
-    # another instance has the lock
+    except IOError:
     logger.info('dbmail_cron: exiting because another instance has the lock.')
+    lock_file_handle.close()
     sys.exit(0)
 
 try:
