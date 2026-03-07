@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -70,7 +66,6 @@ Procedures:
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
 
-@python_2_unicode_compatible
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
     # TODO: this model can almost certainly be cleaned up. It is probably possible to delete the caching and dumping
@@ -98,7 +93,7 @@ class ResourceType(models.Model):
         if self.attributes_dumped:
             try:
                 self._attributes_cached = json.loads(self.attributes_dumped)
-            except:
+            except (ValueError, TypeError):
                 self._attributes_cached = None
         else:
             self._attributes_cached = None
@@ -113,7 +108,7 @@ class ResourceType(models.Model):
     def save(self, *args, **kwargs):
         if hasattr(self, '_attributes_cached'):
             self.attributes_dumped = json.dumps(self._attributes_cached)
-        super(ResourceType, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     _get_or_create_cache = {}
     @classmethod
@@ -144,9 +139,8 @@ class ResourceType(models.Model):
         return ret
 
     def __str__(self):
-        return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
+        return f'Resource Type "{self.name}", priority={self.priority_default}'
 
-@python_2_unicode_compatible
 class ResourceRequest(models.Model):
     """ A request for a particular type of resource associated with a particular clas section. """
 
@@ -156,16 +150,14 @@ class ResourceRequest(models.Model):
     desired_value = models.TextField()
 
     def __str__(self):
-        return 'Resource request of %s for %s: %s' % (six.text_type(self.res_type), self.target.emailcode(), self.desired_value)
+        return f'Resource request of {self.res_type} for {self.target.emailcode()}: {self.desired_value}'
 
-@python_2_unicode_compatible
 class ResourceGroup(models.Model):
     """ A hack to make the database handle resource group ID creation """
 
     def __str__(self):
-        return 'Resource group %d' % (self.id,)
+        return f'Resource group {self.id}'
 
-@python_2_unicode_compatible
 class Resource(models.Model):
     """ An individual resource, such as a class room or piece of equipment.  Categorize by
     res_type, attach to a user if necessary. """
@@ -187,12 +179,12 @@ class Resource(models.Model):
 
     def __str__(self):
         if self.user is not None:
-            return 'For %s: %s (%s)' % (six.text_type(self.user), self.name, six.text_type(self.res_type))
+            return f'For {self.user}: {self.name} ({self.res_type})'
         else:
             if self.num_students != -1:
-                return 'For %d students: %s (%s)' % (self.num_students, self.name, six.text_type(self.res_type))
+                return f'For {self.num_students} students: {self.name} ({self.res_type})'
             else:
-                return '%s (%s)' % (self.name, six.text_type(self.res_type))
+                return f'{self.name} ({self.res_type})'
 
     def save(self, *args, **kwargs):
         if self.res_group is None:
@@ -203,7 +195,7 @@ class Resource(models.Model):
         else:
             self.is_unique = False
 
-        super(Resource, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     # I'd love to kill this, but since it's set as the __sub__, it's hard to
     # grep to be sure it's not used.
@@ -267,6 +259,11 @@ class Resource(models.Model):
         if override:
             self.clear_assignments()
         if self.is_available():
+            if check_constraint and self.is_unique and self.res_type.name != 'Classroom' and self.has_unreturned_prior_assignment(self.event, ignore_section=section):
+                raise ESPError(
+                    'Resource %s has not been returned from a prior assignment.' % self.name,
+                    log=True
+                )
             new_ra = ResourceAssignment()
             new_ra.resource = self
             new_ra.target = section
@@ -274,7 +271,7 @@ class Resource(models.Model):
                 new_ra.assignment_group = group
             new_ra.save()
         else:
-            raise ESPError('Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id, log=True)
+            raise ESPError(f'Attempted to assign class section {section.id} to conflicted resource; and constraint check was on.', log=True)
         return new_ra
 
     assign_to_class = assign_to_section
@@ -316,7 +313,7 @@ class Resource(models.Model):
         return (len(self.available_times(program)) > 0)
 
     def available_times_html(self, program=None):
-        return '<br /> '.join([six.text_type(e) for e in Event.collapse(self.available_times(program))])
+        return '<br /> '.join([str(e) for e in Event.collapse(self.available_times(program))])
 
     def available_times(self, program=None):
         event_list = [x for x in list(self.matching_times(program)) if self.is_available(timeslot=x)]
@@ -351,14 +348,34 @@ class Resource(models.Model):
             collision = ResourceAssignment.objects.filter(resource=self)
             return collision.exists()
 
-@python_2_unicode_compatible
+    def has_unreturned_prior_assignment(self, timeslot, ignore_section=None):
+        """Check if any identical resource (same name and type) in an earlier
+        timeslot has an unreturned ResourceAssignment.
+
+        If ignore_section is provided, assignments to that section are excluded
+        so that multi-timeslot classes can be assigned without self-blocking."""
+        earlier_resources = Resource.objects.filter(
+            name=self.name,
+            res_type=self.res_type,
+            is_unique=True,
+            event__end__lte=timeslot.start,
+            event__program=timeslot.program,
+        )
+        query = ResourceAssignment.objects.filter(
+            resource__in=earlier_resources,
+            returned=False,
+        )
+        if ignore_section is not None:
+            query = query.exclude(target=ignore_section)
+        return query.exists()
+
+
 class AssignmentGroup(models.Model):
     """ A hack to make the database handle assignment group ID creation """
 
     def __str__(self):
-        return 'Assignment group %d' % (self.id,)
+        return f'Assignment group {self.id}'
 
-@python_2_unicode_compatible
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
@@ -372,7 +389,7 @@ class ResourceAssignment(models.Model):
     assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        result = 'Resource assignment for %s' % six.text_type(self.getTargetOrSubject())
+        result = f'Resource assignment for {self.getTargetOrSubject()}'
         if self.lock_level > 0:
             result += ' (locked)'
         return result
@@ -382,7 +399,7 @@ class ResourceAssignment(models.Model):
             #   Make a new group for this
             new_group = AssignmentGroup.objects.create()
             self.assignment_group = new_group
-        super(ResourceAssignment, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """

@@ -1,7 +1,5 @@
-from __future__ import absolute_import
 import datetime
 import logging
-import six
 logger = logging.getLogger(__name__)
 
 from django import forms
@@ -17,7 +15,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission
+from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission
 from django.test import TestCase
 import esp.users.views as views
 from esp.program.models import Program
@@ -59,7 +57,6 @@ class TestUserSearchController(TestCase):
         }
 
 
-
     def test_student_confirmed(self):
         post_data = self._get_combination_post_data('Student', 'confirmed')
         qobject = self.controller.filter_from_postdata(self.program, post_data).getList(ESPUser)
@@ -73,24 +70,24 @@ class TestUserSearchController(TestCase):
         self.assertGreater(qobject.count(), 0)
 
     def test_teacher_classroom_tables_query_from_post(self):
-        post_data = {six.u('username'): six.u(''),
-                     six.u('zipdistance_exclude'): six.u(''),
-                     six.u('first_name'): six.u(''),
-                     six.u('last_name'): six.u(''),
-                     six.u('use_checklist'): six.u('0'),
-                     six.u('gradyear_max'): six.u(''),
-                     six.u('userid'): six.u(''),
-                     six.u('school'): six.u(''),
-                     six.u('combo_base_list'): six.u('Teacher:teacher_res_150_8'),
-                     six.u('zipcode'): six.u(''),
-                     six.u('states'): six.u(''),
-                     six.u('student_sendto_self'): six.u('1'),
-                     six.u('checkbox_and_teacher_res_152_0'): six.u(''),
-                     six.u('grade_min'): six.u(''),
-                     six.u('gradyear_min'): six.u(''),
-                     six.u('zipdistance'): six.u(''),
-                      six.u('csrfmiddlewaretoken'): six.u('GKk9biBZE2muppi7jcv2OnqQyIehiCuw'),
-                      six.u('grade_max'): six.u(''), six.u('email'): six.u('')}
+        post_data = {'username': '',
+                     'zipdistance_exclude': '',
+                     'first_name': '',
+                     'last_name': '',
+                     'use_checklist': '0',
+                     'gradyear_max': '',
+                     'userid': '',
+                     'school': '',
+                     'combo_base_list': 'Teacher:teacher_res_150_8',
+                     'zipcode': '',
+                     'states': '',
+                     'student_sendto_self': '1',
+                     'checkbox_and_teacher_res_152_0': '',
+                     'grade_min': '',
+                     'gradyear_min': '',
+                     'zipdistance': '',
+                      'csrfmiddlewaretoken': 'GKk9biBZE2muppi7jcv2OnqQyIehiCuw',
+                      'grade_max': '', 'email': ''}
 
         query =  self.controller.query_from_postdata(self.program, post_data)
         # TODO(benkraft): what is going on here?  Should these tests be getting

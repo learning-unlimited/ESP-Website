@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,7 +39,6 @@ from esp.program.modules.handlers.programprintables import ProgramPrintables
 from datetime         import datetime
 from esp.utils.web    import render_to_response
 from esp.utils.models import Printer, PrintRequest
-from datetime         import datetime
 
 class OnsitePrintSchedules(ProgramModuleObj):
     doc = """Automatically print student schedules at onsite registration."""

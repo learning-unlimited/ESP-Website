@@ -1,8 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import map
-import six
-from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -91,7 +87,7 @@ class ProgramCreationForm(BetterModelForm):
                                                         ('Would you be willing to solicit donations for LU?', [x.id for x in ProgramModule.objects.filter(admin_title='Donation Module')]),
                                                         ('Do you plan to have teacher training or interviews?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Training and Interview Signups', 'Manage Teacher Training and Interviews'])]),
                                                         (mark_safe('Will you use lottery admission (as opposed to first come, first served) for <b>classes</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Two-Phase Student Registration', 'Lottery Frontend'])]),
-                                                        (mark_safe('Will you use lottery registration (as opposed to first come, first served) to the <b>program</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Registration Phase Zero', 'Manage Student Registration Phase Zero'])]),
+                                                        (mark_safe('Will you use lottery registration (as opposed to first come, first served) to the <b>program</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Program Lottery Registration', 'Manage Program Lottery'])]),
                                                         ('Will you let students enter a lottery to switch classes after the program has started?', [x.id for x in ProgramModule.objects.filter(admin_title='Class Change Request')]),
                                                         ('Will you have students accept some sort of agreement?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Acknowledgement')]),
                                                         ('Do students have to apply to individual classes?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])]),
@@ -104,7 +100,7 @@ class ProgramCreationForm(BetterModelForm):
             if x.id not in sum(list(self.program_module_question_ids.values()), []): # flatten list of modules
                 self.program_module_question_ids['Would you like to include the {} module?'.format(x.admin_title)] = [x.id]
         # Now initialize the form
-        super(ProgramCreationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['program_module_questions'].choices = [(','.join(map(str, ids)), q) for q, ids in self.program_module_question_ids.items()]
         #self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
         self.fields['program_modules'].required = False
@@ -112,12 +108,10 @@ class ProgramCreationForm(BetterModelForm):
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
 
-
     def save(self, commit=True):
         self.instance.url = self.cleaned_data['new_url']
         self.instance.name = self.cleaned_data['new_name']
-        return super(ProgramCreationForm, self).save(commit=commit)
-
+        return super().save(commit=commit)
 
     def load_program(self, program):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
@@ -134,15 +128,15 @@ class ProgramCreationForm(BetterModelForm):
         Takes the program creation form's program_type, term, and term_friendly
         fields, and constructs the url and name fields on the Program instance.
         '''
-        super(ProgramCreationForm, self).clean()
+        super().clean()
         if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
             #   Filter out unwanted characters from program type to form URL
             ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
-            new_url = six.u('%(type)s/%(term)s') \
+            new_url = '%(type)s/%(term)s' \
                 % {'type': ptype_slug
                   ,'term': self.cleaned_data['term']
                   }
-            new_name = six.u('%(type)s %(term)s') \
+            new_name = '%(type)s %(term)s' \
                 % {'type': self.cleaned_data['program_type']
                   ,'term': self.cleaned_data['term_friendly']
                   }
@@ -282,10 +276,13 @@ class StatisticsQueryForm(forms.Form):
             #   placeholder for later:
             del kwargs['program']
 
-        super(StatisticsQueryForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.fields['program_type'].choices = StatisticsQueryForm.get_program_type_choices()
-        self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
+        if self.fields['program_type'].choices:
+            self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
+        else:
+            self.fields['program_instances'].choices = []
 
         school_choices = StatisticsQueryForm.get_school_choices()
         if len(school_choices) > 0:
@@ -427,7 +424,6 @@ class StatisticsQueryForm(forms.Form):
                 result.append(field_name)
         return result
 
-
 class ClassFlagForm(forms.ModelForm):
     class Meta:
         model = ClassFlag
@@ -464,7 +460,7 @@ class RedirectForm(forms.ModelForm):
 
 class PlainRedirectForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        super(PlainRedirectForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['original'].help_text = 'A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@%s will be redirected to the destination email address(es).' % Site.objects.get_current().domain
     class Meta:
         model = PlainRedirect
@@ -474,7 +470,7 @@ class TagSettingsForm(BetterForm):
     """ Form for changing global tags. """
     def __init__(self, *args, **kwargs):
         self.categories = set()
-        super(TagSettingsForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for key in all_global_tags:
             # generate field for each tag
             tag_info = all_global_tags[key]

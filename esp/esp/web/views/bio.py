@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -38,6 +37,7 @@ from django.core.files.base import ContentFile
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response
+from esp.middleware import ESPError
 from django.http          import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.contrib.auth.decorators import login_required
 from datetime             import datetime
@@ -58,7 +58,7 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, userna
             else:
                 founduser = ESPUser.getUserFromNum(first, last, usernum)
                 old_url = True
-    except:
+    except (ESPUser.DoesNotExist, ESPError):
         return bio_not_found(request)
 
     foundprogram = get_from_id(progid, Program, 'program', False)
@@ -125,7 +125,6 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
                                                    'picture_file': lastbio.picture})
 
 
-
 def bio_not_found(request, user=None, edit_url=None):
     response = render_to_response('users/teacherbionotfound.html', request,
                                   {'biouser': user,
@@ -143,7 +142,7 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
         else:
             founduser = ESPUser.getUserFromNum(first, last, usernum)
             old_url = True
-    except:
+    except (ESPUser.DoesNotExist, ESPError):
         return bio_not_found(request)
 
     return bio_user(request, founduser, old_url)

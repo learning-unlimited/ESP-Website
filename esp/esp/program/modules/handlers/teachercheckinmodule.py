@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -156,7 +155,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             if 'when' in request.POST:
                 try:
                     when = datetime.strptime(request.POST['when'], "%m/%d/%Y %H:%M")
-                except:
+                except ValueError:
                     pass
             if 'undo' in request.POST and request.POST['undo'].lower() == 'true':
                 json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
