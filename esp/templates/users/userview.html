@@ -360,8 +360,8 @@
     {% endfor %}
 {% endif %}{% endwith %}
 
-{% with enrolled_classes as classes %}{% if classes %}
-    <h2>Classes Enrolled In (currently or previously):</h2>
+{% with current_enrolled as classes %}{% if classes %}
+    <h2>Classes Currently Enrolled In:</h2>
     <br />
     {% for class in classes %}
     {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
@@ -370,6 +370,21 @@
     {% endwith %}
     {% if forloop.last %}</ul>{% endif %}
     {% endfor %}
+{% endif %}{% endwith %}
+
+{% with past_enrolled as classes %}{% if classes %}
+    <a class="btn" data-toggle="collapse" data-target="#past-enrolled-collapse">Show/hide previously enrolled classes ({{ classes|length }})</a>
+    <div id="past-enrolled-collapse" class="collapse">
+    <h2>Previously Enrolled Classes:</h2>
+    <br />
+    {% for class in classes %}
+    {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
+    {% with show_class_details="True" %}
+    {% include "users/userview_class_entry.html" %}
+    {% endwith %}
+    {% if forloop.last %}</ul>{% endif %}
+    {% endfor %}
+    </div>
 {% endif %}{% endwith %}
 
 {% with taken_classes as classes %}{% if classes %}
