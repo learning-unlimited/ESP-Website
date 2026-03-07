@@ -50,8 +50,8 @@ try:
     logger.info('dbmail_cron: message processing complete; sending emails.')
     send_email_requests()
     logger.info('dbmail_cron: sent emails.')
-except Exception as e:
-    logger.info('dbmail_cron: fatal error!')
+    except Exception as e:
+    logger.error('dbmail_cron: fatal error!')
     logger.exception(e)
 finally:
     # Release the lock when message sending is complete.
