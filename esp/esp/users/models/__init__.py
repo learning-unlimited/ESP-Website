@@ -1161,8 +1161,14 @@ class BaseESPUser(object):
             profile.save()
 
         #   Update the graduation year.
+        #   Guard against non-numeric input (e.g. a typo in the GET parameter)
+        #   so the view degrades gracefully instead of returning a 500.
+        try:
+            parsed_year = int(grad_year)
+        except (ValueError, TypeError):
+            return
         student_info = profile.student_info
-        student_info.graduation_year = int(grad_year)
+        student_info.graduation_year = parsed_year
         student_info.save()
 
     def set_grade(self, grade):
