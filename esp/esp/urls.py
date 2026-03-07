@@ -121,7 +121,7 @@ urlpatterns += [
 
 urlpatterns += [
     # bios
-    url(r'^(?P<tl>teach|learn)/teachers/', include('esp.web.urls')),
+    url(r'^(?P<tl>teach)/teachers/', include('esp.web.urls')),
 ]
 
 # Specific .html pages that have defaults
