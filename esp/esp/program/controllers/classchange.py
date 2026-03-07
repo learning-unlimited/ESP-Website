@@ -712,7 +712,7 @@ class ClassChangeController(object):
             logger.info(text_fn(student_ind, for_real=False) + sent_to)
             sys.stdout.flush()
         if f:
-            f.write((text_fn(student_ind, for_real=False) + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"').encode('ascii', 'ignore'))
+            f.write((text_fn(student_ind, for_real=False) + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"'))
         if for_real:
             send_mail(self.subject, text_fn(student_ind, for_real=True), self.from_email, recipient_list, bcc=self.bcc, extra_headers=self.extra_headers)
             time.sleep(self.timeout)
