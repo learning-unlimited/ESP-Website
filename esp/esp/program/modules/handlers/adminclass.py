@@ -149,11 +149,9 @@ class AdminClass(ProgramModuleObj):
 
             class_id = request.POST['class_id']
             try:
-                class_subject = ClassSubject.objects.get(pk=class_id)
-            except ClassSubject.MultipleObjectsReturned:
-                raise ESPError("Error: multiple classes selected")
-            except ClassSubject.DoesNotExist:
-                raise ESPError("Error: no classes found with id "+str(class_id))
+                class_subject = self.getClassFromId(request, class_id)
+            except ESPError:
+                raise
 
             review_status = request.POST['review_status']
 
@@ -177,14 +175,16 @@ class AdminClass(ProgramModuleObj):
         if request.method == 'POST':
             if request.POST.get('sure') == 'True':
                 try:
-                    s = ClassSection.objects.get(id=int(request.GET['sec_id']))
+                    s = ClassSection.objects.get(id=int(request.GET['sec_id']),
+                    parent_class__parent_program=self.program)
                     s.delete()
                     return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
                 except (ValueError, ClassSection.DoesNotExist):
                     raise ESPError('Unable to delete a section.  The section requested was: %s' % request.GET['sec_id'], log=False)
         else:
             section_id = int(request.GET['sec_id'])
-            section = ClassSection.objects.get(id=section_id)
+            section = ClassSection.objects.get(id=section_id,
+                parent_class__parent_program=self.program)
             context = {'sec': section, 'module': self}
 
             return render_to_response(self.baseDir()+'delete_confirm.html', request, context)
@@ -245,7 +245,8 @@ class AdminClass(ProgramModuleObj):
                         sf.data = request.POST
                         sf.is_bound = True
                         if sf.is_valid():
-                            sec = ClassSection.objects.get(id=sf.cleaned_data['secid'])
+                            sec = ClassSection.objects.get(id=sf.cleaned_data['secid'],
+                                parent_class__parent_program=self.program)
                             orig_sec_status = sec.status
                             sf.save_data(sec)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
