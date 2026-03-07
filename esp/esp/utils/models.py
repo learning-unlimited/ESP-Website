@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django.db import models
+from django.db.models import Max
 from reversion import revisions as reversion
 
 from esp.users.models import ESPUser
@@ -52,11 +53,8 @@ class TemplateOverride(models.Model):
         return 'Ver. %d of %s' % (self.version, self.name)
 
     def next_version(self):
-        qs = TemplateOverride.objects.filter(name=self.name)
-        if qs.exists():
-            return qs.order_by('-version').values_list('version', flat=True)[0] + 1
-        else:
-            return 1
+        max_version = TemplateOverride.objects.filter(name=self.name).aggregate(max_version=Max('version'))['max_version']
+        return (max_version or 0) + 1
 
     def save(self, *args, **kwargs):
         #   Never overwrite; save a new copy with the version incremented.
