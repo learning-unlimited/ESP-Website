@@ -462,7 +462,7 @@ class UserSearchController(object):
 
         return context
 
-    def create_filter(self, request, program, template=None, target_path=None, add_to_context={}):
+    def create_filter(self, request, program, template=None, target_path=None, add_to_context=None):
         from esp.program.modules.handlers.listgenmodule import ListGenModule
         """ Function to obtain a list of users, possibly requiring multiple requests.
             Similar to the old get_user_list function.
