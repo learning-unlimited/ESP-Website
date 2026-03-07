@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 import os
 import sys
+
+# Prevent creation of .pyc files to avoid stale bytecode issues
+sys.dont_write_bytecode = True
+
 from io import open
 
 # Check if a virtualenv has been installed and activated from elsewhere.
