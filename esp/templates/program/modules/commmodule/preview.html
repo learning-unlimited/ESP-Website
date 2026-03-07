@@ -29,6 +29,18 @@
 <h2>Preview</h2>
 
 <br />
+
+{% if mailer_warnings %}
+    <div style="background-color: #ffdddd; border-left: 6px solid #f44336; padding: 15px; margin-bottom: 20px;">
+        <h3 style="color: #900; margin-top: 0;">⚠️ Before you send:</h3>
+        <ul style="color: #900; font-weight: bold;">
+            {% for warning in mailer_warnings %}
+                <li>{{ warning }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
 <p>
 Here is a preview of what the email you sent will look like for the first user in the list of
 users to whom you are sending this email.

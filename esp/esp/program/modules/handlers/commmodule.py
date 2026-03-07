@@ -144,6 +144,43 @@ class CommModule(ProgramModuleObj):
 
         MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
+        # --- MASS MAILER WARNINGS LOGIC ---
+        mailer_warnings = []
+
+        # a. Warn if massive mailer (over 2000 recipients)
+        try:
+            listcount_int=int(listcount)
+
+        except(TypeError,ValueError):
+            # Fall back to the the actual number of users if POST data is malformed
+            listcount_int=len(userlist)
+
+        if listcount_int>=2000:
+            mailer_warnings.append(f"Caution: You are about to send a massive mailer to {listcount_int} recipients.")
+
+        # b. Warn if no grade range filter is used
+        filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        filter_name=(getattr(filter_obj,'useful_name','') or '')
+
+        if filter_name and 'grade' not in filter_name.lower():
+            mailer_warnings.append("Warning: You haven't selected a grade range filter.")
+
+        # c. Warn if parent/emergency contact emails are included
+        guardian_or_emergency_sentto_values=set()
+
+        for attr_name in dir(MessageRequest):
+            if not attr_name.startswith('SEND_TO_'):
+                continue
+            value =getattr(MessageRequest,attr_name)
+            if not isinstance(value,str):
+                continue
+            lower_value=value.lower()
+            if 'guardian' in lower_value or 'emergency' in lower_value:
+                guardian_or_emergency_sentto_values.add(value)
+
+        if sendto_fn_name in guardian_or_emergency_sentto_values:
+            mailer_warnings.append("Note: This mailer includes parent and/or emergency contact emails.")
+
         # If they used the rich-text editor, we'll need to add <html> tags
         if '<html>' not in body:
             body = '<html>' + body + '</html>'
@@ -176,6 +213,7 @@ class CommModule(ProgramModuleObj):
                                                'public_view': public_view,
                                                'body': body,
                                                'template': template,
+                                               'mailer_warnings': mailer_warnings,
                                                'rendered_text': rendered_text,
                                                'other_program_urls': other_program_urls})
 
