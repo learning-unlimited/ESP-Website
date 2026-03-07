@@ -234,7 +234,7 @@ def registration_redirect(request):
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
         # check for programs where the teacher has any of the following permissions
-        teacher_perms = ['Teacher/Classes/Create/Class', 'Teacher/Classes/Create/OpenClass', 'Teacher/Acknowledgement']
+        teacher_perms = ['Teacher/Classes/Create/Class', 'Teacher/Classes/Create/OpenClass', 'Teacher/Availability']
         progs_set = set()
         for perm in teacher_perms:
             progs_set |= set(Permission.program_by_perm(user, perm))
