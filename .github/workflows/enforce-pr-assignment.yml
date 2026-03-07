@@ -20,11 +20,19 @@ jobs:
             const pr = context.payload.pull_request;
             const prAuthor = pr.user.login;
             const prNumber = pr.number;
+            const prState = pr.state;
             const body = pr.body || '';
             // Strip HTML comments so PR template hints don't trigger the check
             const cleanBody = body.replace(/<!--[\s\S]*?-->/g, '');
 
-            console.log(`Checking PR #${prNumber} by @${prAuthor}`);
+            console.log(`Checking PR #${prNumber} by @${prAuthor} (state: ${prState})`);
+
+            // Skip redundant re-checks on open PRs that were merely edited
+            const action = context.payload.action;
+            if (action === 'edited' && prState === 'open') {
+              console.log('PR is already open and was only edited — skipping redundant check.');
+              return;
+            }
 
             // Check if the PR author is an admin or maintainer (exempt)
             let permission = 'none';
@@ -59,27 +67,34 @@ jobs:
             }
 
             if (issueNumbers.length === 0) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: `👋 Hi @${prAuthor}, thanks for your interest in contributing!\n\nThis PR doesn't appear to link to any issue. All PRs must reference an issue using a keyword like "Closes #123" in the PR description.\n\nPlease:\n1. Find or create an issue for the work you're doing\n2. Comment on the issue asking to be assigned\n3. Wait for a maintainer to assign you\n4. Update this PR's description to link the issue, then reopen it\n\nWe appreciate your enthusiasm and look forward to your contributions! 🙌`,
-              });
+              // Only close and comment if the PR is currently open
+              if (prState === 'open') {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: `👋 Hi @${prAuthor}, thanks for your interest in contributing!\n\nThis PR doesn't appear to link to any issue. All PRs must reference an issue using a keyword like "Closes #123" in the PR description.\n\nPlease:\n1. Find or create an issue for the work you're doing\n2. Comment on the issue asking to be assigned\n3. Wait for a maintainer to assign you\n4. Update this PR's description to link the issue\n\nOnce you've updated the description, this workflow will automatically recheck and reopen the PR if everything looks good. 🙌`,
+                });
 
-              await github.rest.pulls.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber,
-                state: 'closed',
-              });
+                await github.rest.pulls.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                  state: 'closed',
+                });
 
-              console.log(`Closed PR #${prNumber} — no linked issues found.`);
+                console.log(`Closed PR #${prNumber} — no linked issues found.`);
+              } else {
+                console.log(`PR #${prNumber} is already closed and still has no linked issues — skipping.`);
+              }
               return;
             }
 
             console.log(`Found linked issues: ${issueNumbers.join(', ')}`);
 
             // Check each linked issue for assignees
+            let allChecksPassed = true;
+
             for (const issueNumber of issueNumbers) {
               let issue;
               try {
@@ -97,50 +112,78 @@ jobs:
               const assignees = issue.assignees.map(a => a.login);
 
               if (assignees.length === 0) {
-                // Issue is unassigned — close the PR
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: prNumber,
-                  body: `👋 Hi @${prAuthor}, thanks for your interest in contributing!\n\nHowever, issue #${issueNumber} is not yet assigned to anyone. To avoid duplicate work, this PR has been automatically closed.\n\nPlease:\n1. Comment on the issue asking to be assigned\n2. Wait for a maintainer to assign you\n3. Reopen this PR\n\nWe appreciate your enthusiasm and look forward to your contributions! 🙌`,
-                });
+                allChecksPassed = false;
 
-                await github.rest.pulls.update({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: prNumber,
-                  state: 'closed',
-                });
+                if (prState === 'open') {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: prNumber,
+                    body: `👋 Hi @${prAuthor}, thanks for your interest in contributing!\n\nHowever, issue #${issueNumber} is not yet assigned to anyone. To avoid duplicate work, this PR has been automatically closed.\n\nPlease:\n1. Comment on the issue asking to be assigned\n2. Wait for a maintainer to assign you\n3. Update this PR's description if needed\n\nOnce you're assigned, this workflow will automatically recheck and reopen the PR. 🙌`,
+                  });
 
-                console.log(`Closed PR #${prNumber} — issue #${issueNumber} is unassigned.`);
+                  await github.rest.pulls.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: prNumber,
+                    state: 'closed',
+                  });
+
+                  console.log(`Closed PR #${prNumber} — issue #${issueNumber} is unassigned.`);
+                } else {
+                  console.log(`PR #${prNumber} is already closed — issue #${issueNumber} is still unassigned.`);
+                }
                 return;
               }
 
               console.log(`Issue #${issueNumber} is assigned to: ${assignees.join(', ')}`);
 
               if (!assignees.includes(prAuthor)) {
+                allChecksPassed = false;
                 const assigneeMentions = assignees.map(a => `@${a}`).join(', ');
 
-                // Close the PR with a helpful comment
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: prNumber,
-                  body: `👋 Hi @${prAuthor}, thanks for your interest in contributing!\n\nHowever, issue #${issueNumber} is currently assigned to ${assigneeMentions}. To avoid duplicate work, this PR has been automatically closed.\n\nIf you'd like to work on this issue, please:\n1. Comment on the issue asking to be assigned\n2. Wait for a maintainer to assign you\n3. Reopen this PR\n\nWe appreciate your enthusiasm and look forward to your contributions! 🙌`,
-                });
+                if (prState === 'open') {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: prNumber,
+                    body: `👋 Hi @${prAuthor}, thanks for your interest in contributing!\n\nHowever, issue #${issueNumber} is currently assigned to ${assigneeMentions}. To avoid duplicate work, this PR has been automatically closed.\n\nIf you'd like to work on this issue, please:\n1. Comment on the issue asking to be assigned\n2. Wait for a maintainer to assign you\n3. Update this PR's description if needed\n\nOnce you're assigned, this workflow will automatically recheck and reopen the PR. 🙌`,
+                  });
 
-                await github.rest.pulls.update({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: prNumber,
-                  state: 'closed',
-                });
+                  await github.rest.pulls.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: prNumber,
+                    state: 'closed',
+                  });
 
-                console.log(`Closed PR #${prNumber} — author is not an assignee of issue #${issueNumber}.`);
+                  console.log(`Closed PR #${prNumber} — author is not an assignee of issue #${issueNumber}.`);
+                } else {
+                  console.log(`PR #${prNumber} is already closed — author still not assigned to issue #${issueNumber}.`);
+                }
                 return;
               }
 
               console.log(`@${prAuthor} is an assignee of issue #${issueNumber} — allowed.`);
             }
 
-            console.log('All checks passed — PR is allowed.');
+            // All checks passed — reopen if the PR was previously closed
+            if (allChecksPassed && prState === 'closed') {
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                state: 'open',
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `🎉 Great news @${prAuthor}! Your PR has been automatically reopened — you're properly assigned to the linked issue(s). Thanks for following the contribution process!`,
+              });
+
+              console.log(`Reopened PR #${prNumber} — all assignment checks now pass.`);
+            } else if (allChecksPassed) {
+              console.log('All checks passed — PR is allowed.');
+            }
