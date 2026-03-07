@@ -62,6 +62,7 @@ from django.core.cache import cache
 from django.urls import reverse
 from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
@@ -792,6 +793,7 @@ def newprogram(request):
     return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'), 'template_prog_id': template_prog_id})
 
 @csrf_exempt
+@require_POST
 @transaction.non_atomic_requests
 def submit_transaction(request):
     # Before we do anything else, log the raw postback to the database
