@@ -7,6 +7,13 @@
 
 <div class="row-fluid">
 <br>
+{% if rate_limited %}
+<div class="alert alert-error span10">
+    <strong>Too many failed login attempts.</strong>
+    Your IP has been temporarily blocked for {{ rate_limited_wait }} minute{{ rate_limited_wait|pluralize }}.
+    Please wait before trying again.
+</div>
+{% else %}
 {% if next and not initiated_login %}
 <div class="alert alert-info span10">
 {% if "unsubscribe" in next %}
@@ -82,6 +89,7 @@ document.getElementById('id_username').focus();
 Don't already have an account?  <a href="/myesp/register/">Click here to create one</a>. <br />
 Forgot your password? <a href="/myesp/passwdrecover/" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
 </div>
+{% endif %}
 </div>
 
 {% endblock %}
