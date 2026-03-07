@@ -57,7 +57,6 @@ def resolve_field_expression(expression, context_vars):
     if not expression or not expression.strip():
         return None
     expression = expression.strip()
-    expression = expression.strip()
     try:
         resolved = Variable(expression).resolve(Context(context_vars))
         if resolved is None:
@@ -117,8 +116,7 @@ class FormstackAppModule(ProgramModuleObj):
         context['form'] = fsas.form()
         context['username_field'] = fsas.username_field
         context['username'] = request.user.username
-        app_is_open = fsas.app_is_open or request.user.isAdmin(prog)
-        context['app_is_open'] = app_is_open
+        context['app_is_open'] = fsas.app_is_open or request.user.isAdmin(prog)
         context['autopopulated'] = autopopulated = []
         for line in fsas.autopopulated_fields.strip().split('\n'):
             if not line.strip():
