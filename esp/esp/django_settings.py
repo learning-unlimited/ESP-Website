@@ -140,6 +140,11 @@ DEFAULT_EMAIL_ADDRESSES = {
 INSTITUTION_NAME = 'LearningUniversity'
 # A 'slug' used in email titles, like 'ESP' or 'Splash'
 ORGANIZATION_SHORT_NAME = 'Splash'
+# The host for ESP site-supported email lists.
+EMAIL_HOST = 'localhost'
+
+#################################
+# Default localization settings #
 #################################
 TIME_ZONE = 'America/New_York'
 
