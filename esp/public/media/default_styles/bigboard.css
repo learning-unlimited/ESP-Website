@@ -121,6 +121,7 @@
   .popular-classes-block {
     width: 100%;
     padding: 10px 15px;
+    box-sizing: border-box;
   }
 
   #highcharts-placeholder {
@@ -131,7 +132,8 @@
 /* Responsive: Phone (≤480px) */
 @media screen and (max-width: 480px) {
   .bigboard-number-block {
-    min-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
     height: auto;
     padding: 6px 10px;
   }
@@ -180,6 +182,7 @@
   .popular-classes-block {
     width: 100%;
     padding: 5px 10px;
+    box-sizing: border-box;
   }
 
   .popular-classes-heading {
