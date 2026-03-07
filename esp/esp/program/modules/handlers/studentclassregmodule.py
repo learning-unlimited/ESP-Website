@@ -563,9 +563,9 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return resp"""
 
-    @cache_control(public=True, max_age=3600)
-    @no_auth
     @aux_call
+    @no_auth
+    @cache_control(public=True, max_age=3600)
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
@@ -600,16 +600,16 @@ class StudentClassRegModule(ProgramModuleObj):
         json.dump(reg_bits_data, resp)
         return resp
 
-    @disable_csrf_cookie_update
     @aux_call
     @no_auth
+    @disable_csrf_cookie_update
     @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
-    @disable_csrf_cookie_update
     @aux_call
     @no_auth
+    @disable_csrf_cookie_update
     @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         #   Get the ProgramPrintables module for the program
