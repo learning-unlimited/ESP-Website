@@ -22,6 +22,16 @@ class TestDbmailCron(unittest.TestCase):
     @mock.patch('dbmail_cron.process_messages', side_effect=Exception('DB error'))
     @mock.patch('dbmail_cron.fcntl.lockf')
     @mock.patch('builtins.open', mock.mock_open())
+    @mock.patch('dbmail_cron.send_email_requests', side_effect=Exception('Email error'))
+    @mock.patch('dbmail_cron.process_messages')
+    @mock.patch('dbmail_cron.fcntl.lockf')
+    @mock.patch('builtins.open', mock.mock_open())
+    def test_send_email_requests_exception_releases_lock(self, mock_lockf, mock_process, mock_send):
+        dbmail_cron.main()
+
+        mock_process.assert_called_once()
+        unlock_call = mock_lockf.call_args_list[-1]
+        assert unlock_call[0][1] == fcntl.LOCK_UN
     def test_process_messages_exception_releases_lock(self, mock_lockf, mock_process, mock_send):
         dbmail_cron.main()
 
