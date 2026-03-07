@@ -18,3 +18,4 @@ class DBMailCronTests(TestCase):
 
         mock_process.assert_called()
         mock_send.assert_called()
+        
