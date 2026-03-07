@@ -197,7 +197,13 @@ def resend_activation_view(request):
         if not form.is_valid():
             return render_to_response('registration/resend.html', request,
                                       {'form':form, 'site': Site.objects.get_current()})
-        user=ESPUser.objects.get(username=form.cleaned_data['username'])
+        user = ESPUser.objects.filter(
+            username__iexact=form.cleaned_data['username'],
+            is_active=False,
+            password__regex=r'\$(.*)_'
+        ).exclude(password='emailuser').first()
+        if user is None:
+            raise ESPError("User not found or already activated.", log=False)
         userkey=user.password[user.password.rfind("_")+1:]
         send_activation_email(user, userkey)
         return render_to_response('registration/resend_done.html', request,
