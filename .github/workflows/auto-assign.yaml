@@ -232,9 +232,10 @@ jobs:
             const patterns = [
               /\bcan i (?:work on|take|tackle|pick up|be assigned|grab|handle|do)\b/,
               /\bi(?:'d| would) like to (?:work on|take|tackle|pick up|be assigned|grab|handle|do)\b/,
-              /\bplease assign (?:me|this to me)\b/,
-              /\bassign (?:me|this to me)\b/,
-              /\bcan (?:you |someone )?assign (?:me|this to me)\b/,
+              /\bplease assign (?:me|this to me|it to me)\b/,
+              /\bassign (?:me|this to me|it to me)\b/,
+              /\bcan (?:you |someone )?assign (?:me|this to me|it to me)\b/,
+              /\bcould (?:you |someone )?(?:please )?assign (?:me|this to me|it to me)\b/,
               /\bi(?:'ll| will) (?:work on|take|tackle|pick up|handle|do) this\b/,
               /\blet me (?:work on|take|tackle|pick up|handle|do) this\b/,
               /\bi want to (?:work on|take|tackle|pick up|handle|do) this\b/,
