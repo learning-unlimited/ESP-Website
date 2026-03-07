@@ -67,16 +67,24 @@ def _full_status_data_cached(prog):
         'switch_time_program_attendance', program=prog
     )
     if switch_time_program_attendance:
-        switch_time_program_attendance = datetime.strptime(
-            now.strftime('%Y/%m/%d ') + switch_time_program_attendance,
-            '%Y/%m/%d %H:%M',
-        )
+        try:
+            switch_time_program_attendance = datetime.strptime(
+                now.strftime('%Y/%m/%d ') + switch_time_program_attendance,
+                '%Y/%m/%d %H:%M',
+            )
+        except (ValueError, TypeError):
+            # Treat invalid tag value as unset, falling back to enrollment-based logic
+            switch_time_program_attendance = None
 
     switch_lag_class_attendance = Tag.getProgramTag(
         'switch_lag_class_attendance', program=prog
     )
     if switch_lag_class_attendance:
-        switch_lag_class_attendance = int(switch_lag_class_attendance)
+        try:
+            switch_lag_class_attendance = int(switch_lag_class_attendance)
+        except (ValueError, TypeError):
+            # Treat invalid tag value as unset, falling back to enrollment-based logic
+            switch_lag_class_attendance = None
 
     use_program_checkin_counts = False
     checked_in_qs = None
