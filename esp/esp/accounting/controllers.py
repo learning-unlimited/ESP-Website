@@ -57,6 +57,9 @@ class BaseAccountingController(object):
     def default_finaid_account(self):
         return Account.objects.get(name='grants')
 
+    def default_payable_account(self):
+        return Account.objects.get(name='payable')
+
 class GlobalAccountingController(BaseAccountingController):
 
     def setup_accounts(self):
@@ -75,6 +78,7 @@ class ProgramAccountingController(BaseAccountingController):
     def __init__(self, program, *args, **kwargs):
         self.program = program
         self.finaid_items = ['Financial aid grant', 'Sibling discount']
+        self.refund_items = ['Student refund']
         self.admission_items = ["Program admission", "Student payment"]
 
     @transaction.atomic
@@ -186,6 +190,15 @@ class ProgramAccountingController(BaseAccountingController):
             return lineitems[0]
         return None
 
+    def default_refund_lineitemtype(self):
+        """Get or create a line item type for refunds."""
+        lineitem, created = LineItemType.objects.get_or_create(
+            program=self.program,
+            text='Student refund',
+            defaults={'for_payments': False}
+        )
+        return lineitem
+
     def donation_lineitemtype(self):
         for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
             other_module = self.program.getModule(module_name)
@@ -196,7 +209,7 @@ class ProgramAccountingController(BaseAccountingController):
     def get_lineitemtypes_Q(self, include_donations=True, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):
         if lineitemtype_id:
             return Q(id=lineitemtype_id)
-        q_object = Q(program=self.program) & ~Q(text__in=self.finaid_items) # exclude finaid grants and sibling discounts
+        q_object = Q(program=self.program) & ~Q(text__in=self.finaid_items) & ~Q(text__in=self.refund_items)
         if not include_donations:
             # The Stripe module (or, if used, donation module) currently takes care of the donation
             # optional line item, so ignore it in the optional costs module.
@@ -263,6 +276,8 @@ class ProgramAccountingController(BaseAccountingController):
         line_item = transfer.line_item
         if line_item == self.default_payments_lineitemtype():
             return 'Payment'
+        elif line_item == self.default_refund_lineitemtype():
+            return 'Refund'
         elif line_item == self.default_finaid_lineitemtype():
             return 'Financial aid'
         elif line_item == self.default_siblingdiscount_lineitemtype():
@@ -571,6 +586,15 @@ class IndividualAccountingController(ProgramAccountingController):
             amount_paid = Decimal('0')
         return amount_paid
 
+    def amount_refunded(self):
+        refund_lineitem = self.default_refund_lineitemtype()
+        payable_account = self.default_payable_account()
+        if Transfer.objects.filter(user=self.user, line_item=refund_lineitem, source=payable_account, destination__isnull=True).exists():
+            amount_refunded = Transfer.objects.filter(user=self.user, line_item=refund_lineitem, source=payable_account, destination__isnull=True).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        else:
+            amount_refunded = Decimal('0')
+        return amount_refunded
+
     def has_paid(self, in_full=False):
         if in_full:
             return (self.amount_paid() > 0) and (self.amount_due() <= 0)
@@ -580,7 +604,7 @@ class IndividualAccountingController(ProgramAccountingController):
     def amount_due(self):
         amt_request = self.amount_requested()
         amt_sibling = self.amount_siblingdiscount()
-        return amt_request - self.amount_finaid(amt_sibling) - amt_sibling - self.amount_paid()
+        return amt_request - self.amount_finaid(amt_sibling) - amt_sibling - self.amount_paid() + self.amount_refunded()
 
     @transaction.atomic
     def submit_payment(self, amount, transaction_id='', link_transfers=True):
@@ -600,6 +624,46 @@ class IndividualAccountingController(ProgramAccountingController):
         if link_transfers:
             self.link_paid_transfers(payment)
         return payment
+
+    @transaction.atomic
+    def record_refund(self, amount, transaction_id=''):
+        """Record accounting entries for a refund.
+
+        Creates two transfers:
+        1. From payable account to None (payment going out to the student)
+        2. From program account to payable (the program no longer has this money)
+
+        Args:
+            amount: The refund amount as a Decimal or float
+            transaction_id: The Stripe refund ID
+
+        Returns:
+            A tuple of (outgoing_transfer, internal_transfer)
+        """
+        line_item_type = self.default_refund_lineitemtype()
+        payable_account = self.default_payable_account()
+        program_account = self.default_program_account()
+        amount_dec = Decimal('%.2f' % amount)
+
+        outgoing_transfer = Transfer.objects.create(
+            source=payable_account,
+            destination=None,
+            user=self.user,
+            line_item=line_item_type,
+            amount_dec=amount_dec,
+            transaction_id=transaction_id
+        )
+
+        internal_transfer = Transfer.objects.create(
+            source=program_account,
+            destination=payable_account,
+            user=self.user,
+            line_item=line_item_type,
+            amount_dec=amount_dec,
+            transaction_id=transaction_id
+        )
+
+        return (outgoing_transfer, internal_transfer)
 
     @transaction.atomic
     def link_paid_transfers(self, payment):

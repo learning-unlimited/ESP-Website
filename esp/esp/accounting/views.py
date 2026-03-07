@@ -82,9 +82,9 @@ def user_accounting(user, progs = []):
             { 'transfer': t, 'type': iac.classify_transfer(t) }
             for t in iac.get_transfers().select_related('line_item')
         ]
-        sort_order = {"Cost (required)": 0, "Cost (optional)": 1, "Sibling discount": 2, "Financial aid": 3, "Payment": 4}
+        sort_order = {"Cost (required)": 0, "Cost (optional)": 1, "Sibling discount": 2, "Financial aid": 3, "Payment": 4, "Refund": 5}
         classified_transfers.sort(key=lambda t: 'Program admission' not in t['transfer'].line_item.text) # put Program admission at the top
-        classified_transfers.sort(key=lambda t: sort_order[t['type']])
+        classified_transfers.sort(key=lambda t: sort_order.get(t['type'], 100))
         result = {
             'program': prog,
             'transfers': classified_transfers,
@@ -97,6 +97,7 @@ def user_accounting(user, progs = []):
             result['finaid'] = iac.amount_finaid()
             result['siblingdiscount'] = iac.amount_siblingdiscount()
             result['paid'] = iac.amount_paid()
+            result['refunded'] = iac.amount_refunded()
             result['due'] = iac.amount_due()
         results.append(result)
     return results
