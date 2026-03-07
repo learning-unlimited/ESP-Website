@@ -392,7 +392,7 @@ class ClassChangeController(object):
         """ Reset the state of the controller so that new assignments may be computed,
             but without fetching any information from the database. """
 
-        self.changed = numpy.zeros((self.num_students,), dtype=numpy.bool)
+        self.changed = numpy.zeros((self.num_students,), dtype=bool)
         self.section_capacities = numpy.copy(self.section_capacities_orig)
         self.section_scores = numpy.copy(self.section_scores_orig)
         self.enroll_final = numpy.copy(self.enroll_final_orig)
@@ -405,19 +405,19 @@ class ClassChangeController(object):
             -   Timeslots (incl. lunch periods for each day)
         """
 
-        self.enroll_orig = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        self.enroll_final = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool) for i in range(self.priority_limit+1)]
-        self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
+        self.enroll_orig = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=bool)
+        self.enroll_final = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=bool)
+        self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=bool)
+        self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=bool) for i in range(self.priority_limit+1)]
+        self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=bool)
         # section_capacities tracks *remaining* capacity.
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.int32)
         # A section's score is number of students requesting minus capacity.
         # It's positive if we can't let everybody who wants it take it. Higher
         # scores mean a class is more in demand.
         self.section_scores = numpy.zeros((self.num_sections,), dtype=numpy.int32)
-        self.same_subject = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
-        self.section_conflict = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool) # is this a section that takes place in the same timeblock
+        self.same_subject = numpy.zeros((self.num_sections, self.num_sections), dtype=bool)
+        self.section_conflict = numpy.zeros((self.num_sections, self.num_sections), dtype=bool) # is this a section that takes place in the same timeblock
 
         #   Get student, section, timeslot IDs and prepare lookup table
         (self.student_ids, self.student_indices) = self.get_ids_and_indices(self.students)
@@ -425,7 +425,7 @@ class ClassChangeController(object):
         (self.timeslot_ids, self.timeslot_indices) = self.get_ids_and_indices(self.timeslots)
         self.parent_classes = numpy.array(self.sections.values_list('parent_class__id', flat=True))
 
-        self.student_not_checked_in = numpy.zeros((self.num_students,), dtype=numpy.bool)
+        self.student_not_checked_in = numpy.zeros((self.num_students,), dtype=bool)
         self.student_not_checked_in[self.student_indices[self.students_not_checked_in]] = True
 
         #   Get IDs of timeslots allocated to lunch by day
