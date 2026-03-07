@@ -1,0 +1,550 @@
+[35m.github/workflows/auto-assign.yaml[m[36m:[m            const requester = context.payload.comment.user.[1;31mlogin[m;
+[35m.github/workflows/auto-assign.yaml[m[36m:[m              const currentAssignees = context.payload.issue.assignees.map(a => a.[1;31mlogin[m);
+[35m.github/workflows/auto-assign.yaml[m[36m:[m            const currentAssignees = context.payload.issue.assignees.map(a => a.[1;31mlogin[m);
+[35m.github/workflows/auto-assign.yaml[m[36m:[m            const commenter = context.payload.comment.user.[1;31mlogin[m;
+[35m.github/workflows/auto-assign.yaml[m[36m:[m              const currentAssignees = context.payload.issue.assignees.map(a => a.[1;31mlogin[m);
+[35m.github/workflows/auto-assign.yaml[m[36m:[m            const assignee = context.payload.assignee.[1;31mlogin[m;
+[35m.github/workflows/enforce-pr-assignment.yml[m[36m:[m            const prAuthor = pr.user.[1;31mlogin[m;
+[35m.github/workflows/enforce-pr-assignment.yml[m[36m:[m              const assignees = issue.assignees.map(a => a.[1;31mlogin[m);
+[35m.github/workflows/too-many-prs.yaml[m[36m:[m              : context.payload.pull_request.user.[1;31mlogin[m;
+[35m.github/workflows/too-many-prs.yaml[m[36m:[m            const authorPRs = openPRs.filter(pr => pr.user.[1;31mlogin[m === author);
+[35mdocs/admin/releases/10/README.rst[m[36m:[mDeletion of [1;31mlogin[m by birthday or school
+[35mdocs/admin/releases/11/README.rst[m[36m:[m- In fruitsalad theme, the [1;31mlogin[m button text now is the same font as everything else.
+[35mdocs/admin/releases/11/README.rst[m[36m:[m- In fruitsalad theme, the contact info in the top left will no longer disappear when on the [1;31mlogin[m form page.
+[35mdocs/admin/releases/11/README.rst[m[36m:[m- In circles theme, replaced the [1;31mlogin[m button and fixed navbar styling.
+[35mdocs/admin/releases/11/README.rst[m[36m:[m- Made [1;31mlogin[m errors clearer.
+[35mdocs/admin/releases/11/README.rst[m[36m:[m- Added a default [1;31mlogin[m help page ``/myesp/[1;31mlogin[mhelp.html`` that admins can modify. (Other pages linked to this page, but it did not exist by default.)
+[35mdocs/admin/releases/12/README.rst[m[36m:[m- Fixed the fruit salad header for instances where the program name was very long and overlapped with the [1;31mlogin[m information. Also changed styling associated with the [1;31mlogin[m box to make things symmetrical (and removed the text "Hello,").
+[35mdocs/admin/releases/14/README.rst[m[36m:[m- Fixed the [1;31mlogin[m redirect behavior when a user is already logged in
+[35mdocs/dev/deploying.rst[m[36m:[m   * test [1;31mlogin[m/admin, a representative page, and outbound email
+[35mesp/INSTALL[m[36m:[ma) Create a [1;31mlogin[m role
+[35mesp/INSTALL[m[36m:[maccount ([1;31mlogin[m role).  This role will be used for all queries generated
+[35mesp/INSTALL[m[36m:[mby Django.  In psql, the syntax for creating a [1;31mlogin[m role is
+[35mesp/INSTALL[m[36m:[m                                to match the [1;31mlogin[m role you created
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.student.username, password='password')
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/accounting/tests/test_refund_views.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m            self.assertRedirects(response, '/accounts/[1;31mlogin[m/?next=%s' % url)
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.student.username, password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m            self.assertRedirects(response, '/accounts/[1;31mlogin[m/?next=%s' % url)
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.student.username, password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='landing_admin', password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='landing_teacher', password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='landing_student', password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.assertRedirects(response, '/accounts/[1;31mlogin[m/?next=/customforms/')
+[35mesp/esp/customforms/tests.py[m[36m:[m        """Unauthenticated user should be redirected to [1;31mlogin[m."""
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.assertRedirects(response, '/accounts/[1;31mlogin[m/?next=/customforms/')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='resp_admin', password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='resp_teacher', password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='resp_student', password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        """Unauthenticated user should be redirected to [1;31mlogin[m (by decorator)."""
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.assertRedirects(response, '/accounts/[1;31mlogin[m/?next=/customforms/responses/%d/' % self.form.id)
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='builder_admin', password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='builder_teacher', password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='builder_teacher', password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='builder_student', password='password')
+[35mesp/esp/customforms/tests.py[m[36m:[m        self.assertRedirects(response, '/accounts/[1;31mlogin[m/?next=/customforms/create')
+[35mesp/esp/customforms/views.py[m[36m:[mfrom django.contrib.auth.decorators import user_passes_test, [1;31mlogin[m_required
+[35mesp/esp/customforms/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/db/views.py[m[36m:[mfrom django.contrib.auth.decorators import [1;31mlogin[m_required, user_passes_test
+[35mesp/esp/db/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/program/modules/base.py[m[36m:[mdef _[1;31mlogin[m_redirect(request):
+[35mesp/esp/program/modules/base.py[m[36m:[m                    return _[1;31mlogin[m_redirect(request)
+[35mesp/esp/program/modules/base.py[m[36m:[m            return _[1;31mlogin[m_redirect(request)
+[35mesp/esp/program/modules/base.py[m[36m:[m            return _[1;31mlogin[m_redirect(request)
+[35mesp/esp/program/modules/base.py[m[36m:[m            return _[1;31mlogin[m_redirect(request)
+[35mesp/esp/program/modules/base.py[m[36m:[m            return _[1;31mlogin[m_redirect(request)
+[35mesp/esp/program/modules/base.py[m[36m:[m            return _[1;31mlogin[m_redirect(request)
+[35mesp/esp/program/modules/base.py[m[36m:[m            return _[1;31mlogin[m_redirect(request)
+[35mesp/esp/program/modules/base.py[m[36m:[m            return _[1;31mlogin[m_redirect(request)
+[35mesp/esp/program/modules/base.py[m[36m:[m            return _[1;31mlogin[m_redirect(request)
+[35mesp/esp/program/modules/base.py[m[36m:[m            return (False, _[1;31mlogin[m_redirect(request))
+[35mesp/esp/program/modules/handlers/admintestingmodule.py[m[36m:[m        through the needs_admin decorator), this performs a real [1;31mlogin[m as
+[35mesp/esp/program/modules/handlers/admintestingmodule.py[m[36m:[m        from django.contrib.auth import [1;31mlogin[m, logout
+[35mesp/esp/program/modules/handlers/admintestingmodule.py[m[36m:[m        [1;31mlogin[m(request, test_user)
+[35mesp/esp/program/modules/tests/adminclass.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username=student.username, password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin_constraints', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin_constraints', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin_constraints', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin_constraints', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin_constraints', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin_constraints', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin_constraints', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin_modmgmt', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin_modmgmt', password='password')
+[35mesp/esp/program/modules/tests/admincore.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin_modmgmt', password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/admintestingmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/program/modules/tests/ajaxschedulingmodule.py[m[36m:[m    def [1;31mlogin[mAdmin(self):
+[35mesp/esp/program/modules/tests/ajaxschedulingmodule.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+[35mesp/esp/program/modules/tests/ajaxschedulingmodule.py[m[36m:[m        self.[1;31mlogin[mAdmin()
+[35mesp/esp/program/modules/tests/ajaxstudentreg.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+[35mesp/esp/program/modules/tests/ajaxstudentreg.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+[35mesp/esp/program/modules/tests/ajaxstudentreg.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+[35mesp/esp/program/modules/tests/availabilitymodule.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=self.teachers[0].username, password='password' ), "Couldn't log in as teacher %s" % self.teachers[0].username )
+[35mesp/esp/program/modules/tests/batchclassregmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin', password='password')
+[35mesp/esp/program/modules/tests/classsearchmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin', password='password')
+[35mesp/esp/program/modules/tests/classsearchmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin', password='password')
+[35mesp/esp/program/modules/tests/commpanel.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+[35mesp/esp/program/modules/tests/existence.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+[35mesp/esp/program/modules/tests/existence.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=teacher.username, password='password' ), "Couldn't log in as teacher %s" % teacher.username )
+[35mesp/esp/program/modules/tests/formstackmedliab.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=student.username, password='password'),
+[35mesp/esp/program/modules/tests/jsondatamodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admins[0].username, password='password')
+[35mesp/esp/program/modules/tests/jsondatamodule.py[m[36m:[m        to the [1;31mlogin[m page or a 403 Forbidden — never 200."""
+[35mesp/esp/program/modules/tests/onsitecheckinmodule.py[m[36m:[m            self.client.[1;31mlogin[m(username=self.admin.username, password='password'),
+[35mesp/esp/program/modules/tests/onsitecheckinmodule.py[m[36m:[m            self.client.[1;31mlogin[m(username=self.admin.username, password='password'),
+[35mesp/esp/program/modules/tests/onsitecheckinmodule.py[m[36m:[m            self.client.[1;31mlogin[m(username=self.admin.username, password='password'),
+[35mesp/esp/program/modules/tests/onsitecheckinmodule.py[m[36m:[m            self.client.[1;31mlogin[m(username=self.admin.username, password='password'),
+[35mesp/esp/program/modules/tests/onsitecheckinmodule.py[m[36m:[m            self.client.[1;31mlogin[m(username=self.admin.username, password='password'),
+[35mesp/esp/program/modules/tests/onsitecheckinmodule.py[m[36m:[m            self.client.[1;31mlogin[m(username=self.admin.username, password='password'),
+[35mesp/esp/program/modules/tests/programprintables.py[m[36m:[m    def _[1;31mlogin[m_admin(self):
+[35mesp/esp/program/modules/tests/programprintables.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+[35mesp/esp/program/modules/tests/programprintables.py[m[36m:[m        self._[1;31mlogin[m_admin()
+[35mesp/esp/program/modules/tests/programprintables.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+[35mesp/esp/program/modules/tests/programprintables.py[m[36m:[m        self._[1;31mlogin[m_admin()
+[35mesp/esp/program/modules/tests/programprintables.py[m[36m:[m        self._[1;31mlogin[m_admin()
+[35mesp/esp/program/modules/tests/programprintables.py[m[36m:[m        self._[1;31mlogin[m_admin()
+[35mesp/esp/program/modules/tests/regprofilemodule.py[m[36m:[m        #   (it should redirect to a [1;31mlogin[m page)
+[35mesp/esp/program/modules/tests/regprofilemodule.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.students[2].username, password='password')
+[35mesp/esp/program/modules/tests/resourcemodule.py[m[36m:[m            self.client.[1;31mlogin[m(username=self.admins[0].username, password='password')
+[35mesp/esp/program/modules/tests/studentreg.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+[35mesp/esp/program/modules/tests/studentreg.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+[35mesp/esp/program/modules/tests/studentreg.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=teacher.username, password='password' ), "Couldn't log in as student %s" % teacher.username )
+[35mesp/esp/program/modules/tests/studentreg.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=admin.username, password='password' ), "Couldn't log in as student %s" % admin.username )
+[35mesp/esp/program/modules/tests/studentreg.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+[35mesp/esp/program/modules/tests/studentreg.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+[35mesp/esp/program/modules/tests/studentregtwophase.py[m[36m:[m            self.client.[1;31mlogin[m(username=student.username, password='password'),
+[35mesp/esp/program/modules/tests/studentregtwophase.py[m[36m:[m            self.client.[1;31mlogin[m(username=student.username, password='password'))
+[35mesp/esp/program/modules/tests/studentregtwophase.py[m[36m:[m            self.client.[1;31mlogin[m(username=student.username, password='password'))
+[35mesp/esp/program/modules/tests/studentregtwophase.py[m[36m:[m            self.client.[1;31mlogin[m(username=student.username, password='password'))
+[35mesp/esp/program/modules/tests/studentregtwophase.py[m[36m:[m            self.client.[1;31mlogin[m(username=student.username, password='password'))
+[35mesp/esp/program/modules/tests/studentregtwophase.py[m[36m:[m            self.client.[1;31mlogin[m(username=student.username, password='password'))
+[35mesp/esp/program/modules/tests/survey.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+[35mesp/esp/program/modules/tests/survey.py[m[36m:[m        self.client.[1;31mlogin[m(username=teacher.username, password='password')
+[35mesp/esp/program/modules/tests/teachercheckinmodule.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=self.admin.username, password='password'), "Couldn't log in as admin %s" % self.admin.username)
+[35mesp/esp/program/modules/tests/teacherclassregmodule.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+[35mesp/esp/program/modules/tests/teacherclassregmodule.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=admin.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=original_teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=original_teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=non_owner.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/test_class_creation.py[m[36m:[m            self.client.[1;31mlogin[m(username=teacher.username, password='password'),
+[35mesp/esp/program/modules/tests/testallviews.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin', password='password')
+[35mesp/esp/program/modules/tests/unenrollmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin', password='password')
+[35mesp/esp/program/modules/tests/unenrollmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin', password='password')
+[35mesp/esp/program/modules/tests/unenrollmodule.py[m[36m:[m        self.client.[1;31mlogin[m(username='admin', password='password')
+[35mesp/esp/program/tests.py[m[36m:[m        c.[1;31mlogin[m(username=self.admin.username, password=self.password)
+[35mesp/esp/program/tests.py[m[36m:[m        c.[1;31mlogin[m(username=self.admin.username, password=self.password)
+[35mesp/esp/program/tests.py[m[36m:[m        c.[1;31mlogin[m(username=self.admin.username, password=self.password)
+[35mesp/esp/program/tests.py[m[36m:[m        c.[1;31mlogin[m(username=self.admin.username, password=self.password)
+[35mesp/esp/program/tests.py[m[36m:[m        self.assertTrue( c.[1;31mlogin[m(username=self.admin.username, password=self.password), "Couldn't log in as admin" )
+[35mesp/esp/program/tests.py[m[36m:[m        self.assertTrue( c.[1;31mlogin[m(username=self.fake_admin.username, password=self.password), "Couldn't log in as fake admin" )
+[35mesp/esp/program/tests.py[m[36m:[m    def [1;31mlogin[mAdmin(self):
+[35mesp/esp/program/tests.py[m[36m:[m        self.assertEqual( self.client.[1;31mlogin[m(username='ubbadmubbin', password='pubbasswubbord'), True, 'Oops, [1;31mlogin[m failed!' )
+[35mesp/esp/program/tests.py[m[36m:[m    def [1;31mlogin[mTeacher(self):
+[35mesp/esp/program/tests.py[m[36m:[m        self.assertEqual( self.client.[1;31mlogin[m(username='tubbeachubber', password='pubbasswubbord'), True, 'Oops, [1;31mlogin[m failed!' )
+[35mesp/esp/program/tests.py[m[36m:[m    def [1;31mlogin[mStudent(self):
+[35mesp/esp/program/tests.py[m[36m:[m        self.assertEqual( self.client.[1;31mlogin[m(username='stubbudubbent', password='pubbasswubbord'), True, 'Oops, [1;31mlogin[m failed!' )
+[35mesp/esp/program/tests.py[m[36m:[m        self.[1;31mlogin[mAdmin()
+[35mesp/esp/program/tests.py[m[36m:[m        self.[1;31mlogin[mTeacher()
+[35mesp/esp/program/tests.py[m[36m:[m        self.[1;31mlogin[mStudent()
+[35mesp/esp/program/tests.py[m[36m:[m        self.assertTrue( self.client.[1;31mlogin[m( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+[35mesp/esp/program/tests.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=self.admins[0].username, password='password'),
+[35mesp/esp/program/tests.py[m[36m:[m                        'Could not [1;31mlogin[m as %s' % self.admins[0].username)
+[35mesp/esp/program/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='docstestadmin', password=self.password)
+[35mesp/esp/program/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='docstestuser', password=self.password)
+[35mesp/esp/program/tests.py[m[36m:[m        self.assertTrue(response['Location'].startswith('/accounts/[1;31mlogin[m/'))
+[35mesp/esp/program/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='docstestadmin', password=self.password)
+[35mesp/esp/program/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='docstestadmin', password=self.password)
+[35mesp/esp/program/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='docstestadmin', password=self.password)
+[35mesp/esp/program/views.py[m[36m:[mfrom django.contrib.auth.decorators import [1;31mlogin[m_required
+[35mesp/esp/program/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/program/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/program/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/program/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/qsd/seltests.py[m[36m:[mfrom esp.seltests.util import try_normal_[1;31mlogin[m, logout, noActiveAjaxJQuery
+[35mesp/esp/qsd/seltests.py[m[36m:[m        try_normal_[1;31mlogin[m(self, self.admin_user.username, self.PASSWORD_STRING)
+[35mesp/esp/qsd/seltests.py[m[36m:[m        try_normal_[1;31mlogin[m(self, self.qsd_user.username, self.PASSWORD_STRING)
+[35mesp/esp/qsd/tests.py[m[36m:[m                self.client.[1;31mlogin[m(username=user[0], password=user[1])
+[35mesp/esp/qsd/tests.py[m[36m:[m                self.client.[1;31mlogin[m(username=user[0], password=user[1])
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_student', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='upload_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='strip_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='strip_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username='strip_admin', password='password')
+[35mesp/esp/qsd/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username="user2", password="password123")
+[35mesp/esp/seltests/seltests.py[m[36m:[mfrom esp.seltests.util import try_normal_[1;31mlogin[m, logout
+[35mesp/esp/seltests/seltests.py[m[36m:[m             {% include "users/[1;31mlogin[mbox.html" %}
+[35mesp/esp/seltests/seltests.py[m[36m:[m        # Now set up and test normal [1;31mlogin[m
+[35mesp/esp/seltests/seltests.py[m[36m:[m        try_normal_[1;31mlogin[m(self, "student", "student")
+[35mesp/esp/seltests/seltests.py[m[36m:[m        try_normal_[1;31mlogin[m(self, "student", "student")
+[35mesp/esp/seltests/util.py[m[36m:[mdef try_[1;31mlogin[m(driver, username, password):
+[35mesp/esp/seltests/util.py[m[36m:[mdef try_normal_[1;31mlogin[m(driver, username, password):
+[35mesp/esp/seltests/util.py[m[36m:[m    try_[1;31mlogin[m(driver, username, password)
+[35mesp/esp/survey/views.py[m[36m:[mfrom django.contrib.auth.decorators import [1;31mlogin[m_required
+[35mesp/esp/survey/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/survey/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/survey/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/survey/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/survey/views.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/themes/tests.py[m[36m:[m            self.assertRedirects(response, '/accounts/[1;31mlogin[m/?next=%s' % url)
+[35mesp/esp/themes/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/themes/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/themes/tests.py[m[36m:[m        self.client.[1;31mlogin[m(username=self.admin.username, password='password')
+[35mesp/esp/themes/theme_data/bigpicture/templates/main.html[m[36m:[m    {% include "users/[1;31mlogin[mbox_content.html" %}
+[35mesp/esp/themes/theme_data/bigpicture/templates/users/loginbox_content.html[m[36m:[m<div id="[1;31mlogin[mbox">
+[35mesp/esp/themes/theme_data/bigpicture/templates/users/loginbox_content.html[m[36m:[m          <li><a href="/myesp/[1;31mlogin[mhelp.html">Help</a></li>
+[35mesp/esp/themes/theme_data/bigpicture/templates/users/loginbox_content.html[m[36m:[m    <form name="[1;31mlogin[mform" id="[1;31mlogin[mform" method="post" action="/myesp/[1;31mlogin[m/" class="navbar-form form-inline">
+[35mesp/esp/themes/theme_data/bigpicture/templates/users/loginbox_content.html[m[36m:[m      <button class="btn" id="go[1;31mlogin[m" type="submit">Login</button>
+[35mesp/esp/themes/theme_data/bigpicture/templates/users/loginbox_content.html[m[36m:[m          <li><a href="/myesp/[1;31mlogin[mhelp.html">Help</a></li>
+[35mesp/esp/themes/theme_data/circles/less/main.less[m[36m:[m#[1;31mlogin[mbox {
+[35mesp/esp/themes/theme_data/circles/less/main.less[m[36m:[m#[1;31mlogin[mbox label {
+[35mesp/esp/themes/theme_data/circles/less/main.less[m[36m:[m#[1;31mlogin[mbox input {
+[35mesp/esp/themes/theme_data/circles/less/main.less[m[36m:[m#[1;31mlogin[mbox form {
+[35mesp/esp/themes/theme_data/circles/templates/main.html[m[36m:[m{% block [1;31mlogin[mbox %}
+[35mesp/esp/themes/theme_data/circles/templates/main.html[m[36m:[m{% include "users/[1;31mlogin[mbox.html" %}
+[35mesp/esp/themes/theme_data/circles/templates/users/loginbox_content.html[m[36m:[m<div id="[1;31mlogin[mbox">
+[35mesp/esp/themes/theme_data/circles/templates/users/loginbox_content.html[m[36m:[m<table align="center" class="[1;31mlogin[mform" cellspacing="0" cellpadding="5">
+[35mesp/esp/themes/theme_data/circles/templates/users/loginbox_content.html[m[36m:[m{% if [1;31mlogin[m_result %}
+[35mesp/esp/themes/theme_data/circles/templates/users/loginbox_content.html[m[36m:[m    <div><center><span style="color: #BCCAF5;">{{ [1;31mlogin[m_result }}{% ifequal "Invalid username or password" [1;31mlogin[m_result %}<br /><a href="/myesp/[1;31mlogin[m/">Try again here.</a>{% endifequal %}</span></center><br /></div>
+[35mesp/esp/themes/theme_data/circles/templates/users/loginbox_content.html[m[36m:[m    {% include "users/[1;31mlogin[mbox_userinfo.html" %}
+[35mesp/esp/themes/theme_data/circles/templates/users/loginbox_content.html[m[36m:[m  <form name="[1;31mlogin[mform" id="[1;31mlogin[mform" method="post" action="/myesp/[1;31mlogin[m/">
+[35mesp/esp/themes/theme_data/circles/templates/users/loginbox_content.html[m[36m:[m        <td style="vertical-align: top;"><div class="divformcol3"><button class="btn btn-inverse glyphicon glyphicon-log-in" id="go[1;31mlogin[m" type="submit" style="margin-left:5px;"></button></div></td>
+[35mesp/esp/themes/theme_data/circles/templates/users/loginbox_content.html[m[36m:[m        <td colspan="3"><div class="divformcol1"><a href="/myesp/[1;31mlogin[mhelp.html">Login Help</a>
+[35mesp/esp/themes/theme_data/droplets/templates/main.html[m[36m:[m        {% include "users/[1;31mlogin[mbox_content.html" %}
+[35mesp/esp/themes/theme_data/droplets/templates/users/loginbox_content.html[m[36m:[m{% if [1;31mlogin[m_result %}
+[35mesp/esp/themes/theme_data/droplets/templates/users/loginbox_content.html[m[36m:[m  <div class="nav">{{ [1;31mlogin[m_result }}</div>
+[35mesp/esp/themes/theme_data/droplets/templates/users/loginbox_content.html[m[36m:[m        <a class="navbar-header" id="[1;31mlogin[mbox_user_name" data-toggle="dropdown">
+[35mesp/esp/themes/theme_data/droplets/templates/users/loginbox_content.html[m[36m:[m    <form name="[1;31mlogin[mform" id="[1;31mlogin[mform" method="post" action="/myesp/[1;31mlogin[m/" class="navbar-form pull-right">
+[35mesp/esp/themes/theme_data/droplets/templates/users/loginbox_content.html[m[36m:[m      <button class="btn btn-inverse" id="go[1;31mlogin[m" type="submit" style="margin-right:0px;"> Login </button>
+[35mesp/esp/themes/theme_data/droplets/templates/users/loginbox_content.html[m[36m:[m      <li><a href="/myesp/[1;31mlogin[mhelp.html">Help</a></li>
+[35mesp/esp/themes/theme_data/floaty/less/main.less[m[36m:[m#[1;31mlogin[m_box
+[35mesp/esp/themes/theme_data/floaty/less/main.less[m[36m:[m#[1;31mlogin[m_box label
+[35mesp/esp/themes/theme_data/floaty/less/main.less[m[36m:[m#[1;31mlogin[m_box input {
+[35mesp/esp/themes/theme_data/floaty/less/main.less[m[36m:[m#[1;31mlogin[m_box input.gobutton
+[35mesp/esp/themes/theme_data/floaty/templates/index.html[m[36m:[m    <td colspan="2">If you have an account, please <a href="/myesp/[1;31mlogin[m?next=/volunteer/Splash/2011_Spring/signup/">click here</a> to log in and return to this page.</td>
+[35mesp/esp/themes/theme_data/floaty/templates/main.html[m[36m:[m    {% include "users/[1;31mlogin[mbox_content.html" %}
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor0 #[1;31mlogin[m_submit { background: @tabcolor0_accent1_color; color: @tabcolor0_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor0 #[1;31mlogin[m_signup { background: @tabcolor0_accent2_color; color: @tabcolor0_base_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor0 #[1;31mlogin[m_arrow1 { border-right: 10px solid @tabcolor0_accent1_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor0 #[1;31mlogin[m_arrow2 { border-right: 10px solid @tabcolor0_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor1 #[1;31mlogin[m_submit { background: @tabcolor1_accent1_color; color: @tabcolor1_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor1 #[1;31mlogin[m_signup { background: @tabcolor1_accent2_color; color: @tabcolor1_base_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor1 #[1;31mlogin[m_arrow1 { border-right: 10px solid @tabcolor1_accent1_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor1 #[1;31mlogin[m_arrow2 { border-right: 10px solid @tabcolor1_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor2 #[1;31mlogin[m_submit { background: @tabcolor2_accent1_color; color: @tabcolor2_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor2 #[1;31mlogin[m_signup { background: @tabcolor2_accent2_color; color: @tabcolor2_base_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor2 #[1;31mlogin[m_arrow1 { border-right: 10px solid @tabcolor2_accent1_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor2 #[1;31mlogin[m_arrow2 { border-right: 10px solid @tabcolor2_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor3 #[1;31mlogin[m_submit { background: @tabcolor3_accent1_color; color: @tabcolor3_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor3 #[1;31mlogin[m_signup { background: @tabcolor3_accent2_color; color: @tabcolor3_base_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor3 #[1;31mlogin[m_arrow1 { border-right: 10px solid @tabcolor3_accent1_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor3 #[1;31mlogin[m_arrow2 { border-right: 10px solid @tabcolor3_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor4 #[1;31mlogin[m_submit { background: @tabcolor4_accent1_color; color: @tabcolor4_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor4 #[1;31mlogin[m_signup { background: @tabcolor4_accent2_color; color: @tabcolor4_base_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor4 #[1;31mlogin[m_arrow1 { border-right: 10px solid @tabcolor4_accent1_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor4 #[1;31mlogin[m_arrow2 { border-right: 10px solid @tabcolor4_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor5 #[1;31mlogin[m_submit { background: @tabcolor5_accent1_color; color: @tabcolor5_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor5 #[1;31mlogin[m_signup { background: @tabcolor5_accent2_color; color: @tabcolor5_base_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor5 #[1;31mlogin[m_arrow1 { border-right: 10px solid @tabcolor5_accent1_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor5 #[1;31mlogin[m_arrow2 { border-right: 10px solid @tabcolor5_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor6 #[1;31mlogin[m_submit { background: @tabcolor6_accent1_color; color: @tabcolor6_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor6 #[1;31mlogin[m_signup { background: @tabcolor6_accent2_color; color: @tabcolor6_base_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor6 #[1;31mlogin[m_arrow1 { border-right: 10px solid @tabcolor6_accent1_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor6 #[1;31mlogin[m_arrow2 { border-right: 10px solid @tabcolor6_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor7 #[1;31mlogin[m_submit { background: @tabcolor7_accent1_color; color: @tabcolor7_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor7 #[1;31mlogin[m_signup { background: @tabcolor7_accent2_color; color: @tabcolor7_base_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor7 #[1;31mlogin[m_arrow1 { border-right: 10px solid @tabcolor7_accent1_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor7 #[1;31mlogin[m_arrow2 { border-right: 10px solid @tabcolor7_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor8 #[1;31mlogin[m_submit { background: @tabcolor8_accent1_color; color: @tabcolor8_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor8 #[1;31mlogin[m_signup { background: @tabcolor8_accent2_color; color: @tabcolor8_base_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor8 #[1;31mlogin[m_arrow1 { border-right: 10px solid @tabcolor8_accent1_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor8 #[1;31mlogin[m_arrow2 { border-right: 10px solid @tabcolor8_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor9 #[1;31mlogin[m_submit { background: @tabcolor9_accent1_color; color: @tabcolor9_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor9 #[1;31mlogin[m_signup { background: @tabcolor9_accent2_color; color: @tabcolor9_base_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor9 #[1;31mlogin[m_arrow1 { border-right: 10px solid @tabcolor9_accent1_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#page.tabcolor9 #[1;31mlogin[m_arrow2 { border-right: 10px solid @tabcolor9_accent2_color; }
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#[1;31mlogin[m_box {
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#[1;31mlogin[m_user {
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#[1;31mlogin[m_pswd {
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#[1;31mlogin[m_submit {
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#[1;31mlogin[m_arrow1 {
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#[1;31mlogin[m_arrow2 {
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#[1;31mlogin[m_signup {
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#[1;31mlogin[m_help {
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m/*#[1;31mlogin[m_help {
+[35mesp/esp/themes/theme_data/fruitsalad/less/main.less[m[36m:[m#[1;31mlogin[m_help:hover {
+[35mesp/esp/themes/theme_data/fruitsalad/less/splash_page.less[m[36m:[m#[1;31mlogin[m_box_index {
+[35mesp/esp/themes/theme_data/fruitsalad/less/splash_page.less[m[36m:[m#[1;31mlogin[m_div_index {
+[35mesp/esp/themes/theme_data/fruitsalad/less/splash_page.less[m[36m:[m#[1;31mlogin[m_greeting_index {
+[35mesp/esp/themes/theme_data/fruitsalad/less/splash_page.less[m[36m:[m#[1;31mlogin[m_user_index {
+[35mesp/esp/themes/theme_data/fruitsalad/less/splash_page.less[m[36m:[m#[1;31mlogin[m_pswd_index {
+[35mesp/esp/themes/theme_data/fruitsalad/less/splash_page.less[m[36m:[m#[1;31mlogin[m_help_index {
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[mwrap(document.getElementById('[1;31mlogin[m_user_index'),'Username');
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[mwrap(document.getElementById('[1;31mlogin[m_pswd_index'),'Password');
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m{% block [1;31mlogin[m %}
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m<div id="[1;31mlogin[m_box_index">
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m<div id="[1;31mlogin[m_div_index">
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m<!-- [1;31mlogin[m -->
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m<form name="[1;31mlogin[m_form" id="[1;31mlogin[m_form_index" method="post" action="/myesp/[1;31mlogin[m/">
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m  <input type="text" id="[1;31mlogin[m_user_index" name="username"/>
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m  <input type="password" id="[1;31mlogin[m_pswd_index" name="password" />
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m  <span id="[1;31mlogin[m_arrow1"></span>
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m  <input type="submit" id="[1;31mlogin[m_submit" name="[1;31mlogin[m_submit" value="Log in" />
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m  <span id="[1;31mlogin[m_arrow2"></span>
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m  <a href="/myesp/register" id="[1;31mlogin[m_signup">Sign up</a>
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m  <a href="/myesp/[1;31mlogin[mhelp.html" id="[1;31mlogin[m_help_index">need help?</a>
+[35mesp/esp/themes/theme_data/fruitsalad/templates/bubblesfront.html[m[36m:[m<div id="[1;31mlogin[m_greeting_index">
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m{% block [1;31mlogin[m %}
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m<div id="[1;31mlogin[m_box">
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m<!-- [1;31mlogin[m -->
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m<form name="[1;31mlogin[m_form" id="[1;31mlogin[m_form" method="post" action="/myesp/[1;31mlogin[m/">
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m  <input type="text" id="[1;31mlogin[m_user" name="username" />
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m  <input type="password" id="[1;31mlogin[m_pswd" name="password" />
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m  <span id="[1;31mlogin[m_arrow1"></span>
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m  <input type="submit" id="[1;31mlogin[m_submit" name="[1;31mlogin[m_submit" value="Log in" />
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m  <span id="[1;31mlogin[m_arrow2"></span>
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m  <a href="/myesp/register" id="[1;31mlogin[m_signup">Sign up</a>
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m  <a href="/myesp/[1;31mlogin[mhelp.html" id="[1;31mlogin[m_help">need help?</a>
+[35mesp/esp/themes/theme_data/fruitsalad/templates/main.html[m[36m:[m  {% include "users/[1;31mlogin[mbox_userinfo.html" %}
+[35mesp/esp/urls.py[m[36m:[m    url(r'^accounts/[1;31mlogin[m/$', esp.users.views.CustomLoginView.as_view()),
+[35mesp/esp/users/admin.py[m[36m:[m        (_('Important dates'), {'fields': ('last_[1;31mlogin[m', 'date_joined')}),
+[35mesp/esp/users/controllers/merge.py[m[36m:[m        forward: Set up [1;31mlogin[m forwarding from absorbee to absorber
+[35mesp/esp/users/controllers/tests/test_usersearch.py[m[36m:[mfrom django.contrib.auth import logout, [1;31mlogin[m, authenticate
+[35mesp/esp/users/forms/merge.py[m[36m:[m        help_text='Should [1;31mlogin[m forwarding be set up from the absorbee to the absorber?')
+[35mesp/esp/users/models/__init__.py[m[36m:[mfrom django.contrib.auth import logout, [1;31mlogin[m, REDIRECT_FIELD_NAME
+[35mesp/esp/users/models/__init__.py[m[36m:[m        [1;31mlogin[m(request, user)
+[35mesp/esp/users/models/__init__.py[m[36m:[m        [1;31mlogin[m(request, old_user)
+[35mesp/esp/users/models/__init__.py[m[36m:[m        and last_[1;31mlogin[m timestamp. Nothing is stored in the database, so even
+[35mesp/esp/users/models/forwarder.py[m[36m:[m    Links source user to target user, to make all [1;31mlogin[m sessions under target.
+[35mesp/esp/users/tests.py[m[36m:[mfrom django.contrib.auth import logout, [1;31mlogin[m, authenticate
+[35mesp/esp/users/tests.py[m[36m:[m        [1;31mlogin[m(request, self.user)
+[35mesp/esp/users/tests.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username="admin", password="password"))
+[35mesp/esp/users/tests.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username='forgetful', password='forgotten_pw'),
+[35mesp/esp/users/tests.py[m[36m:[m                        "User forgetful cannot [1;31mlogin[m")
+[35mesp/esp/users/tests.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username='innocent', password='remembered_pw'),
+[35mesp/esp/users/tests.py[m[36m:[m                        "User innocent cannot [1;31mlogin[m")
+[35mesp/esp/users/tests.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username='forgetful', password='new_pw'),
+[35mesp/esp/users/tests.py[m[36m:[m                        "User forgetful cannot [1;31mlogin[m with new password")
+[35mesp/esp/users/tests.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username='innocent', password='remembered_pw'),
+[35mesp/esp/users/tests.py[m[36m:[m        # Make sure that an unprivileged access to /myesp/makeadmin/ returns a redirect to the [1;31mlogin[m page
+[35mesp/esp/users/tests.py[m[36m:[m        self.assertRedirects(response, '/accounts/[1;31mlogin[m/?next=/myesp/makeadmin/')
+[35mesp/esp/users/tests.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=self.user.username, password='password'))
+[35mesp/esp/users/tests.py[m[36m:[m        self.assertTrue(self.client.[1;31mlogin[m(username=user.username, password='password'))
+[35mesp/esp/users/tests.py[m[36m:[m        c.[1;31mlogin[m(username=self.user.username, password=self.password)
+[35mesp/esp/users/tests.py[m[36m:[m        c.[1;31mlogin[m(username=self.user.username, password=self.password)
+[35mesp/esp/users/urls.py[m[36m:[m    url(r'^[1;31mlogin[m/?$', views.CustomLoginView.as_view(), name="[1;31mlogin[m"),
+[35mesp/esp/users/urls.py[m[36m:[m    url(r'^[1;31mlogin[mhelp', views.LoginHelpView.as_view(), name='Login Help'),
+[35mesp/esp/users/views/__init__.py[m[36m:[mfrom django.contrib.auth import [1;31mlogin[m, logout
+[35mesp/esp/users/views/__init__.py[m[36m:[mfrom django.contrib.auth.decorators import [1;31mlogin[m_required
+[35mesp/esp/users/views/__init__.py[m[36m:[m#   This is a huge hack while we figure out what to do about [1;31mlogin[ms and cookies.
+[35mesp/esp/users/views/__init__.py[m[36m:[m    template_name = 'registration/[1;31mlogin[m.html'
+[35mesp/esp/users/views/__init__.py[m[36m:[m            context['initiated_[1;31mlogin[m'] = True
+[35mesp/esp/users/views/__init__.py[m[36m:[m        """Handle successful [1;31mlogin[m with user forwarding and profile checks."""
+[35mesp/esp/users/views/__init__.py[m[36m:[m        [1;31mlogin[m(self.request, user)
+[35mesp/esp/users/views/__init__.py[m[36m:[m                'users/[1;31mlogin[m_duplicate_warning.html',
+[35mesp/esp/users/views/__init__.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/users/views/__init__.py[m[36m:[m    redirected to the [1;31mlogin[m page and unsubscribed as soon as they log in.
+[35mesp/esp/users/views/__init__.py[m[36m:[m    # so show the [1;31mlogin[m page (with a custom alert message)
+[35mesp/esp/users/views/__init__.py[m[36m:[m        return HttpResponseRedirect('%s?next=%s' % (reverse('[1;31mlogin[m'), next_url))
+[35mesp/esp/users/views/__init__.py[m[36m:[m    template_name = "users/[1;31mlogin[mhelp.html"
+[35mesp/esp/users/views/merge.py[m[36m:[m#from django.contrib.auth.decorators import [1;31mlogin[m_required
+[35mesp/esp/users/views/password_reset.py[m[36m:[mfrom django.contrib.auth import authenticate, [1;31mlogin[m
+[35mesp/esp/users/views/password_reset.py[m[36m:[m    and auto-[1;31mlogin[m the user after password reset.
+[35mesp/esp/users/views/password_reset.py[m[36m:[m    pk, password hash, and last_[1;31mlogin[m timestamp.  No token is ever
+[35mesp/esp/users/views/password_reset.py[m[36m:[m        # Auto-[1;31mlogin[m the user after successful password reset
+[35mesp/esp/users/views/password_reset.py[m[36m:[m            [1;31mlogin[m(self.request, auth_user)
+[35mesp/esp/users/views/registration.py[m[36m:[mfrom django.contrib.auth import [1;31mlogin[m, authenticate
+[35mesp/esp/users/views/registration.py[m[36m:[mfrom django.contrib.auth.decorators import [1;31mlogin[m_required
+[35mesp/esp/users/views/registration.py[m[36m:[m            [1;31mlogin[m(request, user)
+[35mesp/esp/users/views/registration.py[m[36m:[m        raise ESPError('The user account supplied has already been activated. If you have lost your password, visit the <a href="/myesp/passwdrecover/">password recovery form</a>.  Otherwise, please <a href="/accounts/[1;31mlogin[m/?next=/myesp/profile/">log in</a>.', log=False)
+[35mesp/esp/users/views/registration.py[m[36m:[m    @method_decorator([1;31mlogin[m_required)
+[35mesp/esp/web/forms/contact_form.py[m[36m:[m    # checking whether they want to recover [1;31mlogin[m information.
+[35mesp/esp/web/tests.py[m[36m:[m        c.[1;31mlogin[m(username=self.admins[0], password='password')
+[35mesp/esp/web/tests.py[m[36m:[m        c.[1;31mlogin[m(username=self.admins[0], password='password')
+[35mesp/esp/web/views/archives.py[m[36m:[mfrom django.contrib.auth.decorators import [1;31mlogin[m_required
+[35mesp/esp/web/views/bio.py[m[36m:[mfrom django.contrib.auth.decorators import [1;31mlogin[m_required
+[35mesp/esp/web/views/bio.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/web/views/bio.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/web/views/myesp.py[m[36m:[mfrom django.contrib.auth import [1;31mlogin[m, authenticate
+[35mesp/esp/web/views/myesp.py[m[36m:[mfrom django.contrib.auth.decorators import [1;31mlogin[m_required
+[35mesp/esp/web/views/myesp.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/web/views/myesp.py[m[36m:[m                        [1;31mlogin[m(request, user)
+[35mesp/esp/web/views/myesp.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/web/views/myesp.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/web/views/myesp.py[m[36m:[m    from django.contrib.auth import [1;31mlogin[m as auth_[1;31mlogin[m, logout as auth_logout
+[35mesp/esp/web/views/myesp.py[m[36m:[m        auth_[1;31mlogin[m(request, admin_user)
+[35mesp/esp/web/views/myesp.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/web/views/myesp.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/esp/web/views/myesp.py[m[36m:[m@[1;31mlogin[m_required
+[35mesp/public/media/default_styles/admin_theme.css[m[36m:[m#[1;31mlogin[m-header {
+[35mesp/public/media/default_styles/admin_theme.css[m[36m:[m.[1;31mlogin[m .form-row #id_username, .[1;31mlogin[m .form-row #id_password {
+[35mesp/public/media/default_styles/admin_theme.css[m[36m:[mbody.[1;31mlogin[m {
+[35mesp/public/media/default_styles/admin_theme.css[m[36m:[m.[1;31mlogin[m .submit-row {
+[35mesp/public/media/default_styles/archives_print.css[m[36m:[m#div[1;31mlogin[m {
+[35mesp/public/media/default_styles/forms.css[m[36m:[m#[1;31mlogin[m_form table {
+[35mesp/public/media/default_styles/forms.css[m[36m:[m#[1;31mlogin[m_form table td, #[1;31mlogin[m_form table th {
+[35mesp/public/media/default_styles/forms.css[m[36m:[m#[1;31mlogin[m_form tbody th, #[1;31mlogin[m_form tbody th {
+[35mesp/public/media/default_styles/forms.css[m[36m:[m#[1;31mlogin[m_form thead th {
+[35mesp/public/media/default_styles/home.css[m[36m:[m/* [1;31mlogin[m form */
+[35mesp/public/media/default_styles/home.css[m[36m:[m#div[1;31mlogin[m {
+[35mesp/public/media/default_styles/home2.css[m[36m:[m/* [1;31mlogin[m form */
+[35mesp/public/media/default_styles/home2.css[m[36m:[m#div[1;31mlogin[m {
+[35mesp/public/media/default_styles/lev2.css[m[36m:[m#div[1;31mlogin[m {
+[35mesp/public/media/default_styles/level3.css[m[36m:[m#div[1;31mlogin[m {
+[35mesp/public/media/default_styles/main.css[m[36m:[mtable.[1;31mlogin[mform {
+[35mesp/public/media/default_styles/print_basic.css[m[36m:[m#div[1;31mlogin[m {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor0 #[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor0 #[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor0 #[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor0 #[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor1 #[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor1 #[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor1 #[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor1 #[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor2 #[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor2 #[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor2 #[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor2 #[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor3 #[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor3 #[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor3 #[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor3 #[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor4 #[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor4 #[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor4 #[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor4 #[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor5 #[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor5 #[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor5 #[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor5 #[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor6 #[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor6 #[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor6 #[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor6 #[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor7 #[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor7 #[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor7 #[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor7 #[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor8 #[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor8 #[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor8 #[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor8 #[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor9 #[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor9 #[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor9 #[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#page.tabcolor9 #[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_box {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_user {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_pswd {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_submit {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_arrow1 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_arrow2 {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_signup {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_help {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m/*#[1;31mlogin[m_help {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_help:hover {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_box_index {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_div_index {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_greeting_index {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_user_index {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_pswd_index {
+[35mesp/public/media/default_styles/theme_compiled_test.css[m[36m:[m#[1;31mlogin[m_help_index {
+[35mesp/public/media/google/google-esp.xsl[m[36m:[m                            <input type="radio" name="access" value="a" checked="checked" />Search public and secure content ([1;31mlogin[m required)
+[35mesp/public/media/google/google-esp.xsl[m[36m:[m                          <input type="radio" name="access" value="a"/>Search public and secure content ([1;31mlogin[m required)
+[35mesp/public/media/scripts/content/user_classes.js[m[36m:[m    // Write user's name in the appropriate spot in the [1;31mlogin[m box
+[35mesp/public/media/scripts/content/user_data.js[m[36m:[mvar esp_user_[1;31mlogin[m = null;
+[35mesp/public/media/scripts/content/user_data.js[m[36m:[m    esp_user_[1;31mlogin[m = '<table border="0" cellpadding="0" cellspacing="0" summary=" "><tr><td width="100%"><div class="divformcol1">&nbsp;</div></td><td style="text-align:left"><div class="divformcol1" style="text-align:left">';
+[35mesp/public/media/scripts/content/user_data.js[m[36m:[m	esp_user_[1;31mlogin[m += '<a href="/myesp/switchback/">Go back to ' + esp_user['cur_retTitle'] + '</a>';
+[35mesp/public/media/scripts/content/user_data.js[m[36m:[m	esp_user_[1;31mlogin[m += 'Welcome, ' + esp_user['cur_first_name'] + '!';
+[35mesp/public/media/scripts/content/user_data.js[m[36m:[m    esp_user_[1;31mlogin[m += '</div></td><td colspan="2"><div class="divformcol2" style="text-align:right"><a href="/myesp/signout/">Sign Out</a></div></tr></table>';
+[35mesp/templates/admin/login.html[m[36m:[m{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% static "admin/css/[1;31mlogin[m.css" %}" />{% endblock %}
+[35mesp/templates/admin/login.html[m[36m:[m{% block bodyclass %}{{ block.super }} [1;31mlogin[m{% endblock %}
+[35mesp/templates/admin/login.html[m[36m:[m<div id="[1;31mlogin[m-header">Admin Login <br></div>
+[35mesp/templates/admin/login.html[m[36m:[m<form action="{{ app_path }}" method="post" id="[1;31mlogin[m-form">{% csrf_token %}
+[35mesp/templates/contact.html[m[36m:[m  It looks like you're trying to recover your [1;31mlogin[m information.
+[35mesp/templates/error_base.html[m[36m:[m    <li><a href="/[1;31mlogin[m/">Try logging in</a> with an account that has the required permissions</li>
+[35mesp/templates/faq.html[m[36m:[m<p align="justify">If you are having trouble logging in to your account, you should check out our <a href="/myesp/[1;31mlogin[mhelp">[1;31mlogin[m help page</a>.</p>
+[35mesp/templates/main.html[m[36m:[m          {% include "users/[1;31mlogin[mbox_content.html" %}
+[35mesp/templates/navbar.html[m[36m:[m	    {% include "users/[1;31mlogin[mbox_content.html" %} 
+[35mesp/templates/program/modules/volunteersignup/signup.html[m[36m:[m      <p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/[1;31mlogin[m?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</p>
+[35mesp/templates/registration/duplicate_accounts.html[m[36m:[m  <form method="link" action="/myesp/[1;31mlogin[m">
+[35mesp/templates/registration/login.html[m[36m:[m{% if next and not initiated_[1;31mlogin[m %}
+[35mesp/templates/registration/login.html[m[36m:[mUnsubscribe token is invalid or has expired (>7 days old). Please [1;31mlogin[m or use an unexpired unsubscribe token.
+[35mesp/templates/registration/newuser.html[m[36m:[m    <form method="post" action="/myesp/[1;31mlogin[m">
+[35mesp/templates/registration/newuser_phase1.html[m[36m:[m  <form method="post" action="/myesp/[1;31mlogin[m">
+[35mesp/templates/users/login_initial.html[m[36m:[m <b>NOTE: You must have cookies enabled to [1;31mlogin[m to this website.<br/>
+[35mesp/templates/users/login_initial.html[m[36m:[m<form action='[1;31mlogin[m.html' method="post">
+[35mesp/templates/users/loginbox.html[m[36m:[m<!-- [1;31mlogin[m -->
+[35mesp/templates/users/loginbox.html[m[36m:[m{% include "users/[1;31mlogin[mbox_content.html" %}
+[35mesp/templates/users/loginbox_content.html[m[36m:[m<div id="[1;31mlogin[mbox">
+[35mesp/templates/users/loginbox_content.html[m[36m:[m  {% if [1;31mlogin[m_result %}
+[35mesp/templates/users/loginbox_content.html[m[36m:[m    <div class="navbar">{{ [1;31mlogin[m_result }}</div>
+[35mesp/templates/users/loginbox_content.html[m[36m:[m      <a id="[1;31mlogin[mbox_user_name">Hello, <span id="user_first_name"></span>!</a>
+[35mesp/templates/users/loginbox_content.html[m[36m:[m            <li><a href="/myesp/[1;31mlogin[mhelp.html">Help</a></li>
+[35mesp/templates/users/loginbox_content.html[m[36m:[m    <form name="[1;31mlogin[mform" id="[1;31mlogin[mform" method="post" action="/myesp/[1;31mlogin[m/" class="navbar-form form-inline">
+[35mesp/templates/users/loginbox_content.html[m[36m:[m      <button class="btn btn-inverse" id="go[1;31mlogin[m" type="submit" style="margin-right:0px;"> Login </button>
+[35mesp/templates/users/loginbox_content.html[m[36m:[m          <li><a href="/myesp/[1;31mlogin[mhelp.html">Help</a></li>
+[35mesp/templates/users/loginbox_userinfo.html[m[36m:[m<div id="[1;31mlogin[mbox_user_name">
+[35mesp/templates/users/loginhelp.html[m[36m:[m{% inline_qsd_block ''[1;31mlogin[mhelp'' %}
+[35mesp/templates/users/recovery_email.html[m[36m:[m    <input type="submit" value="Set password and [1;31mlogin[m!" name="submit_btn" class="btn btn-primary" />
+[35mesp/useful_scripts/ajax-hammer/curl.sh[m[36m:[mcurl -c cookies.txt -b cookies.txt -L -d @[1;31mlogin[m.txt "http://$HOSTNAME/myesp/[1;31mlogin[m/" >/dev/null 2>&1
+[35mesp/useful_scripts/ajax-hammer/login.txt[m[36m:[mnext=%2F&username=test&password=password&[1;31mlogin[m_submit=
+[35mesp/useful_scripts/poll_schedules.sh[m[36m:[mcurl -b "${CURL_COOKIE_STORE}" -c "${CURL_COOKIE_STORE}" -d "username=${USERNAME}&password=${PASSWORD}&this_is_the_[1;31mlogin[m_form=1" "https://esp.mit.edu/admin/" >/dev/null 2>&1

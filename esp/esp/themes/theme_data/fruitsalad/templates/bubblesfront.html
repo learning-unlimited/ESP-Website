@@ -76,11 +76,18 @@ document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025"
 <!-- login -->
 <form name="login_form" id="login_form_index" method="post" action="/myesp/login/">
   <input type="hidden" name="next" value="/" />
-  <input type="text" id="login_user_index" name="username"/>
-  <input type="password" id="login_pswd_index" name="password" />
+
+  <input type="text" id="login_user_index" name="username" required />
+  
+  <input type="password" id="login_pswd_index" name="password" required />
+  <!-- Fix #4818: prevent empty login submission -->
+
   <span id="login_arrow1"></span>
+
   <input type="submit" id="login_submit" name="login_submit" value="Log in" />
+
   <span id="login_arrow2"></span>
+
   <a href="/myesp/register" id="login_signup">Sign up</a>
   <a href="/myesp/loginhelp.html" id="login_help_index">need help?</a>
 </form>
