@@ -37,7 +37,7 @@ def ajax_autocomplete(request):
         ajax_func    = request.GET.get('ajax_func', 'ajax_autocomplete')
         data         = request.GET['ajax_data']
         prog         = request.GET['prog']
-    except KeyError as ValueError:
+    except (KeyError, ValueError):
         # bad request
         response = HttpResponse('Malformed Input')
         response.status_code = 400
