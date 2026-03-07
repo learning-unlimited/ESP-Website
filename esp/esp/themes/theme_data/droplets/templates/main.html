@@ -8,6 +8,12 @@
 .jumbotron {
     background-image: url(/media/images/theme/header.png?v={{ current_header_version }});
 }
+body {
+    background-color: {{ theme.page_background_color|default:"#ffffff" }};
+}
+#main {
+    background-color: {{ theme.main_content_background_color|default:theme.page_background_color|default:"#ffffff" }};
+}
 </style>
 {% endblock stylesheets %}
 
