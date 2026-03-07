@@ -166,6 +166,10 @@ For a custom-format dump (created with ``pg_dump -Fc``)::
 
     docker compose exec web python esp/manage.py migrate
 
+**Step 5: Setup the local development domain** to prevent emails and links from resolving to the original production domain::
+
+    docker compose exec web python esp/manage.py setup_dev_site
+
 .. note::
    If you see ownership or permission errors when loading a dump from a different
    environment, the ``--no-owner --no-acl`` flags on ``pg_restore`` will
