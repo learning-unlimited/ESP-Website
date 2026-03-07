@@ -13,15 +13,12 @@ class UpdateScheduleJsonTests(SimpleTestCase):
 
     def setUp(self):
         self.factory = RequestFactory()
-        self.module = SimpleNamespace()  
+        self.module = SimpleNamespace()
 
     def _call(self, params):
         request = self.factory.get("/onsite/update", params)
 
-       
         fn = getattr(OnSiteClassList.update_schedule_json, "method", OnSiteClassList.update_schedule_json)
-
-        
         return fn(self.module, request, None, None, None, None, None, None)
 
     def _assert_user_not_found(self, resp):
