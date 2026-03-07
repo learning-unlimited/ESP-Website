@@ -4,10 +4,16 @@ from esp.admin import admin_site
 from django import forms
 from django.db import models
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, RecordType, Record, Permission, GradeChangeRequest
+from esp.users.models import (
+    UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo,
+    EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, RecordType,
+    Record, Permission, GradeChangeRequest,
+)
+from esp.utils.models import AuditLogEntry
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
+from esp.utils.audit import AuditedModelAdmin
 import datetime
 
 
@@ -86,7 +92,7 @@ class ExpiredListFilter(admin.SimpleListFilter):
         elif self.value() == 'expired':
             return queryset.filter(end_date__lte=datetime.datetime.now())
 
-class PermissionAdmin(admin.ModelAdmin):
+class PermissionAdmin(AuditedModelAdmin, admin.ModelAdmin):
     list_display = ['id', 'user', 'role', 'permission_type', 'program', 'start_date', 'end_date']
     search_fields = default_user_search() + ['permission_type', 'program__url']
     list_filter = ['permission_type', 'program', 'role', ExpiredListFilter]
@@ -158,7 +164,7 @@ class K12SchoolAdmin(admin.ModelAdmin):
 
 admin_site.register(K12School, K12SchoolAdmin)
 
-class GradeChangeRequestAdmin(admin.ModelAdmin):
+class GradeChangeRequestAdmin(AuditedModelAdmin, admin.ModelAdmin):
     list_display = ['requesting_student', 'claimed_grade', 'approved', 'acknowledged_by', 'acknowledged_time', 'created']
     readonly_fields = ['grade_before_request', 'requesting_student', 'acknowledged_by', 'acknowledged_time', 'claimed_grade']
     search_fields = default_user_search('requesting_student')
@@ -174,3 +180,23 @@ admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group
 admin_site.register(Group, GroupAdmin)
+
+
+class AuditLogEntryAdmin(admin.ModelAdmin):
+    """Read-only browse view for the admin audit log."""
+    list_display  = ['timestamp', 'actor', 'actor_ip', 'action', 'content_type', 'object_id', 'object_repr', 'extra']
+    list_filter   = ['action', 'content_type', 'timestamp']
+    search_fields = default_user_search('actor') + ['actor_ip', 'object_repr', 'extra']
+    date_hierarchy = 'timestamp'
+    readonly_fields = ['actor', 'actor_ip', 'action', 'content_type', 'object_id', 'object_repr', 'changes', 'extra', 'timestamp']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+admin_site.register(AuditLogEntry, AuditLogEntryAdmin)

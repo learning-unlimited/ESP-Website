@@ -2910,6 +2910,7 @@ class GradeChangeRequest(TimeStampedModel):
     def __str__(self):
         return  f"{self.requesting_student} requests a grade change to {self.claimed_grade}" + (" (Approved)" if self.approved else "")
 
+
 # We can't import these earlier because of circular stuff...
 from esp.users.models.forwarder import UserForwarder # Don't delete, needed for app loading
 from esp.cal.models import Event

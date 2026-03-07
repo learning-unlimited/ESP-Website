@@ -33,6 +33,8 @@ Learning Unlimited, Inc.
 """
 
 from django.db import models
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.fields import JSONField
 from reversion import revisions as reversion
 
 from esp.users.models import ESPUser
@@ -79,3 +81,63 @@ class PrintRequest(models.Model):
     user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
     time_requested = models.DateTimeField(auto_now_add=True)
     time_executed = models.DateTimeField(blank=True, null=True)
+
+
+class AuditLogEntry(models.Model):
+    """
+    Immutable record of a sensitive admin action.
+    Written by AuditedModelAdmin whenever an object is saved or deleted
+    through the Django admin interface.
+
+    Cross-app infrastructure — lives in esp.utils, not in any single app.
+    """
+
+    ACTION_CREATE = 'create'
+    ACTION_UPDATE = 'update'
+    ACTION_DELETE = 'delete'
+    ACTION_BULK   = 'bulk_action'
+    ACTION_CHOICES = [
+        (ACTION_CREATE, 'Create'),
+        (ACTION_UPDATE, 'Update'),
+        (ACTION_DELETE, 'Delete'),
+        (ACTION_BULK,   'Bulk action'),
+    ]
+
+    actor        = models.ForeignKey(
+        ESPUser, null=True, on_delete=models.SET_NULL,
+        related_name='audit_log_entries',
+        help_text='Admin user who performed the action.',
+    )
+    action       = models.CharField(max_length=16, choices=ACTION_CHOICES)
+    content_type = models.ForeignKey(
+        ContentType, null=True, blank=True, on_delete=models.SET_NULL,
+        help_text='Django ContentType of the affected model.',
+    )
+    object_id    = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text='Primary key of the affected object.',
+    )
+    object_repr  = models.TextField(blank=True, help_text='str() of the object at action time.')
+    changes      = JSONField(
+        null=True, blank=True,
+        help_text='JSON dict of {field: [old_value, new_value]} for updates.',
+    )
+    actor_ip     = models.GenericIPAddressField(
+        null=True, blank=True,
+        help_text='IP address of the admin user at action time.',
+    )
+    extra        = models.TextField(
+        blank=True,
+        help_text='Free-text note, e.g. bulk action name or extra context.',
+    )
+    timestamp    = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        app_label = 'utils'
+        ordering = ['-timestamp']
+        verbose_name = 'audit log entry'
+        verbose_name_plural = 'audit log entries'
+
+    def __str__(self):
+        model_name = self.content_type.model if self.content_type else 'unknown'
+        return f'[{self.timestamp:%Y-%m-%d %H:%M}] {self.actor} {self.action} {model_name} #{self.object_id}'
