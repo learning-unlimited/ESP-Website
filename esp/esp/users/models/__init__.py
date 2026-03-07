@@ -56,6 +56,7 @@ from django.db.models import signals, Min
 from django.db.models.base import ModelState
 from django.db.models.manager import Manager
 from django.db.models.query import Q
+from django.contrib.postgres.fields import JSONField
 from django.http import HttpResponseRedirect
 from django.template import loader
 from django.template.defaultfilters import urlencode
@@ -2110,7 +2111,8 @@ class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
         to pass the query along to multiple pages and retrieval (et al). """
     item_model   = models.CharField(max_length=256)            # A string representing the model, for instance User or Program
-    q_filter     = models.BinaryField()                         # A bytestring representing a query filter
+    q_filter     = models.BinaryField()                         # DEPRECATED: A bytestring representing a query filter
+    q_filter_json = JSONField(null=True, blank=True)            # A JSON representation of the query filter
     sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
     create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
     useful_name  = models.CharField(max_length=1024, blank=True, null=True) # A nice name to apply to this filter.
@@ -2123,27 +2125,53 @@ class PersistentQueryFilter(models.Model):
     def create_from_Q(item_model, q_filter, description = ''):
         """ The main constructor, please call this. """
         import hashlib
+        
+        # New JSON serialization
+        json_filter_data = q_to_json(q_filter)
+        json_filter_str = json.dumps(json_filter_data, sort_keys=True)
+        sha1_hash_val = hashlib.sha1(json_filter_str.encode('utf-8')).hexdigest()
+
+        # Legacy pickle serialization for migration period
         dumped_filter = pickle.dumps(q_filter)
 
         # Deal with multiple instances
-        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+        query_q = Q(item_model = str(item_model), sha1_hash = sha1_hash_val)
         pqfs = PersistentQueryFilter.objects.filter(query_q)
         if pqfs.exists():
             foo = pqfs[0]
         else:
-            foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
-                                                                       q_filter = dumped_filter,
-                                                                       sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+            foo, created = PersistentQueryFilter.objects.get_or_create(
+                item_model = str(item_model),
+                sha1_hash = sha1_hash_val,
+                defaults={
+                    'q_filter': dumped_filter,
+                    'q_filter_json': json_filter_data
+                }
+            )
         foo.useful_name = description
         foo.save()
         return foo
 
     def get_Q(self, restrict_to_active = True):
         """ This will return the Q object that was passed into it. """
-        try:
-            QObj = pickle.loads(self.q_filter)
-        except Exception:
-            raise ESPError('Invalid Q object stored in database.')
+        QObj = None
+        if self.q_filter_json:
+            try:
+                QObj = json_to_q(self.q_filter_json)
+            except Exception as e:
+                raise ESPError(f'Invalid JSON Q object stored in database: {e}')
+        # Fallback to legacy pickle field if JSON is not present
+        elif self.q_filter:
+            try:
+                QObj = pickle.loads(self.q_filter)
+                # To aid migration, let's save the converted version
+                self.q_filter_json = q_to_json(QObj)
+                self.save(update_fields=['q_filter_json'])
+            except Exception:
+                raise ESPError('Invalid pickled Q object stored in database.')
+
+        if QObj is None:
+            raise ESPError('No query filter found in database record.')
 
         #   Do not include users if they have disabled their account.
         if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
@@ -2159,21 +2187,19 @@ class PersistentQueryFilter(models.Model):
         should_save - If True (default), this PQF will be saved after setting the new filter.
         restrict_to_active - If True (default) and the filter is on users, automatically add an is_active=True filter.
         """
-        if item_model is None:
-            item_model = self.item_model
-        self.item_model = str(item_model)
-
-        if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
-            q_filter = q_filter & Q(is_active=True)
-
         import hashlib
-        dumped_filter = pickle.dumps(q_filter)
-        sha1_hash = hashlib.sha1(dumped_filter).hexdigest()
+        if item_model is not None:
+            self.item_model = str(item_model)
+        
+        # New JSON serialization
+        self.q_filter_json = q_to_json(q_filter)
+        json_filter_str = json.dumps(self.q_filter_json, sort_keys=True)
+        self.sha1_hash = hashlib.sha1(json_filter_str.encode('utf-8')).hexdigest()
 
-        self.q_filter = dumped_filter
-        self.sha1_hash = sha1_hash
+        # Legacy pickle serialization for migration period
+        self.q_filter = pickle.dumps(q_filter)
+
         self.useful_name = description
-
         if should_save:
             self.save()
 
@@ -2198,25 +2224,28 @@ class PersistentQueryFilter(models.Model):
         return PersistentQueryFilter.objects.get(id = id,
                                                  item_model = str(model))
 
-
     @staticmethod
     def getFilterFromQ(QObject, model, description = ''):
         """ This function will get the filter from the Q object. It will either create one
             or use an old one depending on whether it's been used. """
-
         import hashlib
+        # Use JSON hash (same as create_from_Q / set_Q) so lookups stay consistent.
         try:
-            qobject_string = pickle.dumps(QObject)
+            json_data = q_to_json(QObject)
+            qobject_hash = hashlib.sha1(
+                json.dumps(json_data, sort_keys=True).encode('utf-8')
+            ).hexdigest()
         except Exception:
-            qobject_string = b''
+            qobject_hash = ''
         try:
-            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
+            filterObj = PersistentQueryFilter.objects.get(sha1_hash=qobject_hash)
         except PersistentQueryFilter.DoesNotExist:
-            filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
-                                                            q_filter    = QObject,
-                                                            description = description)
-            filterObj.save() # create a new one.
-
+            filterObj = PersistentQueryFilter.create_from_Q(
+                item_model=model,
+                q_filter=QObject,
+                description=description,
+            )
+            filterObj.save()
         return filterObj
 
     def __str__(self):
@@ -2383,6 +2412,44 @@ def flatten(choices):
         else: l=l+flatten(x[1])
     return l
 
+# Connectors that Django's Q object legitimately supports.
+_ALLOWED_Q_CONNECTORS = frozenset({'AND', 'OR', 'XOR'})
+
+
+def q_to_json(q_obj):
+    """Recursively convert a Q object to a JSON-serializable dictionary."""
+    if not isinstance(q_obj, Q):
+        # Leaf node: a tuple like ('field__lookup', value).
+        return q_obj
+    return {
+        'connector': q_obj.connector,
+        'negated': q_obj.negated,
+        'children': [q_to_json(child) for child in q_obj.children],
+    }
+
+
+def json_to_q(data):
+    """Recursively convert a JSON dictionary back to a Q object.
+
+    Only AND / OR / XOR connectors are accepted; anything else raises
+    ValueError to prevent injection of unexpected query operators.
+    """
+    if isinstance(data, list):
+        # Leaf node: a tuple like ['field__lookup', value].
+        return Q(tuple(data))
+    connector = data.get('connector', 'AND')
+    if connector not in _ALLOWED_Q_CONNECTORS:
+        raise ValueError(
+            f"Invalid Q connector {connector!r}. "
+            f"Allowed values: {sorted(_ALLOWED_Q_CONNECTORS)}"
+        )
+    children = [json_to_q(child) for child in data.get('children', [])]
+    q_obj = Q(*children, _connector=connector)
+    if data.get('negated', False):
+        q_obj.negate()
+    return q_obj
+
+
 class Permission(ExpirableModel):
 
     #a permission can be assigned to a user, or a role
@@ -2437,7 +2504,6 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/All", "All classes deadlines"),
             ("Teacher/Classes/View", "View registered classes"),
             ("Teacher/Classes/Edit", "Edit registered classes"),
-            ("Teacher/Classes/CancelReq", "Request class cancellation"),
             ("Teacher/Classes/Coteachers", "Add or remove coteachers"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),
