@@ -13,12 +13,14 @@ class FixIEMiddleware(MiddlewareMixin):
 
     def process_response(self, request, response):
 
+        # a list of mime-types that are decreed "Vary-safe" for IE
         safe_mime_types = (
             "text/html",
             "text/plain",
             "text/sgml",
         )
 
+        # establish that the user is using IE
         try:
             user_agent = request.META.get("HTTP_USER_AGENT", "")
             if "MSIE" not in user_agent.upper():
@@ -26,6 +28,7 @@ class FixIEMiddleware(MiddlewareMixin):
         except (KeyError, AttributeError):
             return response
 
+        # IE will break
         content_type = getattr(response, "content_type", "")
         base_content_type = content_type.split(";", 1)[0].strip().lower()
         if base_content_type not in safe_mime_types:

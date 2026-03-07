@@ -284,6 +284,7 @@ class IndividualAccountingController(ProgramAccountingController):
                 destination=self.default_program_account(),
                 user=self.user).exists()
 
+    @transaction.atomic
     def ensure_required_transfers(self):
         """ Function to ensure there are transfers for this user corresponding
             to required line item types, e.g. program admission """
@@ -321,6 +322,7 @@ class IndividualAccountingController(ProgramAccountingController):
                 transfer.amount_dec = item.amount_dec
                 transfer.save()
 
+    @transaction.atomic
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
             to optional line item types, according to their preferences.
@@ -343,6 +345,7 @@ class IndividualAccountingController(ProgramAccountingController):
 
         return result
 
+    @transaction.atomic
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
@@ -379,6 +382,7 @@ class IndividualAccountingController(ProgramAccountingController):
         return Transfer.objects.filter(user=self.user, line_item__in=line_items).order_by('id')
 
     def get_preferences(self, line_items=None):
+        #   Return a list of 4-tuples: (item name, quantity, cost, options)
         result = []
         transfers = self.get_transfers(line_items)
         seen = {}
@@ -562,6 +566,7 @@ class IndividualAccountingController(ProgramAccountingController):
             return Decimal('0')
 
     def amount_paid(self):
+        #   Compute sum of all transfers from outside (e.g. credit card payments) that are for this user
         result = Transfer.objects.filter(
             user=self.user,
             line_item=self.default_payments_lineitemtype(),
