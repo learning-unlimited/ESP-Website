@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 {% load getTag %}
 
 {% block title %}Section Attendance{% if section %} for {{ section }}{% endif %}{% endblock %}
@@ -22,7 +22,7 @@
     {% endif %}
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 {% load users %}
 
 {% if tl == "onsite" %}
