@@ -131,7 +131,14 @@ jobs:
 
                   console.log(`Closed PR #${prNumber} — issue #${issueNumber} is unassigned.`);
                 } else {
-                  console.log(`PR #${prNumber} is already closed — issue #${issueNumber} is still unassigned.`);
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: prNumber,
+                    body: `👋 Hi @${prAuthor}, issue #${issueNumber} is still not assigned to anyone. Please comment on the issue asking to be assigned, and once a maintainer assigns you, this workflow will automatically reopen the PR. 🙌`,
+                  });
+
+                  console.log(`Commented on closed PR #${prNumber} — issue #${issueNumber} is still unassigned.`);
                 }
                 return;
               }
@@ -159,7 +166,15 @@ jobs:
 
                   console.log(`Closed PR #${prNumber} — author is not an assignee of issue #${issueNumber}.`);
                 } else {
-                  console.log(`PR #${prNumber} is already closed — author still not assigned to issue #${issueNumber}.`);
+                  const assigneeMentionsMsg = assignees.map(a => `@${a}`).join(', ');
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: prNumber,
+                    body: `👋 Hi @${prAuthor}, issue #${issueNumber} is still assigned to ${assigneeMentionsMsg} and not to you. Please comment on the issue asking to be assigned, and once a maintainer assigns you, this workflow will automatically reopen the PR. 🙌`,
+                  });
+
+                  console.log(`Commented on closed PR #${prNumber} — author still not assigned to issue #${issueNumber}.`);
                 }
                 return;
               }
