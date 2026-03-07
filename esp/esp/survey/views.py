@@ -498,7 +498,7 @@ def top_classes(request, tl, program, instance):
 
         # Try to find an "overall rating" question first
         rating_question = survey.questions.filter(
-            name__contains='overall rating'
+            name__icontains='overall rating'
         ).first()
 
         # Determine which type of question we're working with
