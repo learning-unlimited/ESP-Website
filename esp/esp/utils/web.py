@@ -115,6 +115,14 @@ def error500(request, template_name='500.html'):
     context['error_description'] = 'An unexpected server error occurred. Please try again in a moment.'
     context['error_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     context['error_url'] = request.build_absolute_uri()
+
+    # Provide the Sentry event ID if sentry-sdk captured an error
+    try:
+        import sentry_sdk
+        context['sentry_event_id'] = sentry_sdk.last_event_id() or ''
+    except Exception:
+        context['sentry_event_id'] = ''
+
     t = loader.get_template(template_name) # You need to create a 500.html template.
 
     # If possible, we want to render this page with our custom

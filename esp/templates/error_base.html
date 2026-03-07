@@ -26,9 +26,9 @@
     </li>
 </ul>
 
-{% if error_id or error_url %}
+{% if sentry_event_id or error_url %}
 <p>
-    <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}?subject=Error%20Report%20{% if error_id %}[ID%3A%20{{ error_id }}]{% else %}(no%20ID){% endif %}&body=Page%3A%20{{ error_url|truncatechars:500|urlencode }}%0ATime%3A%20{{ error_time }}%0AError%20ID%3A%20{{ error_id|default:'N/A' }}{% if request.user.is_authenticated and request.user.isAdministrator %}%0AError%20Type%3A%20{{ error_type|truncatechars:200|urlencode }}%0AError%20Message%3A%20{{ error|truncatechars:500|urlencode }}%0A%0AAdmin%20notes%3A%0A{% else %}%0A%0APlease%20describe%20what%20you%20were%20doing%20when%20this%20happened%3A%0A{% endif %}"
+    <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}?subject=Error%20Report%20{% if sentry_event_id %}[ID%3A%20{{ sentry_event_id }}]{% else %}(no%20ID){% endif %}&body=Page%3A%20{{ error_url|truncatechars:500|urlencode }}%0ATime%3A%20{{ error_time }}%0AError%20ID%3A%20{{ sentry_event_id|default:'N/A' }}{% if request.user.is_authenticated and request.user.isAdministrator %}%0AError%20Type%3A%20{{ error_type|truncatechars:200|urlencode }}%0AError%20Message%3A%20{{ error|truncatechars:500|urlencode }}%0A%0AAdmin%20notes%3A%0A{% else %}%0A%0APlease%20describe%20what%20you%20were%20doing%20when%20this%20happened%3A%0A{% endif %}"
         aria-label="Report this error via email
         {% if request.user.is_authenticated and request.user.isAdministrator %} (Admin){% endif %}">
         &#128231; Report this error
@@ -54,10 +54,10 @@
         <th>URL</th>
         <td>{{ request.path }}</td>
     </tr>
-    {% if error_id %}
+    {% if sentry_event_id %}
     <tr>
         <th>Sentry ID</th>
-        <td>{{ error_id }}</td>
+        <td>{{ sentry_event_id }}</td>
     </tr>
     {% endif %}
     <tr>
