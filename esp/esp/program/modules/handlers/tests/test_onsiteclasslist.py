@@ -30,14 +30,14 @@ class UpdateScheduleJsonTests(SimpleTestCase):
         self.assertEqual(payload.get("sections"), [])
 
     def test_missing_user_param_returns_400(self):
-        resp = self._call({})
+        resp = self._call({"sections": "[]"})
         self._assert_user_not_found(resp)
 
     def test_non_numeric_user_param_returns_400(self):
-        resp = self._call({"user": "abc"})
+        resp = self._call({"user": "abc", "sections": "[]"})
         self._assert_user_not_found(resp)
 
     def test_unknown_user_id_returns_400(self):
         with patch.object(ESPUser.objects, "get", side_effect=ESPUser.DoesNotExist):
-            resp = self._call({"user": "9999"})
+            resp = self._call({"user": "9999", "sections": "[]"})
         self._assert_user_not_found(resp)
