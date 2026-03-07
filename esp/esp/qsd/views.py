@@ -157,7 +157,7 @@ def qsd(request, url):
             if action == 'read':
                 raise Http404('This page does not exist.')
             else:
-                raise Http403('Sorry, you can not modify <tt>%s</tt>.' % request.path)
+                raise Http403(f'Sorry, you can not modify <tt>{request.path}</tt>.')
 
     if action == 'create':
         action = 'edit'
@@ -395,8 +395,7 @@ def ajax_qsd_image_upload(request):
             safe_name = html_escape(uploaded_file.name or 'unknown')
             return JsonResponse(
                 {'success': False, 'data': {'messages': [
-                    'File "%s" exceeds the %d MB per-file size limit.'
-                    % (safe_name, QSD_IMAGE_MAX_SIZE // (1024 * 1024))
+                    f'File exceeds the {QSD_IMAGE_MAX_SIZE // (1024 * 1024)} MB size limit.'
                 ]}},
                 status=400,
             )
@@ -407,7 +406,7 @@ def ajax_qsd_image_upload(request):
         raw_ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
         safe_ext = _sanitize_image_extension(raw_ext)
         if safe_ext is None:
-            msg = 'Invalid file type. Allowed types: %s' % ', '.join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS))
+            msg = f'Invalid file type. Allowed types: {', '.join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS))}'
             return JsonResponse(
                 {'success': False, 'data': {'messages': [msg]}},
                 status=400,
@@ -430,7 +429,7 @@ def ajax_qsd_image_upload(request):
     saved_urls = []
     saved_paths = []
     for uploaded_file, ext in validated_files:
-        safe_filename = '%s.%s' % (uuid.uuid4().hex, ext)
+        safe_filename = f'{uuid.uuid4().hex}.{ext}'
         # Normalize the path and verify it stays inside the upload
         # directory (CodeQL barrier-guard for py/path-injection CWE-022).
         file_path = os.path.normpath(os.path.join(upload_dir, safe_filename))
@@ -462,7 +461,7 @@ def ajax_qsd_image_upload(request):
         saved_paths.append(file_path)
 
         # Build the public URL for the saved image
-        image_url = '%s%s/%s' % (settings.MEDIA_URL, QSD_IMAGE_UPLOAD_DIR, safe_filename)
+        image_url = f'{settings.MEDIA_URL}{QSD_IMAGE_UPLOAD_DIR}/{safe_filename}'
         saved_urls.append(image_url)
 
     logger.info("QSD image upload by user %s: %d file(s) saved", request.user.username, len(saved_urls))
