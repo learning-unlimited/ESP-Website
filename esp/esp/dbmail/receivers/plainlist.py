@@ -12,7 +12,12 @@ class PlainList(BaseHandler):
         if len(redirects.values('id')[:1]) == 0:
             return
 
-        self.recipients = [redirect.destination for redirect in redirects]
+        self.recipients = []
+        for redirect in redirects:
+            for addr in redirect.destination.split(','):
+                addr = addr.strip()
+                if addr:
+                    self.recipients.append(addr)
 
         self.send = True
 
