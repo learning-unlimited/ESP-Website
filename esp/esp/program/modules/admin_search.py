@@ -1,3 +1,4 @@
+from collections import Counter
 from dataclasses import dataclass, asdict
 from typing import List
 
@@ -16,19 +17,28 @@ class AdminSearchEntry:
     keywords: List[str]
 
 
+def _humanize_view_name(view_name):
+    """Turn view_name like 'class_list' into 'Class list' for display."""
+    if not view_name:
+        return view_name
+    return view_name.replace("_", " ").strip().title()
+
+
 def get_admin_search_entries(program):
     """
     Return a list of AdminSearchEntry objects by collecting metadata from each
     module. Modules can define get_admin_search_entry() with title, category,
     and keywords so search stays discoverable and keywords live next to the
     module code. Views without custom metadata get a default entry (title +
-    basic keywords from link_title).
+    basic keywords from link_title). When multiple entries share the same
+    title (e.g. many "Student Onsite" links), the title is disambiguated by
+    appending the view name in parentheses so users can tell them apart.
     """
     from esp.program.modules import handlers
 
     base = program.getUrlBase()
     view_map = program.getModuleViews(main_only=False)
-    entries = []
+    built = []
     seen_ids = set()
 
     for (tl, view_name), pmo in view_map.items():
@@ -61,6 +71,21 @@ def get_admin_search_entries(program):
                 keywords=keywords,
             )
 
+        built.append((entry, view_name))
+
+    # Disambiguate duplicate titles so "Student Onsite" x8 becomes
+    # "Student Onsite (main)", "Student Onsite (class list)", etc.
+    title_counts = Counter(e.title for e, _ in built)
+    entries = []
+    for entry, view_name in built:
+        if title_counts[entry.title] > 1:
+            entry = AdminSearchEntry(
+                id=entry.id,
+                url=entry.url,
+                title=entry.title + " (" + _humanize_view_name(view_name) + ")",
+                category=entry.category,
+                keywords=entry.keywords,
+            )
         entries.append(entry)
 
     return entries

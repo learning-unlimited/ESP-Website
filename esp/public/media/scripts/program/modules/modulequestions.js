@@ -4,7 +4,7 @@ $j(document).ready(function(){
     $j(".hidden-field").parents("tr").hide()
 
     modulesToQuestions();
-    
+
     // when any question is checked/unchecked, add/remove only those modules
     $j("#id_program_module_questions").find("input").change(function(){
         var modules = $j("#id_program_modules").val();
