@@ -75,14 +75,14 @@ class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
     # Title for the link displayed for this Program Module in the Programs form
-    link_title = models.CharField(max_length=64, blank=True, null=True)
+    link_title = models.CharField(max_length=64, blank=True, default="")
 
     # Human-readable name for the Program Module
     admin_title = models.CharField(max_length=128)
 
     #   A module can have an inline template (whose context is filled by prepare())
     #   independently of its main view.
-    inline_template = models.CharField(max_length=32, blank=True, null=True)
+    inline_template = models.CharField(max_length=32, blank=True, default="")
 
     # One of teach/learn/etc.; What is this module typically used for?
     module_type = models.CharField(max_length=32)
@@ -144,7 +144,7 @@ class ArchiveClass(models.Model):
     teacher = models.CharField(max_length=1024)
     title = models.CharField(max_length=1024)
     description = models.TextField()
-    teacher_ids = models.CharField(max_length=256, blank=True, null=True)
+    teacher_ids = models.CharField(max_length=256, blank=True, default="")
     student_ids = models.TextField()
     original_id = models.IntegerField(blank=True, null=True)
 
@@ -1428,10 +1428,10 @@ class SplashInfo(models.Model):
     student = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
     #   Program field may be empty for backwards compatibility with Stanford data
     program = AjaxForeignKey(Program, null=True, on_delete=models.CASCADE)
-    lunchsat = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
-    lunchsun = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
+    lunchsat = models.CharField(max_length=32, blank=True, default="") # No longer used, kept for backwards compatibility
+    lunchsun = models.CharField(max_length=32, blank=True, default="") # No longer used, kept for backwards compatibility
     siblingdiscount = models.NullBooleanField(default=False, blank=True)
-    siblingname = models.CharField(max_length=64, blank=True, null=True)
+    siblingname = models.CharField(max_length=64, blank=True, default="")
     submitted = models.NullBooleanField(default=False, blank=True)
 
     class Meta:
@@ -1658,8 +1658,8 @@ class TeacherBio(models.Model):
 
     program = models.ForeignKey(Program, blank=True, null=True, on_delete=models.CASCADE)
     user    = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
-    bio     = models.TextField(blank=True, null=True)
-    slugbio = models.CharField(max_length=50, blank=True, null=True)
+    bio     = models.TextField(blank=True, default="")
+    slugbio = models.CharField(max_length=50, blank=True, default="")
     picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/", blank=True, null=True)
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
@@ -1716,7 +1716,7 @@ class FinancialAidRequest(models.Model):
     household_income = models.CharField(verbose_name = 'Approximately what is your household income (round to the nearest $10,000)?', null=True, blank=True,
                         max_length=12)
 
-    extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this year', null=True, blank=True)
+    extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this year', default="", blank=True)
 
     student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True, default=False)
 
@@ -2136,14 +2136,14 @@ class VolunteerOffer(models.Model):
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
 
     #   ...or this if you haven't.
-    email = models.EmailField(blank=True, null=True, max_length=75)
-    name = models.CharField(max_length=80, blank=True, null=True)
+    email = models.EmailField(blank=True, default="", max_length=75)
+    name = models.CharField(max_length=80, blank=True, default="")
     phone = PhoneNumberField(blank=True, null=True)
 
-    shirt_size = models.TextField(blank=True, null=True)
-    shirt_type = models.TextField(blank=True, null=True)
+    shirt_size = models.TextField(blank=True, default="")
+    shirt_type = models.TextField(blank=True, default="")
 
-    comments = models.TextField(blank=True, null=True)
+    comments = models.TextField(blank=True, default="")
 
     class Meta:
         app_label = 'program'
@@ -2171,10 +2171,10 @@ class RegistrationType(models.Model):
     name = models.CharField(max_length=32)
 
     #   A more understandable name that is displayed by default, but has no effect on behavior
-    displayName = models.CharField(max_length=32, blank=True, null=True)
+    displayName = models.CharField(max_length=32, blank=True, default="")
 
     #   A more detailed description
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, default="")
 
     #   Purely for bookkeeping on the part of administrators
     #   without reading the whole description
@@ -2236,7 +2236,7 @@ class ModeratorRecord(models.Model):
     will_moderate = models.BooleanField(default = False)
     num_slots = models.PositiveIntegerField(default = 0)
     class_categories = models.ManyToManyField('ClassCategories', blank=True)
-    comments = models.TextField(blank=True, null=True)
+    comments = models.TextField(blank=True, default="")
 
     class Meta:
         app_label = 'program'

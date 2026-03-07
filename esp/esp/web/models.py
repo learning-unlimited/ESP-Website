@@ -94,7 +94,7 @@ class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
 
     sort_rank = models.IntegerField()
-    link = models.CharField(max_length=256, blank=True, null=True)
+    link = models.CharField(max_length=256, blank=True, default="")
     text = models.CharField(max_length=64)
     indent = models.BooleanField(default=False)
 

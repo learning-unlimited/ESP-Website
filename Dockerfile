@@ -12,7 +12,9 @@ WORKDIR /app
 
 # Install system dependencies from packages_base.txt to avoid duplication.
 COPY esp/packages_base.txt /tmp/packages_base.txt
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Retry fetching packages up to 3 times to handle network flakiness.
+RUN apt-get update && \
+    apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout="60" install -y --no-install-recommends \
     $(cat /tmp/packages_base.txt | grep -v '^python' | grep -v '^#' | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 

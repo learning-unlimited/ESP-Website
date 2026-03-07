@@ -196,16 +196,16 @@ class MessageRequest(models.Model):
     )
 
     id = models.AutoField(primary_key=True)
-    subject = models.TextField(null=True, blank=True)
-    msgtext = models.TextField(blank=True, null=True)
-    special_headers = models.TextField(blank=True, null=True)
+    subject = models.TextField(default="", blank=True)
+    msgtext = models.TextField(blank=True, default="")
+    special_headers = models.TextField(blank=True, default="")
     recipients = models.ForeignKey(PersistentQueryFilter, on_delete=models.CASCADE) # We will get the user from a query filter
     sendto_fn_name = models.CharField("sendto function", max_length=128,
                     choices=SENDTO_FN_CHOICES, default=SEND_TO_SELF,
                     help_text="The function that specifies, for each recipient " +
                     "of the message, which set of associated email addresses " +
                     "should receive the message.")
-    sender = models.TextField(blank=True, null=True) # Email sender; should be a valid SMTP sender string
+    sender = models.TextField(blank=True, default="") # Email sender; should be a valid SMTP sender string
     creator = AjaxForeignKey(ESPUser, on_delete=models.CASCADE) # the person who sent this message
 
     # Use `default` instead of `auto_now_add`, so that the migration creating
@@ -588,15 +588,15 @@ class EmailList(models.Model):
 
     handler = models.CharField(max_length=128)
 
-    subject_prefix = models.CharField(max_length=64, blank=True, null=True)
+    subject_prefix = models.CharField(max_length=64, blank=True, default="")
 
     admin_hold = models.BooleanField(default=False)
 
     cc_all     = models.BooleanField(help_text="If true, the CC field will list everyone. Otherwise each email will be sent individually.", default=False)
 
-    from_email = models.CharField(help_text="If specified, the FROM header will be overwritten with this email.", blank=True, null=True, max_length=512)
+    from_email = models.CharField(help_text="If specified, the FROM header will be overwritten with this email.", blank=True, default="", max_length=512)
 
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, default="")
 
     class Meta:
         ordering=('seq',)

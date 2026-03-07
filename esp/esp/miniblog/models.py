@@ -45,7 +45,7 @@ class AnnouncementLink(models.Model):
     timestamp = models.DateTimeField(default=datetime.datetime.now, editable=False)
     highlight_begin = models.DateTimeField(blank=True, null=True, help_text="When this should start being showcased.")
     highlight_expire = models.DateTimeField(blank=True, null=True, help_text="When this should stop being showcased.")
-    section = models.CharField(max_length=32, blank=True, null=True, help_text="e.g. 'teach' or 'learn' or blank")
+    section = models.CharField(max_length=32, blank=True, default="", help_text="e.g. 'teach' or 'learn' or blank")
     href = models.URLField(help_text="The URL the link should point to.")
 
     def __str__(self):
@@ -79,9 +79,9 @@ class Entry(models.Model):
     sent    = models.BooleanField(editable=False, default=False)
     email   = models.BooleanField(editable=False, default=False)
     fromuser = AjaxForeignKey(ESPUser, blank=True, null=True, editable=False, on_delete=models.CASCADE)
-    fromemail = models.CharField(max_length=80, blank=True, null=True, editable=False)
+    fromemail = models.CharField(max_length=80, blank=True, default="", editable=False)
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
-    section = models.CharField(max_length=32, blank=True, null=True, help_text="e.g. 'teach' or 'learn' or blank")
+    section = models.CharField(max_length=32, blank=True, default="", help_text="e.g. 'teach' or 'learn' or blank")
 
     def __str__(self):
         if self.slug:

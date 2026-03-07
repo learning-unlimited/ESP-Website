@@ -158,7 +158,7 @@ class ClassRegModuleInfo(models.Model):
     class_min_cap       = models.IntegerField(blank=True, null=True, help_text='The minimum number of students a teacher can choose as their class capacity.')
     class_max_size       = models.IntegerField(blank=True, null=True, help_text='The maximum number of students a teacher can choose as their class capacity.')
     class_size_step      = models.IntegerField(blank=True, null=True, help_text='The interval for class capacity choices.')
-    class_other_sizes    = models.CharField(blank=True, null=True, max_length=100, validators=[validate_comma_separated_integer_list],
+    class_other_sizes    = models.CharField(blank=True, default="", max_length=100, validators=[validate_comma_separated_integer_list],
         help_text='Force the addition of these options to teachers\' choices of class size.  (Enter a comma-separated list of integers.)')
 
     #   Allowed numbers of sections and meeting days
@@ -172,7 +172,7 @@ class ClassRegModuleInfo(models.Model):
     #   An HTML color code for the program.  All classes will appear in some variant
     #   of this color in the catalog and registration pages.  If null, the default
     #   ESP colors will be used.
-    color_code           = models.CharField(max_length=7, blank=True, null=True, help_text='The background color for class titles in the catalog and registration pages. If no color is chosen, the default light blue will be used.',
+    color_code           = models.CharField(max_length=7, blank=True, default="", help_text='The background color for class titles in the catalog and registration pages. If no color is chosen, the default light blue will be used.',
                                             validators = [RegexValidator(r'^#([a-zA-Z0-9]{3}){1,2}$', message = 'Value must be a valid 3-character or 6-character hex color starting with "#".')])
 
     #   If this is true, teachers will be allowed to specify that students may

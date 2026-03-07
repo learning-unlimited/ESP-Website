@@ -1403,21 +1403,21 @@ class StudentInfo(models.Model):
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True, on_delete=models.CASCADE)
-    school = models.CharField(max_length=256, blank=True, null=True)
+    school = models.CharField(max_length=256, blank=True, default="")
     dob = models.DateField(blank=True, null=True)
-    gender = models.CharField(max_length=32, blank=True, null=True)
-    pronoun = models.CharField(max_length=50, blank=True, null=True)
+    gender = models.CharField(max_length=32, blank=True, default="")
+    pronoun = models.CharField(max_length=50, blank=True, default="")
     studentrep = models.BooleanField(blank=True, default = False)
-    studentrep_expl = models.TextField(blank=True, null=True)
-    heard_about = models.TextField(blank=True, null=True)
-    food_preference = models.TextField(blank=True, null=True)
-    shirt_size = models.TextField(blank=True, null=True)
-    shirt_type = models.TextField(blank=True, null=True)
+    studentrep_expl = models.TextField(blank=True, default="")
+    heard_about = models.TextField(blank=True, default="")
+    food_preference = models.TextField(blank=True, default="")
+    shirt_size = models.TextField(blank=True, default="")
+    shirt_type = models.TextField(blank=True, default="")
 
-    medical_needs = models.TextField(blank=True, null=True)
+    medical_needs = models.TextField(blank=True, default="")
 
     # Deprecated, but left here so as not to remove Chicago's existing data.
-    schoolsystem_id = models.CharField(max_length=32, blank=True, null=True)
+    schoolsystem_id = models.CharField(max_length=32, blank=True, default="")
     schoolsystem_optout = models.BooleanField(default=False)
     post_hs = models.TextField(default='', blank=True)
     transportation = models.TextField(default='', blank=True)
@@ -1592,16 +1592,16 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     }
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
-    pronoun = models.CharField(max_length=50, blank=True, null=True)
-    graduation_year = models.CharField(max_length=4, blank=True, null=True)
+    pronoun = models.CharField(max_length=50, blank=True, default="")
+    graduation_year = models.CharField(max_length=4, blank=True, default="")
     affiliation = models.CharField(max_length=100, blank=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
-    college = models.CharField(max_length=128, blank=True, null=True)
-    major = models.CharField(max_length=32, blank=True, null=True)
-    bio = models.TextField(blank=True, null=True)
-    shirt_size = models.TextField(blank=True, null=True)
-    shirt_type = models.TextField(blank=True, null=True)
+    college = models.CharField(max_length=128, blank=True, default="")
+    major = models.CharField(max_length=32, blank=True, default="")
+    bio = models.TextField(blank=True, default="")
+    shirt_size = models.TextField(blank=True, default="")
+    shirt_type = models.TextField(blank=True, default="")
 
     @classmethod
     def cf_link_instance(cls, request):
@@ -1748,10 +1748,10 @@ class GuardianInfo(models.Model):
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
-    subject_taught = models.CharField(max_length=64, blank=True, null=True)
-    grades_taught = models.CharField(max_length=16, blank=True, null=True)
-    school = models.CharField(max_length=128, blank=True, null=True)
-    position = models.CharField(max_length=64, blank=True, null=True)
+    subject_taught = models.CharField(max_length=64, blank=True, default="")
+    grades_taught = models.CharField(max_length=16, blank=True, default="")
+    school = models.CharField(max_length=128, blank=True, default="")
+    position = models.CharField(max_length=64, blank=True, default="")
     k12school = models.ForeignKey('K12School', blank=True, null=True, on_delete=models.CASCADE)
 
     class Meta:
@@ -1942,16 +1942,16 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     user = AjaxForeignKey(ESPUser, blank=True, null=False, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
-    e_mail = models.EmailField('Email address', blank=True, null=True, max_length=75)
+    e_mail = models.EmailField('Email address', blank=True, default="", max_length=75)
     phone_day = PhoneNumberField('Home phone', blank=True, null=True)
     phone_cell = PhoneNumberField('Cell phone', blank=True, null=True)
     receive_txt_message = models.BooleanField(default=False)
     phone_even = PhoneNumberField('Alternate phone', blank=True, null=True)
-    address_street = models.CharField('Street address', max_length=100, blank=True, null=True)
-    address_city = models.CharField('City', max_length=50, blank=True, null=True)
-    address_state = models.CharField('State', max_length=32, blank=True, null=True)
-    address_zip = models.CharField('Zip code', max_length=5, blank=True, null=True)
-    address_postal = models.TextField(blank=True, null=True)
+    address_street = models.CharField('Street address', max_length=100, blank=True, default="")
+    address_city = models.CharField('City', max_length=50, blank=True, default="")
+    address_state = models.CharField('State', max_length=32, blank=True, default="")
+    address_zip = models.CharField('Zip code', max_length=5, blank=True, default="")
+    address_postal = models.TextField(blank=True, default="")
     address_country = models.CharField('Country', max_length=2, choices=sorted(list(country_names.items()), key = lambda x: x[1]), default='US')
     undeliverable = models.BooleanField(default=False)
 
@@ -2066,14 +2066,14 @@ class K12School(models.Model):
     """
     contact = AjaxForeignKey(ContactInfo, null=True, blank=True,
         help_text=mark_safe('A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.'), on_delete=models.CASCADE)
-    school_type = models.TextField(blank=True, null=True,
+    school_type = models.TextField(blank=True, default="",
         help_text='i.e. Public, Private, Charter, Magnet, ...')
-    grades      = models.TextField(blank=True, null=True,
+    grades      = models.TextField(blank=True, default="",
         help_text='i.e. "PK, K, 1, 2, 3"')
-    school_id   = models.CharField(max_length=128, blank=True, null=True,
+    school_id   = models.CharField(max_length=128, blank=True, default="",
         help_text='An 8-digit ID number.')
-    contact_title = models.TextField(blank=True, null=True)
-    name          = models.TextField(blank=True, null=True)
+    contact_title = models.TextField(blank=True, default="")
+    name          = models.TextField(blank=True, default="")
 
     objects = K12SchoolManager()
 
@@ -2113,7 +2113,7 @@ class PersistentQueryFilter(models.Model):
     q_filter     = models.BinaryField()                         # A bytestring representing a query filter
     sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
     create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
-    useful_name  = models.CharField(max_length=1024, blank=True, null=True) # A nice name to apply to this filter.
+    useful_name  = models.CharField(max_length=1024, blank=True, default="") # A nice name to apply to this filter.
 
     class Meta:
         app_label = 'users'
