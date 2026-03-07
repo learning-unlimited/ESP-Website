@@ -36,6 +36,7 @@ from esp.admin import admin_site
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, \
     LineItemType, LineItemOptions, CybersourcePostback
 from esp.utils.admin_user_search import default_user_search
+from esp.utils.audit import AuditedModelAdmin
 
 class LIOInline(admin.TabularInline):
     model = LineItemOptions
@@ -73,7 +74,7 @@ admin_site.register(Account, AccountAdmin)
 def finalize_finaid_grants(modeladmin, request, queryset):
     for grant in queryset:
         grant.finalize()
-class FinancialAidGrantAdmin(admin.ModelAdmin):
+class FinancialAidGrantAdmin(AuditedModelAdmin, admin.ModelAdmin):
     list_display = ['id', 'request', 'user', 'program', 'finalized', 'amount_max_dec', 'percent']
     readonly_fields=('finalized',)
     list_filter = ['request__program']
