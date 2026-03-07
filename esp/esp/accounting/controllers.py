@@ -1,5 +1,4 @@
 
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -289,7 +288,6 @@ class ProgramAccountingController(BaseAccountingController):
         else:
             return 'Unrelated!?'
 
-@python_2_unicode_compatible
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
         super().__init__(program, *args, **kwargs)
