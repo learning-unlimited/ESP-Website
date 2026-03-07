@@ -1,4 +1,4 @@
-      <fieldset class="{{ fieldset.classes }}">
+﻿      <fieldset class="{{ fieldset.classes }}">
 	  {% if fieldset.legend %}
 	    <h2 class="sect_title">{{ fieldset.legend }}</h2>
 	  {% endif %}
@@ -20,7 +20,7 @@
 				
                 {{ field.label_tag }}
                 {% if field.help_text %}
-                    <img src="/media/default_images/question_mark.jpg" class="qmark" title="{{field.help_text}}">
+                    <img src="/media/images/question_mark.jpg" class="qmark" title="{{field.help_text}}">
                 {% endif %}
             {% endif %}
 		  <div class="form_field">{{ field }}</div>

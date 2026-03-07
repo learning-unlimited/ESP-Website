@@ -1,4 +1,4 @@
-table,th,td
+﻿table,th,td
 {
     border:1px solid black;
     border-collapse: collapse;
@@ -272,5 +272,5 @@ button.sidetoolbar {
     height: 100%;
     display: block;
     text-align: center;
-    background: rgba(200,200,200,0.5) url('/media/default_images/ajax_loader.gif') no-repeat center; /*.gif file or just div with message etc. however you like*/
+    background: rgba(200,200,200,0.5) url('/media/images/ajax_loader.gif') no-repeat center; /*.gif file or just div with message etc. however you like*/
 }
