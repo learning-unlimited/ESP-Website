@@ -3,6 +3,22 @@
 {% block title %}Login!{% endblock %}
 
 {% block content %}
+<style>
+.spinner-border {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #fff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+
 <h1>Please log in</h1>
 
 <div class="row-fluid">
@@ -64,7 +80,16 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 
 <div class="form-actions">
 <input type="hidden" name="next" value="{{ next }}" />
-<input type="submit" class="btn btn-primary btn-large" value="Login" />
+<button type="submit" id="submitBtn" class="btn btn-primary btn-large">
+
+<span id="btnText">Login</span>
+
+<span id="btnSpinner" style="display:none;">
+<span class="spinner-border spinner-border-sm"></span>
+Loading...
+</span>
+
+</button>
 </div>
 
 </form>
@@ -74,7 +99,27 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 document.getElementById('id_username').focus();
 //-->
 </script>
+<script>
+document.querySelector("form").addEventListener("submit", function () {
 
+    const button = document.getElementById("submitBtn");
+    const text = document.getElementById("btnText");
+    const spinner = document.getElementById("btnSpinner");
+
+    if (button) {
+        button.disabled = true;
+    }
+
+    if (text) {
+        text.style.display = "none";
+    }
+
+    if (spinner) {
+        spinner.style.display = "inline";
+    }
+
+});
+</script>
 </div>
 
 <br />
