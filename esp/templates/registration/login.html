@@ -2,6 +2,11 @@
 
 {% block title %}Login!{% endblock %}
 
+{% block stylesheets %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="/media/default_styles/auth-forms.css" />
+{% endblock %}
+
 {% block content %}
 <h1>Please log in</h1>
 
@@ -83,5 +88,7 @@ Don't already have an account?  <a href="/myesp/register/">Click here to create 
 Forgot your password? <a href="/myesp/passwdrecover/" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
 </div>
 </div>
+
+<script src="/media/scripts/auth-forms.js"></script>
 
 {% endblock %}

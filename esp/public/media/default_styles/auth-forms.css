@@ -1,0 +1,142 @@
+/* ===== Authentication Forms Enhancement Styles ===== */
+
+.password-input-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  padding-right: 45px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  color: #718096;
+  transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: #2d3748;
+}
+
+.password-toggle:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.password-strength-container {
+  margin-top: 8px;
+}
+
+.password-strength-meter {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.password-strength-bar {
+  height: 100%;
+  width: 0%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.password-strength-bar.strength-weak { background: #f44336; }
+.password-strength-bar.strength-medium { background: #ff9800; }
+.password-strength-bar.strength-strong { background: #4caf50; }
+
+.password-strength-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 4px 0;
+}
+
+.password-strength-text.strength-weak { color: #f44336; }
+.password-strength-text.strength-medium { color: #ff9800; }
+.password-strength-text.strength-strong { color: #4caf50; }
+
+.password-strength-hint {
+  font-size: 0.875rem;
+  color: #718096;
+  margin: 4px 0 0 0;
+}
+
+.form-control {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control.is-valid {
+  border-color: #4caf50;
+  padding-right: 40px;
+}
+
+.form-control.is-invalid {
+  border-color: #f44336;
+  padding-right: 40px;
+}
+
+.invalid-feedback {
+  display: block;
+  color: #f44336;
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
+
+.valid-feedback {
+  display: block;
+  color: #4caf50;
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
+
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.7;
+  padding-right: 40px;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .form-control {
+    font-size: 16px;
+    padding: 12px;
+  }
+  
+  .btn {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  
+  .password-toggle {
+    padding: 12px;
+    right: 8px;
+  }
+}
