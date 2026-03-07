@@ -577,9 +577,6 @@ def top_classes(request, tl, program, instance):
                     class_data['coteachers'] = teachers[1:]
                 perclass_data.append(class_data)
 
-            # Sort by vote count (descending)
-            perclass_data.sort(key=lambda x: x['avg'], reverse=True)
-
             context = {
                 'survey': survey,
                 'program': prog,
