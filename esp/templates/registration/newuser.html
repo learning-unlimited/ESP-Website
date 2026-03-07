@@ -3,6 +3,21 @@
 {% block title %}Create a new user account{% endblock %}
 
 {% block content %}
+<style>
+.spinner-border {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #fff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
 {% if accounts %}
 <div class="note">
   <p>
@@ -75,16 +90,47 @@
     {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 
     <div class="form-actions">
-    <input type="submit" value="{% if accounts %}Confirm: Create another account for this email{% else %}Create account{% endif %}" name="submit_btn" class="btn btn-primary" />
+    <button type="submit" id="submitBtn" name="submit_btn" class="btn btn-primary">
+
+<span id="btnText">
+{% if accounts %}
+Confirm: Create another account for this email
+{% else %}
+Create account
+{% endif %}
+</span>
+
+<span id="btnSpinner" style="display:none;">
+<span class="spinner-border"></span>
+Creating account...
+</span>
+
+</button>
+
     </div>
   </fieldset>
 </form>
 </div>
 
-<script type="text/javascript">
-<!--
-  document.getElementById('id_first_name').focus();
-//-->
-</script>
+ <script>
+document.querySelector("form").addEventListener("submit", function () {
 
+    const button = document.getElementById("submitBtn");
+    const text = document.getElementById("btnText");
+    const spinner = document.getElementById("btnSpinner");
+
+    if (button) {
+        button.disabled = true;
+    }
+
+    if (text) {
+        text.style.display = "none";
+    }
+
+    if (spinner) {
+        spinner.style.display = "inline";
+    }
+
+});
+</script>
 {% endblock %}
