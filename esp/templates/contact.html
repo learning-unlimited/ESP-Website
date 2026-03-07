@@ -15,6 +15,14 @@
       $j("#id_anonymous").change(function() {
         $j("#id_sender").attr('required', !this.checked);
       });
+
+      // Ensure submit button starts with btn-primary and no stale btn-success
+      $j(".contact-send").removeClass("btn-success").addClass("btn-primary");
+
+      // Switch button to green on form submit
+      $j(".contact-form").submit(function() {
+        $j(".contact-send").removeClass("btn-primary").addClass("btn-success");
+      });
     });
   </script>
 {% endblock %}
