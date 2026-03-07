@@ -59,3 +59,31 @@ class CancelClassTest(ProgramFrameworkTest):
         # Check that classes show up in the cancelled classes printable
         r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
         self.assertContains(r, self.cls.emailcode(), status_code=200)
+class EditClassViewTest(ProgramFrameworkTest):
+    def setUp(self):
+        super().setUp()
+        self.schedule_randomly()
+
+        # Select a class
+        self.cls = self.teachers[0].getTaughtClasses()[0]
+
+        # Create admin user
+        self.adminUser, created = ESPUser.objects.get_or_create(username='admin2')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+        self.adminUser.save()
+
+    def test_editclass_page_loads(self):
+        self.client.login(username='admin2', password='password')
+
+        url = "/manage/" + self.program.url + "/editclass/" + str(self.cls.id)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_editclass_requires_login(self):
+        url = "/manage/" + self.program.url + "/editclass/" + str(self.cls.id)
+        response = self.client.get(url)
+
+        # Expect redirect to login page
+        self.assertEqual(response.status_code, 302)
