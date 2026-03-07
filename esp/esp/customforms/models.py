@@ -8,7 +8,7 @@ from esp.users.models import ESPUser
 from esp.program.models import Program
 
 class Form(models.Model):
-    title = models.CharField(max_length=40, blank=True)
+    title = models.CharField(max_length=40, blank=False)
     description = models.TextField(blank=True)
     date_created = models.DateField(auto_now_add=True)
     created_by = models.ForeignKey(ESPUser, on_delete=models.CASCADE)
