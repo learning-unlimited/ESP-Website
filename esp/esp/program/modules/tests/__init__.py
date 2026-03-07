@@ -53,14 +53,6 @@ from esp.program.modules.tests.auth import ProgramModuleAuthTest  # noqa: F401
 from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest  # noqa: F401
 from esp.program.modules.tests.testallviews import AllViewsTest  # noqa: F401
 from esp.program.modules.tests.admintestingmodule import AdminTestingModuleTest  # noqa: F401
-from esp.program.modules.tests.batchclassregmodule import BatchClassRegModuleTest
-from esp.program.modules.tests.test_creditcard_required import (
-    CreditCardRequiredTest, CreditCardCybersourceRequiredTest, CreditCardSelfBlockingTest
-)
-from esp.program.modules.tests.test_class_creation import (
-    MakeAClassViewTest,
-    ClassStatusOnEditTest,
-    ClassTeacherListTest,
-    ClassFormValidationTest,
-    TeacherAvailabilityConsistencyTest,
-)
+from esp.program.modules.tests.batchclassregmodule import BatchClassRegModuleTest  # noqa: F401
+from esp.program.modules.tests.test_creditcard_required import CreditCardRequiredTest, CreditCardCybersourceRequiredTest, CreditCardSelfBlockingTest  # noqa: F401
+from esp.program.modules.tests.test_class_creation import MakeAClassViewTest, ClassStatusOnEditTest, ClassTeacherListTest, ClassFormValidationTest, TeacherAvailabilityConsistencyTest  # noqa: F401

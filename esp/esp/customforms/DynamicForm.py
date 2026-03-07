@@ -395,7 +395,7 @@ class ComboForm(SessionWizardView):
                 v['instance'].save()
             else:
                 try:
-                    new_instance = v['model'].objects.create(**v['data'])
+                    v['model'].objects.create(**v['data'])
                 except Exception:
                     # show some error message
                     pass
