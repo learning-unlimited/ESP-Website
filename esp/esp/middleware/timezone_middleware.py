@@ -12,17 +12,15 @@ class TimezoneMiddleware:
     def process_view(self, request, view_func, view_args, view_kwargs):
         program = None
 
-        # Try to get program from view kwargs (passed by main.program)
-        one = view_kwargs.get('one')
-        two = view_kwargs.get('two')
-
-        if one and two:
+        if len(view_args) >= 3:
+            one = view_args[1]
+            two = view_args[2]
             try:
                 program = Program.by_prog_inst(one, two)
             except Exception:
                 pass
 
-        # Fallback to request.program if set by other means
+        # Fallback to request.program if not already set
         if program is None:
             program = getattr(request, 'program', None)
 

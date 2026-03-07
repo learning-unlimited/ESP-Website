@@ -44,6 +44,7 @@ from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.utils.web import render_to_response
 from django.db.models.query import Q
+from django.conf import settings
 
 @login_required
 def myesp_passwd(request):
@@ -268,7 +269,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         try:
             new_data['timezone'] = curUser.preferences.timezone
         except Exception:
-            new_data['timezone'] = 'America/New_York'
+            new_data['timezone'] = settings.TIME_ZONE
         new_data = regProf.updateForm(new_data, role)
 
         if regProf.student_info and regProf.student_info.dob:
