@@ -1498,7 +1498,7 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
 
 
 class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
-    """Tests for making class flags visible to teachers (#3268)."""
+    """Tests for making class flags visible to teachers."""
 
     def setUp(self):
         from esp.program.models import ClassFlag, ClassFlagType
