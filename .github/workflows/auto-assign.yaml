@@ -1,0 +1,485 @@
+name: Limit Issue Assignments
+
+on:
+  # When someone comments "/assign" on an issue
+  issue_comment:
+    types: [created]
+  # Safety net: also check when someone is assigned directly (e.g. by a maintainer)
+  issues:
+    types: [assigned]
+
+# Set the maximum number of open issues any single contributor can be assigned to.
+# You can also override this with a repository variable named MAX_ISSUE_ASSIGNMENTS.
+#
+# To block assignments on issues with certain labels, set a repository variable
+# named NO_ASSIGN_LABELS to a comma-separated list of label names.
+# Example: "Idea for Discussion, wontfix, blocked"
+#
+# By default, issues with linked pull requests do NOT count towards the limit.
+# To make them count, set a repository variable named COUNT_LINKED_PRS to "true".
+env:
+  DEFAULT_MAX: "5"
+
+permissions:
+  issues: write
+
+jobs:
+  # ── Handle "/assign" comments ──────────────────────────────────────────────
+  handle-assign-command:
+    if: >-
+      github.event_name == 'issue_comment'
+      && !github.event.issue.pull_request
+      && contains(github.event.comment.body, '/assign')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process /assign request
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const requester = context.payload.comment.user.login;
+            const issueNumber = context.payload.issue.number;
+
+            const WIKI_LINKS = `\n\n📖 [Getting Started](https://github.com/learning-unlimited/ESP-Website/wiki#getting-started) · [Contribution Rules](https://github.com/learning-unlimited/ESP-Website/wiki#rules) · [Code of Conduct](https://github.com/learning-unlimited/ESP-Website/blob/main/CODE_OF_CONDUCT.md)`;
+
+            const max = parseInt(
+              process.env.MAX_OVERRIDE || process.env.DEFAULT_MAX,
+              10
+            );
+
+            core.info(`/assign request from @${requester} on #${issueNumber}`);
+
+            // Check if user is a maintainer (admin or maintain permission)
+            const { data: permData } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: requester,
+            });
+            const isMaintainer = ['admin', 'maintain'].includes(permData.permission);
+            if (isMaintainer) {
+              core.info(`@${requester} is a maintainer — bypassing all assignment restrictions.`);
+
+              // Still skip if already assigned to this issue
+              const currentAssignees = context.payload.issue.assignees.map(a => a.login);
+              if (currentAssignees.includes(requester)) {
+                core.info(`@${requester} is already assigned to #${issueNumber}. Skipping.`);
+                return;
+              }
+
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                assignees: [requester],
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `✅ @${requester} has been assigned to this issue.` + WIKI_LINKS,
+              });
+
+              core.info(`Assigned maintainer @${requester} to #${issueNumber}.`);
+              return;
+            }
+
+            // Reject if the issue is closed
+            if (context.payload.issue.state === 'closed') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `⚠️ Sorry @${requester}, this issue is closed and is not available for assignment.` + WIKI_LINKS,
+              });
+              core.info(`Rejected /assign from @${requester} on #${issueNumber} — issue is closed.`);
+              return;
+            }
+
+            // Check if the issue has a blocked label
+            const blockedRaw = process.env.NO_ASSIGN_LABELS || '';
+            const blockedLabels = blockedRaw
+              .split(',')
+              .map(l => l.trim().toLowerCase())
+              .filter(Boolean);
+            const issueLabels = context.payload.issue.labels.map(l => l.name.toLowerCase());
+            const matched = issueLabels.filter(l => blockedLabels.includes(l));
+
+            if (matched.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `⚠️ Sorry @${requester}, this issue is labeled **${matched.join('**, **')}** and is not currently available for assignment.`,
+              });
+              core.warning(`Blocked /assign on #${issueNumber} due to label(s): ${matched.join(', ')}`);
+              return;
+            }
+
+            // Check if already assigned to this issue
+            const currentAssignees = context.payload.issue.assignees.map(a => a.login);
+            if (currentAssignees.includes(requester)) {
+              core.info(`@${requester} is already assigned to #${issueNumber}. Skipping.`);
+              return;
+            }
+
+            // Reject if someone else is already assigned
+            if (currentAssignees.length > 0) {
+              const assigneeList = currentAssignees.map(a => `@${a}`).join(', ');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `⚠️ Sorry @${requester}, this issue is already assigned to ${assigneeList}. ` +
+                  `Please look for another open issue to work on!`,
+              });
+              core.info(`Rejected /assign from @${requester} on #${issueNumber} — already assigned to ${assigneeList}.`);
+              return;
+            }
+
+            // Count open issues assigned to this user
+            const countLinkedPRs = (process.env.COUNT_LINKED_PRS || 'false').toLowerCase() === 'true';
+            const searchParts = [
+              `repo:${context.repo.owner}/${context.repo.repo}`,
+              `is:issue`,
+              `is:open`,
+              `assignee:${requester}`,
+            ];
+            if (!countLinkedPRs) {
+              searchParts.push('-linked:pr');
+            }
+
+            const { data: searchResult } = await github.rest.search.issuesAndPullRequests({
+              q: searchParts.join(' '),
+              per_page: 100,
+            });
+
+            const openIssues = searchResult.items;
+            const count = openIssues.length;
+
+            core.info(`@${requester} has ${count} countable open issue(s) (COUNT_LINKED_PRS: ${countLinkedPRs}).`);
+
+            if (count >= max) {
+              // Over limit — decline and explain
+              const issueList = openIssues
+                .map(i => `- #${i.number}`)
+                .join('\n');
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: [
+                  `👋 Hi @${requester}! To keep work distributed across contributors, ` +
+                  `we limit each person to **${max}** assigned open issue(s) at a time` +
+                  (countLinkedPRs ? `.` : ` (issues with linked pull requests don't count).`),
+                  ``,
+                  `You're currently assigned to **${count}** open issue(s):`,
+                  ``,
+                  issueList,
+                  ``,
+                  `Once you close or unassign yourself from an existing issue, ` +
+                  `feel free to come back and request this one!`,
+                ].join('\n'),
+              });
+
+              core.warning(
+                `Declined /assign from @${requester} on #${issueNumber} — ` +
+                `already at ${count} open issues (limit: ${max}).`
+              );
+            } else {
+              // Under limit — assign them
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                assignees: [requester],
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `✅ @${requester} has been assigned to this issue. You have **${count + 1}/${max}** issue(s) assigned.` + WIKI_LINKS,
+              });
+
+              core.info(`Assigned @${requester} to #${issueNumber} (${count + 1}/${max}).`);
+            }
+        env:
+          MAX_OVERRIDE: ${{ vars.MAX_ISSUE_ASSIGNMENTS }}
+          NO_ASSIGN_LABELS: ${{ vars.NO_ASSIGN_LABELS }}
+          COUNT_LINKED_PRS: ${{ vars.COUNT_LINKED_PRS }}
+
+  # ── Nudge contributors who ask informally to use /assign ───────────────────
+  nudge-assign-command:
+    if: >-
+      github.event_name == 'issue_comment'
+      && !github.event.issue.pull_request
+      && !contains(github.event.comment.body, '/assign')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for informal assignment requests
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const body = context.payload.comment.body.toLowerCase();
+            const commenter = context.payload.comment.user.login;
+            const issueNumber = context.payload.issue.number;
+
+            const WIKI_LINKS = `\n\n📖 [Getting Started](https://github.com/learning-unlimited/ESP-Website/wiki#getting-started) · [Contribution Rules](https://github.com/learning-unlimited/ESP-Website/wiki#rules) · [Code of Conduct](https://github.com/learning-unlimited/ESP-Website/blob/main/CODE_OF_CONDUCT.md)`;
+
+            // Phrases that strongly suggest the commenter wants to be assigned
+            const patterns = [
+              /\bcan i (?:work on|take|tackle|pick up|be assigned|grab|handle|do)\b/,
+              /\bi(?:'d| would) like to (?:work on|take|tackle|pick up|be assigned|grab|handle|do)\b/,
+              /\bplease assign (?:me|this to me|it to me)\b/,
+              /\bassign (?:me|this to me|it to me)\b/,
+              /\bcan (?:you |someone )?assign (?:me|this to me|it to me)\b/,
+              /\bcould (?:you |someone )?(?:please )?assign (?:me|this to me|it to me)\b/,
+              /\bi(?:'ll| will) (?:work on|take|tackle|pick up|handle|do) this\b/,
+              /\blet me (?:work on|take|tackle|pick up|handle|do) this\b/,
+              /\bi want to (?:work on|take|tackle|pick up|handle|do) this\b/,
+              /\bi'?m interested in (?:working on|taking|tackling|picking up|handling|doing) this\b/,
+            ];
+
+            const matched = patterns.some(p => p.test(body));
+
+            if (matched) {
+              core.info(`Informal assignment request detected from @${commenter} on #${issueNumber}`);
+
+              // Reject if the issue is closed
+              if (context.payload.issue.state === 'closed') {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: `⚠️ Sorry @${commenter}, this issue is closed and is not available for assignment.` + WIKI_LINKS,
+                });
+                return;
+              }
+
+              // Check if user is a maintainer (admin or maintain permission)
+              const { data: permData } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: commenter,
+              });
+              const isMaintainer = ['admin', 'maintain'].includes(permData.permission);
+
+              // Check if someone is already assigned
+              const currentAssignees = context.payload.issue.assignees.map(a => a.login);
+              if (!isMaintainer && currentAssignees.length > 0 && !currentAssignees.includes(commenter)) {
+                const assigneeList = currentAssignees.map(a => `@${a}`).join(', ');
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: `⚠️ Sorry @${commenter}, this issue is already assigned to ${assigneeList}. ` +
+                    `Please look for another open issue to work on!` + WIKI_LINKS,
+                });
+              } else if (!currentAssignees.includes(commenter)) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: `👋 Hi @${commenter}! It looks like you'd like to work on this issue. ` +
+                    `To get assigned, please comment \`/assign\` and I'll handle the rest.` + WIKI_LINKS,
+                });
+              }
+            }
+
+  # ── Safety net: check direct assignments by maintainers ────────────────────
+  check-direct-assignment:
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify assignee is within limit
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const max = parseInt(
+              process.env.MAX_OVERRIDE || process.env.DEFAULT_MAX,
+              10
+            );
+            const assignee = context.payload.assignee.login;
+            const issueNumber = context.payload.issue.number;
+
+            core.info(`Direct assignment: checking limit for @${assignee} (max: ${max})`);
+
+            const WIKI_LINKS = `\n\n📖 [Getting Started](https://github.com/learning-unlimited/ESP-Website/wiki#getting-started) · [Contribution Rules](https://github.com/learning-unlimited/ESP-Website/wiki#rules) · [Code of Conduct](https://github.com/learning-unlimited/ESP-Website/blob/main/CODE_OF_CONDUCT.md)`;
+
+            // Check if the assignee is a maintainer (admin or maintain permission)
+            const { data: assigneePermData } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: assignee,
+            });
+            const assigneeIsMaintainer = ['admin', 'maintain'].includes(assigneePermData.permission);
+            if (assigneeIsMaintainer) {
+              core.info(`@${assignee} is a maintainer — no restrictions apply.`);
+              return;
+            }
+
+            // Check if the person who made this assignment is a maintainer
+            const sender = context.payload.sender.login;
+            let senderIsMaintainer = false;
+            if (sender !== assignee) {
+              const { data: senderPermData } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: sender,
+              });
+              senderIsMaintainer = ['admin', 'maintain'].includes(senderPermData.permission);
+            }
+
+            // Reject if the issue is closed (even if assigned by a maintainer)
+            if (context.payload.issue.state === 'closed') {
+              await github.rest.issues.removeAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                assignees: [assignee],
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `⚠️ Sorry @${assignee}, this issue is closed and is not available for assignment.` + WIKI_LINKS,
+              });
+
+              core.info(`Removed @${assignee} from #${issueNumber} — issue is closed.`);
+              return;
+            }
+
+            // Check if the issue has a blocked label
+            const blockedRaw = process.env.NO_ASSIGN_LABELS || '';
+            const blockedLabels = blockedRaw
+              .split(',')
+              .map(l => l.trim().toLowerCase())
+              .filter(Boolean);
+            const issueLabels = context.payload.issue.labels.map(l => l.name.toLowerCase());
+            const matched = issueLabels.filter(l => blockedLabels.includes(l));
+
+            if (matched.length > 0 && !senderIsMaintainer) {
+              await github.rest.issues.removeAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                assignees: [assignee],
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `⚠️ Sorry @${assignee}, this issue is labeled **${matched.join('**, **')}** and is not currently available for assignment.` + WIKI_LINKS,
+              });
+
+              core.warning(`Removed @${assignee} from #${issueNumber} due to label(s): ${matched.join(', ')}`);
+              return;
+            }
+
+            // Count open issues assigned to this user
+            const countLinkedPRs = (process.env.COUNT_LINKED_PRS || 'false').toLowerCase() === 'true';
+            const searchParts = [
+              `repo:${context.repo.owner}/${context.repo.repo}`,
+              `is:issue`,
+              `is:open`,
+              `assignee:${assignee}`,
+            ];
+            if (!countLinkedPRs) {
+              searchParts.push('-linked:pr');
+            }
+
+            const { data: searchResult } = await github.rest.search.issuesAndPullRequests({
+              q: searchParts.join(' '),
+              per_page: 100,
+            });
+
+            const openIssues = searchResult.items;
+            const count = openIssues.length;
+
+            core.info(`@${assignee} has ${count} countable open issue(s) (COUNT_LINKED_PRS: ${countLinkedPRs}).`);
+
+            if (count > max) {
+              if (senderIsMaintainer) {
+                // Maintainer override — keep the assignment but warn
+                const issueList = openIssues
+                  .filter(i => i.number !== issueNumber)
+                  .map(i => `- #${i.number}`)
+                  .join('\n');
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: [
+                    `⚠️ **Maintainer override:** @${assignee} has been assigned by @${sender}, ` +
+                    `but is now over the limit with **${count}/${max}** issue(s) assigned` +
+                    (countLinkedPRs ? `.` : ` (excluding issues with linked pull requests).`),
+                    ``,
+                    `Currently assigned to:`,
+                    ``,
+                    issueList,
+                  ].join('\n'),
+                });
+
+                core.warning(
+                  `Maintainer @${sender} assigned @${assignee} to #${issueNumber} — ` +
+                  `now at ${count} open issues (limit: ${max}).`
+                );
+              } else {
+                // Non-maintainer — enforce the limit
+                await github.rest.issues.removeAssignees({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  assignees: [assignee],
+                });
+
+                const issueList = openIssues
+                  .filter(i => i.number !== issueNumber)
+                  .map(i => `- #${i.number}`)
+                  .join('\n');
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: [
+                    `👋 Hi @${assignee}! To keep work distributed across contributors, ` +
+                    `we limit each person to **${max}** assigned open issue(s) at a time` +
+                    (countLinkedPRs ? `.` : ` (issues with linked pull requests don't count).`),
+                    ``,
+                    `You're currently assigned to **${count - 1}** other open issue(s):`,
+                    ``,
+                    issueList,
+                    ``,
+                    `Your assignment to this issue has been removed. Once you close or ` +
+                    `unassign yourself from an existing issue, feel free to pick this one up!` + WIKI_LINKS,
+                  ].join('\n'),
+                });
+
+                core.warning(
+                  `Removed @${assignee} from #${issueNumber} — ` +
+                  `already assigned to ${count - 1} open issues (limit: ${max}).`
+                );
+              }
+            } else {
+              if (senderIsMaintainer) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: `✅ @${assignee} has been assigned by @${sender}. They now have **${count}/${max}** issue(s) assigned.`,
+                });
+              }
+              core.info(`@${assignee} is within the limit (${count}/${max}). No action needed.`);
+            }
+        env:
+          MAX_OVERRIDE: ${{ vars.MAX_ISSUE_ASSIGNMENTS }}
+          NO_ASSIGN_LABELS: ${{ vars.NO_ASSIGN_LABELS }}
+          COUNT_LINKED_PRS: ${{ vars.COUNT_LINKED_PRS }}
