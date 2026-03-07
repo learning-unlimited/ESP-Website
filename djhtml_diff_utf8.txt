@@ -1,0 +1,376 @@
+﻿
+diff --git a/esp/templates/404.html b/esp/templates/404.html
+index 628636a02..1d3f23b20 100644
+--- a/esp/templates/404.html
++++ b/esp/templates/404.html
+@@ -4,19 +4,19 @@
+ 
+ {% block content %}
+ 
+-<h1>Error 404</h1>
+-<p>
+-   This page does not exist.
+-   Please try to fix the URL and try again.
+-   <br />
+-   If you think this page should exist, please email us at 
++  <h1>Error 404</h1>
++  <p>
++    This page does not exist.
++    Please try to fix the URL and try again.
++    <br />
++    If you think this page should exist, please email us at
+      <pre>{{ DEFAULT_EMAIL_ADDRESSES.support }}</pre>
+-   explaining to us how you got this message, and we'll try to fix it.
+-   <br />
+-   <br />
+-   <br />
+-   <em>Thank you and sorry for the inconvenience!
++    explaining to us how you got this message, and we'll try to fix it.
++    <br />
++    <br />
+     <br />
+-     - Web Team</em>
+-</p>
++    <em>Thank you and sorry for the inconvenience!
++      <br />
++      - Web Team</em>
++  </p>
+ {% endblock %}
+diff --git a/esp/templates/admin/emails.html b/esp/templates/admin/emails.html
+index 3228fe668..aea307506 100644
+--- a/esp/templates/admin/emails.html
++++ b/esp/templates/admin/emails.html
+@@ -4,109 +4,109 @@
+ {% block content_title %}Monitor Emails{% endblock %}
+ 
+ {% block stylesheets %}
+-{{ block.super }}
+-<style>
+-table.emails-table {
+-  border: 1px solid black;
+-}
+-  
+-table {
+-  width: 100%;
+-  table-layout: fixed;
+-  word-wrap: break-word;
+-  border-collapse: collapse;
+-}
++    {{ block.super }}
++    <style>
++        table.emails-table {
++            border: 1px solid black;
++        }
+ 
+-th {
+-  background: black;
+-  color: white;
+-}
++        table {
++            width: 100%;
++            table-layout: fixed;
++            word-wrap: break-word;
++            border-collapse: collapse;
++        }
+ 
+-tr.email-header > th, tr.email-header > td {
+-  border-bottom: 1px solid #ddd;
+-}
++        th {
++            background: black;
++            color: white;
++        }
+ 
+-th, td {
+-  padding-top: 5px !important;
+-  padding-left: 5px !important;
+-  padding-bottom: 5px !important;
+-  padding-right: 5px !important;
+-}
++        tr.email-header > th, tr.email-header > td {
++            border-bottom: 1px solid #ddd;
++        }
+ 
+-tr.email-header:hover {
+-  background-color: #f5f5f5;
+-}
++        th, td {
++            padding-top: 5px !important;
++            padding-left: 5px !important;
++            padding-bottom: 5px !important;
++            padding-right: 5px !important;
++        }
+ 
+-tr.email-details {
+-  display: none;
+-  border-left: 1px solid #ddd;
+-  border-right: 1px solid #ddd;
+-  border-bottom: 1px solid #ddd;
+-}
+-</style>
++        tr.email-header:hover {
++            background-color: #f5f5f5;
++        }
++
++        tr.email-details {
++            display: none;
++            border-left: 1px solid #ddd;
++            border-right: 1px solid #ddd;
++            border-bottom: 1px solid #ddd;
++        }
++    </style>
+ {% endblock %}
+ 
+ {% block content %}
+ 
+-<p>This page lets you monitor emails that have been sent through the website via a program's comm panel.</p>
+-<form action="/manage/emails" method="get">
+-<p>Currently showing emails since <input name="start_date" type="date" onchange="$j(this).parents('form').submit();return false;" value="{{ start_date|date:"Y-m-d" }}"></p>
+-</form>
+-<p>If you notice any problems (emails aren't getting processed, emails won't send, emails are not sent to everyone, etc.), please contact <a href="mailto:websupport@learningu.org">websupport</a>.</p>
++    <p>This page lets you monitor emails that have been sent through the website via a program's comm panel.</p>
++    <form action="/manage/emails" method="get">
++        <p>Currently showing emails since <input name="start_date" type="date" onchange="$j(this).parents('form').submit();return false;" value="{{ start_date|date:"Y-m-d" }}"></p>
++    </form>
++    <p>If you notice any problems (emails aren't getting processed, emails won't send, emails are not sent to everyone, etc.), please contact <a href="mailto:websupport@learningu.org">websupport</a>.</p>
+ 
+-{% if not requests %}
+-<p>There are no emails to monitor.</p>
+-{% else %}
+-<p>Click on a row for more details:</p>
+-<table class="emails-table">
+-    <tr>
+-        <th style="width:5%;"></th>
+-        <th style="width:50%;">Subject</th>
+-        <th>Request Processed</th>
+-        <th># Recipients</th>
+-        <th># Emails Sent</th>
+-    </tr>
+-    {% for req in requests %}
+-        <tr class="email-header">
+-            <td>+</td>
+-            <td><b>{{ req.subject }}</b></td>
+-            <td style="text-align:center;">{% if req.processed %}&#10003;{% else %}&#10005;{% endif %}</td>
+-            <td style="text-align:center;">{{ req.num_rec }}</td>
+-            <td style="text-align:center;">{{ req.num_sent }}</td>
+-        </tr>
+-        <tr class="email-details">
+-            <td colspan="3" style="vertical-align:top;">
+-                <iframe srcdoc="{{ req.msgtext|join:""|escape }}" style="width: 100%; max-height: 600px;"></iframe>
+-            </td>
+-            <td colspan="2" style="vertical-align:top;padding:0;"><table>
+-                <tr><td><i>Sent by:</i><br /><a href="/manage/userview?username={{ req.creator|urlencode }}">{{ req.creator }}</a></td></tr>
+-                <tr><td><i>Sending address:</i><br />{{ req.sender }}</td></tr>
+-                <tr><td><i>Created at:</i><br />{{ req.created_at }}</td></tr>
+-                <tr><td><i>Finished at:</i><br />{{ req.finished_at }}</td></tr>
+-                {% if req.public %}
+-                <tr><td><i><a href="/email/{{ req.id }}" target="_blank">Public here</a></i><br /></td></tr>
+-                {% endif %}
+-            </table></td>
+-        </tr>
+-    {% endfor %}
+-</table>
+-{% endif %}
++    {% if not requests %}
++        <p>There are no emails to monitor.</p>
++    {% else %}
++        <p>Click on a row for more details:</p>
++        <table class="emails-table">
++            <tr>
++                <th style="width:5%;"></th>
++                <th style="width:50%;">Subject</th>
++                <th>Request Processed</th>
++                <th># Recipients</th>
++                <th># Emails Sent</th>
++            </tr>
++            {% for req in requests %}
++                <tr class="email-header">
++                    <td>+</td>
++                    <td><b>{{ req.subject }}</b></td>
++                    <td style="text-align:center;">{% if req.processed %}&#10003;{% else %}&#10005;{% endif %}</td>
++                    <td style="text-align:center;">{{ req.num_rec }}</td>
++                    <td style="text-align:center;">{{ req.num_sent }}</td>
++                </tr>
++                <tr class="email-details">
++                    <td colspan="3" style="vertical-align:top;">
++                        <iframe srcdoc="{{ req.msgtext|join:""|escape }}" style="width: 100%; max-height: 600px;"></iframe>
++                    </td>
++                    <td colspan="2" style="vertical-align:top;padding:0;"><table>
++                        <tr><td><i>Sent by:</i><br /><a href="/manage/userview?username={{ req.creator|urlencode }}">{{ req.creator }}</a></td></tr>
++                        <tr><td><i>Sending address:</i><br />{{ req.sender }}</td></tr>
++                        <tr><td><i>Created at:</i><br />{{ req.created_at }}</td></tr>
++                        <tr><td><i>Finished at:</i><br />{{ req.finished_at }}</td></tr>
++                        {% if req.public %}
++                            <tr><td><i><a href="/email/{{ req.id }}" target="_blank">Public here</a></i><br /></td></tr>
++                        {% endif %}
++                    </table></td>
++                </tr>
++            {% endfor %}
++        </table>
++    {% endif %}
+ 
+-<script>
+-$j(function() {
+-    $j("tr.email-header").click(function(event) {
+-        var $target = $j(event.target).parent("tr.email-header");
+-        var $row = $target.next("tr");
+-        $row.toggle();
+-        var iframe = $row.find("iframe")[0];
+-        iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 16 + 'px';
+-        if ($target.find("td:first").html() == "+") {
+-            $target.find("td:first").html("-");
+-        } else {
+-            $target.find("td:first").html("+");
+-        }
+-    });
+-});
+-</script>
++    <script>
++        $j(function() {
++            $j("tr.email-header").click(function(event) {
++                var $target = $j(event.target).parent("tr.email-header");
++                var $row = $target.next("tr");
++                $row.toggle();
++                var iframe = $row.find("iframe")[0];
++                iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 16 + 'px';
++                if ($target.find("td:first").html() == "+") {
++                    $target.find("td:first").html("-");
++                } else {
++                    $target.find("td:first").html("+");
++                }
++            });
++        });
++    </script>
+ 
+ {% endblock %}
+diff --git a/esp/templates/contact.html b/esp/templates/contact.html
+index 15d4d4997..2aab6cbaa 100644
+--- a/esp/templates/contact.html
++++ b/esp/templates/contact.html
+@@ -20,46 +20,46 @@
+ {% endblock %}
+ 
+ {% block content %}
+-{% load render_qsd %}
++  {% load render_qsd %}
+ 
+-{% if contact_form.data.decline_password_recovery %}
+-  {% inline_qsd_block "contact_password_recovery_check" %}
+-  # Contact Us
++  {% if contact_form.data.decline_password_recovery %}
++    {% inline_qsd_block "contact_password_recovery_check" %}
++      # Contact Us
+ 
+-  It looks like you're trying to recover your login information.
+-  If you would like, we can email you a link to reset your password.
+-  The email will remind you of your username.
+-  {% end_inline_qsd_block %}
+-  <form action="/myesp/passwdrecover/" method="post">
+-    <input type="hidden" name="email" value="{{contact_form.cleaned_data.sender}}" />
+-    <input type="submit" name="recoverpassword" value="Reset my password" />
+-  </form>
+-  <form action="{{ request.path }}" method="post" class="contact-form">
+-    <input type="submit" name="sendanyway" value="I want to send this message anyway" />
+-{% else %}
+-  {% inline_qsd_block "contact_header_text" %}
+-  # Contact Us
++      It looks like you're trying to recover your login information.
++      If you would like, we can email you a link to reset your password.
++      The email will remind you of your username.
++    {% end_inline_qsd_block %}
++    <form action="/myesp/passwdrecover/" method="post">
++      <input type="hidden" name="email" value="{{contact_form.cleaned_data.sender}}" />
++      <input type="submit" name="recoverpassword" value="Reset my password" />
++    </form>
++    <form action="{{ request.path }}" method="post" class="contact-form">
++      <input type="submit" name="sendanyway" value="I want to send this message anyway" />
++  {% else %}
++    {% inline_qsd_block "contact_header_text" %}
++      # Contact Us
+ 
+-  Fill out this form to send a quick email to {{ settings.ORGANIZATION_SHORT_NAME }}.
+-  We will get back to you as soon as possible (usually within a day).
+-  Submitting this form does not add you to our mailing list.
++      Fill out this form to send a quick email to {{ settings.ORGANIZATION_SHORT_NAME }}.
++      We will get back to you as soon as possible (usually within a day).
++      Submitting this form does not add you to our mailing list.
+ 
+-  ## Note to Parents:
++      ## Note to Parents:
+ 
+-  If your child is or wants to be a student at one of our programs, while we do appreciate your interest, we'd rather hear from the child directly.
+-  We're an all-volunteer organization, so we sometimes take a while to respond to email, and we have an obligation to answer mail from our students first.
+-  {% end_inline_qsd_block %}
+-  <form action="{{ request.path }}" method="post" class="contact-form">
+-{% endif %}
++      If your child is or wants to be a student at one of our programs, while we do appreciate your interest, we'd rather hear from the child directly.
++      We're an all-volunteer organization, so we sometimes take a while to respond to email, and we have an obligation to answer mail from our students first.
++    {% end_inline_qsd_block %}
++    <form action="{{ request.path }}" method="post" class="contact-form">
++  {% endif %}
+ 
+-<h2>Contact Form</h2>
+-{% if contact_form.errors %}
+-<div class="errors">
+-  There
+-  {% if contact_form.errors|length_is:1 %}is an error{% else %}are errors{% endif %}
+-  in the below form. Please fix and resubmit.
+-</div>
+-{% endif %}
++  <h2>Contact Form</h2>
++  {% if contact_form.errors %}
++    <div class="errors">
++      There
++      {% if contact_form.errors|length_is:1 %}is an error{% else %}are errors{% endif %}
++      in the below form. Please fix and resubmit.
++    </div>
++  {% endif %}
+ 
+   <table class="contact">
+     <tbody>
+@@ -71,5 +71,5 @@ <h2>Contact Form</h2>
+     </tbody>
+   </table>
+ 
+-</form>
++  </form>
+ {% endblock %}
+diff --git a/esp/templates/customforms/form.html b/esp/templates/customforms/form.html
+index e1d52230c..7a6354472 100644
+--- a/esp/templates/customforms/form.html
++++ b/esp/templates/customforms/form.html
+@@ -3,7 +3,7 @@
+ {% block stylesheets %}
+     {{ block.super }}
+ 
+-{% endblock %}  
++{% endblock %}
+ 
+ {% block title %}{{ form_title }}{% endblock title %}
+ 
+@@ -14,16 +14,16 @@ <h2 class="form_desc">{{ form_description }}</h2>
+     <em class="req_text">(Fields in blue are required)</em>
+ 
+     <form action="." method="post" enctype="multipart/form-data" id="cstform" class="form-stacked">
+-    {% include "customforms/single_form_fragment.html" %}
+-    
+-    <br/>
+-    {% if wizard.steps.prev %}
+-        {% if wizard.steps.first != wizard.steps.prev %}
+-            <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.first }}">First Step</button>
++        {% include "customforms/single_form_fragment.html" %}
++
++        <br/>
++        {% if wizard.steps.prev %}
++            {% if wizard.steps.first != wizard.steps.prev %}
++                <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.first }}">First Step</button>
++            {% endif %}
++            <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.prev }}">Prev Step</button>
+         {% endif %}
+-        <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.prev }}">Prev Step</button>
+-    {% endif %}
+-    <input type="submit" class="btn primary"{% if wizard.steps.next %} value="Next Step"{% endif %}>
++        <input type="submit" class="btn primary"{% if wizard.steps.next %} value="Next Step"{% endif %}>
+     </form>
+ {% endblock %}
+ 
