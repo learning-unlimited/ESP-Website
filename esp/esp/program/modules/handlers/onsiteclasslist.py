@@ -92,8 +92,6 @@ def parse_update_schedule_sections(raw_sections, max_len=MAX_UPDATE_SCHEDULE_SEC
             continue
         cleaned.append(val)
         seen.add(val)
-        if len(cleaned) > max_len:
-            raise ValueError('too many sections requested')
 
     if parsed and not cleaned:
         raise ValueError('sections must contain at least one valid section id')
