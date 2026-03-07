@@ -692,7 +692,7 @@ class LotteryAssignmentController(object):
             import re
             p = re.search('(?<=priority_)\d*', mode).group(0)
             if p:
-                assignments = numpy.nonzero(self.priority[p][self.student_indices[student_id],:])[0]
+                assignments = numpy.nonzero(self.priority[int(p)][self.student_indices[student_id],:])[0]
         result = []
         for i in range(assignments.shape[0]):
             result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
