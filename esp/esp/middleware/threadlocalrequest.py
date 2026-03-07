@@ -15,6 +15,17 @@ except ImportError:
 def get_current_request():
     return getattr(_threading_local, 'request', None)
 
+def set_current_request(request):
+    """Explicitly set the thread-local request.
+
+    Intended for use in automated tests where the full middleware stack is
+    not invoked (e.g. when using RequestFactory instead of the test client).
+    In production the ThreadLocals middleware populates this automatically
+    via process_request(); this function must NOT be called from production
+    code paths.
+    """
+    _threading_local.request = request
+
 def AutoRequestContext(*args, **kwargs):
     request = get_current_request()
     if request is None:
