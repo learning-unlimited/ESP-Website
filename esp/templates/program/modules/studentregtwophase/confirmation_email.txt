@@ -1,0 +1,20 @@
+Hi {{ student.name }},
+
+This confirms that your lottery preferences for {{ program.niceName }} have been saved as of {{ curtime|date:"l M d Y" }} at {{ curtime|date:"h:i A" }}.
+
+YOUR PRIORITY RANKINGS:
+{% for timeslot, priorities in schedule %}
+  {{ timeslot.short_description }}:
+{% for label, title in priorities %}    {{ label }}: {{ title }}
+{% endfor %}
+{% endfor %}
+{% if starred_classes %}YOUR STARRED CLASSES ({{ starred_classes|length }}):
+{% for title in starred_classes %}  - {{ title }}
+{% endfor %}{% endif %}
+You may update your preferences at any time before the deadline by visiting:
+http://{{ DEFAULT_HOST }}/learn/{{ program.url }}/studentreg2phase
+
+If you make changes, please confirm again to receive an updated confirmation.
+
+- {{ program.program_type }} Registration System
+  Contact the directors: {{ program.director_email }}
