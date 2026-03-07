@@ -114,8 +114,8 @@ def _generate_favicon_variants(ico_path, images_dir):
                 out_path = os.path.join(images_dir, filename)
                 resized = img.resize((size, size), resample)
                 resized.save(out_path, 'PNG')
-        name = Tag.getTag('site_name') or Tag.getTag('full_group_name') or getattr(settings, 'INSTITUTION_NAME', 'ESP Website')
-        short_name = Tag.getTag('site_short_name') or Tag.getTag('full_group_name') or getattr(settings, 'ORGANIZATION_SHORT_NAME', 'ESP')
+        name = Tag.getTag('full_group_name') or getattr(settings, 'INSTITUTION_NAME', 'ESP Website')
+        short_name = Tag.getTag('full_group_name') or getattr(settings, 'ORGANIZATION_SHORT_NAME', 'ESP')
         if name is None:
             name = 'ESP Website'
         elif not isinstance(name, str):
