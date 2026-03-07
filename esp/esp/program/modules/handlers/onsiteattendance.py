@@ -170,6 +170,9 @@ class OnSiteAttendance(ProgramModuleObj):
             user = sr.user
             time = start_time
             # loop through hours until we get to the end time of the section
+            if end_time < start_time:
+                continue
+
             while(True):
                 if time in att_dict:
                     # Only count each student a maximum of one time per hour
