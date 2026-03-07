@@ -234,13 +234,20 @@ $j(document).ready(function() {
 	            // or any other URL that isn't scheme relative or absolute i.e relative.
 	            !(/^(\/\/|http:|https:).*/.test(url));
 	    }
-	    function safeMethod(method) {
-	        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-	    }
+	function safeMethod(method) {
+	    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+	}
+        function getCsrfCookieName() {
+            var meta = document.querySelector('meta[name="csrf-cookie-name"]');
+            if (meta && meta.getAttribute('content')) {
+                return meta.getAttribute('content');
+            }
+            return 'csrftoken';
+        }
 
-	    if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
-	        xhr.setRequestHeader("X-CSRFToken", getCookie('esp_csrftoken'));
-	    }
+	if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
+	    xhr.setRequestHeader("X-CSRFToken", getCookie(getCsrfCookieName()));
+	}
 	});
 	//end of csrf stuff
 	
@@ -1847,4 +1854,3 @@ var rebuild=function(metadata) {
     //Open the information panel if not already open
     $j("#header_information.ui-accordion-header-collapsed").trigger("click");
 };
-
