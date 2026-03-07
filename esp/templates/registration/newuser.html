@@ -84,6 +84,87 @@
 <script type="text/javascript">
 <!--
   document.getElementById('id_first_name').focus();
+
+  // Real-time username validation
+  (function() {
+    var usernameField = document.getElementById('id_username');
+    var statusDiv = null;
+    var validationTimer = null;
+    
+    function createStatusDiv() {
+      if (statusDiv) return;
+      statusDiv = document.createElement('div');
+      statusDiv.id = 'username-validation-status';
+      statusDiv.style.marginTop = '5px';
+      statusDiv.style.fontSize = '14px';
+      usernameField.parentNode.appendChild(statusDiv);
+    }
+    
+    function showStatus(message, isAvailable) {
+      createStatusDiv();
+      statusDiv.innerHTML = message;
+      statusDiv.className = '';
+      if (isAvailable) {
+        statusDiv.style.color = '#5cb85c';
+        statusDiv.innerHTML = '\u2713 ' + message;
+      } else {
+        statusDiv.style.color = '#d9534f';
+        statusDiv.innerHTML = '\u2717 ' + message;
+      }
+    }
+    
+    function hideStatus() {
+      if (statusDiv) {
+        statusDiv.innerHTML = '';
+      }
+    }
+    
+    function checkUsernameAvailability() {
+      var username = usernameField.value.trim();
+      
+      if (!username) {
+        hideStatus();
+        return;
+      }
+      
+      if (username.length < 5) {
+        showStatus('Username must be at least 5 characters long', false);
+        return;
+      }
+      
+      // Clear status while checking to avoid showing an error icon during loading
+      hideStatus();
+      
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/myesp/ajax/check_username/?username=' + encodeURIComponent(username), true);
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          try {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              showStatus(response.message, response.available);
+            } else {
+              showStatus('Error checking username availability', false);
+            }
+          } catch (e) {
+            showStatus('Error checking username availability', false);
+          }
+        }
+      };
+      
+      xhr.send();
+    }
+    
+    if (usernameField) {
+      usernameField.addEventListener('input', function() {
+        clearTimeout(validationTimer);
+        validationTimer = setTimeout(checkUsernameAvailability, 500);
+      });
+      
+      usernameField.addEventListener('blur', checkUsernameAvailability);
+    }
+  })();
 //-->
 </script>
 

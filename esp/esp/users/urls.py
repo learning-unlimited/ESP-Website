@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.conf.urls import url
 
 from esp.users import views
@@ -23,17 +24,16 @@ urlpatterns = [
     url(r'^signedout/?$', views.signed_out_message),
     url(r'^login/?$', views.CustomLoginView.as_view(), name="login"),
     url(r'^disableaccount/?$', views.disable_account),
-    url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(),
-        name='grade_change_request'),
+    url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
     url(r'^makeadmin/?$', views.make_admin),
     url(r'^loginhelp', views.LoginHelpView.as_view(), name='Login Help'),
     url(r'^morph/?$', views.morph_into_user),
-    # username uses [^/]+ (not the narrower [\w.@+-]+) to preserve routing for
-    # legacy usernames that may contain characters outside that charset.
-    url(r'^unsubscribe/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$',
-        views.unsubscribe, name="unsubscribe"),
-    url(r'^unsubscribe_oneclick/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$',
-        views.unsubscribe_oneclick, name="unsubscribe_oneclick"),
+    url(r'^unsubscribe/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$', views.unsubscribe, name="unsubscribe"),
+    url(r'^unsubscribe_oneclick/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$', views.unsubscribe_oneclick, name="unsubscribe_oneclick"),
+
+    # AJAX endpoints for real-time validation
+    url(r'^ajax/check_email/?$', views.ajax_check_email_availability, name='ajax_check_email'),
+    url(r'^ajax/check_username/?$', views.ajax_check_username_availability, name='ajax_check_username'),
 ]
 
 urlpatterns += [
