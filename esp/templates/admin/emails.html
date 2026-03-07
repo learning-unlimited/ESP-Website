@@ -54,6 +54,15 @@ tr.email-details {
 </form>
 <p>If you notice any problems (emails aren't getting processed, emails won't send, emails are not sent to everyone, etc.), please contact <a href="mailto:websupport@learningu.org">websupport</a>.</p>
 
+<p>
+    <button id="process-emails-btn" class="btn btn-primary" type="button">
+        Process Emails Now
+    </button>
+    <span id="process-emails-status" style="margin-left: 10px;"></span>
+    <br />
+    <small style="color: #777;">Emails submitted via the comm panel are processed automatically. Use this button to manually re-trigger processing if needed. Safe to click multiple times &mdash; concurrent runs are prevented automatically.</small>
+</p>
+
 {% if not requests %}
 <p>There are no emails to monitor.</p>
 {% else %}
@@ -94,6 +103,32 @@ tr.email-details {
 
 <script>
 $j(function() {
+    $j("#process-emails-btn").click(function() {
+        var $btn = $j(this);
+        var $status = $j("#process-emails-status");
+        $btn.prop("disabled", true);
+        $status.text("Triggering email processing...").css("color", "");
+        $j.ajax({
+            url: "/manage/process_emails",
+            type: "POST",
+            data: { csrfmiddlewaretoken: csrf_token() },
+            dataType: "json",
+            success: function(data) {
+                $status.text(data.message).css("color", "green");
+            },
+            error: function(xhr) {
+                var msg = "An error occurred.";
+                try { msg = JSON.parse(xhr.responseText).message; } catch(e) {}
+                $status.text(msg).css("color", "red");
+            },
+            complete: function() {
+                // Client-side cooldown: keep button disabled for 5 seconds
+                // to prevent rapid clicks spawning many short-lived processes.
+                setTimeout(function() { $btn.prop("disabled", false); }, 5000);
+            }
+        });
+    });
+
     $j("tr.email-header").click(function(event) {
         var $target = $j(event.target).parent("tr.email-header");
         var $row = $target.next("tr");

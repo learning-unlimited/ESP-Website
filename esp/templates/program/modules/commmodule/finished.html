@@ -32,12 +32,63 @@
 <p>
 Congratulations!<br />
 <br />
-The email is in the process of being sent. Visit <a href="/manage/emails">the email status page</a> to monitor its status. To avoid being marked as a spam source, <strong>there may be a delay</strong> with sending it to everyone on the list, so please be patient!
+Your email has been queued{% if auto_trigger_ok %} and <strong>processing has been automatically triggered</strong>{% endif %}.
+Visit <a href="/manage/emails">the email status page</a> to monitor its status.
+To avoid being marked as a spam source, <strong>there may be a delay</strong> with sending it to everyone on the list, so please be patient!
 <br /><br />
 {% if req_id %}
 <a href="/email/{{ req_id }}" target="_blank">The email is viewable by the public at this link.</a>
 {% endif %}
 </p>
+
+{% if auto_trigger_ok %}
+<div class="alert alert-success">
+    &#10003; Email processing was automatically started. Emails will be sent shortly.
+</div>
+{% else %}
+<div class="alert alert-warning">
+    &#9888; Automatic processing could not be started. The email is safely queued and will be picked up by the next scheduled run, or you can manually trigger processing below.
+</div>
+{% endif %}
+
+<p>
+    <button id="process-emails-btn" class="btn btn-default" type="button">
+        Re-trigger Processing
+    </button>
+    <span id="process-emails-status" style="margin-left: 10px;"></span>
+    <br />
+    <small style="color: #777;">Use this if processing seems stalled. Safe to click multiple times &mdash; concurrent runs are prevented automatically.</small>
+</p>
+
+<script>
+$j(function() {
+    $j("#process-emails-btn").click(function() {
+        var $btn = $j(this);
+        var $status = $j("#process-emails-status");
+        $btn.prop("disabled", true);
+        $status.text("Triggering email processing...").css("color", "");
+        $j.ajax({
+            url: "/manage/process_emails",
+            type: "POST",
+            data: { csrfmiddlewaretoken: csrf_token() },
+            dataType: "json",
+            success: function(data) {
+                $status.text(data.message).css("color", "green");
+            },
+            error: function(xhr) {
+                var msg = "An error occurred.";
+                try { msg = JSON.parse(xhr.responseText).message; } catch(e) {}
+                $status.text(msg).css("color", "red");
+            },
+            complete: function() {
+                // Client-side cooldown: keep button disabled for 5 seconds
+                // to prevent rapid clicks spawning many short-lived processes.
+                setTimeout(function() { $btn.prop("disabled", false); }, 5000);
+            }
+        });
+    });
+});
+</script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
