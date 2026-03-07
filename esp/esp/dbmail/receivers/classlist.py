@@ -2,6 +2,7 @@ from esp.dbmail.base import BaseHandler
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
 from esp.mailman import create_list, load_list_settings, add_list_member, add_list_members, set_list_moderator_password, apply_list_settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -19,7 +20,7 @@ class ClassList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id = class_id)
             sections = cls.sections.all()
-        except ClassSubject.DoesNotExist:
+        except ObjectDoesNotExist:
             return
 
         self.emailcode = cls.emailcode()
@@ -48,7 +49,7 @@ class ClassList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id = class_id)
             sections = cls.sections.all()
-        except ClassSubject.DoesNotExist:
+        except ObjectDoesNotExist:
             return
 
         # Create a class list in Mailman,
