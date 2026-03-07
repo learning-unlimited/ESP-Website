@@ -62,6 +62,20 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             "choosable": 1
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if tl != "learn" or view_name != "studentreg":
+            return None
+        from esp.program.modules.admin_search import AdminSearchEntry
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="learn_studentreg",
+            url="/learn/%s/studentreg" % base,
+            title="Student Registration",
+            category="Quick Links",
+            keywords=["student registration", "signup", "enroll"],
+        )
+
     @cache_function
     def have_paid(self, user):
         """ Whether the user has paid for this program.  """

@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
@@ -80,6 +81,26 @@ class ProgramPrintables(ProgramModuleObj):
             "seq": 5,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        base = program.getUrlBase()
+        entries = {
+            "catalog": ("PDF Catalog", "Printables", ["printable", "pdf catalog", "classes"]),
+            "studentschedules": ("Student Schedules", "Printables", ["printable", "student schedules", "schedules"]),
+            "studentscheduleform": ("Student Schedule Formatter", "Printables", ["formatter", "student schedules", "printable"]),
+            "printoptions": ("All Printables", "Printables", ["printables", "all printables", "pdf", "documents"]),
+        }
+        if view_name not in entries:
+            return None
+        title, category, keywords = entries[view_name]
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/manage/%s/%s" % (base, view_name),
+            title=title,
+            category=category,
+            keywords=keywords,
+        )
 
     @aux_call
     @needs_admin
