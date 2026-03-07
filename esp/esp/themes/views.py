@@ -49,6 +49,11 @@ import random
 import string
 import os.path
 import shutil
+#new imports
+import json
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from esp.themes.models import AdminToolbarLink
 
 THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
                      "If you want to switch to one of the standard themes, " + \
@@ -360,3 +365,18 @@ def recompile(request, keep_files=None):
     tc.recompile_theme(keep_files=keep_files)
     return HttpResponseRedirect('/themes/')
 
+
+
+
+
+@login_required
+def admin_toolbar_links(request):
+    # Only allow admin/staff users
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    
+    links = AdminToolbarLink.objects.filter(is_active=True).values(
+        'id', 'title', 'url', 'order'
+    )
+    
+    return JsonResponse({'links': list(links)})

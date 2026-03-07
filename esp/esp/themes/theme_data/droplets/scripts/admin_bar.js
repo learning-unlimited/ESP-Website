@@ -81,14 +81,49 @@ if (currentPrograms && currentPrograms.forEach) {
     });
 }
 
-ESP.registerAdminModule({
-    content_html: '<div class="content">' +
-                  '<a href="/manage/programs/">Manage all programs</a><br/>' +
-                  '<a href="/manage/pages">Manage static pages</a><br />' +
-                  (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
-                  '<a href="/admin/filebrowser/browse/">Manage media files</a><br />' +
-                  '<a href="/themes/">Manage theme settings</a>' +
-                  '</div>',
-    name: 'Other',
-    displayName: 'Other Important Links'
+fetch('/themes/api/toolbar-links/', {
+    method: 'GET',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    credentials: 'same-origin'
+})
+.then(function(response) { 
+    console.log('Toolbar API status:', response.status);
+    return response.json(); 
+})
+.then(function(data) {
+    console.log('Toolbar API data:', data);
+    
+    var linksHtml = '<div class="content">';
+
+    if (data.links && data.links.length > 0) {
+        data.links.forEach(function(link) {
+            linksHtml += '<a href="' + link.url + '">' + link.title + '</a><br/>';
+        });
+    } else {
+        linksHtml += '<em>No links configured.</em>';
+    }
+
+    linksHtml += '<br/><a href="/admin/themes/admintoolbarlink/">Edit Links</a>';
+    linksHtml += '</div>';
+
+    ESP.registerAdminModule({
+        content_html: linksHtml,
+        name: 'Other',
+        displayName: 'Other Important Links'
+    });
+})
+.catch(function(err) {
+    console.error('Toolbar fetch failed:', err);
+    // Fallback - register with default links so toolbar stays visible
+    ESP.registerAdminModule({
+        content_html: '<div class="content">' +
+            '<a href="/manage/programs/">Manage all programs</a><br/>' +
+            '<a href="/manage/pages">Manage static pages</a><br/>' +
+            '<a href="/admin/filebrowser/browse/">Manage media files</a><br/>' +
+            '<a href="/themes/">Manage theme settings</a><br/>' +
+            '<a href="/admin/themes/admintoolbarlink/">Edit Links</a>' +
+            '</div>',
+        name: 'Other',
+        displayName: 'Other Important Links'
+    });
 });
