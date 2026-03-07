@@ -460,6 +460,7 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
 
 # To be replaced with something more useful, eventually.
 @login_required
+@login_required
 def top_classes(request, tl, program, instance):
     try:
         prog = Program.by_prog_inst(program, instance)
