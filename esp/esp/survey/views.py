@@ -459,7 +459,6 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
     return render_to_response(template, request, context)
 
 # To be replaced with something more useful, eventually.
-@login_required
 def top_classes(request, tl, program, instance):
     try:
         prog = Program.by_prog_inst(program, instance)
@@ -496,16 +495,21 @@ def top_classes(request, tl, program, instance):
     if tl == 'manage':
         classes = prog.classes()
 
-        rating_questions = survey.questions.filter(
+        # Try to find an "overall rating" question first
+        rating_question = survey.questions.filter(
             name__contains='overall rating'
-        )
+        ).first()
 
-        if len(rating_questions) < 1:
-            # Try to find a "Favorite Class" question as fallback
-            favorite_questions = survey.questions.filter(
+        # Determine which type of question we're working with
+        use_favorite_class = rating_question is None
+
+        if use_favorite_class:
+            # If no rating question, try to find a "Favorite Class" question
+            favorite_question = survey.questions.filter(
                 question_type__name='Favorite Class'
-            )
-            if len(favorite_questions) < 1:
+            ).first()
+
+            if favorite_question is None:
                 raise ESPError(
                     'Couldn\'t find an "overall rating" or "Favorite Class" '
                     'question in this survey. To compute top classes, the '
@@ -516,9 +520,8 @@ def top_classes(request, tl, program, instance):
                     'Please update the survey configuration and try again.',
                     log=False
                 )
-            # Handle Favorite Class questions
-            favorite_question = favorite_questions[0]
 
+            # Handle Favorite Class questions
             num_cut = 1
             if 'num_cut' in request.GET:
                 try:
@@ -588,8 +591,6 @@ def top_classes(request, tl, program, instance):
             }
         else:
             # Handle overall rating questions (original logic)
-            rating_question = rating_questions[0]
-
             rating_cut = 0.0
             try:
                 rating_cut = float(
