@@ -21,7 +21,8 @@ sys.path.insert(0, project)
 if os.environ.get('VIRTUAL_ENV') is None:
     root = os.path.dirname(project)
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
+    with open(activate_this, "rb") as f:
+        exec(compile(f.read(), activate_this, 'exec'), dict(__file__=activate_this))
 
 import django
 django.setup()
