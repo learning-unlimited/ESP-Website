@@ -36,12 +36,14 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime
+import json
 import operator
 
+from django.db import transaction
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
-from django.http import Http404
+from django.http import Http404, JsonResponse
 
 from argcache import cache_function
 
@@ -1186,6 +1188,244 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             } for t in teachers ]
 
         return {'teachers': teacher_dicts}
+
+    @staticmethod
+    def _module_constraints(handler):
+        """Return constraint flags for a module handler, mirroring admincore."""
+        required_locked = (
+            handler == 'RegProfileModule' or
+            handler == 'AvailabilityModule' or
+            'AcknowledgementModule' in handler or
+            handler == 'StudentRegTwoPhase'
+        )
+        not_required_locked = (
+            'CreditCardModule_' in handler or
+            handler == 'StudentRegConfirm'
+        )
+        position_locked = (
+            handler == 'RegProfileModule' or
+            'CreditCardModule_' in handler or
+            handler == 'StudentRegConfirm'
+        )
+        if required_locked or not_required_locked or position_locked:
+            return {
+                'required_locked': required_locked,
+                'not_required_locked': not_required_locked,
+                'position_locked': position_locked,
+            }
+        return None
+
+    @staticmethod
+    def _enforce_constraints(prog):
+        """Re-apply hard-coded module constraints, mirroring admincore."""
+        ProgramModuleObj.objects.filter(
+            program=prog, module__handler='RegProfileModule'
+        ).update(seq=0, required=True)
+        ProgramModuleObj.objects.filter(
+            program=prog, module__handler='AvailabilityModule'
+        ).update(required=True)
+        ProgramModuleObj.objects.filter(
+            program=prog, module__handler='StudentRegTwoPhase'
+        ).update(required=True)
+        ProgramModuleObj.objects.filter(
+            program=prog, module__handler='StudentRegConfirm'
+        ).update(seq=99999, required=False)
+        ProgramModuleObj.objects.filter(
+            program=prog, module__handler__contains='CreditCardModule_'
+        ).update(seq=10000, required=False)
+        ProgramModuleObj.objects.filter(
+            program=prog, module__handler__contains='AcknowledgementModule'
+        ).update(required=True)
+
+    @aux_call
+    @json_response()
+    @needs_admin
+    @cached_module_view
+    def modules_list(prog):
+        """List all program modules with their configuration."""
+        modules = []
+        for tl in ('learn', 'teach'):
+            for pmo in prog.getModules(tl=tl):
+                if not pmo.inModulesList():
+                    continue
+                entry = {
+                    'id': pmo.id,
+                    'module_type': tl,
+                    'handler': pmo.module.handler,
+                    'admin_title': pmo.module.admin_title,
+                    'link_title': pmo.link_title or pmo.module.link_title,
+                    'link_title_override': pmo.link_title,
+                    'seq': pmo.seq,
+                    'required': pmo.required,
+                    'required_label': pmo.required_label,
+                }
+                constraints = JSONDataModule._module_constraints(pmo.module.handler)
+                if constraints:
+                    entry['constraints'] = constraints
+                modules.append(entry)
+        return {'modules': modules}
+    modules_list.method.cached_function.depend_on_model(ProgramModuleObj)
+
+    @aux_call
+    @needs_admin
+    def module_update(self, request, tl, one, two, module, extra, prog):
+        """Update properties of a single program module."""
+        if request.method != 'POST':
+            return JsonResponse({'error': 'POST required'}, status=405)
+
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        module_id = data.get('id')
+        if not isinstance(module_id, int):
+            return JsonResponse({'error': 'id must be an integer'}, status=400)
+
+        try:
+            pmo = ProgramModuleObj.objects.select_related('module').get(
+                id=module_id, program=prog)
+        except ProgramModuleObj.DoesNotExist:
+            return JsonResponse({'error': 'Module not found'}, status=404)
+
+        allowed_fields = {'seq', 'required', 'required_label', 'link_title'}
+        updates = {k: v for k, v in data.items() if k in allowed_fields}
+        if not updates:
+            return JsonResponse({'error': 'No valid fields to update'}, status=400)
+
+        if 'seq' in updates and (isinstance(updates['seq'], bool) or not isinstance(updates['seq'], int)):
+            return JsonResponse({'error': 'seq must be an integer'}, status=400)
+        if 'required' in updates and not isinstance(updates['required'], bool):
+            return JsonResponse({'error': 'required must be a boolean'}, status=400)
+        if 'required_label' in updates:
+            if not isinstance(updates['required_label'], str):
+                return JsonResponse({'error': 'required_label must be a string'}, status=400)
+            if len(updates['required_label']) > 80:
+                return JsonResponse({'error': 'required_label exceeds 80 characters'}, status=400)
+        if 'link_title' in updates:
+            if not isinstance(updates['link_title'], str):
+                return JsonResponse({'error': 'link_title must be a string'}, status=400)
+            if len(updates['link_title']) > 64:
+                return JsonResponse({'error': 'link_title exceeds 64 characters'}, status=400)
+
+        with transaction.atomic():
+            for field, value in updates.items():
+                setattr(pmo, field, value)
+            pmo.save()
+            self._enforce_constraints(prog)
+
+        pmo.refresh_from_db()
+        return JsonResponse({
+            'id': pmo.id,
+            'seq': pmo.seq,
+            'required': pmo.required,
+            'required_label': pmo.required_label,
+            'link_title': pmo.link_title,
+        })
+
+    @aux_call
+    @needs_admin
+    def modules_reorder(self, request, tl, one, two, module, extra, prog):
+        """Batch-update module sequence numbers.
+
+        Accepts a JSON body with the desired order of module IDs
+        under the key "module_ids".
+        """
+        if request.method != 'POST':
+            return JsonResponse({'error': 'POST required'}, status=405)
+
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        module_ids = data.get('module_ids')
+        if not isinstance(module_ids, list) or not all(
+            isinstance(mid, int) for mid in module_ids
+        ):
+            return JsonResponse(
+                {'error': 'module_ids must be a list of integers'}, status=400)
+
+        pmos = ProgramModuleObj.objects.filter(
+            id__in=module_ids, program=prog
+        ).select_related('module')
+        pmo_map = {pmo.id: pmo for pmo in pmos}
+
+        missing = set(module_ids) - set(pmo_map.keys())
+        if missing:
+            return JsonResponse(
+                {'error': 'Module IDs not found: %s' % sorted(missing)},
+                status=404)
+
+        with transaction.atomic():
+            seq = 12  # In case there are other modules that aren't steps and should be earlier
+            to_update = []
+            for mid in module_ids:
+                pmo = pmo_map[mid]
+                pmo.seq = seq
+                seq += 1
+                to_update.append(pmo)
+            ProgramModuleObj.objects.bulk_update(to_update, ['seq'])
+            self._enforce_constraints(prog)
+
+        return JsonResponse({'status': 'ok', 'updated': len(to_update)})
+
+    @aux_call
+    @needs_admin
+    def modules_reset(self, request, tl, one, two, module, extra, prog):
+        """Reset module properties to program defaults.
+
+        Accepts a JSON body specifying which properties to reset:
+        {"seq": true, "required": true, "required_label": true, "link_title": true}
+        """
+        if request.method != 'POST':
+            return JsonResponse({'error': 'POST required'}, status=405)
+
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        reset_seq = data.get('seq', False)
+        reset_required = data.get('required', False)
+        reset_required_label = data.get('required_label', False)
+        reset_link_title = data.get('link_title', False)
+
+        if not any([reset_seq, reset_required, reset_required_label, reset_link_title]):
+            return JsonResponse(
+                {'error': 'Specify at least one property to reset'}, status=400)
+
+        with transaction.atomic():
+            to_update = [
+                pmo
+                for tl in ('learn', 'teach')
+                for pmo in prog.getModules(tl=tl)
+                if pmo.inModulesList()
+            ]
+            for pmo in to_update:
+                if reset_seq:
+                    pmo.seq = pmo.module.seq
+                if reset_required:
+                    pmo.required = pmo.module.required
+                if reset_required_label:
+                    pmo.required_label = ''
+                if reset_link_title:
+                    pmo.link_title = ''
+
+            update_fields = []
+            if reset_seq:
+                update_fields.append('seq')
+            if reset_required:
+                update_fields.append('required')
+            if reset_required_label:
+                update_fields.append('required_label')
+            if reset_link_title:
+                update_fields.append('link_title')
+
+            ProgramModuleObj.objects.bulk_update(to_update, update_fields)
+            self._enforce_constraints(prog)
+
+        return JsonResponse({'status': 'ok'})
 
     class Meta:
         proxy = True
