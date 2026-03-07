@@ -20,9 +20,20 @@ echo
 CURL_COOKIE_STORE="curl_cookies.txt"
 
 echo "Logging in..."
-curl -c "${CURL_COOKIE_STORE}" "https://esp.mit.edu/admin/" >/dev/null 2>&1
-curl -b "${CURL_COOKIE_STORE}" -c "${CURL_COOKIE_STORE}" -d "username=${USERNAME}&password=${PASSWORD}&this_is_the_login_form=1" "https://esp.mit.edu/admin/" >/dev/null 2>&1
-echo "Logged in!"
+curl -L -c "${CURL_COOKIE_STORE}" "https://esp.mit.edu/admin/login/" >/dev/null 2>&1
+CSRF_TOKEN=$(grep csrftoken "${CURL_COOKIE_STORE}" | awk '{print $NF}')
+LOGIN_RESULT=$(curl -b "${CURL_COOKIE_STORE}" -c "${CURL_COOKIE_STORE}" \
+    -d "username=${USERNAME}&password=${PASSWORD}&csrfmiddlewaretoken=${CSRF_TOKEN}&next=/admin/" \
+    -w "%{http_code}|%{redirect_url}" -o /dev/null \
+    "https://esp.mit.edu/admin/login/")
+LOGIN_CODE=$(echo "${LOGIN_RESULT}" | cut -d'|' -f1)
+LOGIN_REDIRECT=$(echo "${LOGIN_RESULT}" | cut -d'|' -f2)
+if [ "${LOGIN_CODE}" = "302" ] && ! echo "${LOGIN_REDIRECT}" | grep -q "login"; then
+    echo "Logged in successfully."
+else
+    echo "Login failed. Please check credentials."
+    exit 1
+fi
 
 while (true); do
   TMPFILE="`mktemp`"
