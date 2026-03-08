@@ -307,3 +307,16 @@ textarea:not([class*="span"]),
 select {
     width: auto;
 }
+
+body #shortcuts-box {
+    top: 60px;
+    z-index: 1000;
+}
+
+@media (max-width: @navbarCollapseWidth) {
+    body #shortcuts-box {
+        top: auto;
+        bottom: 60px;
+        right: 10px;
+    }
+}

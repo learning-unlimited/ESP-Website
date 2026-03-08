@@ -1136,6 +1136,14 @@ all_program_tags = {
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
     },
+    'twophase_min_classes': {
+        'is_boolean': False,
+        'help_text': 'The minimum number of classes a student must select before submitting two-phase registration',
+        'default': '0',
+        'category': 'learn',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
+    },
     'survey_teacher_filter': {
         'is_boolean': False,
         'help_text': 'Which sets of teachers are allowed to fill out the post-program survey? Specified as a comma-separated list of options in program.teachers().',
