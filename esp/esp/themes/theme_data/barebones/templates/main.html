@@ -2,17 +2,17 @@
 
 {% comment %}
 Customize your title formatting here.  For example:
-{% block fulltitle %}Splash at UFoo - {% block title %}{% endblock %}{% endblock %} 
+{% block fulltitle %}Splash at UFoo - {% block title %}{% endblock %}{% endblock %}
 {% endcomment %}
 {% block fulltitle %}{% block title %}{% endblock %}{% endblock %}
 
 {% block stylesheets %}
-    {{ block.super }}
-    {% comment %}
+{{ block.super }}
+{% comment %}
     If you would like to customize the appearance of your site beyond the possibilities of the theme editor, you may add additional stylesheets here.
-    Example stylesheet inclusion tag:
-    <link rel="stylesheet" href="/media/styles/main.css" type="text/css" />
-    {% endcomment %}
+Example stylesheet inclusion tag:
+<link rel="stylesheet" href="/media/styles/main.css" type="text/css" />
+{% endcomment %}
 {% endblock %}
 
 {% block javascript %}
@@ -34,57 +34,38 @@ Customize your title formatting here.  For example:
     {% block sidebar %}
     <div class="hidden" id="sidebar">
       <ul class="nav nav-list sidebar">
-	{% include "sidebar/me.html" %}
-	{% include "sidebar/programs.html" %}
-    {% include "sidebar/admin.html" %}
+        {% include "sidebar/me.html" %}
+        {% include "sidebar/programs.html" %}
+        {% include "sidebar/admin.html" %}
       </ul>
 
-    {% load preview %}
-    {% if request.path == "/teach/index.html" %}
-        {% miniblog_for_user AnonymousUser as announcements teach 3 %}
-    {% else %}
-        {% miniblog_for_user AnonymousUser as announcements learn 3 %}
-    {% endif %}
-
-      {% if not announcements.announcementList|length_is:0 %}
-      <ul class="nav nav-list sidebar">
-        <li class="nav-header"> Announcements</li>
-        {% for announce in announcements.announcementList %}
-        <li>
-            {% if announce.makeUrl %}
-            <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a>
-            {% else %}
-            {{ announce.makeTitle }}
-            {% endif %}
-        </li>
-        {% endfor %}
-        {% if announcements.overflowed %}
-        <li id="divannouncemore">
-              <a href="/myesp/home/">More Notices...</a>
-        </li>
-        {% endif %}
-      </ul>
-      {% endif %}
     </div>
     {% endblock %}
 
     <div id="main" class="span12 resizable">
+      {% if request.COOKIES.esp_testing_role %}
+      <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+        <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
+        You are logged in as a test account.
+        <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
+      </div>
+      {% endif %}
       {% if request.mod_required %}
       <div class="alert alert-danger">
-          <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
           This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
       </div>
       {% endif %}
       {% if request.show_perm_info %}
       <div class="alert alert-info">
-          <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
           <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
-          <br />
-          {% if request.roles_with_perm %}
-              Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
-          {% else %}
-              <strong>No (non-admin) roles have permission to view this page!</strong>
-          {% endif %}
+        <br />
+        {% if request.roles_with_perm %}
+        Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
+        {% else %}
+        <strong>No (non-admin) roles have permission to view this page!</strong>
+        {% endif %}
       </div>
       {% endif %}
       {% block content %}
@@ -100,11 +81,11 @@ Customize your title formatting here.  For example:
     <hr />
     {% block footer %}
     <div class="onsite hidden"><a href="/myesp/onsite/">On-Site Registration</a></div>
-	<div>
-		{% load render_qsd %}
-		{% inline_qsd_block "footer_text" %}
-		{% end_inline_qsd_block %}
-	</div>
+    <div>
+      {% load render_qsd %}
+      {% inline_qsd_block "footer_text" %}
+      {% end_inline_qsd_block %}
+    </div>
     <div>
     <p>Copyright {{ theme.mtime.year }}, {{ settings.ORGANIZATION_SHORT_NAME }} at {{ settings.INSTITUTION_NAME }} - <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">Email us</a> - <a href="/contact/contact/">Contact Form</a></p>
     </div>
