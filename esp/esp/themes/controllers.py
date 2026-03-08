@@ -332,7 +332,14 @@ class ThemeController(object):
 
         if customization_name is not None and customization_name != "None":
             try:
-                (vars, palette) = self.load_customizations(customization_name)
+                (loaded_vars, loaded_palette) = self.load_customizations(customization_name)
+                # Merge the loaded file back with the user's active database customizations
+                merged_vars = dict(loaded_vars)
+                merged_vars.update(current_vars)
+                vars = merged_vars
+                
+                merged_palette = list(set(current_palette) | set(loaded_palette))
+                palette = merged_palette
             except IOError:
                 logger.warning("Customization file for %s missing. Using parameters from database.", customization_name)
                 self.set_current_customization(customization_name)
