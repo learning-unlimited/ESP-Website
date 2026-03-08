@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 
-from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail
+from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail, HeldEmail
 from esp.utils.admin_user_search import default_user_search
 
 class MessageVarsAdmin(admin.ModelAdmin):
@@ -45,7 +45,8 @@ class MessageVarsAdmin(admin.ModelAdmin):
 admin_site.register(MessageVars, MessageVarsAdmin)
 
 class EmailListAdmin(admin.ModelAdmin):
-    list_display = ('description', 'regex')
+    list_display = ('description', 'regex', 'handler', 'admin_hold', 'seq')
+    list_editable = ('admin_hold',)
 admin_site.register(EmailList, EmailListAdmin)
 
 class PlainRedirectAdmin(admin.ModelAdmin):
@@ -66,3 +67,37 @@ class TextOfEmailAdmin(admin.ModelAdmin):
     date_hierarchy = 'sent'
     list_filter = ('send_from',)
 admin_site.register(TextOfEmail, TextOfEmailAdmin)
+
+class HeldEmailAdmin(admin.ModelAdmin):
+    list_display = ('id', 'sender', 'subject', 'local_part', 'handler_class', 'status', 'held_at', 'moderated_by', 'moderated_at')
+    list_filter = ('status', 'handler_class', 'held_at')
+    search_fields = ('sender', 'subject', 'local_part')
+    readonly_fields = ('email_list', 'local_part', 'raw_message', 'recipients_json',
+                       'handler_class', 'subject_prefix', 'from_email_override',
+                       'cc_all', 'preserve_headers', 'emailcode', 'sender', 'subject',
+                       'held_at')
+    date_hierarchy = 'held_at'
+    actions = ['approve_selected', 'reject_selected']
+
+    def approve_selected(self, request, queryset):
+        count = 0
+        for held in queryset.filter(status=HeldEmail.PENDING):
+            try:
+                held.approve(request.user)
+                count += 1
+            except Exception:
+                pass
+        self.message_user(request, "%d email(s) approved and sent." % count)
+    approve_selected.short_description = "Approve and send selected held emails"
+
+    def reject_selected(self, request, queryset):
+        from datetime import datetime
+        count = queryset.filter(status=HeldEmail.PENDING).update(
+            status=HeldEmail.REJECTED,
+            moderated_by=request.user,
+            moderated_at=datetime.now(),
+        )
+        self.message_user(request, "%d email(s) rejected." % count)
+    reject_selected.short_description = "Reject selected held emails"
+
+admin_site.register(HeldEmail, HeldEmailAdmin)

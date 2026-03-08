@@ -49,6 +49,14 @@ tr.email-details {
 {% block content %}
 
 <p>This page lets you monitor emails that have been sent through the website via a program's comm panel.</p>
+
+{% if pending_held_count %}
+<div class="alert alert-warning">
+  <strong>{{ pending_held_count }}</strong> email{{ pending_held_count|pluralize }} sent to class mailing lists {{ pending_held_count|pluralize:"is,are" }} awaiting moderation.
+  <a href="/manage/held_emails/">Review held emails</a>
+</div>
+{% endif %}
+
 <form action="/manage/emails" method="get">
 <p>Currently showing emails since <input name="start_date" type="date" onchange="$j(this).parents('form').submit();return false;" value="{{ start_date|date:"Y-m-d" }}"></p>
 </form>

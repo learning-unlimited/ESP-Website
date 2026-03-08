@@ -38,7 +38,7 @@ from django.contrib.auth.models import Group
 from django.core import mail
 from django.core.exceptions import ValidationError
 
-from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, send_mail
+from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, HeldEmail, send_mail
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser
 
@@ -347,3 +347,274 @@ class PlainRedirectValidationTest(TestCase):
 
         self.assertIn('destination', error.exception.message_dict)
         self.assertIn('<empty>', error.exception.message_dict['destination'][0])
+
+
+# ---------------------------------------------------------------------------
+# Tests for issue #1229: HeldEmail moderation
+# ---------------------------------------------------------------------------
+import json
+from email.mime.multipart import MIMEMultipart
+
+
+def _create_held_email(email_list=None, **overrides):
+    """Helper to build a HeldEmail for testing."""
+    msg = _make_message()
+    defaults = {
+        'email_list': email_list,
+        'local_part': 'M100-students',
+        'raw_message': msg.as_bytes(),
+        'recipients_json': json.dumps(['student1@example.com', 'student2@example.com']),
+        'handler_class': 'ClassList',
+        'subject_prefix': '',
+        'from_email_override': '',
+        'cc_all': False,
+        'preserve_headers': False,
+        'emailcode': 'M100',
+        'sender': 'sender@example.com',
+        'subject': 'Test',
+    }
+    defaults.update(overrides)
+    return HeldEmail.objects.create(**defaults)
+
+
+class HeldEmailModelTest(TestCase):
+    """Tests for the HeldEmail model."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.admin = ESPUser.objects.create_user(
+            username='held_admin', email='admin@example.com', password='password'
+        )
+        self.admin.makeRole('Administrator')
+        self.email_list = EmailList.objects.create(
+            regex=r'^(\d+)-(teachers|students|class)$',
+            seq=5, handler='ClassList', cc_all=False, admin_hold=True,
+        )
+
+    def test_create_held_email(self):
+        held = _create_held_email(email_list=self.email_list)
+        self.assertEqual(held.status, HeldEmail.PENDING)
+        self.assertIsNotNone(held.held_at)
+        self.assertEqual(held.local_part, 'M100-students')
+
+    def test_get_recipients(self):
+        held = _create_held_email(email_list=self.email_list)
+        self.assertEqual(held.get_recipients(), ['student1@example.com', 'student2@example.com'])
+
+    def test_get_message_object(self):
+        held = _create_held_email(email_list=self.email_list)
+        msg = held.get_message_object()
+        self.assertEqual(msg['From'], 'sender@example.com')
+        self.assertEqual(msg['Subject'], 'Test')
+
+    def test_get_body_preview(self):
+        held = _create_held_email(email_list=self.email_list)
+        preview = held.get_body_preview()
+        self.assertIn('Test body', preview)
+
+    def test_get_body_preview_multipart(self):
+        msg = MIMEMultipart()
+        msg['To'] = 'test@learningu.org'
+        msg['From'] = 'teacher@example.com'
+        msg['Subject'] = 'Multipart'
+        msg.attach(MIMEText('Plain text part'))
+        msg.attach(MIMEText('<html>HTML part</html>', 'html'))
+        held = _create_held_email(
+            email_list=self.email_list,
+            raw_message=msg.as_bytes(),
+        )
+        preview = held.get_body_preview()
+        self.assertIn('Plain text part', preview)
+
+    @patch('esp.dbmail.models.os.popen')
+    def test_approve_changes_status(self, mock_popen):
+        held = _create_held_email(email_list=self.email_list)
+        held.approve(self.admin)
+        held.refresh_from_db()
+        self.assertEqual(held.status, HeldEmail.APPROVED)
+        self.assertEqual(held.moderated_by, self.admin)
+        self.assertIsNotNone(held.moderated_at)
+
+    def test_reject_changes_status(self):
+        held = _create_held_email(email_list=self.email_list)
+        held.reject(self.admin, reason='Inappropriate content')
+        held.refresh_from_db()
+        self.assertEqual(held.status, HeldEmail.REJECTED)
+        self.assertEqual(held.rejection_reason, 'Inappropriate content')
+        self.assertEqual(held.moderated_by, self.admin)
+        self.assertIsNotNone(held.moderated_at)
+
+    @patch('esp.dbmail.models.os.popen')
+    def test_send_individual_recipients(self, mock_popen):
+        """cc_all=False: one sendmail call per recipient."""
+        held = _create_held_email(email_list=self.email_list)
+        held.approve(self.admin)
+        self.assertEqual(mock_popen.call_count, 2)
+
+    @patch('esp.dbmail.models.os.popen')
+    def test_send_cc_all(self, mock_popen):
+        """cc_all=True: single sendmail call with all recipients."""
+        held = _create_held_email(email_list=self.email_list, cc_all=True)
+        held.approve(self.admin)
+        self.assertEqual(mock_popen.call_count, 1)
+
+    @patch('esp.dbmail.models.os.popen')
+    def test_send_applies_subject_prefix(self, mock_popen):
+        """Approve should add subject_prefix and emailcode to Subject."""
+        held = _create_held_email(
+            email_list=self.email_list,
+            subject_prefix='ESP',
+            emailcode='M100',
+        )
+        held.approve(self.admin)
+        # Check the message written to sendmail
+        written = mock_popen.return_value.write.call_args[0][0]
+        self.assertIn('[ESP]', written)
+        self.assertIn('[M100]', written)
+
+    @patch('esp.dbmail.models.os.popen')
+    def test_send_no_recipients_does_not_send(self, mock_popen):
+        """If recipients list is empty, sendmail should not be called."""
+        held = _create_held_email(
+            email_list=self.email_list,
+            recipients_json=json.dumps([]),
+        )
+        held.approve(self.admin)
+        mock_popen.assert_not_called()
+
+    def test_mime_roundtrip(self):
+        """Multipart message survives BinaryField storage round-trip."""
+        msg = MIMEMultipart()
+        msg['Subject'] = 'MIME roundtrip'
+        msg['From'] = 'teacher@example.com'
+        msg['To'] = 'test@learningu.org'
+        msg.attach(MIMEText('Hello plain'))
+        msg.attach(MIMEText('<html>Hello HTML</html>', 'html'))
+        held = _create_held_email(
+            email_list=self.email_list,
+            raw_message=msg.as_bytes(),
+        )
+        recovered = held.get_message_object()
+        self.assertTrue(recovered.is_multipart())
+        content_types = [p.get_content_type() for p in recovered.walk()]
+        self.assertIn('text/plain', content_types)
+        self.assertIn('text/html', content_types)
+
+    def test_str_representation(self):
+        held = _create_held_email(email_list=self.email_list)
+        s = str(held)
+        self.assertIn('pending', s)
+        self.assertIn('sender@example.com', s)
+        self.assertIn('M100-students', s)
+
+    def test_email_list_set_null_on_delete(self):
+        """HeldEmail survives even if its EmailList is deleted."""
+        held = _create_held_email(email_list=self.email_list)
+        self.email_list.delete()
+        held.refresh_from_db()
+        self.assertIsNone(held.email_list)
+        self.assertEqual(held.status, HeldEmail.PENDING)
+
+
+class HeldEmailViewTest(TestCase):
+    """Tests for the /manage/held_emails/ admin view."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.admin = ESPUser.objects.create_user(
+            username='view_admin', email='vadmin@example.com', password='password'
+        )
+        self.admin.makeRole('Administrator')
+        self.email_list = EmailList.objects.create(
+            regex=r'^test$', seq=1, handler='ClassList',
+            cc_all=False, admin_hold=True,
+        )
+
+    def _create_and_login(self):
+        self.client.login(username='view_admin', password='password')
+
+    def test_view_requires_admin(self):
+        response = self.client.get('/manage/held_emails/')
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_view_displays_pending_emails(self):
+        self._create_and_login()
+        _create_held_email(email_list=self.email_list, subject='Held Subject')
+        response = self.client.get('/manage/held_emails/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Held Subject')
+
+    def test_view_status_filter(self):
+        self._create_and_login()
+        held = _create_held_email(email_list=self.email_list, subject='Filtered')
+        held.status = HeldEmail.APPROVED
+        held.save()
+        # Default filter is 'pending', so approved email should not appear
+        response = self.client.get('/manage/held_emails/')
+        self.assertNotContains(response, 'Filtered')
+        # With status=approved it should
+        response = self.client.get('/manage/held_emails/?status=approved')
+        self.assertContains(response, 'Filtered')
+
+    @patch('esp.dbmail.models.os.popen')
+    def test_approve_single_via_post(self, mock_popen):
+        self._create_and_login()
+        held = _create_held_email(email_list=self.email_list)
+        response = self.client.post('/manage/held_emails/', {
+            'action': 'approve_single',
+            'held_id': held.id,
+        })
+        self.assertEqual(response.status_code, 200)
+        held.refresh_from_db()
+        self.assertEqual(held.status, HeldEmail.APPROVED)
+
+    def test_reject_single_via_post(self):
+        self._create_and_login()
+        held = _create_held_email(email_list=self.email_list)
+        response = self.client.post('/manage/held_emails/', {
+            'action': 'reject_single',
+            'held_id': held.id,
+            'rejection_reason': 'Spam',
+        })
+        self.assertEqual(response.status_code, 200)
+        held.refresh_from_db()
+        self.assertEqual(held.status, HeldEmail.REJECTED)
+        self.assertEqual(held.rejection_reason, 'Spam')
+
+    @patch('esp.dbmail.models.os.popen')
+    def test_batch_approve_via_post(self, mock_popen):
+        self._create_and_login()
+        held1 = _create_held_email(email_list=self.email_list)
+        held2 = _create_held_email(email_list=self.email_list)
+        response = self.client.post('/manage/held_emails/', {
+            'action': 'approve',
+            'held_ids': [held1.id, held2.id],
+        })
+        self.assertEqual(response.status_code, 200)
+        held1.refresh_from_db()
+        held2.refresh_from_db()
+        self.assertEqual(held1.status, HeldEmail.APPROVED)
+        self.assertEqual(held2.status, HeldEmail.APPROVED)
+
+    def test_approve_already_moderated_does_not_error(self):
+        self._create_and_login()
+        held = _create_held_email(email_list=self.email_list)
+        held.reject(self.admin)
+        # Try to approve a rejected email — should silently skip
+        response = self.client.post('/manage/held_emails/', {
+            'action': 'approve_single',
+            'held_id': held.id,
+        })
+        self.assertEqual(response.status_code, 200)
+        held.refresh_from_db()
+        self.assertEqual(held.status, HeldEmail.REJECTED)  # unchanged
+
+    def test_emails_page_shows_pending_held_count(self):
+        self._create_and_login()
+        _create_held_email(email_list=self.email_list)
+        response = self.client.get('/manage/emails/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'awaiting moderation')
+        self.assertContains(response, '/manage/held_emails/')

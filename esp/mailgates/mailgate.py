@@ -31,8 +31,9 @@ if os.environ.get('VIRTUAL_ENV') is None:
 
 import django
 django.setup()
-from esp.dbmail.models import EmailList
+from esp.dbmail.models import EmailList, HeldEmail
 from django.conf import settings
+import json
 
 import email.utils
 from django.core.mail import send_mail as django_send_mail
@@ -77,6 +78,37 @@ try:
         instance = Class(handler, message)
 
         instance.process(user, *match.groups(), **match.groupdict())
+
+        # Admin hold: store email for moderation instead of sending.
+        # When admin_hold is True on the EmailList, emails are held for
+        # admin review before delivery. Mailman-routed emails are excluded
+        # because Mailman has its own moderation system.
+        if handler.admin_hold and instance.send:
+            is_mailman_path = (
+                getattr(settings, 'USE_MAILMAN', False)
+                and handler.handler in ('ClassList', 'SectionList')
+            )
+            if not is_mailman_path:
+                try:
+                    HeldEmail.objects.create(
+                        email_list=handler,
+                        local_part=user,
+                        raw_message=message.as_bytes(),
+                        recipients_json=json.dumps(instance.recipients),
+                        handler_class=handler.handler,
+                        subject_prefix=handler.subject_prefix or '',
+                        from_email_override=handler.from_email or '',
+                        cc_all=handler.cc_all,
+                        preserve_headers=getattr(instance, 'preserve_headers', False),
+                        emailcode=getattr(instance, 'emailcode', '') or '',
+                        sender=message.get('From', ''),
+                        subject=message.get('Subject', ''),
+                    )
+                    logger.info("Held email from '%s' to '%s' for admin moderation",
+                                message.get('From', ''), user)
+                except Exception:
+                    logger.exception("Failed to hold email for moderation")
+                sys.exit(0)
 
         if not instance.send:
             continue

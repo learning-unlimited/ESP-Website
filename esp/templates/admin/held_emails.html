@@ -1,0 +1,902 @@
+{% extends "main.html" %}
+
+{% block title %}Moderate Held Emails{% endblock %}
+{% block content_title %}Moderate Held Emails{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style>
+/* ========== Filter Tabs (pill badges with counts) ========== */
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 16px 0 12px 0;
+  flex-wrap: wrap;
+}
+.filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.92em;
+  font-weight: 600;
+  text-decoration: none;
+  color: #555;
+  background: #e9ecef;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+.filter-tab:hover {
+  background: #dee2e6;
+  color: #333;
+  text-decoration: none;
+}
+.filter-tab.active {
+  background: #fff;
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+.filter-tab .badge {
+  display: inline-block;
+  min-width: 20px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 0.8em;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.3;
+}
+.filter-tab .badge-pending { background: #fff3cd; color: #856404; }
+.filter-tab .badge-approved { background: #d4edda; color: #155724; }
+.filter-tab .badge-rejected { background: #f8d7da; color: #721c24; }
+.filter-tab .badge-all { background: #d1ecf1; color: #0c5460; }
+
+/* ========== Search box ========== */
+.search-box-wrap {
+  margin: 0 0 12px 0;
+}
+.search-box-wrap input {
+  width: 100%;
+  max-width: 420px;
+  padding: 7px 12px 7px 32px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  font-size: 0.92em;
+  outline: none;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85zm-5.242.156a5 5 0 110-10 5 5 0 010 10z'/%3E%3C/svg%3E") 10px center no-repeat;
+  transition: border-color 0.2s;
+}
+.search-box-wrap input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 2px rgba(13,110,253,0.15);
+}
+
+/* ========== Action bar (sticky) ========== */
+.action-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  margin: 0 0 12px 0;
+  padding: 10px 14px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+.action-bar .selection-counter {
+  font-size: 0.88em;
+  color: #666;
+  margin-left: 4px;
+  min-width: 100px;
+}
+.action-bar .selection-counter strong { color: #333; }
+.action-bar .separator {
+  width: 1px;
+  height: 24px;
+  background: #ccc;
+}
+.action-bar .rejection-input {
+  margin-left: auto;
+}
+.action-bar .rejection-input input {
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+
+/* ========== Expand/Collapse All ========== */
+.toolbar-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+.expand-collapse-btn {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 3px 12px;
+  font-size: 0.85em;
+  cursor: pointer;
+  color: #555;
+  transition: all 0.2s;
+}
+.expand-collapse-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+/* ========== Table ========== */
+table.held-emails-table {
+  border: 1px solid #dee2e6;
+  width: 100%;
+  table-layout: fixed;
+  word-wrap: break-word;
+  border-collapse: collapse;
+  border-radius: 6px;
+  overflow: hidden;
+}
+table.held-emails-table thead th {
+  background: #343a40;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.88em;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+th, td {
+  padding: 8px 10px !important;
+}
+
+/* ========== Zebra striping ========== */
+tr.held-email-header:nth-child(4n+1) {
+  background-color: #f8f9fa;
+}
+tr.held-email-header:hover {
+  background-color: #e8f0fe !important;
+  cursor: pointer;
+}
+
+/* ========== Triangle expand indicators ========== */
+.expand-indicator {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 0 5px 8px;
+  border-color: transparent transparent transparent #666;
+  transition: transform 0.2s ease;
+  vertical-align: middle;
+}
+.expand-indicator.expanded {
+  transform: rotate(90deg);
+}
+td.expand-cell {
+  text-align: center;
+  width: 24px;
+}
+
+/* ========== Status badges ========== */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.82em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.status-pending { background: #fff3cd; color: #856404; }
+.status-approved { background: #d4edda; color: #155724; }
+.status-rejected { background: #f8d7da; color: #721c24; }
+
+/* ========== Time ago ========== */
+.time-ago {
+  font-size: 0.85em;
+  color: #888;
+}
+.time-ago-full {
+  font-size: 0.75em;
+  color: #aaa;
+  display: block;
+}
+
+/* ========== Detail panel (card layout) ========== */
+tr.held-email-details {
+  display: none;
+}
+tr.held-email-details > td {
+  padding: 0 !important;
+}
+.detail-card {
+  margin: 0 12px 12px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.detail-card-header {
+  background: #f1f3f5;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.detail-card-header h4 {
+  margin: 0;
+  font-size: 0.95em;
+  color: #333;
+}
+.detail-card-body {
+  display: flex;
+  gap: 0;
+}
+.detail-preview {
+  flex: 3;
+  padding: 16px;
+  border-right: 1px solid #e9ecef;
+  min-width: 0;
+}
+.detail-sidebar {
+  flex: 2;
+  padding: 16px;
+  min-width: 0;
+}
+.body-preview {
+  white-space: pre-wrap;
+  max-height: 350px;
+  overflow: auto;
+  background: #fafafa;
+  padding: 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.88em;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.5;
+}
+.detail-meta {
+  font-size: 0.88em;
+  line-height: 1.7;
+}
+.detail-meta .meta-label {
+  font-weight: 600;
+  color: #555;
+}
+.detail-meta .meta-value {
+  color: #333;
+}
+.recipient-list {
+  max-height: 150px;
+  overflow: auto;
+  padding-left: 18px;
+  font-size: 0.85em;
+  margin: 4px 0 8px 0;
+}
+.recipient-list li {
+  padding: 1px 0;
+}
+.detail-actions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.detail-actions input[type="text"] {
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+
+/* ========== Empty state ========== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}
+.empty-state .empty-icon {
+  font-size: 3em;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+.empty-state h3 {
+  color: #666;
+  margin: 0 0 8px 0;
+  font-size: 1.2em;
+}
+.empty-state p {
+  font-size: 0.95em;
+  margin: 0;
+}
+
+/* ========== Banners (auto-dismiss) ========== */
+.alert-autodismiss {
+  transition: opacity 0.5s ease;
+}
+.alert-autodismiss.fading {
+  opacity: 0;
+}
+
+/* ========== Confirmation modal ========== */
+.confirm-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+.confirm-overlay.active {
+  display: flex;
+}
+.confirm-modal {
+  background: #fff;
+  border-radius: 10px;
+  padding: 28px 32px;
+  max-width: 460px;
+  width: 90%;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  text-align: center;
+  animation: modalIn 0.15s ease-out;
+}
+@keyframes modalIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.confirm-modal h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.15em;
+}
+.confirm-modal p {
+  margin: 0 0 20px 0;
+  color: #555;
+  font-size: 0.93em;
+  line-height: 1.5;
+}
+.confirm-modal .modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.confirm-modal .modal-actions button {
+  padding: 8px 28px;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.93em;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.15s;
+}
+.confirm-modal .btn-cancel {
+  background: #e9ecef;
+  color: #333;
+}
+.confirm-modal .btn-cancel:hover { background: #dee2e6; }
+.confirm-modal .btn-confirm-approve {
+  background: #28a745;
+  color: #fff;
+}
+.confirm-modal .btn-confirm-approve:hover { background: #218838; }
+.confirm-modal .btn-confirm-reject {
+  background: #dc3545;
+  color: #fff;
+}
+.confirm-modal .btn-confirm-reject:hover { background: #c82333; }
+
+/* ========== Keyboard shortcut hint ========== */
+.kbd-hint {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.78em;
+  line-height: 1.6;
+  z-index: 50;
+  opacity: 0.85;
+}
+.kbd-hint kbd {
+  background: rgba(255,255,255,0.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 1.05em;
+}
+
+/* ========== Row highlight on checkbox select ========== */
+tr.held-email-header.row-selected {
+  background-color: #e3f2fd !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<p>This page lets you moderate emails that have been held for admin review before being sent to class/section mailing lists.
+When an <a href="/admin/dbmail/emaillist/">email list</a> has "admin hold" enabled, incoming emails are held here instead of being forwarded immediately.</p>
+
+{% if pending_count > 0 and status_filter != "pending" %}
+<div class="alert alert-warning">
+  <strong>{{ pending_count }}</strong> email{{ pending_count|pluralize }} awaiting moderation.
+  <a href="?status=pending">View pending &rarr;</a>
+</div>
+{% endif %}
+
+{% if approved_count %}
+<div class="alert alert-success alert-autodismiss">
+  Successfully approved and sent {{ approved_count }} email{{ approved_count|pluralize }}.
+</div>
+{% endif %}
+{% if rejected_count %}
+<div class="alert alert-info alert-autodismiss">
+  Rejected {{ rejected_count }} email{{ rejected_count|pluralize }}.
+</div>
+{% endif %}
+{% if errors %}
+<div class="alert alert-danger">
+  <strong>Errors:</strong>
+  <ul>{% for err in errors %}<li>{{ err }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<!-- Filter tabs with pill badges -->
+<div class="filter-tabs">
+  <a href="?status=pending" class="filter-tab {% if status_filter == 'pending' %}active{% endif %}">
+    Pending <span class="badge badge-pending">{{ pending_count }}</span>
+  </a>
+  <a href="?status=approved" class="filter-tab {% if status_filter == 'approved' %}active{% endif %}">
+    Approved <span class="badge badge-approved">{{ approved_count_total }}</span>
+  </a>
+  <a href="?status=rejected" class="filter-tab {% if status_filter == 'rejected' %}active{% endif %}">
+    Rejected <span class="badge badge-rejected">{{ rejected_count_total }}</span>
+  </a>
+  <a href="?status=all" class="filter-tab {% if status_filter == 'all' %}active{% endif %}">
+    All <span class="badge badge-all">{{ total_count }}</span>
+  </a>
+</div>
+
+<!-- Client-side search -->
+{% if held_emails %}
+<div class="search-box-wrap">
+  <input type="text" id="search-filter" placeholder="Search by sender, subject, list... (press / to focus)" />
+</div>
+{% endif %}
+
+{% if not held_emails %}
+<div class="empty-state">
+  <div class="empty-icon">
+    {% if status_filter == "pending" %}
+    &#9993;
+    {% elif status_filter == "approved" %}
+    &#10003;
+    {% elif status_filter == "rejected" %}
+    &#10007;
+    {% else %}
+    &#128235;
+    {% endif %}
+  </div>
+  <h3>
+    {% if status_filter == "pending" %}No emails awaiting moderation
+    {% elif status_filter == "approved" %}No approved emails
+    {% elif status_filter == "rejected" %}No rejected emails
+    {% else %}No held emails found{% endif %}
+  </h3>
+  <p>
+    {% if status_filter == "pending" %}All caught up! There are no pending emails to review.
+    {% elif status_filter == "approved" %}No emails have been approved yet.
+    {% elif status_filter == "rejected" %}No emails have been rejected yet.
+    {% else %}No emails have been held for moderation yet. Enable "admin hold" on an <a href="/admin/dbmail/emaillist/">email list</a> to start moderating.{% endif %}
+  </p>
+</div>
+{% else %}
+
+{% if status_filter == "pending" %}
+<div class="action-bar" id="action-bar">
+  <input type="checkbox" id="select-all" />
+  <label for="select-all" style="margin:0;cursor:pointer;">Select all</label>
+  <span class="selection-counter" id="selection-counter">
+    <strong>0</strong> of {{ held_emails|length }} selected
+  </span>
+  <span class="separator"></span>
+  <button type="button" class="btn btn-success batch-action-btn" data-action="approve"
+    data-title="Approve Selected Emails"
+    data-message="Are you sure you want to approve and send the selected emails? They will be delivered to all recipients immediately."
+    data-style="approve">
+    Approve Selected
+  </button>
+  <button type="button" class="btn btn-danger batch-action-btn" data-action="reject"
+    data-title="Reject Selected Emails"
+    data-message="Are you sure you want to reject the selected emails? They will not be sent to recipients."
+    data-style="reject">
+    Reject Selected
+  </button>
+  <span class="rejection-input">
+    <input type="text" id="batch-rejection-reason" size="30" placeholder="Rejection reason (optional)" />
+  </span>
+</div>
+{% endif %}
+
+<div class="toolbar-row">
+  <button type="button" class="expand-collapse-btn" id="expand-collapse-all">Expand All</button>
+</div>
+
+<table class="held-emails-table">
+  <thead>
+  <tr>
+    {% if status_filter == "pending" %}<th style="width:3%"></th>{% endif %}
+    <th style="width:3%"></th>
+    <th style="width:22%">From</th>
+    <th style="width:28%">Subject</th>
+    <th style="width:13%">To (list)</th>
+    <th style="width:8%">Handler</th>
+    <th style="width:8%">Status</th>
+    <th style="width:15%">Held</th>
+  </tr>
+  </thead>
+  <tbody id="email-tbody">
+  {% for held in held_emails %}
+  <tr class="held-email-header" data-id="{{ held.id }}"
+      data-search="{{ held.sender|lower }} {{ held.subject|lower }} {{ held.local_part|lower }} {{ held.handler_class|lower }}">
+    {% if status_filter == "pending" %}
+    <td><input type="checkbox" name="held_ids" value="{{ held.id }}" class="held-checkbox" onclick="event.stopPropagation();" /></td>
+    {% endif %}
+    <td class="expand-cell"><span class="expand-indicator"></span></td>
+    <td>{{ held.sender|truncatechars:40 }}</td>
+    <td><b>{{ held.subject|truncatechars:55 }}</b></td>
+    <td><code>{{ held.local_part }}</code></td>
+    <td>{{ held.handler_class }}</td>
+    <td style="text-align:center;">
+      <span class="status-badge status-{{ held.status }}">{{ held.get_status_display }}</span>
+    </td>
+    <td>
+      <span class="time-ago" data-timestamp="{{ held.held_at|date:'c' }}"></span>
+      <span class="time-ago-full">{{ held.held_at|date:"M d, Y H:i" }}</span>
+    </td>
+  </tr>
+  <tr class="held-email-details">
+    <td colspan="{% if status_filter == 'pending' %}8{% else %}7{% endif %}">
+      <div class="detail-card">
+        <div class="detail-card-header">
+          <h4>{{ held.subject }}</h4>
+          <span class="status-badge status-{{ held.status }}">{{ held.get_status_display }}</span>
+        </div>
+        <div class="detail-card-body">
+          <div class="detail-preview">
+            <div style="font-size:0.8em;color:#888;margin-bottom:6px;text-transform:uppercase;font-weight:600;">Message Preview</div>
+            <div class="body-preview">{{ held.get_body_preview }}</div>
+          </div>
+          <div class="detail-sidebar">
+            <div class="detail-meta">
+              <p><span class="meta-label">From:</span> <span class="meta-value">{{ held.sender }}</span></p>
+              <p><span class="meta-label">To list:</span> <span class="meta-value"><code>{{ held.local_part }}</code></span></p>
+              <p><span class="meta-label">Handler:</span> <span class="meta-value">{{ held.handler_class }}</span></p>
+              {% if held.emailcode %}<p><span class="meta-label">Class code:</span> <span class="meta-value">{{ held.emailcode }}</span></p>{% endif %}
+              <p><span class="meta-label">Held at:</span> <span class="meta-value">{{ held.held_at|date:"M d, Y H:i" }}</span></p>
+              {% if held.moderated_by %}
+              <p><span class="meta-label">Moderated by:</span> <span class="meta-value"><a href="/manage/userview?username={{ held.moderated_by.username|urlencode }}">{{ held.moderated_by.name }}</a></span></p>
+              <p><span class="meta-label">Moderated at:</span> <span class="meta-value">{{ held.moderated_at|date:"M d, Y H:i" }}</span></p>
+              {% endif %}
+              {% if held.rejection_reason %}
+              <p><span class="meta-label">Rejection reason:</span> <span class="meta-value" style="color:#c0392b;">{{ held.rejection_reason }}</span></p>
+              {% endif %}
+              <p><span class="meta-label">Recipients ({{ held.get_recipients|length }}):</span></p>
+              <ul class="recipient-list">
+                {% for r in held.get_recipients %}
+                <li>{{ r }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% if held.status == "pending" %}
+            <div class="detail-actions">
+              <button type="button" class="btn btn-success single-action-btn"
+                data-held-id="{{ held.id }}" data-action="approve_single"
+                data-title="Approve &amp; Send Email"
+                data-message="This email will be sent to {{ held.get_recipients|length }} recipient{{ held.get_recipients|length|pluralize }} immediately."
+                data-style="approve">
+                Approve &amp; Send
+              </button>
+              <input type="text" class="single-reject-reason" data-held-id="{{ held.id }}" placeholder="Reason (optional)" size="18" />
+              <button type="button" class="btn btn-danger single-action-btn"
+                data-held-id="{{ held.id }}" data-action="reject_single"
+                data-title="Reject Email"
+                data-message="This email will be rejected and will not be sent to recipients."
+                data-style="reject">
+                Reject
+              </button>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% endif %}
+
+<!-- Single hidden form for ALL actions -->
+<form method="post" id="action-form" style="display:none;">
+  {% csrf_token %}
+  <input type="hidden" name="action" id="form-action" />
+  <input type="hidden" name="held_id" id="form-held-id" />
+  <input type="hidden" name="rejection_reason" id="form-rejection-reason" />
+</form>
+
+<!-- Confirmation modal -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-modal">
+    <h3 id="confirm-title"></h3>
+    <p id="confirm-message"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" id="confirm-cancel">Cancel</button>
+      <button type="button" class="" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Keyboard shortcut hints -->
+<div class="kbd-hint" id="kbd-hint">
+  <kbd>/</kbd> Search &nbsp;
+  <kbd>E</kbd> Expand all &nbsp;
+  <kbd>A</kbd> Approve &nbsp;
+  <kbd>R</kbd> Reject
+</div>
+
+<script>
+$j(function() {
+
+    // ========== Time-ago display ==========
+    function timeAgo(date) {
+        var seconds = Math.floor((new Date() - date) / 1000);
+        if (seconds < 60) return "just now";
+        var minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return minutes + "m ago";
+        var hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + "h ago";
+        var days = Math.floor(hours / 24);
+        if (days < 7) return days + "d ago";
+        if (days < 30) return Math.floor(days / 7) + "w ago";
+        return Math.floor(days / 30) + "mo ago";
+    }
+
+    $j(".time-ago").each(function() {
+        var ts = $j(this).data("timestamp");
+        if (ts) {
+            $j(this).text(timeAgo(new Date(ts)));
+        }
+    });
+
+    // ========== Row expand/collapse ==========
+    $j("tr.held-email-header").click(function(event) {
+        if ($j(event.target).is("input[type=checkbox]")) return;
+        var $header = $j(event.target).closest("tr.held-email-header");
+        var $details = $header.next("tr.held-email-details");
+        $details.toggle();
+        $header.find(".expand-indicator").toggleClass("expanded");
+    });
+
+    // ========== Expand/Collapse All ==========
+    var allExpanded = false;
+    $j("#expand-collapse-all").click(function() {
+        allExpanded = !allExpanded;
+        if (allExpanded) {
+            $j("tr.held-email-details").show();
+            $j(".expand-indicator").addClass("expanded");
+            $j(this).text("Collapse All");
+        } else {
+            $j("tr.held-email-details").hide();
+            $j(".expand-indicator").removeClass("expanded");
+            $j(this).text("Expand All");
+        }
+    });
+
+    // ========== Select all + live counter ==========
+    function updateSelectionCounter() {
+        var checked = $j(".held-checkbox:checked").length;
+        var total = $j(".held-checkbox").length;
+        $j("#selection-counter").html("<strong>" + checked + "</strong> of " + total + " selected");
+        // Highlight selected rows
+        $j(".held-checkbox").each(function() {
+            $j(this).closest("tr.held-email-header").toggleClass("row-selected", this.checked);
+        });
+    }
+
+    $j("#select-all").change(function() {
+        $j(".held-checkbox:visible").prop("checked", this.checked);
+        updateSelectionCounter();
+    });
+
+    $j(document).on("change", ".held-checkbox", function() {
+        updateSelectionCounter();
+        // Uncheck "select all" if not all checked
+        var total = $j(".held-checkbox:visible").length;
+        var checked = $j(".held-checkbox:visible:checked").length;
+        $j("#select-all").prop("checked", total > 0 && checked === total);
+    });
+
+    // ========== Client-side search ==========
+    $j("#search-filter").on("input", function() {
+        var query = $j(this).val().toLowerCase().trim();
+        $j("tr.held-email-header").each(function() {
+            var searchData = $j(this).data("search") || "";
+            var match = !query || searchData.indexOf(query) !== -1;
+            $j(this).toggle(match);
+            $j(this).next("tr.held-email-details").hide();
+            $j(this).find(".expand-indicator").removeClass("expanded");
+        });
+        // Reset expand-all state
+        allExpanded = false;
+        $j("#expand-collapse-all").text("Expand All");
+        // Update select all state
+        updateSelectionCounter();
+    });
+
+    // ========== Auto-dismiss success banners ==========
+    setTimeout(function() {
+        $j(".alert-autodismiss").addClass("fading");
+        setTimeout(function() {
+            $j(".alert-autodismiss").slideUp(300);
+        }, 500);
+    }, 5000);
+
+    // ========== Modal state ==========
+    var pendingCallback = null;
+
+    function showModal(title, message, style, callback) {
+        $j("#confirm-title").html(title);
+        $j("#confirm-message").text(message);
+        var $okBtn = $j("#confirm-ok");
+        $okBtn.removeClass("btn-confirm-approve btn-confirm-reject");
+        if (style === "approve") {
+            $okBtn.addClass("btn-confirm-approve").text("Approve & Send");
+        } else if (style === "dismiss") {
+            $okBtn.addClass("btn-confirm-approve").text("OK");
+        } else {
+            $okBtn.addClass("btn-confirm-reject").text("Reject");
+        }
+        pendingCallback = callback;
+        $j("#confirm-overlay").addClass("active");
+    }
+
+    function closeModal() {
+        $j("#confirm-overlay").removeClass("active");
+        pendingCallback = null;
+    }
+
+    // ========== Single action buttons ==========
+    $j(".single-action-btn").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $btn = $j(this);
+        var heldId = $btn.data("held-id");
+        var action = $btn.data("action");
+        var title = $btn.data("title");
+        var message = $btn.data("message");
+        var style = $btn.data("style");
+
+        var reason = "";
+        if (action === "reject_single") {
+            reason = $j(".single-reject-reason[data-held-id='" + heldId + "']").val() || "";
+        }
+
+        showModal(title, message, style, function() {
+            $j("#form-action").val(action);
+            $j("#form-held-id").val(heldId);
+            $j("#form-rejection-reason").val(reason);
+            $j("#action-form")[0].submit();
+        });
+    });
+
+    // ========== Batch action buttons ==========
+    $j(".batch-action-btn").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $btn = $j(this);
+        var action = $btn.data("action");
+        var title = $btn.data("title");
+        var message = $btn.data("message");
+        var style = $btn.data("style");
+
+        var $checked = $j(".held-checkbox:checked");
+        if ($checked.length === 0) {
+            showModal("No Emails Selected",
+                "Please select at least one email using the checkboxes before performing a batch action.",
+                "dismiss", function() { closeModal(); });
+            return;
+        }
+
+        message += " (" + $checked.length + " email" + ($checked.length > 1 ? "s" : "") + " selected)";
+
+        showModal(title, message, style, function() {
+            var $form = $j("#action-form");
+            $form.find(".batch-id").remove();
+            $j("#form-action").val(action);
+            $j("#form-held-id").val("");
+            $j("#form-rejection-reason").val($j("#batch-rejection-reason").val() || "");
+            $checked.each(function() {
+                $form.append($j("<input>").attr({
+                    type: "hidden", name: "held_ids", value: $j(this).val(), class: "batch-id"
+                }));
+            });
+            $form[0].submit();
+        });
+    });
+
+    // ========== Modal buttons ==========
+    $j("#confirm-cancel").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+    });
+
+    $j("#confirm-overlay").click(function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    $j("#confirm-ok").click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var cb = pendingCallback;
+        closeModal();
+        if (cb) cb();
+    });
+
+    // ========== Keyboard shortcuts ==========
+    $j(document).keydown(function(e) {
+        // Escape closes modal
+        if (e.key === "Escape" && $j("#confirm-overlay").hasClass("active")) {
+            closeModal();
+            return;
+        }
+        // Don't fire shortcuts if typing in an input
+        if ($j(e.target).is("input, textarea, select")) return;
+        // Don't fire if modal is open
+        if ($j("#confirm-overlay").hasClass("active")) return;
+
+        switch(e.key) {
+            case "/":
+                e.preventDefault();
+                $j("#search-filter").focus();
+                break;
+            case "e":
+            case "E":
+                e.preventDefault();
+                $j("#expand-collapse-all").click();
+                break;
+            case "a":
+            case "A":
+                e.preventDefault();
+                $j(".batch-action-btn[data-action='approve']").click();
+                break;
+            case "r":
+            case "R":
+                e.preventDefault();
+                $j(".batch-action-btn[data-action='reject']").click();
+                break;
+        }
+    });
+
+    // ========== Hide kbd hint after 10s ==========
+    setTimeout(function() {
+        $j("#kbd-hint").fadeOut(1000);
+    }, 10000);
+
+});
+</script>
+
+{% endblock %}
