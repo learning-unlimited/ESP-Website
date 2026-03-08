@@ -22,7 +22,7 @@ class SectionList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
             section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
-        except:
+        except (ClassSubject.DoesNotExist, IndexError, ValueError):
             return
 
         self.emailcode = section.emailcode()
@@ -40,6 +40,9 @@ class SectionList(BaseHandler):
             self.recipients += [user.get_email_sendto_address()
                                 for user in section.students()     ]
 
+        # Remove duplicate email addresses while preserving order
+        self.recipients = list(dict.fromkeys(self.recipients))
+
         if len(self.recipients) > 0:
             self.send = True
 
@@ -49,7 +52,7 @@ class SectionList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
             section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
-        except:
+        except (ClassSubject.DoesNotExist, IndexError, ValueError):
             return
 
         # Create a section list in Mailman,
