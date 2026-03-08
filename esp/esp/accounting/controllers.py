@@ -1,5 +1,4 @@
 
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -45,7 +44,7 @@ from esp.utils.query_utils import nest_Q
 
 from django.db import transaction
 from django.db.models import Sum, Q
-from django.template.defaultfilters import slugify
+from django.utils.text import slugify
 
 from decimal import Decimal
 
@@ -274,7 +273,7 @@ class ProgramAccountingController(BaseAccountingController):
         else:
             return 'Unrelated!?'
 
-@python_2_unicode_compatible
+
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
         super().__init__(program, *args, **kwargs)
@@ -332,39 +331,17 @@ class IndividualAccountingController(ProgramAccountingController):
             be set to None if unused.   """
 
         result = []
-        program_account = self.default_program_account()
-        source_account = self.default_source_account()
         line_items = self.get_lineitemtypes(include_donations=False).exclude(text__in=self.admission_items)
 
-        #   Clear existing transfers
+        #   Clear all existing optional transfers for this student at once
         Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
 
-        #   Create transfers for optional line item types
+        #   Delegate each item to set_preference(), which handles transfer creation.
+        #   set_preference()'s own per-item delete is a no-op here since we
+        #   already cleared all transfers above.
         for item_tup in optional_items:
             (item_name, quantity, cost, option_id) = item_tup
-            matched = False
-            for lit in line_items:
-                if lit.text == item_name:
-                    matched = True
-                    option = None
-                    #   Determine the cost to apply to the transfer:
-                    #   - Default to the cost of the line item type
-                    transfer_amount = lit.amount_dec
-                    #   - If a dollar amount is specified, use that amount
-                    #     (note: this will override any line item option)
-                    if cost is not None:
-                        transfer_amount = cost
-                    #   - If a line item option is specified, use its amount
-                    #     (which may inherit from the line item type)
-                    if option_id is not None:
-                        option = LineItemOptions.objects.get(id=option_id)
-                        if cost is None:
-                            transfer_amount = option.amount_dec_inherited
-                    for i in range(quantity or 0):
-                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
-                    break
-            if not matched:
-                raise Exception('Could not find a line item type matching "%s"' % item_name)
+            result.extend(self.set_preference(item_name, quantity or 0, amount=cost, option_id=option_id))
 
         return result
 
@@ -408,14 +385,14 @@ class IndividualAccountingController(ProgramAccountingController):
         #   Return a list of 4-tuples: (item name, quantity, cost, options)
         result = []
         transfers = self.get_transfers(line_items)
+        seen = {}
         for transfer in transfers:
             li_name = transfer.line_item.text
-            if (li_name, transfer.amount_dec, transfer.option_id) not in [(x[0], x[2], x[3]) for x in result]:
+            key = (li_name, transfer.amount_dec, transfer.option_id)
+            if key not in seen:
+                seen[key] = len(result)
                 result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
-                result_index = len(result) - 1
-            else:
-                result_index = [(x[0], x[2], x[3]) for x in result].index((li_name, transfer.amount_dec, transfer.option_id))
-            result[result_index][1] += 1
+            result[seen[key]][1] += 1
         return result
 
     ##  Functions to turn a user's account status for a program into a string
@@ -549,10 +526,9 @@ class IndividualAccountingController(ProgramAccountingController):
         return transfers.aggregate(Sum('amount_dec'))['amount_dec__sum'] or Decimal('0')
 
     def latest_finaid_grant(self):
-        if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():
-            return FinancialAidGrant.objects.get(request__user=self.user, request__program=self.program)
-        else:
-            return None
+        return FinancialAidGrant.objects.filter(
+            request__user=self.user, request__program=self.program
+        ).order_by('-request__id').first()
 
     def amount_finaid(self, amount_siblingdiscount=None):
         amount_requested = self.amount_requested(for_finaid_only=True)
@@ -576,10 +552,12 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def amount_donation(self):
         lit = self.donation_lineitemtype()
-        if lit is not None and Transfer.objects.filter(user=self.user, line_item=lit).exists():
-            return Transfer.objects.filter(user=self.user, line_item=lit).aggregate(Sum('amount_dec'))['amount_dec__sum']
-        else:
+        if lit is None:
             return Decimal('0')
+        result = Transfer.objects.filter(user=self.user, line_item=lit).aggregate(
+            total=Sum('amount_dec')
+        )['total']
+        return result or Decimal('0')
 
     def amount_siblingdiscount(self):
         if self.program.sibling_discount and SplashInfo.getForUser(self.user, self.program).siblingdiscount:
@@ -589,11 +567,12 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def amount_paid(self):
         #   Compute sum of all transfers from outside (e.g. credit card payments) that are for this user
-        if Transfer.objects.filter(user=self.user, line_item=self.default_payments_lineitemtype(), source__isnull=True).exists():
-            amount_paid = Transfer.objects.filter(user=self.user, line_item=self.default_payments_lineitemtype(), source__isnull=True).aggregate(Sum('amount_dec'))['amount_dec__sum']
-        else:
-            amount_paid = Decimal('0')
-        return amount_paid
+        result = Transfer.objects.filter(
+            user=self.user,
+            line_item=self.default_payments_lineitemtype(),
+            source__isnull=True,
+        ).aggregate(total=Sum('amount_dec'))['total']
+        return result or Decimal('0')
 
     def has_paid(self, in_full=False):
         if in_full:
@@ -662,7 +641,7 @@ class IndividualAccountingController(ProgramAccountingController):
         """ Create an invoice for the user and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
         iac = IndividualAccountingController(program, user)
-        if not iac.has_paid(in_full):
+        if not iac.has_paid(in_full=in_full):
             iac.ensure_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())
