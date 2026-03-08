@@ -5,31 +5,43 @@
   {% endif %}
 
 
-  <div class="logged_in hidden">
-    <ul class="nav">
-      <li>
-          <a id="loginbox_user_name">
-              Hello, <span id="user_first_name"></span>
-              <span id="user_last_name"></span>!
-          </a>
-      </li>
-      <li><form class="navbar-form form-inline" action="/myesp/signout">
-        <a href="/myesp/signout"><button class="btn btn-inverse" style="margin-right:0px;">Logout</button></a>
+<div class="logged_in hidden">
+  <ul class="nav">
+    <li>
+      <a id="loginbox_user_name">Hello, <span id="user_first_name"></span>!</a>
+    </li>
+
+    <li>
+      <form class="navbar-form form-inline" action="/myesp/signout">
+        <a href="/myesp/signout">
+          <button class="btn btn-inverse" style="margin-right:0px;">
+            Logout
+          </button>
+        </a>
+
         <span class="dropdown">
-          <button class="btn btn-inverse dropdown-toggle" data-toggle="dropdown" style="margin-left:0px;">
+          <button
+            class="btn btn-inverse dropdown-toggle"
+            data-toggle="dropdown"
+            style="margin-left:0px;"
+          >
             <span class="caret"></span>
           </button>
 
           <ul class="dropdown-menu">
             <li><a href="/myesp/accountmanage/">Manage Account</a></li>
             <li><a href="/myesp/loginhelp.html">Help</a></li>
-            <li><a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a></li>
+            <li>
+              <a href="https://www.learningu.org/about/privacy/" target="_blank">
+                Privacy Policy
+              </a>
+            </li>
           </ul>
         </span>
-
-      </form></li>
-    </ul>
-  </div>
+      </form>
+    </li>
+  </ul>
+</div>
 
 
 
