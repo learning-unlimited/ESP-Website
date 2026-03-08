@@ -40,6 +40,9 @@ class SectionList(BaseHandler):
             self.recipients += [user.get_email_sendto_address()
                                 for user in section.students()     ]
 
+        # Remove duplicate email addresses while preserving order
+        self.recipients = list(dict.fromkeys(self.recipients))
+
         if len(self.recipients) > 0:
             self.send = True
 
