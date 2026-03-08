@@ -493,6 +493,22 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['date'] = date
         context['sections'], context['arrived'] = self.getMissingTeachers(
             prog, date, starttime, when, show_flags, default_phone)
+
+        # Compute summary statistics for the stats bar
+        all_teacher_ids = set()
+        arrived_teacher_ids = set()
+        all_arrived_count = 0
+        for section in context['sections']:
+            teacher_ids = {t.id for t in section.teachers_list}
+            all_teacher_ids.update(teacher_ids)
+            arrived_teacher_ids.update(teacher_ids & set(context['arrived'].keys()))
+            if section.all_arrived:
+                all_arrived_count += 1
+        context['total_teachers'] = len(all_teacher_ids)
+        context['arrived_teachers'] = len(arrived_teacher_ids)
+        context['total_sections'] = len(context['sections'])
+        context['all_arrived_sections'] = all_arrived_count
+
         context['missing_resources'] = self.getMissingResources(prog, date, getattr(starttime, "start", None))
         if show_flags:
             context['show_flags'] = True
@@ -503,6 +519,79 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['previous'] = previous
         return render_to_response(self.baseDir()+'missingteachers.html',
                                   request, context)
+
+    @aux_call
+    @needs_onsite
+    def ajaxmissingstats(self, request, tl, one, two, module, extra, prog):
+        """AJAX endpoint returning current check-in statistics as JSON.
+
+        Used for auto-refreshing the missing teachers page without a
+        full page reload. Returns arrived teacher IDs and per-timeslot
+        summary statistics.
+        """
+        starttime = date = None
+        if 'start' in request.GET:
+            starttime = Event.objects.get(id=request.GET['start'])
+            date = starttime.start.date()
+        elif 'date' in request.GET:
+            date = datetime.strptime(request.GET['date'], "%m/%d/%Y").date()
+
+        form = TeacherCheckinForm(request.GET)
+        when = None
+        if form.is_valid():
+            when = form.cleaned_data['when']
+
+        sections, arrived = self.getMissingTeachers(
+            prog, date, starttime, when, show_flags=False)
+
+        # Compute per-timeslot statistics
+        all_teacher_ids = set()
+        arrived_teacher_ids = set()
+        all_arrived_count = 0
+        timeslot_data = {}
+
+        for section in sections:
+            teacher_ids = {t.id for t in section.teachers_list}
+            all_teacher_ids.update(teacher_ids)
+            section_arrived = teacher_ids & set(arrived.keys())
+            arrived_teacher_ids.update(section_arrived)
+            if section.all_arrived:
+                all_arrived_count += 1
+
+            ts_key = str(section.begin_time)
+            if ts_key not in timeslot_data:
+                timeslot_data[ts_key] = {
+                    'timeslot': str(section.begin_time),
+                    'total': set(),
+                    'arrived': set(),
+                }
+            timeslot_data[ts_key]['total'].update(teacher_ids)
+            timeslot_data[ts_key]['arrived'].update(section_arrived)
+
+        by_timeslot = []
+        for ts_key in sorted(timeslot_data.keys()):
+            ts = timeslot_data[ts_key]
+            total = len(ts['total'])
+            arrived_count = len(ts['arrived'])
+            by_timeslot.append({
+                'timeslot': ts['timeslot'],
+                'total': total,
+                'arrived': arrived_count,
+                'pct': round(100 * arrived_count / total) if total > 0 else 100,
+            })
+
+        data = {
+            'arrived_ids': list(arrived.keys()),
+            'stats': {
+                'total_sections': len(sections),
+                'all_arrived_sections': all_arrived_count,
+                'total_teachers': len(all_teacher_ids),
+                'arrived_teachers': len(arrived_teacher_ids),
+                'by_timeslot': by_timeslot,
+            },
+            'timestamp': datetime.now().strftime('%H:%M:%S'),
+        }
+        return HttpResponse(json.dumps(data), content_type='application/json')
 
     class Meta:
         proxy = True
