@@ -45,6 +45,7 @@ from django.http import HttpResponse
 from django.db import transaction
 from django.template.loader import render_to_string
 from esp.users.views    import search_for_user
+from django.utils import timezone
 
 import json
 
@@ -116,11 +117,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
     def timeCheckedIn(self):
         u = Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("time")
-        return str(u[0].time.strftime("%H:%M %m/%d/%y"))
+        return str(timezone.localtime(u[0].time).strftime("%H:%M %m/%d/%y"))
 
     def lastCheckedIn(self):
         u = Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")
-        return str(u[0].time.strftime("%H:%M %m/%d/%y"))
+        return str(timezone.localtime(u[0].time).strftime("%H:%M %m/%d/%y"))
 
     def checkinPairs(self):
         recs = Record.objects.filter(program = self.program, user = self.student, event__name__in=["attended", "checked_out"]).order_by('time')

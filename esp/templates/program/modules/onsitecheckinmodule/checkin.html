@@ -51,7 +51,7 @@
   <p>
     <b>Student checked in during the following times:</b></br>
     {% for pair in module.checkinPairs %}
-        {{ pair.0.time }} to {% if pair.1 %}{{ pair.1.time }}{% else %}<i>present</i>{% endif %}</br>
+        {{ pair.0|time }} to {% if pair.1 %}{{ pair.1|time }}{% else %}<i>present</i>{% endif %}</br>
     {% endfor %}
   </p>
   <form name="checkin" method="POST" action="{{request.path}}">

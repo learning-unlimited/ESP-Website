@@ -4,7 +4,7 @@ This confirms that your lottery preferences for {{ program.niceName }} have been
 
 YOUR PRIORITY RANKINGS:
 {% for timeslot, priorities in schedule %}
-  {{ timeslot.short_description }}:
+  {{ timeslot.short_time }}:
 {% for label, title in priorities %}    {{ label }}: {{ title }}
 {% endfor %}
 {% endfor %}

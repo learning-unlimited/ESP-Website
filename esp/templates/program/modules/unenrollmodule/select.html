@@ -38,7 +38,7 @@
                {% if t.passed %} checked {% endif %}
                id="student_timeslot_{{ t.slot.id }}" />
         <label for="student_timeslot_{{ t.slot.id }}">
-          {{ t.slot.short_description }}
+          {{ t.slot.short_time }}
         </label>
       </td>
       <td>
@@ -47,7 +47,7 @@
                {% if t.upcoming %} checked {% endif %}
                id="section_timeslot_{{ t.slot.id }}" />
         <label for="section_timeslot_{{ t.slot.id }}">
-          {{ t.slot.short_description }}
+          {{ t.slot.short_time }}
         </label>
       </td>
     </tr>

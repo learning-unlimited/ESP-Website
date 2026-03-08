@@ -57,6 +57,7 @@ from django.template import loader
 from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
+from django.utils import timezone
 
 from datetime import timedelta
 from functools import cmp_to_key
@@ -977,7 +978,7 @@ class ProgramPrintables(ProgramModuleObj):
                 program=self.program
             ).order_by('-end_date').first()
             if perm and perm.end_date:
-                return perm.end_date.strftime('%B %d, %Y %I:%M %p')
+                return timezone.localtime(perm.end_date).strftime('%B %d, %Y %I:%M %p')
             return ''
         if key == 'receipt':
             #   Take the user's most recent registration profile.

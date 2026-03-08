@@ -43,6 +43,7 @@ from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from django.http import HttpResponse, HttpResponseRedirect
+from django.utils import timezone
 import csv
 
 class VolunteerManage(ProgramModuleObj):
@@ -141,7 +142,7 @@ class VolunteerManage(ProgramModuleObj):
                 prev_requests = past_program.getVolunteerRequests()
                 for prev_request in prev_requests:
                     prev_timeslots.append(prev_request.timeslot)
-                time_delta = start_date - prev_timeslots[0].start.date()
+                time_delta = start_date - timezone.localtime(prev_timeslots[0].start).date()
                 for i, orig_timeslot in enumerate(prev_timeslots):
                     new_timeslot = Event(
                         program = self.program,

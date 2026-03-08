@@ -1072,7 +1072,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 timeslot_dict[timeslot].append(section)
 
         for timeslot in timeslots:
-            curTimeslot = {'slotname': timeslot.short_description}
+            curTimeslot = {'slotname': timeslot.short_time()}
 
             curTimeslot['classcount'] = len(timeslot_dict[timeslot])
 

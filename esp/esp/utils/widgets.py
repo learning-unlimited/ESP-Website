@@ -90,12 +90,12 @@ class SplitDateWidget(forms.MultiWidget):
     """ A date widget that separates days, etc. """
 
     def __init__(self, attrs=None, min_year=None, max_year=None):
-        from datetime import datetime
+        from django.utils import timezone
 
         if min_year is None:
-            min_year = datetime.now().year - 70
+            min_year = timezone.now().year - 70
         if max_year is None:
-            max_year = datetime.now().year - 10
+            max_year = timezone.now().year - 10
 
         year_choices = list(range(min_year,
                              max_year+1))

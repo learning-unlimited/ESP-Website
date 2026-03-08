@@ -39,7 +39,8 @@ import math
 import time
 
 from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail
-from datetime import datetime, timedelta
+from datetime import timedelta
+from django.utils import timezone
 from django.db.models.query import Q
 from django.template.loader import render_to_string
 
@@ -53,7 +54,7 @@ def process_messages():
     Callers (e.g. dbmail_cron.py) should ensure that this function is not
     called in more than one thread simultaneously."""
 
-    now = datetime.now()
+    now = timezone.now()
     one_week_ago = now - _ONE_WEEK
 
     # Choose a set of messages to process.  Anything which arrives later will
@@ -84,7 +85,7 @@ def send_email_requests():
     Callers (e.g. dbmail_cron.py) should ensure that this function is not
     called in more than one thread simultaneously."""
 
-    now = datetime.now()
+    now = timezone.now()
     one_week_ago = now - _ONE_WEEK
 
     retries = getattr(settings, 'EMAILRETRIES', None)

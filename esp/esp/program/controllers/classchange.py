@@ -43,6 +43,7 @@ import queue
 import random
 
 from datetime import date, datetime
+from django.utils import timezone
 import re
 import os
 import sys
@@ -129,7 +130,7 @@ class ClassChangeController(object):
         print(self.program)
         iscorrect = input("Is this the correct program (y/[n])? ")
         assert (iscorrect.lower() == 'y' or iscorrect.lower() == 'yes')
-        self.now = datetime.now()
+        self.now = timezone.now()
         self.options = ClassChangeController.default_options.copy()
         self.options.update(kwargs)
         self.students_not_checked_in = []

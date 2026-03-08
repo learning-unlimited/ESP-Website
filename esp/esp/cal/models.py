@@ -36,7 +36,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
-from datetime import datetime, timedelta
+from django.utils import timezone
+from datetime import timedelta
 from argcache import cache_function
 from esp.utils import cmp
 
@@ -102,23 +103,27 @@ class Event(models.Model):
         return '%d hr %d min' % (hours, minutes)
 
     def __str__(self):
-        return self.start.strftime('%a %b %d: ') + self.short_time()
+        start_local = timezone.localtime(self.start)
+        return start_local.strftime('%a %b %d: ') + self.short_time()
 
     def short_time(self):
         day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
+        start_local = timezone.localtime(self.start)
+        end_local = timezone.localtime(self.end)
+
         start_minutes = ''
         end_minutes = ''
         start_ampm = ''
-        if self.start.minute != 0:
-            start_minutes = ':%02d' % self.start.minute
-        if self.end.minute != 0:
-            end_minutes = ':%02d' % self.end.minute
-        if (self.start.hour < 12) != (self.end.hour < 12):
-            start_ampm = self.start.strftime(' %p')
+        if start_local.minute != 0:
+            start_minutes = ':%02d' % start_local.minute
+        if end_local.minute != 0:
+            end_minutes = ':%02d' % end_local.minute
+        if (start_local.hour < 12) != (end_local.hour < 12):
+            start_ampm = start_local.strftime(' %p')
 
-        return '%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
-            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p') )
+        return '%d%s%s to %d%s %s' % ( (start_local.hour % 12) or 12, start_minutes, start_ampm,
+            (end_local.hour % 12) or 12, end_minutes, end_local.strftime('%p') )
 
     @staticmethod
     def total_length(event_list):
@@ -186,27 +191,30 @@ class Event(models.Model):
         return grouped_list
 
     def pretty_time(self, include_date = False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
-        s = self.start.strftime('%a')
-        s2 = self.end.strftime('%a')
+        start_local = timezone.localtime(self.start)
+        end_local = timezone.localtime(self.end)
+        s = start_local.strftime('%a')
+        s2 = end_local.strftime('%a')
         # The two days of the week are different
         if include_date:
-            s += self.start.strftime(', %b %d,')
-            s2 += self.end.strftime(', %b %d,')
+            s += start_local.strftime(', %b %d,')
+            s2 += end_local.strftime(', %b %d,')
         if s != s2:
-            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
-               + s2 + ' ' + self.end.strftime('%I:%M%p').lower().strip('0')
+            return s + ' ' + start_local.strftime('%I:%M%p').lower().strip('0') + '--' \
+               + s2 + ' ' + end_local.strftime('%I:%M%p').lower().strip('0')
         else:
-            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
-               + self.end.strftime('%I:%M%p').lower().strip('0')
+            return s + ' ' + start_local.strftime('%I:%M%p').lower().strip('0') + '--' \
+               + end_local.strftime('%I:%M%p').lower().strip('0')
 
     def pretty_time_with_date(self):
         return self.pretty_time(include_date = True)
 
     def pretty_date(self):
-        return self.start.strftime('%A, %B %d')
+        return timezone.localtime(self.start).strftime('%A, %B %d')
 
     def pretty_start_time(self):
-        return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0')
+        start_local = timezone.localtime(self.start)
+        return start_local.strftime('%a') + ' ' + start_local.strftime('%I:%M%p').lower().strip('0')
 
     def parent_program(self):
         return self.program

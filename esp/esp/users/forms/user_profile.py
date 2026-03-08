@@ -5,12 +5,15 @@ from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestricte
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
 from esp.users.models import ESPUser, K12School, StudentInfo, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
-from datetime import datetime
+from django.utils import timezone
 from esp.program.models import RegistrationProfile
 from django.conf import settings
 import json
+import pytz
 from pytz import country_names
 from phonenumber_field.formfields import PhoneNumberField
+
+TIMEZONE_CHOICES = [('', 'Select a timezone')] + [(tz, tz) for tz in pytz.common_timezones]
 
 class DropdownOtherWidget(forms.MultiWidget):
     """
@@ -57,6 +60,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_state = forms.ChoiceField(required=True, choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
     address_zip = StrippedCharField(required=True, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
+    timezone = forms.ChoiceField(required=False, choices=TIMEZONE_CHOICES, label='Preferred Timezone (for online programs)')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -168,7 +172,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
     school = forms.CharField(max_length=128, required=False)
-    dob = forms.DateField(widget=SplitDateWidget(min_year=datetime.now().year-20))
+    dob = forms.DateField(widget=SplitDateWidget(min_year=timezone.now().year-20))
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
     heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=list(zip(HEARD_ABOUT_ESP_CHOICES, HEARD_ABOUT_ESP_CHOICES))))#forms.CharField(required=False)
@@ -495,7 +499,7 @@ class MinimalUserInfo(FormUnrestrictedOtherUser):
     address_zip = StrippedCharField(length=5, max_length=5)
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
-_grad_years = list(range(datetime.now().year, datetime.now().year + 6))
+_grad_years = list(range(timezone.now().year, timezone.now().year + 6))
 
 class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
     graduation_year = forms.ChoiceField(choices=list(zip(_grad_years, _grad_years)))

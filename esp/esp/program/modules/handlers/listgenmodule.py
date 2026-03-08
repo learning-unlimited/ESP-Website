@@ -40,6 +40,7 @@ from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.middleware import ESPError
 from esp.program.models import StudentRegistration, PhaseZeroRecord, SplashInfo
 from django import forms
+from django.utils import timezone
 
 class UserAttributeGetter(object):
     @staticmethod
@@ -152,12 +153,13 @@ class UserAttributeGetter(object):
                 return self.profile.contact_guardian.phone_cell
 
     def get_accountdate(self):
-        return self.user.date_joined.strftime("%m/%d/%Y")
+        return timezone.localtime(self.user.date_joined).strftime("%m/%d/%Y")
 
     def get_regdate(self, ordering='start_date'):
         regs = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__parent_program=self.program, relationship__name='Enrolled')
         if regs.exists():
-            return regs.order_by(ordering).values_list('start_date', flat=True)[0].strftime("%Y-%m-%d %H:%M:%S")
+            reg_date = regs.order_by(ordering).values_list('start_date', flat=True)[0]
+            return timezone.localtime(reg_date).strftime("%Y-%m-%d %H:%M:%S")
 
     def get_first_regdate(self):
         return self.get_regdate(ordering='start_date')

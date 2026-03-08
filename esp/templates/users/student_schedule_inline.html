@@ -31,7 +31,7 @@
     {% endifchanged %} -->
     {% ifequal timeslot.0.event_type.description 'Compulsory' %}
     <tr>
-        <td width='35%' valign='top' align='center' class='compulsory_event_time'>{{ timeslot.0.short_description }}</td>
+        <td width='35%' valign='top' align='center' class='compulsory_event_time'>{{ timeslot.0.short_time }}</td>
         <td colspan='2' class='compulsory_event_desc'>{{ timeslot.0.description }}</td>
     </tr>
     {% else %}

@@ -8,6 +8,7 @@ and static utility methods (total_length, contiguous, collapse, group_contiguous
 from datetime import datetime, timedelta
 
 from django.contrib.auth.models import Group
+from django.utils import timezone as dj_tz
 
 from esp.cal.models import Event, EventType, install
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -51,8 +52,8 @@ class EventTest(TestCase):
         _setup_roles()
         install()
         self.event_type = EventType.objects.get(description='Class Time Block')
-        self.start = datetime(2025, 6, 15, 9, 0)
-        self.end = datetime(2025, 6, 15, 10, 30)
+        self.start = dj_tz.make_aware(datetime(2025, 6, 15, 9, 0))
+        self.end = dj_tz.make_aware(datetime(2025, 6, 15, 10, 30))
         self.event = Event.objects.create(
             start=self.start,
             end=self.end,
@@ -122,16 +123,16 @@ class EventComparisonTest(TestCase):
         install()
         self.event_type = EventType.objects.get(description='Class Time Block')
         self.early = Event.objects.create(
-            start=datetime(2025, 6, 15, 9, 0),
-            end=datetime(2025, 6, 15, 10, 0),
+            start=dj_tz.make_aware(datetime(2025, 6, 15, 9, 0)),
+            end=dj_tz.make_aware(datetime(2025, 6, 15, 10, 0)),
             short_description='Early',
             description='',
             name='Early',
             event_type=self.event_type,
         )
         self.late = Event.objects.create(
-            start=datetime(2025, 6, 15, 11, 0),
-            end=datetime(2025, 6, 15, 12, 0),
+            start=dj_tz.make_aware(datetime(2025, 6, 15, 11, 0)),
+            end=dj_tz.make_aware(datetime(2025, 6, 15, 12, 0)),
             short_description='Late',
             description='',
             name='Late',
@@ -147,7 +148,7 @@ class EventComparisonTest(TestCase):
     def test_eq_same_start(self):
         same = Event.objects.create(
             start=self.early.start,
-            end=datetime(2025, 6, 15, 10, 30),
+            end=dj_tz.make_aware(datetime(2025, 6, 15, 10, 30)),
             short_description='Same start',
             description='',
             name='Same',
@@ -177,8 +178,8 @@ class EventStaticMethodsTest(TestCase):
         self.events = []
         for hour in [9, 10, 11, 14]:
             ev = Event.objects.create(
-                start=datetime(2025, 6, 15, hour, 0),
-                end=datetime(2025, 6, 15, hour, 50),
+                start=dj_tz.make_aware(datetime(2025, 6, 15, hour, 0)),
+                end=dj_tz.make_aware(datetime(2025, 6, 15, hour, 50)),
                 short_description='',
                 description='',
                 name='Event %d' % hour,
@@ -215,9 +216,9 @@ class EventStaticMethodsTest(TestCase):
 
     def test_collapse(self):
         # Create two overlapping events
-        e1 = Event(start=datetime(2025, 6, 15, 9, 0), end=datetime(2025, 6, 15, 10, 0),
+        e1 = Event(start=dj_tz.make_aware(datetime(2025, 6, 15, 9, 0)), end=dj_tz.make_aware(datetime(2025, 6, 15, 10, 0)),
                    event_type=self.event_type)
-        e2 = Event(start=datetime(2025, 6, 15, 10, 0), end=datetime(2025, 6, 15, 11, 0),
+        e2 = Event(start=dj_tz.make_aware(datetime(2025, 6, 15, 10, 0)), end=dj_tz.make_aware(datetime(2025, 6, 15, 11, 0)),
                    event_type=self.event_type)
         collapsed = Event.collapse([e1, e2])
         self.assertEqual(len(collapsed), 1)
@@ -225,9 +226,9 @@ class EventStaticMethodsTest(TestCase):
         self.assertEqual(collapsed[0].end, e2.end)
 
     def test_collapse_non_overlapping(self):
-        e1 = Event(start=datetime(2025, 6, 15, 9, 0), end=datetime(2025, 6, 15, 10, 0),
+        e1 = Event(start=dj_tz.make_aware(datetime(2025, 6, 15, 9, 0)), end=dj_tz.make_aware(datetime(2025, 6, 15, 10, 0)),
                    event_type=self.event_type)
-        e2 = Event(start=datetime(2025, 6, 15, 14, 0), end=datetime(2025, 6, 15, 15, 0),
+        e2 = Event(start=dj_tz.make_aware(datetime(2025, 6, 15, 14, 0)), end=dj_tz.make_aware(datetime(2025, 6, 15, 15, 0)),
                    event_type=self.event_type)
         collapsed = Event.collapse([e1, e2])
         self.assertEqual(len(collapsed), 2)
