@@ -40,3 +40,4 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
             self.assertIsInstance(users, list)
             for u in users:
                 self.assertTrue(hasattr(u, "username"))
+                
