@@ -38,6 +38,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
+from django.contrib import messages
 from django.db.models import Min, Q
 from django.http import HttpResponse, HttpResponseBadRequest, Http404
 from django.template.loader import render_to_string
@@ -493,10 +494,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
         min_classes = int(Tag.getProgramTag("twophase_min_classes", program=prog, default=0))
         total_classes = len(starred_classes)
         if min_classes > 0 and total_classes < min_classes:
-            from django.contrib import messages
-            messages.error(request,
+            messages.error(
+                request,
                 'You must star at least %d classes before confirming your preferences. '
-                'You currently have %d starred.' % (min_classes, total_classes))
+                'You currently have %d starred.' % (min_classes, total_classes)
+            )
             return self.goToCore(tl)
 
         # Build sorted schedule for display
