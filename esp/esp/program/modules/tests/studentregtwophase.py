@@ -192,10 +192,12 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
     # ---------------------------------------------------------------
     def test_min_classes_rejects(self):
         """With min_classes set, confirmation should be rejected if too few classes starred."""
-        Tag.objects.get_or_create(
-            key='twophase_min_classes', value='5',
+        # Use update_or_create to ensure the value is set correctly
+        Tag.objects.update_or_create(
+            key='twophase_min_classes',
             content_type=self.program_content_type,
-            object_id=self.program.id
+            object_id=self.program.id,
+            defaults={'value': '5'}
         )
 
         student = random.choice(self.students)
@@ -223,10 +225,11 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
 
     def test_min_classes_passes(self):
         """With min_classes set, confirmation should succeed when enough classes starred."""
-        Tag.objects.get_or_create(
-            key='twophase_min_classes', value='2',
+        Tag.objects.update_or_create(
+            key='twophase_min_classes',
             content_type=self.program_content_type,
-            object_id=self.program.id
+            object_id=self.program.id,
+            defaults={'value': '2'}
         )
 
         student = random.choice(self.students)
@@ -266,10 +269,11 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
 
     def test_min_classes_zero_no_restriction(self):
         """twophase_min_classes=0 should behave like no restriction."""
-        Tag.objects.get_or_create(
-            key='twophase_min_classes', value='0',
+        Tag.objects.update_or_create(
+            key='twophase_min_classes',
             content_type=self.program_content_type,
-            object_id=self.program.id
+            object_id=self.program.id,
+            defaults={'value': '0'}
         )
 
         student = random.choice(self.students)
@@ -284,10 +288,11 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
 
     def test_main_page_shows_min_classes(self):
         """When min_classes is set, the main page should show the requirement."""
-        Tag.objects.get_or_create(
-            key='twophase_min_classes', value='3',
+        Tag.objects.update_or_create(
+            key='twophase_min_classes',
             content_type=self.program_content_type,
-            object_id=self.program.id
+            object_id=self.program.id,
+            defaults={'value': '3'}
         )
 
         student = random.choice(self.students)
