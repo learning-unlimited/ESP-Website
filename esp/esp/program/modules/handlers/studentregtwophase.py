@@ -494,11 +494,6 @@ class StudentRegTwoPhase(ProgramModuleObj):
         total_classes = len(starred_classes)
         if min_classes > 0 and total_classes < min_classes:
             from django.contrib import messages
-            from django.contrib.messages import get_messages
-            # Clear any existing messages to avoid duplicates from rapid clicks
-            storage = get_messages(request)
-            for _ in storage:
-                pass  # Iterate to clear
             messages.error(request,
                 'You must star at least %d classes before confirming your preferences. '
                 'You currently have %d starred.' % (min_classes, total_classes))

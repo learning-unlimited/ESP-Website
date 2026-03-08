@@ -211,7 +211,7 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 302,
                          "Expected redirect when below min_classes")
 
-        # Check error message was set
+        # Check error message was set in the session
         from django.contrib.messages import get_messages
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 1)
