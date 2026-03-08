@@ -2,6 +2,43 @@ from collections import Counter
 from dataclasses import dataclass, asdict
 from typing import List
 
+# Views that require a class ID or extra path segment; linking to /tl/prog/view
+# would not open a valid page. Excluded from admin search so users don't get
+# broken links.
+EXCLUDED_VIEW_NAMES = frozenset([
+    "editclass", "manageclass", "addsection", "deletesection",
+    "deleteclass", "approveclass", "rejectclass", "coteachers",
+    "classavailability", "reviewclass",
+])
+
+# Human-readable labels for view names used in disambiguation. When multiple
+# entries share the same title, we append " (label)" so users can tell them apart.
+VIEW_DISPLAY_NAMES = {
+    # Onsite / printables
+    "onsiteregform": "Registration form",
+    "onsiteaddclass": "Add class",
+    "onsiteclearslot": "Clear slot",
+    "onsitecatalog": "Catalog",
+    "selfcheckin": "Self check-in",
+    "onsitedetails": "Details",
+    "onsitemap": "Map",
+    "onsitesurvey": "Survey",
+    "onsiteroster": "Roster",
+    "studentonsite": "Student onsite",
+    "teacheronsite": "Teacher onsite",
+    # Manage class (some excluded from search but kept for consistency if used elsewhere)
+    "editclass": "Edit class",
+    "manageclass": "Manage class",
+    "addsection": "Add section",
+    "deletesection": "Delete section",
+    "deleteclass": "Delete class",
+    "approveclass": "Approve class",
+    "rejectclass": "Reject class",
+    "coteachers": "Co-teachers",
+    "classavailability": "Class availability",
+    "reviewclass": "Review class",
+}
+
 
 @dataclass
 class AdminSearchEntry:
@@ -18,9 +55,12 @@ class AdminSearchEntry:
 
 
 def _humanize_view_name(view_name):
-    """Turn view_name like 'class_list' into 'Class list' for display."""
+    """Return a human-readable label for view_name, for disambiguation."""
     if not view_name:
         return view_name
+    key = view_name.lower()
+    if key in VIEW_DISPLAY_NAMES:
+        return VIEW_DISPLAY_NAMES[key]
     return view_name.replace("_", " ").strip().title()
 
 
@@ -42,6 +82,8 @@ def get_admin_search_entries(program):
     seen_ids = set()
 
     for (tl, view_name), pmo in view_map.items():
+        if view_name.lower() in EXCLUDED_VIEW_NAMES:
+            continue
         url = "/%s/%s/%s" % (tl, base, view_name)
         entry_id = "%s_%s" % (tl, view_name)
         if entry_id in seen_ids:
@@ -70,6 +112,12 @@ def get_admin_search_entries(program):
                 category="Other",
                 keywords=keywords,
             )
+
+        # Ensure area (tl) and technical view_name are always searchable
+        if tl not in entry.keywords:
+            entry.keywords.append(tl)
+        if view_name not in entry.keywords:
+            entry.keywords.append(view_name)
 
         built.append((entry, view_name))
 

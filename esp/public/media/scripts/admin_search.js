@@ -59,8 +59,6 @@
     }
 
     var grouped = groupByCategory(entries);
-    var html = "";
-
     var cats = [];
     for (var cat in grouped) {
       if (Object.prototype.hasOwnProperty.call(grouped, cat)) {
@@ -71,18 +69,28 @@
 
     for (var i = 0; i < cats.length; i++) {
       var category = cats[i];
-      html += '<div class="admin-search-category">';
-      html += '<h4>' + category + '</h4>';
-      html += "<ul>";
+      var catDiv = document.createElement("div");
+      catDiv.className = "admin-search-category";
+      var h4 = document.createElement("h4");
+      h4.textContent = category;
+      catDiv.appendChild(h4);
+      var ul = document.createElement("ul");
       var list = grouped[category];
       for (var j = 0; j < list.length; j++) {
         var e = list[j];
-        html += '<li><a href="' + e.url + '"><strong>' + e.title + "</strong></a></li>";
+        var li = document.createElement("li");
+        var a = document.createElement("a");
+        a.setAttribute("href", e.url);
+        var strong = document.createElement("strong");
+        strong.textContent = e.title;
+        a.appendChild(strong);
+        li.appendChild(a);
+        ul.appendChild(li);
       }
-      html += "</ul></div>";
+      catDiv.appendChild(ul);
+      container.appendChild(catDiv);
     }
 
-    container.innerHTML = html;
     container.style.display = "block";
   }
 

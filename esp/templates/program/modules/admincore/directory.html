@@ -35,8 +35,12 @@ $j(document).ready(function() {
 </script>
 <script src="/media/scripts/utils/search_filter.js"></script>
 
+{{ admin_search_entries|json_script:"admin-search-entries" }}
 <script type="text/javascript">
-    window.ADMIN_SEARCH_ENTRIES = {{ admin_search_entries_json|safe }};
+    (function() {
+        var el = document.getElementById('admin-search-entries');
+        if (el) window.ADMIN_SEARCH_ENTRIES = JSON.parse(el.textContent);
+    })();
 </script>
 <script src="/media/scripts/admin_search.js"></script>
 

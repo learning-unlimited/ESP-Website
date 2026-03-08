@@ -49,7 +49,6 @@ from esp.db.forms import AjaxForeignKeyNewformField
 from esp.program.controllers.testingutils import TestDataCleanupController
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.admin_search import AdminSearchEntry, serialize_admin_search_entries
-import json
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
 from esp.users.models import Permission, ESPUser
@@ -163,9 +162,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
             context['%s_%s' % (tl, view_name)] = True
 
         # Metadata for admin search across dashboard sections and other views.
-        context['admin_search_entries_json'] = json.dumps(
-            serialize_admin_search_entries(prog)
-        )
+        # Pass list of dicts; template uses json_script for safe embedding (no XSS).
+        context['admin_search_entries'] = serialize_admin_search_entries(prog)
         context['manage_refund'] = prog.hasModule('CreditCardModule_Stripe')
 
         return render_to_response(self.baseDir()+'directory.html', request, context)
