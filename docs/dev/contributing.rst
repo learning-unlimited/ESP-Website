@@ -130,7 +130,6 @@ Many tests are located in application-specific files. Some legacy tests may stil
 * ``esp/cal/tests.py``
 * ``esp/dbmail/tests.py``
 * ``esp/formstack/tests.py``
-* ``esp/miniblog/tests.py``
 * ``esp/program/tests.py``
 * ``esp/survey/tests.py``
 * ``esp/varnish/tests.py``

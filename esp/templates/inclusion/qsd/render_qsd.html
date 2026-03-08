@@ -1,5 +1,6 @@
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.css">
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
+<script src="/media/scripts/jodit_base64_upload.js"></script>
 <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
 <script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
 
@@ -45,6 +46,7 @@ $j(document).ready(function() {
   }
 });
 
+(function() {
 var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
   "enter": "BR",
   "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
@@ -64,14 +66,16 @@ var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
     },
     "defaultHandlerSuccess": function(data) {
       for (var i = 0; i < data.files.length; i++) {
-        this.selection.insertImage(data.files[i]);
+        editor.selection.insertImage(data.files[i]);
       }
     },
     "error": function(e) {
-      this.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
+      editor.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
     }
   }
 });
+espHandleBase64Paste(editor);
+})();
 </script>
 <br />
 {% if not inline %}
