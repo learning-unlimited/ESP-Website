@@ -61,6 +61,13 @@ class ClassChangeTestBase(ProgramFrameworkTest):
         kwargs.setdefault("num_rooms", 2)
         super().setUp(*args, **kwargs)
 
+        # Create RegistrationProfile + StudentInfo (with graduation_year) for
+        # every student.  classchange.py's initialize() (line 505) queries
+        # RegistrationProfile for graduation years; without profiles the
+        # resulting numpy array is 1-D empty and ``gradyear_pairs[:, 0]``
+        # raises IndexError.
+        self.add_user_profiles()
+
         # Assign meeting_times to sections so they pass the controller's
         # ``meeting_times__isnull=False`` filter; without this the sections
         # queryset inside ClassChangeController.__init__ is empty, and
