@@ -261,7 +261,6 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 
 # change csrf cookie name from default to prevent collisions with misbehaving sites
 # that set a cookie on the top-level domain
-# NOTE: don't change this value; it's hard coded into various JavaScript files
 CSRF_COOKIE_NAME = 'esp_csrftoken'
 
 if SENTRY_DSN:
@@ -277,4 +276,3 @@ if SENTRY_DSN:
         'dsn': SENTRY_DSN,
         'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
     }
-
