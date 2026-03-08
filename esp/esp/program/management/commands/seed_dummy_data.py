@@ -23,9 +23,11 @@ Covers:
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from faker import Faker
+import phonenumbers
 import random
 from datetime import datetime, timedelta
 
@@ -38,6 +40,7 @@ from esp.program.models.class_ import ClassSubject, ClassSection, ClassCategorie
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.cal.models import Event, EventType
 from esp.resources.models import Resource, ResourceType, ResourceAssignment
+from esp.accounting.controllers import GlobalAccountingController
 from esp.users.models import (
     ESPUser, StudentInfo, TeacherInfo, GuardianInfo,
     ContactInfo, UserAvailability, K12School, Record, RecordType,
@@ -68,17 +71,21 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        Faker.seed(0)
-        random.seed(0)
+        Faker.seed(42)
+        random.seed(42)
         self.fake = Faker('en_US')
 
-        if options['flush']:
-            self.stdout.write('Flushing existing seed data...')
-            self.flush_seeded_data()
-
-        self.stdout.write('Starting database seeding...')
-
         with transaction.atomic():
+            if options['flush']:
+                self.stdout.write('Flushing existing seed data...')
+                self.flush_seeded_data()
+
+            self.stdout.write('Starting database seeding...')
+
+            # SplashInfo.save() invokes sibling-discount accounting that expects
+            # global accounts to exist.
+            GlobalAccountingController().setup_accounts()
+
             self._seed_site()
             self._seed_groups()
             self._seed_lookup_data()
@@ -395,7 +402,7 @@ class Command(BaseCommand):
                 defaults=dict(
                     name=spec['name'], grade_min=spec['grade_min'],
                     grade_max=spec['grade_max'],
-                    director_email='director@example.com',
+                    director_email='director@devsite.learningu.org',
                     director_cc_email='', director_confidential_email='',
                     program_size_max=200, program_allow_waitlist=True,
                 ))
@@ -501,7 +508,7 @@ class Command(BaseCommand):
                     defaults=dict(category=cat, class_info=self.fake.text(max_nb_chars=500),
                                   grade_min=program.grade_min, grade_max=program.grade_max,
                                   class_size_max=30, status=10, allow_lateness=False,
-                                  message_for_directors='', session_count=1))
+                                  message_for_directors='', session_count=1, duration=1.0))
                 if sc:
                     subj.teachers.add(user)
                     subj.meeting_times.add(slot)
@@ -545,6 +552,7 @@ class Command(BaseCommand):
     def _create_students(self, program, sections, school):
         enrolled_type   = RegistrationType.objects.get(name='Enrolled', category='student')
         confirmed_rtype = RecordType.objects.get(name='reg_confirmed')
+        current_year = timezone.now().year
         students = []
 
         for i in range(1, 16):
@@ -561,10 +569,10 @@ class Command(BaseCommand):
                 user.makeRole('Student')
 
             grade = random.randint(program.grade_min, program.grade_max)
-            dob   = datetime(2026 - grade - 6, random.randint(1, 12), random.randint(1, 28))
+            dob = datetime(current_year - grade - 6, random.randint(1, 12), random.randint(1, 28))
 
             si, _ = StudentInfo.objects.get_or_create(user=user, defaults=dict(
-                graduation_year=2026 + (12 - grade), k12school=school,
+                graduation_year=current_year + (12 - grade), k12school=school,
                 dob=dob, gender=random.choice(['Male', 'Female', 'Other/Prefer not to say']),
                 studentrep=False, post_hs='', transportation='',
                 schoolsystem_optout=False))
@@ -848,7 +856,7 @@ class Command(BaseCommand):
             (f'manage/{pu}/main_bottom', 'main_bottom',
              f'{pn} \u2014 Admin Notes',
              f'## Admin Notes for {pn}\n\n'
-             '- Director email: director@example.com\n'
+             '- Director email: director@devsite.learningu.org\n'
              f'- Program capacity: 200 students\n'
              '- Waitlist enabled: Yes\n'),
         ]
@@ -874,21 +882,44 @@ class Command(BaseCommand):
     # ── contact helper ────────────────────────────────────────────────────────
 
     def _make_contact(self, user, first_name, last_name):
+        state = self.fake.state_abbr()
+        try:
+            zip_code = self.fake.zipcode_in_state(state)
+        except Exception:
+            zip_code = self.fake.numerify('#####')
+
         contact, _ = ContactInfo.objects.get_or_create(
             user=user, first_name=first_name, last_name=last_name,
             defaults=dict(
                 e_mail=f'{first_name.lower()}.{last_name.lower()}@example.com',
-                phone_day=self.fake.numerify('###-###-####'),
-                phone_cell=self.fake.numerify('###-###-####'),
+                phone_day=self._generate_valid_demo_phone(),
+                phone_cell=self._generate_valid_demo_phone(),
                 address_street=self.fake.street_address(),
                 address_city=self.fake.city(),
-                address_state=self.fake.state_abbr(),
-                address_zip=self.fake.numerify('#####'),
+                address_state=state,
+                address_zip=zip_code,
                 address_country='US',
                 receive_txt_message=False,
                 undeliverable=False,
             ))
         return contact
+
+    def _generate_valid_demo_phone(self):
+        """
+        Generate a syntactically valid demo US phone number in a 555 range.
+        """
+        region = getattr(settings, 'PHONENUMBER_DEFAULT_REGION', 'US')
+        for _ in range(20):
+            area_code = random.randint(200, 999)
+            suffix = random.randint(0, 99)
+            phone = f'+1{area_code}55501{suffix:02d}'
+            try:
+                parsed = phonenumbers.parse(phone, region)
+                if phonenumbers.is_valid_number(parsed):
+                    return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+            except phonenumbers.NumberParseException:
+                pass
+        return '+12125550100'
 
     # ── registration profile helper ───────────────────────────────────────────
 
@@ -903,3 +934,4 @@ class Command(BaseCommand):
                 teacher_info=teacher_info, guardian_info=guardian_info,
                 most_recent_profile=True, last_ts=timezone.now()))
         return profile
+
