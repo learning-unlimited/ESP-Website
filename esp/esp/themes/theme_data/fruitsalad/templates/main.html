@@ -78,21 +78,21 @@
   <div id="adminbar_content"></div>
 </div>
 <script type="text/javascript">
-var currentPrograms = [
-{% for current_program in current_programs %}
-    {
-        urlBase: "{{ current_program.getUrlBase }}",
-        name: "{{ current_program.niceName }}",
+  var currentPrograms = [
+    {% for current_program in current_programs %}
+  {
+    urlBase: "{{ current_program.getUrlBase }}",
+      name: "{{ current_program.niceName }}",
         class_search: {% if current_program|hasModule:"ClassSearchModule" %}true{% else %}false{% endif %}
-    },
-{% endfor %}
+  },
+  {% endfor %}
 ];
 var debug = {{ settings.DEBUG|yesno:"true,false" }};
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
-    <div id="page" class="{{ request.path|extract_theme }}">
-    <div id="tab_sidebar">
-      <ul id="menu">
+<div id="page" class="{{ request.path|extract_theme }}">
+  <div id="tab_sidebar">
+    <ul id="menu">
       <li id="tab_logo" class="tabcolor0" ><span class="accent">&nbsp;</span><a href="/"><img id="logo" alt="home" src="/media/images/theme/logo.png?v={{ current_logo_version }}" /></a></li>
       {% with request.path|get_nav_category as category %}
       {% for item in category.links %}
@@ -101,25 +101,25 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
       {% endwith %}
       <li class="admin hidden tabcolor9" ><span class="accent">&nbsp;</span><a href="/manage/programs/">MANAGE</a></li>
       <li class="unmorph hidden tabcolor9" ><span class="accent">&nbsp;</span><a href="/myesp/switchback/">UNMORPH</a><div id="unmorph_text" style="font-size: 0.7em; margin-left: 16px"></div></li>
-      </ul>
+    </ul>
   </div>
   <div id="body">
     <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
     <div id="header">
 
-    <div id="cross_link">
-    {% for category in theme.nav_structure %}
+      <div id="cross_link">
+        {% for category in theme.nav_structure %}
     <span class="leftedge{% if request.path|slice:':5' != category.header_link|slice:':5' %} inactive{% endif %}"><a href="{{ category.header_link }}"></a></span><span class="teach{% if request.path|slice:':5' != category.header_link|slice:':5' %} inactive{% endif %}"><a href="{{ category.header_link }}">{{ category.header }}</a></span>
-    {% endfor %}
-    </div>
+        {% endfor %}
+      </div>
       <div id="search_box">
-      <span class="leftedge"></span>
-	<form name="search_form" method="get" action="https://www.google.com/search">
-	 <input type='hidden' name='sitesearch' value='{{ request.META.HTTP_HOST }}' />
-	  <input type="text" id="search_field" name="q" />
-	  <input type="hidden" id="search_submit" name="search_submit" value="" />
-      <input type="image" src="/media/images/theme/search-icon.png" />
-	</form>
+        <span class="leftedge"></span>
+        <form name="search_form" method="get" action="https://www.google.com/search">
+          <input type='hidden' name='sitesearch' value='{{ request.META.HTTP_HOST }}' />
+          <input type="text" id="search_field" name="q" />
+          <input type="hidden" id="search_submit" name="search_submit" value="" />
+          <input type="image" src="/media/images/theme/search-icon.png" />
+        </form>
       </div>
       <div id="contact_info">
         {% if theme.show_group_name %}
@@ -143,113 +143,81 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
         {% if theme.faq_link or theme.facebook_link %}
         <span class="normal">
           {% if theme.faq_link %}
-            <a href="{{ theme.faq_link }}">FAQ</a>
+          <a href="{{ theme.faq_link }}">FAQ</a>
           {% endif %}
           {% if theme.faq_link and theme.facebook_link %} | {% endif %}
           {% if theme.facebook_link %}
-            <a href="{{ theme.facebook_link }}">facebook</a>
+          <a href="{{ theme.facebook_link }}">facebook</a>
           {% endif %}
         </span>
         {% endif %}
       </div>
-{% block login %}
-<div id="login_box">
+      {% block login %}
+      <div id="login_box">
 
-<!-- login -->
-<div class="not_logged_in">
-<form name="login_form" id="login_form" method="post" action="/myesp/login/">
-  <input type="hidden" name="next" value="{{ request.path }}" />
-  <input type="text" id="login_user" name="username" />
-  <input type="password" id="login_pswd" name="password" />
-  <span id="login_arrow1"></span>
-  <input type="submit" id="login_submit" name="login_submit" value="Log in" />
-  <span id="login_arrow2"></span>
-  <a href="/myesp/register" id="login_signup">Sign up</a>
-  <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
-</form>
-</div>
-<div class="logged_in hidden">
-  {% include "users/loginbox_userinfo.html" %}
+        <!-- login -->
+        <div class="not_logged_in">
+          <form name="login_form" id="login_form" method="post" action="/myesp/login/">
+            <input type="hidden" name="next" value="{{ request.path }}" />
+            <input type="text" id="login_user" name="username" />
+            <input type="password" id="login_pswd" name="password" />
+            <span id="login_arrow1"></span>
+            <input type="submit" id="login_submit" name="login_submit" value="Log in" />
+            <span id="login_arrow2"></span>
+            <a href="/myesp/register" id="login_signup">Sign up</a>
+            <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
+          </form>
+        </div>
+        <div class="logged_in hidden">
+          {% include "users/loginbox_userinfo.html" %}
   <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage">Manage Account</a></span>
-</div>
+        </div>
 
-</div>
-{% endblock %}
+      </div>
+      {% endblock %}
     </div>
     <div id="page_main">
       <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
-{% block content_header %}
-<div id="content_header">
+      {% block content_header %}
+      <div id="content_header">
 <div class="corners"><div class="ul"></div><div class="ur"></div></div>
 
-<h1 class="title">{% block content_title %}&nbsp;{% endblock %}</h1>
-{% if request.path|equal:"/teach/index.html" or request.path|equal:"/learn/index.html" %}
+        <h1 class="title">{% block content_title %}&nbsp;{% endblock %}</h1>
+      </div>
+      {% endblock %}
 
-{% load preview %}
-
-{% if request.path|equal:"/teach/index.html" %}
-    {% miniblog_for_user AnonymousUser as announcements teach 3 %}
-{% else %}
-    {% miniblog_for_user AnonymousUser as announcements learn 3 %}
-{% endif %}
-
-{% if not announcements.announcementList|length_is:0 %}
-
-{# announcements #}
-<div id="divannouncements">
-<ul>
-
-
-{% for announce in announcements.announcementList %}
-       <li>
-        {% with announceUrl=announce.get_absolute_url %}
-        {% if announceUrl %}
-	<a href="{{ announceUrl }}" title="{{ announce.makeTitle }}">
-        {% endif %}
-	  <h1>{{ announce.category|default:"" }}</h1>
-          <span style="color: #CBF57F; font-size: 12pt; text-decoration: none;">
-                {{ announce.makeTitle }}</span>
-       {% if announceUrl %}</a>{% endif %}</li>
-       {% endwith %}
-{% endfor %}
-     </ul>
-</div>
-
-<!-- more announcements -->
-{% if announcements.overflowed %}
-<div id="divannouncemore">
-  <a href="/myesp/home/">more announcements...</a></div>
-{% endif %}
-{% endif %}
-{% endif %}
-</div>
-{% endblock %}
-
-{% block secondary_nav %}
-{% load navbar %}
-{% navbar_gen request.path None navbar_list %}
-{% endblock %}
+      {% block secondary_nav %}
+      {% load navbar %}
+      {% navbar_gen request.path None navbar_list %}
+      {% endblock %}
 
       <div id="content">
+          {% if request.COOKIES.esp_testing_role %}
+          <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+            <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
+            You are logged in as a test account.
+            <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
+          </div>
+          {% endif %}
           {% if request.mod_required %}
           <div class="alert alert-danger">
               <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
               This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
-          </div>
-          {% endif %}
-          {% if request.show_perm_info %}
-          <div class="alert alert-info">
-              <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        </div>
+        {% endif %}
+        {% if request.show_perm_info %}
+        <div class="alert alert-info">
+          <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
               <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
-              <br />
-              {% if request.roles_with_perm %}
-                  Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
-              {% else %}
-                  <strong>No (non-admin) roles have permission to view this page!</strong>
-              {% endif %}
-          </div>
+          <br />
+          {% if request.roles_with_perm %}
+          Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
+          {% else %}
+          <strong>No (non-admin) roles have permission to view this page!</strong>
           {% endif %}
-{% block content %}{% endblock %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
       </div>
       <!--[if lte IE 6]>
       <div id="ie6_warning">
@@ -259,19 +227,19 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
       {% with request.path|split:"/"|index:1 as split_url %}
       {% if program and split_url|notequal:"manage" %}
       <div class="admin hidden" id="admin_link">
-          <a href="/manage/{{ program.getUrlBase }}/dashboard">Administer this program</a>
+        <a href="/manage/{{ program.getUrlBase }}/dashboard">Administer this program</a>
       </div>
       {% endif %}
       {% endwith %}
     </div>
     <div id="footer">
-	  {% if theme.show_footer_textbox %}
-		<div>
-		  {% load render_qsd %}
-		  {% inline_qsd_block "footer_text" %}
-		  {% end_inline_qsd_block %}
-		</div>
-	  {% endif %}
+      {% if theme.show_footer_textbox %}
+      <div>
+        {% load render_qsd %}
+        {% inline_qsd_block "footer_text" %}
+        {% end_inline_qsd_block %}
+      </div>
+      {% endif %}
       &copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}
       <br />
       <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
