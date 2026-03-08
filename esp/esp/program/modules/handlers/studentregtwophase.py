@@ -39,7 +39,8 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.db.models import Min, Q
-from django.http import HttpResponse, HttpResponseBadRequest, Http404
+from django.contrib import messages
+from django.http import HttpResponse, HttpResponseBadRequest, Http404, JsonResponse
 from django.template.loader import render_to_string
 
 from esp.cal.models import Event
@@ -322,9 +323,21 @@ class StudentRegTwoPhase(ProgramModuleObj):
             subject__pk__in=json_data['not_interested'])
         to_expire.update(end_date=datetime.datetime.now())
 
+        # Report any class IDs that were silently excluded due to grade range
+        excluded_ids = list(set(json_data['interested']) - set(valid_ids))
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return HttpResponse()
+            return JsonResponse({'excluded_ids': excluded_ids})
         else:
+            for exc_id in excluded_ids:
+                try:
+                    exc_cls = ClassSubject.objects.get(pk=exc_id)
+                    messages.warning(
+                        request,
+                        'Class "%s" (grades %d\u2013%d) was not starred '
+                        'because you are outside its grade range.'
+                        % (exc_cls.title, exc_cls.grade_min, exc_cls.grade_max))
+                except ClassSubject.DoesNotExist:
+                    pass
             return self.goToCore(tl)
 
     @aux_call
@@ -419,6 +432,12 @@ class StudentRegTwoPhase(ProgramModuleObj):
                                "user '%s' register.", sec, request.user)
             if (not sec.parent_class.grade_min <= request.user.getGrade(prog)
                 or not sec.parent_class.grade_max >= request.user.getGrade(prog)):
+                messages.warning(
+                    request,
+                    'You are not in the eligible grade range '
+                    '(grades %d\u2013%d) for "%s"; your priority %s could not be saved.'
+                    % (sec.parent_class.grade_min, sec.parent_class.grade_max,
+                       sec.parent_class.title, rel_name))
                 logger.warning("User '%s' not in class grade range; not "
                                "letting them register.", request.user)
                 continue

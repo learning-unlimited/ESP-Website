@@ -66,6 +66,15 @@
 
 {% block content %}
 <h1>Student Registration for {{program.niceName}}</h1>
+{% if messages %}
+<div class="two-phase-messages" style="margin-bottom: 15px;">
+    {% for message in messages %}
+    <div class="alert alert-warning" style="border: 1px solid #8a6d3b; padding: 10px; background-color: #fcf8e3; margin-bottom: 5px;">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 {% inline_program_qsd_block program "learn:studentregtwophase/top" %}
 Welcome to the registration lottery for {{program.niceName}}. Please complete all of the steps below to select your class preferences. You may come back to this page to update your preferences at any time before the deadline.
 {% end_inline_program_qsd_block %}
