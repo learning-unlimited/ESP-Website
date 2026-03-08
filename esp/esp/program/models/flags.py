@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -42,7 +41,6 @@ from argcache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import Program
 
-@python_2_unicode_compatible
 class ClassFlagType(models.Model):
     name = models.CharField(max_length=255, unique=True, help_text='The name of the flag type')
     show_in_scheduler = models.BooleanField(default=False, help_text='Should this flag type be shown in the scheduler?')
@@ -92,7 +90,6 @@ class ClassFlagType(models.Model):
     def used_by_flags(self):
         return ClassFlag.objects.filter(flag_type=self).exists()
 
-@python_2_unicode_compatible
 class ClassFlag(models.Model):
     subject = AjaxForeignKey('ClassSubject', related_name='flags', on_delete=models.CASCADE)
     flag_type = models.ForeignKey(ClassFlagType, on_delete=models.CASCADE)
@@ -134,12 +131,6 @@ class ClassFlag(models.Model):
         program = cls.parent_program
         teachers = cls.get_teachers()
 
-        context = {
-            'flag': self,
-            'cls': cls,
-            'program': program,
-        }
-        email_content = render_to_string('email/class_flag_teacher.txt', context)
         from_email = ESPUser.email_sendto_address(
             program.director_email,
             '%s at %s' % (program.program_type, settings.INSTITUTION_NAME)
@@ -147,6 +138,13 @@ class ClassFlag(models.Model):
         failures = []
         for teacher in teachers:
             try:
+                context = {
+                    'flag': self,
+                    'cls': cls,
+                    'program': program,
+                    'teacher': teacher,
+                }
+                email_content = render_to_string('email/class_flag_teacher.txt', context)
                 to_email = [teacher.get_email_sendto_address()]
                 send_mail(
                     'Class Flag Added - %s: %s' % (cls.emailcode(), cls.title),

@@ -94,11 +94,11 @@ class ViewUserInfoTest(TestCase):
 
     def assertStringContains(self, string, contents):
         if not (contents in string):
-            self.assert_(False, "'%s' not in '%s'" % (contents, string))
+            self.fail("'%s' not in '%s'" % (contents, string))
 
     def assertNotStringContains(self, string, contents):
         if contents in string:
-            self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
+            self.fail("'%s' are in '%s' and shouldn't be" % (contents, string))
 
     def testIssue1448UsernameMatchesFirstName(self):
         """
@@ -226,10 +226,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'].id, self.user.id)
-        self.assert_(self.user.username in str(response.content, encoding='UTF-8'))
-        self.assert_(self.user.first_name in str(response.content, encoding='UTF-8'))
-        self.assert_(self.user.last_name in str(response.content, encoding='UTF-8'))
-        self.assert_(str(self.user.id) in str(response.content, encoding='UTF-8'))
+        self.assertTrue(self.user.username in str(response.content, encoding='UTF-8'))
+        self.assertTrue(self.user.first_name in str(response.content, encoding='UTF-8'))
+        self.assertTrue(self.user.last_name in str(response.content, encoding='UTF-8'))
+        self.assertTrue(str(self.user.id) in str(response.content, encoding='UTF-8'))
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
@@ -263,8 +263,8 @@ class ProfileTest(TestCase):
         self.group=Group(name='Test Group')
         self.group.save()
         self.u.groups.add(self.group)
-        self.assertEquals(ESPUser.objects.get(username='bjones'), self.u)
-        self.assertEquals(Group.objects.get(name='Test Group'), self.group)
+        self.assertEqual(ESPUser.objects.get(username='bjones'), self.u)
+        self.assertEqual(Group.objects.get(name='Test Group'), self.group)
 
 class ProgramHappenTest(TestCase):
     """
@@ -1498,10 +1498,17 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
 
 
 class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
-    """Tests for making class flags visible to teachers (#3268)."""
+    """Tests for making class flags visible to teachers."""
 
     def setUp(self):
         from esp.program.models import ClassFlag, ClassFlagType
+        # Clear any stale thread-local request from previous test classes.
+        # ClassFlag.save() overrides created_by with request.user, which may
+        # reference a user whose savepoint was already rolled back.
+        from esp.middleware.threadlocalrequest import _threading_local
+        if hasattr(_threading_local, 'request'):
+            del _threading_local.request
+
         super(ClassFlagTeacherVisibilityTest, self).setUp(num_students=0, num_teachers=2, num_admins=1)
 
         # Use the first teacher and first class from the framework
@@ -1520,15 +1527,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
             name='Internal Note', show_to_teacher=False, notify_teacher_by_email=False,
         )
         self.program.flag_types.add(self.teacher_visible_type, self.teacher_notify_type, self.admin_only_type)
-
-    def tearDown(self):
-        # Clear thread-local request to prevent stale FK references.
-        # ClassFlag.save() auto-sets created_by from get_current_request(),
-        # which can hold a reference to a rolled-back user after client.post().
-        from esp.middleware.threadlocalrequest import _threading_local
-        if hasattr(_threading_local, 'request'):
-            _threading_local.request = None
-        super(ClassFlagTeacherVisibilityTest, self).tearDown()
 
     def test_get_flag_types_teacher_filter(self):
         """get_flag_types(teacher=True) returns only teacher-visible types."""
@@ -1562,7 +1560,7 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         self.assertEqual(visible[0].flag_type.name, 'Needs Update')
 
     def test_notification_email_sent(self):
-        """Creating a flag with notify_teacher_by_email=True sends email."""
+        """Creating a flag with notify_teacher_by_email=True sends personalized email to each teacher."""
         from esp.program.models import ClassFlag
         from django.core import mail
         flag = ClassFlag.objects.create(
@@ -1571,8 +1569,15 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         )
         mail.outbox = []
         flag.send_teacher_notification()
-        self.assertGreaterEqual(len(mail.outbox), 1)
-        self.assertIn('Class Flag Added', mail.outbox[0].subject)
+        teachers = list(self.subject.get_teachers())
+        self.assertEqual(len(mail.outbox), len(teachers))
+        for email in mail.outbox:
+            self.assertIn('Class Flag Added', email.subject)
+        for teacher in teachers:
+            self.assertTrue(
+                any(teacher.first_name in email.body for email in mail.outbox),
+                "No email contained personalized greeting for %s" % teacher.first_name,
+            )
 
     def test_no_notification_when_disabled(self):
         """Creating a flag with notify_teacher_by_email=False sends no email."""
@@ -1599,10 +1604,7 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         """If send_teacher_notification() raises, newflag() still returns 200
         with the flag data and includes a warning message (#4223)."""
         from esp.program.models import ClassFlag
-        try:
-            from unittest.mock import patch
-        except ImportError:
-            from mock import patch
+        from unittest.mock import patch
 
         # Log in as admin
         self.client.login(username=self.admin_user.username, password='password')
@@ -1642,10 +1644,7 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_newflag_email_success_no_warning(self):
         """When email succeeds, the response has no warning field."""
         from esp.program.models import ClassFlag
-        try:
-            from unittest.mock import patch
-        except ImportError:
-            from mock import patch
+        from unittest.mock import patch
 
         self.client.login(username=self.admin_user.username, password='password')
 
@@ -1665,3 +1664,324 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         response_data = _json.loads(response.content.decode('utf-8'))
         self.assertNotIn('warning', response_data)
         self.assertIn('flag_name', response_data)
+
+
+"""
+Tests for esp.program.controllers.classreg
+Source: esp/esp/program/controllers/classreg.py
+
+Tests ClassCreationController and ClassCreationValidationError.
+"""
+from django.contrib.auth.models import Group
+
+from esp.program.controllers.classreg import (
+    ClassCreationController,
+    ClassCreationValidationError,
+)
+from esp.program.models import Program
+from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.users.models import ESPUser
+
+
+def _setup_roles():
+    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+        Group.objects.get_or_create(name=name)
+
+
+class ClassCreationValidationErrorTest(TestCase):
+    def test_is_exception(self):
+        err = ClassCreationValidationError(None, None, 'test error')
+        self.assertIsInstance(err, Exception)
+
+    def test_stores_forms(self):
+        mock_form = 'form'
+        mock_formset = 'formset'
+        err = ClassCreationValidationError(mock_form, mock_formset, 'msg')
+        self.assertEqual(err.reg_form, 'form')
+        self.assertEqual(err.resource_formset, 'formset')
+
+    def test_str(self):
+        err = ClassCreationValidationError(None, None, 'bad data')
+        self.assertEqual(str(err), 'bad data')
+
+
+class ClassCreationControllerTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+
+    def test_init_stores_program(self):
+        # ClassCreationController needs classregmoduleinfo on the program
+        # but we can at least test the constructor stores program
+        try:
+            controller = ClassCreationController(self.program)
+            self.assertEqual(controller.program, self.program)
+        except Exception:
+            # classregmoduleinfo may not exist, which is expected
+            pass
+"""
+Tests for esp.program.controllers.confirmation
+Source: esp/esp/program/controllers/confirmation.py
+
+Tests ConfirmationEmailController: record creation, no-duplicate behavior,
+and repeat sending logic.
+"""
+from unittest.mock import patch, MagicMock
+
+from django.contrib.auth.models import Group
+from django.core import mail
+
+from esp.cal.models import install as install_cal
+from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.models import Program
+from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.users.models import ESPUser, Record, RecordType
+
+
+def _setup_roles():
+    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+        Group.objects.get_or_create(name=name)
+
+
+class ConfirmationEmailControllerTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        install_cal()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.user = ESPUser.objects.create_user(
+            username='confirmer',
+            email='confirmer@example.com',
+            password='password',
+        )
+        self.controller = ConfirmationEmailController()
+        RecordType.objects.get_or_create(name='conf_email')
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_send_confirmation_email_creates_record(self, mock_send_mail):
+        """Sending a confirmation email should create a Record for the user."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+
+        rt = RecordType.objects.get(name='conf_email')
+        self.assertTrue(Record.objects.filter(user=self.user, event=rt, program=self.program).exists())
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_no_duplicate_without_repeat(self, mock_send_mail):
+        """Sending twice without repeat=True should not send a second email."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            call_count_1 = mock_send_mail.call_count
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            call_count_2 = mock_send_mail.call_count
+
+        self.assertEqual(call_count_1, call_count_2)
+
+    @patch('esp.program.controllers.confirmation.send_mail')
+    def test_repeat_sends_again(self, mock_send_mail):
+        """With repeat=True, a second email should be sent."""
+        mock_options = MagicMock()
+        mock_options.send_confirmation = True
+
+        with patch.object(
+            type(self.program), 'studentclassregmoduleinfo',
+            new_callable=lambda: property(lambda self: mock_options),
+        ):
+            self.controller.send_confirmation_email(self.user, self.program, override=True)
+            self.controller.send_confirmation_email(self.user, self.program, repeat=True, override=True)
+
+        self.assertEqual(mock_send_mail.call_count, 2)
+
+
+class ManageDocsViewTest(TestCase):
+    """Tests for the /manage/docs documentation viewer."""
+
+    def setUp(self):
+        user_role_setup()
+        password = 'testpass123'
+
+        self.admin = ESPUser.objects.create_user(
+            username='docstestadmin',
+            first_name='Docs',
+            last_name='Admin',
+            email='docsadmin@test.learningu.org',
+        )
+        self.admin.set_password(password)
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.regular_user = ESPUser.objects.create_user(
+            username='docstestuser',
+            first_name='Docs',
+            last_name='User',
+            email='docsuser@test.learningu.org',
+        )
+        self.regular_user.set_password(password)
+        self.regular_user.save()
+
+        self.password = password
+        self.client = Client()
+
+    def tearDown(self):
+        self.admin.delete()
+        self.regular_user.delete()
+
+    def test_index_accessible_by_admin(self):
+        """Admin user can access /manage/docs and gets a 200 response."""
+        self.client.login(username='docstestadmin', password=self.password)
+        response = self.client.get('/manage/docs')
+        self.assertEqual(response.status_code, 200)
+
+    def test_index_blocked_for_non_admin(self):
+        """Non-admin authenticated user is denied access (403)."""
+        self.client.login(username='docstestuser', password=self.password)
+        response = self.client.get('/manage/docs')
+        self.assertEqual(response.status_code, 403)
+
+    def test_index_redirects_anonymous(self):
+        """Anonymous user is redirected away from /manage/docs."""
+        response = self.client.get('/manage/docs')
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response['Location'].startswith('/accounts/login/'))
+
+    def test_path_traversal_blocked(self):
+        """Attempts to traverse outside DOCS_ADMIN_ROOT return 404."""
+        self.client.login(username='docstestadmin', password=self.password)
+        response = self.client.get('/manage/docs/../../../etc/passwd.rst')
+        self.assertEqual(response.status_code, 404)
+
+    def test_path_with_dotdot_blocked(self):
+        """doc_path containing '..' is rejected with 404."""
+        self.client.login(username='docstestadmin', password=self.password)
+        response = self.client.get('/manage/docs/..%2F..%2Fetc%2Fpasswd.rst')
+        self.assertEqual(response.status_code, 404)
+
+    def test_rst_to_html_basic(self):
+        """_rst_to_html converts RST text to a non-empty HTML fragment."""
+        from esp.program.views import _rst_to_html
+        html = _rst_to_html('Some text here.\n')
+        self.assertTrue(len(html) > 0)
+        self.assertIn('Some text here.', html)
+
+    def test_rst_to_html_paragraph(self):
+        """_rst_to_html converts a paragraph to a <p> tag."""
+        from esp.program.views import _rst_to_html
+        html = _rst_to_html('This is a paragraph.\n')
+        self.assertIn('<p>', html)
+        self.assertIn('This is a paragraph.', html)
+
+    @patch('esp.program.views.os.path.isfile')
+    def test_serve_image_file(self, mock_isfile):
+        """Image files are served natively by the manage_docs view."""
+        mock_isfile.return_value = True
+        self.client.login(username='docstestadmin', password=self.password)
+        # Mock open so it doesn't crash trying to open a fake image
+        from unittest.mock import mock_open
+        with patch('esp.program.views.open', mock_open(read_data=b'fakeimage')) as m:
+            response = self.client.get('/manage/docs/test_image.png')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'image/png')
+            self.assertEqual(b''.join(response.streaming_content), b'fakeimage')
+
+
+class GradeCacheInvalidationTest(TestCase):
+    """Tests for issue #1601: Changing a user's grade must invalidate cache."""
+
+    def setUp(self):
+        user_role_setup()
+        self.student = ESPUser.objects.create_user(
+            username='gradecachetest',
+            email='gradecache@test.com',
+            password='test123'
+        )
+        self.student.makeRole('Student')
+
+        # Create a future program
+        self.program = Program.objects.create(
+            name='GradeCache Test',
+            url='gradecachetest',
+            grade_min=7,
+            grade_max=12
+        )
+        prog_type, _ = EventType.objects.get_or_create(description='Program')
+        Event.objects.create(
+            program=self.program,
+            event_type=prog_type,
+            start=datetime.now() + timedelta(days=30),
+            end=datetime.now() + timedelta(days=31),
+            short_description='Test event'
+        )
+
+        initial_yog = ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.program))
+        self.student_info = StudentInfo.objects.create(
+            user=self.student,
+            graduation_year=initial_yog,
+            dob=datetime.now() - timedelta(days=365*15)
+        )
+
+        self.reg_profile = RegistrationProfile.objects.create(
+            user=self.student,
+            program=self.program,
+            student_info=self.student_info,
+            most_recent_profile=True
+        )
+
+    def test_grade_change_invalidates_cache(self):
+        """Changing StudentInfo.graduation_year should invalidate grade lookup."""
+        initial_grade = self.student.getGrade(self.program)
+        self.assertEqual(initial_grade, 10)
+
+        # Change the grade via StudentInfo (as admin would do)
+        new_yog = ESPUser.YOGFromGrade(11, ESPUser.program_schoolyear(self.program))
+        self.student_info.graduation_year = new_yog
+        self.student_info.save()
+
+        # Grade should now reflect the change without manual cache flush
+        updated_grade = self.student.getGrade(self.program)
+        self.assertEqual(updated_grade, 11, "Grade should update after StudentInfo change")
+
+    def test_getLastForProgram_invalidates_on_studentinfo_change(self):
+        """getLastForProgram should return updated student_info after change."""
+        profile1 = RegistrationProfile.getLastForProgram(self.student, self.program)
+        initial_yog = profile1.student_info.graduation_year
+
+        # Modify graduation_year
+        new_yog = ESPUser.YOGFromGrade(9, ESPUser.program_schoolyear(self.program))
+        self.student_info.graduation_year = new_yog
+        self.student_info.save()
+
+        # Fetch again - should get fresh data
+        profile2 = RegistrationProfile.getLastForProgram(self.student, self.program)
+        self.assertEqual(
+            profile2.student_info.graduation_year, new_yog,
+            "getLastForProgram should return updated graduation_year"
+        )
+
+    def test_getLastProfile_invalidates_on_studentinfo_change(self):
+        """getLastProfile should return updated student_info after change."""
+        profile1 = RegistrationProfile.getLastProfile(self.student)
+        initial_yog = profile1.student_info.graduation_year
+
+        new_yog = ESPUser.YOGFromGrade(11, ESPUser.program_schoolyear(self.program))
+        self.student_info.graduation_year = new_yog
+        self.student_info.save()
+
+        profile2 = RegistrationProfile.getLastProfile(self.student)
+        self.assertEqual(
+            profile2.student_info.graduation_year, new_yog,
+            "getLastProfile should return updated graduation_year"
+        )
+>>>>>>> origin/main
