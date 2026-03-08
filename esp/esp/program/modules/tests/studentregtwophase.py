@@ -209,6 +209,12 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 302,
                          "Expected redirect when below min_classes")
 
+        # Check error message was set
+        from django.contrib.messages import get_messages
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertIn('must star at least 5 classes', str(messages[0]))
+
         rt = RecordType.objects.get(name='twophase_reg_done')
         self.assertFalse(
             Record.objects.filter(
@@ -447,3 +453,171 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertIn('twophase_star_students', desc)
         self.assertIn('twophase_priority_students', desc)
         self.assertIn('starred', desc['twophase_star_students'])
+
+    def test_students_method_qobject(self):
+        """students() method with QObject=True should return Q objects."""
+        from esp.program.modules.handlers.studentregtwophase import StudentRegTwoPhase
+        from django.db.models import Q
+
+        student1 = self.students[0]
+        self._star_classes(student1, 2)
+
+        module = StudentRegTwoPhase()
+        module.program = self.program
+
+        q_dict = module.students(QObject=True)
+
+        self.assertIn('twophase_star_students', q_dict)
+        self.assertIn('twophase_priority_students', q_dict)
+        self.assertIsInstance(q_dict['twophase_star_students'], Q)
+        self.assertIsInstance(q_dict['twophase_priority_students'], Q)
+
+    # ---------------------------------------------------------------
+    # Tests: View classes (public catalog) and rank classes pages
+    # ---------------------------------------------------------------
+    def test_view_classes_page_loads(self):
+        """The view_classes page should load without authentication."""
+        response = self.client.get(
+            '/learn/%s/view_classes' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_classes_shows_categories(self):
+        """The view_classes page should include category filter options."""
+        response = self.client.get(
+            '/learn/%s/view_classes' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        # Category choices should be in context
+        self.assertIn('category_choices', response.context)
+
+    def test_rank_classes_page_loads(self):
+        """The rank_classes page should load for a logged-in student."""
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        timeslot = self.program.getTimeSlots()[0]
+        response = self.client.get(
+            '/learn/%s/rank_classes/%s' % (self.program.getUrlBase(), timeslot.id))
+        self.assertEqual(response.status_code, 200)
+
+    def test_rank_classes_invalid_timeslot(self):
+        """rank_classes with invalid timeslot should return 404."""
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        response = self.client.get(
+            '/learn/%s/rank_classes/99999' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 404)
+
+    # ---------------------------------------------------------------
+    # Tests: Save priorities AJAX endpoint
+    # ---------------------------------------------------------------
+    def test_save_priorities_success(self):
+        """POST to save_priorities should save priority registrations."""
+        import json as json_module
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        # Get a timeslot and a class in that timeslot
+        timeslot = self.program.getTimeSlots()[0]
+        sections = list(self.program.sections().filter(
+            meeting_times=timeslot,
+            status__gte=0,
+            parent_class__status__gte=0
+        ))
+        if not sections:
+            self.skipTest("No sections in first timeslot")
+        section = sections[0]
+
+        response = self.client.post(
+            '/learn/%s/save_priorities' % self.program.getUrlBase(),
+            {'json_data': json_module.dumps({
+                str(timeslot.id): {'1': str(section.parent_class.id)}
+            })})
+        self.assertEqual(response.status_code, 302)
+
+        # Verify the registration was created
+        reg_type = RegistrationType.objects.get(name='Priority/1', category='student')
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(
+                user=student, section=section, relationship=reg_type).exists())
+
+    def test_save_priorities_clear(self):
+        """POST to save_priorities with empty should clear priority."""
+        import json as json_module
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        # Set up an existing priority
+        timeslot = self.program.getTimeSlots()[0]
+        sections = list(self.program.sections().filter(
+            meeting_times=timeslot, status__gte=0))
+        if not sections:
+            self.skipTest("No sections in first timeslot")
+        section = sections[0]
+        self._set_priorities(student, section)
+
+        # Clear the priority
+        response = self.client.post(
+            '/learn/%s/save_priorities' % self.program.getUrlBase(),
+            {'json_data': json_module.dumps({
+                str(timeslot.id): {'1': ''}
+            })})
+        self.assertEqual(response.status_code, 302)
+
+        # Verify the registration was expired
+        reg_type = RegistrationType.objects.get(name='Priority/1', category='student')
+        self.assertFalse(
+            StudentRegistration.valid_objects().filter(
+                user=student, section=section, relationship=reg_type).exists())
+
+    def test_save_priorities_bad_json(self):
+        """Bad JSON to save_priorities should return 400."""
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        response = self.client.post(
+            '/learn/%s/save_priorities' % self.program.getUrlBase(),
+            {'json_data': 'not valid json'})
+        self.assertEqual(response.status_code, 400)
+
+    def test_save_priorities_missing_data(self):
+        """Missing json_data in save_priorities should return 400."""
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        response = self.client.post(
+            '/learn/%s/save_priorities' % self.program.getUrlBase(),
+            {})
+        self.assertEqual(response.status_code, 400)
+
+    def test_save_priorities_bad_format(self):
+        """Mis-formatted json_data in save_priorities should return 400."""
+        import json as json_module
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        # Multiple timeslot keys (should be exactly one)
+        response = self.client.post(
+            '/learn/%s/save_priorities' % self.program.getUrlBase(),
+            {'json_data': json_module.dumps({'1': {}, '2': {}})})
+        self.assertEqual(response.status_code, 400)
+
+    # ---------------------------------------------------------------
+    # Tests: Module properties
+    # ---------------------------------------------------------------
+    def test_module_properties(self):
+        """module_properties() should return expected values."""
+        from esp.program.modules.handlers.studentregtwophase import StudentRegTwoPhase
+
+        props = StudentRegTwoPhase.module_properties()
+
+        self.assertEqual(props['module_type'], 'learn')
+        self.assertEqual(props['link_title'], 'Two-Phase Student Registration')
+        self.assertTrue(props['required'])
