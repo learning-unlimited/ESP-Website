@@ -268,7 +268,7 @@ class OnSiteClassList(ProgramModuleObj):
         result = {'user': None, 'user_grade': 0, 'sections': [], 'messages': []}
         try:
             result['user'] = int(request.GET['user'])
-        except:
+        except (ValueError, TypeError, KeyError):
             result['messages'].append('Error: no user specified.')
         if result['user']:
             result['user_grade'] = ESPUser.objects.get(id=result['user']).getGrade(program=prog)
@@ -373,7 +373,7 @@ class OnSiteClassList(ProgramModuleObj):
         try:
             user = int(request.GET.get('user', None))
             user_obj = ESPUser.objects.get(id=user)
-        except:
+        except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
 
         printer = request.GET.get('printer', None)
