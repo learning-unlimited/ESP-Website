@@ -86,7 +86,8 @@ Please complete the form below to update your biography.  We'd appreciate a pict
        <small>(if available)</small></label></td>
  <td>{{ form.picture }}<br />
      {% if picture_file %}
-     <img src="/media/{{ picture_file}}" title="Your current photo." alt="Your current photo" />
+     <img src="/media/{{ picture_file}}" title="Your current photo." alt="Your current photo" /><br />
+     {{ form.remove_picture }} <label for="id_remove_picture" style="display:inline; font-weight:normal;">Remove current picture</label>
      {% endif %}
      {% if form.picture.errors %}
    <br /><span class="form_error">{{ form.picture.errors|join:", " }}</span>
