@@ -1308,6 +1308,9 @@ def statistics(request, program=None):
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                result = {}
+                result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
+                result['script'] = render_to_string('program/statistics/script.js', context)
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)

@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import decimal
+import json
 
 import logging
 logger = logging.getLogger(__name__)
@@ -66,6 +67,67 @@ import numpy
 import random
 import re
 import unicodedata
+
+
+class _StatsDummy(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+class DemographicsStatisticsTest(TestCase):
+    def test_null_graduation_year_is_ignored(self):
+        from esp.program.statistics import demographics
+
+        form = _StatsDummy(cleaned_data={})
+        profiles = [
+            _StatsDummy(student_info=_StatsDummy(graduation_year=None, dob=None)),
+            _StatsDummy(student_info=_StatsDummy(graduation_year=2030, dob=None)),
+        ]
+        result_dict = {}
+
+        demographics(form, [], [], profiles, result_dict)
+
+        self.assertEqual(result_dict['gradyear_data'], [(2030, 1)])
+
+
+class StatisticsViewTest(TestCase):
+    def setUp(self):
+        self.password = "pass1234"
+        self.admin, created = ESPUser.objects.get_or_create(
+            first_name="Stats",
+            last_name="Admin",
+            username="statsadminuser",
+            email="statsadmin@example.com",
+        )
+        if created:
+            self.admin.set_password(self.password)
+            self.admin.save()
+        self.admin.makeRole('Administrator')
+        Program.objects.get_or_create(
+            url='splash/teststats',
+            defaults={
+                'name': 'Test Statistics Program',
+                'grade_min': 7,
+                'grade_max': 12,
+                'director_email': 'info@learningu.org',
+            },
+        )
+
+    def test_invalid_ajax_submission_returns_form_payload(self):
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+
+        response = c.post(
+            "/manage/statistics",
+            {},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(str(response.content, encoding='UTF-8'))
+        self.assertTrue('statistics_form_contents_html' in payload)
+        self.assertTrue('script' in payload)
+
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
