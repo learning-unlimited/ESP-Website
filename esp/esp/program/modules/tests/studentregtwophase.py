@@ -187,6 +187,9 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Send Me a Confirmation Email')
 
+    # ---------------------------------------------------------------
+    # Tests: Minimum class requirement (twophase_min_classes tag)
+    # ---------------------------------------------------------------
     def test_min_classes_rejects(self):
         """With min_classes set, confirmation should be rejected if too few classes starred."""
         Tag.objects.get_or_create(
@@ -290,6 +293,9 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'You must star at least 3 classes')
 
+    # ---------------------------------------------------------------
+    # Tests: Mark classes page and AJAX endpoints
+    # ---------------------------------------------------------------
     def test_mark_classes_page_loads(self):
         """The mark_classes page should load for a logged-in student."""
         student = random.choice(self.students)
@@ -379,6 +385,9 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 400)
 
+    # ---------------------------------------------------------------
+    # Tests: Module helper methods (isCompleted, students, studentDesc)
+    # ---------------------------------------------------------------
     def test_is_completed_false_before_confirm(self):
         """isCompleted should return False before confirmation."""
         from esp.program.modules.handlers.studentregtwophase import StudentRegTwoPhase
