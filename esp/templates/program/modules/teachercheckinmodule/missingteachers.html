@@ -57,7 +57,24 @@
 </div>
 {% endif %}
 <div style="clear: both;"></div>
-<br>
+
+<!-- Check-in summary statistics bar -->
+<div id="checkin-stats-bar">
+    <strong>{{ arrived_teachers }}/{{ total_teachers }}</strong> teachers checked in
+    &nbsp;|&nbsp;
+    <strong>{{ all_arrived_sections }}/{{ total_sections }}</strong> sections fully staffed
+    <span id="last-refresh-time" style="float:right; color:#888;"></span>
+</div>
+
+<!-- Auto-refresh controls -->
+<div id="auto-refresh-controls">
+    <label>
+        <input type="checkbox" id="auto-refresh-toggle" checked
+               {% if when %}disabled{% endif %} />
+        Auto-refresh every 30s
+    </label>
+    {% if when %}<span style="color:#888; margin-left:5px;">(disabled for historical view)</span>{% endif %}
+</div>
 
 <div style="text-align:right; float: right; width: 225px; padding-bottom: 10px;">
 <input class="button text-all-teachers" type="button" value="Text All Unchecked-In Teachers"

@@ -388,6 +388,66 @@ $j(function(){
         lastLength = input.val().length;
     });
 
+    // ----- Auto-refresh for check-in statistics -----
+    var autoRefreshInterval = 30000;
+    var autoRefreshTimer = null;
+    var autoRefreshEnabled = true;
+
+    function buildRefreshUrl() {
+        var params = [];
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('start')) params.push('start=' + urlParams.get('start'));
+        if (urlParams.has('date')) params.push('date=' + urlParams.get('date'));
+        if (urlParams.has('when')) params.push('when=' + urlParams.get('when'));
+        return 'ajaxmissingstats' + (params.length ? '?' + params.join('&') : '');
+    }
+
+    function refreshCheckinStatus() {
+        if (!autoRefreshEnabled) return;
+        $j.getJSON(buildRefreshUrl(), function(data) {
+            if (data.stats) {
+                updateStatsBar(data.stats);
+            }
+            $j('#last-refresh-time').text('Updated ' + data.timestamp);
+        }).always(function() {
+            if (autoRefreshEnabled) {
+                autoRefreshTimer = setTimeout(refreshCheckinStatus, autoRefreshInterval);
+            }
+        });
+    }
+
+    function updateStatsBar(stats) {
+        var html = '<strong>' + stats.arrived_teachers + '/' + stats.total_teachers + '</strong> teachers checked in';
+        html += ' &nbsp;|&nbsp; <strong>' + stats.all_arrived_sections + '/' + stats.total_sections + '</strong> sections fully staffed';
+        if (stats.by_timeslot && stats.by_timeslot.length > 0) {
+            html += '<br/>';
+            for (var i = 0; i < stats.by_timeslot.length; i++) {
+                var ts = stats.by_timeslot[i];
+                var color = ts.pct >= 90 ? '#5cb85c' : ts.pct >= 50 ? '#f0ad4e' : '#d9534f';
+                html += '<span style="margin-right:10px;">' + ts.timeslot + ': ';
+                html += '<span style="color:' + color + ';font-weight:bold;">' + ts.pct + '%</span>';
+                html += ' (' + ts.arrived + '/' + ts.total + ')</span>';
+            }
+        }
+        html += '<span id="last-refresh-time" style="float:right; color:#888;">' +
+                $j('#last-refresh-time').text() + '</span>';
+        $j('#checkin-stats-bar').html(html);
+    }
+
+    $j('#auto-refresh-toggle').on('change', function() {
+        autoRefreshEnabled = this.checked;
+        if (autoRefreshEnabled) {
+            refreshCheckinStatus();
+        } else if (autoRefreshTimer) {
+            clearTimeout(autoRefreshTimer);
+        }
+    });
+
+    // Start auto-refresh only for live views (not historical)
+    if (!new URLSearchParams(window.location.search).has('when')) {
+        autoRefreshTimer = setTimeout(refreshCheckinStatus, autoRefreshInterval);
+    }
+
     var lastResult = '';
     Quagga.onDetected(function(result) {
         var code = result.codeResult.code;

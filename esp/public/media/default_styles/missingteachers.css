@@ -118,3 +118,23 @@ input.not-found {
 #shortcuts-box .message {
     color: red;
 }
+
+#checkin-stats-bar {
+    background-color: #f5f5f5;
+    padding: 10px;
+    margin: 10px 0 5px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.95em;
+    line-height: 1.6;
+}
+
+#auto-refresh-controls {
+    text-align: right;
+    margin-bottom: 10px;
+    font-size: 0.85em;
+}
+
+#auto-refresh-controls label {
+    cursor: pointer;
+}
