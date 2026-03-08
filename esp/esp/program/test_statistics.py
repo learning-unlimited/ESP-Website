@@ -19,7 +19,7 @@ them.
 
 from types import SimpleNamespace
 
-from esp.program.models import Program
+from esp.program.models import Program, RegistrationProfile
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.statistics import (
     zipcodes,
@@ -33,7 +33,7 @@ from esp.program.statistics import (
     teacher_reg,
     class_reg,
 )
-from esp.users.models import ESPUser, RegistrationProfile
+from esp.users.models import ESPUser
 
 
 # ---------------------------------------------------------------------------
