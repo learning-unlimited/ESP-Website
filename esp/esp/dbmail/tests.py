@@ -347,3 +347,205 @@ class PlainRedirectValidationTest(TestCase):
 
         self.assertIn('destination', error.exception.message_dict)
         self.assertIn('<empty>', error.exception.message_dict['destination'][0])
+
+
+# ---------------------------------------------------------------------------
+# Tests for SendGrid Event Webhook
+# ---------------------------------------------------------------------------
+import base64
+import json
+import time
+
+from django.test import override_settings, RequestFactory
+
+from esp.dbmail.models import SendGridEvent, TextOfEmail
+
+
+WEBHOOK_AUTH_SETTINGS = {
+    'SENDGRID_WEBHOOK_USERNAME': 'testuser',
+    'SENDGRID_WEBHOOK_PASSWORD': 'testpass',
+}
+
+
+def _basic_auth_header(username, password):
+    credentials = base64.b64encode(
+        ('%s:%s' % (username, password)).encode('utf-8')
+    ).decode('utf-8')
+    return 'Basic %s' % credentials
+
+
+class SendGridEventModelTest(TestCase):
+    def test_create_event(self):
+        event = SendGridEvent.objects.create(
+            email='user@example.com',
+            event_type='delivered',
+            timestamp='2026-03-08T12:00:00Z',
+            sg_event_id='unique-id-123',
+        )
+        self.assertEqual(event.event_type, 'delivered')
+        self.assertEqual(event.email, 'user@example.com')
+
+    def test_sg_event_id_uniqueness(self):
+        SendGridEvent.objects.create(
+            email='user@example.com',
+            event_type='delivered',
+            timestamp='2026-03-08T12:00:00Z',
+            sg_event_id='duplicate-id',
+        )
+        from django.db import IntegrityError
+        with self.assertRaises(IntegrityError):
+            SendGridEvent.objects.create(
+                email='other@example.com',
+                event_type='bounce',
+                timestamp='2026-03-08T12:01:00Z',
+                sg_event_id='duplicate-id',
+            )
+
+    def test_textofemail_link(self):
+        toe = TextOfEmail.objects.create(
+            send_to='user@example.com',
+            send_from='from@learningu.org',
+            subject='Test',
+            msgtext='Body',
+        )
+        event = SendGridEvent.objects.create(
+            textofemail=toe,
+            email='user@example.com',
+            event_type='delivered',
+            timestamp='2026-03-08T12:00:00Z',
+            sg_event_id='linked-event-1',
+        )
+        self.assertEqual(event.textofemail, toe)
+        self.assertEqual(toe.sendgrid_events.count(), 1)
+
+
+@override_settings(**WEBHOOK_AUTH_SETTINGS)
+class SendGridWebhookViewTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.url = '/webhooks/sendgrid/'
+        self.auth_header = _basic_auth_header('testuser', 'testpass')
+
+    def test_valid_webhook_returns_200(self):
+        events = [
+            {
+                'event': 'delivered',
+                'email': 'user@example.com',
+                'timestamp': int(time.time()),
+                'sg_event_id': 'evt-001',
+                'sg_message_id': 'msg-001',
+            },
+        ]
+        response = self.client.post(
+            self.url,
+            data=json.dumps(events),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(SendGridEvent.objects.count(), 1)
+        event = SendGridEvent.objects.first()
+        self.assertEqual(event.event_type, 'delivered')
+        self.assertEqual(event.email, 'user@example.com')
+
+    def test_missing_auth_returns_403(self):
+        events = [{'event': 'delivered', 'email': 'x@x.com',
+                    'timestamp': 0, 'sg_event_id': 'e1'}]
+        response = self.client.post(
+            self.url,
+            data=json.dumps(events),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(SendGridEvent.objects.count(), 0)
+
+    def test_wrong_auth_returns_403(self):
+        events = [{'event': 'delivered', 'email': 'x@x.com',
+                    'timestamp': 0, 'sg_event_id': 'e2'}]
+        response = self.client.post(
+            self.url,
+            data=json.dumps(events),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=_basic_auth_header('wrong', 'creds'),
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_idempotent_processing(self):
+        events = [
+            {
+                'event': 'delivered',
+                'email': 'user@example.com',
+                'timestamp': int(time.time()),
+                'sg_event_id': 'idempotent-001',
+            },
+        ]
+        payload = json.dumps(events)
+        for _ in range(3):
+            self.client.post(
+                self.url, data=payload,
+                content_type='application/json',
+                HTTP_AUTHORIZATION=self.auth_header,
+            )
+        self.assertEqual(SendGridEvent.objects.count(), 1)
+
+    def test_links_textofemail_via_unique_args(self):
+        toe = TextOfEmail.objects.create(
+            send_to='user@example.com',
+            send_from='from@learningu.org',
+            subject='Test',
+            msgtext='Body',
+        )
+        events = [
+            {
+                'event': 'delivered',
+                'email': 'user@example.com',
+                'timestamp': int(time.time()),
+                'sg_event_id': 'linked-evt-001',
+                'textofemail_id': str(toe.id),
+            },
+        ]
+        self.client.post(
+            self.url,
+            data=json.dumps(events),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        event = SendGridEvent.objects.first()
+        self.assertEqual(event.textofemail, toe)
+
+    def test_event_without_textofemail_id_stored_with_null(self):
+        events = [
+            {
+                'event': 'bounce',
+                'email': 'bounce@example.com',
+                'timestamp': int(time.time()),
+                'sg_event_id': 'no-link-001',
+                'reason': 'mailbox full',
+            },
+        ]
+        self.client.post(
+            self.url,
+            data=json.dumps(events),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        event = SendGridEvent.objects.first()
+        self.assertIsNone(event.textofemail)
+        self.assertEqual(event.reason, 'mailbox full')
+
+    def test_invalid_json_returns_400(self):
+        response = self.client.post(
+            self.url,
+            data='not json',
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_get_method_not_allowed(self):
+        response = self.client.get(
+            self.url,
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(response.status_code, 405)

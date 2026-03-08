@@ -109,6 +109,7 @@ urlpatterns += [
     url(r'^accounting/', include(esp.accounting.urls)),
     url(r'^customforms', include(esp.customforms.urls)),
     url(r'^random', include(esp.random.urls)),
+    url(r'^', include(esp.dbmail.urls)),
     url(r'^', include(esp.formstack.urls)),
     url(r'^',  include(esp.program.urls)),
     url(r'^download', include(esp.qsdmedia.urls)),

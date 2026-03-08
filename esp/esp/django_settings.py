@@ -143,6 +143,10 @@ ORGANIZATION_SHORT_NAME = 'Splash'
 # The host for ESP site-supported email lists.
 EMAIL_HOST = 'localhost'
 
+# SendGrid Event Webhook credentials (override in local_settings.py)
+SENDGRID_WEBHOOK_USERNAME = ''
+SENDGRID_WEBHOOK_PASSWORD = ''
+
 #################################
 # Default localization settings #
 #################################

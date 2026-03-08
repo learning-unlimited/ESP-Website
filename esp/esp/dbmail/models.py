@@ -449,6 +449,13 @@ class TextOfEmail(models.Model):
         else:
             extra_headers = {}
 
+        # Inject SendGrid unique_args so webhook events can be linked
+        # back to this TextOfEmail. SendGrid strips the X-SMTPAPI header
+        # and passes unique_args in Event Webhook callbacks.
+        extra_headers['X-SMTPAPI'] = json.dumps({
+            'unique_args': {'textofemail_id': str(self.id)}
+        })
+
         now = datetime.now()
 
         try:
@@ -565,6 +572,50 @@ class MessageVars(models.Model):
 
     class Meta:
         verbose_name_plural = 'Message variables'
+
+class SendGridEvent(models.Model):
+    """Stores delivery events received from SendGrid's Event Webhook."""
+
+    EVENT_TYPES = (
+        ('processed', 'Processed'),
+        ('dropped', 'Dropped'),
+        ('delivered', 'Delivered'),
+        ('deferred', 'Deferred'),
+        ('bounce', 'Bounce'),
+        ('open', 'Open'),
+        ('click', 'Click'),
+        ('spamreport', 'Spam Report'),
+        ('unsubscribe', 'Unsubscribe'),
+    )
+
+    textofemail = models.ForeignKey(
+        TextOfEmail, null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='sendgrid_events',
+    )
+    email = models.EmailField(db_index=True)
+    event_type = models.CharField(max_length=32, choices=EVENT_TYPES, db_index=True)
+    timestamp = models.DateTimeField(db_index=True)
+    sg_event_id = models.CharField(
+        max_length=255, unique=True,
+        help_text="SendGrid's unique event ID for deduplication",
+    )
+    sg_message_id = models.CharField(max_length=255, blank=True, default='')
+    reason = models.TextField(blank=True, default='')
+    response = models.TextField(blank=True, default='')
+    raw_event = models.TextField(
+        blank=True, default='{}',
+        help_text="Full raw event JSON from SendGrid for debugging")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = 'SendGrid event'
+        verbose_name_plural = 'SendGrid events'
+
+    def __str__(self):
+        return '%s for %s at %s' % (self.event_type, self.email, self.timestamp)
+
 
 class EmailRequest(models.Model):
     """ Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
