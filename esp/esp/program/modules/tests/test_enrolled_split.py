@@ -11,8 +11,11 @@ from esp.cal.models import Event, EventType
 class EnrolledSplitViewTest(ProgramFrameworkTest, CacheFlushTestCase):
     """
     Tests that /manage/userview correctly splits a student's enrolled sections
-    into current_enrolled (program end in the future) and past_enrolled
-    (program end in the past) — Issue #1150.
+    and taken/applied sections by the selected program — Issue #1150.
+
+    Sections from the currently selected program appear in program_enrolled /
+    program_taken; sections from all other programs are hidden in
+    other_enrolled / other_taken.
     """
 
     def setUp(self):
@@ -20,67 +23,58 @@ class EnrolledSplitViewTest(ProgramFrameworkTest, CacheFlushTestCase):
         # signal handlers to be re-registered, which corrupts the handler
         # chain when StudentRegistration is saved.
         super(EnrolledSplitViewTest, self).setUp()
-        # self.program has Class Time Block events in 2222 (future)
-        self.current_program = self.program
+        self.selected_program = self.program
         self.enrolled_rt = RegistrationType.objects.get(name='Enrolled')
 
-        # Build a minimal past program manually — no second super().setUp().
-        self.past_program = self._create_past_program()
+        # Build a second program to act as the "other" program.
+        self.other_program = self._create_other_program()
 
     # ------------------------------------------------------------------
-    # Helper
+    # Helpers
     # ------------------------------------------------------------------
 
-    def _create_past_program(self):
+    def _create_other_program(self):
         """
-        Create a bare Program with a past-dated 'Class Time Block' event,
-        one accepted ClassSubject, and one ClassSection.
-        Returns the Program instance.
+        Create a minimal second Program with one accepted ClassSubject and
+        one ClassSection, sharing modules/categories with the selected program.
         """
-        past_prog = Program.objects.create(
-            url='TestProgram/2020_Past',
-            name='TestProgram Past 2020',
+        other_prog = Program.objects.create(
+            url='TestProgram/2020_Other',
+            name='TestProgram Other 2020',
             grade_min=7,
             grade_max=12,
             director_email='info@test.learningu.org',
             program_size_max=3000,
         )
-        # Share modules / categories with the current program so the view
-        # can look up module data without crashing.
-        past_prog.program_modules.set(self.current_program.program_modules.all())
-        past_prog.class_categories.set(self.current_program.class_categories.all())
+        # Share modules / categories so the view can look up module data.
+        other_prog.program_modules.set(self.selected_program.program_modules.all())
+        other_prog.class_categories.set(self.selected_program.class_categories.all())
 
-        # Past-dated Class Time Block event (same event_type used by getTimeSlots)
         et = EventType.get_from_desc('Class Time Block')
         Event.objects.create(
-            program=past_prog,
+            program=other_prog,
             event_type=et,
             start=datetime.datetime(2020, 7, 7, 7, 5),
             end=datetime.datetime(2020, 7, 7, 8, 0),
-            short_description='Past Slot 0',
+            short_description='Other Slot 0',
             description='07:05 07/07/2020',
         )
 
-        # One accepted class with one section
-        past_class = ClassSubject.objects.create(
-            title='Past Test Class',
+        other_class = ClassSubject.objects.create(
+            title='Other Test Class',
             category=self.categories[0],
             grade_min=7,
             grade_max=12,
-            parent_program=past_prog,
+            parent_program=other_prog,
             class_size_max=30,
-            class_info='Past class for #1150 test',
+            class_info='Other program class for #1150 test',
         )
-        past_class.makeTeacher(self.teachers[0])
-        past_class.accept()
-        if not past_class.get_sections().exists():
-            past_class.add_section(duration=50 / 60.0)
+        other_class.makeTeacher(self.teachers[0])
+        other_class.accept()
+        if not other_class.get_sections().exists():
+            other_class.add_section(duration=50 / 60.0)
 
-        return past_prog
-
-    # ------------------------------------------------------------------
-    # Tests
-    # ------------------------------------------------------------------
+        return other_prog
 
     def _enroll(self, student, section):
         """
@@ -97,73 +91,135 @@ class EnrolledSplitViewTest(ProgramFrameworkTest, CacheFlushTestCase):
             )
         ])
 
-    def test_current_section_appears_in_current_enrolled(self):
-        """A section from a future program must appear in current_enrolled."""
+    # ------------------------------------------------------------------
+    # Tests — program_enrolled / other_enrolled
+    # ------------------------------------------------------------------
+
+    def test_selected_program_section_appears_in_program_enrolled(self):
+        """A section from the selected program must appear in program_enrolled."""
         student = self.students[0]
         admin = self.admins[0]
 
-        current_section = self.current_program.sections()[0]
-        self._enroll(student, current_section)
+        selected_section = self.selected_program.sections()[0]
+        self._enroll(student, selected_section)
 
         self.client.force_login(admin)
-        response = self.client.get('/manage/userview', {'username': student.username})
+        response = self.client.get(
+            '/manage/userview',
+            {'username': student.username, 'program': self.selected_program.id},
+        )
         self.assertEqual(response.status_code, 200)
 
-        current_ids = [s.id for s in response.context['current_enrolled']]
+        program_ids = [s.id for s in response.context['program_enrolled']]
         self.assertIn(
-            current_section.id,
-            current_ids,
-            "Section from a future program must appear in current_enrolled",
+            selected_section.id,
+            program_ids,
+            "Section from the selected program must appear in program_enrolled",
         )
 
-    def test_past_section_appears_in_past_enrolled(self):
-        """A section from a past program must appear in past_enrolled."""
+    def test_other_program_section_appears_in_other_enrolled(self):
+        """A section from a different program must appear in other_enrolled."""
         student = self.students[0]
         admin = self.admins[0]
 
-        past_section = self.past_program.sections()[0]
-        self._enroll(student, past_section)
+        other_section = self.other_program.sections()[0]
+        self._enroll(student, other_section)
 
         self.client.force_login(admin)
-        response = self.client.get('/manage/userview', {'username': student.username})
+        response = self.client.get(
+            '/manage/userview',
+            {'username': student.username, 'program': self.selected_program.id},
+        )
         self.assertEqual(response.status_code, 200)
 
-        past_ids = [s.id for s in response.context['past_enrolled']]
+        other_ids = [s.id for s in response.context['other_enrolled']]
         self.assertIn(
-            past_section.id,
-            past_ids,
-            "Section from a past program must appear in past_enrolled",
+            other_section.id,
+            other_ids,
+            "Section from a different program must appear in other_enrolled",
         )
 
-    def test_sections_are_not_cross_contaminated(self):
+    def test_enrolled_sections_are_not_cross_contaminated(self):
         """
-        A current-program section must NOT leak into past_enrolled, and
-        a past-program section must NOT leak into current_enrolled.
+        A selected-program section must NOT appear in other_enrolled, and
+        a non-selected-program section must NOT appear in program_enrolled.
         """
         student = self.students[0]
         admin = self.admins[0]
 
-        current_section = self.current_program.sections()[0]
-        past_section = self.past_program.sections()[0]
+        selected_section = self.selected_program.sections()[0]
+        other_section = self.other_program.sections()[0]
 
-        self._enroll(student, current_section)
-        self._enroll(student, past_section)
+        self._enroll(student, selected_section)
+        self._enroll(student, other_section)
 
         self.client.force_login(admin)
-        response = self.client.get('/manage/userview', {'username': student.username})
+        response = self.client.get(
+            '/manage/userview',
+            {'username': student.username, 'program': self.selected_program.id},
+        )
         self.assertEqual(response.status_code, 200)
 
-        current_ids = [s.id for s in response.context['current_enrolled']]
-        past_ids = [s.id for s in response.context['past_enrolled']]
+        program_ids = [s.id for s in response.context['program_enrolled']]
+        other_ids = [s.id for s in response.context['other_enrolled']]
 
-        self.assertIn(current_section.id, current_ids)
+        self.assertIn(selected_section.id, program_ids)
         self.assertNotIn(
-            current_section.id, past_ids,
-            "Current section must not leak into past_enrolled",
+            selected_section.id, other_ids,
+            "Selected-program section must not leak into other_enrolled",
         )
 
-        self.assertIn(past_section.id, past_ids)
+        self.assertIn(other_section.id, other_ids)
         self.assertNotIn(
-            past_section.id, current_ids,
-            "Past section must not leak into current_enrolled",
+            other_section.id, program_ids,
+            "Other-program section must not leak into program_enrolled",
+        )
+
+    # ------------------------------------------------------------------
+    # Tests — program_taken / other_taken
+    # ------------------------------------------------------------------
+
+    def test_selected_program_section_appears_in_program_taken(self):
+        """A taken/applied section from the selected program must appear in program_taken."""
+        student = self.students[0]
+        admin = self.admins[0]
+
+        selected_section = self.selected_program.sections()[0]
+        self._enroll(student, selected_section)
+
+        self.client.force_login(admin)
+        response = self.client.get(
+            '/manage/userview',
+            {'username': student.username, 'program': self.selected_program.id},
+        )
+        self.assertEqual(response.status_code, 200)
+        # program_taken should not contain sections from other programs
+        program_taken_program_ids = {
+            s.parent_class.parent_program_id for s in response.context['program_taken']
+        }
+        self.assertTrue(
+            all(pid == self.selected_program.id for pid in program_taken_program_ids),
+            "program_taken must only contain sections from the selected program",
+        )
+
+    def test_other_program_section_appears_in_other_taken(self):
+        """A taken/applied section from a different program must appear in other_taken."""
+        student = self.students[0]
+        admin = self.admins[0]
+
+        other_section = self.other_program.sections()[0]
+        self._enroll(student, other_section)
+
+        self.client.force_login(admin)
+        response = self.client.get(
+            '/manage/userview',
+            {'username': student.username, 'program': self.selected_program.id},
+        )
+        self.assertEqual(response.status_code, 200)
+        other_taken_program_ids = {
+            s.parent_class.parent_program_id for s in response.context['other_taken']
+        }
+        self.assertTrue(
+            all(pid != self.selected_program.id for pid in other_taken_program_ids),
+            "other_taken must not contain sections from the selected program",
         )

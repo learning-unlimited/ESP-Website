@@ -360,8 +360,8 @@
     {% endfor %}
 {% endif %}{% endwith %}
 
-{% with current_enrolled as classes %}{% if classes %}
-    <h2>Classes Currently Enrolled In:</h2>
+{% with program_enrolled as classes %}{% if classes %}
+    <h2>Classes Enrolled In ({{ program.niceName }}):</h2>
     <br />
     {% for class in classes %}
     {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
@@ -372,10 +372,10 @@
     {% endfor %}
 {% endif %}{% endwith %}
 
-{% with past_enrolled as classes %}{% if classes %}
-    <a class="btn" data-toggle="collapse" data-target="#past-enrolled-collapse">Show/hide previously enrolled classes ({{ classes|length }})</a>
-    <div id="past-enrolled-collapse" class="collapse">
-    <h2>Previously Enrolled Classes:</h2>
+{% with other_enrolled as classes %}{% if classes %}
+    <a class="btn" data-toggle="collapse" data-target="#other-enrolled-collapse">Show/hide classes enrolled in other programs ({{ classes|length }})</a>
+    <div id="other-enrolled-collapse" class="collapse">
+    <h2>Classes Enrolled In (Other Programs):</h2>
     <br />
     {% for class in classes %}
     {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
@@ -387,14 +387,27 @@
     </div>
 {% endif %}{% endwith %}
 
-{% with taken_classes as classes %}{% if classes %}
-    <h2>Classes Taken Or Applied For:</h2>
+{% with program_taken as classes %}{% if classes %}
+    <h2>Classes Taken Or Applied For ({{ program.niceName }}):</h2>
     <br />
     {% for class in classes %}
     {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
     {% include "users/userview_class_entry.html" %}
     {% if forloop.last %}</ul>{% endif %}
     {% endfor %}
+{% endif %}{% endwith %}
+
+{% with other_taken as classes %}{% if classes %}
+    <a class="btn" data-toggle="collapse" data-target="#other-taken-collapse">Show/hide classes from other programs ({{ classes|length }})</a>
+    <div id="other-taken-collapse" class="collapse">
+    <h2>Classes Taken Or Applied For (Other Programs):</h2>
+    <br />
+    {% for class in classes %}
+    {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
+    {% include "users/userview_class_entry.html" %}
+    {% if forloop.last %}</ul>{% endif %}
+    {% endfor %}
+    </div>
 {% endif %}{% endwith %}
 
 {% with starred_classes as classes %}{% if classes %}
