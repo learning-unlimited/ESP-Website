@@ -84,30 +84,6 @@
         <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
     </div>
     
-    <!-- Announcements -->
-    {% load preview %}
-    {% if request.path == "/teach/index.html" %}
-        {% miniblog_for_user AnonymousUser as announcements teach 3 %}
-    {% else %}
-        {% miniblog_for_user AnonymousUser as announcements learn 3 %}
-    {% endif %}
-
-    {% if not announcements.announcementList|length_is:0 %}
-    {% for announce in announcements.announcementList %}
-    <div class="box">
-        {% if announce.makeUrl %}
-        <div class="box_header"><a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a></div>
-        {% else %}
-        <div class="box_header">{{ announce.makeTitle }}</div>{{ announce.content }}
-        {% endif %}
-    </div>
-    {% endfor %}
-    {% if announcements.overflowed %}
-    <div class="box" id="divannouncemore">
-        <div class="box_header"><a href="/myesp/home/">More Notices...</a></div>
-    </div>
-    {% endif %}
-    {% endif %}
 
     <!-- Onsite -->
     <div class="box onsite hidden">

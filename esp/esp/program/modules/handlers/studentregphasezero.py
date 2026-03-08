@@ -205,7 +205,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
     def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string
-        if not 'username' in request.GET or 'username' in request.POST:
+        if 'username' not in request.GET and 'username' not in request.POST:
             return self.goToCore(tl)
 
         limit = 10
