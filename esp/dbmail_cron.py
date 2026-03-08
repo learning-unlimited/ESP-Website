@@ -15,7 +15,7 @@ sys.path.insert(0, project)
 if os.environ.get('VIRTUAL_ENV') is None:
     root = os.path.dirname(project)
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    with open(activate_this, "rb") as f:                          # Fix 1: resource leak
+    with open(activate_this, "rb") as f:
         exec(compile(f.read(), activate_this, 'exec'), dict(__file__=activate_this))
 
 import django
@@ -35,7 +35,7 @@ def main():
         fcntl.lockf(lock_file_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except IOError:
         logger.info('dbmail_cron: exiting because another instance has the lock.')
-        lock_file_handle.close()                                  # Fix 2: resource leak
+        lock_file_handle.close()
         sys.exit(0)
 
     try:
@@ -45,7 +45,7 @@ def main():
         send_email_requests()
         logger.info('dbmail_cron: sent emails.')
     except Exception as e:
-        logger.error('dbmail_cron: fatal error!')                 # Fix 3: wrong log level
+        logger.error('dbmail_cron: fatal error!')
         logger.exception(e)
     finally:
         fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
