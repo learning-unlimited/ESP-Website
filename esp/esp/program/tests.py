@@ -1505,9 +1505,8 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         # Clear any stale thread-local request from previous test classes.
         # ClassFlag.save() overrides created_by with request.user, which may
         # reference a user whose savepoint was already rolled back.
-        from esp.middleware.threadlocalrequest import _threading_local
-        if hasattr(_threading_local, 'request'):
-            del _threading_local.request
+        from esp.middleware.threadlocalrequest import clear_current_request
+        clear_current_request()
 
         super(ClassFlagTeacherVisibilityTest, self).setUp(num_students=0, num_teachers=2, num_admins=1)
 
@@ -1984,4 +1983,3 @@ class GradeCacheInvalidationTest(TestCase):
             profile2.student_info.graduation_year, new_yog,
             "getLastProfile should return updated graduation_year"
         )
->>>>>>> origin/main

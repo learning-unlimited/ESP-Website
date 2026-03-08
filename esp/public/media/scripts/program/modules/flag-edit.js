@@ -1,7 +1,6 @@
 function submitFlagForm (event) {
     console.log("submit");
     var form = $j(this)
-    var flagsContainer = form.closest('.class-flags');
     var data = form.serialize();
     $j.post(form.attr("action"), data, function (data) {
         form.parents("div.fqr-class").find("div.fqr-class-flags").append(data.flag_name);
