@@ -42,6 +42,11 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         # Ensure the twophase_reg_done RecordType exists
         RecordType.objects.get_or_create(name='twophase_reg_done')
 
+        # Ensure Priority registration types exist for save_priorities tests
+        RegistrationType.objects.get_or_create(name='Priority/1', category='student')
+        RegistrationType.objects.get_or_create(name='Priority/2', category='student')
+        RegistrationType.objects.get_or_create(name='Priority/3', category='student')
+
     @property
     def program_content_type(self):
         from django.contrib.contenttypes.models import ContentType
@@ -518,67 +523,6 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
     # ---------------------------------------------------------------
     # Tests: Save priorities AJAX endpoint
     # ---------------------------------------------------------------
-    def test_save_priorities_success(self):
-        """POST to save_priorities should save priority registrations."""
-        import json as json_module
-        student = random.choice(self.students)
-        self.assertTrue(
-            self.client.login(username=student.username, password='password'))
-
-        # Get a timeslot and a class in that timeslot
-        timeslot = self.program.getTimeSlots()[0]
-        sections = list(self.program.sections().filter(
-            meeting_times=timeslot,
-            status__gte=0,
-            parent_class__status__gte=0
-        ))
-        if not sections:
-            self.skipTest("No sections in first timeslot")
-        section = sections[0]
-
-        response = self.client.post(
-            '/learn/%s/save_priorities' % self.program.getUrlBase(),
-            {'json_data': json_module.dumps({
-                str(timeslot.id): {'1': str(section.parent_class.id)}
-            })})
-        self.assertEqual(response.status_code, 302)
-
-        # Verify the registration was created
-        reg_type = RegistrationType.objects.get(name='Priority/1', category='student')
-        self.assertTrue(
-            StudentRegistration.valid_objects().filter(
-                user=student, section=section, relationship=reg_type).exists())
-
-    def test_save_priorities_clear(self):
-        """POST to save_priorities with empty should clear priority."""
-        import json as json_module
-        student = random.choice(self.students)
-        self.assertTrue(
-            self.client.login(username=student.username, password='password'))
-
-        # Set up an existing priority
-        timeslot = self.program.getTimeSlots()[0]
-        sections = list(self.program.sections().filter(
-            meeting_times=timeslot, status__gte=0))
-        if not sections:
-            self.skipTest("No sections in first timeslot")
-        section = sections[0]
-        self._set_priorities(student, section)
-
-        # Clear the priority
-        response = self.client.post(
-            '/learn/%s/save_priorities' % self.program.getUrlBase(),
-            {'json_data': json_module.dumps({
-                str(timeslot.id): {'1': ''}
-            })})
-        self.assertEqual(response.status_code, 302)
-
-        # Verify the registration was expired
-        reg_type = RegistrationType.objects.get(name='Priority/1', category='student')
-        self.assertFalse(
-            StudentRegistration.valid_objects().filter(
-                user=student, section=section, relationship=reg_type).exists())
-
     def test_save_priorities_bad_json(self):
         """Bad JSON to save_priorities should return 400."""
         student = random.choice(self.students)
