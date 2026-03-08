@@ -34,9 +34,12 @@ function update_checkboxes(table) {
 }
 
 $j(function(){
-    function markAttendance(username, secid, undo = false, callback, errorCallback){
+    function markAttendance(username, secid, undo, callback, errorCallback, undoCheckin){
         refresh_csrf_cookie();
         var data = {student: username, secid: secid, undo: undo, csrfmiddlewaretoken: csrf_token()};
+        if (undoCheckin) {
+            data.undo_checkin = true;
+        }
         $j.post('/teach/' + prog_url + '/ajaxstudentattendance', data, "json").done(callback)
         .fail(errorCallback);
     }
@@ -67,9 +70,37 @@ $j(function(){
                     // If this is the webapp, we want to toggle the icons as well
                     $checkedin.siblings("i").html("check_box");
                 }
+                // Show undo button after marking attendance
+                if (checked) {
+                    $msg.find(".undo-attendance").remove();
+                    var $undoBtn = $j('<button>')
+                        .addClass('btn btn-default btn-mini undo-attendance')
+                        .text('Undo')
+                        .attr('data-checkedin', response.checkedin ? 'true' : 'false');
+                    $undoBtn.on("click", function(e) {
+                        e.preventDefault();
+                        var undoCheckin = $j(this).attr('data-checkedin') === 'true';
+                        $undoBtn.text('Undoing...').prop('disabled', true);
+                        markAttendance(username, secid, true, function(resp) {
+                            $me.prop("checked", false);
+                            $me.closest("td").attr("data-st-key", 1);
+                            $me.siblings("i").html("check_box_outline_blank");
+                            if (resp.uncheckedin) {
+                                $checkedin.prop("checked", false);
+                                $checkedin.closest("td").attr("data-st-key", 1);
+                                $checkedin.siblings("i").html("check_box_outline_blank");
+                            }
+                            $msg.text(resp.message);
+                            update_checkboxes($table);
+                        }, function() {
+                            alert("An error occurred while undoing attendance for " + username + ".");
+                            $undoBtn.text('Undo').prop('disabled', false);
+                        }, undoCheckin);
+                    });
+                    $msg.html('').append($undoBtn);
+                }
                 console.log(response.message);
             }
-            $msg.text("");
             $me.prop('disabled', false);
             var inFlight = ($table.data('in-flight') || 1) - 1;
             $table.data('in-flight', Math.max(0, inFlight));
