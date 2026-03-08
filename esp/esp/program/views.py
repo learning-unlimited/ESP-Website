@@ -55,7 +55,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.redirects.models import Redirect
 from django.contrib.sites.models import Site
 from django.db.models.query import Q
-from django.db.models import Min
+from django.db.models import Count, Min
 from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
@@ -955,6 +955,14 @@ def get_email_data(start_date):
                 req.finished_at = "(Not finished)"
         else:
             req.finished_at = "(Not finished)"
+
+        # Aggregate SendGrid delivery events for this message request
+        from esp.dbmail.models import SendGridEvent
+        event_counts = SendGridEvent.objects.filter(
+            textofemail__in=toes
+        ).values('event_type').annotate(count=Count('id'))
+        req.delivery_stats = {item['event_type']: item['count'] for item in event_counts}
+
         requests_list.append(req)
     return requests_list
 get_email_data.depend_on_model(MessageRequest)

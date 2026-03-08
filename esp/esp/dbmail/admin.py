@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 
-from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail
+from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail, SendGridEvent
 from esp.utils.admin_user_search import default_user_search
 
 class MessageVarsAdmin(admin.ModelAdmin):
@@ -66,3 +66,11 @@ class TextOfEmailAdmin(admin.ModelAdmin):
     date_hierarchy = 'sent'
     list_filter = ('send_from',)
 admin_site.register(TextOfEmail, TextOfEmailAdmin)
+
+class SendGridEventAdmin(admin.ModelAdmin):
+    list_display = ('email', 'event_type', 'timestamp', 'textofemail', 'sg_message_id')
+    list_filter = ('event_type',)
+    search_fields = ('email', 'sg_message_id', 'sg_event_id')
+    date_hierarchy = 'timestamp'
+    raw_id_fields = ('textofemail',)
+admin_site.register(SendGridEvent, SendGridEventAdmin)

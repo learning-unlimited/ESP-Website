@@ -61,10 +61,13 @@ tr.email-details {
 <table class="emails-table">
     <tr>
         <th style="width:5%;"></th>
-        <th style="width:50%;">Subject</th>
+        <th style="width:35%;">Subject</th>
         <th>Request Processed</th>
         <th># Recipients</th>
         <th># Emails Sent</th>
+        <th>Delivered</th>
+        <th>Bounced</th>
+        <th>Opened</th>
     </tr>
     {% for req in requests %}
         <tr class="email-header">
@@ -73,16 +76,26 @@ tr.email-details {
             <td style="text-align:center;">{% if req.processed %}&#10003;{% else %}&#10005;{% endif %}</td>
             <td style="text-align:center;">{{ req.num_rec }}</td>
             <td style="text-align:center;">{{ req.num_sent }}</td>
+            <td style="text-align:center;">{{ req.delivery_stats.delivered|default:"—" }}</td>
+            <td style="text-align:center;">{% if req.delivery_stats.bounce %}<span style="color:red;">{{ req.delivery_stats.bounce }}</span>{% else %}—{% endif %}</td>
+            <td style="text-align:center;">{{ req.delivery_stats.open|default:"—" }}</td>
         </tr>
         <tr class="email-details">
-            <td colspan="3" style="vertical-align:top;">
+            <td colspan="4" style="vertical-align:top;">
                 <iframe srcdoc="{{ req.msgtext|join:""|escape }}" style="width: 100%; max-height: 600px;"></iframe>
             </td>
-            <td colspan="2" style="vertical-align:top;padding:0;"><table>
+            <td colspan="4" style="vertical-align:top;padding:0;"><table>
                 <tr><td><i>Sent by:</i><br /><a href="/manage/userview?username={{ req.creator|urlencode }}">{{ req.creator }}</a></td></tr>
                 <tr><td><i>Sending address:</i><br />{{ req.sender }}</td></tr>
                 <tr><td><i>Created at:</i><br />{{ req.created_at }}</td></tr>
                 <tr><td><i>Finished at:</i><br />{{ req.finished_at }}</td></tr>
+                {% if req.delivery_stats %}
+                <tr><td><i>Delivery details:</i><br />
+                    {% for event_type, count in req.delivery_stats.items %}
+                        {{ event_type }}: <b>{{ count }}</b>&nbsp;&nbsp;
+                    {% endfor %}
+                </td></tr>
+                {% endif %}
                 {% if req.public %}
                 <tr><td><i><a href="/email/{{ req.id }}" target="_blank">Public here</a></i><br /></td></tr>
                 {% endif %}
