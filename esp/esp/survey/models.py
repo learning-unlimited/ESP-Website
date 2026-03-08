@@ -300,7 +300,7 @@ class Question(models.Model):
             else:
                 new_val = ans_sum // ans_count;
             return pretty_val(new_val)
-        except:
+        except (ValueError, TypeError):
             return 'N/A'
     global_average.depend_on_row('survey.Answer', lambda ans: {'self': ans.question})
 
