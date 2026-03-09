@@ -216,7 +216,6 @@ class CommModule(ProgramModuleObj):
                                                'public_view': public_view,
                                                'body': body,
                                                'template': template,
-                                               'mailer_warnings': mailer_warnings,
                                                'rendered_text': rendered_text,
                                                'other_program_urls': other_program_urls})
 
