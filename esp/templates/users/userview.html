@@ -29,7 +29,7 @@
                     (Select a program)
                 </option>
                 {% for prog in all_programs %}
-                <option value="{{prog.id}}" {% if prog==program %}selected="selected" {% endif %}>
+                <option value="{{prog.id}}" {% if prog == program %}selected="selected" {% endif %}>
                     {{prog.name}}
                 </option>
                 {% endfor %}
