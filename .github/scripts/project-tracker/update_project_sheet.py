@@ -219,6 +219,9 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
             ", ".join(labels),
         ])
 
+    # Sort by PR number descending (skip header)
+    rows[1:] = sorted(rows[1:], key=lambda r: r[0], reverse=True)
+
     return rows
 
 
@@ -264,6 +267,9 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
             ", ".join(linked_prs),
         ])
 
+    # Sort by issue number descending (skip header)
+    rows[1:] = sorted(rows[1:], key=lambda r: r[0], reverse=True)
+
     return rows
 
 
@@ -293,7 +299,7 @@ def build_contributor_rows(
                 activity[login]["last_activity"] = issue["updatedAt"]
 
     rows = [header]
-    for login in sorted(activity, key=lambda k: activity[k]["last_activity"], reverse=True):
+    for login in sorted(activity, key=lambda k: activity[k]["open_prs"], reverse=True):
         info = activity[login]
         rows.append([
             login,
@@ -373,23 +379,6 @@ def main() -> None:
     write_sheet(spreadsheet, "Open Pull Requests", pr_rows)
     write_sheet(spreadsheet, "Open Issues", issue_rows)
     write_sheet(spreadsheet, "Contributor Activity", contributor_rows)
-
-    # Add a metadata note to the first sheet
-    try:
-        meta_ws = spreadsheet.worksheet("Open Pull Requests")
-    except gspread.exceptions.WorksheetNotFound:
-        return
-    last_col = chr(ord("A") + len(pr_rows[0]))
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    meta_ws.update(
-        [[f"Last updated: {timestamp}"]],
-        f"{last_col}1",
-        value_input_option="RAW",
-    )
-    meta_ws.format(
-        f"{last_col}1",
-        {"textFormat": {"bold": False, "italic": True}},
-    )
 
     print("Done!")
 
