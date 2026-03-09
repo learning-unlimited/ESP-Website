@@ -50,7 +50,7 @@ def ajax_autocomplete(request):
     except (Program.DoesNotExist, ValueError):
         prog_obj = None
 
-    kwargs = {'grade': grade, 'last_name_range': last_name_range, 'prog': prog_obj}
+    kwargs = {'grade': grade, 'last_name_range': last_name_range}
 
     if hasattr(Model.objects, ajax_func):
         query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff, prog_obj, **kwargs)
