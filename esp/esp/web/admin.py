@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.contrib import admin
+from django.contrib import messages
 from esp.admin import admin_site
 from esp.web.models import NavBarEntry, NavBarCategory
 
@@ -40,5 +41,19 @@ class NavBarEntryAdmin(admin.ModelAdmin):
     list_display = ('category', 'sort_rank', 'text', 'link')
     list_filter = ('category',)
 
+class NavBarCategoryAdmin(admin.ModelAdmin):
+    def delete_model(self, request, obj):
+        if obj.name == "default":
+            self.message_user(
+                request,
+                'The "default" nav category cannot be deleted because it is required by the system.',
+                level = messages.ERROR,
+            )
+        return super().delete_model(request, obj)
+    def has_delete_permission(self, request, obj = None):
+        if obj and obj.name == "default":
+            return False
+        return super().has_delete_permission(request, obj)
+
 admin_site.register(NavBarEntry, NavBarEntryAdmin)
-admin_site.register(NavBarCategory)
+admin_site.register(NavBarCategory, NavBarCategoryAdmin)

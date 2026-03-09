@@ -66,6 +66,15 @@
 
 {% block content %}
 <h1>Student Registration for {{program.niceName}}</h1>
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags|default:'info' }}" style="border: 1px solid {% if message.tags == 'error' %}#a94442{% else %}#31708f{% endif %}; padding: 10px; background-color: {% if message.tags == 'error' %}#f2dede{% else %}#d9edf7{% endif %}; margin-bottom: 15px;">
+    <strong>{% if message.tags == 'error' %}Error:{% else %}Notice:{% endif %}</strong> {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
 {% inline_program_qsd_block program "learn:studentregtwophase/top" %}
 Welcome to the registration lottery for {{program.niceName}}. Please complete all of the steps below to select your class preferences. You may come back to this page to update your preferences at any time before the deadline.
 {% end_inline_program_qsd_block %}
@@ -146,4 +155,33 @@ recommend you have at least {{num_star}} classes starred for every priority slot
 {% endfor %}
 </table>
 </div>
+
+<br>
+<hr>
+
+<h1>Step 3 &ndash; Confirmation Email</h1>
+
+<div class="alert alert-success"
+    style="border: 1px solid #3c763d; padding: 10px; background-color: #dff0d8; margin-bottom: 15px;">
+    <strong>Your preferences have been automatically saved.</strong>
+</div>
+
+<p>
+    If you would like to receive a confirmation email with a summary of your selections, click the button below.
+</p>
+
+{% if min_classes > 0 %}
+<div class="alert alert-warning">
+    <strong>Note:</strong> You must star at least {{ min_classes }} classes before you can confirm your preferences.
+</div>
+{% endif %}
+
+<center>
+    <form method="post" action="/learn/{{program.getUrlBase}}/confirm_registration">{% csrf_token %}
+        <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 10px 30px;">
+            Send Me a Confirmation Email
+        </button>
+    </form>
+</center>
+
 {% endblock %}
