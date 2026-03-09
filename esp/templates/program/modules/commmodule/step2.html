@@ -29,6 +29,19 @@
 <h2>Step 2:</h2>
 
 <br />
+
+{% if mailer_warnings %}
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span>
+    <strong>Before you send:</strong>
+    <ul style="margin-top: 10px; margin-bottom: 0;">
+        {% for warning in mailer_warnings %}
+            <li>{{ warning }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 <p>
 There are <strong>{{listcount}}</strong> distinct users in your query{% if selected %} of <strong>{{ selected }}</strong>{% endif %}. If you feel this to be off, please
 <a href="javascript:history.go(-1);">go back</a> now.<br />
