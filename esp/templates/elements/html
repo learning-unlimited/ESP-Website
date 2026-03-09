@@ -3,8 +3,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 {% if theme %}<!-- Theme: {{ theme.theme_name }} -->{% endif %}
   <head>
-   <title>{% block fulltitle %}{% endblock %}</title>
-
+    <title>{% block fulltitle %}{% endblock %}</title>
+  {% block meta %}
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="description" content="{% block description %}{% endblock %}" />
     <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
     <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
@@ -14,7 +15,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="{% block og_title %}{% if theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock %}" />
     <meta property="og:description" content="{% block og_description %}{% if theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock %}" />
-    <meta property="og:url" content="{{ request.build_absolute_uri }}" />
+    <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.get_full_path }}" />
     <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png?v={{ current_logo_version }}" />
 
     <!-- Twitter Card Meta Tags -->
@@ -22,9 +23,15 @@
     <meta name="twitter:title" content="{% block twitter_title %}{% if theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock %}" />
     <meta name="twitter:description" content="{% block twitter_description %}{% if theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock %}" />
     <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png?v={{ current_logo_version }}" />
+  {% endblock meta %}
 
     {% block stylesheets %}
     <link rel="shortcut icon" href="/media/images/favicon.ico?v={{ current_favicon_version }}">
+    {% comment %}PNG/manifest URLs: 404 until theme favicon upload generates them (Pillow/favicons follow-up). Kept here so upload flow can update cache-busting.{% endcomment %}
+    <link rel="icon" type="image/png" sizes="32x32" href="/media/images/favicon-32x32.png?v={{ current_favicon_version }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="/media/images/favicon-16x16.png?v={{ current_favicon_version }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="/media/images/apple-touch-icon.png?v={{ current_favicon_version }}">
+    <link rel="manifest" href="/media/images/site.webmanifest?v={{ current_favicon_version }}">
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
