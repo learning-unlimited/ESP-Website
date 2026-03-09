@@ -25,6 +25,19 @@ td.newday { border-width: 2px 1px 0 1px;}
 .meals li { font-weight: bold; text-size: x-large; list-style: none; display: block; width: 180px; border: 1px solid black; margin: 0 auto; margin-bottom: 8px;}
 .perforate { text-align: center; width: 100%; height: 2in; page-break-after: always; }
 </style>
+<style type="text/css" media="print">
+/* Ensure schedule fits on one printed page */
+@media print {
+    body { font-size: 9px; margin: 0; }
+    .title { font-size: 9pt; }
+    .title span { font-size: 11pt; }
+    .description { padding: .05in 0; }
+    .perforate { height: 1in; }
+    .schedule td, .schedule th { padding: 2px; }
+    .schedule { page-break-inside: avoid; }
+    table.header-table td { padding: 2px; }
+}
+</style>
 
 </head>
 <body>
