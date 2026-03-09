@@ -42,7 +42,6 @@ class MeetsDeadlineValidationTest(SimpleTestCase):
     """
     Tests that @meets_deadline and @meets_any_deadline raise ImproperlyConfigured
     at decoration time (startup time) when an invalid permission extension is used.
-    See GitHub issue #1163.
     """
 
     def test_valid_extension_does_not_raise(self):
@@ -75,14 +74,12 @@ class MeetsDeadlineValidationTest(SimpleTestCase):
             meets_deadline('/NonExistentDeadline')
         self.assertIn('/NonExistentDeadline', str(ctx.exception))
 
-    def test_invalid_extension_error_message_contains_candidates(self):
-        """The error message should list the invalid candidate permission strings."""
+    def test_invalid_extension_error_message_contains_invalid_exts(self):
+        """The error message should list the invalid extension permission strings."""
         with self.assertRaises(ImproperlyConfigured) as ctx:
             meets_deadline('/Bogus')
         msg = str(ctx.exception)
-        self.assertIn('Student/Bogus', msg)
-        self.assertIn('Teacher/Bogus', msg)
-        self.assertIn('Volunteer/Bogus', msg)
+        self.assertIn('Invalid permission extensions: /Bogus', msg)
 
     def test_invalid_extension_error_message_contains_valid_choices(self):
         """The error message should list valid deadline choices to aid debugging."""
@@ -100,8 +97,17 @@ class MeetsDeadlineValidationTest(SimpleTestCase):
 
     def test_meets_any_deadline_one_invalid_raises(self):
         """meets_any_deadline with a mix of valid and invalid extensions should raise for the invalid one."""
-        with self.assertRaises(ImproperlyConfigured):
+        with self.assertRaises(ImproperlyConfigured) as ctx:
             meets_any_deadline(['/Classes', '/InvalidPerm'])
+        msg = str(ctx.exception)
+        self.assertIn('Invalid permission extensions: /InvalidPerm', msg)
+
+    def test_meets_any_deadline_multiple_invalid_raises(self):
+        """meets_any_deadline with multiple invalid extensions should report all of them."""
+        with self.assertRaises(ImproperlyConfigured) as ctx:
+            meets_any_deadline(['/InvalidPerm1', '/Classes', '/InvalidPerm2'])
+        msg = str(ctx.exception)
+        self.assertIn('Invalid permission extensions: /InvalidPerm1, /InvalidPerm2', msg)
 
     def test_meets_any_deadline_all_valid_does_not_raise(self):
         """meets_any_deadline with all valid extensions should not raise."""
