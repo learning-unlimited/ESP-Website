@@ -338,7 +338,7 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             try:
                 sec_ids = [int(x) for x in extra.split(',')]
-            except:
+            except (ValueError, TypeError, AttributeError):
                 pass
 
         for sec_id in sec_ids:
@@ -427,7 +427,7 @@ class StudentClassRegModule(ProgramModuleObj):
                     #   Rewrite the registration button if possible.  This requires telling
                     #   the ajax_schedule view what section was added/changed.
                     extra = request.POST['section_id']
-                except:
+                except KeyError:
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
@@ -464,7 +464,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         try:
             extra = int(extra)
-        except:
+        except (ValueError, TypeError):
             raise ESPError('Please use the link at the main registration page.', log=False)
         user = request.user
         ts = Event.objects.filter(id=extra, program=prog)
