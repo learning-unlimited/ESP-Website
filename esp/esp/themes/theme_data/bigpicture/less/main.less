@@ -179,6 +179,134 @@ div.nav-collapse.collapse {
     }
 }
 
+/* ===== Collapsible Sidebar Navigation (ReadTheDocs-style) ===== */
+
+.sidebar-collapsible {
+  padding: 0;
+  list-style: none;
+}
+
+.sidebar-collapsible .sidebar-section {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  list-style: none;
+}
+
+.sidebar-collapsible .sidebar-section:last-child {
+  border-bottom: none;
+}
+
+.sidebar-collapsible .sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-collapsible .sidebar-section-header:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.sidebar-collapsible .sidebar-header-link {
+  color: @sidebarHeader;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  flex: 1;
+}
+
+.sidebar-collapsible .sidebar-header-link:hover {
+  color: @accent2;
+  text-decoration: none;
+}
+
+.sidebar-collapsible .sidebar-header-text {
+  color: @sidebarHeader;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex: 1;
+}
+
+.sidebar-collapsible .sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.sidebar-collapsible .sidebar-chevron {
+  font-size: 10px;
+  color: #666;
+  transition: transform 0.25s ease;
+}
+
+/* Expanded state */
+.sidebar-collapsible .sidebar-section.expanded .sidebar-section-header {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.sidebar-collapsible .sidebar-section.expanded .sidebar-chevron {
+  transform: rotate(90deg);
+}
+
+/* Active section */
+.sidebar-collapsible .sidebar-section.active-section .sidebar-section-header {
+  border-left: 3px solid @accent2;
+}
+
+.sidebar-collapsible .sidebar-section.active-section .sidebar-header-link,
+.sidebar-collapsible .sidebar-section.active-section .sidebar-header-text {
+  color: @accent2;
+}
+
+/* Children list */
+.sidebar-collapsible .sidebar-children {
+  list-style: none;
+  padding: 0 0 8px 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.sidebar-collapsible .sidebar-child-item {
+  list-style: none;
+}
+
+.sidebar-collapsible .sidebar-child-item a {
+  display: block;
+  padding: 6px 15px 6px 30px;
+  color: @sidebarLink;
+  font-size: 13px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-collapsible .sidebar-child-item a:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: @sidebarLinkHover;
+  border-left-color: fade(@accent2, 50%);
+}
+
+.sidebar-collapsible .sidebar-child-item a i {
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+.sidebar-collapsible .sidebar-child-item.active a {
+  color: @accent2;
+  font-weight: 600;
+  border-left-color: @accent2;
+  background-color: fade(@accent2, 6%);
+}
+
 .btn:hover {
     background-position: 0;
 }
