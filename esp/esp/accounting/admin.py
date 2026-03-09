@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -54,12 +52,12 @@ class TransferAdmin(admin.ModelAdmin):
         if obj.option:
             return obj.option.description
         else:
-            return six.u('--')
+            return '--'
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "line_item":
             kwargs["queryset"] = LineItemType.objects.all().select_related('program')
-        return super(TransferAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'option_description']
     list_filter = ['source', 'destination', 'line_item__program']

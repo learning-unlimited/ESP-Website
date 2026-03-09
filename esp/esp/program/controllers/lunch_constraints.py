@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"

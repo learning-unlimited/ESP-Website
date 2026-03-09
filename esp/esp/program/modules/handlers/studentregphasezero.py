@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -41,10 +40,9 @@ from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm
 from esp.dbmail.models import send_mail
 from esp.tagdict.models import Tag
-from esp.web.views.json_utils import JsonResponse
 
 from django.conf import settings
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.template.loader import render_to_string
 from django.db.models.query import Q
 
@@ -74,8 +72,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
-            "admin_title": "Student Registration Phase Zero",
-            "link_title": "Student Registration Phase Zero",
+            "admin_title": "Program Lottery Registration",
+            "link_title": "Program Lottery Registration",
             "module_type": "learn",
             "seq": 2,
             "required": True,
@@ -207,7 +205,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
     def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string
-        if not 'username' in request.GET or 'username' in request.POST:
+        if 'username' not in request.GET and 'username' not in request.POST:
             return self.goToCore(tl)
 
         limit = 10
@@ -235,7 +233,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         else:
             obj_list = []
 
-        return JsonResponse(obj_list)
+        return JsonResponse(obj_list, safe=False)
 
     def send_confirmation_email(self, student, note=None):
         email_title = 'Student Lottery Confirmation for %s: %s' % (self.program.niceName(), student.name())

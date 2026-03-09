@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,7 +39,7 @@ from esp.resources.models import ResourceType, ResourceRequest, Resource, Resour
 
 class ResourceTypeAdmin(admin.ModelAdmin):
     def rt_choices(self, obj):
-        return "%s" % str(obj.choices)
+        return str(obj.choices)
     rt_choices.short_description = 'Choices'
 
     list_display = ('name', 'description', 'only_one', 'consumable', 'autocreated', 'hidden', 'priority_default', 'rt_choices', 'program')

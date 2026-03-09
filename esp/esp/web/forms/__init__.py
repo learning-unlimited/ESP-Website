@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 """ ESP In-house Form Fields ... some of these might be useful
-    ouside ESP.
+    outside ESP.
     """
 
 from django import forms
@@ -56,10 +55,12 @@ class ResizeImageField(forms.ImageField):
         """ gets the image and resizes it """
         file = super(forms.ImageField, self).clean(file, initial)
         if file and self.size is not None:
+            import os
             from PIL import Image
             from io import BytesIO
 
-            filename = file.name
+            filename_root, filename_ext = os.path.splitext(file.name)
+            filename = filename_root + filename_ext.lower()
 
             picturefile = BytesIO()
             if hasattr(file, 'temporary_file_path'):
