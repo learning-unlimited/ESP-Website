@@ -683,7 +683,7 @@ class IndividualAccountingController(ProgramAccountingController):
         total = 0
         # Calculate the target including all of the user's payments, discount, and all granted fin aid
         # I believe the user's payments include the current payment based on order of operations here
-        target_full = self.amount_paid() + self.amount_siblingdiscount() + self.amount_finaid()
+        target_full = self.amount_paid() + self.amount_siblingdiscount() + self.amount_finaid() - self.amount_refunded()
 
         # Check that all payments and financial aid together sum to all transfers together
         # Add the paid_in to the outstanding transfers

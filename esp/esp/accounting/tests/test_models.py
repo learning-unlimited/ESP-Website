@@ -477,3 +477,13 @@ class IndividualAccountingControllerTest(TestCase):
             line_item=refund_lit,
         ).first()
         self.assertEqual(self.iac.classify_transfer(transfer), 'Refund')
+
+    def test_link_paid_transfers_after_refund(self):
+        """submit_payment works correctly after a partial refund."""
+        self.iac.ensure_required_transfers()
+        self.iac.submit_payment(Decimal('50.00'))
+        self.iac.record_refund(Decimal('20.00'), 'ref_link')
+        self.assertEqual(self.iac.amount_due(), Decimal('20.00'))
+        self.iac.submit_payment(Decimal('20.00'))
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+
