@@ -1613,7 +1613,10 @@ var submit=function() {
 		form['link_id']=$j('#links_id_pick').val();
         if($j("#links_id_main").val()=="Program"){
             form['link_tl'] = $j("#links_id_tl").val();
-            form['link_module'] = $j("#links_id_module").val();
+            var module_val = $j("#links_id_module").val();
+            if(module_val){
+                form['link_module'] = module_val;
+            }
         }
 	} else {
         form['link_id']=-1;
