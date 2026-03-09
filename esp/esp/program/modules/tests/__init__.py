@@ -65,4 +65,5 @@ from esp.program.modules.tests.test_class_creation import (
     ClassTeacherListTest,
     ClassFormValidationTest,
     TeacherAvailabilityConsistencyTest,
+    ClassCreationControllerUnitTest,
 )
