@@ -60,6 +60,8 @@ def registration_progress(context):
     )
 
     extra_steps = {'learn': 'learn:extra_steps', 'teach': 'teach:extra_steps'}.get(tl)
+    mainpage_view = {'learn': 'studentreg', 'teach': 'teacherreg'}.get(tl)
+    mainpage_url = '/%s/%s/%s' % (tl, program.url, mainpage_view)
 
     return {
         'modules': modules,
@@ -68,4 +70,5 @@ def registration_progress(context):
         'program': program,
         'extra_steps': extra_steps,
         'is_module_page': True,
+        'mainpage_url': mainpage_url,
     }
