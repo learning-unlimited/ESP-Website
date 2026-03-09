@@ -11,7 +11,7 @@ user_is_staff = user_passes_test(lambda u: u.is_authenticated and u.is_staff and
 @user_is_staff
 """
 
-def autocomplete_wrapper(function, data, is_staff, prog, **kwargs):
+def autocomplete_wrapper(function, data, is_staff, **kwargs):
     if is_staff:
         return function(data, **kwargs)
     else:
@@ -50,12 +50,12 @@ def ajax_autocomplete(request):
     except (Program.DoesNotExist, ValueError):
         prog_obj = None
 
-    kwargs = {'grade': grade, 'last_name_range': last_name_range}
+    kwargs = {'grade': grade, 'last_name_range': last_name_range, 'prog': prog_obj}
 
     if hasattr(Model.objects, ajax_func):
-        query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff, prog_obj, **kwargs)
+        query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff, **kwargs)
     else:
-        query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff, prog_obj, **kwargs)
+        query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff, **kwargs)
 
     output = list(query_set[:limit])
     output2 = []

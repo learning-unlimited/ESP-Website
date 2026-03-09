@@ -37,6 +37,7 @@ from datetime import datetime, timedelta, date
 from pytz import country_names
 import json
 import logging
+import string
 
 logger = logging.getLogger(__name__)
 import functools
@@ -244,15 +245,23 @@ class BaseESPUser(object):
                 pass
 
         if last_name_range:
-            # last_name_range format: "A-G"
+            # last_name_range format: "A-G", "H-N", "O-Z" (case-insensitive)
             parts = last_name_range.split('-')
             if len(parts) == 2:
-                start_char = parts[0].strip()
-                end_char = parts[1].strip()
-                # We want to include names starting with end_char, so we use a trick or just range.
-                # String range "A" to "G" includes "G" but stops before "H".
-                # Django's __range is inclusive.
-                query_set = query_set.filter(last_name__range=(start_char, end_char + '\uffff'))
+                start_char = (parts[0].strip() or 'A')[:1].upper()
+                end_char = (parts[1].strip() or 'Z')[:1].upper()
+                if start_char.isalpha() and end_char.isalpha():
+                    try:
+                        idx_start = string.ascii_uppercase.index(start_char)
+                        idx_end = string.ascii_uppercase.index(end_char)
+                        if idx_start <= idx_end:
+                            letters = list(string.ascii_uppercase[idx_start:idx_end + 1])
+                            q_last = Q()
+                            for letter in letters:
+                                q_last = q_last | Q(last_name__istartswith=letter)
+                            query_set = query_set.filter(q_last)
+                    except ValueError:
+                        pass
 
         if QObject:
             query_set = query_set.filter(QObject)
