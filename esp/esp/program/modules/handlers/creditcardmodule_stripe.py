@@ -87,13 +87,53 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return donate_type
 
     def isCompleted(self):
-        """ Whether the user has paid for this program or its parent program. """
+        """ Whether the user has fully paid for this program. """
         if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user
-        return IndividualAccountingController(self.program, user).has_paid()
+        return IndividualAccountingController(self.program, user).has_paid(in_full=True)
     have_paid = isCompleted
+
+    def isRequired(self):
+        """Conditionally require credit card payment when student selects extra cost items.
+
+        Returns True if:
+        - An admin explicitly marked the module as required, OR
+        - The 'creditcard_required_for_extracosts' tag is set for the program,
+          the student has selected matching extra cost items, AND has an
+          outstanding balance >= $0.50.
+
+        The tag value controls which items trigger the requirement:
+        - '*' means any extra cost item (excludes program admission)
+        - 'Meal Ticket,T-Shirt' means only those specific items
+        """
+        if super(CreditCardModule_Stripe, self).isRequired():
+            return True
+        return self._extracost_requires_payment()
+
+    def _extracost_requires_payment(self):
+        """Check if the student selected extra cost items that require CC payment."""
+        from esp.accounting.models import Transfer
+        tag_value = Tag.getTag('creditcard_required_for_extracosts', self.program, default='')
+        if not tag_value:
+            return False
+        request = get_current_request()
+        user = getattr(self, 'user', request.user if request else None)
+        if not user or not user.is_authenticated:
+            return False
+        iac = IndividualAccountingController(self.program, user)
+        if iac.amount_due() < Decimal('0.50'):
+            return False
+        pac = ProgramAccountingController(self.program)
+        extra_lits = pac.get_lineitemtypes(include_donations=False).exclude(
+            text__in=pac.admission_items)
+        if tag_value.strip() != '*':
+            item_names = [name.strip() for name in tag_value.split(',')]
+            extra_lits = extra_lits.filter(text__in=item_names)
+        return Transfer.objects.filter(
+            user=user, line_item__in=extra_lits,
+        ).exists()
 
     def students(self, QObject = False):
         #   This query represented students who have a payment transfer from the outside
@@ -142,9 +182,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   are "finished" registering for the program.  (In other words, they
         #   should be registered for at least one class, and filled out other
         #   required forms, before paying by credit card.)
+        #   Skip the credit card module itself to avoid circular blocking (#3501).
         modules = prog.getModules(request.user, tl)
         completedAll = True
         for module in modules:
+            if module.id == self.id:
+                continue
             if not module.isCompleted() and module.isRequired():
                 completedAll = False
         if not completedAll and not request.user.isAdmin(prog):
