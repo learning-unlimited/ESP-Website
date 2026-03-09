@@ -87,9 +87,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return donate_type
 
     def isCompleted(self, user=None):
-        """ Whether the user has paid for this program or its parent program. """
+        """ Whether the user has fully paid for this program. """
         user = self._resolve_user(user)
-        return IndividualAccountingController(self.program, user).has_paid()
+        return IndividualAccountingController(self.program, user).has_paid(in_full=True)
     have_paid = isCompleted
 
     def students(self, QObject = False):
@@ -142,6 +142,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         modules = prog.getModules(request.user, tl)
         completedAll = True
         for module in modules:
+            if module.id == self.id:
+                continue
             if not module.isCompleted(request.user) and module.isRequired():
                 completedAll = False
         if not completedAll and not request.user.isAdmin(prog):
