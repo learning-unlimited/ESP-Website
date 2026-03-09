@@ -1,13 +1,10 @@
 """Various utility functions."""
 
-from __future__ import absolute_import
-from __future__ import division
 from datetime import timedelta, datetime
 from timeit import default_timer
 from functools import wraps
 
 from esp.program.controllers.autoscheduler import config
-import six
 
 
 TIMES = {}
@@ -101,7 +98,7 @@ def override(dicts):
     in key has highest precedence."""
     output = {}
     for d in dicts:
-        for k, v in six.iteritems(d):
+        for k, v in d.items():
             output[k] = v
     return output
 

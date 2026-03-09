@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -137,7 +136,15 @@ class AdmissionsDashboard(ProgramModuleObj):
         if request.method == 'POST':
             updated = []
 
-            changes = json.loads(request.POST['changes'])
+            changes_data = request.POST.get('changes')
+            if not changes_data:
+                return {'success': 0, 'error': 'Missing changes data'}
+
+            try:
+                changes = json.loads(changes_data)
+            except (ValueError, TypeError):
+                return {'success': 0, 'error': 'Invalid JSON data'}
+
             for app_id, change in changes.items():
                 try:
                     classapp = StudentClassApp.objects.get(id=app_id)

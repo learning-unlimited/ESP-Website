@@ -1,10 +1,22 @@
-name: "Lint and Unit Tests"
+name: "Unit Tests"
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.gitignore'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitattributes'
+      - '.gitignore'
   workflow_dispatch:
 
 concurrency:
@@ -14,14 +26,19 @@ concurrency:
 permissions:
   contents: read
 
+
 jobs:
-  build:
-    name: ${{ matrix.ci_job }} (Python ${{ matrix.python-version }})
+  test:
+    name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7]
     services:
       postgres:
-        image: postgres:10.8
+        image: postgres:14
         env:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpassword
@@ -34,50 +51,57 @@ jobs:
         image: memcached:alpine
         ports:
           - 11211:11211
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [3.7]
-        ci_job: ["lint", "test"]
     env:
       DJANGO_SETTINGS_MODULE: esp.settings
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: deadsnakes/action@v3.2.0
+      uses: deadsnakes/action@e640ac8743173a67cca4d7d77cd837e514bf98e8  # v3.2.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache pip packages
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
+    - name: Get apt packages list
+      id: apt-action
+      run: |
+        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+        echo "packages=$PKGS" >> $GITHUB_OUTPUT
+    - name: Cache apt packages
+      uses: Eeems-Org/apt-cache-action@v1
+      with:
+        packages: ${{ steps.apt-action.outputs.packages }}
     - name: Prepare for Installing Dependencies
       run: deploy/ci/before_install
       env:
         PYTHON_VERSION: ${{ matrix.python-version }}
-    - name: Install Dependencies for ${{ matrix.ci_job }}
+    - name: Install Dependencies
       env:
-        CI_JOB: ${{ matrix.ci_job }}
+        CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/install
-    - name: Prepare for ${{ matrix.ci_job }}
+    - name: Prepare for Test
       env:
-        CI_JOB: ${{ matrix.ci_job }}
+        CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/before_script
-    - name: Run ${{ matrix.ci_job }}
+    - name: Run Tests
       env:
-        CI_JOB: ${{ matrix.ci_job }}
+        CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
+        # Match PostgreSQL service credentials so connection uses testuser, not runner user (e.g. root)
+        DATABASE_USER: testuser
+        DATABASE_PASSWORD: testpassword
+        DATABASE_NAME: test_django
       run: deploy/ci/script
     - name: Upload Coverage to Codecov
-      if: ${{ matrix.ci_job == 'test' }}
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de  # v5
       with:
         fail_ci_if_error: true
         verbose: true
