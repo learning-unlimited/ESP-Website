@@ -70,6 +70,8 @@ from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
+from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 
 # Create your models here.
 @python_2_unicode_compatible
@@ -262,8 +264,8 @@ class Program(models.Model, CustomFormsLinkModel):
 
     url = models.CharField(max_length=80, unique=True)
     name = models.CharField(max_length=80)
-    grade_min = models.IntegerField()
-    grade_max = models.IntegerField()
+    grade_min = models.IntegerField(validators=[MinValueValidator(0)])
+    grade_max = models.IntegerField(validators=[MinValueValidator(0)])
     # director contact email address used for from field and display
     director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
                                        validators=[validators.RegexValidator(r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.')))],
@@ -274,7 +276,7 @@ class Program(models.Model, CustomFormsLinkModel):
                                                            'You can create and manage your email redirects <a href="/manage/redirects/">here</a>.'))
     director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
     director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
-    program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
+    program_size_max = models.IntegerField(null=True, validators=[MinValueValidator(0)], help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule,
                          help_text='The set of enabled program functionalities. See ' +
@@ -289,7 +291,14 @@ class Program(models.Model, CustomFormsLinkModel):
                     help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/catsflagsrecs/flagtypes">here</a>.')
 
     documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+    def clean(self):
+        super().clean()
 
+        if self.grade_min is not None and self.grade_max is not None:
+            if self.grade_min > self.grade_max:
+                raise ValidationError({
+                    "grade_min": "grade_min cannot be greater than grade_max"
+                })
     class Meta:
         app_label = 'program'
         db_table = 'program_program'
