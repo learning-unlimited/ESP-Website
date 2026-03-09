@@ -725,15 +725,15 @@ def meets_any_deadline(extensions=None):
     """
     if extensions is None:
         extensions = []
-        
+
     _tl_prefixes = ('Student', 'Teacher', 'Volunteer')
     valid_perms = Permission.deadline_types
     invalid_exts = []
-    
+
     for ext in extensions:
         if not any((prefix + ext) in valid_perms for prefix in _tl_prefixes):
             invalid_exts.append(ext)
-            
+
     if invalid_exts:
         raise ImproperlyConfigured(
             "@meets_deadline(...) / @meets_any_deadline(...) use an invalid permission extension. "
@@ -744,7 +744,7 @@ def meets_any_deadline(extensions=None):
                                        if p.startswith(_tl_prefixes))),
             )
         )
-        
+
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             for ext in extensions:
