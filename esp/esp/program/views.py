@@ -78,7 +78,7 @@ from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserA
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
-from esp.dbmail.models import MessageRequest, TextOfEmail, PlainRedirect
+from esp.dbmail.models import MessageRequest, TextOfEmail, PlainRedirect, HeldEmail
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
@@ -976,8 +976,87 @@ def emails(request):
     context['start_date'] = start_date
 
     context['requests'] = get_email_data(start_date)
+    context['pending_held_count'] = HeldEmail.objects.filter(status=HeldEmail.PENDING).count()
 
     return render_to_response('admin/emails.html', request, context)
+
+@admin_required
+def held_emails(request):
+    """
+    View for admins to moderate held emails (approve/reject).
+    Emails are held when an EmailList has admin_hold=True.
+    """
+    context = {}
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        held_ids = request.POST.getlist('held_ids')
+
+        if action == 'approve' and held_ids:
+            approved_count = 0
+            errors = []
+            for held_id in held_ids:
+                try:
+                    held = HeldEmail.objects.get(id=held_id, status=HeldEmail.PENDING)
+                    held.approve(request.user)
+                    approved_count += 1
+                except HeldEmail.DoesNotExist:
+                    pass
+                except Exception as e:
+                    errors.append('Email %s: %s' % (held_id, str(e)))
+            context['approved_count'] = approved_count
+            if errors:
+                context['errors'] = errors
+
+        elif action == 'reject' and held_ids:
+            reason = request.POST.get('rejection_reason', '')
+            rejected_count = 0
+            for held_id in held_ids:
+                try:
+                    held = HeldEmail.objects.get(id=held_id, status=HeldEmail.PENDING)
+                    held.reject(request.user, reason=reason)
+                    rejected_count += 1
+                except HeldEmail.DoesNotExist:
+                    pass
+            context['rejected_count'] = rejected_count
+
+        elif action == 'approve_single':
+            held_id = request.POST.get('held_id')
+            try:
+                held = HeldEmail.objects.get(id=held_id, status=HeldEmail.PENDING)
+                held.approve(request.user)
+                context['approved_count'] = 1
+            except HeldEmail.DoesNotExist:
+                context['errors'] = ['Email not found or already moderated.']
+            except Exception as e:
+                context['errors'] = [str(e)]
+
+        elif action == 'reject_single':
+            held_id = request.POST.get('held_id')
+            reason = request.POST.get('rejection_reason', '')
+            try:
+                held = HeldEmail.objects.get(id=held_id, status=HeldEmail.PENDING)
+                held.reject(request.user, reason=reason)
+                context['rejected_count'] = 1
+            except HeldEmail.DoesNotExist:
+                context['errors'] = ['Email not found or already moderated.']
+
+    status_filter = request.GET.get('status', 'pending')
+    if status_filter == 'all':
+        held_emails_qs = HeldEmail.objects.all()
+    elif status_filter in ('pending', 'approved', 'rejected'):
+        held_emails_qs = HeldEmail.objects.filter(status=status_filter)
+    else:
+        held_emails_qs = HeldEmail.objects.filter(status=HeldEmail.PENDING)
+
+    context['held_emails'] = held_emails_qs[:200]
+    context['status_filter'] = status_filter
+    context['pending_count'] = HeldEmail.objects.filter(status=HeldEmail.PENDING).count()
+    context['approved_count_total'] = HeldEmail.objects.filter(status=HeldEmail.APPROVED).count()
+    context['rejected_count_total'] = HeldEmail.objects.filter(status=HeldEmail.REJECTED).count()
+    context['total_count'] = context['pending_count'] + context['approved_count_total'] + context['rejected_count_total']
+
+    return render_to_response('admin/held_emails.html', request, context)
 
 @admin_required
 def tags(request, section=""):

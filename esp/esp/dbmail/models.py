@@ -33,11 +33,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import hashlib
 import json
 import logging
 logger = logging.getLogger(__name__)
+import os
 import pickle
+import random
 import re
+import socket
 import sys
 
 from django.db import models, transaction
@@ -614,6 +618,163 @@ class EmailList(models.Model):
 
     def __str__(self):
         return '%s (%s)' % (self.description, self.regex)
+
+class HeldEmail(models.Model):
+    """
+    An email held for admin moderation before delivery.
+    Created by the mailgate when an EmailList has admin_hold=True.
+    """
+    PENDING = 'pending'
+    APPROVED = 'approved'
+    REJECTED = 'rejected'
+    STATUS_CHOICES = (
+        (PENDING, 'Pending'),
+        (APPROVED, 'Approved'),
+        (REJECTED, 'Rejected'),
+    )
+
+    email_list = models.ForeignKey(
+        EmailList, on_delete=models.SET_NULL, null=True, blank=True,
+        help_text="The EmailList rule that held this email."
+    )
+    local_part = models.CharField(max_length=512,
+        help_text="The local part of the address (e.g. 'M100-students').")
+    raw_message = models.BinaryField(
+        help_text="Raw RFC 2822 email message bytes (preserves MIME structure and attachments)."
+    )
+    recipients_json = models.TextField(
+        help_text="JSON-serialized list of recipient email addresses."
+    )
+    handler_class = models.CharField(max_length=128,
+        help_text="Handler class name (e.g. 'ClassList', 'SectionList').")
+    subject_prefix = models.CharField(max_length=64, blank=True, default='')
+    from_email_override = models.CharField(max_length=512, blank=True, default='')
+    cc_all = models.BooleanField(default=False)
+    preserve_headers = models.BooleanField(default=False)
+    emailcode = models.CharField(max_length=128, blank=True, default='',
+        help_text="The emailcode from the handler (e.g. class code for subject prefix).")
+    sender = models.CharField(max_length=512, blank=True, default='',
+        help_text="Original From header value.")
+    subject = models.CharField(max_length=1024, blank=True, default='',
+        help_text="Original Subject header value.")
+    status = models.CharField(
+        max_length=10, choices=STATUS_CHOICES, default=PENDING, db_index=True
+    )
+    held_at = models.DateTimeField(auto_now_add=True)
+    moderated_at = models.DateTimeField(blank=True, null=True)
+    moderated_by = models.ForeignKey(
+        'users.ESPUser', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='moderated_emails',
+        help_text="Admin who approved or rejected this email."
+    )
+    rejection_reason = models.TextField(blank=True, default='',
+        help_text="Optional reason for rejection.")
+
+    class Meta:
+        ordering = ['-held_at']
+        verbose_name = 'Held email'
+        verbose_name_plural = 'Held emails'
+
+    def __str__(self):
+        return '[%s] %s -> %s (%s)' % (
+            self.status, self.sender or '?', self.local_part,
+            self.held_at.strftime('%Y-%m-%d %H:%M') if self.held_at else '?'
+        )
+
+    def get_recipients(self):
+        return json.loads(self.recipients_json)
+
+    def get_message_object(self):
+        import email as email_mod
+        return email_mod.message_from_bytes(bytes(self.raw_message))
+
+    def get_body_preview(self):
+        """Extract a text preview of the email body for admin display."""
+        msg = self.get_message_object()
+        if msg.is_multipart():
+            for part in msg.walk():
+                content_type = part.get_content_type()
+                if content_type == 'text/plain':
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        return payload.decode('utf-8', errors='replace')[:2000]
+                elif content_type == 'text/html':
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        return strip_tags(payload.decode('utf-8', errors='replace'))[:2000]
+            return '(multipart message - no text preview available)'
+        else:
+            payload = msg.get_payload(decode=True)
+            if payload:
+                return payload.decode('utf-8', errors='replace')[:2000]
+        return '(empty message)'
+
+    def approve(self, admin_user):
+        """Mark as approved, record who approved it, and send the email."""
+        self.status = self.APPROVED
+        self.moderated_at = datetime.now()
+        self.moderated_by = admin_user
+        self.save()
+        self._send()
+
+    def reject(self, admin_user, reason=''):
+        """Mark as rejected."""
+        self.status = self.REJECTED
+        self.moderated_at = datetime.now()
+        self.moderated_by = admin_user
+        self.rejection_reason = reason
+        self.save()
+
+    def _send(self):
+        """
+        Replay the original email delivery using the stored data.
+        Mirrors the logic in mailgate.py lines 84-119.
+        """
+        MAIL_PATH = '/usr/sbin/sendmail'
+
+        message = self.get_message_object()
+        recipients = self.get_recipients()
+
+        if not recipients:
+            logger.warning("HeldEmail %d approved but has no recipients", self.pk)
+            return
+
+        if not self.preserve_headers:
+            del message['to']
+            del message['cc']
+            message['X-ESP-SENDER'] = 'version 2'
+
+            subj = message.get('subject', '')
+            del message['subject']
+            if self.emailcode:
+                subj = '[%s] %s' % (self.emailcode, subj)
+            if self.subject_prefix:
+                subj = '[%s] %s' % (self.subject_prefix, subj)
+            message['Subject'] = subj
+
+            if self.from_email_override:
+                del message['from']
+                message['From'] = self.from_email_override
+
+            del message['Message-ID']
+            host = socket.gethostname()
+            message['Message-ID'] = '<%s@%s>' % (
+                hashlib.sha1(str(random.random()).encode()).hexdigest(), host
+            )
+
+        def _pipe_to_sendmail(msg_str):
+            p = os.popen("%s -i -t" % MAIL_PATH, 'w')
+            p.write(msg_str)
+
+        if self.cc_all:
+            del message['To']
+            message['To'] = ', '.join(recipients)
+            _pipe_to_sendmail(str(message))
+        else:
+            for recipient in recipients:
+                del message['To']
+                message['To'] = recipient
+                _pipe_to_sendmail(str(message))
 
 class PlainRedirect(models.Model):
     """
