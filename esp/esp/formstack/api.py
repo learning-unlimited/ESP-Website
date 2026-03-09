@@ -80,19 +80,25 @@ class Formstack(object):
         args['id'] = id
         return self.__request('edit', args)
 
-    def delete(self, id, args = {}):
+    def delete(self, id, args=None):
+        if args is None:
+            args = {}
         """Deletes an existing submission."""
 
         args['id'] = id
         return self.__request('delete', args)
 
-    def create_field(self, form, args = {}):
+    def create_field(self, form, args=None):
+        if args is None:
+            args = {}
         """ Creates a field."""
 
         args['form'] = form
         return self.__request('createField', args)
 
-    def __request(self, method, args = {}):
+    def __request(self, method, args=None):
+        if args is None:
+            args = {}
         """ Makes a Formstack API call and returns the response as an array."""
 
         args['api_key'] = self.__api_key
