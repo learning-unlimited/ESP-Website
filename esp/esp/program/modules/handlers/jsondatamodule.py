@@ -512,6 +512,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 cls['class_info'] = c.class_info
                 cls['class_style'] = c.class_style
                 cls['difficulty'] = c.hardness_rating
+                cls['difficulty_description'] = Tag.get_difficulty_description(c.hardness_rating)
                 cls['prereqs'] = c.prereqs
             cls['emailcode'] = c.emailcode()
             if c.duration:
@@ -555,6 +556,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'classes': classes, 'teachers': teachers, 'moderators': moderators}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
+    class_subjects.cached_function.depend_on_model('tagdict.Tag')
 
     @aux_call
     @json_response({
@@ -666,6 +668,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'class_info': cls.class_info,
             'category': cls.category.category,
             'difficulty': cls.hardness_rating,
+            'difficulty_description': Tag.get_difficulty_description(cls.hardness_rating),
             'prereqs': cls.prereqs,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
@@ -788,6 +791,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'category': cls.category.category,
             'class_style': cls.class_style,
             'difficulty': cls.hardness_rating,
+            'difficulty_description': Tag.get_difficulty_description(cls.hardness_rating),
             'prereqs': cls.prereqs,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
