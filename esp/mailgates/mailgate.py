@@ -52,8 +52,9 @@ DEBUG=False
 user = "UNKNOWN USER"
 
 def send_mail(message):
-    p = os.popen("%s -i -t" % MAIL_PATH, 'w')
-    p.write(message)
+    import subprocess
+    p = subprocess.Popen([MAIL_PATH, "-i", "-t"], stdin=subprocess.PIPE, universal_newlines=True)
+    p.communicate(message)
 
 try:
     user = os.environ['LOCAL_PART']
