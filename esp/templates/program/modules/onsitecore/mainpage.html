@@ -123,7 +123,7 @@
             {% if not module.useTemplate %}
               {% autoescape off %}{{ module.makeButtonLink }}{% endautoescape %}
             {% else %}
-              <em>{{ module.module.link_title }} (below)</em>
+              <em>{{ module.module.get_effective_link_title }} (below)</em>
             {% endif %}
             {% endif %}
         {% endif %}

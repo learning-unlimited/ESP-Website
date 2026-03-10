@@ -19,8 +19,8 @@
     title="Not Done" alt="Not Done"{% endif %} /><br />
 </a>
 {% if module.useTemplate %}
-<a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
-    {{ module.module.link_title }} 
+<a href="#module-{{ module.id }}" title="{{ module.module.get_effective_link_title }}">
+    {{ module.module.get_effective_link_title }} 
     </a> <em>(below)</em>
 {% else %}
     {% autoescape off %}{{ module.makeLink }}{% endautoescape %}

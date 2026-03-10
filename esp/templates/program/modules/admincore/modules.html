@@ -67,7 +67,7 @@
                 {% for mod in learn_modules.required %}
                     <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="glyphicon glyphicon-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="glyphicon glyphicon-ban-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
-                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
+                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.get_effective_link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
                 {% endfor %}
@@ -79,7 +79,7 @@
                 {% for mod in learn_modules.not_required %}
                     <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="glyphicon glyphicon-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="glyphicon glyphicon-ban-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
-                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
+                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.get_effective_link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
                 {% endfor %}
@@ -98,7 +98,7 @@
                 {% for mod in teach_modules.required %}
                     <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="glyphicon glyphicon-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="glyphicon glyphicon-ban-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
-                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
+                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.get_effective_link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
                 {% endfor %}
@@ -110,7 +110,7 @@
                 {% for mod in teach_modules.not_required %}
                     <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="glyphicon glyphicon-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="glyphicon glyphicon-ban-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
-                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
+                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.get_effective_link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
                     </li>
                 {% endfor %}
