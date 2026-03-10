@@ -1,5 +1,5 @@
-{% extends "main.html" %} {% block title %}{{program.niceName}} Management{%
-endblock %} {% block stylesheets %} {{ block.super }}
+{% extends "main.html" %}
+{% block title %}{{ program.niceName }} Management{% endblock title %} {% block stylesheets %} {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 
 <style type="text/css">
@@ -14,7 +14,8 @@ endblock %} {% block stylesheets %} {{ block.super }}
     width: calc(100% - 10px);
   }
 </style>
-{% endblock %} {% block content %}
+{% endblock stylesheets %}
+{% block content %}
 <br />
 <div id="program_form">
   <br /><br />
@@ -114,19 +115,24 @@ endblock %} {% block stylesheets %} {{ block.super }}
   </p>
 </div>
 
-{% include "program/modules/onsitecore/returnlink.html" %} {% endblock %} {%
-block javascript %} {{ block.super }}
+{% include "program/modules/onsitecore/returnlink.html" %}
+
 <script type="text/javascript">
-  $j(function () {
-    // Override the autocomplete source to add filters
-    var $searchField = $j("#id_target_user");
-    if ($searchField.length > 0) {
-      var originalSource = $searchField.autocomplete("option", "source");
-      $searchField.autocomplete(
-        "option",
-        "source",
-        function (request, response) {
-          $j.ajax({
+  (function () {
+    var $ = window.$j || window.jQuery;
+    if (!$) return;
+    var programId = "{{ program.id }}";
+
+    $(function () {
+      var $field = $("#id_target_user");
+      var $data = $("#id_target_user_data");
+      if ($field.length === 0 || $data.length === 0) return;
+      if ($field.data("esp-rapid-checkin-filters")) return;
+      $field.data("esp-rapid-checkin-filters", true);
+
+      $field.autocomplete({
+        source: function (request, response) {
+          $.ajax({
             url: "/admin/ajax_autocomplete/",
             dataType: "json",
             data: {
@@ -134,24 +140,28 @@ block javascript %} {{ block.super }}
               model_name: "ESPUser",
               ajax_func: "ajax_autocomplete_student",
               ajax_data: request.term,
-              prog: "{{ program.id }}",
-              grade: $j("#grade_filter").val(),
-              last_name_range: $j("#last_name_filter").val(),
+              prog: programId,
+              grade: $("#grade_filter").val(),
+              last_name_range: $("#last_name_filter").val(),
+              limit: 25,
             },
             success: function (data) {
-              var output = $j.map(data.result, function (item) {
-                return {
-                  label: item.ajax_str,
-                  value: item.ajax_str,
-                  id: item.id,
-                };
-              });
-              response(output);
+              var items = (data && data.result) ? data.result : [];
+              response($.map(items, function (item) {
+                return { label: item.ajax_str, value: item.ajax_str, id: item.id };
+              }));
             },
           });
         },
-      );
-    }
-  });
+        select: function (event, ui) {
+          $data.val(ui.item.id);
+        },
+        change: function (event, ui) {
+          $data.val(ui.item ? ui.item.id : "");
+        },
+      });
+    });
+  })();
 </script>
-{% endblock %}
+{% endblock content %}
+{% block javascript %}{{ block.super }}{% endblock javascript %}
