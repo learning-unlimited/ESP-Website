@@ -3,6 +3,7 @@
 class BaseHandler(object):
 
     send = False
+    preserve_headers = False
 
     def __init__(self, handler, message):
         self.handler = handler
