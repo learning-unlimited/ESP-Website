@@ -61,7 +61,7 @@ class RandomModuleTests(ProgramFrameworkTest):
     def test_good_random_class_missing_tag(self):
         """test what happens when tag is missing entirely"""
         Tag.unSetTag('random_constraints')
-        
+
         # it should safely return a valid class
         # previously this threw JSONDecodeError/TypeError bc getTag returned None
         cls = good_random_class()
@@ -71,18 +71,18 @@ class RandomModuleTests(ProgramFrameworkTest):
         """test main view returns 200 ok"""
         request = self.factory.get('/random')
         response = main(request)
-        
+
         self.assertEqual(response.status_code, 200)
 
     def test_ajax_view(self):
         """test ajax view returns expected json keys"""
         request = self.factory.get('/random/ajax')
         response = ajax(request)
-        
+
         self.assertEqual(response.status_code, 200)
-        
+
         response_data = json.loads(response.content.decode('utf-8'))
-        
+
         # check standard json keys
         self.assertIn('title', response_data)
         self.assertIn('program', response_data)
