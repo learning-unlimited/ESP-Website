@@ -302,13 +302,13 @@ def process_refund(request):
         except stripe.error.InvalidRequestError as e:
             result['error_message'] = str(e)
             has_errors = True
-            logger.error("Stripe refund InvalidRequestError for charge %s: %s",
-                         transfer.transaction_id, str(e))
+            logger.warning("Stripe refund InvalidRequestError for charge %s: %s",
+                           transfer.transaction_id, str(e))
         except stripe.error.StripeError as e:
             result['error_message'] = str(e)
             has_errors = True
-            logger.error("Stripe refund error for charge %s: %s",
-                         transfer.transaction_id, str(e))
+            logger.warning("Stripe refund error for charge %s: %s",
+                           transfer.transaction_id, str(e))
 
         refund_results.append(result)
 
