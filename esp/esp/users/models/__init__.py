@@ -409,8 +409,9 @@ class BaseESPUser(object):
             from django.utils.encoding import force_bytes
             uid = urlsafe_base64_encode(force_bytes(otheruser.pk))
             token = default_token_generator.make_token(otheruser)
-            return 'https://%s/myesp/resetpassword/%s/%s/' % \
-                         (settings.DEFAULT_HOST, uid, token)
+            scheme = 'http' if getattr(settings, 'DEBUG', False) else 'https'
+            return '%s://%s/myesp/resetpassword/%s/%s/' % \
+                         (scheme, settings.DEFAULT_HOST, uid, token)
         elif key == 'recover_query':
             from django.contrib.auth.tokens import default_token_generator
             from django.utils.http import urlsafe_base64_encode
