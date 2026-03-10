@@ -137,7 +137,7 @@ def average(lst):
         for l in lst:
             sum += float(l)
         return str(round(sum // len(lst), 2))
-    except:
+    except (ValueError, TypeError):
         return 'N/A'
 
 @register.filter
@@ -153,7 +153,7 @@ def stdev(lst):
         for l in lst:
             std_sum += abs(float(l) - mean)
         return str(round(std_sum // len(lst), 2))
-    except:
+    except (ValueError, TypeError):
         return 'N/A'
 
 @register.filter
