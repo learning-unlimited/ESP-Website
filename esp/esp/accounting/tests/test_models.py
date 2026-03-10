@@ -440,3 +440,61 @@ class IndividualAccountingControllerTest(TestCase):
         self.iac.set_finaid_params(20.0, 0)
         due = self.iac.amount_due()
         self.assertEqual(due, Decimal('30.00'))
+
+    def test_amount_refunded_zero(self):
+        """amount_refunded returns 0 when no refunds exist."""
+        self.assertEqual(self.iac.amount_refunded(), Decimal('0'))
+
+    def test_record_refund_creates_transfers(self):
+        """record_refund creates two transfers for payable and line item."""
+        self.iac.record_refund(Decimal('25.00'), 'ref_123')
+        refund_lit = self.pac.default_refund_lineitemtype()
+        transfers = Transfer.objects.filter(
+            user=self.user,
+            line_item=refund_lit,
+        )
+        self.assertEqual(transfers.count(), 2)
+
+    def test_record_refund_amount_refunded(self):
+        """amount_refunded returns correct amount after recording refund."""
+        self.iac.record_refund(Decimal('25.00'), 'ref_456')
+        self.assertEqual(self.iac.amount_refunded(), Decimal('25.00'))
+
+    def test_amount_due_increases_after_refund(self):
+        """amount_due increases after a refund is recorded."""
+        self.iac.ensure_required_transfers()
+        self.iac.submit_payment(Decimal('50.00'))
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+        self.iac.record_refund(Decimal('20.00'), 'ref_789')
+        self.assertEqual(self.iac.amount_due(), Decimal('20.00'))
+
+    def test_classify_transfer_refund(self):
+        """classify_transfer correctly identifies refund transfers."""
+        self.iac.record_refund(Decimal('10.00'), 'ref_classify')
+        refund_lit = self.pac.default_refund_lineitemtype()
+        transfer = Transfer.objects.filter(
+            user=self.user,
+            line_item=refund_lit,
+        ).first()
+        self.assertEqual(self.iac.classify_transfer(transfer), 'Refund')
+
+    def test_link_paid_transfers_after_refund(self):
+        """submit_payment works correctly after a partial refund."""
+        self.iac.ensure_required_transfers()
+        self.iac.submit_payment(Decimal('50.00'))
+        self.iac.record_refund(Decimal('20.00'), 'ref_link')
+        self.assertEqual(self.iac.amount_due(), Decimal('20.00'))
+        self.iac.submit_payment(Decimal('20.00'))
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+
+    def test_user_accounting_includes_refunds(self):
+        """user_accounting results include refund transfers."""
+        from esp.accounting.views import user_accounting
+        self.iac.ensure_required_transfers()
+        self.iac.submit_payment(Decimal('50.00'))
+        self.iac.record_refund(Decimal('15.00'), 'ref_acct')
+        results = user_accounting(self.user, [self.program])
+        types = [t['type'] for t in results[0]['transfers']]
+        self.assertIn('Refund', types)
+        self.assertEqual(results[0]['refunded'], Decimal('15.00'))
+

@@ -73,7 +73,7 @@ def program(request, tl, one, two, module, extra = None):
             programs = Program.objects.all()
             progs = [(program, program.dates()[-1]) for program in programs if program.program_type == one and len(program.dates()) > 0]
             two = sorted(progs, key=lambda x: x[1], reverse = True)[0][0].program_instance
-        except:
+        except (IndexError, TypeError):
             raise Http404("No current program of the type '" + one + "'.")
     try:
         prog = Program.by_prog_inst(one, two)
@@ -233,8 +233,13 @@ def registration_redirect(request):
         userrole['name'] = 'Teacher'
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
-        # first check for which programs they can still create a class
-        progs = list(set(Permission.program_by_perm(user, 'Teacher/Classes/Create/Class')) | set(Permission.program_by_perm(user, 'Teacher/Classes/Create/OpenClass')))
+        # check for programs where the teacher has any of the following permissions
+        teacher_perms = ['Teacher/Classes/Create/Class', 'Teacher/Classes/Create/OpenClass', 'Teacher/Availability']
+        progs_set = set()
+        for perm in teacher_perms:
+            progs_set |= set(Permission.program_by_perm(user, perm))
+        progs = list(progs_set)
+
         # then check for which programs they have already registered a class
         for prog in user.getTaughtPrograms():
             # only include the program if it hasn't finished yet
@@ -249,9 +254,14 @@ def registration_redirect(request):
         userrole['name'] = 'Student'
         userrole['base'] = 'learn'
         userrole['reg'] = 'studentreg'
-        # first check for which program they can still register for a class
+        # check for programs where the student has any of the following permissions
+        student_perms = ['Student/Classes', 'Student/PhaseZero', 'Student/Applications']
         user_grade = user.getGrade()
-        progs = list(Permission.program_by_perm(user, 'Student/Classes').filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+        progs_set = set()
+        for perm in student_perms:
+            progs_set |= set(Permission.program_by_perm(user, perm).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+        progs = list(progs_set)
+
         # then check for which programs they have already registered for a class
         for prog in user.getLearntPrograms():
             # only include the program if it hasn't finished yet
