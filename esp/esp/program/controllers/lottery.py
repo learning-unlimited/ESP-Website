@@ -536,8 +536,6 @@ class LotteryAssignmentController(object):
         interest_matches = self.student_sections * self.interest
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
-        with numpy.errstate(divide=np_errstate, invalid=np_errstate):
-            interest_fractions = numpy.nan_to_num(interest_assigned.astype(float) / interest_requested)
 
         if self.effective_priority_limit > 1:
             for i in range(1, self.effective_priority_limit+1):
