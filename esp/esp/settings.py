@@ -52,6 +52,14 @@ from .django_settings import *
 # Import system-specific settings
 from .local_settings import *
 
+# Allow env to override DB settings (CI sets these to match the PostgreSQL service)
+if os.environ.get('DATABASE_USER'):
+    DATABASE_USER = os.environ.get('DATABASE_USER')
+if os.environ.get('DATABASE_PASSWORD'):
+    DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD')
+if os.environ.get('DATABASE_NAME'):
+    DATABASE_NAME = os.environ.get('DATABASE_NAME')
+
 # Preserve the pre-Django-3.2 AutoField behaviour to silence models.W042
 # warnings. Explicitly locking this in prevents unintended schema changes if
 # Django's default evolves further. Revisit when migrating to BigAutoField
@@ -67,17 +75,17 @@ TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 if len(DATABASES['default']['USER']) == 0:
     try:
         DATABASES['default']['USER'] = DATABASE_USER
-    except:
+    except NameError:
         raise Exception("You need to supply either DATABASES['default']['USER'] or DATABASE_USER in database_settings.py")
 if len(DATABASES['default']['PASSWORD']) == 0:
     try:
         DATABASES['default']['PASSWORD'] = DATABASE_PASSWORD
-    except:
+    except NameError:
         raise Exception("You need to supply either DATABASES['default']['PASSWORD'] or DATABASE_PASSWORD in database_settings.py")
 if len(DATABASES['default']['NAME']) == 0:
     try:
         DATABASES['default']['NAME'] = DATABASE_NAME
-    except:
+    except NameError:
         raise Exception("You need to supply either DATABASES['default']['NAME'] or DATABASE_NAME in local_settings.py")
 
 SERVER_EMAIL = 'server@%s' % EMAIL_HOST_SENDER
@@ -246,7 +254,6 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 
 # change csrf cookie name from default to prevent collisions with misbehaving sites
 # that set a cookie on the top-level domain
-# NOTE: don't change this value; it's hard coded into various JavaScript files
 CSRF_COOKIE_NAME = 'esp_csrftoken'
 
 if SENTRY_DSN:
@@ -279,4 +286,3 @@ if SENTRY_DSN:
         release=_release,
         send_default_pii=False,
     )
-

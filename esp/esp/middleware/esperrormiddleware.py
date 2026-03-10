@@ -244,11 +244,10 @@ class ESPErrorMiddleware(MiddlewareMixin):
             # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
             #   TEMPLATE in main?
             context = RequestContext(request, context).flatten()
-        except:
+        except BaseException:
             # well, we couldn't, but at least display something
             # (actually it will immediately fail on main because someone
-            # removed the safe version of the template and
-            # miniblog_for_user doesn't silently fail but best not to put
+            # removed the safe version of the template but best not to put
             # in ugly hacks and make random variables just happen to work.)
             pass
         # All error templates now extend error_base.html, which provides
