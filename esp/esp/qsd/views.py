@@ -159,7 +159,7 @@ def qsd(request, url):
             if action == 'read':
                 raise Http404('This page does not exist.')
             else:
-                raise Http403('Sorry, you can not modify <tt>%s</tt>.' % request.path)
+                raise Http403('Sorry, you can not modify <tt>%s</tt>.' % html_escape(request.path))
 
     if action == 'create':
         action = 'edit'
