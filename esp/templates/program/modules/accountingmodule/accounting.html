@@ -60,7 +60,7 @@ table {
         <td>{{ transfer.type }}</td>
         <td>{{ transfer.transfer.line_item }}</td>
         <td>{% if transfer.transfer.line_item.for_finaid %}&#10003;{% endif %}</td>
-        <td style="text-align:right;">{% if transfer.type == "Payment" %}-{% endif %}${{ transfer.transfer.amount|floatformat:"2" }}</td>
+        <td style="text-align:right;">{% if transfer.type == "Payment" or transfer.type == "Refund" %}-{% endif %}${{ transfer.transfer.amount|floatformat:"2" }}</td>
     </tr>
 {% endfor %}
 </table>
@@ -129,6 +129,13 @@ table {
         <td style="text-align:right;"><em>Total Paid</em></td>
         <td style="text-align:right;"><em>${{ result.paid|floatformat:"2" }}</em></td>
     </tr>
+    {% if result.refunded > 0 %}
+    <tr>
+        <td style="border-top: none;"></td>
+        <td style="text-align:right;"><em>Total Refunded</em></td>
+        <td style="text-align:right;"><em>${{ result.refunded|floatformat:"2" }}</em></td>
+    </tr>
+    {% endif %}
     <tr>
         <td style="border-top: none;"></td>
         <td style="text-align:right;"><strong>Balance</strong></td>
