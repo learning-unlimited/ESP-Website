@@ -11,7 +11,7 @@ ignore = E,F,W
 #   W601: `has_key` instead of `in`
 #   W603: <> instead of !=
 #   W604: backticks instead of `repr`
-select = E10,F82,F831,W191,W29,W601,W603,W604
+select = E10,E11,F401,F82,F811,F831,F841,W191,W29,W601,W603,W604
 
 # Errors we'd like to turn on sometime soon, but which still require some
 # cleanup first:
@@ -22,4 +22,10 @@ select = E10,F82,F831,W191,W29,W601,W603,W604
 
 # Ignore /env, since that's where we by default put the virtualenv, which has
 # lots of code that's not ours.  Also exclude .git, for speed.
-exclude = .git,env
+exclude = .git,__pycache__,env,useful_scripts,seltests
+
+per-file-ignores =
+    tests/*:F401,F811,F841
+    **/test_*.py:F401,F811,F841
+    tests.py:F401,F811,F841
+    **/tests.py:F401,F811,F841
