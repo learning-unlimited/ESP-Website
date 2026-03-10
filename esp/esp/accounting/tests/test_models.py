@@ -487,3 +487,14 @@ class IndividualAccountingControllerTest(TestCase):
         self.iac.submit_payment(Decimal('20.00'))
         self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
 
+    def test_user_accounting_includes_refunds(self):
+        """user_accounting results include refund transfers."""
+        from esp.accounting.views import user_accounting
+        self.iac.ensure_required_transfers()
+        self.iac.submit_payment(Decimal('50.00'))
+        self.iac.record_refund(Decimal('15.00'), 'ref_acct')
+        results = user_accounting(self.user, [self.program])
+        types = [t['type'] for t in results[0]['transfers']]
+        self.assertIn('Refund', types)
+        self.assertEqual(results[0]['refunded'], Decimal('15.00'))
+

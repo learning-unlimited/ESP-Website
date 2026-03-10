@@ -184,6 +184,24 @@ def fmt_time(iso: str | None) -> str:
     return dt.strftime("%Y-%m-%d %H:%M UTC")
 
 
+REPO_URL = f"https://github.com/{REPO_OWNER}/{REPO_NAME}"
+
+
+def link_pr(number: int) -> str:
+    """Google Sheets HYPERLINK formula for a pull request."""
+    return f'=HYPERLINK("{REPO_URL}/pull/{number}", "#{number}")'
+
+
+def link_issue(number: int) -> str:
+    """Google Sheets HYPERLINK formula for an issue."""
+    return f'=HYPERLINK("{REPO_URL}/issues/{number}", "#{number}")'
+
+
+def link_profile(login: str) -> str:
+    """Google Sheets HYPERLINK formula for a GitHub user profile."""
+    return f'=HYPERLINK("https://github.com/{login}", "{login}")'
+
+
 def build_pr_rows(prs: list[dict]) -> list[list[str]]:
     """Build the rows for the Pull Requests sheet."""
     header = [
@@ -191,6 +209,9 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
         "Reviewers", "Linked Issues", "Labels",
     ]
     rows = [header]
+
+    # Sort by PR number descending before building rows
+    prs = sorted(prs, key=lambda p: p["number"], reverse=True)
 
     for pr in prs:
         # Combine requested + completed reviewers, deduplicated
@@ -204,14 +225,16 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
         reviewers.discard("")
 
         linked_issues = [
-            f"#{n['number']}" for n in pr["closingIssuesReferences"]["nodes"]
+            f"#{n['number']}"
+            for n in pr["closingIssuesReferences"]["nodes"]
         ]
         labels = [l["name"] for l in pr["labels"]["nodes"]]
+        author = (pr["author"] or {}).get("login", "ghost")
 
         rows.append([
-            pr["number"],
+            link_pr(pr["number"]),
             pr["title"],
-            (pr["author"] or {}).get("login", "ghost"),
+            link_profile(author),
             fmt_time(pr["createdAt"]),
             fmt_time(pr["updatedAt"]),
             ", ".join(sorted(reviewers)),
@@ -229,6 +252,9 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
         "Assigned Date", "Last Updated", "Linked PRs",
     ]
     rows = [header]
+
+    # Sort by issue number descending before building rows
+    issues = sorted(issues, key=lambda i: i["number"], reverse=True)
 
     for issue in issues:
         assignees = [a["login"] for a in issue["assignees"]["nodes"]]
@@ -253,10 +279,12 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
         if assign_dates:
             earliest_assign = fmt_time(min(assign_dates.values()))
 
+        author = (issue["author"] or {}).get("login", "ghost")
+
         rows.append([
-            issue["number"],
+            link_issue(issue["number"]),
             issue["title"],
-            (issue["author"] or {}).get("login", "ghost"),
+            link_profile(author),
             fmt_time(issue["createdAt"]),
             ", ".join(assignees),
             earliest_assign,
@@ -293,10 +321,10 @@ def build_contributor_rows(
                 activity[login]["last_activity"] = issue["updatedAt"]
 
     rows = [header]
-    for login in sorted(activity, key=lambda k: activity[k]["last_activity"], reverse=True):
+    for login in sorted(activity, key=lambda k: activity[k]["open_prs"], reverse=True):
         info = activity[login]
         rows.append([
-            login,
+            link_profile(login),
             info["open_prs"],
             info["assigned_issues"],
             fmt_time(info["last_activity"]),
@@ -336,7 +364,7 @@ def write_sheet(
         ws = spreadsheet.add_worksheet(title=title, rows=len(rows), cols=len(rows[0]))
 
     ws.clear()
-    ws.update(rows, value_input_option="RAW")
+    ws.update(rows, value_input_option="USER_ENTERED")
 
     # Bold the header row
     ws.format("1", {"textFormat": {"bold": True}})
@@ -373,23 +401,6 @@ def main() -> None:
     write_sheet(spreadsheet, "Open Pull Requests", pr_rows)
     write_sheet(spreadsheet, "Open Issues", issue_rows)
     write_sheet(spreadsheet, "Contributor Activity", contributor_rows)
-
-    # Add a metadata note to the first sheet
-    try:
-        meta_ws = spreadsheet.worksheet("Open Pull Requests")
-    except gspread.exceptions.WorksheetNotFound:
-        return
-    last_col = chr(ord("A") + len(pr_rows[0]))
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    meta_ws.update(
-        [[f"Last updated: {timestamp}"]],
-        f"{last_col}1",
-        value_input_option="RAW",
-    )
-    meta_ws.format(
-        f"{last_col}1",
-        {"textFormat": {"bold": False, "italic": True}},
-    )
 
     print("Done!")
 
