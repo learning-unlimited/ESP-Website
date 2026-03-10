@@ -65,6 +65,9 @@ class ProgramCreationForm(BetterModelForm):
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
+    grade_min = forms.IntegerField(label="grade_min" , min_value=0)
+    grade_max = forms.IntegerField(label="grade_max" , min_value=0)
+    # program_size_max = forms.IntegerField(label = 'Program Max Size', min_value = 0, help_text='Set to 0 for no cap.')
     base_cost         = forms.IntegerField(label = 'Cost of Program Admission $', min_value = 0 )
     sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None,
                                            help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
@@ -106,6 +109,8 @@ class ProgramCreationForm(BetterModelForm):
         self.fields['program_modules'].required = False
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
+        self.fields['program_size_max'].validators.append(validators.MinValueValidator(0))
+        self.fields['program_size_max'].widget.attrs['min'] = 0
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
 
     def save(self, commit=True):
@@ -147,6 +152,14 @@ class ProgramCreationForm(BetterModelForm):
                 self.add_error('term', "A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'])
             if Program.objects.filter(name=new_name).exclude(id=self.instance.id).exists():
                 self.add_error('term_friendly', "A %s program already exists with this name. Please choose a new name or change the name of the old program." % self.cleaned_data['program_type'])
+            g_min = self.cleaned_data.get('grade_min')
+            g_max = self.cleaned_data.get('grade_max')
+
+            # Only run validation if both fields are filled out
+            if g_min is not None and g_max is not None:
+                if g_min >= g_max:
+                    # Using the syntax you requested to attach the error to a specific field
+                    self.add_error('grade_max', "The maximum grade must be strictly greater than the minimum grade.")
 
     class Meta:
         fieldsets = [
