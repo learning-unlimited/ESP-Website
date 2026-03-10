@@ -44,7 +44,7 @@ from esp.utils.query_utils import nest_Q
 
 from django.db import transaction
 from django.db.models import Sum, Q
-from django.template.defaultfilters import slugify
+from django.utils.text import slugify
 
 from decimal import Decimal
 
@@ -56,6 +56,9 @@ class BaseAccountingController(object):
 
     def default_finaid_account(self):
         return Account.objects.get(name='grants')
+
+    def default_payable_account(self):
+        return Account.objects.get(name='payable')
 
 class GlobalAccountingController(BaseAccountingController):
 
@@ -75,6 +78,7 @@ class ProgramAccountingController(BaseAccountingController):
     def __init__(self, program, *args, **kwargs):
         self.program = program
         self.finaid_items = ['Financial aid grant', 'Sibling discount']
+        self.refund_items = ['Student refund']
         self.admission_items = ["Program admission", "Student payment"]
 
     @transaction.atomic
@@ -186,6 +190,15 @@ class ProgramAccountingController(BaseAccountingController):
             return lineitems[0]
         return None
 
+    def default_refund_lineitemtype(self):
+        """Get or create a line item type for refunds."""
+        lineitem, created = LineItemType.objects.get_or_create(
+            program=self.program,
+            text='Student refund',
+            defaults={'for_payments': False}
+        )
+        return lineitem
+
     def donation_lineitemtype(self):
         for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
             other_module = self.program.getModule(module_name)
@@ -196,7 +209,7 @@ class ProgramAccountingController(BaseAccountingController):
     def get_lineitemtypes_Q(self, include_donations=True, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):
         if lineitemtype_id:
             return Q(id=lineitemtype_id)
-        q_object = Q(program=self.program) & ~Q(text__in=self.finaid_items) # exclude finaid grants and sibling discounts
+        q_object = Q(program=self.program) & ~Q(text__in=self.finaid_items) & ~Q(text__in=self.refund_items)
         if not include_donations:
             # The Stripe module (or, if used, donation module) currently takes care of the donation
             # optional line item, so ignore it in the optional costs module.
@@ -263,6 +276,8 @@ class ProgramAccountingController(BaseAccountingController):
         line_item = transfer.line_item
         if line_item == self.default_payments_lineitemtype():
             return 'Payment'
+        elif line_item == self.default_refund_lineitemtype():
+            return 'Refund'
         elif line_item == self.default_finaid_lineitemtype():
             return 'Financial aid'
         elif line_item == self.default_siblingdiscount_lineitemtype():
@@ -272,6 +287,7 @@ class ProgramAccountingController(BaseAccountingController):
             return "Cost ({})".format(req_desc)
         else:
             return 'Unrelated!?'
+
 
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
@@ -384,14 +400,14 @@ class IndividualAccountingController(ProgramAccountingController):
         #   Return a list of 4-tuples: (item name, quantity, cost, options)
         result = []
         transfers = self.get_transfers(line_items)
+        seen = {}
         for transfer in transfers:
             li_name = transfer.line_item.text
-            if (li_name, transfer.amount_dec, transfer.option_id) not in [(x[0], x[2], x[3]) for x in result]:
+            key = (li_name, transfer.amount_dec, transfer.option_id)
+            if key not in seen:
+                seen[key] = len(result)
                 result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
-                result_index = len(result) - 1
-            else:
-                result_index = [(x[0], x[2], x[3]) for x in result].index((li_name, transfer.amount_dec, transfer.option_id))
-            result[result_index][1] += 1
+            result[seen[key]][1] += 1
         return result
 
     ##  Functions to turn a user's account status for a program into a string
@@ -525,10 +541,9 @@ class IndividualAccountingController(ProgramAccountingController):
         return transfers.aggregate(Sum('amount_dec'))['amount_dec__sum'] or Decimal('0')
 
     def latest_finaid_grant(self):
-        if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():
-            return FinancialAidGrant.objects.get(request__user=self.user, request__program=self.program)
-        else:
-            return None
+        return FinancialAidGrant.objects.filter(
+            request__user=self.user, request__program=self.program
+        ).order_by('-request__id').first()
 
     def amount_finaid(self, amount_siblingdiscount=None):
         amount_requested = self.amount_requested(for_finaid_only=True)
@@ -552,10 +567,12 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def amount_donation(self):
         lit = self.donation_lineitemtype()
-        if lit is not None and Transfer.objects.filter(user=self.user, line_item=lit).exists():
-            return Transfer.objects.filter(user=self.user, line_item=lit).aggregate(Sum('amount_dec'))['amount_dec__sum']
-        else:
+        if lit is None:
             return Decimal('0')
+        result = Transfer.objects.filter(user=self.user, line_item=lit).aggregate(
+            total=Sum('amount_dec')
+        )['total']
+        return result or Decimal('0')
 
     def amount_siblingdiscount(self):
         if self.program.sibling_discount and SplashInfo.getForUser(self.user, self.program).siblingdiscount:
@@ -565,11 +582,21 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def amount_paid(self):
         #   Compute sum of all transfers from outside (e.g. credit card payments) that are for this user
-        if Transfer.objects.filter(user=self.user, line_item=self.default_payments_lineitemtype(), source__isnull=True).exists():
-            amount_paid = Transfer.objects.filter(user=self.user, line_item=self.default_payments_lineitemtype(), source__isnull=True).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        result = Transfer.objects.filter(
+            user=self.user,
+            line_item=self.default_payments_lineitemtype(),
+            source__isnull=True,
+        ).aggregate(total=Sum('amount_dec'))['total']
+        return result or Decimal('0')
+
+    def amount_refunded(self):
+        refund_lineitem = self.default_refund_lineitemtype()
+        payable_account = self.default_payable_account()
+        if Transfer.objects.filter(user=self.user, line_item=refund_lineitem, source=payable_account, destination__isnull=True).exists():
+            amount_refunded = Transfer.objects.filter(user=self.user, line_item=refund_lineitem, source=payable_account, destination__isnull=True).aggregate(Sum('amount_dec'))['amount_dec__sum']
         else:
-            amount_paid = Decimal('0')
-        return amount_paid
+            amount_refunded = Decimal('0')
+        return amount_refunded
 
     def has_paid(self, in_full=False):
         if in_full:
@@ -580,7 +607,7 @@ class IndividualAccountingController(ProgramAccountingController):
     def amount_due(self):
         amt_request = self.amount_requested()
         amt_sibling = self.amount_siblingdiscount()
-        return amt_request - self.amount_finaid(amt_sibling) - amt_sibling - self.amount_paid()
+        return amt_request - self.amount_finaid(amt_sibling) - amt_sibling - self.amount_paid() + self.amount_refunded()
 
     @transaction.atomic
     def submit_payment(self, amount, transaction_id='', link_transfers=True):
@@ -602,6 +629,46 @@ class IndividualAccountingController(ProgramAccountingController):
         return payment
 
     @transaction.atomic
+    def record_refund(self, amount, transaction_id=''):
+        """Record accounting entries for a refund.
+
+        Creates two transfers:
+        1. From payable account to None (payment going out to the student)
+        2. From program account to payable (the program no longer has this money)
+
+        Args:
+            amount: The refund amount as a Decimal or float
+            transaction_id: The Stripe refund ID
+
+        Returns:
+            A tuple of (outgoing_transfer, internal_transfer)
+        """
+        line_item_type = self.default_refund_lineitemtype()
+        payable_account = self.default_payable_account()
+        program_account = self.default_program_account()
+        amount_dec = Decimal('%.2f' % amount)
+
+        outgoing_transfer = Transfer.objects.create(
+            source=payable_account,
+            destination=None,
+            user=self.user,
+            line_item=line_item_type,
+            amount_dec=amount_dec,
+            transaction_id=transaction_id
+        )
+
+        internal_transfer = Transfer.objects.create(
+            source=program_account,
+            destination=payable_account,
+            user=self.user,
+            line_item=line_item_type,
+            amount_dec=amount_dec,
+            transaction_id=transaction_id
+        )
+
+        return (outgoing_transfer, internal_transfer)
+
+    @transaction.atomic
     def link_paid_transfers(self, payment):
         """ Given a Transfer representing a payment (e.g. a credit card
         payment), find all of the Transfers representing the items that were
@@ -616,7 +683,7 @@ class IndividualAccountingController(ProgramAccountingController):
         total = 0
         # Calculate the target including all of the user's payments, discount, and all granted fin aid
         # I believe the user's payments include the current payment based on order of operations here
-        target_full = self.amount_paid() + self.amount_siblingdiscount() + self.amount_finaid()
+        target_full = self.amount_paid() + self.amount_siblingdiscount() + self.amount_finaid() - self.amount_refunded()
 
         # Check that all payments and financial aid together sum to all transfers together
         # Add the paid_in to the outstanding transfers
@@ -638,7 +705,7 @@ class IndividualAccountingController(ProgramAccountingController):
         """ Create an invoice for the user and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
         iac = IndividualAccountingController(program, user)
-        if not iac.has_paid(in_full):
+        if not iac.has_paid(in_full=in_full):
             iac.ensure_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())
