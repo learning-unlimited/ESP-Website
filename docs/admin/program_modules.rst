@@ -120,7 +120,7 @@ Relevant settings include:
 * Tag 'ask_student_about_post_hs_plans': If tag exists, ask in the student profile about a student's post-high-school plans (go to college, go to trade school, get a job, etc)
 * Tag 'ask_student_about_transportation_to_program': If tag exists, ask in the student profile about how the student is going to get to the upcoming program
 
-More details on these Tags can be found here at http://wiki.learningu.org/Customize_behavior_with_Tags.
+More details on these Tags can be found here at https://wiki.learningu.org/Customize_behavior_with_Tags.
 
 Student Class Registration (StudentClassRegModule)
 --------------------------------------------------

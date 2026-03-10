@@ -148,7 +148,7 @@ Extra Explanation:
 ========================================
 
 This request can be (re)viewed at:
-<http://%s/admin/program/financialaidrequest/%s/>
+<https://%s/admin/program/financialaidrequest/%s/>
 
 
 """) % (request.user.first_name,
