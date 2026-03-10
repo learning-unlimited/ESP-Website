@@ -417,3 +417,28 @@ class PlainListRecipientPrivacyTest(TestCase):
         handler = self._make_handler()
         handler.process('nonexistent', 'nonexistent')
         self.assertFalse(handler.send)
+
+    def test_hide_recipients_flag_set(self):
+        """PlainList should set hide_recipients=True so the mailgate uses
+        envelope routing instead of exposing real addresses in To: header."""
+        PlainRedirect.objects.create(original='board', destination='alice@example.com')
+        handler = self._make_handler()
+        handler.process('board', 'board')
+        self.assertTrue(handler.hide_recipients)
+
+    def test_original_address_stored(self):
+        """PlainList should store the original alias address so the mailgate
+        can use it in the To: header instead of the real recipient."""
+        PlainRedirect.objects.create(original='board', destination='alice@example.com')
+        handler = self._make_handler()
+        handler.process('board', 'board')
+        self.assertEqual(handler.original_address, 'board')
+
+    def test_case_insensitive_match_preserves_original(self):
+        """The original_address should store the user input (for the To: header),
+        even when it differs in case from the stored redirect."""
+        PlainRedirect.objects.create(original='Board', destination='alice@example.com')
+        handler = self._make_handler()
+        handler.process('BOARD', 'BOARD')
+        self.assertEqual(handler.original_address, 'BOARD')
+        self.assertTrue(handler.send)
