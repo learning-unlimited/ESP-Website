@@ -1,4 +1,5 @@
 
+
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -67,3 +68,4 @@ from esp.program.modules.tests.test_class_creation import (
     TeacherAvailabilityConsistencyTest,
 )
 from esp.program.modules.tests.test_enrolled_split import EnrolledSplitViewTest
+from esp.program.modules.tests.test_autoschedulerfrontendmodule import AutoschedulerFrontendModuleTest
