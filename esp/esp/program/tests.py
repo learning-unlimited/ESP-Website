@@ -1505,9 +1505,8 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         # Clear any stale thread-local request from previous test classes.
         # ClassFlag.save() overrides created_by with request.user, which may
         # reference a user whose savepoint was already rolled back.
-        from esp.middleware.threadlocalrequest import _threading_local
-        if hasattr(_threading_local, 'request'):
-            del _threading_local.request
+        from esp.middleware.threadlocalrequest import clear_current_request
+        clear_current_request()
 
         super(ClassFlagTeacherVisibilityTest, self).setUp(num_students=0, num_teachers=2, num_admins=1)
 
@@ -1599,6 +1598,72 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         form = FlagTypeForm()
         self.assertIn('show_to_teacher', form.fields)
         self.assertIn('notify_teacher_by_email', form.fields)
+
+    def test_newflag_email_failure_returns_warning(self):
+        """If send_teacher_notification() raises, newflag() still returns 200
+        with the flag data and includes a warning message (#4223)."""
+        from esp.program.models import ClassFlag
+        from unittest.mock import patch
+
+        # Log in as admin
+        self.client.login(username=self.admin_user.username, password='password')
+
+        flag_count_before = ClassFlag.objects.filter(subject=self.subject).count()
+
+        url = '/manage/%s/newflag/' % self.program.getUrlBase()
+        post_data = {
+            'subject': self.subject.id,
+            'flag_type': self.teacher_notify_type.id,
+            'comment': 'Test email failure',
+        }
+
+        with patch.object(ClassFlag, 'send_teacher_notification',
+                          side_effect=Exception('SMTP connection refused')):
+            response = self.client.post(url, post_data)
+
+        # Endpoint returns 200, not 500
+        self.assertEqual(response.status_code, 200)
+
+        # Response contains warning about failed email
+        import json as _json
+        response_data = _json.loads(response.content.decode('utf-8'))
+        self.assertIn('warning', response_data)
+        self.assertIn('email notification failed', response_data['warning'])
+
+        # Flag HTML is still returned
+        self.assertIn('flag_name', response_data)
+        self.assertIn('flag_detail', response_data)
+
+        # Flag was saved to the database
+        self.assertEqual(
+            ClassFlag.objects.filter(subject=self.subject).count(),
+            flag_count_before + 1
+        )
+
+    def test_newflag_email_success_no_warning(self):
+        """When email succeeds, the response has no warning field."""
+        from esp.program.models import ClassFlag
+        from unittest.mock import patch
+
+        self.client.login(username=self.admin_user.username, password='password')
+
+        url = '/manage/%s/newflag/' % self.program.getUrlBase()
+        post_data = {
+            'subject': self.subject.id,
+            'flag_type': self.teacher_notify_type.id,
+            'comment': 'Email works fine',
+        }
+
+        with patch.object(ClassFlag, 'send_teacher_notification'):
+            response = self.client.post(url, post_data)
+
+        self.assertEqual(response.status_code, 200)
+
+        import json as _json
+        response_data = _json.loads(response.content.decode('utf-8'))
+        self.assertNotIn('warning', response_data)
+        self.assertIn('flag_name', response_data)
+
 
 """
 Tests for esp.program.controllers.classreg
