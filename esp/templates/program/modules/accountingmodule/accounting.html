@@ -60,7 +60,7 @@ table {
         <td>{{ transfer.type }}</td>
         <td>{{ transfer.transfer.line_item }}</td>
         <td>{% if transfer.transfer.line_item.for_finaid %}&#10003;{% endif %}</td>
-        <td style="text-align:right;">{% if transfer.type == "Payment" or transfer.type == "Refund" %}-{% endif %}${{ transfer.transfer.amount|floatformat:"2" }}</td>
+        <td style="text-align:right;">{% if transfer.type == "Payment" %}-{% endif %}${{ transfer.transfer.amount|floatformat:"2" }}</td>
     </tr>
 {% endfor %}
 </table>
