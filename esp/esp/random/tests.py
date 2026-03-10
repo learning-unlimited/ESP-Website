@@ -7,6 +7,7 @@ Tests good_random_class(), main view, and ajax view.
 import json
 from unittest.mock import patch, MagicMock
 
+from django.db.models import Q 
 from django.test import RequestFactory
 
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -26,6 +27,8 @@ class GoodRandomClassTest(TestCase):
 
         result = good_random_class()
 
+        expected_q = Q()
+        mock_classsubject.objects.random_class.assert_called_once_with(expected_q)
         self.assertEqual(result, mock_cls)
 
     @patch('esp.random.views.Tag')
@@ -40,9 +43,9 @@ class GoodRandomClassTest(TestCase):
 
         result = good_random_class()
 
+        expected_q = Q() & ~Q(parent_program__name__icontains='TestProgram')
+        mock_classsubject.objects.random_class.assert_called_once_with(expected_q)
         self.assertEqual(result, mock_cls)
-        # Verify random_class was called with some filter
-        mock_classsubject.objects.random_class.assert_called_once()
 
     @patch('esp.random.views.Tag')
     @patch('esp.random.views.ClassSubject')
@@ -56,6 +59,25 @@ class GoodRandomClassTest(TestCase):
 
         result = good_random_class()
 
+        expected_q = Q() & ~Q(title__iexact='Lunch Period')
+        mock_classsubject.objects.random_class.assert_called_once_with(expected_q)
+        self.assertEqual(result, mock_cls)
+
+    @patch('esp.random.views.Tag')
+    @patch('esp.random.views.ClassSubject')
+    def test_multiple_constraints_combined(self, mock_classsubject, mock_tag):
+        
+        mock_tag.getTag.return_value = json.dumps({
+            'bad_program_names': ['TestProgram'],
+            'bad_titles': ['Lunch Period']
+        })
+        mock_cls = MagicMock()
+        mock_classsubject.objects.random_class.return_value = mock_cls
+
+        result = good_random_class()
+
+        expected_q = Q() & ~Q(parent_program__name__icontains='TestProgram') & ~Q(title__iexact='Lunch Period')
+        mock_classsubject.objects.random_class.assert_called_once_with(expected_q)
         self.assertEqual(result, mock_cls)
 
 
