@@ -350,6 +350,23 @@ class GetNondefaultProgramTagsTest(ProgramFrameworkTest):
         self.assertIsNotNone(entry)
         self.assertIn('help_text', entry)
 
+    def test_tag_at_default_value_excluded(self):
+        '''A tag stored in the DB but set to its default value is not shown in the banner.'''
+        # 'test_bool' has default=False; setting it to its default should hide it
+        all_program_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=self.program, value="False")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test_bool", keys)
+
+    def test_tag_at_nondefault_value_included(self):
+        '''A tag stored with a value different from the default is shown in the banner.'''
+        all_program_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=self.program, value="True")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertIn("test_bool", keys)
+
 
 class TagRegistrationTest(SimpleTestCase):
     """

@@ -202,6 +202,9 @@ class Tag(models.Model):
         result = []
         for tag in program_tag_rows:
             if tag.key in all_program_tags and all_program_tags[tag.key].get('is_setting', False):
+                default = all_program_tags[tag.key].get('default')
+                if default is not None and tag.value == str(default):
+                    continue
                 result.append({
                     'key': tag.key,
                     'value': tag.value,
