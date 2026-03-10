@@ -27,7 +27,10 @@ img.biophoto { border: 1px solid black; }
 {% endif %}
 {% if request.user.isAdministrator %}
     <a class="btn btn-primary" href="/manage/userview?username={{biouser.username}}">Go to teacher profile</a>
-    <a class="btn btn-primary" href="/myesp/morph?morph_user={{biouser.id}}">Morph into teacher</a>
+    <form id="morphteacher-form" action="/myesp/morph" method="post" style="display:inline">{% csrf_token %}
+        <input type="hidden" name="morph_user" value="{{biouser.id}}"/>
+        <button type="submit" class="btn btn-primary">Morph into teacher</button>
+    </form>
     <a class="btn btn-primary" href="/admin/users/espuser/{{biouser.id}}/">View on admin panel</a>
 {% endif %}
 <br /><br />
