@@ -78,7 +78,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     def _extracost_requires_payment(self):
         """Check if the student selected extra cost items that require CC payment."""
         from esp.accounting.models import Transfer
-        tag_value = Tag.getTag('creditcard_required_for_extracosts', self.program, default='')
+        tag_value = Tag.getProgramTag('creditcard_required_for_extracosts', program=self.program, default='')
         if not tag_value:
             return False
         request = get_current_request()
