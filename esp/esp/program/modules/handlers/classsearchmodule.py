@@ -9,7 +9,7 @@ from django.db.models import Count
 from django.db.models.query import Q
 
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
-from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
+from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, needs_admin
 from esp.program.models import RegistrationType
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
@@ -236,7 +236,7 @@ class ClassSearchModule(ProgramModuleObj):
             english_name="classes",
             filters=filters)
 
-    @main_call
+    @aux_call
     @needs_admin
     def create_autorule(self, request, tl, one, two, module, extra, prog):
         """Create an AutoClassFlagRule from a query."""
