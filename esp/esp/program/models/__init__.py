@@ -1069,8 +1069,26 @@ class Program(models.Model, CustomFormsLinkModel):
             return [result[c] for c in result]
 
     def getAvailableResources(self, timeslot, queryset=False):
-        #   Filters down the floating resources to those that are not taken.
-        return [x for x in self.getFloatingResources(timeslot=timeslot, queryset=queryset) if x.is_available()]
+        from esp.resources.models import ResourceAssignment
+        #   Filters down the floating resources to those that are not taken
+        #   and that have been returned from any earlier assignment.
+        floating = list(self.getFloatingResources(timeslot=timeslot, queryset=queryset))
+        if not floating:
+            return []
+        floating_names = [r.name for r in floating]
+        floating_type_ids = set(r.res_type_id for r in floating)
+        unreturned_keys = set(
+            ResourceAssignment.objects.filter(
+                resource__name__in=floating_names,
+                resource__res_type_id__in=floating_type_ids,
+                resource__event__end__lte=timeslot.start,
+                resource__event__program=self,
+                resource__is_unique=True,
+                returned=False,
+            ).values_list('resource__name', 'resource__res_type_id')
+        )
+        return [x for x in floating
+                if x.is_available() and (x.name, x.res_type_id) not in unreturned_keys]
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
