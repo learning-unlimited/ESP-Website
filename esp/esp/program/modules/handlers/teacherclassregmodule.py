@@ -85,14 +85,14 @@ class TeacherClassRegModule(ProgramModuleObj):
         # Everything else (ajaxstudentattendance, editclass, etc.) should be hidden.
         if view_name not in ["makeaclass", "copyaclass"]:
             return None
-            
+
         base = program.getUrlBase()
-        
+
         entries = {
             "makeaclass": ("Register Your Classes (Teacher Lookup)", "Other", ["teacher", "classes", "registration", "lookup", "add"]),
             "copyaclass": ("Copy Your Classes", "Other", ["teacher", "classes", "registration", "copy"]),
         }
-        
+
         title, category, keywords = entries[view_name]
         return AdminSearchEntry(
             id="teach_%s" % view_name,
