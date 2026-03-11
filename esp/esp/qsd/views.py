@@ -156,10 +156,7 @@ def qsd(request, url):
                 response.status_code = 404 # Make sure we actually 404, so that if there is a redirect the middleware can catch it.
                 return response
         else:
-            if action == 'read':
-                raise Http404('This page does not exist.')
-            else:
-                raise Http403('Sorry, you can not modify <tt>%s</tt>.' % html_escape(request.path))
+            raise Http404('This page does not exist.')
 
     if action == 'create':
         action = 'edit'

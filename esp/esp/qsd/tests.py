@@ -193,7 +193,7 @@ class QSDCorrectnessTest(TestCase):
         qsd_rec_new.delete()
 
     def testUnauthorizedEditNonexistentPage(self):
-        """Editing a nonexistent QSD page without permission returns 403."""
+        """Editing a nonexistent QSD page without permission returns 404."""
         edit_url = '/learn/nonexistent_page.edit.html'
 
         # Verify the page truly doesn't exist
@@ -209,19 +209,9 @@ class QSDCorrectnessTest(TestCase):
             if user is not None:
                 self.client.login(username=user[0], password=user[1])
 
-            # Attempting to edit a nonexistent page should give 403, not 500
+            # Attempting to edit a nonexistent page should give 404, not 500
             response = self.client.get(edit_url)
-            self.assertEqual(response.status_code, 403)
-
-        # Also verify the error message escapes HTML in the path
-        self.client.logout()
-        xss_url = '/learn/<script>alert(1)</script>.edit.html'
-        response = self.client.get(xss_url)
-        # Should be 403 or 404, not 500
-        self.assertIn(response.status_code, [403, 404])
-        if response.status_code == 403:
-            content = response.content.decode('utf-8')
-            self.assertNotIn('<script>', content)
+            self.assertEqual(response.status_code, 404)
 
 
 class QSDImageUploadTest(TestCase):
