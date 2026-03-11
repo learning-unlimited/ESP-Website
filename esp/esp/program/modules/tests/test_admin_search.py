@@ -37,8 +37,8 @@ class AdminSearchEntriesTest(ProgramFrameworkTest):
             self.assertIn(tl, e.keywords, "Keywords for %s should include area %r" % (e.id, tl))
             self.assertIn(view_name, e.keywords, "Keywords for %s should include view name %r" % (e.id, view_name))
 
-    def test_default_entries_use_link_title(self):
-        """Entries for modules without get_admin_search_entry use get_link_title and link_title."""
+    def test_entries_have_required_fields(self):
+        """Every listed entry has non-empty title, keywords, url, and id."""
         entries = get_admin_search_entries(self.program)
         for e in entries:
             self.assertTrue(e.title, "Every entry should have a non-empty title")
@@ -64,13 +64,8 @@ class AdminSearchEntriesTest(ProgramFrameworkTest):
                 self.assertIn(key, d, "Serialized entry should have key %r" % key)
             self.assertIsInstance(d['keywords'], list)
 
-    def test_humanize_view_name_uses_display_names(self):
-        """Known view names get human-readable labels from VIEW_DISPLAY_NAMES."""
-        self.assertEqual(_humanize_view_name("selfcheckin"), "Self check-in")
-        self.assertEqual(_humanize_view_name("onsitemap"), "Map")
-        self.assertEqual(_humanize_view_name("manageclass"), "Manage class")
-
-    def test_humanize_view_name_fallback(self):
-        """Unknown view names are title-cased with underscores as spaces."""
+    def test_humanize_view_name(self):
+        """View names are title-cased with underscores as spaces (labels live in module files)."""
         self.assertEqual(_humanize_view_name("some_aux_view"), "Some Aux View")
+        self.assertEqual(_humanize_view_name("selfcheckin"), "Selfcheckin")
         self.assertEqual(_humanize_view_name(""), "")

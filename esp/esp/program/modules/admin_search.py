@@ -1,6 +1,6 @@
 from collections import Counter
 from dataclasses import dataclass, asdict
-from typing import List
+from typing import List, Optional
 
 # Views that require a class ID or extra path segment; linking to /tl/prog/view
 # would not open a valid page. Excluded from admin search so users don't get
@@ -11,40 +11,14 @@ EXCLUDED_VIEW_NAMES = frozenset([
     "classavailability", "reviewclass",
 ])
 
-# Human-readable labels for view names used in disambiguation. When multiple
-# entries share the same title, we append " (label)" so users can tell them apart.
-VIEW_DISPLAY_NAMES = {
-    # Onsite / printables
-    "onsiteregform": "Registration form",
-    "onsiteaddclass": "Add class",
-    "onsiteclearslot": "Clear slot",
-    "onsitecatalog": "Catalog",
-    "selfcheckin": "Self check-in",
-    "onsitedetails": "Details",
-    "onsitemap": "Map",
-    "onsitesurvey": "Survey",
-    "onsiteroster": "Roster",
-    "studentonsite": "Student onsite",
-    "teacheronsite": "Teacher onsite",
-    # Manage class (some excluded from search but kept for consistency if used elsewhere)
-    "editclass": "Edit class",
-    "manageclass": "Manage class",
-    "addsection": "Add section",
-    "deletesection": "Delete section",
-    "deleteclass": "Delete class",
-    "approveclass": "Approve class",
-    "rejectclass": "Reject class",
-    "coteachers": "Co-teachers",
-    "classavailability": "Class availability",
-    "reviewclass": "Review class",
-}
-
 
 @dataclass
 class AdminSearchEntry:
     """
     Lightweight description of an admin-facing page or tool that can be found
-    via the Admin Dashboard search.
+    via the Admin Dashboard search. Only views that explicitly return an entry
+    from get_admin_search_entry() are listed; JSON/AJAX and internal endpoints
+    should return None so they do not appear.
     """
 
     id: str
@@ -52,27 +26,27 @@ class AdminSearchEntry:
     title: str
     category: str
     keywords: List[str]
+    # Optional short label for disambiguation when multiple entries share the same title.
+    # Set in the module's get_admin_search_entry(); if unset, view_name is humanized.
+    disambiguation_label: Optional[str] = None
 
 
 def _humanize_view_name(view_name):
-    """Return a human-readable label for view_name, for disambiguation."""
+    """Return a human-readable label for view_name, for disambiguation when the module does not set disambiguation_label."""
     if not view_name:
         return view_name
-    key = view_name.lower()
-    if key in VIEW_DISPLAY_NAMES:
-        return VIEW_DISPLAY_NAMES[key]
     return view_name.replace("_", " ").strip().title()
 
 
 def get_admin_search_entries(program):
     """
     Return a list of AdminSearchEntry objects by collecting metadata from each
-    module. Modules can define get_admin_search_entry() with title, category,
-    and keywords so search stays discoverable and keywords live next to the
-    module code. Views without custom metadata get a default entry (title +
-    basic keywords from link_title). When multiple entries share the same
-    title (e.g. many "Student Onsite" links), the title is disambiguated by
-    appending the view name in parentheses so users can tell them apart.
+    module. Only views for which the module's get_admin_search_entry() returns
+    an AdminSearchEntry are included; returning None excludes the view (e.g. JSON/AJAX
+    and internal endpoints). Title, category, keywords, and optional disambiguation_label
+    are defined in the module so new modules stay discoverable without updating a central list.
+    When multiple entries share the same title, the title is disambiguated by appending
+    the module's disambiguation_label or a humanized view name in parentheses.
     """
     from esp.program.modules import handlers
 
@@ -100,18 +74,10 @@ def get_admin_search_entries(program):
                 program, tl, view_name, pmo
             )
 
+        # Only list views that explicitly opt in. Do not add default entries for
+        # views that return None (e.g. JSON/AJAX endpoints, internal pages).
         if entry is None:
-            title = pmo.get_link_title()
-            keywords = [title]
-            if pmo.module.link_title and pmo.module.link_title != title:
-                keywords.append(pmo.module.link_title)
-            entry = AdminSearchEntry(
-                id=entry_id,
-                url=url,
-                title=title,
-                category="Other",
-                keywords=keywords,
-            )
+            continue
 
         # Ensure area (tl) and technical view_name are always searchable
         if tl not in entry.keywords:
@@ -121,18 +87,19 @@ def get_admin_search_entries(program):
 
         built.append((entry, view_name))
 
-    # Disambiguate duplicate titles so "Student Onsite" x8 becomes
-    # "Student Onsite (main)", "Student Onsite (class list)", etc.
+    # Disambiguate duplicate titles using the module's disambiguation_label or humanized view name.
     title_counts = Counter(e.title for e, _ in built)
     entries = []
     for entry, view_name in built:
         if title_counts[entry.title] > 1:
+            label = entry.disambiguation_label or _humanize_view_name(view_name)
             entry = AdminSearchEntry(
                 id=entry.id,
                 url=entry.url,
-                title=entry.title + " (" + _humanize_view_name(view_name) + ")",
+                title=entry.title + " (" + label + ")",
                 category=entry.category,
                 keywords=entry.keywords,
+                disambiguation_label=entry.disambiguation_label,
             )
         entries.append(entry)
 

@@ -90,6 +90,16 @@ class ProgramPrintables(ProgramModuleObj):
             "studentschedules": ("Student Schedules", "Printables", ["printable", "student schedules", "schedules"]),
             "studentscheduleform": ("Student Schedule Formatter", "Printables", ["formatter", "student schedules", "printable"]),
             "printoptions": ("All Printables", "Printables", ["printables", "all printables", "pdf", "documents"]),
+            "teachersbytime": ("Teacher List by Time", "Other", ["teachers", "time", "printables"]),
+            "teachermoderatorsbytime": ("Teacher and Moderator List by Time", "Other", ["teachers", "moderators", "time", "printables"]),
+            "classesbyteacher": ("Classes by Teacher", "Other", ["classes", "teacher", "printables"]),
+            "teacherlabels": ("Teacher Labels", "Other", ["teacher", "labels", "printables"]),
+            "teachermoderatorsbyname": ("Teacher and Moderator List by Name", "Other", ["teachers", "moderators", "name", "printables"]),
+            "teachermoderatorschedules": ("Teacher and Moderator Schedules", "Other", ["teachers", "moderators", "schedules", "printables"]),
+            "teachermoderatorlist": ("Teacher and Moderator List", "Other", ["teachers", "moderators", "list", "printables"]),
+            "teachersbyname": ("Teacher List by Name", "Other", ["teachers", "name", "printables"]),
+            "teacherschedules": ("Teacher Schedules", "Other", ["teachers", "schedules", "printables"]),
+            "teacherlist": ("Teacher List", "Other", ["teachers", "list", "printables"]),
         }
         if view_name not in entries:
             return None
@@ -100,6 +110,7 @@ class ProgramPrintables(ProgramModuleObj):
             title=title,
             category=category,
             keywords=keywords,
+            disambiguation_label=title.split(" (")[1].strip(")") if "(" in title else None,
         )
 
     @aux_call

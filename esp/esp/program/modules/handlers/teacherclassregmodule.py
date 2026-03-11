@@ -56,6 +56,7 @@ from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
 
+from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
@@ -76,6 +77,31 @@ class TeacherClassRegModule(ProgramModuleObj):
             "inline_template": "listclasses.html",
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # We only want to surface the main entry point to register a class,
+        # which is the 'makeaclass' or 'copyclasses' view.
+        # Everything else (ajaxstudentattendance, editclass, etc.) should be hidden.
+        if view_name not in ["makeaclass", "copyaclass"]:
+            return None
+            
+        base = program.getUrlBase()
+        
+        entries = {
+            "makeaclass": ("Register Your Classes (Teacher Lookup)", "Other", ["teacher", "classes", "registration", "lookup", "add"]),
+            "copyaclass": ("Copy Your Classes", "Other", ["teacher", "classes", "registration", "copy"]),
+        }
+        
+        title, category, keywords = entries[view_name]
+        return AdminSearchEntry(
+            id="teach_%s" % view_name,
+            url="/teach/%s/%s" % (base, view_name),
+            title=title,
+            category=category,
+            keywords=keywords,
+            disambiguation_label=title.split(" (")[1].strip(")") if "(" in title else None,
+        )
 
     @property
     def crmi(self):
