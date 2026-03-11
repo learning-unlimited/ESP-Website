@@ -157,3 +157,15 @@ class ClassFlag(models.Model):
         if failures:
             raise RuntimeError("Failed to email %d teacher(s): %s" % (len(failures), ', '.join(failures)))
 
+
+class AutoClassFlagRule(models.Model):
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='autoflag_rules')
+    flag_type = models.ForeignKey(ClassFlagType, on_delete=models.CASCADE)
+    rule_data = models.TextField(help_text='JSON representation of the QueryBuilder rule')
+    comment = models.TextField(blank=True, help_text='Annotation/comment to add to the flag')
+
+    class Meta:
+        app_label = 'program'
+
+    def __str__(self):
+        return "Auto-flag rule for %s in %s" % (self.flag_type, self.program)
