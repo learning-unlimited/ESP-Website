@@ -67,4 +67,5 @@ from esp.program.modules.tests.test_class_creation import (
     TeacherAvailabilityConsistencyTest,
 )
 from esp.program.modules.tests.resolve_user import ResolveUserTest
+from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest
 from esp.program.modules.tests.test_enrolled_split import EnrolledSplitViewTest
