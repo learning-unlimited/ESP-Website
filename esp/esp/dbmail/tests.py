@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import email
+
 from django.test import SimpleTestCase
 
 from email.message import Message
@@ -59,3 +61,24 @@ class MailgateUtilsTest(SimpleTestCase):
             drop_bcc=False,
         )
         self.assertIsNone(msg.get("To"))
+
+    def test_sanitizes_all_occurrences_when_multiple_header_lines(self):
+        # Message with multiple To lines (self-ref in first and third)
+        raw = (
+            "To: math101-class@test.learningu.org\n"
+            "To: other@test.learningu.org\n"
+            "To: math101-class@test.learningu.org\n"
+            "Cc: math101-class@test.learningu.org\n"
+            "Cc: cc@example.com\n"
+            "From: sender@example.com\n"
+            "\n"
+        )
+        msg = email.message_from_string(raw)
+        sanitize_recipient_headers(
+            msg,
+            local_part='math101-class',
+            domain='test.learningu.org',
+            drop_bcc=False,
+        )
+        self.assertEqual(msg.get("To"), "other@test.learningu.org")
+        self.assertEqual(msg.get("Cc"), "cc@example.com")

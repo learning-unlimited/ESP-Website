@@ -23,19 +23,25 @@ def sanitize_recipient_headers(message, local_part, domain, drop_bcc=False):
     Optionally drop Bcc entirely for forwarded mail.
     """
     for header in ("To", "Cc", "Bcc"):
-        if not message.get(header):
+        header_values = message.get_all(header, [])
+        if not header_values:
             continue
 
         if header == "Bcc" and drop_bcc:
             del message[header]
             continue
 
-        addresses = getaddresses([message.get(header)])
+        addresses = getaddresses(header_values)
         filtered = []
         for name, address in addresses:
-            if _is_self_address(address, local_part, domain):
+            if not address or not address.strip():
                 continue
-            filtered.append(formataddr((name, address)) if name else address)
+            normalized_address = address.strip()
+            if _is_self_address(normalized_address, local_part, domain):
+                continue
+            filtered.append(
+                formataddr((name, normalized_address)) if name else normalized_address
+            )
 
         del message[header]
         if filtered:

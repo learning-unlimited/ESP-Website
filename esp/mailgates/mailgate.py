@@ -33,6 +33,8 @@ if os.environ.get('VIRTUAL_ENV') is None:
 
 import django
 django.setup()
+from django.contrib.sites.models import Site
+
 from esp.dbmail.models import EmailList
 from esp.dbmail.mailgate_utils import sanitize_recipient_headers
 from django.conf import settings
@@ -77,10 +79,11 @@ try:
         if not instance.send:
             continue
 
+        domain = Site.objects.get_current().domain
         sanitize_recipient_headers(
             message,
             local_part=user,
-            domain=Site.objects.get_current().domain,
+            domain=domain,
             drop_bcc=False,
         )
 
@@ -91,7 +94,7 @@ try:
         sanitize_recipient_headers(
             message,
             local_part=user,
-            domain=Site.objects.get_current().domain,
+            domain=domain,
             drop_bcc=True,
         )
 
