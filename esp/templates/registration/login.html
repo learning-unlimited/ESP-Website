@@ -18,12 +18,13 @@ You need to log in before you can access <tt>{{ next }}</tt>.
 {% endif %}
 
 <div class="alert span10">
-Both the username and password are <b>case-sensitive</b>: capitalization matters!
+Both the username/email and password are <b>case-sensitive</b>: capitalization matters!
 </div>
 
 <div class="well span10">
 
 <form action="{{ request.action }}" class="form-horizontal" method="post">
+{% csrf_token %}
 
 <div class="control-group">
     {% if form.username.errors %}
@@ -32,11 +33,11 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
        </ul>
     {% elif wrong_user %}
        <ul class="errorlist">
-            The username you entered is not valid. Keep in mind the username is case sensitive.
+            The username or email you entered is not valid. Keep in mind it is case sensitive.
        </ul>
     {% endif %}
 
-    <label class="control-label required" for="id_username">Username:</label>
+    <label class="control-label required" for="id_username">Username or Email:</label>
 
     <div class="controls">
     {{ form.username }}
@@ -46,7 +47,9 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 <div class="control-group">
     {% if form.password.errors %}
         <ul class="errorlist">
-            {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
+            {% for error in form.password.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
         </ul>
     {% elif wrong_pw %}
         <ul class="errorlist">
@@ -75,12 +78,16 @@ document.getElementById('id_username').focus();
 //-->
 </script>
 
-</div>
+</div>  
 
 <br />
 <div class="alert alert-info span10">
-Don't already have an account?  <a href="/myesp/register/">Click here to create one</a>. <br />
-Forgot your password? <a href="/myesp/passwdrecover/" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
+Don't already have an account?  
+<a href="/myesp/register/">Click here to create one</a>. <br />
+Forgot your password? 
+<a href="/myesp/passwdrecover/" title="Click for account recovery">
+Head on over to the Account Recovery Page
+</a>.
 </div>
 </div>
 
