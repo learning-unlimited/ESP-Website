@@ -1,0 +1,48 @@
+# Django
+Django==2.2.28
+
+# Django-specific packages
+git+https://github.com/learning-unlimited/django-argcache.git@django2 # Handles caching
+django-debug-toolbar==3.2.4 # Provides the debug toolbar
+django-extensions==3.1.5 # Provides shell_plus, runserver_plus, and other utilities
+django-filebrowser-no-grappelli==3.8.0 # Provides admin panel interface for files
+django-form-utils==1.0.3 # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
+django-formtools==2.4 # Used once in customforms
+django-localflavor==3.1 # Provides address fields
+django-phonenumber-field[phonenumbers]==6.3.0 # Provides phone number fields
+django-recaptcha==3.0.0 # Provides support for Google reCAPTCHA
+django-reversion==5.0.2 # Handles versioning, currently for QSD and TemplateOverrides
+django-sendgrid-v5==1.2.4 # Provides support for using SendGrid as the EmailBackend
+django-vanilla-views==3.0.0 # Provides simpler generic views, currently used only for grade change requests
+git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends Django Admin
+
+
+# Non-Django-specific packages
+bleach==6.0.0 # For sanitizing QSD content
+dill # For migrating Python 2 pickles in the database
+docutils==0.12 # Needed for django.contrib.admindocs
+flake8==3.9.2 # Required for linter
+pytest==7.4.4 # Test runner (last version supporting Python 3.7)
+pytest-cov==4.1.0 # Coverage measurement compatible with pytest-xdist parallel runs
+pytest-django==4.5.2 # Django integration for pytest
+pytest-xdist==3.3.1 # Parallel test execution via -n auto
+ipython==7.34.0 # Used for shell_plus
+Markdown==2.3.1 # Used in QSD
+numpy==1.16.6 # Used mainly in the lottery and class change controller
+pillow==8.3.2 # Required for ImageField, which we use in teacher bios
+psycopg2==2.8.6 # Talks to postgres
+py3dns==3.2.1 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
+Pygments==2.10.0 # django-extensions dependency
+pylibmc==1.5.0 # Talks to memcached
+pytz==2015.4 # Required for timezone support
+# pywatchman # Makes dev servers auto-reload
+raven # Required for Sentry error reporting
+setuptools==57.5.0 # For building packages from source; stripe and a few others don't work with v58+
+selenium>=4.0,<4.9.0 # Runs selenium tests (4.9+ requires Python 3.8)
+shortuuid==0.4.2 # django-extensions dependency
+stripe==2.60.0 # Required for credit card processing
+twilio==6.63.2 # Required for text messaging support
+wheel==0.38.4  # For building modern packages
+werkzeug==0.16.1 # Required for runserver_plus (alternative to runserver provided by django-extensions)
+openpyxl==3.1.2 # Does form and survey exporting
+
