@@ -98,27 +98,31 @@ class TeacherEventsManageModule(ProgramModuleObj):
                     new_timeslot = Event()
 
                     # decide type
-                    event_type = "training"
-
-                    if data.get('submit_btn') == "Add Interview":
-                        event_type = "interview"
-
-                    form.save_timeslot(self.program, new_timeslot, event_type)
+                    try:
+                        event_type_id = int(data.get('event_type_id',0))
+                        event_type = EventType.objects.get(id=event_type_id, is_teacher_type=True)
+                        form.save_timeslot(self.program, new_timeslot, event_type)
+                    except (ValueError, EventType.DoesNotExist):
+                        form.add_error(None, "Please select a valid teacher event type.")
+                        context['timeslot_form'] = form
                 else:
                     context['timeslot_form'] = form
 
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
 
-        interview_times = self.program.get_teacher_event_times('interview')
-        training_times = self.program.get_teacher_event_times('training')
+        teacher_event_types = EventType.objects.filter(is_teacher_type=True)
+        context['teacher_event_types'] = teacher_event_types
+        teacher_event_times = {}
 
-        for ts in list( interview_times ) + list( training_times ):
-            ts.teachers = UserAvailability.entriesBySlot( ts )
+        for et in teacher_event_types:
+            times = self.program.get_teacher_event_times(et)
+            for ts in list(times):
+                ts.teachers = UserAvailability.entriesBySlot( ts )
+            teacher_event_times[et] = times
 
         context['prog'] = prog
-        context['interview_times'] = interview_times
-        context['training_times'] = training_times
+        context['teacher_event_times'] = teacher_event_times
 
         return render_to_response( self.baseDir()+'teacher_events.html', request, context )
 
@@ -128,7 +132,7 @@ class TeacherEventsManageModule(ProgramModuleObj):
     setup_title = "Set up events for teachers to attend before the program"
 
     def isCompleted(self):
-        return Event.objects.filter(program=self.program, event_type__in=list(EventType.teacher_event_types().values())).exists()
+        return Event.objects.filter(program=self.program, event_type__is_teacher_type=True).exists()
 
     class Meta:
         proxy = True
