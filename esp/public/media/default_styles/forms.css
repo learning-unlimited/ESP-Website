@@ -6,7 +6,7 @@
 
 /* Profile editor */
 #id_receive_txt_message {
-    list-style:none
+    list-style: none;
 }
 
 /*  Default formatting */
@@ -197,7 +197,7 @@ input.fancybutton:active
    border: 0 !important;
 }
 
-#login_form tbody th, #login_form tbody th {
+#login_form tbody th {
   padding: 2px !important;
 }
 
