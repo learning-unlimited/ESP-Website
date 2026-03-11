@@ -1436,719 +1436,735 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     #customforms info
     form_link_name='Course'
 
-    title = models.TextField()
-    parent_program = models.ForeignKey(Program, on_delete=models.CASCADE)
-    category = models.ForeignKey('ClassCategories', related_name = 'cls', on_delete=models.CASCADE)
-    class_info = models.TextField(blank=True)
-    teachers = models.ManyToManyField(ESPUser)
-    allow_lateness = models.BooleanField(default=False)
-    message_for_directors = models.TextField(blank=True)
-    class_size_optimal = models.IntegerField(blank=True, null=True)
-    optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True, on_delete=models.CASCADE)
-    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True, null=True)
-    grade_min = models.IntegerField()
-    grade_max = models.IntegerField()
-    class_size_min = models.IntegerField(blank=True, null=True)
-    class_style = models.TextField(blank=True, null=True)
-    hardness_rating = models.TextField(blank=True, null=True)
-    class_size_max = models.IntegerField(blank=True, null=True)
-    schedule = models.TextField(blank=True)
-    prereqs  = models.TextField(blank=True, null=True)
-    requested_special_resources = models.TextField(blank=True, null=True)
-    directors_notes = models.TextField(blank=True, null=True)
-    requested_room = models.TextField(blank=True, null=True)
-    session_count = models.IntegerField(default=1)
+title = models.TextField()
 
-    purchase_requests = models.TextField(blank=True, null=True)
-    custom_form_data = JSONField(blank=True, null=True)
+parent_program = models.ForeignKey(Program, on_delete=models.CASCADE)
 
-    documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+# Primary category
+category = models.ForeignKey(
+'ClassCategories',
+related_name='cls',
+on_delete=models.CASCADE
+)
 
-    objects = ClassManager()
+# Secondary categories
+secondary_categories = models.ManyToManyField(
+'ClassCategories',
+blank=True,
+related_name='secondary_classsubjects',
+help_text='Additional categories this class can appear under'
+)
 
-    status = models.IntegerField(choices = STATUS_CHOICES, default=ClassStatus.UNREVIEWED)
-    duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
-    meeting_times = models.ManyToManyField(Event, blank=True)
+class_info = models.TextField(blank=True)
+teachers = models.ManyToManyField(ESPUser)
+allow_lateness = models.BooleanField(default=False)
+message_for_directors = models.TextField(blank=True)
+class_size_optimal = models.IntegerField(blank=True, null=True)
+optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True, on_delete=models.CASCADE)
+allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True, null=True)
+grade_min = models.IntegerField()
+grade_max = models.IntegerField()
+class_size_min = models.IntegerField(blank=True, null=True)
+class_style = models.TextField(blank=True, null=True)
+hardness_rating = models.TextField(blank=True, null=True)
+class_size_max = models.IntegerField(blank=True, null=True)
+schedule = models.TextField(blank=True)
+prereqs  = models.TextField(blank=True, null=True)
+requested_special_resources = models.TextField(blank=True, null=True)
+directors_notes = models.TextField(blank=True, null=True)
+requested_room = models.TextField(blank=True, null=True)
+session_count = models.IntegerField(default=1)
 
-    # TODO(benkraft): backfill this on all existing sites, then make required.
-    timestamp = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+purchase_requests = models.TextField(blank=True, null=True)
+custom_form_data = JSONField(blank=True, null=True)
 
-    @cache_function
-    def get_allowable_class_size_ranges(self):
-        return self.allowable_class_size_ranges.all()
-    get_allowable_class_size_ranges.depend_on_m2m('program.ClassSubject', 'allowable_class_size_ranges', lambda subj, csr: {'self':subj })
+documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
-    def get_sections(self):
-        if not hasattr(self, "_sections") or self._sections is None:
-            # We explicitly order by ID to make sure we get reproducible
-            # ordering for e.g. index().
-            self._sections = self.sections.order_by('id')
+objects = ClassManager()
 
-        return self._sections
+status = models.IntegerField(choices = STATUS_CHOICES, default=ClassStatus.UNREVIEWED)
+duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
+meeting_times = models.ManyToManyField(Event, blank=True)
 
-    def getDocuments(self):
-        return self.documents.all()
+# TODO(benkraft): backfill this on all existing sites, then make required.
+timestamp = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
-    def get_absolute_url(self):
-        return "/manage/"+self.parent_program.url+"/manageclass/"+str(self.id)
+@cache_function
+def get_allowable_class_size_ranges(self):
+    return self.allowable_class_size_ranges.all()
+get_allowable_class_size_ranges.depend_on_m2m('program.ClassSubject', 'allowable_class_size_ranges', lambda subj, csr: {'self':subj })
 
-    def get_edit_absolute_url(self):
-        return "/manage/"+self.parent_program.url+"/editclass/"+str(self.id)
+def get_sections(self):
+    if not hasattr(self, "_sections") or self._sections is None:
+        # We explicitly order by ID to make sure we get reproducible
+        # ordering for e.g. index().
+        self._sections = self.sections.order_by('id')
 
-    @classmethod
-    def ajax_autocomplete(cls, data):
-        values = cls.objects.filter(title__istartswith=data).values(
-                    'id', 'title').order_by('title')
-        for v in values:
-            v['ajax_str'] = v['title']
-        return values
+    return self._sections
 
-    def ajax_str(self):
-        return self.title
+def getDocuments(self):
+    return self.documents.all()
 
-    def num_sections(self):
-        return len(self.get_sections())
+def get_absolute_url(self):
+    return "/manage/"+self.parent_program.url+"/manageclass/"+str(self.id)
 
-    def prettyDuration(self):
-        if self.num_sections() <= 0:
-            return "N/A"
+def get_edit_absolute_url(self):
+    return "/manage/"+self.parent_program.url+"/editclass/"+str(self.id)
+
+@classmethod
+def ajax_autocomplete(cls, data):
+    values = cls.objects.filter(title__istartswith=data).values(
+                'id', 'title').order_by('title')
+    for v in values:
+        v['ajax_str'] = v['title']
+    return values
+
+def ajax_str(self):
+    return self.title
+
+def num_sections(self):
+    return len(self.get_sections())
+
+def prettyDuration(self):
+    if self.num_sections() <= 0:
+        return "N/A"
+    else:
+        return self.get_sections()[0].prettyDuration()
+
+def prettyrooms(self):
+    if self.num_sections() <= 0:
+        return "N/A"
+    else:
+        rooms = []
+
+        for subj in self.get_sections():
+            rooms.extend(subj.prettyrooms())
+
+        return rooms
+
+def ascii_info(self):
+    return self.class_info.encode('ascii', 'ignore').decode('ascii')
+
+def _get_meeting_times(self):
+    timeslot_id_list = []
+    for s in self.get_sections():
+        timeslot_id_list += s.meeting_times.all().values_list('id', flat=True)
+    return Event.objects.filter(id__in=timeslot_id_list).order_by('start')
+all_meeting_times = property(_get_meeting_times)
+
+def _get_capacity(self):
+    c = 0
+    for s in self.get_sections():
+        c += s.capacity
+    return c
+capacity = property(_get_capacity)
+
+@cache_function
+def get_section(self, timeslot=None):
+    """ Cache sections for a class.  Always use this function to get a class's sections. """
+    # If we happen to know our own sections from a subquery:
+    did_search = True
+
+    if hasattr(self, "_sections"):
+        for s in self._sections:
+            if not hasattr(s, "_events"):
+                did_search = False
+                break
+            if timeslot in s._events or timeslot is None:
+                return s
+
+        if did_search: # If we did successfully search all sections, but found none in this timeslot
+            return None
+        #If we didn't successfully search all sections, go and do it the old-fashioned way:
+
+    if timeslot:
+        qs = self.sections.filter(meeting_times=timeslot)
+        if qs.exists():
+            result = qs[0]
         else:
-            return self.get_sections()[0].prettyDuration()
+            result = None
+    else:
+        result = self.default_section()
 
-    def prettyrooms(self):
-        if self.num_sections() <= 0:
-            return "N/A"
-        else:
-            rooms = []
+    return result
+get_section.depend_on_row('program.ClassSection', lambda cs: {'self': cs.parent_class})
+get_section.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
 
-            for subj in self.get_sections():
-                rooms.extend(subj.prettyrooms())
-
-            return rooms
-
-    def ascii_info(self):
-        return self.class_info.encode('ascii', 'ignore').decode('ascii')
-
-    def _get_meeting_times(self):
-        timeslot_id_list = []
-        for s in self.get_sections():
-            timeslot_id_list += s.meeting_times.all().values_list('id', flat=True)
-        return Event.objects.filter(id__in=timeslot_id_list).order_by('start')
-    all_meeting_times = property(_get_meeting_times)
-
-    def _get_capacity(self):
-        c = 0
-        for s in self.get_sections():
-            c += s.capacity
-        return c
-    capacity = property(_get_capacity)
-
-    @cache_function
-    def get_section(self, timeslot=None):
-        """ Cache sections for a class.  Always use this function to get a class's sections. """
-        # If we happen to know our own sections from a subquery:
-        did_search = True
-
-        if hasattr(self, "_sections"):
-            for s in self._sections:
-                if not hasattr(s, "_events"):
-                    did_search = False
-                    break
-                if timeslot in s._events or timeslot is None:
-                    return s
-
-            if did_search: # If we did successfully search all sections, but found none in this timeslot
-                return None
-            #If we didn't successfully search all sections, go and do it the old-fashioned way:
-
-        if timeslot:
-            qs = self.sections.filter(meeting_times=timeslot)
-            if qs.exists():
-                result = qs[0]
-            else:
-                result = None
-        else:
-            result = self.default_section()
-
-        return result
-    get_section.depend_on_row('program.ClassSection', lambda cs: {'self': cs.parent_class})
-    get_section.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
-
-    def default_section(self, create=True):
-        """ Return the first section that was created for this class. """
-        sec_qs = self.sections.order_by('id')
-        if not sec_qs.exists():
-            if create:
-                return self.add_default_section()
-            else:
-                return None
-        else:
-            return sec_qs[0]
-
-    def add_section(self, duration=None, status=None):
-        """ Add a ClassSection belonging to this class. Can be run multiple times. """
-
-        section_index = self.sections.count() + 1
-
-        if duration is None:
-            duration = self.duration
-        if status is None:
-            status = self.status
-
-        new_section = ClassSection()
-        new_section.parent_class = self
-        new_section.duration = '%.4f' % duration
-        new_section.status = status
-        new_section.save()
-        self.sections.add(new_section)
-
-        self._sections = None
-
-        return new_section
-
-    def add_default_section(self, duration=0.0, status=ClassStatus.UNREVIEWED):
-        """ Make sure this class has a section associated with it.  This should be called
-        at least once on every class.  Afterwards, additional sections can be created using
-        add_section. """
-
-        #   Support migration from currently existing classes.
-        if self.status != ClassStatus.UNREVIEWED:
-            status = self.status
-        if self.duration is not None and self.duration > 0:
-            duration = self.duration
-
-        if not self.sections.exists():
-            return self.add_section(duration, status)
+def default_section(self, create=True):
+    """ Return the first section that was created for this class. """
+    sec_qs = self.sections.order_by('id')
+    if not sec_qs.exists():
+        if create:
+            return self.add_default_section()
         else:
             return None
+    else:
+        return sec_qs[0]
 
-    def friendly_times(self):
-        collapsed_times = []
-        for s in self.get_sections():
-            collapsed_times += s.friendly_times()
-        return collapsed_times
+def add_section(self, duration=None, status=None):
+    """ Add a ClassSection belonging to this class. Can be run multiple times. """
 
-    def prettyblocks(self):
-        blocks = []
+    section_index = self.sections.count() + 1
 
-        for s in self.get_sections():
-            rooms = ", ".join(s.prettyrooms())
-            blocks += [(x + " in " + rooms) for x in s.friendly_times()]
+    if duration is None:
+        duration = self.duration
+    if status is None:
+        status = self.status
 
-        return blocks
+    new_section = ClassSection()
+    new_section.parent_class = self
+    new_section.duration = '%.4f' % duration
+    new_section.status = status
+    new_section.save()
+    self.sections.add(new_section)
 
-    @cache_function
-    def get_teachers(self):
-        """ Return a queryset of all teachers of this class. """
-        # We might have teachers pulled in by Awesome Query Magic(tm), as in .catalog()
-        if hasattr(self, "_teachers"):
-            return self._teachers
+    self._sections = None
 
-        return self.teachers.all().order_by('last_name')
-    get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
+    return new_section
 
-    def students_dict(self):
-        result = PropertyDict({})
-        for sec in self.get_sections():
-            result.merge(sec.students_dict())
-        return result
+def add_default_section(self, duration=0.0, status=ClassStatus.UNREVIEWED):
+    """ Make sure this class has a section associated with it.  This should be called
+    at least once on every class.  Afterwards, additional sections can be created using
+    add_section. """
 
-    def students(self, verbs=['Enrolled']):
-        result = ESPUser.objects.none()
-        for sec in self.get_sections():
-            result = result | sec.students(verbs=verbs)
-        return result
+    #   Support migration from currently existing classes.
+    if self.status != ClassStatus.UNREVIEWED:
+        status = self.status
+    if self.duration is not None and self.duration > 0:
+        duration = self.duration
 
-    def moderators(self):
-        result = ESPUser.objects.none()
-        for sec in self.get_sections():
-            result = result.union(sec.get_moderators())
-        return result
+    if not self.sections.exists():
+        return self.add_section(duration, status)
+    else:
+        return None
 
-    def num_students(self, verbs=['Enrolled']):
-        result = 0
-        for sec in self.get_sections():
-            result += sec.num_students(verbs)
-        return result
+def friendly_times(self):
+    collapsed_times = []
+    for s in self.get_sections():
+        collapsed_times += s.friendly_times()
+    return collapsed_times
 
-    def num_students_prereg(self):
-        result = 0
-        for sec in self.get_sections():
-            result += sec.num_students_prereg()
-        return result
+def prettyblocks(self):
+    blocks = []
 
-    def percent_capacity(self):
-        return 100 * self.num_students() / float(self.capacity)
+    for s in self.get_sections():
+        rooms = ", ".join(s.prettyrooms())
+        blocks += [(x + " in " + rooms) for x in s.friendly_times()]
 
-    def max_students(self):
-        return self.sections.count()*self.class_size_max
+    return blocks
 
-    def grades(self):
-        """ Return an iterable list of the grades for a class. """
-        return list(range(self.grade_min, self.grade_max + 1))
+@cache_function
+def get_teachers(self):
+    """ Return a queryset of all teachers of this class. """
+    # We might have teachers pulled in by Awesome Query Magic(tm), as in .catalog()
+    if hasattr(self, "_teachers"):
+        return self._teachers
 
-    def emailcode(self):
-        """ Return the emailcode for this class.
+    return self.teachers.all().order_by('last_name')
+get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
 
-        The ``emailcode`` is defined as 'first letter of category' + id.
-        """
-        return self.category.symbol+str(self.id)
+def students_dict(self):
+    result = PropertyDict({})
+    for sec in self.get_sections():
+        result.merge(sec.students_dict())
+    return result
 
-    def url(self):
-        return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
+def students(self, verbs=['Enrolled']):
+    result = ESPUser.objects.none()
+    for sec in self.get_sections():
+        result = result | sec.students(verbs=verbs)
+    return result
 
-    def got_index_qsd(self):
-        """ Returns if this class has an associated index.html QSD. """
-        if hasattr(self, "_index_qsd"):
-            return (self._index_qsd != 0)
+def moderators(self):
+    result = ESPUser.objects.none()
+    for sec in self.get_sections():
+        result = result.union(sec.get_moderators())
+    return result
 
-        return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
+def num_students(self, verbs=['Enrolled']):
+    result = 0
+    for sec in self.get_sections():
+        result += sec.num_students(verbs)
+    return result
 
-    def __str__(self):
-        if self.title != "":
-            return "%s: %s" % (self.id, self.title)
-        else:
-            return "%s: (none)" % self.id
+def num_students_prereg(self):
+    result = 0
+    for sec in self.get_sections():
+        result += sec.num_students_prereg()
+    return result
 
-    def delete(self, adminoverride = False):
-        if self.num_students() > 0 and not adminoverride:
-            return False
+def percent_capacity(self):
+    return 100 * self.num_students() / float(self.capacity)
 
-        for sec in self.sections.all():
-            sec.delete()
+def max_students(self):
+    return self.sections.count()*self.class_size_max
 
-        #   Remove indirect dependencies
-        self.documents.clear()
+def grades(self):
+    """ Return an iterable list of the grades for a class. """
+    return list(range(self.grade_min, self.grade_max + 1))
 
-        super().delete()
+def emailcode(self):
+    """ Return the emailcode for this class.
 
-    def numStudentAppQuestions(self):
-        # This field may be prepopulated by .objects.catalog()
-        if not hasattr(self, "_studentapps_count"):
-            self._studentapps_count = self.studentappquestion_set.count()
+    The ``emailcode`` is defined as 'first letter of category' + id.
+    """
+    return self.category.symbol+str(self.id)
 
-        return self._studentapps_count
+def url(self):
+    return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
 
-    def pretty_teachers(self):
-        """ Return a prettified string listing of the class's teachers """
-        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
+def got_index_qsd(self):
+    """ Returns if this class has an associated index.html QSD. """
+    if hasattr(self, "_index_qsd"):
+        return (self._index_qsd != 0)
 
-    def pretty_moderators(self):
-        """ Return a prettified string listing of the class's moderators """
-        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.moderators() ])
+    return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
 
-    def isFull(self, ignore_changes=False, timeslot=None, webapp=False):
-        """ A class subject is full if all of its sections are full. """
-        if timeslot is not None:
-            sections = [self.get_section(timeslot)]
-        else:
-            sections = self.get_sections()
-        for s in sections:
-            if not s.isFull(ignore_changes=ignore_changes, webapp=webapp):
-                return False
-        return True
+def __str__(self):
+    if self.title != "":
+        return "%s: %s" % (self.id, self.title)
+    else:
+        return "%s: (none)" % self.id
 
-    def hasScheduledSections(self):
-        """ Return whether the class has at least one scheduled section.
+def delete(self, adminoverride = False):
+    if self.num_students() > 0 and not adminoverride:
+        return False
 
-        Only display the "class is full" message if this is true.
-        """
+    for sec in self.sections.all():
+        sec.delete()
+
+    #   Remove indirect dependencies
+    self.documents.clear()
+
+    super().delete()
+
+def numStudentAppQuestions(self):
+    # This field may be prepopulated by .objects.catalog()
+    if not hasattr(self, "_studentapps_count"):
+        self._studentapps_count = self.studentappquestion_set.count()
+
+    return self._studentapps_count
+
+def pretty_teachers(self):
+    """ Return a prettified string listing of the class's teachers """
+    return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
+
+def pretty_moderators(self):
+    """ Return a prettified string listing of the class's moderators """
+    return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.moderators() ])
+
+def isFull(self, ignore_changes=False, timeslot=None, webapp=False):
+    """ A class subject is full if all of its sections are full. """
+    if timeslot is not None:
+        sections = [self.get_section(timeslot)]
+    else:
         sections = self.get_sections()
-        for s in sections:
-            if s.isScheduled():
-                return True
-        return False
+    for s in sections:
+        if not s.isFull(ignore_changes=ignore_changes, webapp=webapp):
+            return False
+    return True
 
-    @cache_function
-    def get_capacity_factor():
-        tag_val = Tag.getTag('nearly_full_threshold')
-        if tag_val:
-            capacity_factor = float(tag_val)
-        else:
-            capacity_factor = 0.75
-        return capacity_factor
-    get_capacity_factor.depend_on_row('tagdict.Tag', lambda tag: {}, lambda tag: tag.key == 'nearly_full_threshold')
-    get_capacity_factor = staticmethod(get_capacity_factor)
+def hasScheduledSections(self):
+    """ Return whether the class has at least one scheduled section.
 
-    def is_nearly_full(self, capacity_factor = None):
-        if capacity_factor is None:
-            capacity_factor = ClassSubject.get_capacity_factor()
-        return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
-
-    def getTeacherNames(self):
-        teachers = []
-        for teacher in self.get_teachers():
-            name = teacher.name()
-            if name.strip() == '':
-                name = teacher.username
-            teachers.append(name)
-        return teachers
-
-    def getTeacherNamesWithPronouns(self):
-        teachers = []
-        for teacher in self.get_teachers():
-            name = teacher.name()
-            if name.strip() == '':
-                name = teacher.username
-            prof = RegistrationProfile.getLastProfile(teacher)
-            if prof.teacher_info is not None:
-                if prof.teacher_info.pronoun is not None:
-                    name = name + ' (' + prof.teacher_info.pronoun + ')'
-            teachers.append(name)
-        return teachers
-
-    def getTeacherNamesLast(self):
-        teachers = []
-        for teacher in self.get_teachers():
-            name = teacher.name_last_first()
-            if name.strip() == '':
-                name = teacher.username
-            teachers.append(name)
-        return teachers
-
-    def cannotAdd(self, user, checkFull=True, which_section=None, webapp=False):
-        """ Go through and give an error message if this user cannot add this class to their schedule. """
-        if not user.isStudent():
-            return 'You are not a student!'
-
-        if not self.isAccepted():
-            return 'This class is not accepted.'
-
-        if checkFull and not self.parent_program.user_can_join(user):
-            return 'This program cannot accept any more students!  Please try again in its next session.'
-
-        if checkFull and self.isFull(webapp=webapp):
-            scrmi = self.parent_program.studentclassregmoduleinfo
-            return scrmi.temporarily_full_text
-
-        if user.getGrade(self.parent_program) < self.grade_min or \
-               user.getGrade(self.parent_program) > self.grade_max:
-            if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
-                return 'You are not in the requested grade range for this class.'
-
-        for section in self.get_sections():
-            if user.isEnrolledInClass(section):
-                return 'You are already signed up for a section of this class!'
-
-        if which_section:
-            sections = [which_section]
-        else:
-            sections = self.get_sections()
-        # check to see if there's a conflict with each section of the subject, or if the user
-        # has already signed up for one of the sections of this class
-        for section in sections:
-            res = section.cannotAdd(user, checkFull, autocorrect_constraints=False, webapp=webapp)
-            if not res: # if any *can* be added, then return False--we can add this class
-                return res
-        #   Pass on any errors that were triggered by the individual sections
-        if res:
-            return res
-
-        # res can't have ever been False--so we must have an error. Pass it along.
-        return 'This class conflicts with your schedule!'
-
-    def makeTeacher(self, user):
-        self.teachers.add(user)
-        return True
-
-    def removeTeacher(self, user):
-        self.teachers.remove(user)
-        return True
-
-    def getResourceRequests(self): # get all resource requests associated with this ClassSubject
-        return ResourceRequest.objects.filter(target__parent_class=self)
-
-    def conflicts(self, teacher):
-        user = teacher
-        for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
-            for section in cls.get_sections():
-                for time in section.meeting_times.all():
-                    for sec in self.sections.all().exclude(id=section.id):
-                        if sec.meeting_times.filter(id = time.id).exists():
-                            return True
-
-        #   Check that adding this teacher as a coteacher would not overcommit them
-        #   to more hours of teaching than the program allows.
-        avail = Event.collapse(user.getAvailableTimes(self.parent_program, ignore_classes=True), tol=timedelta(minutes=15))
-        time_avail = 0.0
-        #   Start with amount of total time pledged as available
-        for tg in avail:
-            td = tg.duration()
-            time_avail += (td.seconds / 3600.0)
-        #   Subtract out time already pledged for teaching classes other than this one
-        for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
-            if cls.id != self.id:
-                for sec in cls.get_sections():
-                    time_avail -= float(str(sec.duration))
-        #   Add up time that would be needed to teach this class
-        time_needed = 0.0
-        for sec in self.get_sections():
-            time_needed += float(str(sec.duration))
-        #   See if the available time exceeds the required time
-        if time_needed > time_avail:
+    Only display the "class is full" message if this is true.
+    """
+    sections = self.get_sections()
+    for s in sections:
+        if s.isScheduled():
             return True
+    return False
 
-        return False
+@cache_function
+def get_capacity_factor():
+    tag_val = Tag.getTag('nearly_full_threshold')
+    if tag_val:
+        capacity_factor = float(tag_val)
+    else:
+        capacity_factor = 0.75
+    return capacity_factor
+get_capacity_factor.depend_on_row('tagdict.Tag', lambda tag: {}, lambda tag: tag.key == 'nearly_full_threshold')
+get_capacity_factor = staticmethod(get_capacity_factor)
 
-    def isAccepted(self): return self.status > 0
-    def isHidden(self): return self.status == ClassStatus.HIDDEN
-    def isReviewed(self): return self.status != ClassStatus.UNREVIEWED
-    def isRejected(self): return self.status == ClassStatus.REJECTED
-    def isCancelled(self): return self.status == ClassStatus.CANCELLED
-    isCanceled = isCancelled    # Yay alternative spellings
+def is_nearly_full(self, capacity_factor = None):
+    if capacity_factor is None:
+        capacity_factor = ClassSubject.get_capacity_factor()
+    return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
 
-    def status_str(self): return STATUS_CHOICES_DICT[self.status]
+def getTeacherNames(self):
+    teachers = []
+    for teacher in self.get_teachers():
+        name = teacher.name()
+        if name.strip() == '':
+            name = teacher.username
+        teachers.append(name)
+    return teachers
 
-    def isRegOpen(self):
-        for sec in self.sections.all():
-            if sec.isRegOpen():
-                return True
-        return False
+def getTeacherNamesWithPronouns(self):
+    teachers = []
+    for teacher in self.get_teachers():
+        name = teacher.name()
+        if name.strip() == '':
+            name = teacher.username
+        prof = RegistrationProfile.getLastProfile(teacher)
+        if prof.teacher_info is not None:
+            if prof.teacher_info.pronoun is not None:
+                name = name + ' (' + prof.teacher_info.pronoun + ')'
+        teachers.append(name)
+    return teachers
 
-    def isRegClosed(self):
-        for sec in self.get_sections():
-            if not sec.isRegClosed():
-                return False
+def getTeacherNamesLast(self):
+    teachers = []
+    for teacher in self.get_teachers():
+        name = teacher.name_last_first()
+        if name.strip() == '':
+            name = teacher.username
+        teachers.append(name)
+    return teachers
+
+def cannotAdd(self, user, checkFull=True, which_section=None, webapp=False):
+    """ Go through and give an error message if this user cannot add this class to their schedule. """
+    if not user.isStudent():
+        return 'You are not a student!'
+
+    if not self.isAccepted():
+        return 'This class is not accepted.'
+
+    if checkFull and not self.parent_program.user_can_join(user):
+        return 'This program cannot accept any more students!  Please try again in its next session.'
+
+    if checkFull and self.isFull(webapp=webapp):
+        scrmi = self.parent_program.studentclassregmoduleinfo
+        return scrmi.temporarily_full_text
+
+    if user.getGrade(self.parent_program) < self.grade_min or \
+            user.getGrade(self.parent_program) > self.grade_max:
+        if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
+            return 'You are not in the requested grade range for this class.'
+
+    for section in self.get_sections():
+        if user.isEnrolledInClass(section):
+            return 'You are already signed up for a section of this class!'
+
+    if which_section:
+        sections = [which_section]
+    else:
+        sections = self.get_sections()
+    # check to see if there's a conflict with each section of the subject, or if the user
+    # has already signed up for one of the sections of this class
+    for section in sections:
+        res = section.cannotAdd(user, checkFull, autocorrect_constraints=False, webapp=webapp)
+        if not res: # if any *can* be added, then return False--we can add this class
+            return res
+    #   Pass on any errors that were triggered by the individual sections
+    if res:
+        return res
+
+    # res can't have ever been False--so we must have an error. Pass it along.
+    return 'This class conflicts with your schedule!'
+
+def makeTeacher(self, user):
+    self.teachers.add(user)
+    return True
+
+def removeTeacher(self, user):
+    self.teachers.remove(user)
+    return True
+
+def getResourceRequests(self): # get all resource requests associated with this ClassSubject
+    return ResourceRequest.objects.filter(target__parent_class=self)
+
+def conflicts(self, teacher):
+    user = teacher
+    for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
+        for section in cls.get_sections():
+            for time in section.meeting_times.all():
+                for sec in self.sections.all().exclude(id=section.id):
+                    if sec.meeting_times.filter(id = time.id).exists():
+                        return True
+
+    #   Check that adding this teacher as a coteacher would not overcommit them
+    #   to more hours of teaching than the program allows.
+    avail = Event.collapse(user.getAvailableTimes(self.parent_program, ignore_classes=True), tol=timedelta(minutes=15))
+    time_avail = 0.0
+    #   Start with amount of total time pledged as available
+    for tg in avail:
+        td = tg.duration()
+        time_avail += (td.seconds / 3600.0)
+    #   Subtract out time already pledged for teaching classes other than this one
+    for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
+        if cls.id != self.id:
+            for sec in cls.get_sections():
+                time_avail -= float(str(sec.duration))
+    #   Add up time that would be needed to teach this class
+    time_needed = 0.0
+    for sec in self.get_sections():
+        time_needed += float(str(sec.duration))
+    #   See if the available time exceeds the required time
+    if time_needed > time_avail:
         return True
 
-    def isFullOrClosed(self):
-        for sec in self.get_sections():
-            if not sec.isFullOrClosed():
-                return False
-        return True
+    return False
 
-    def accept(self):
-        """ mark this class as accepted """
-        if self.isAccepted():
-            return False # already accepted
+def isAccepted(self): return self.status > 0
+def isHidden(self): return self.status == ClassStatus.HIDDEN
+def isReviewed(self): return self.status != ClassStatus.UNREVIEWED
+def isRejected(self): return self.status == ClassStatus.REJECTED
+def isCancelled(self): return self.status == ClassStatus.CANCELLED
+isCanceled = isCancelled    # Yay alternative spellings
 
-        self.accept_all_sections()
-        return True
+def status_str(self): return STATUS_CHOICES_DICT[self.status]
 
-    def set_all_sections_to_status(self, status, skip_cancelled = True, skip_rejected = True):
-        self.status = status
-        self.save()
-        for sec in self.sections.all():
-            if skip_cancelled and sec.isCancelled() and self.num_sections() > 1:
-                continue
-            if skip_rejected and sec.isRejected() and self.num_sections() > 1:
-                continue
-            sec.status = status
-            sec.save()
+def isRegOpen(self):
+    for sec in self.sections.all():
+        if sec.isRegOpen():
+            return True
+    return False
 
-    def accept_all_sections(self):
-        """ Accept all sections of this class that aren't already cancelled/rejected, without any of the checks or messages that are in accept() """
-        self.set_all_sections_to_status(ClassStatus.ACCEPTED)
+def isRegClosed(self):
+    for sec in self.get_sections():
+        if not sec.isRegClosed():
+            return False
+    return True
 
-    def propose(self):
-        """ Mark this class as just 'proposed' """
-        self.unreview_all_sections()
+def isFullOrClosed(self):
+    for sec in self.get_sections():
+        if not sec.isFullOrClosed():
+            return False
+    return True
 
-    def unreview_all_sections(self):
-        """ Unreview all sections of this class that aren't already cancelled/rejected. """
-        self.set_all_sections_to_status(ClassStatus.UNREVIEWED)
+def accept(self):
+    """ mark this class as accepted """
+    if self.isAccepted():
+        return False # already accepted
 
-    def reject(self):
-        """ Mark this class as rejected. This should only ever be used if no sections are scheduled.
-            This kicks out students from each section and unschedules all of the sections (just in case). """
-        self.clearStudents()
-        self.clearRooms()
-        self.clearTimes()
-        self.set_all_sections_to_status(ClassStatus.REJECTED)
+    self.accept_all_sections()
+    return True
 
-    def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
-        """ Cancel this class by cancelling all of its sections. """
-        for sec in self.sections.all():
-            if sec.isCancelled():
-                continue
-            sec.cancel(email_students, include_lottery_students, text_students, email_teachers, explanation, unschedule)
-        self.status = ClassStatus.CANCELLED
-        self.save()
+def set_all_sections_to_status(self, status, skip_cancelled = True, skip_rejected = True):
+    self.status = status
+    self.save()
+    for sec in self.sections.all():
+        if skip_cancelled and sec.isCancelled() and self.num_sections() > 1:
+            continue
+        if skip_rejected and sec.isRejected() and self.num_sections() > 1:
+            continue
+        sec.status = status
+        sec.save()
 
-    def clearStudents(self):
-        for sec in self.sections.all():
-            sec.clearStudents()
+def accept_all_sections(self):
+    """ Accept all sections of this class that aren't already cancelled/rejected, without any of the checks or messages that are in accept() """
+    self.set_all_sections_to_status(ClassStatus.ACCEPTED)
 
-    def clearRooms(self):
-        for sec in self.sections.all():
-            sec.clearRooms()
+def propose(self):
+    """ Mark this class as just 'proposed' """
+    self.unreview_all_sections()
 
-    def clearTimes(self):
-        for sec in self.sections.all():
-            sec.meeting_times.clear()
+def unreview_all_sections(self):
+    """ Unreview all sections of this class that aren't already cancelled/rejected. """
+    self.set_all_sections_to_status(ClassStatus.UNREVIEWED)
 
-    @cache_function
-    def docs_summary(self):
-        """ Return the first three documents associated
-        with a class, for previewing. """
-        return self.documents.all()[:3]
-    docs_summary.depend_on_model('qsdmedia.Media')
+def reject(self):
+    """ Mark this class as rejected. This should only ever be used if no sections are scheduled.
+        This kicks out students from each section and unschedules all of the sections (just in case). """
+    self.clearStudents()
+    self.clearRooms()
+    self.clearTimes()
+    self.set_all_sections_to_status(ClassStatus.REJECTED)
 
-    def getUrlBase(self):
-        """ Gets the base url of this class """
-        return self.url()
+def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
+    """ Cancel this class by cancelling all of its sections. """
+    for sec in self.sections.all():
+        if sec.isCancelled():
+            continue
+        sec.cancel(email_students, include_lottery_students, text_students, email_teachers, explanation, unschedule)
+    self.status = ClassStatus.CANCELLED
+    self.save()
 
-    def getRegistrations(self, user=None):
-        """Gets all non-expired StudentRegistrations associated with this class. If user is given, will also filter to that particular user only."""
-        if user is None:
-            return StudentRegistration.valid_objects().filter(section__in=self.sections.all()).order_by('start_date')
+def clearStudents(self):
+    for sec in self.sections.all():
+        sec.clearStudents()
+
+def clearRooms(self):
+    for sec in self.sections.all():
+        sec.clearRooms()
+
+def clearTimes(self):
+    for sec in self.sections.all():
+        sec.meeting_times.clear()
+
+@cache_function
+def docs_summary(self):
+    """ Return the first three documents associated
+    with a class, for previewing. """
+    return self.documents.all()[:3]
+docs_summary.depend_on_model('qsdmedia.Media')
+
+def getUrlBase(self):
+    """ Gets the base url of this class """
+    return self.url()
+
+def getRegistrations(self, user=None):
+    """Gets all non-expired StudentRegistrations associated with this class. If user is given, will also filter to that particular user only."""
+    if user is None:
+        return StudentRegistration.valid_objects().filter(section__in=self.sections.all()).order_by('start_date')
+    else:
+        return StudentRegistration.valid_objects().filter(section__in=self.sections.all(), user=user).order_by('start_date')
+
+def getRegVerbs(self, user):
+    """ Get the list of verbs that a student has within this class. """
+    return self.getRegistrations(user).values_list('relationship__name', flat=True)
+
+def preregister_student(self, user, overridefull=False, automatic=False):
+    """ Register the student for the least full section of the class
+    that fits into their schedule. """
+    sections = user.getEnrolledSections()
+    time_taken = []
+    for c in sections:
+        time_taken += list(c.meeting_times.all())
+
+    best_section = None
+    min_ratio = 1.0
+    for sec in self.sections.all():
+        available = True
+        for t in sec.meeting_times.all():
+            if t in time_taken:
+                available = False
+        if available and (float(sec.num_students()) / (sec.capacity + 1)) < min_ratio:
+            min_ratio = float(sec.num_students()) / (sec.capacity + 1)
+            best_section = sec
+
+    if best_section:
+        best_section.preregister_student(user, overridefull, automatic)
+
+def unpreregister_student(self, user, prereg_verbs = []):
+    """ Find the student's registration for the class and expire it.
+    Also update the cache on each of the sections.  """
+    for s in self.sections.all():
+        s.unpreregister_student(user, prereg_verbs)
+
+def __cmp__(self, other):
+    # Warning: this hits the DB around four times per comparison, i.e.,
+    # O(n log n) times for a list.  Consider using prefetch_related and
+    # then sorting with the key self.start_time_prefetched(), which will
+    # hit the DB only once at the start, and compute the start time of each
+    # class only once.
+    if not isinstance(other, type(self)):
+        return 1
+    selfevent = self.firstBlockEvent()
+    otherevent = other.firstBlockEvent()
+
+    if selfevent is not None and otherevent is None:
+        return 1
+    if selfevent is None and otherevent is not None:
+        return -1
+
+    if selfevent is not None and otherevent is not None:
+        cmpresult = selfevent.__cmp__(otherevent)
+        if cmpresult != 0:
+            return cmpresult
+
+    return cmp(self.title, other.title)
+def __lt__(self, other):
+    return self.__cmp__(other) < 0
+def __gt__(self, other):
+    return self.__cmp__(other) > 0
+def __eq__(self, other):
+    return self.__cmp__(other) == 0
+def __le__(self, other):
+    return self.__cmp__(other) <= 0
+def __ge__(self, other):
+    return self.__cmp__(other) >= 0
+def __ne__(self, other):
+    return self.__cmp__(other) != 0
+
+def __hash__(self):
+    if self.pk is None:
+        return super().__hash__()
+    return hash(self.pk)
+
+def firstBlockEvent(self):
+    eventList = self.all_meeting_times.all().order_by('start')
+    if not eventList.exists():
+        return None
+    else:
+        return eventList[0]
+
+def getArchiveClass(self):
+    result = ArchiveClass.objects.filter(original_id=self.id)
+    if result.exists():
+        return result[0]
+
+    result = ArchiveClass()
+    date_dir = self.parent_program.program_instance.split('_')
+    result.program = self.parent_program.program_type
+    result.year = date_dir[0][:4]
+    if len(date_dir) > 1:
+        result.date = date_dir[1]
+    teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.get_teachers()]
+    result.teacher = ' and '.join(teacher_strs)
+    result.category = self.category.category[:32]
+    result.title = self.title
+    result.description = self.class_info
+    if self.prereqs and len(self.prereqs) > 0:
+        result.description += '\n\nThe prerequisites for this class were: %s' % self.prereqs
+    result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.get_teachers()]) + '|'
+    all_students = self.students()
+    result.student_ids = '|' + '|'.join([str(s.id) for s in all_students]) + '|'
+    result.original_id = self.id
+
+    #   It's good to just keep everything in the archives since they are cheap.
+    result.save()
+
+    return result
+
+@staticmethod
+def class_sort_by_category(one, other):
+    return cmp(one.category.category, other.category.category)
+
+@staticmethod
+def class_sort_by_id(one, other):
+    return cmp(one.id, other.id)
+
+@staticmethod
+def class_sort_by_teachers(one, other):
+    return cmp( sorted(one.getTeacherNames()), sorted(other.getTeacherNames()) )
+
+@staticmethod
+def class_sort_by_title(one, other):
+    return cmp(one.title, other.title)
+
+@staticmethod
+def class_sort_by_timeblock(one, other):
+    if len(one.all_meeting_times) == 0:
+        if len(other.all_meeting_times) == 0:
+            return 0
         else:
-            return StudentRegistration.valid_objects().filter(section__in=self.sections.all(), user=user).order_by('start_date')
-
-    def getRegVerbs(self, user):
-        """ Get the list of verbs that a student has within this class. """
-        return self.getRegistrations(user).values_list('relationship__name', flat=True)
-
-    def preregister_student(self, user, overridefull=False, automatic=False):
-        """ Register the student for the least full section of the class
-        that fits into their schedule. """
-        sections = user.getEnrolledSections()
-        time_taken = []
-        for c in sections:
-            time_taken += list(c.meeting_times.all())
-
-        best_section = None
-        min_ratio = 1.0
-        for sec in self.sections.all():
-            available = True
-            for t in sec.meeting_times.all():
-                if t in time_taken:
-                    available = False
-            if available and (float(sec.num_students()) / (sec.capacity + 1)) < min_ratio:
-                min_ratio = float(sec.num_students()) / (sec.capacity + 1)
-                best_section = sec
-
-        if best_section:
-            best_section.preregister_student(user, overridefull, automatic)
-
-    def unpreregister_student(self, user, prereg_verbs = []):
-        """ Find the student's registration for the class and expire it.
-        Also update the cache on each of the sections.  """
-        for s in self.sections.all():
-            s.unpreregister_student(user, prereg_verbs)
-
-    def __cmp__(self, other):
-        # Warning: this hits the DB around four times per comparison, i.e.,
-        # O(n log n) times for a list.  Consider using prefetch_related and
-        # then sorting with the key self.start_time_prefetched(), which will
-        # hit the DB only once at the start, and compute the start time of each
-        # class only once.
-        if not isinstance(other, type(self)):
-            return 1
-        selfevent = self.firstBlockEvent()
-        otherevent = other.firstBlockEvent()
-
-        if selfevent is not None and otherevent is None:
-            return 1
-        if selfevent is None and otherevent is not None:
             return -1
-
-        if selfevent is not None and otherevent is not None:
-            cmpresult = selfevent.__cmp__(otherevent)
-            if cmpresult != 0:
-                return cmpresult
-
-        return cmp(self.title, other.title)
-    def __lt__(self, other):
-        return self.__cmp__(other) < 0
-    def __gt__(self, other):
-        return self.__cmp__(other) > 0
-    def __eq__(self, other):
-        return self.__cmp__(other) == 0
-    def __le__(self, other):
-        return self.__cmp__(other) <= 0
-    def __ge__(self, other):
-        return self.__cmp__(other) >= 0
-    def __ne__(self, other):
-        return self.__cmp__(other) != 0
-
-    def __hash__(self):
-        if self.pk is None:
-            return super().__hash__()
-        return hash(self.pk)
-
-    def firstBlockEvent(self):
-        eventList = self.all_meeting_times.all().order_by('start')
-        if not eventList.exists():
-            return None
+    else:
+        if len(other.all_meeting_times) == 0:
+            return 1
         else:
-            return eventList[0]
+            return cmp(one.all_meeting_times[0], other.all_meeting_times[0])
 
-    def getArchiveClass(self):
-        result = ArchiveClass.objects.filter(original_id=self.id)
-        if result.exists():
-            return result[0]
+@staticmethod
+def class_sort_noop(one, other):
+    return 0
 
-        result = ArchiveClass()
-        date_dir = self.parent_program.program_instance.split('_')
-        result.program = self.parent_program.program_type
-        result.year = date_dir[0][:4]
-        if len(date_dir) > 1:
-            result.date = date_dir[1]
-        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.get_teachers()]
-        result.teacher = ' and '.join(teacher_strs)
-        result.category = self.category.category[:32]
-        result.title = self.title
-        result.description = self.class_info
-        if self.prereqs and len(self.prereqs) > 0:
-            result.description += '\n\nThe prerequisites for this class were: %s' % self.prereqs
-        result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.get_teachers()]) + '|'
-        all_students = self.students()
-        result.student_ids = '|' + '|'.join([str(s.id) for s in all_students]) + '|'
-        result.original_id = self.id
+def save(self, *args, **kwargs):
+    super().save(*args, **kwargs)
+    if self.status < ClassStatus.UNREVIEWED: #ie, all rejected or cancelled classes.
+        # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
+        teachers = self.get_teachers()
+        for t in teachers:
+            if not t.getTaughtClasses(self.parent_program).filter(status__gte=10).exists():
+                mailing_list_name = "%s_%s" % (self.parent_program.program_type, self.parent_program.program_instance)
+                teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
+                remove_list_member(teachers_list_name, t.email)
 
-        #   It's good to just keep everything in the archives since they are cheap.
-        result.save()
-
-        return result
-
-    @staticmethod
-    def class_sort_by_category(one, other):
-        return cmp(one.category.category, other.category.category)
-
-    @staticmethod
-    def class_sort_by_id(one, other):
-        return cmp(one.id, other.id)
-
-    @staticmethod
-    def class_sort_by_teachers(one, other):
-        return cmp( sorted(one.getTeacherNames()), sorted(other.getTeacherNames()) )
-
-    @staticmethod
-    def class_sort_by_title(one, other):
-        return cmp(one.title, other.title)
-
-    @staticmethod
-    def class_sort_by_timeblock(one, other):
-        if len(one.all_meeting_times) == 0:
-            if len(other.all_meeting_times) == 0:
-                return 0
-            else:
-                return -1
-        else:
-            if len(other.all_meeting_times) == 0:
-                return 1
-            else:
-                return cmp(one.all_meeting_times[0], other.all_meeting_times[0])
-
-    @staticmethod
-    def class_sort_noop(one, other):
-        return 0
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.status < ClassStatus.UNREVIEWED: #ie, all rejected or cancelled classes.
-            # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
-            teachers = self.get_teachers()
-            for t in teachers:
-                if not t.getTaughtClasses(self.parent_program).filter(status__gte=10).exists():
-                    mailing_list_name = "%s_%s" % (self.parent_program.program_type, self.parent_program.program_instance)
-                    teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
-                    remove_list_member(teachers_list_name, t.email)
-
-    class Meta:
-        db_table = 'program_class'
-        app_label = 'program'
+class Meta:
+    db_table = 'program_class'
+    app_label = 'program'
 
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
