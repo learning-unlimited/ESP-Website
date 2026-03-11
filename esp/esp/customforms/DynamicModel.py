@@ -1,10 +1,10 @@
 import re
 import os
 
-from django.db import models
+from django.db import models, connection, transaction, OperationalError
 from django.apps import apps
-from django.db import connection, transaction
 from django.db.models.fields import NOT_PROVIDED
+
 from esp.customforms.models import Field
 from argcache import cache_function
 from esp.users.models import ESPUser
@@ -93,6 +93,13 @@ class DynamicModelHandler:
         # Keep track of the models being linked to (see docstring)
         self.link_models_list = []
 
+    def _set_lock_timeout(self):
+        """
+        Prevent schema operations from hanging indefinitely if database tables are locked
+        """
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout = '5s'")
+
     def __marinade__(self):
         """
         Implemented for caching convenience
@@ -171,29 +178,43 @@ class DynamicModelHandler:
         return self.field_list
 
     def createTable(self):
-        """
-        Sets up the database table using self.field_list
-        """
+        # """
+        # Sets up the database table using self.field_list
+        # """
 
         if not self.field_list:
             self._getModelFieldList()
 
-        if transaction.get_autocommit():
-            with transaction.atomic():
+        try:
+            if transaction.get_autocommit():
+                with transaction.atomic():
+                    self._set_lock_timeout()
+                    with connection.schema_editor() as schema_editor:
+                        schema_editor.create_model(self.createDynModel())
+            else:
+                self._set_lock_timeout()
                 with connection.schema_editor() as schema_editor:
                     schema_editor.create_model(self.createDynModel())
-        else:
-            with connection.schema_editor() as schema_editor:
-                schema_editor.create_model(self.createDynModel())
+
+        except OperationalError:
+            raise Exception(
+                "Custom form table creation failed due to a database lock. Please try again."
+            )
 
     @transaction.atomic
     def deleteTable(self):
         """
         Deletes the response table for the current form
         """
-        with connection.schema_editor() as schema_editor:
-            schema_editor.delete_model(self.createDynModel())
-        self.purgeDynModel()
+        try:
+            self._set_lock_timeout()
+            with connection.schema_editor() as schema_editor:
+                schema_editor.delete_model(self.createDynModel())
+                self.purgeDynModel()
+        except OperationalError:
+            raise Exception(
+                "Deleting a custom form table failed due to a database lock. Please try again."
+            )
 
     def _getFieldToAdd(self, ftype):
         """
@@ -217,35 +238,74 @@ class DynamicModelHandler:
         return "question_%d" % field.id
 
     def addField(self, field):
-        with connection.schema_editor() as schema_editor:
-            model = self.createDynModel()
-            new_field = self._getModelField(field.field_type)
-            if new_field:
-                new_field.column = self.get_field_name(field)
-                # We need to set a default (if one isn't set already) in case there are already responses to the form
-                if new_field.default == NOT_PROVIDED:
-                    new_field.default = ''
-                schema_editor.add_field(model, new_field)
+
+        try:
+            with transaction.atomic():
+                self._set_lock_timeout()
+
+                with connection.schema_editor() as schema_editor:
+                    model = self.createDynModel()
+                    new_field = self._getModelField(field.field_type)
+
+                    if new_field:
+                        new_field.column = self.get_field_name(field)
+
+                        # Set default if needed (existing rows may exist)
+                        if new_field.default == NOT_PROVIDED:
+                            new_field.default = ''
+
+                        schema_editor.add_field(model, new_field)
+
+        except OperationalError:
+            raise Exception(
+                "Adding a custom form field failed due to a database lock. Please try again."
+            )
 
     def updateField(self, field, old_field):
-        with connection.schema_editor() as schema_editor:
-            model = self.createDynModel()
-            old_field_name = self.get_field_name(old_field)
-            new_field = self._getModelField(field.field_type)
-            if new_field:
-                new_field.column = self.get_field_name(field)
-                schema_editor.alter_field(model, model._meta.get_field(old_field_name), new_field)
+
+        try:
+            with transaction.atomic():
+                self._set_lock_timeout()
+
+                with connection.schema_editor() as schema_editor:
+                    model = self.createDynModel()
+                    old_field_name = self.get_field_name(old_field)
+
+                    new_field = self._getModelField(field.field_type)
+
+                    if new_field:
+                        new_field.column = self.get_field_name(field)
+
+                        schema_editor.alter_field(
+                            model,
+                            model._meta.get_field(old_field_name),
+                            new_field
+                        )
+
+        except OperationalError:
+            raise Exception(
+                "Updating a custom form field failed due to a database lock."
+            )
+
 
     def removeField(self, field):
         """
         Removes a column (or columns) corresponding to a particular field
         """
-        with connection.schema_editor() as schema_editor:
-            model = self.createDynModel()
-            if self._getModelField(field.field_type):
-                field_name = self.get_field_name(field)
-                #   TODO: Return early if this is a linked field
-                schema_editor.remove_field(model, model._meta.get_field(field_name))
+        try:
+            with transaction.atomic():
+                self._set_lock_timeout()
+
+                with connection.schema_editor() as schema_editor:
+                    model = self.createDynModel()
+                    if self._getModelField(field.field_type):
+                        field_name = self.get_field_name(field)
+                        schema_editor.remove_field(model, model._meta.get_field(field_name))
+
+        except OperationalError:
+            raise Exception(
+                "Removing a custom form field failed due to a database lock. Please try again."
+            )
 
     def removeLinkField(self, field):
         """
