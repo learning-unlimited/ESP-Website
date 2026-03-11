@@ -36,7 +36,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 import math
-import time
 
 from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail
 from datetime import timedelta
@@ -105,10 +104,6 @@ def send_email_requests():
                                           sent__isnull=True,
                                           tries__lte=retries)
 
-    wait = getattr(settings, 'EMAILTIMEOUT', None)
-    if wait is None:
-        wait = 1.5
-
     num_sent = 0
     errors = [] # if any messages failed to deliver
 
@@ -141,8 +136,6 @@ def send_email_requests():
                 logger.warning("Encountered error while sending to " + mailtxt.send_to + ": " + exception_type_str)
             else:
                 num_sent += 1
-
-            time.sleep(wait)
 
     if num_sent > 0:
         logger.info('Sent %d messages', num_sent)

@@ -42,6 +42,8 @@ from os.path import basename, dirname
 from django.utils import timezone
 from django.core.cache import cache
 from django.template.defaultfilters import urlencode
+from django.contrib import messages
+from django.shortcuts import redirect
 from esp.middleware import Http403
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
@@ -154,10 +156,7 @@ def qsd(request, url):
                 response.status_code = 404 # Make sure we actually 404, so that if there is a redirect the middleware can catch it.
                 return response
         else:
-            if action == 'read':
-                raise Http404('This page does not exist.')
-            else:
-                raise Http403('Sorry, you can not modify <tt>%s</tt>.' % request.path)
+            raise Http404('This page does not exist.')
 
     if action == 'create':
         action = 'edit'
@@ -191,7 +190,8 @@ def qsd(request, url):
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
-            raise Http403("Sorry, you do not have permission to edit this page.")
+            messages.error(request, "Sorry, you do not have permission to edit this page.")
+            return redirect('/' + base_url + '.html')
 
         nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
 
@@ -234,7 +234,8 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise Http403("You don't have permission to edit this page.")
+            messages.error(request, "You don't have permission to edit this page.")
+            return redirect('/' + base_url + '.html')
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
