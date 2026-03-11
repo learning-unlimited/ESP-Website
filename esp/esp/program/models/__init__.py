@@ -2027,9 +2027,12 @@ class ScheduleConstraint(models.Model):
         try:
             func_str = """def _f(schedule_map):
 %s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
-            exec(func_str)
-            result = _f(self.schedule_map)
-            return result
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning("Execution of ScheduleConstraint.on_failure disabled for security reasons.")
+            # exec(func_str)
+            # result = _f(self.schedule_map)
+            # return result
         except Exception as inst:
             #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
             pass

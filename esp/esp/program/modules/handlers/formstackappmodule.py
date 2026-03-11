@@ -118,16 +118,26 @@ class FormstackAppModule(ProgramModuleObj):
         context['username'] = request.user.username
         context['app_is_open'] = fsas.app_is_open or request.user.isAdmin(prog)
         context['autopopulated'] = autopopulated = []
+        from django.template import Template, Context
+
         for line in fsas.autopopulated_fields.strip().split('\n'):
             if not line.strip():
                 continue
+
             field, _, expr = line.partition(':')
-            value = resolve_field_expression(expr, {'user': request.user})
-            field_name = field.strip()
-            if value is not None and field_name:
-                autopopulated.append((field_name, value))
+            try:
+                template = Template(expr)
+                context_dict = Context({'user': request.user})
+                value = template.render(context_dict)
+            except Exception as e:
+                logger.exception("Error in FormstackAppSettings: %s", e)
+                continue
+
+            autopopulated.append((field.strip(), value))
+
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, context)
+
 
     @aux_call
     @needs_student_in_grade

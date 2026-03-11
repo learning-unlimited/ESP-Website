@@ -31,11 +31,11 @@ class FormstackAppSettings(models.Model):
     coreclass_fields = models.CharField(max_length=80, blank=True, help_text="A list of field ids separated by commas.", validators=[validate_comma_separated_integer_list])
 
     autopopulated_fields = models.TextField(blank=True, help_text="""\
-To autopopulate fields on the form, type "[field id]: [Python
-expression that returns field value]", one field per line. The Python
+To autopopulate fields on the form, type "[field id]: [Template
+expression that returns field value]", one field per line. The Template
 expression can use the variable 'user' to refer to request.user.
 
-Caution: expressions will be eval()'d by the server.""")
+Example: 12345: {{ user.username }}""")
 
     finaid_user_id_field = models.IntegerField(null=True, blank=True)
     finaid_username_field = models.IntegerField(null=True, blank=True)
