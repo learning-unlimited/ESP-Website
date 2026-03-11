@@ -2365,8 +2365,10 @@ the specific language governing permissions and limitations under the Apache Lic
                 self=this;
 
             
-            if (opts.placeholder && typeof opts.placeholder !== 'string') {
-                console.error("Select2: placeholder must be a string");
+            if (opts.placeholder != null && typeof opts.placeholder !== 'string') {
+                if (typeof console !== "undefined" && console && typeof console.error === "function") {
+                    console.error("Select2: placeholder must be a string");
+                }
                 delete opts.placeholder;
             }
             
