@@ -596,6 +596,24 @@ def userview(request):
     change_grade_form.fields['graduation_year'].initial = user.getYOG()
     change_grade_form.fields['graduation_year'].choices = [choice for choice in change_grade_form.fields['graduation_year'].choices if bool(choice[0])]
 
+    # Split enrolled sections: those from the selected program vs. all others
+    all_enrolled = user.getEnrolledSections().order_by('parent_class__parent_program', 'id')
+    if program:
+        program_enrolled = all_enrolled.filter(parent_class__parent_program=program)
+        other_enrolled = all_enrolled.exclude(parent_class__parent_program=program)
+    else:
+        program_enrolled = all_enrolled
+        other_enrolled = all_enrolled.none()
+
+    # Split taken/applied sections the same way
+    all_taken = user.getSections().order_by('parent_class__parent_program', 'id')
+    if program:
+        program_taken = all_taken.filter(parent_class__parent_program=program)
+        other_taken = all_taken.exclude(parent_class__parent_program=program)
+    else:
+        program_taken = all_taken
+        other_taken = all_taken.none()
+
     # Get StudentSubjectInterests (starred classes) for this user
     starred_classes = []
     if program:
@@ -608,8 +626,10 @@ def userview(request):
     context = {
         'user': user,
         'taught_classes': user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
-        'enrolled_classes': user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
-        'taken_classes': user.getSections().order_by('parent_class__parent_program', 'id'),
+        'program_enrolled': program_enrolled,
+        'other_enrolled': other_enrolled,
+        'program_taken': program_taken,
+        'other_taken': other_taken,
         'starred_classes': starred_classes,
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
