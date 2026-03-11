@@ -257,7 +257,7 @@ class ClassSearchModule(ProgramModuleObj):
                 rule_data=query_data,
                 comment=comment
             )
-            # Proactively run the rule once for existing classes? 
+            # Proactively run the rule once for existing classes?
             # The signal handles future saves, but we might want to flag existing classes.
             # For now, let's keep it simple as requested: "specfying that when a class is added or edited..."
         except Exception as e:

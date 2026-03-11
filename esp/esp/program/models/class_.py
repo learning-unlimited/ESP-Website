@@ -48,6 +48,7 @@ from django.db import models, transaction
 from django.db.models.query import Q
 from django.db.models import signals, Sum
 from django.db.models.manager import Manager
+from django.dispatch import receiver
 from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
@@ -2195,7 +2196,7 @@ def install():
             ClassCategories.objects.create(symbol=key, category=category_dict[key])
 
 
-@signals.receiver(signals.post_save, sender=ClassSubject)
+@receiver(signals.post_save, sender=ClassSubject)
 def handle_auto_class_flags(sender, instance, **kwargs):
     """Automatically add flags to a class if it satisfies certain conditions."""
     import json
@@ -2228,7 +2229,7 @@ def handle_auto_class_flags(sender, instance, **kwargs):
                         flag_type=rule.flag_type,
                         comment=rule.comment or "Automatically added by rule.",
                     )
-                    
+
                     if current_request is None:
                         # Fallback for background tasks/scripts: use the first superuser or staff
                         system_user = ESPUser.objects.filter(is_superuser=True).first() or \
@@ -2240,9 +2241,9 @@ def handle_auto_class_flags(sender, instance, **kwargs):
                             # If no user found, we can't save ClassFlag due to non-null constraints
                             logger.warning("AutoClassFlagRule: Could not find a system user to attribute flag creation for class %s", instance.id)
                             continue
-                    
+
                     flag.save()
-                    
+
                     if rule.flag_type.notify_teacher_by_email:
                         try:
                             flag.send_teacher_notification()
