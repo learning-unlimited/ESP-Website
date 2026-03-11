@@ -666,7 +666,7 @@ class ProgramFrameworkTest(TestCase):
         (qsd, created) = QuasiStaticData.objects.get_or_create(url='learn/%s/index' % self.program.url,
                                               name="learn:index",
                                               title=new_prog.niceName(),
-                                              content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
+                                              content="Welcome to %s! <a href='studentreg'>Student Registration</a>.  <a href='catalog'>View the course catalog</a>.",
                                               author=self.admins[0],
                                               nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="", include_auto_links=False)[0])
 

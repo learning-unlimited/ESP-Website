@@ -27,7 +27,7 @@ def HttpMetaRedirect(location='/'):
     <html><head>
     <meta http-equiv="refresh" content="0; url=%s">
     </head>
-    <body>Thank you for logging in.  Please click <a href="%s">here</a> if you are not redirected.</body>
+    <body>Thank you for logging in.  <a href="%s">Proceed to your destination</a> if you are not redirected.</body>
     </html>
     """ % (location, location)
     return response

@@ -59,7 +59,7 @@ class AnnouncementLink(models.Model):
         return self.title
 
     def content(self):
-        return '<a href="%s">Click Here</a> for details' % self.href
+        return '<a href="%s">View details</a>' % self.href
 
     def html(self):
         return '<p><a href="%s">%s</a></p>' % (self.href, self.title)

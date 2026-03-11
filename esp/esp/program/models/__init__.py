@@ -267,7 +267,7 @@ class Program(models.Model, CustomFormsLinkModel):
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
                                                            'email address from your site\'s settings by default. ' +
-                                                           'You can create and manage your email redirects <a href="/manage/redirects/">here</a>.'))
+                                                           'You can <a href="/manage/redirects/">create and manage your email redirects </a>.'))
     director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
     director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
     program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
@@ -278,11 +278,11 @@ class Program(models.Model, CustomFormsLinkModel):
                          'the documentation</a> for details.')
     class_categories = models.ManyToManyField('ClassCategories',
                                               blank=True,
-                                              help_text='You can add new categories or modify existing ones <a href="/manage/catsflagsrecs/categories">here</a>.')
+                                              help_text='You can <a href="/manage/catsflagsrecs/categories">add new categories or modify existing ones</a>.')
 
     flag_types = models.ManyToManyField('ClassFlagType',
                     blank=True,
-                    help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/catsflagsrecs/flagtypes">here</a>.')
+                    help_text='The set of flags that can be used to tag classes for this program. You can <a href="/manage/catsflagsrecs/flagtypes">add and modify flag types</a>.')
 
     documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 

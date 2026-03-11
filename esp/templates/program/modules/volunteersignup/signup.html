@@ -94,7 +94,7 @@ The directors have been notified that you are no longer able to volunteer at {{ 
         {{ hidden }}
     {% endfor %}
     <center>
-      <p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</p>
+      <p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">log in to return to this page</a>.{% endif %}</p>
       {% if form.errors %}
         <div class="alert alert-danger">
             <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
