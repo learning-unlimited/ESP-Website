@@ -298,7 +298,7 @@ def heardabout(form, programs, students, profiles, result_dict={}):
             if ha_str:
                 ha_key = ha_str.rstrip('s').lower()
                 for char in ' _:-/.,!?+':
-                    ha_key.replace(char, '')
+                    ha_key = ha_key.replace(char, '')
                 if ha_key not in case_map:
                     case_map[ha_key] = ha_str
                     reasons_dict[ha_str] = 0
