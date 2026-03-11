@@ -233,10 +233,10 @@ jobs:
             const patterns = [
               /\bcan i (?:work on|take|tackle|pick up|be assigned|grab|handle|do)\b/,
               /\bi(?:'d| would) like to (?:work on|take|tackle|pick up|be assigned|grab|handle|do)\b/,
-              /\bplease assign (?:me|this to me|it to me)\b/,
-              /\bassign (?:me|this to me|it to me)\b/,
-              /\bcan (?:you |someone )?assign (?:me|this to me|it to me)\b/,
-              /\bcould (?:you |someone )?(?:please )?assign (?:me|this to me|it to me)\b/,
+              /\bplease assign (?:me|this to me|this issue to me|it to me)\b/,
+              /\bassign (?:me|this to me|this issue to me|it to me)\b/,
+              /\bcan (?:you |someone )?assign (?:me|this to me|this issue to me|it to me)\b/,
+              /\bcould (?:you |someone )?(?:please )?assign (?:me|this to me|this issue to me|it to me)\b/,
               /\bi(?:'ll| will) (?:work on|take|tackle|pick up|handle|do) this\b/,
               /\blet me (?:work on|take|tackle|pick up|handle|do) this\b/,
               /\bi want to (?:work on|take|tackle|pick up|handle|do) this\b/,
@@ -255,6 +255,25 @@ jobs:
                   repo: context.repo.repo,
                   issue_number: issueNumber,
                   body: `⚠️ Sorry @${commenter}, this issue is closed and is not available for assignment.` + WIKI_LINKS,
+                });
+                return;
+              }
+
+              // Check if the issue has a blocked label
+              const blockedRaw = process.env.NO_ASSIGN_LABELS || '';
+              const blockedLabels = blockedRaw
+                .split(',')
+                .map(l => l.trim().toLowerCase())
+                .filter(Boolean);
+              const issueLabels = context.payload.issue.labels.map(l => l.name.toLowerCase());
+              const matchedLabels = issueLabels.filter(l => blockedLabels.includes(l));
+
+              if (matchedLabels.length > 0) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: `⚠️ Sorry @${commenter}, this issue is labeled **${matchedLabels.join('**, **')}** and is not currently available for assignment.` + WIKI_LINKS,
                 });
                 return;
               }
@@ -288,6 +307,8 @@ jobs:
                 });
               }
             }
+        env:
+          NO_ASSIGN_LABELS: ${{ vars.NO_ASSIGN_LABELS }}
 
   # ── Safety net: check direct assignments by maintainers ────────────────────
   check-direct-assignment:

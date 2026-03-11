@@ -115,7 +115,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
     def _extracost_requires_payment(self):
         """Check if the student selected extra cost items that require CC payment."""
         from esp.accounting.models import Transfer
-        tag_value = Tag.getTag('creditcard_required_for_extracosts', self.program, default='')
+        tag_value = Tag.getProgramTag('creditcard_required_for_extracosts', program=self.program, default='')
         if not tag_value:
             return False
         request = get_current_request()
@@ -220,6 +220,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['financial_aid'] = iac.amount_finaid()
         context['sibling_discount'] = iac.amount_siblingdiscount()
         context['amount_paid'] = iac.amount_paid()
+        context['amount_refunded'] = iac.amount_refunded()
 
         #   Load donation amount separately, since the client-side code needs to know about it separately.
         donation_prefs = iac.get_preferences([donate_type,]) if offer_donation else None
