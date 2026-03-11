@@ -53,7 +53,7 @@ Each major directory under `esp/esp/` has a README at `docs/walkthroughs/esp/esp
 - [ ] New external imports are in the Interactions table
 - [ ] Fixed bugs/gotchas have their notes removed or updated
 - [ ] Footer updated: `<!-- Last verified: YYYY-MM-DD | Verified by: github-username | Codebase commit: abc1234 -->`
-- [ ] If you **created a new walkthrough file**, updated `docs/dev/directory_structure.rst` as needed so the directory overview still points readers to the walkthroughs section accurately
+- [ ] If you **created a new walkthrough file**, added an entry for its directory in `docs/dev/directory_structure.rst` with a short description and the directory name linked to the new walkthrough doc (e.g. `` `web <../walkthroughs/esp/esp/web-README.MD>`_ ``)
 
 ---
 
@@ -64,7 +64,7 @@ Each major directory under `esp/esp/` has a README at `docs/walkthroughs/esp/esp
 3. Pay attention to: import statements, function signatures, `TODO`/`FIXME` comments, and decorators like `@cache_function` or `@login_required`.
 4. Check `esp/esp/urls.py` to verify the full mounted path of any URL patterns.
 5. Add the `<!-- Last verified -->` footer.
-6. Update `docs/dev/directory_structure.rst` if needed so its `walkthroughs` entry still accurately points new developers to these docs.
+6. Add an entry for the directory in `docs/dev/directory_structure.rst` — a short description with the directory name linked to your new walkthrough doc (e.g. `` `web <../walkthroughs/esp/esp/web-README.MD>`_ ``).
 
 ---
 
