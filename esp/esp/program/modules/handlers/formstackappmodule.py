@@ -123,7 +123,7 @@ class FormstackAppModule(ProgramModuleObj):
         for line in fsas.autopopulated_fields.strip().split('\n'):
             if not line.strip():
                 continue
-            
+
             field, _, expr = line.partition(':')
             try:
                 template = Template(expr)
@@ -132,7 +132,7 @@ class FormstackAppModule(ProgramModuleObj):
             except Exception as e:
                 logger.exception("Error in FormstackAppSettings: %s", e)
                 continue
-                
+
             autopopulated.append((field.strip(), value))
 
         return render_to_response(self.baseDir()+'studentapp.html',
