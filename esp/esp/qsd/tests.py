@@ -40,6 +40,8 @@ from esp.users.models import ESPUser
 from django.template import Template, Context
 from django.urls import reverse
 
+from esp.qsd.seltests import TestQsdCachePurging  # Run Selenium tests with regular tests
+
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
 
@@ -236,7 +238,7 @@ class QSDImageUploadTest(TestCase):
         import json
         data = json.loads(response.content)
         self.assertFalse(data['success'])
-        self.assertIn('.exe', data['data']['messages'][0])
+        self.assertIn('Invalid file type', data['data']['messages'][0])
 
     def test_upload_rejects_non_image_content_type(self):
         """Files with non-image content type are rejected."""
@@ -250,15 +252,54 @@ class QSDImageUploadTest(TestCase):
         self.assertIn('does not appear to be an image', data['data']['messages'][0])
 
     def test_upload_rejects_oversized_file(self):
-        """Files exceeding 5MB are rejected."""
+        """A single file exceeding 25MB per-file limit is rejected."""
         self.client.login(username='upload_admin', password='password')
-        f = self._make_image_file(size=6 * 1024 * 1024)  # 6 MB
+        f = self._make_image_file(size=26 * 1024 * 1024)  # 26 MB
         response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
         self.assertEqual(response.status_code, 400)
         import json
         data = json.loads(response.content)
         self.assertFalse(data['success'])
-        self.assertIn('size limit', data['data']['messages'][0])
+        self.assertIn('per-file size limit', data['data']['messages'][0])
+
+    def test_upload_allows_multiple_files_under_per_file_limit(self):
+        """Multiple files each under 25MB are accepted (no combined limit)."""
+        self.client.login(username='upload_admin', password='password')
+        f1 = self._make_image_file(name='test1.png', size=15 * 1024 * 1024)  # 15 MB
+        f2 = self._make_image_file(name='test2.png', size=15 * 1024 * 1024)  # 15 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f1, 'files[1]': f2})
+        self._track_response_files(response)
+        self.assertEqual(response.status_code, 200)
+        import json
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['data']['files']), 2)
+
+    def test_upload_rejects_oversized_in_multi_file_batch(self):
+        """If any file in a batch exceeds 25MB, the entire batch is rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f1 = self._make_image_file(name='small.png', size=1024)  # 1 KB
+        f2 = self._make_image_file(name='huge.png', size=26 * 1024 * 1024)  # 26 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f1, 'files[1]': f2})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('huge.png', data['data']['messages'][0])
+        self.assertIn('per-file size limit', data['data']['messages'][0])
+
+    def test_oversized_error_escapes_filename(self):
+        """Filenames in size-limit errors are HTML-escaped to prevent XSS."""
+        self.client.login(username='upload_admin', password='password')
+        xss_name = '<img src=x onerror=alert(1)>.png'
+        f = self._make_image_file(name=xss_name, size=26 * 1024 * 1024)
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        msg = data['data']['messages'][0]
+        self.assertNotIn('<img', msg)
+        self.assertIn('&lt;img', msg)
 
     def test_upload_valid_png(self):
         """A valid PNG upload succeeds and returns correct JSON."""
@@ -350,6 +391,18 @@ class QSDImageUploadTest(TestCase):
         response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
         self.assertEqual(response.status_code, 400)
 
+    def test_upload_handles_missing_filename(self):
+        """Files with no filename (None) are handled safely and rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='temp.png')
+        f.name = None  # Simulate missing filename
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('Invalid file type', data['data']['messages'][0])
+
     def test_multi_file_bad_second_no_orphan(self):
         """When one file in a batch fails validation, no files are saved.
 
@@ -377,6 +430,83 @@ class QSDImageUploadTest(TestCase):
         after = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
         new_files = after - before
         self.assertEqual(new_files, set(), "Orphaned files found after failed batch upload: %s" % new_files)
+
+
+class QSDBase64StrippingTest(TestCase):
+    """Tests that base64 images are stripped when saving QSD content (#3612)."""
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='strip_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+    def _create_qsd(self, url_path, name):
+        """Helper to create a QSD page for testing."""
+        from esp.web.models import default_navbarcategory
+        qsd_rec = QuasiStaticData()
+        qsd_rec.url = url_path
+        qsd_rec.name = name
+        qsd_rec.author = self.admin
+        qsd_rec.nav_category = default_navbarcategory()
+        qsd_rec.content = 'Original content'
+        qsd_rec.title = 'Test Page'
+        qsd_rec.description = ''
+        qsd_rec.keywords = ''
+        qsd_rec.save()
+        return qsd_rec
+
+    def test_qsd_edit_strips_base64(self):
+        """Full-page QSD edit strips base64 images from content."""
+        qsd_rec = self._create_qsd('learn/teststrip', 'learn:teststrip')
+        self.client.login(username='strip_admin', password='password')
+
+        self.client.post('/learn/teststrip.edit.html', {
+            'post_edit': '1',
+            'nav_category': qsd_rec.nav_category.id,
+            'content': '<p>Hello</p><img src="data:image/png;base64,iVBORw0KGgo"/><p>World</p>',
+            'title': 'Test Page',
+            'description': '',
+            'keywords': '',
+        })
+        qsd_rec.refresh_from_db()
+        self.assertNotIn('data:image', qsd_rec.content)
+        self.assertIn('Hello', qsd_rec.content)
+        self.assertIn('World', qsd_rec.content)
+
+    def test_ajax_qsd_strips_base64(self):
+        """Inline AJAX QSD edit strips base64 images."""
+        qsd_rec = self._create_qsd('learn/testajaxstrip', 'learn:testajaxstrip')
+        self.client.login(username='strip_admin', password='password')
+
+        response = self.client.post('/admin/ajax_qsd', {
+            'cmd': 'update',
+            'url': 'learn/testajaxstrip',
+            'data': '<p>Text</p><img src="data:image/png;base64,HUGE_BLOB"/>',
+        }, HTTP_REFERER='http://testserver/learn/index.html')
+
+        self.assertEqual(response.status_code, 200)
+        qsd_rec.refresh_from_db()
+        self.assertNotIn('data:image', qsd_rec.content)
+        self.assertIn('Text', qsd_rec.content)
+
+    def test_qsd_edit_preserves_normal_images(self):
+        """Normal image URLs are not stripped by the base64 filter."""
+        qsd_rec = self._create_qsd('learn/testpreserve', 'learn:testpreserve')
+        self.client.login(username='strip_admin', password='password')
+
+        self.client.post('/learn/testpreserve.edit.html', {
+            'post_edit': '1',
+            'nav_category': qsd_rec.nav_category.id,
+            'content': '<p>Photo:</p><img src="/media/uploaded/qsd_images/abc123.png"/>',
+            'title': 'Test Page',
+            'description': '',
+            'keywords': '',
+        })
+        qsd_rec.refresh_from_db()
+        self.assertIn('/media/uploaded/qsd_images/abc123.png', qsd_rec.content)
+
+
 class QSDAdminAuthorTest(TestCase):
 
     def setUp(self):

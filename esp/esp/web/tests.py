@@ -49,6 +49,7 @@ import logging
 logger = logging.getLogger(__name__)
 import re
 import os
+import subprocess
 import tempfile
 
 # Make sure that we can actually download the homepage
@@ -58,11 +59,11 @@ class PageTest(TestCase):
     # Util Functions
     def assertStringContains(self, string, contents):
         if not (contents in string):
-            self.assert_(False, "'%s' not in '%s'" % (contents, string))
+            self.fail("'%s' not in '%s'" % (contents, string))
 
     def assertNotStringContains(self, string, contents):
         if contents in string:
-            self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
+            self.fail("'%s' are in '%s' and shouldn't be" % (contents, string))
 
 
     def testHomePage(self):
@@ -291,11 +292,14 @@ class JavascriptSyntaxTest(TestCase):
                     file_list.append('%s/%s' % (dirpath, file))
                     num_files += 1
 
-        file_args = ' '.join([('--js %s' % file) for file in file_list])
-        os.system('java -jar %s/compiler.jar %s --js_output_file %s 2> %s' % (closure_path, file_args, closure_output_code, closure_output_file))
-        checkfile = open(closure_output_file)
-
-        results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
+        cmd = ['java', '-jar', '%s/compiler.jar' % closure_path]
+        for file in file_list:
+            cmd.extend(['--js', file])
+        cmd.extend(['--js_output_file', closure_output_code])
+        with open(closure_output_file, 'w') as err_file:
+            subprocess.run(cmd, stderr=err_file, stdout=subprocess.DEVNULL, check=True)
+        with open(closure_output_file) as checkfile:
+            results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
 
         if len(results) > 0:
             closure_result = results[-1].split(',')

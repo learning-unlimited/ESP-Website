@@ -6,9 +6,9 @@
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Patrick+Hand" />
 <style>
-.jumbotron {
+  .jumbotron {
     background-image: url(/media/images/theme/header.png?v={{ current_header_version }});
-}
+  }
 </style>
 {% endblock stylesheets %}
 
@@ -25,14 +25,14 @@
 </div>
 {% endblock navbar%}
 
-{% block heading %}  
+{% block heading %}
 <header class="jumbotron subhead" id="overview">
   <div>
     <div class="header-cell">
       <a href="/">
           <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo">
       </a>
-       <div id="contact_info">
+      <div id="contact_info">
         {% if theme.show_group_name %}
         <span class="title accentcolor">{{ theme.full_group_name }}</span></br>
         {% endif %}
@@ -54,11 +54,11 @@
         {% if theme.faq_link or theme.facebook_link %}
         <span class="normal">
           {% if theme.faq_link %}
-            <a href="{{ theme.faq_link }}">FAQ</a>
+          <a href="{{ theme.faq_link }}">FAQ</a>
           {% endif %}
           {% if theme.faq_link and theme.facebook_link %} | {% endif %}
           {% if theme.facebook_link %}
-            <a href="{{ theme.facebook_link }}">facebook</a>
+          <a href="{{ theme.facebook_link }}">facebook</a>
           {% endif %}
         </span></br>
         {% endif %}
@@ -82,65 +82,49 @@
     <div id="sidebar" class="span3">
       {% include "sidebar/nav.html" %}
       {% include "sidebar/admin.html" %}
-
-      {% load preview %}
-      {% if request.path == "/teach/index.html" %}
-      {% miniblog_for_user AnonymousUser as announcements teach 3 %}
-      {% else %}
-      {% miniblog_for_user AnonymousUser as announcements learn 3 %}
-      {% endif %}
-      {% if not announcements.announcementList|length_is:0 %}
-      <ul class="nav nav-list sidebar">
-        <li class="nav-header"> Announcements</li>
-        {% for announce in announcements.announcementList %}
-        <li>
-          {% if announce.makeUrl %}
-          <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a> {% else %} {{ announce.makeTitle }} {% endif %}
-        </li>
-        {% endfor %}
-        {% if announcements.overflowed %}
-        <li id="divannouncemore">
-          <a href="/myesp/home/">More Notices...</a>
-        </li>
-        {% endif %}
-      </ul>
-      {% endif %}
     </div>
     {% endblock %}
 
     <div id="main" class="span9 resizable">
+      {% if request.COOKIES.esp_testing_role %}
+      <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+        <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
+        You are logged in as a test account.
+        <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
+      </div>
+      {% endif %}
       {% if request.mod_required %}
       <div class="alert alert-danger">
-          <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
           This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
       </div>
       {% endif %}
       {% if request.show_perm_info %}
       <div class="alert alert-info">
-          <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
           <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
-          <br />
-          {% if request.roles_with_perm %}
-              Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
-          {% else %}
-              <strong>No (non-admin) roles have permission to view this page!</strong>
-          {% endif %}
+        <br />
+        {% if request.roles_with_perm %}
+        Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
+        {% else %}
+        <strong>No (non-admin) roles have permission to view this page!</strong>
+        {% endif %}
       </div>
       {% endif %}
       {% block content %}
       {% endblock content %}
-	  
-	  {% if theme.show_footer_textbox %}
-		<div>
-			{% load render_qsd %}
-			{% inline_qsd_block "footer_text" %}
-			{% end_inline_qsd_block %}
-		</div>
-	  {% endif %}
-	  <div>
-		<a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
-		<a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
-	  </div>
+
+      {% if theme.show_footer_textbox %}
+      <div>
+        {% load render_qsd %}
+        {% inline_qsd_block "footer_text" %}
+        {% end_inline_qsd_block %}
+      </div>
+      {% endif %}
+      <div>
+        <a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
+        <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
+      </div>
     </div>
   </div>
 </div>
