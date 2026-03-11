@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 {% load render_qsd %}
 
 {% block title %} Student Registration for {{program.niceName}} {% endblock %}
@@ -64,13 +64,14 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <h1>Student Registration for {{program.niceName}}</h1>
+
 {% if messages %}
 <div class="two-phase-messages" style="margin-bottom: 15px;">
     {% for message in messages %}
-    <div class="alert alert-warning" style="border: 1px solid #8a6d3b; padding: 10px; background-color: #fcf8e3; margin-bottom: 5px;">
-        {{ message }}
+    <div class="alert alert-{{ message.tags|default:'info' }}" style="border: 1px solid {% if message.tags == 'error' %}#a94442{% elif message.tags == 'warning' %}#8a6d3b{% else %}#31708f{% endif %}; padding: 10px; background-color: {% if message.tags == 'error' %}#f2dede{% elif message.tags == 'warning' %}#fcf8e3{% else %}#d9edf7{% endif %}; margin-bottom: 5px;">
+        <strong>{% if message.tags == 'error' %}Error:{% elif message.tags == 'warning' %}Warning:{% else %}Notice:{% endif %}</strong> {{ message }}
     </div>
     {% endfor %}
 </div>
@@ -169,6 +170,12 @@ recommend you have at least {{num_star}} classes starred for every priority slot
 <p>
     If you would like to receive a confirmation email with a summary of your selections, click the button below.
 </p>
+
+{% if min_classes > 0 %}
+<div class="alert alert-warning">
+    <strong>Note:</strong> You must star at least {{ min_classes }} classes before you can confirm your preferences.
+</div>
+{% endif %}
 
 <center>
     <form method="post" action="/learn/{{program.getUrlBase}}/confirm_registration">{% csrf_token %}
