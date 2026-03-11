@@ -170,3 +170,50 @@ class OnSiteCheckinModuleTest(ProgramFrameworkTest):
                 'is not a user' in json_data.get('message', ''),
                 f"Unexpected message for code {code!r}: {json_data.get('message')}"
             )
+
+    def get_checkin_url(self):
+        return '/onsite/%s/checkin' % self.program.getUrlBase()
+
+    def test_undo_checkin_no_record_does_not_crash(self):
+        """Test that undoing check-in when no Record exists does not raise IndexError.
+
+        Regression test for https://github.com/learning-unlimited/ESP-Website/issues/4988
+        """
+        self.assertTrue(
+            self.client.login(username=self.admin.username, password='password'),
+            "Couldn't log in as admin %s" % self.admin.username
+        )
+
+        # Ensure the student has no "attended" Record
+        Record.objects.filter(
+            event__name="attended", program=self.program, user=self.student
+        ).delete()
+
+        # POST with undocheckin — previously crashed with IndexError
+        response = self.client.post(
+            self.get_checkin_url(),
+            {'userid': str(self.student.id), 'undocheckin': 'true'}
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_undo_checkout_no_record_does_not_crash(self):
+        """Test that undoing checkout when no Record exists does not raise IndexError.
+
+        Regression test for https://github.com/learning-unlimited/ESP-Website/issues/4988
+        """
+        self.assertTrue(
+            self.client.login(username=self.admin.username, password='password'),
+            "Couldn't log in as admin %s" % self.admin.username
+        )
+
+        # Ensure the student has no "checked_out" Record
+        Record.objects.filter(
+            event__name="checked_out", program=self.program, user=self.student
+        ).delete()
+
+        # POST with undocheckout — previously crashed with IndexError
+        response = self.client.post(
+            self.get_checkin_url(),
+            {'userid': str(self.student.id), 'undocheckout': 'true'}
+        )
+        self.assertEqual(response.status_code, 200)
