@@ -106,8 +106,12 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
             progbio.save()
             # save the image
             if request.POST.get('remove_picture') == 'true':
+                if progbio.picture:
+                    progbio.picture.delete(save=False)
                 progbio.picture = None
             elif form.cleaned_data['picture'] is not None:
+                if progbio.picture:
+                    progbio.picture.delete(save=False)
                 progbio.picture = form.cleaned_data['picture']
             else:
                 progbio.picture = lastbio.picture
@@ -123,7 +127,6 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
                     'bio': lastbio.bio, 'picture': lastbio.picture}
         form = BioEditForm(formdata)
 
-    # Fetch all classes the teacher has taught and gather documents
     return render_to_response('users/teacherbioedit.html', request, {'form':    form,
                                                    'institution': settings.INSTITUTION_NAME,
                                                    'user':    founduser,
