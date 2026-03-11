@@ -386,9 +386,12 @@ class LotteryAssignmentController(object):
         possible_students = numpy.copy(signup[:, si])
 
         #   Filter students by the section's grade limits
+        #   Grade 0 means "unknown/unset" – treat as any grade (allow through).
         if self.options['check_grade'] and not (priority == self.effective_priority_limit and self.grade_range_exceptions):
-            possible_students *= (self.student_grades >= self.section_grade_min[si])
-            possible_students *= (self.student_grades <= self.section_grade_max[si])
+            grade_ok = ((self.student_grades == 0) |
+                        ((self.student_grades >= self.section_grade_min[si]) &
+                         (self.student_grades <= self.section_grade_max[si])))
+            possible_students *= grade_ok
 
         if self.options['use_student_apps']:
             possible_students *= (self.ranks[:, si] == rank)

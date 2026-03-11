@@ -1821,8 +1821,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             scrmi = self.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
 
-        if user.getGrade(self.parent_program) < self.grade_min or \
-               user.getGrade(self.parent_program) > self.grade_max:
+        user_grade = user.getGrade(self.parent_program)
+        if not ESPUser.grade_in_range(user_grade, self.grade_min, self.grade_max):
             if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
                 return 'You are not in the requested grade range for this class.'
 
