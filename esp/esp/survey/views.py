@@ -517,7 +517,7 @@ def top_classes(request, tl, program, instance):
                     'survey must include either (a) a rating question whose '
                     'name contains the text "overall rating" (for example '
                     '"overall rating" or "Overall rating"), or (b) a question '
-                    'whose question_type__name is exactly "Favorite Class". '
+                    'whose type is "Favorite Class". '
                     'Please update the survey configuration and try again.',
                     log=False
                 )
