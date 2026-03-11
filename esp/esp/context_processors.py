@@ -51,11 +51,9 @@ def schoolyear(request):
         return {'schoolyear': ESPUser.current_schoolyear()}
 
 def index_backgrounds(request):
-    #if request.path.strip() == '':
     return {'backgrounds': [settings.MEDIA_URL+"images/home/pagebkg1.jpg",
                             settings.MEDIA_URL+"images/home/pagebkg2.jpg",
                             settings.MEDIA_URL+"images/home/pagebkg3.jpg"]}
-    return {}
 
 def current_site(request):
 

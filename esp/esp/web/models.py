@@ -126,3 +126,26 @@ def install():
             name='default',
             long_explanation='The default category, to which new nav bars and QSD pages get assigned.',
         )
+
+class FAQCategory(models.Model):
+    name = models.CharField(max_length=255)
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name_plural = 'FAQ Categories'
+
+    def __str__(self):
+        return self.name
+
+class FAQQuestion(models.Model):
+    category = models.ForeignKey(FAQCategory, related_name='questions', on_delete=models.CASCADE)
+    question = models.CharField(max_length=512)
+    answer = models.TextField()
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'question']
+
+    def __str__(self):
+        return self.question

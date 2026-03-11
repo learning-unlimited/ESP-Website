@@ -126,6 +126,12 @@ class DefaultQSDView(TemplateView):
 class FAQView(DefaultQSDView):
     template_name = "faq.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from esp.web.models import FAQCategory
+        context['faq_categories'] = FAQCategory.objects.prefetch_related('questions').all()
+        return context
+
 class ContactUsView(DefaultQSDView):
     template_name = "contact_qsd.html"
 

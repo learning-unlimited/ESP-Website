@@ -312,6 +312,11 @@ class ClassSection(models.Model):
     instructor_email = models.EmailField(blank=True, null=True, help_text="Instructor contact email")
     instructor_phone = models.CharField(max_length=32, blank=True, null=True, help_text="Instructor contact phone")
 
+    @property
+    def initial_lat_long(self):
+        """Mock method to provide coordinates for walking directions."""
+        return "42.36,-71.09"
+
     @classmethod
     def ajax_autocomplete(cls, data):
         clsname = data.strip().split(':')
@@ -2195,3 +2200,14 @@ def install():
     if not ClassCategories.objects.exists():
         for key in category_dict:
             ClassCategories.objects.create(symbol=key, category=category_dict[key])
+
+class ClassReminder(models.Model):
+    """ Record of a reminder sent to students for an upcoming class """
+    section = models.ForeignKey(ClassSection, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    sent_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_classreminder'
+        unique_together = ('section', 'event')

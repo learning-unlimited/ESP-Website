@@ -1403,7 +1403,6 @@ def manage_docs(request, doc_path=None):
 
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from esp.program.models.checkin import ClassCheckIn
 
 @login_required
 def class_resources(request, section_id):
@@ -1417,6 +1416,7 @@ def class_resources(request, section_id):
 @csrf_exempt
 @login_required
 def auto_checkin_api(request):
+    from esp.program.models.checkin import ClassCheckIn
     if request.method != 'POST':
         return HttpResponseBadRequest("Must be POST")
     

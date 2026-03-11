@@ -46,8 +46,10 @@ $j(document).ready(function() {
   }
 });
 
-(function() {
-var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
+var editor_{{ qsdrec.edit_id }} = null;
+function init_editor_{{ qsdrec.edit_id }}() {
+if (editor_{{ qsdrec.edit_id }}) return;
+editor_{{ qsdrec.edit_id }} = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
   "enter": "BR",
   "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
   "toolbarAdaptive": false,
@@ -66,16 +68,16 @@ var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
     },
     "defaultHandlerSuccess": function(data) {
       for (var i = 0; i < data.files.length; i++) {
-        editor.selection.insertImage(data.files[i]);
+        editor_{{ qsdrec.edit_id }}.selection.insertImage(data.files[i]);
       }
     },
     "error": function(e) {
-      editor.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
+      editor_{{ qsdrec.edit_id }}.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
     }
   }
 });
-espHandleBase64Paste(editor);
-})();
+espHandleBase64Paste(editor_{{ qsdrec.edit_id }});
+}
 </script>
 <br />
 {% if not inline %}

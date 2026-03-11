@@ -30,10 +30,8 @@
   display: none;
 }
 
-/* To provide greater specificity compared to Bootstrap's default .hidden */
- .nav .hidden {
-  display: none;
-  visibility: hidden;
+/* To provide greater specificity or cover cases where Bootstrap 2 lacks .hidden */
+.hidden {
+  display: none !important;
+  visibility: hidden !important;
 }
-
-

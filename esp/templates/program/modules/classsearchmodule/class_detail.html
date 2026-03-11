@@ -1,4 +1,4 @@
-<table>
+<table class="table table-striped table-bordered table-condensed">
     <tbody>
         <tr>
             <th class="smaller">Sections:</th>
@@ -31,3 +31,96 @@
         {% include "program/modules/adminclass/manageclass_class_info.html" %}
     </tbody>
 </table>
+</table>
+
+<div class="walking-directions-container" style="margin-top: 15px;">
+    {% for section in class.sections.all %}
+    <div style="margin-bottom: 10px;">
+        <button class="btn btn-primary show-directions-btn" data-dest="{{ section.initial_lat_long }}">
+            <i class="icon-map-marker icon-white"></i> 🚶‍♂️ Get Walking Directions (Sect. {{ section.emailcode }})
+        </button>
+        <div class="directions-output" style="display: none; margin-top: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background-color: #f9f9f9;"></div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var buttons = document.querySelectorAll('.show-directions-btn');
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var outputDiv = this.nextElementSibling;
+            var dest = this.getAttribute('data-dest');
+            
+            outputDiv.style.display = 'block';
+            outputDiv.innerHTML = "Fetching your location...";
+            
+            if (navigator.geolocation) {
+                // For demo, we might simulate location if permission is denied, but we'll try API first.
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+                    
+                    var destParts = dest.split(',');
+                    var destLat = parseFloat(destParts[0]);
+                    var destLon = parseFloat(destParts[1]);
+                    
+                    // Call OSRM API for walking directions
+                    var osrmUrl = "https://router.project-osrm.org/route/v1/foot/" + lon + "," + lat + ";" + destLon + "," + destLat + "?steps=true&overview=false";
+                    
+                    fetch(osrmUrl)
+                        .then(function(response){ return response.json(); })
+                        .then(function(data) {
+                            if (data.routes && data.routes.length > 0) {
+                                var route = data.routes[0];
+                                var duration = Math.round(route.duration / 60);
+                                var distance = (route.distance / 1000).toFixed(2);
+                                
+                                var html = "<p><strong>Estimated Time:</strong> " + duration + " mins walking (" + distance + " km)</p>";
+                                html += "<ul style='padding-left: 20px;'>";
+                                route.legs[0].steps.forEach(function(step) {
+                                    if (step.maneuver.instruction) {
+                                        html += "<li>" + step.maneuver.instruction + "</li>";
+                                    } else {
+                                        var direction = step.maneuver.type;
+                                        var name = step.name || "unknown street";
+                                        html += "<li>" + direction + " on " + name + "</li>";
+                                    }
+                                });
+                                html += "</ul>";
+                                outputDiv.innerHTML = html;
+                            } else {
+                                outputDiv.innerHTML = "No walking route found from your location.";
+                            }
+                        })
+                        .catch(function(err){
+                            outputDiv.innerHTML = "Error fetching directions from map service.";
+                            console.error(err);
+                        });
+                }, function(error) {
+                    // Fallback to demo coordinates (e.g., somewhere in Boston) if location is denied
+                    outputDiv.innerHTML = "Location access denied. Displaying directions from demo start point (Boston):<br/><br/>";
+                    var lon = -71.10;
+                    var lat = 42.35;
+                    var destParts = dest.split(',');
+                    var osrmUrl = "https://router.project-osrm.org/route/v1/foot/" + lon + "," + lat + ";" + destParts[1] + "," + destParts[0] + "?steps=true&overview=false";
+                    fetch(osrmUrl).then(function(r){return r.json()}).then(function(data){
+                         if (data.routes && data.routes.length > 0) {
+                                var route = data.routes[0];
+                                var html = "<p><strong>Estimated Time:</strong> " + Math.round(route.duration/60) + " mins walking</p><ul>";
+                                route.legs[0].steps.forEach(function(step) {
+                                  html += "<li>" + (step.maneuver.instruction || step.maneuver.type) + "</li>";
+                                });
+                                html += "</ul>";
+                                outputDiv.innerHTML += html;
+                         }
+                    });
+                });
+            } else {
+                outputDiv.innerHTML = "Geolocation is not supported by this browser.";
+            }
+        });
+    });
+});
+</script>

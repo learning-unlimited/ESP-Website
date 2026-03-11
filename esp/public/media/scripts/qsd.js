@@ -20,6 +20,11 @@ function post_encode(data)
 
 function qsd_inline_edit(qsd_url, edit_id)
 {
+    // Initialize Jodit editor on-demand if defined for this block
+    if (typeof window['init_editor_' + edit_id] === 'function') {
+        window['init_editor_' + edit_id]();
+    }
+    
     //  Switch the visibility of the edit and view areas.
     document.getElementById("inline_edit_" + edit_id).className = "qsd_edit_visible";
     $j("#inline_edit_msg_" + edit_id).hide();

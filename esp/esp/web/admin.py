@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from django.contrib import messages
 from esp.admin import admin_site
-from esp.web.models import NavBarEntry, NavBarCategory
+from esp.web.models import NavBarEntry, NavBarCategory, FAQCategory, FAQQuestion
 
 class NavBarEntryAdmin(admin.ModelAdmin):
     list_display = ('category', 'sort_rank', 'text', 'link')
@@ -57,3 +57,13 @@ class NavBarCategoryAdmin(admin.ModelAdmin):
 
 admin_site.register(NavBarEntry, NavBarEntryAdmin)
 admin_site.register(NavBarCategory, NavBarCategoryAdmin)
+
+class FAQQuestionInline(admin.TabularInline):
+    model = FAQQuestion
+    extra = 1
+
+class FAQCategoryAdmin(admin.ModelAdmin):
+    inlines = [FAQQuestionInline]
+    list_display = ('name', 'order')
+
+admin_site.register(FAQCategory, FAQCategoryAdmin)

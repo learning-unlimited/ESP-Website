@@ -1,0 +1,100 @@
+﻿web-1  |  * Detected change in '/app/esp/manage.py', reloading
+web-1  |  * Restarting with stat
+web-1  | Performing system checks...
+web-1  | 
+web-1  | System check identified some issues:
+web-1  | 
+web-1  | WARNINGS:
+web-1  | program.ClassSubject.allowable_class_size_ranges: (fields.W340) null has no effect on ManyToManyField.
+web-1  | users.UserForwarder.source: (fields.W342) Setting unique=True on a ForeignKey has the same effect as using a OneToOneField.
+web-1  | 	HINT: ForeignKey(unique=True) is usually better served by a OneToOneField.
+web-1  | 
+web-1  | System check identified 2 issues (2 silenced).
+web-1  | 
+web-1  | Django version 2.2.28, using settings 'esp.settings'
+web-1  | Development server is running at http://0.0.0.0:8000/
+web-1  | Using the Werkzeug debugger (http://werkzeug.pocoo.org/)
+web-1  | Quit the server with CONTROL-C.
+web-1  |  * Debugger is active!
+web-1  |  * Debugger PIN: 107-649-574
+web-1  |  * Detected change in '/app/esp/esp/django_settings.py', reloading
+web-1  |  * Restarting with stat
+web-1  | Performing system checks...
+web-1  | 
+web-1  | System check identified some issues:
+web-1  | 
+web-1  | WARNINGS:
+web-1  | program.ClassSubject.allowable_class_size_ranges: (fields.W340) null has no effect on ManyToManyField.
+web-1  | users.UserForwarder.source: (fields.W342) Setting unique=True on a ForeignKey has the same effect as using a OneToOneField.
+web-1  | 	HINT: ForeignKey(unique=True) is usually better served by a OneToOneField.
+web-1  | 
+web-1  | System check identified 2 issues (2 silenced).
+web-1  | 
+web-1  | Django version 2.2.28, using settings 'esp.settings'
+web-1  | Development server is running at http://0.0.0.0:8000/
+web-1  | Using the Werkzeug debugger (http://werkzeug.pocoo.org/)
+web-1  | Quit the server with CONTROL-C.
+web-1  |  * Debugger is active!
+web-1  |  * Debugger PIN: 107-649-574
+web-1  |  * Detected change in '/app/esp/esp/django_settings.py', reloading
+web-1  |  * Restarting with stat
+web-1  | Performing system checks...
+web-1  | 
+web-1  | System check identified some issues:
+web-1  | 
+web-1  | WARNINGS:
+web-1  | program.ClassSubject.allowable_class_size_ranges: (fields.W340) null has no effect on ManyToManyField.
+web-1  | users.UserForwarder.source: (fields.W342) Setting unique=True on a ForeignKey has the same effect as using a OneToOneField.
+web-1  | 	HINT: ForeignKey(unique=True) is usually better served by a OneToOneField.
+web-1  | 
+web-1  | System check identified 2 issues (2 silenced).
+web-1  | 
+web-1  | Django version 2.2.28, using settings 'esp.settings'
+web-1  | Development server is running at http://0.0.0.0:8000/
+web-1  | Using the Werkzeug debugger (http://werkzeug.pocoo.org/)
+web-1  | Quit the server with CONTROL-C.
+web-1  |  * Debugger is active!
+web-1  |  * Debugger PIN: 107-649-574
+web-1  |  * Detected change in '/app/esp/esp/local_settings.py', reloading
+web-1  |  * Restarting with stat
+web-1  | Traceback (most recent call last):
+web-1  |   File "/app/esp/manage.py", line 41, in <module>
+web-1  |     execute_from_command_line(sys.argv)
+web-1  |   File "/usr/local/lib/python3.7/site-packages/django/core/management/__init__.py", line 381, in execute_from_command_line
+web-1  |     utility.execute()
+web-1  |   File "/usr/local/lib/python3.7/site-packages/django/core/management/__init__.py", line 325, in execute
+web-1  |     settings.INSTALLED_APPS
+web-1  |   File "/usr/local/lib/python3.7/site-packages/django/conf/__init__.py", line 79, in __getattr__
+web-1  |     self._setup(name)
+web-1  |   File "/usr/local/lib/python3.7/site-packages/django/conf/__init__.py", line 66, in _setup
+web-1  |     self._wrapped = Settings(settings_module)
+web-1  |   File "/usr/local/lib/python3.7/site-packages/django/conf/__init__.py", line 157, in __init__
+web-1  |     mod = importlib.import_module(self.SETTINGS_MODULE)
+web-1  |   File "/usr/local/lib/python3.7/importlib/__init__.py", line 127, in import_module
+web-1  |     return _bootstrap._gcd_import(name[level:], package, level)
+web-1  |   File "<frozen importlib._bootstrap>", line 1006, in _gcd_import
+web-1  |   File "<frozen importlib._bootstrap>", line 983, in _find_and_load
+web-1  |   File "<frozen importlib._bootstrap>", line 967, in _find_and_load_unlocked
+web-1  |   File "<frozen importlib._bootstrap>", line 677, in _load_unlocked
+web-1  |   File "<frozen importlib._bootstrap_external>", line 728, in exec_module
+web-1  |   File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+web-1  |   File "/app/esp/esp/settings.py", line 66, in <module>
+web-1  |     if len(DATABASES['default']['USER']) == 0:
+web-1  | KeyError: 'USER'
+web-1  | >>> Waiting for PostgreSQL...
+web-1  | >>> PostgreSQL is ready!
+web-1  | >>> Skipping migrations and collectstatic (already done).
+web-1  | >>> To force re-run, use: FORCE_SETUP=1 docker compose up
+web-1  | >>> Starting server...
+web-1  | manage.py:5: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working
+web-1  |   collections.Mapping
+web-1  | System check identified some issues:
+web-1  | 
+web-1  | WARNINGS:
+web-1  | program.ClassSubject.allowable_class_size_ranges: (fields.W340) null has no effect on ManyToManyField.
+web-1  | users.UserForwarder.source: (fields.W342) Setting unique=True on a ForeignKey has the same effect as using a OneToOneField.
+web-1  | 	HINT: ForeignKey(unique=True) is usually better served by a OneToOneField.
+web-1  |  * Running on http://0.0.0.0:8000/ (Press CTRL+C to quit)
+web-1  |  * Restarting with stat
+web-1  | /app/esp/manage.py:5: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working
+web-1  |   collections.Mapping
