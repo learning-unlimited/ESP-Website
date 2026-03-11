@@ -42,5 +42,4 @@ class BioEditForm(forms.Form):
     slugbio = forms.CharField(required = False, max_length = 50, widget = forms.TextInput({'size': 50}))
     bio = forms.CharField(required = False, widget = forms.Textarea({'rows':20, 'cols':60}))
     picture = ResizeImageField(required = False, size = (300, 300))
-    remove_picture = forms.BooleanField(required=False, label="Remove current picture")
     hidden = forms.BooleanField(required = False)

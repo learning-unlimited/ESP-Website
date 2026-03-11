@@ -41,20 +41,6 @@ Please complete the form below to update your biography.  We'd appreciate a pict
 
 <tr><th colspan="2">Your Teacher Biography</th></tr>
 
-{% if previous_docs %}
-<tr>
-    <td colspan="2" style="background-color: #f9f9f9; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-        <b>Suggestions (from your previous classes):</b>
-        <br />
-        <small>Here are some documents you've uploaded for classes in the past:</small>
-        <ul style="margin-top: 5px; margin-bottom: 5px;">
-        {% for p_doc in previous_docs %}
-            <li><a href="{{ p_doc.download_path }}">{{ p_doc.friendly_name }}</a> (from {{ p_doc.owner.title }})</li>
-        {% endfor %}
-        </ul>
-    </td>
-</tr>
-{% endif %}
 
 <tr>
   <td><label for="id_hidden">Hide your teacher biography:<br />
@@ -87,7 +73,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
  <td>{{ form.picture }}<br />
      {% if picture_file %}
      <img src="/media/{{ picture_file}}" title="Your current photo." alt="Your current photo" /><br />
-     {{ form.remove_picture }} <label for="id_remove_picture" style="display:inline; font-weight:normal;">Remove current picture</label>
+     <button type="submit" name="remove_picture" value="true" class="btn btn-danger btn-sm">Remove current picture</button>
      {% endif %}
      {% if form.picture.errors %}
    <br /><span class="form_error">{{ form.picture.errors|join:", " }}</span>
