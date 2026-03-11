@@ -59,7 +59,8 @@ from django.utils.html import strip_tags
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.validators import validate_email
 
 # `user` is required for marketing and subscribed messages to add unsubscribe headers
 # this includes all comm panel emails
@@ -523,7 +524,7 @@ class MessageVars(models.Model):
         """ Get a variable from this object. """
         try:
             provider = pickle.loads(self.pickled_provider)
-        except:
+        except Exception:
             raise ESPError('Could not load variable provider object!')
 
         if hasattr(provider, 'get_msg_vars'):
@@ -623,6 +624,26 @@ class PlainRedirect(models.Model):
 
     destination = models.CharField(max_length=512, help_text='A comma-separated list of one or more real email address(es) that will receive the redirected email(s)')
 
+    def clean(self):
+        super().clean()
+
+        invalid_emails = []
+        for item in self.destination.split(','):
+            email = item.strip()
+            if not email:
+                invalid_emails.append('<empty>')
+                continue
+
+            try:
+                validate_email(email)
+            except ValidationError:
+                invalid_emails.append(email)
+
+        if invalid_emails:
+            raise ValidationError({
+                'destination': 'Invalid email address(es): %s' % ', '.join(invalid_emails)
+            })
+
     def __str__(self):
         return '%s --> %s'  % (self.original, self.destination)
 
@@ -653,7 +674,7 @@ class CustomSMTPBackend(SMTPEmailBackend):
             self.connection.sendmail(sanitize_address(return_path, email_message.encoding),
                     recipients,
                     email_message.message().as_string())
-        except:
+        except Exception:
             if not self.fail_silently:
                 raise
             return False
