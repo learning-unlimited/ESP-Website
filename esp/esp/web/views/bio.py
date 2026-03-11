@@ -118,7 +118,6 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
             progbio.bio      = form.cleaned_data['bio']
 
             progbio.save()
-            progbio.save()
 
             # Handle picture updates
             new_picture = form.cleaned_data.get('picture')
