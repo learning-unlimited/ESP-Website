@@ -1,9 +1,4 @@
-from __future__ import absolute_import
-from __future__ import print_function
 from io import open
-import six
-from six.moves import range
-from six.moves import input
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -44,7 +39,7 @@ import numpy
 from pkg_resources import parse_version
 assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
 import numpy.random
-import six.moves.queue
+import queue
 import random
 
 from datetime import date, datetime
@@ -164,10 +159,6 @@ class ClassChangeController(object):
         self.num_timeslots = len(self.timeslots)
         self.num_students = len(self.students)
         self.num_sections = len(self.sections)
-
-
-
-
 
 
         numpy.random.seed(self.now.microsecond)
@@ -401,7 +392,7 @@ class ClassChangeController(object):
         """ Reset the state of the controller so that new assignments may be computed,
             but without fetching any information from the database. """
 
-        self.changed = numpy.zeros((self.num_students,), dtype=numpy.bool)
+        self.changed = numpy.zeros((self.num_students,), dtype=bool)
         self.section_capacities = numpy.copy(self.section_capacities_orig)
         self.section_scores = numpy.copy(self.section_scores_orig)
         self.enroll_final = numpy.copy(self.enroll_final_orig)
@@ -414,19 +405,19 @@ class ClassChangeController(object):
             -   Timeslots (incl. lunch periods for each day)
         """
 
-        self.enroll_orig = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        self.enroll_final = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool) for i in range(self.priority_limit+1)]
-        self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
+        self.enroll_orig = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=bool)
+        self.enroll_final = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=bool)
+        self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=bool)
+        self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=bool) for i in range(self.priority_limit+1)]
+        self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=bool)
         # section_capacities tracks *remaining* capacity.
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.int32)
         # A section's score is number of students requesting minus capacity.
         # It's positive if we can't let everybody who wants it take it. Higher
         # scores mean a class is more in demand.
         self.section_scores = numpy.zeros((self.num_sections,), dtype=numpy.int32)
-        self.same_subject = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
-        self.section_conflict = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool) # is this a section that takes place in the same timeblock
+        self.same_subject = numpy.zeros((self.num_sections, self.num_sections), dtype=bool)
+        self.section_conflict = numpy.zeros((self.num_sections, self.num_sections), dtype=bool) # is this a section that takes place in the same timeblock
 
         #   Get student, section, timeslot IDs and prepare lookup table
         (self.student_ids, self.student_indices) = self.get_ids_and_indices(self.students)
@@ -434,7 +425,7 @@ class ClassChangeController(object):
         (self.timeslot_ids, self.timeslot_indices) = self.get_ids_and_indices(self.timeslots)
         self.parent_classes = numpy.array(self.sections.values_list('parent_class__id', flat=True))
 
-        self.student_not_checked_in = numpy.zeros((self.num_students,), dtype=numpy.bool)
+        self.student_not_checked_in = numpy.zeros((self.num_students,), dtype=bool)
         self.student_not_checked_in[self.student_indices[self.students_not_checked_in]] = True
 
         #   Get IDs of timeslots allocated to lunch by day
@@ -560,8 +551,6 @@ class ClassChangeController(object):
                 return False
 
 
-
-
         #   Filter students by the section's grade limits
         if self.options['check_grade']:
             possible_students *= (self.student_grades >= self.section_grade_min[si])
@@ -651,7 +640,7 @@ class ClassChangeController(object):
                             # class by requesting it, in the enrollment we've
                             # computed so far.
                             students_to_kick[sec_ind] = numpy.transpose(numpy.nonzero((self.enroll_final*self.request)[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1)))
-                            pq = six.moves.queue.PriorityQueue()
+                            pq = queue.PriorityQueue()
                             random.shuffle(students_to_kick[sec_ind])
                             for [student] in students_to_kick[sec_ind]:
                                 # For each student, get class sections they
@@ -673,7 +662,7 @@ class ClassChangeController(object):
                         # Try to kick a student.
                         try:
                             self.enroll_final[students_to_kick[sec_ind].get(False)[2], sec_ind, self.section_schedules[sec_ind,:]] = False
-                        except six.moves.queue.Empty:
+                        except queue.Empty:
                             pass
 
     def compute_assignments(self):
@@ -725,7 +714,7 @@ class ClassChangeController(object):
             logger.info(text_fn(student_ind, for_real=False) + sent_to)
             sys.stdout.flush()
         if f:
-            f.write((text_fn(student_ind, for_real=False) + sent_to).replace(six.u('\u2019'), "'").replace(six.u('\u201c'), '"').replace(six.u('\u201d'), '"').encode('ascii', 'ignore'))
+            f.write((text_fn(student_ind, for_real=False) + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"').encode('ascii', 'ignore'))
         if for_real:
             send_mail(self.subject, text_fn(student_ind, for_real=True), self.from_email, recipient_list, bcc=self.bcc, extra_headers=self.extra_headers)
             time.sleep(self.timeout)

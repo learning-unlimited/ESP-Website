@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.dbmail.base import BaseHandler
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
@@ -20,7 +19,7 @@ class ClassList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id = class_id)
             sections = cls.sections.all()
-        except ESPUser.DoesNotExist:
+        except ClassSubject.DoesNotExist:
             return
 
         self.emailcode = cls.emailcode()
@@ -39,6 +38,9 @@ class ClassList(BaseHandler):
                 self.recipients += [user.get_email_sendto_address()
                                     for user in section.students()     ]
 
+        # Remove duplicate email addresses while preserving order
+        self.recipients = list(dict.fromkeys(self.recipients))
+
         if len(self.recipients) > 0:
             self.send = True
 
@@ -49,7 +51,7 @@ class ClassList(BaseHandler):
         try:
             cls = ClassSubject.objects.get(id = class_id)
             sections = cls.sections.all()
-        except ESPUser.DoesNotExist:
+        except ClassSubject.DoesNotExist:
             return
 
         # Create a class list in Mailman,

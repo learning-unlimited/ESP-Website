@@ -33,5 +33,5 @@ unittest for already-scheduled multihour class
 
 scoring student-class-hours should account for classroom capacity
 
-test to be able to handle sections which don't satsify constraints
+test to be able to handle sections which don't satisfy constraints
 

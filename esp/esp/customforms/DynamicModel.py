@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import re
 import os
 
@@ -52,7 +51,7 @@ class DynamicModelHandler:
     can have a custom form with fields that are actually stored in another model. The custom form
     responses table has a foreign key to that other model. The form will have multiple fields
     that are part of this linked model, and you might add or remove one of those, but the existence
-    of the foreign key in the custom forms table shouldn't change unles you've added a new one
+    of the foreign key in the custom forms table shouldn't change unless you've added a new one
     or removed all of them. This is why you have to keep track of them and check, and have
     separate add and remove methods from the normal fields.
     """
@@ -147,7 +146,7 @@ class DynamicModelHandler:
             self.field_list.append( ('user', self._getLinkModelField(ESPUser) ) )
 
         # Checking for only_fkey links
-        if self.form.link_type != '-1':
+        if self.form.link_type and self.form.link_type != '-1' and self.form.link_type in cf_cache.only_fkey_models:
             model_cls = cf_cache.only_fkey_models[self.form.link_type]
             self.field_list.append( ('link_%s' % model_cls.__name__, self._getLinkModelField(model_cls)) )
 
@@ -285,7 +284,7 @@ class DynamicModelHandler:
         form is modified.
         """
         with connection.schema_editor() as schema_editor:
-            if old_link_type != new_link_type and old_link_type != "-1":
+            if old_link_type != new_link_type and old_link_type and old_link_type != "-1" and old_link_type in cf_cache.only_fkey_models:
                 # Old FK column needs to go
                 model = self.createDynModel()
                 old_model_cls = cf_cache.only_fkey_models[old_link_type]
@@ -296,7 +295,7 @@ class DynamicModelHandler:
             form.link_id = link_id
             form.save()
 
-            if old_link_type != new_link_type and new_link_type != "-1":
+            if old_link_type != new_link_type and new_link_type and new_link_type != "-1" and new_link_type in cf_cache.only_fkey_models:
                 # New FK column needs to be inserted
                 model = self.createDynModel()
                 new_model_cls = cf_cache.only_fkey_models[new_link_type]

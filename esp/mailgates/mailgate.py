@@ -3,9 +3,7 @@
 # Main mailgate
 # Handles incoming messages etc.
 
-from __future__ import absolute_import
-from __future__ import print_function
-import sys, os, email, re, smtplib, socket, sha, random
+import sys, os, email, re, smtplib, socket, hashlib, random
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
@@ -39,6 +37,10 @@ from esp.dbmail.models import EmailList
 from esp.dbmail.mailgate_utils import sanitize_recipient_headers
 from django.conf import settings
 
+import email.utils
+from django.core.mail import send_mail as django_send_mail
+from esp.users.models import ESPUser
+
 host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
 MAIL_PATH = '/usr/sbin/sendmail'
@@ -59,16 +61,19 @@ def send_mail(message):
 try:
     user = os.environ['LOCAL_PART']
 
-    message = email.message_from_file(sys.stdin)
+    message = email.message_from_bytes(sys.stdin.buffer.read())
 
     handlers = EmailList.objects.all()
+
+    matched_any_handler = False
 
     for handler in handlers:
         re_obj = re.compile(handler.regex)
         match = re_obj.search(user)
 
-
         if not match: continue
+
+        matched_any_handler = True
 
         Class = getattr(__import__(import_location + handler.handler.lower(), (), (), ['']), handler.handler)
 
@@ -79,52 +84,34 @@ try:
         if not instance.send:
             continue
 
-        domain = Site.objects.get_current().domain
-        sanitize_recipient_headers(
-            message,
-            local_part=user,
-            domain=domain,
-            drop_bcc=False,
-        )
+        if not getattr(instance, 'preserve_headers', False):
+            # Group broadcasts (ClassList, SectionList, PlainList):
+            # Strip headers, prefix subject, regen Message-ID
+            del(message['to'])
+            del(message['cc'])
+            message['X-ESP-SENDER'] = 'version 2'
+            message['X-FORWARDED-FOR'] = message['X-CLIENT-IP'] if message['X-Client-IP'] else message['Client-IP']
 
-        if hasattr(instance, "direct_send") and instance.direct_send:
-            send_mail(str(message))
-            continue
+            subject = message['subject']
+            del(message['subject'])
+            if hasattr(instance, 'emailcode') and instance.emailcode:
+                subject = '[%s] %s' % (instance.emailcode, subject)
+            if handler.subject_prefix:
+                subject = '[%s] %s' % (handler.subject_prefix, subject)
+            message['Subject'] = subject
 
-        sanitize_recipient_headers(
-            message,
-            local_part=user,
-            domain=domain,
-            drop_bcc=True,
-        )
+            if handler.from_email:
+                del(message['from'])
+                message['From'] = handler.from_email
 
-        if message.get('To'):
-            del(message['To'])
-        if message.get('Cc'):
-            del(message['Cc'])
-        message['X-ESP-SENDER'] = 'version 2'
-        message['X-FORWARDED-FOR'] = message['X-CLIENT-IP'] if message['X-Client-IP'] else message['Client-IP']
+            del message['Message-ID']
+            message['Message-ID'] = '<%s@%s>' % (hashlib.sha1(str(random.random()).encode()).hexdigest(),
+                                                 host)
 
-        subject = message['subject']
-        del(message['subject'])
-        if hasattr(instance, 'emailcode') and instance.emailcode:
-            subject = '[%s] %s' % (instance.emailcode, subject)
-        if handler.subject_prefix:
-            subject = '[%s] %s' % (handler.subject_prefix, subject)
-        message['Subject'] = subject
-
-        if handler.from_email:
-            del(message['from'])
-            message['From'] = handler.from_email
-
-        del message['Message-ID']
-
-        # get a new message id
-        message['Message-ID'] = '<%s@%s>' % (sha.new(str(random.random())).hexdigest(),
-                                             host)
-
+        # Common path for ALL handlers — iterate recipients
         if handler.cc_all:
             # send one mass-email
+            del(message['To'])
             message['To'] = ', '.join(instance.recipients)
             send_mail(str(message))
         else:
@@ -136,9 +123,34 @@ try:
 
         sys.exit(0)
 
+    # ----- No handler accepted the email -----
+    # Only bounce if no handler regex matched (true invalid address).
+    # If a handler matched but chose not to send (permission issue), stay silent.
+    if not matched_any_handler:
+        _sender_name, sender_email = email.utils.parseaddr(message.get('From', ''))
+        # Anti-loop: never bounce to our own system address
+        if (sender_email
+                and sender_email.lower() != SUPPORT.lower()
+                and ESPUser.objects.filter(email__iexact=sender_email).exists()):
+            try:
+                django_send_mail(
+                    'Undeliverable mail to %s@%s' % (user, host),
+                    'Your message to "%s@%s" could not be delivered.\n\n'
+                    'The address does not exist or is not currently accepting '
+                    'messages. If you believe this is an error, please contact '
+                    '%s for assistance.\n' % (user, host, SUPPORT),
+                    SUPPORT,
+                    [sender_email],
+                    fail_silently=True,
+                )
+            except Exception:
+                logger.warning("Failed to send bounce to '%s'", sender_email)
+
+    # Exit 0 so MTA considers delivery "handled" — no native NDR bounce
+    sys.exit(0)
 
 except Exception as e:
-    # we dont' want to care if it's an exit
+    # we don't want to care if it's an exit
     if isinstance(e, SystemExit):
         raise
 

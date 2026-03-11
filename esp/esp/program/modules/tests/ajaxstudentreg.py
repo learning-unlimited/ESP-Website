@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,16 +36,13 @@ from esp.middleware.esperrormiddleware import AjaxErrorMiddleware
 from esp.program.models.class_ import ClassSection
 from esp.program.tests import ProgramFrameworkTest
 
-from django_selenium.testcases import SeleniumTestCase
 import random
 import json
 import logging
-import six
 
 logger = logging.getLogger(__name__)
 
-# TODO(gkanwar): Remove non-selenium tests from this TestCase
-class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
+class AjaxStudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
@@ -57,7 +53,6 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
             'num_rooms': 6,
             } )
         ProgramFrameworkTest.setUp(self, *args, **kwargs)
-        SeleniumTestCase.setUp(self)
 
         self.add_student_profiles()
         self.schedule_randomly()
@@ -68,13 +63,13 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         self.moduleobj.user = self.students[0]
 
     def expect_empty_schedule(self, response):
-        resp_data = json.loads(six.text_type(response.content, encoding='UTF-8'))
+        resp_data = json.loads(str(response.content, encoding='UTF-8'))
         self.assertTrue('student_schedule_html' in resp_data)
         search_str = 'Your schedule for %s is empty.  Please add classes below!' % self.program.niceName()
         self.assertTrue(search_str in resp_data['student_schedule_html'], 'Could not find empty fragment "%s" in response "%s"' % (search_str, resp_data['student_schedule_html']))
 
     def expect_sections_in_schedule(self, response, sections=[]):
-        resp_data = json.loads(six.text_type(response.content, encoding='UTF-8'))
+        resp_data = json.loads(str(response.content, encoding='UTF-8'))
         self.assertTrue('student_schedule_html' in resp_data)
         for sec in sections:
             self.assertTrue(sec.title() in resp_data['student_schedule_html'])
@@ -97,13 +92,13 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
 
         if not error_received:
             #   If AjaxErrorMiddleware is engaged, we should get a JSON response.
-            response_dict = json.loads(six.text_type(response.content, encoding='UTF-8'))
+            response_dict = json.loads(str(response.content, encoding='UTF-8'))
             self.assertTrue(int(response_dict['status']) == 200)
             error_received = True
             error_msg = response_dict['error']
 
         self.assertTrue(error_received)
-        self.assertTrue(error_msg == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (error_msg, error_str))
+        self.assertTrue(str(error_msg) == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (error_msg, error_str))
 
     def test_ajax_schedule(self):
         program = self.program
@@ -162,7 +157,10 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec3.parent_class.id, 'section_id': sec3.id}, 'You are already signed up for a section of this class!')
 
         #   Try adding another class that we can actually take and check that it's there
-        sec4 = random.choice(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
+        available_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
+        if not available_sections:
+            self.skipTest('No non-conflicting sections available for this random configuration')
+        sec4 = random.choice(available_sections)
         response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec4.parent_class.id, 'section_id': sec4.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec1, sec4])
 
@@ -174,7 +172,10 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
         sec1 = random.choice(program.sections())
         sec1.preregister_student(student)
-        sec2 = random.choice(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
+        available_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
+        if not available_sections:
+            self.skipTest('No non-conflicting sections available for this random configuration')
+        sec2 = random.choice(available_sections)
         sec2.preregister_student(student)
 
         #   Get the schedule and check that both classes are there
@@ -188,10 +189,4 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         #   Clear other timeslot and check that the schedule is empty
         response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec2.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
-
-    def test_lottery(self):
-        # TODO(gkanwar): Make this test actually do something, or remove it
-        program = self.program
-
-        self.webdriver.get('/learn/%s/lotterystudentreg' % program.getUrlBase())
 

@@ -1,7 +1,5 @@
 """A controller for the automatic scheduling assistant."""
 
-from __future__ import absolute_import
-from __future__ import division
 import datetime
 import logging
 from django.core.exceptions import ObjectDoesNotExist
@@ -13,8 +11,6 @@ from esp.program.controllers.autoscheduler import \
     db_interface, constraints, config, manipulator, resource_checker, \
     search
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
-import six
-from six.moves import zip
 
 logger = logging.getLogger(__name__)
 
@@ -23,29 +19,29 @@ class AutoschedulerController(object):
     def __init__(self, prog, **options):
         self.options = options
         constraint_options = {
-            k.split('_', 1)[1]: v for k, v in six.iteritems(options)
+            k.split('_', 1)[1]: v for k, v in options.items()
             if k.startswith("constraints_")}
         scoring_options = {
-            k.split('_', 1)[1]: v for k, v in six.iteritems(options)
+            k.split('_', 1)[1]: v for k, v in options.items()
             if k.startswith("scorers_")}
         resource_options = {
-            k.split('_', 1)[1]: v for k, v in six.iteritems(options)
+            k.split('_', 1)[1]: v for k, v in options.items()
             if k.startswith("resources_")}
         search_options = {
-            k.split('_', 1)[1]: v for k, v in six.iteritems(options)
+            k.split('_', 1)[1]: v for k, v in options.items()
             if k.startswith("search_")}
-        constraint_names = [k for k, v in six.iteritems(constraint_options)
+        constraint_names = [k for k, v in constraint_options.items()
                             if v]
         resource_criteria = load_all_resource_criteria(prog)
         valid_res_types = \
             ResourceType.objects.filter(program=prog).values_list(
                     "name", flat=True)
         resource_constraints = resource_checker.create_resource_criteria(
-                [{k: spec for k, (spec, wt) in six.iteritems(resource_criteria)
+                [{k: spec for k, (spec, wt) in resource_criteria.items()
                   if resource_options[k] == -1}], valid_res_types)
         resource_scorers = resource_checker.create_resource_criteria(
                 [{k: (spec, resource_options[k])
-                  for k, (spec, wt) in six.iteritems(resource_criteria)
+                  for k, (spec, wt) in resource_criteria.items()
                   if resource_options[k] != -1}], valid_res_types,
                 use_weights=True)
         schedule = db_interface.load_schedule_from_db(
@@ -74,7 +70,7 @@ class AutoschedulerController(object):
         loaded_constraints = db_interface.load_constraints(prog, overrides)
         constraint_options = {
             k: (v, config.CONSTRAINT_DESCRIPTIONS[k])
-            for k, v in six.iteritems(loaded_constraints)}
+            for k, v in loaded_constraints.items()}
         return constraint_options
 
     @staticmethod
@@ -83,7 +79,7 @@ class AutoschedulerController(object):
         scorers = db_interface.load_scorers(prog)
         scorer_options = {
             k: (v, config.SCORER_DESCRIPTIONS[k])
-            for k, v in six.iteritems(scorers)}
+            for k, v in scorers.items()}
         return scorer_options
 
     @staticmethod
@@ -92,7 +88,7 @@ class AutoschedulerController(object):
         criterion is required, mark as -1."""
         resource_criteria = load_all_resource_criteria(prog, use_comments=True)
         resource_options = {k: (wt, spec) for k, (spec, wt)
-                            in six.iteritems(resource_criteria)}
+                            in resource_criteria.items()}
         return resource_options
 
     @staticmethod
@@ -138,46 +134,46 @@ class AutoschedulerController(object):
                 self.optimizer.manipulator.history):
             row = []
             if action["action"] == "schedule":
-                row.append([six.u("Scheduled {}:").format(
+                row.append(["Scheduled {}:".format(
                                 self.section_identifier(action["section"])),
                            self.section_info(action["section"])])
-                row.append([six.u("In {}:").format(
+                row.append(["In {}:".format(
                                 self.roomslot_identifier(
                                     action["start_roomslot"])),
                            self.roomslot_info(action["start_roomslot"])])
             elif action["action"] == "move":
-                row.append([six.u("Moved {}:").format(
+                row.append(["Moved {}:".format(
                                 self.section_identifier(action["section"])),
                            self.section_info(action["section"])])
-                row.append([six.u("From {}:").format(
+                row.append(["From {}:".format(
                                 self.roomslot_identifier(
                                     action["prev_start_roomslot"])),
                            self.roomslot_info(action["prev_start_roomslot"])])
-                row.append([six.u("To {}:").format(
+                row.append(["To {}:".format(
                                 self.roomslot_identifier(
                                     action["start_roomslot"])),
                            self.roomslot_info(action["start_roomslot"])])
             elif action["action"] == "unschedule":
-                row.append([six.u("Unscheduled {}:").format(
+                row.append(["Unscheduled {}:".format(
                                 self.section_identifier(action["section"])),
                            self.section_info(action["section"])])
-                row.append([six.u("From {}:").format(
+                row.append(["From {}:".format(
                                 self.roomslot_identifier(
                                     action["prev_start_roomslot"])),
                            self.roomslot_info(action["prev_start_roomslot"])])
             elif action["action"] == "swap":
                 sec1, sec2 = action["sections"]
                 rs2, rs1 = action["original_roomslots"]
-                row.append([six.u("Swapped {}:").format(
+                row.append(["Swapped {}:".format(
                                 self.section_identifier(sec1)),
                            self.section_info(sec1)])
-                row.append([six.u("Now in {}:").format(
+                row.append(["Now in {}:".format(
                                 self.roomslot_identifier(rs1)),
                            self.roomslot_info(rs1)])
-                row.append([six.u("and {}:").format(
+                row.append(["and {}:".format(
                                 self.section_identifier(sec2)),
                            self.section_info(sec2)])
-                row.append([six.u("Now in {}:").format(
+                row.append(["Now in {}:".format(
                                 self.roomslot_identifier(rs2)),
                            self.roomslot_info(rs2)])
             else:
@@ -203,16 +199,16 @@ class AutoschedulerController(object):
 
             def format_row(row):
                 scorer, weight, delta = row
-                return six.u("{} (wt {}): chg {:.3f} -> {:.3f}").format(
+                return "{} (wt {}): chg {:.3f} -> {:.3f}".format(
                     scorer, weight, delta, weight * delta // total_wt)
             new_row = []
             if len(diffs) > 6:
                 new_row += [format_row(r) for r in diffs[:3]]
-                new_row += [six.u("[{} more truncated]").format(len(diffs) - 6)]
+                new_row += ["[{} more truncated]".format(len(diffs) - 6)]
                 new_row += [format_row(r) for r in diffs[-3:]]
             else:
                 new_row += [format_row(r) for r in diffs]
-            new_row += [six.u("Total change: {}").format(total_change)]
+            new_row += ["Total change: {}".format(total_change)]
             rows.append([[
                 "Major score changes (weight, change, contribution):",
                 new_row]])
@@ -228,7 +224,7 @@ class AutoschedulerController(object):
             section_obj.parent_class.parent_program.getUrlBase(),
             section.parent_class)
         edit_link = "<a href='{}'>Edit</a>".format(edit)
-        return six.u("{}: {} (id: {}) ({}, {})").format(
+        return "{}: {} (id: {}) ({}, {})".format(
             section_obj.emailcode(), section_obj.parent_class.title,
             section.id, manage_link, edit_link)
 
@@ -236,45 +232,45 @@ class AutoschedulerController(object):
         info = []
         teachers_list = [ESPUser.objects.get(id=teacher.id).name()
                          for teacher in section.teachers]
-        info.append(six.u("<b>Teachers:</b> {}").format(
+        info.append("<b>Teachers:</b> {}".format(
             ", ".join(teachers_list)))
-        info.append(six.u("<b>Capacity: </b>{}").format(section.capacity))
-        info.append(six.u("<b>Duration: </b>{}").format(section.duration))
-        info.append(six.u("<b>Grades: </b>{}-{}").format(
+        info.append("<b>Capacity: </b>{}".format(section.capacity))
+        info.append("<b>Duration: </b>{}".format(section.duration))
+        info.append("<b>Grades: </b>{}-{}".format(
             section.grade_min, section.grade_max))
         resources = ""
-        for restype in six.itervalues(section.resource_requests):
+        for restype in section.resource_requests.values():
             resources += "<li>"
             if restype.value == "":
                 resources += restype.name
             else:
-                resources += six.u("{}: {}").format(restype.name, restype.value)
+                resources += "{}: {}".format(restype.name, restype.value)
             resources += "</li>"
-        info.append(six.u("<b>Resource requests:</b><ul>{}</ul>").format(
+        info.append("<b>Resource requests:</b><ul>{}</ul>".format(
             resources))
         cls = ClassSection.objects.get(id=section.id).parent_class
-        info.append(six.u("<b>Class Flags: </b>{}").format(six.u(", ").join(
+        info.append("<b>Class Flags: </b>{}".format(", ".join(
             cls.flags.values_list(
                 'flag_type__name', flat=True))))
         return info
 
     def roomslot_identifier(self, roomslot):
-        return six.u("{} starting at {}").format(
+        return "{} starting at {}".format(
                 roomslot.room.name,
                 roomslot.timeslot.start.strftime("%A %-I:%M%p"))
 
     def roomslot_info(self, roomslot):
         info = []
-        info.append(six.u("<b>Capacity:</b> {}").format(roomslot.room.capacity))
+        info.append("<b>Capacity:</b> {}".format(roomslot.room.capacity))
         resources = ""
-        for restype in six.itervalues(roomslot.room.furnishings):
+        for restype in roomslot.room.furnishings.values():
             resources += "<li>"
             if restype.value == "":
                 resources += restype.name
             else:
-                resources += six.u("{}: {}").format(restype.name, restype.value)
+                resources += "{}: {}".format(restype.name, restype.value)
             resources += "</li>"
-        info.append(six.u("<b>Furnishings:</b><ul>{}</ul>").format(
+        info.append("<b>Furnishings:</b><ul>{}</ul>".format(
             resources))
         return info
 
@@ -321,7 +317,7 @@ class AutoschedulerController(object):
                     else:
                         sections[section][1] = new_r
         new_history = []
-        for section, (old_r, new_r) in six.iteritems(sections):
+        for section, (old_r, new_r) in sections.items():
             if old_r is None:
                 assert new_r is not None, "Did nothing"
                 new_history.append({
@@ -359,7 +355,7 @@ class AutoschedulerController(object):
     def import_assignments(self, data):
         history, scheduling_hashes = data
         logger.info(scheduling_hashes)
-        for section, scheduling_hash in six.iteritems(scheduling_hashes):
+        for section, scheduling_hash in scheduling_hashes.items():
             initial_state = self.schedule.class_sections[
                 int(section)].initial_state
             logger.info(initial_state)
@@ -367,7 +363,7 @@ class AutoschedulerController(object):
                 emailcode = ClassSection.objects.get(
                         id=int(section)).emailcode()
                 raise SchedulingError(
-                    six.u("Section {} was moved.").format(emailcode))
+                    "Section {} was moved.".format(emailcode))
         if not self.optimizer.manipulator.load_history(history):
             raise SchedulingError("Unable to replay assignments.")
 
@@ -380,17 +376,17 @@ def load_all_resource_criteria(prog, use_comments=False):
     of specs."""
     resource_constraints = db_interface.load_resource_constraints(
             prog, specs_only=True, ignore_comments=(not use_comments))
-    overrides = {k: (v, -1) for k, v in six.iteritems(resource_constraints)}
+    overrides = {k: (v, -1) for k, v in resource_constraints.items()}
     resource_criteria = db_interface.load_resource_scoring(
             prog, overrides, specs_only=True,
             ignore_comments=(not use_comments))
     if use_comments:
         for k in resource_criteria:
-            comment = six.u("{}_comment").format(k)
+            comment = "{}_comment".format(k)
             if comment in resource_criteria:
                 resource_criteria[k] = \
                     (resource_criteria[comment][0], resource_criteria[k][1])
-    return {k: v for k, v in six.iteritems(resource_criteria) if "_comment" not in
+    return {k: v for k, v in resource_criteria.items() if "_comment" not in
             k}
 
 
