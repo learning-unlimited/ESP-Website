@@ -98,6 +98,28 @@ We would like you, as a teacher, to upload all documents and other materials rel
 </table>
 </form>
 
+{% if previous_docs %}
+<br />
+<table cellpadding="12" cellspacing="0" align="center" width="70%" style="background-color: #f9f9f9; border-radius: 5px; margin-top: 20px;">
+    <tr>
+        <th style="text-align: center;">
+            Suggestions (from your previous classes)
+        </th>
+    </tr>
+    <tr>
+        <td class="instructions">
+            Here are some documents you've uploaded for classes in the past. This may help you decide what to upload for this class:
+            <ul style="margin-top: 10px;">
+            {% for p_doc in previous_docs %}
+                <li><a href="{{ p_doc.download_path }}">{{ p_doc.friendly_name }}</a> (from {{ p_doc.owner.title }})</li>
+            {% endfor %}
+            </ul>
+        </td>
+    </tr>
+</table>
+{% endif %}
+
+
 {% include "program/modules/teacherregcore/returnlink.html" %}
 
 </div>

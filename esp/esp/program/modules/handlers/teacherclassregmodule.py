@@ -523,7 +523,14 @@ class TeacherClassRegModule(ProgramModuleObj):
                 else:
                     context_rename_form = form
 
-        context = {'cls': target_class, 'uploadform': context_form, 'module': self, 'renameform': context_rename_form}
+        # Fetch all classes the teacher has taught and gather documents
+        previous_classes = request.user.getTaughtClasses()
+        previous_docs = []
+        for p_cls in previous_classes:
+            if p_cls.id != target_class.id:
+                previous_docs.extend(list(p_cls.getDocuments()))
+
+        context = {'cls': target_class, 'uploadform': context_form, 'module': self, 'renameform': context_rename_form, 'previous_docs': previous_docs}
 
         return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
