@@ -8,6 +8,8 @@ This is not intended to be an exhaustive list, just a summary with some comments
   * ``admin``
   * ``dev``
 
+    * ``walkthroughs``: Per-directory orientation READMEs for each major module under ``esp/esp/``.  See `<walkthroughs/CONTRIBUTING-TO-READMES.MD>`_ for how to read, update, and create them.
+
 * ``esp``: The root of the django project.
 
   * ``esp``: The root of the python code.  Every folder from here on down needs to have an ``__init__.py``.  Contains a directory for each django app we use, along with some other files and directories.  There are a whole lot of these, but the most important are below.  Each app contains a file or directory for models, views, and tests; most also contain a directory for migrations.
