@@ -374,7 +374,7 @@ class IndividualAccountingControllerTest(TestCase):
         self.iac = IndividualAccountingController(self.program, self.user)
 
     def test_get_id(self):
-        expected = '%d/%d' % (self.program.id, self.user.id)
+        expected = f'{self.program.id}/{self.user.id}'
         self.assertEqual(self.iac.get_id(), expected)
 
     def test_from_id(self):
