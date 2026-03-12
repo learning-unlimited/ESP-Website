@@ -152,7 +152,7 @@ class PasswordRecoveryTest(TestCase):
         self.other.set_password('remembered_pw')
         self.other.save()
 
-    def runTest(self):
+    def test_run(self):
         from django.contrib.auth.tokens import default_token_generator
         from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
         from django.utils.encoding import force_bytes
@@ -296,7 +296,7 @@ class UserForwarderTest(TestCase):
         self.ub, created = ESPUser.objects.get_or_create(username='forward_b')
         self.uc, created = ESPUser.objects.get_or_create(username='forward_c')
         self.users = [self.ua, self.ub, self.uc]
-    def runTest(self):
+    def test_run(self):
         def fwd_info(user):
             return '%s forwards by: %s' % (user.username, user.forwarders_out.all())
         # Ensure that users have no forwarders by default
@@ -331,7 +331,7 @@ class MakeAdminTest(TestCase):
         self.target_user.is_superuser = False
         user_role_setup()
 
-    def runTest(self):
+    def test_run(self):
         # Make sure user starts off with no administrator privileges
         self.assertFalse(self.user.is_staff)
         self.assertFalse(self.user.is_superuser)
@@ -373,7 +373,7 @@ class AjaxExistenceChecker(TestCase):
     """ Check that an Ajax view is there by trying to retrieve it and checking for the desired keys
         in the response.
     """
-    def runTest(self):
+    def test_run(self):
         #   Quit if path and keys are not provided.  This ensures nothing will
         #   break if this is invoked without those attributes.
         if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
@@ -384,12 +384,12 @@ class AjaxExistenceChecker(TestCase):
             self.assertContains(response, key, msg_prefix="Key %s missing from Ajax response to %s" % (key, self.path), status_code=200)
 
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
-    def runTest(self):
+    def test_run(self):
         self.path = '/learn/%s/ajax_schedule' % self.program.getUrlBase()
         self.keys = ['student_schedule_html']
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
-        super().runTest()
+        super().test_run()
 
 class AccountCreationTest(TestCase):
 
@@ -592,7 +592,7 @@ class RecordTest(TestCase):
         self.program1.delete()
         self.program2.delete()
 
-    def runTest(self):
+    def test_run(self):
         # Run the tests for Records with two different programs, and without
         # a specific program.
         # If all iterations run successfully, this means that the Record

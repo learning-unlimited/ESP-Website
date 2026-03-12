@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{program.niceName}}{% endblock %}
 
@@ -27,7 +27,7 @@
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog-new.css" />
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <h1>{{ program.niceName }} Student Registration</h1>
 
 <div id="catalog-intro">
