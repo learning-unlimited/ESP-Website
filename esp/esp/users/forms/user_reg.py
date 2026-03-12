@@ -20,6 +20,9 @@ class ValidHostEmailField(forms.EmailField):
 
         try:
             import DNS
+            if email_host in ['esp.mit.edu', 'mit.edu', 'learningu.org']:
+                return email
+
             try:
                 DNS.DiscoverNameServers()
                 if len(DNS.Request(qtype='a').req(email_host).answers) == 0 and len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
