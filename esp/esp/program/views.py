@@ -1253,18 +1253,48 @@ def statistics(request, program=None):
             result_dict['programs'] = programs
 
             #   Get list of users the query applies to
-            users_q = Q()
+            users_q = None
+
             for program in programs:
-                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types']:
+                student_q = None
+                if form.cleaned_data.get('student_reg_type_all'):
+                    student_q = program.students_union(QObject=True)
+                elif form.cleaned_data.get('student_reg_types'):
                     students_objects = program.students(QObjects=True)
+                    student_q = Q(pk__in=[])
                     for reg_type in form.cleaned_data['student_reg_types']:
-                        if reg_type in list(students_objects.keys()):
-                            users_q = users_q | students_objects[reg_type]
-                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types']:
+                        if reg_type in students_objects:
+                            student_q |= students_objects[reg_type]
+
+                if student_q:
+                    # Explicitly restrict to students to avoid including teachers/volunteers
+                    # who might have attended/confirmed records.
+                    student_q &= ESPUser.getAllOfType('Student')
+                    if users_q is None:
+                        users_q = student_q
+                    else:
+                        users_q |= student_q
+
+                teacher_q = None
+                if form.cleaned_data.get('teacher_reg_type_all'):
+                    teacher_q = program.teachers_union(QObject=True)
+                elif form.cleaned_data.get('teacher_reg_types'):
                     teachers_objects = program.teachers(QObjects=True)
+                    teacher_q = Q(pk__in=[])
                     for reg_type in form.cleaned_data['teacher_reg_types']:
-                        if reg_type in list(teachers_objects.keys()):
-                            users_q = users_q | teachers_objects[reg_type]
+                        if reg_type in teachers_objects:
+                            teacher_q |= teachers_objects[reg_type]
+
+                if teacher_q:
+                    # Explicitly restrict to teachers
+                    teacher_q &= ESPUser.getAllOfType('Teacher')
+                    if users_q is None:
+                        users_q = teacher_q
+                    else:
+                        users_q |= teacher_q
+
+            if users_q is None:
+                users_q = Q(pk__in=[])
 
             #   Narrow down by school (perhaps not ideal results, but faster)
             if form.cleaned_data['school_query_type'] == 'name':
