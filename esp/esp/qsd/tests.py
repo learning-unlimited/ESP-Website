@@ -40,6 +40,8 @@ from esp.users.models import ESPUser
 from django.template import Template, Context
 from django.urls import reverse
 
+from esp.qsd.seltests import TestQsdCachePurging  # Run Selenium tests with regular tests
+
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
 
@@ -141,6 +143,75 @@ class QSDCorrectnessTest(TestCase):
 
             #   Delete the new QSD so we can start again.
             qsd_rec_new.delete()
+
+    def testUnauthorizedAccess(self):
+        # Create QSD with desired URL
+        qsd_rec_new = QuasiStaticData()
+        qsd_rec_new.url = 'learn/foo'
+        qsd_rec_new.name = "learn:foo"
+        qsd_rec_new.author = self.author
+        qsd_rec_new.nav_category = default_navbarcategory()
+        qsd_rec_new.content = "Testing 123"
+        qsd_rec_new.title = "Test QSD page"
+        qsd_rec_new.description = ""
+        qsd_rec_new.keywords = ""
+        qsd_rec_new.save()
+
+        edit_url = '/learn/foo.edit.html'
+
+        # Array of users without edit permission: unauthenticated (None) and student
+        unauthorized_users = [None, self.users[2]]
+
+        for user in unauthorized_users:
+            self.client.logout()
+            if user is not None:
+                self.client.login(username=user[0], password=user[1])
+
+            # Test GET to *.edit.html
+            response = self.client.get(edit_url, follow=True)
+            self.assertRedirects(response, '/learn/foo.html')
+
+            messages = list(response.context['messages'])
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(str(messages[0]), "You don't have permission to edit this page.")
+
+            # Test POST to *.edit.html
+            response = self.client.post(edit_url, {
+                'post_edit': '1',
+                'content': 'hacked',
+                'nav_category': qsd_rec_new.nav_category.id,
+                'title': 'Hacked',
+                'description': '',
+                'keywords': ''
+            }, follow=True)
+            self.assertRedirects(response, '/learn/foo.html')
+
+            messages = list(response.context['messages'])
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(str(messages[0]), "Sorry, you do not have permission to edit this page.")
+
+        qsd_rec_new.delete()
+
+    def testUnauthorizedEditNonexistentPage(self):
+        """Editing a nonexistent QSD page without permission returns 404."""
+        edit_url = '/learn/nonexistent_page.edit.html'
+
+        # Verify the page truly doesn't exist
+        self.client.logout()
+        response = self.client.get('/learn/nonexistent_page.html')
+        self.assertEqual(response.status_code, 404)
+
+        # Users without edit permission: unauthenticated (None) and student
+        unauthorized_users = [None, self.users[2]]
+
+        for user in unauthorized_users:
+            self.client.logout()
+            if user is not None:
+                self.client.login(username=user[0], password=user[1])
+
+            # Attempting to edit a nonexistent page should give 404, not 500
+            response = self.client.get(edit_url)
+            self.assertEqual(response.status_code, 404)
 
 
 class QSDImageUploadTest(TestCase):
