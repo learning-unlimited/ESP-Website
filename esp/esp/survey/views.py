@@ -515,10 +515,8 @@ def top_classes(request, tl, program, instance):
                     'Couldn\'t find an "overall rating" or "Favorite Class" '
                     'question in this survey. To compute top classes, the '
                     'survey must include either (a) a rating question whose '
-                    'name contains the text "overall rating" (for example '
-                    '"overall rating" or "Overall rating"), or (b) a question '
-                    'whose type is "Favorite Class". '
-                    'Please update the survey configuration and try again.',
+                    'name contains "overall rating", or (b) a question '
+                    'whose type is "Favorite Class".',
                     log=False
                 )
 
