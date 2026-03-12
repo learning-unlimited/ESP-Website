@@ -217,6 +217,11 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
           {% endif %}
         </div>
         {% endif %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
         {% block content %}{% endblock %}
       </div>
       <!--[if lte IE 6]>
