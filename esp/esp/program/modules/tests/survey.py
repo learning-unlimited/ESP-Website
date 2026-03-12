@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.forms.surveys import QuestionForm
 from esp.program.tests import ProgramFrameworkTest
 from esp.survey.models import Survey, Question, QuestionType, SurveyResponse, Answer
 from esp.users.models import Record
@@ -140,3 +141,101 @@ class SurveyTest(ProgramFrameworkTest):
         self.assertContains(response, 'Question2')
         self.assertContains(response, 'Question3')
         self.assertNotContains(response, 'Question1')
+
+
+class QuestionFormValidationTest(ProgramFrameworkTest):
+    """Tests for QuestionForm validation added to fix issue #3858.
+
+    Verifies that non-numeric and negative values for num_choices /
+    num_ratings are rejected server-side.
+    """
+
+    def setUp(self, *args, **kwargs):
+        super().setUp(*args, **kwargs)
+        self.survey = Survey.objects.create(
+            name='Validation Test Survey',
+            program=self.program,
+            category='learn',
+        )
+        self.mc_qtype, _ = QuestionType.objects.get_or_create(
+            name='Multiple Choice',
+        )
+        self.cb_qtype, _ = QuestionType.objects.get_or_create(
+            name='Checkboxes',
+        )
+        self.rating_qtype, _ = QuestionType.objects.get_or_create(
+            name='Labeled Numeric Rating',
+            _param_names='Number of ratings',
+            is_numeric=True,
+            is_countable=True,
+        )
+
+    def _base_data(self, question_type, param_values):
+        """Build a minimal POST-like data dict for QuestionForm."""
+        return {
+            'survey': str(self.survey.id),
+            'name': 'Test Question',
+            'question_type': str(question_type.id),
+            'per_class': False,
+            'seq': 0,
+            '_param_values': param_values,
+        }
+
+    # --- Multiple Choice / Checkboxes ---
+
+    def test_multiple_choice_empty_choices_invalid(self):
+        """Submitting Multiple Choice with no choices should fail validation."""
+        data = self._base_data(self.mc_qtype, '')
+        form = QuestionForm(data, cur_prog=self.program)
+        self.assertFalse(form.is_valid())
+        self.assertIn('Please provide at least one choice', str(form.errors))
+
+    def test_checkboxes_empty_choices_invalid(self):
+        """Submitting Checkboxes with no choices should fail validation."""
+        data = self._base_data(self.cb_qtype, '')
+        form = QuestionForm(data, cur_prog=self.program)
+        self.assertFalse(form.is_valid())
+        self.assertIn('Please provide at least one choice', str(form.errors))
+
+    def test_multiple_choice_with_valid_choices(self):
+        """Submitting Multiple Choice with valid choices should pass."""
+        data = self._base_data(self.mc_qtype, 'Option A|Option B|Option C')
+        form = QuestionForm(data, cur_prog=self.program)
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+    # --- Labeled Numeric Rating ---
+
+    def test_rating_letter_value_invalid(self):
+        """Entering a letter (e.g. 'f') for num_ratings should fail validation."""
+        data = self._base_data(self.rating_qtype, 'f|Low|High')
+        form = QuestionForm(data, cur_prog=self.program)
+        self.assertFalse(form.is_valid())
+        self.assertIn('must be a whole number', str(form.errors))
+
+    def test_rating_negative_value_invalid(self):
+        """Entering a negative number for num_ratings should fail validation."""
+        data = self._base_data(self.rating_qtype, '-3|Low|High')
+        form = QuestionForm(data, cur_prog=self.program)
+        self.assertFalse(form.is_valid())
+        self.assertIn('at least 2', str(form.errors))
+
+    def test_rating_zero_invalid(self):
+        """Entering 0 for num_ratings should fail validation."""
+        data = self._base_data(self.rating_qtype, '0|Low|High')
+        form = QuestionForm(data, cur_prog=self.program)
+        self.assertFalse(form.is_valid())
+        self.assertIn('at least 2', str(form.errors))
+
+    def test_rating_one_invalid(self):
+        """Entering 1 for num_ratings should fail (min is 2)."""
+        data = self._base_data(self.rating_qtype, '1|Low|High')
+        form = QuestionForm(data, cur_prog=self.program)
+        self.assertFalse(form.is_valid())
+        self.assertIn('at least 2', str(form.errors))
+
+    def test_rating_valid_value(self):
+        """Entering a valid num_ratings (>= 2) should pass validation."""
+        data = self._base_data(self.rating_qtype, '5|Terrible|Okay|Awesome|Great|Excellent')
+        form = QuestionForm(data, cur_prog=self.program)
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
