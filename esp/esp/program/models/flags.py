@@ -135,6 +135,7 @@ class ClassFlag(models.Model):
             program.director_email,
             '%s at %s' % (program.program_type, settings.INSTITUTION_NAME)
         )
+        failures = []
         for teacher in teachers:
             try:
                 context = {
@@ -152,4 +153,7 @@ class ClassFlag(models.Model):
             except Exception:
                 logger.error("Failed to email teacher %s for flag %s on class %s",
                              teacher.username, self.id, cls.id, exc_info=True)
+                failures.append(teacher.username)
+        if failures:
+            raise RuntimeError("Failed to email %d teacher(s): %s" % (len(failures), ', '.join(failures)))
 
