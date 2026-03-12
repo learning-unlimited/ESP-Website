@@ -55,6 +55,7 @@ from esp.dbmail.models import send_mail
 from esp.utils.query_utils import nest_Q
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models.query import QuerySet
 from django.db.models import Q
 
@@ -683,6 +684,7 @@ class ClassChangeController(object):
 
         self.push_back_students()
 
+    @transaction.atomic
     def save_assignments(self):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
