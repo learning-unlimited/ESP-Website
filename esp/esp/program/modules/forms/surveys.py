@@ -62,11 +62,12 @@ class QuestionForm(forms.ModelForm):
                         params={'qt': qt_name},
                     )
 
-            elif qt_name == 'Labeled Numeric Rating':
+            elif qt_name in ('Labeled Numeric Rating', 'Numeric Rating'):
                 # First param is the number of ratings; must be an integer >= 2
                 if not params or not params[0]:
                     raise forms.ValidationError(
-                        'Number of ratings is required for a Labeled Numeric Rating question.'
+                        '%(qt)s requires the number of ratings to be specified.',
+                        params={'qt': qt_name},
                     )
                 try:
                     num_ratings = int(params[0])

@@ -239,3 +239,16 @@ class QuestionFormValidationTest(ProgramFrameworkTest):
         form = QuestionForm(data, cur_prog=self.program)
         self.assertTrue(form.is_valid(), msg=form.errors)
 
+    def test_numeric_rating_empty_invalid(self):
+        """An empty Numeric Rating question should fail validation."""
+        numeric_rating_qtype, _ = QuestionType.objects.get_or_create(
+            name='Numeric Rating',
+            _param_names='Number of ratings|Lower text|Middle text|Upper text',
+            is_numeric=True,
+            is_countable=True,
+        )
+        data = self._base_data(numeric_rating_qtype, '')
+        form = QuestionForm(data, cur_prog=self.program)
+        self.assertFalse(form.is_valid())
+        self.assertIn('Numeric Rating requires the number of ratings to be specified', str(form.errors))
+
