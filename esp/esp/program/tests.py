@@ -2035,3 +2035,65 @@ class HeardAboutNormalizationTest(TestCase):
     def test_only_punctuation_normalizes_to_empty(self):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
+
+import threading
+from django.test import TransactionTestCase
+
+class ClassConcurrencyTest(TransactionTestCase):
+    """
+    Tests that ClassSection.preregister_student() is safe against race conditions.
+    """
+    def setUp(self):
+        from esp.program.models import ClassSubject, ClassSection, Program, RegistrationType
+        from esp.users.models import ESPUser
+
+        self.program = Program.objects.create(name="Concurrent Prog", url="concur", grade_min=0, grade_max=12)
+        # Class size max = 1
+        self.subject = ClassSubject.objects.create(title="Concur Class", parent_program=self.program, grade_min=0, grade_max=12, class_size_max=1)
+        self.section = self.subject.add_default_section(duration=1.0)
+        self.section.capacity = 1 # Force cache
+        
+        # We need a category for the subject
+        from esp.program.models.category import ClassCategories
+        cat = ClassCategories.objects.create(title='C', symbol='C')
+        self.subject.category = cat
+        self.subject.save()
+
+        self.students = []
+        for i in range(10):
+            u = ESPUser.objects.create_user(username=f'cstudent_{i}', email=f's{i}@test.com', password='p')
+            self.students.append(u)
+
+    def test_concurrent_enrollment(self):
+        from django.db import connection, transaction
+        from esp.program.models import StudentRegistration
+        
+        success_count = [0]
+        failure_count = [0]
+        
+        def enroll_thread(student):
+            # Each thread needs its own db connection
+            try:
+                success = self.section.preregister_student(student, prereg_verb="Enrolled")
+                if success:
+                    success_count[0] += 1
+                else:
+                    failure_count[0] += 1
+            except Exception as e:
+                failure_count[0] += 1
+            finally:
+                connection.close()
+
+        threads = []
+        for student in self.students:
+            t = threading.Thread(target=enroll_thread, args=(student,))
+            threads.append(t)
+            t.start()
+            
+        for t in threads:
+            t.join()
+
+        # With class_size_max=1, exactly 1 should succeed
+        self.assertEqual(success_count[0], 1)
+        self.assertEqual(failure_count[0], 9)
+        self.assertEqual(StudentRegistration.objects.filter(section=self.section).count(), 1)

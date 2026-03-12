@@ -1356,7 +1356,10 @@ class ClassSection(models.Model):
             else:
                 prereg_verb = 'Enrolled'
 
-        if overridefull or fast_force_create or not self.isFull(webapp=webapp):
+        # Lock the ClassSection row to serialize concurrent capacity and existence checks
+        locked_section = type(self).objects.select_for_update().get(id=self.id)
+
+        if overridefull or fast_force_create or not locked_section.isFull(webapp=webapp):
             #    Then, create the registration for this class.
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
             qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
