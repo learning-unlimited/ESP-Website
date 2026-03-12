@@ -485,7 +485,7 @@ all_global_tags = {
     },
     'google_cloud_api_key': {
         'is_boolean': False,
-        'help_text': 'An API key for use with the Google Cloud Platform. Used for the maps in the student and teacher onsite webapps. The embedded map is entirely free but requires an API key. If not set, the map tab will be hidden.',
+        'help_text': 'Deprecated: previously used for the Google Maps JavaScript API in onsite webapps. The site now links directly to google.com/maps/dir and this value is no longer used. It can be left blank and may be removed in a future release.',
         'default': '',
         'category': 'manage',
         'is_setting': True,

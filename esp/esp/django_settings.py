@@ -426,3 +426,7 @@ ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
 
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']
+
+# Google Maps Embed API key (free). Set this in local_settings.py.
+# When set, the map tab is shown in the student and teacher onsite webapps.
+GOOGLE_MAPS_EMBED_KEY = ''
