@@ -153,18 +153,6 @@ def get_dblistcount_version():
     return version
 
 
-# Invalidate DBListCount cache on ESPUser changes
-@dispatch.receiver(post_save, sender=ESPUser,
-                   dispatch_uid='invalidate_dblistcount_cache_post_save')
-@dispatch.receiver(post_delete, sender=ESPUser,
-                   dispatch_uid='invalidate_dblistcount_cache_post_delete')
-def invalidate_dblistcount_cache(sender, **kwargs):
-    """Bump the version so all existing DBListCount cache entries become stale."""
-    try:
-        cache.incr(DBLISTCOUNT_VERSION_KEY)
-    except ValueError:
-        cache.set(DBLISTCOUNT_VERSION_KEY, 1)
-
 class ESPUserManager(UserManager):
     pass
 
@@ -1345,6 +1333,19 @@ def update_email_save(**kwargs):
 def update_email_delete(**kwargs):
     kwargs['deleted']=True
     return update_email(**kwargs)
+
+
+# Invalidate DBListCount cache on ESPUser changes
+@dispatch.receiver(post_save, sender=ESPUser,
+                   dispatch_uid='invalidate_dblistcount_cache_post_save')
+@dispatch.receiver(post_delete, sender=ESPUser,
+                   dispatch_uid='invalidate_dblistcount_cache_post_delete')
+def invalidate_dblistcount_cache(sender, **kwargs):
+    """Bump the version so all existing DBListCount cache entries become stale."""
+    try:
+        cache.incr(DBLISTCOUNT_VERSION_KEY)
+    except ValueError:
+        cache.set(DBLISTCOUNT_VERSION_KEY, 1)
 
 
 @enable_with_setting(settings.USE_MAILMAN)
