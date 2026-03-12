@@ -2,7 +2,7 @@
 
 import datetime
 import esp.program.controllers.autoscheduler.util as util
-
+from django.utils import timezone
 
 class SearchOptimizer:
     def __init__(self, manipulator):
@@ -19,7 +19,7 @@ class SearchOptimizer:
         done."""
         if depth == 0:
             return []
-        if timeout is not None and datetime.datetime.now() > timeout:
+        if timeout is not None and timezone.now() > timeout:
             return []
 
         best_score = self.manipulator.scorer.score_schedule()

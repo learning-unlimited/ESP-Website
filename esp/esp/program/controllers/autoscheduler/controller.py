@@ -12,6 +12,8 @@ from esp.program.controllers.autoscheduler import \
     search
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 
+from django.utils import timezone
+
 logger = logging.getLogger(__name__)
 
 
@@ -125,7 +127,7 @@ class AutoschedulerController(object):
     def compute_assignments(self):
         self.optimizer.optimize_section(
                 self.section, self.depth,
-                datetime.datetime.now() +
+                timezone.now() +
                 datetime.timedelta(seconds=self.timeout))
 
     def get_scheduling_info(self):

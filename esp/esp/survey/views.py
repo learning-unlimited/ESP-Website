@@ -55,6 +55,7 @@ from wsgiref.util import FileWrapper
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Min
+from django.utils import timezone
 
 @login_required
 def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):
@@ -145,7 +146,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
 
                 # Set record to mark general survey as completed
                 rt = RecordType.objects.get(name=event)
-                r = Record(user=user, event=rt, program=prog, time=datetime.datetime.now())
+                r = Record(user=user, event=rt, program=prog, time=timezone.now())
                 r.save()
 
                 response.set_answers(request.POST, save=True)
@@ -170,7 +171,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
             sections = [sec for sec in sections if sec.meeting_times.count() > 0]
         # Mark sections for whether they've started yet and whether the user has filled out a survey for them yet
         for sec in sections:
-            sec.started = sec.start < datetime.datetime.now()
+            sec.started = sec.start < timezone.now()
             sec.completed = sec in completed_sections
 
         context['general_done'] = Record.user_completed(user, event, prog)

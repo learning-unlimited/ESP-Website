@@ -41,6 +41,7 @@ import string
 
 logger = logging.getLogger(__name__)
 import functools
+from django.utils import timezone
 
 from django import forms, dispatch
 from django.conf import settings
@@ -2641,7 +2642,7 @@ class Permission(ExpirableModel):
             `Program` or None
         :param when:
             Check permissions as of this point in time.
-            If None, default to datetime.datetime.now().
+            If None, default to timezone.now().
         :type when:
             `datetime.datetime` or None
         :param program_is_none_implies_all:

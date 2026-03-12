@@ -60,6 +60,7 @@ from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
 from esp.varnish import varnish
 from esp.middleware import ESPError
+from django.utils import timezone
 
 THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')
 THEME_COMPILED_WARNING = textwrap.dedent("""\
@@ -119,7 +120,7 @@ class ThemeController(object):
         #   Merge with the existing settings so you don't forget anything
         initial_data = self.get_template_settings()
         initial_data.update(data)
-        now = datetime.datetime.now()
+        now = timezone.now()
         mtime = {'year': now.year, 'month': now.month, 'day': now.day,
                  'hour': now.hour, 'minute': now.minute,
                  'second': now.second, 'microsecond': now.microsecond}

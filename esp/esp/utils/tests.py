@@ -21,6 +21,7 @@ import unittest
 from django.db.models.query import Q
 from django.template import loader, Template, Context, TemplateDoesNotExist
 from django.test import TestCase as DjangoTestCase
+from django.utils import timezone
 
 from esp.middleware import ESPError_Log
 from esp.users.models import ESPUser
@@ -204,7 +205,7 @@ class QueryBuilderTest(DjangoTestCase):
         sad_printer = Printer.objects.create(name="Slow")
         nice_user = ESPUser.objects.create(username="nice_user")
         mean_user = ESPUser.objects.create(username="mean_user")
-        now = datetime.datetime.now()
+        now = timezone.now()
         PrintRequest.objects.create(printer=happy_printer, user=nice_user,
                                     time_executed=now)
         PrintRequest.objects.create(printer=happy_printer, user=nice_user,

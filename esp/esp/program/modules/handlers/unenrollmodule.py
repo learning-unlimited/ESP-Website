@@ -41,6 +41,7 @@ from esp.program.models import StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.web import render_to_response
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ class UnenrollModule(ProgramModuleObj):
                 selected_enrollments = request.POST['selected_enrollments']
                 ids = [int(id) for id in selected_enrollments.split(',')]
                 registrations = StudentRegistration.objects.filter(id__in=ids)
-                registrations.update(end_date=datetime.datetime.now())
+                registrations.update(end_date=timezone.now())
                 logger.info("Expired student registrations: %s", ids)
             # send signal to expire caches
             # XXX: sending all of them is actually kind of
@@ -98,7 +99,7 @@ class UnenrollModule(ProgramModuleObj):
                 self.baseDir()+'result.html', request, context)
 
         timeslots = prog.getTimeSlotList()
-        now = datetime.datetime.now()
+        now = timezone.now()
         hour = datetime.timedelta(minutes=60)
         selections = [{
             'slot': timeslot,

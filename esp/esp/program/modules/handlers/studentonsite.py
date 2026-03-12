@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 import datetime
 
 from django import forms
+from django.utils import timezone
 
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, meets_cap
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
@@ -100,7 +101,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                     context['has_survey'] = surveys.count() > 0 and surveys[0].questions.filter(per_class = True).exists()
                     first_block = section.firstBlockEvent()
                     if first_block:
-                        context['has_started'] =  first_block.start < datetime.datetime.now()
+                        context['has_started'] =  first_block.start < timezone.now()
                     context['section'] = section
                     return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
         return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')

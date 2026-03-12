@@ -11,6 +11,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
+from django.utils import timezone
 
 def get_filter(prog, approved = False, scheduled = False, teachers = None):
     filt = Q(parent_program=prog)
@@ -164,7 +165,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_active_users(self, prog, minutes=10):
-        recent = datetime.datetime.now() - datetime.timedelta(0, minutes * 60)
+        recent = timezone.now() - datetime.timedelta(0, minutes * 60)
         return ClassSubject.objects.filter(parent_program=prog, timestamp__gt=recent
         ).exclude(category__category__iexact="Lunch"
         ).exclude(teachers=None
@@ -172,7 +173,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_checked_in_teachers(self, prog):
-        now = datetime.datetime.now()
+        now = timezone.now()
         return Record.objects.filter(program=prog, event__name='teacher_checked_in',
             time__year=now.year,
             time__month=now.month,

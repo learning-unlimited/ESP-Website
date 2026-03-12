@@ -8,6 +8,7 @@ from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
 from django.utils.functional import SimpleLazyObject
+from django.utils import timezone
 
 from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program
@@ -616,9 +617,9 @@ class RecordTest(TestCase):
             # Create Record without time, test that it was created for now,
             # and that the event is complete, both in general and for the
             # current day.
-            before = datetime.datetime.now()
+            before = timezone.now()
             nowRecord = create()
-            after = datetime.datetime.now()
+            after = timezone.now()
             self.assertTrue(before <= nowRecord.time <= after)
             self.assertTrue(user_completed())
             # Below, we must explicitly pass time, instead of relying on

@@ -40,6 +40,7 @@ from django import forms
 from django.utils.deconstruct import deconstructible
 
 import datetime
+from django.utils import timezone
 
 __all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication']
 
@@ -110,7 +111,7 @@ class BaseAppElement(object):
         return form
 
     def update(self, form):
-        self.date = datetime.datetime.now()
+        self.date = timezone.now()
         for field_name in self._field_names:
             if field_name in form.cleaned_data:
                 setattr(self, field_name, form.cleaned_data[field_name])
