@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2009 by the individual contributors
@@ -33,32 +32,38 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTest  # noqa: F401
-from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest  # noqa: F401
-from esp.program.modules.tests.onsitecheckinmodule import OnSiteCheckinModuleTest  # noqa: F401
-from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest  # noqa: F401
-from esp.program.modules.tests.studentreg import StudentRegTest  # noqa: F401
-from esp.program.modules.tests.survey import SurveyTest  # noqa: F401
-from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest  # noqa: F401
-from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest  # noqa: F401
-from esp.program.modules.tests.jsondatamodule import JSONDataModuleTest  # noqa: F401
-from esp.program.modules.tests.existence import ModuleExistenceTest  # noqa: F401
-from esp.program.modules.tests.programprintables import ProgramPrintablesModuleTest  # noqa: F401
-from esp.program.modules.tests.commpanel import CommunicationsPanelTest  # noqa: F401
-from esp.program.modules.tests.resourcemodule import ResourceModuleTest  # noqa: F401
-from esp.program.modules.tests.admincore import RegistrationTypeManagementTest, ModuleManagementConstraintsTest, ModuleManagementLinkTitleTest  # noqa: F401
-from esp.program.modules.tests.adminclass import CancelClassTest  # noqa: F401
-from esp.program.modules.tests.classsearchmodule import ClassSearchModuleTest  # noqa: F401
-from esp.program.modules.tests.auth import ProgramModuleAuthTest  # noqa: F401
-from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest  # noqa: F401
-from esp.program.modules.tests.testallviews import AllViewsTest  # noqa: F401
-from esp.program.modules.tests.admintestingmodule import AdminTestingModuleTest  # noqa: F401
-from esp.program.modules.tests.batchclassregmodule import BatchClassRegModuleTest  # noqa: F401
-from esp.program.modules.tests.formstackappmodule import FormstackAppModuleTest  # noqa: F401
-from esp.program.modules.tests.test_creditcard_required import (  # noqa: F401
-    CreditCardRequiredTest, CreditCardCybersourceRequiredTest, CreditCardSelfBlockingTest
+from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTest
+from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
+from esp.program.modules.tests.onsitecheckinmodule import OnSiteCheckinModuleTest
+from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest
+from esp.program.modules.tests.studentreg import StudentRegTest
+from esp.program.modules.tests.survey import SurveyTest
+from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest
+from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
+from esp.program.modules.tests.jsondatamodule import JSONDataModuleTest
+from esp.program.modules.tests.existence import ModuleExistenceTest
+from esp.program.modules.tests.programprintables import ProgramPrintablesModuleTest
+from esp.program.modules.tests.commpanel import CommunicationsPanelTest
+from esp.program.modules.tests.resourcemodule import ResourceModuleTest
+from esp.program.modules.tests.admincore import (
+    RegistrationTypeManagementTest,
+    ModuleManagementConstraintsTest,
+    ModuleManagementLinkTitleTest,
 )
-from esp.program.modules.tests.test_class_creation import (  # noqa: F401
+from esp.program.modules.tests.adminclass import CancelClassTest
+from esp.program.modules.tests.classsearchmodule import ClassSearchModuleTest
+from esp.program.modules.tests.auth import ProgramModuleAuthTest
+from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest
+from esp.program.modules.tests.testallviews import AllViewsTest
+from esp.program.modules.tests.admintestingmodule import AdminTestingModuleTest
+from esp.program.modules.tests.batchclassregmodule import BatchClassRegModuleTest
+from esp.program.modules.tests.formstackappmodule import FormstackAppModuleTest
+from esp.program.modules.tests.test_creditcard_required import (
+    CreditCardRequiredTest,
+    CreditCardCybersourceRequiredTest,
+    CreditCardSelfBlockingTest,
+)
+from esp.program.modules.tests.test_class_creation import (
     MakeAClassViewTest,
     ClassStatusOnEditTest,
     ClassTeacherListTest,

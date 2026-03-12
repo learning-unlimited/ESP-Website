@@ -17,8 +17,6 @@ done
 
 echo "Running lint checks..."
 
-# Lint checks are configured in setup.cfg [flake8] section.
-# See setup.cfg for the list of enabled checks and exclusions.
 if [ "$STAGED" = true ]; then
     FILES=$(git diff --cached --name-only --diff-filter=d | grep '\.py$' || true)
     if [ -z "$FILES" ]; then
