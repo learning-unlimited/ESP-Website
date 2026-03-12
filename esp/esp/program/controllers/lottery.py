@@ -61,7 +61,8 @@ from io import BytesIO
 
 class LotteryException(Exception):
     """ Top level exception class for lottery related problems.  """
-
+        pass
+        
 class LotterySectionException(LotteryException):
     """ Something is wrong with a class section.    """
     def __init__(self, section, msg, **kwargs):

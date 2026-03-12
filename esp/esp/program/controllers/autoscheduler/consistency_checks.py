@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class ConsistencyError(Exception):
     """An error caught by a consistency check."""
-
+pass
 
 class ConsistencyChecker:
     """A class for running consistency checks on an AS_Schedule.

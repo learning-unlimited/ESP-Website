@@ -26,3 +26,6 @@ per-file-ignores =
     **/test_*.py:F401,F811,F841
     tests.py:F401,F811,F841
     **/tests.py:F401,F811,F841
+    */program/modules/tests/__init__.py:F401
+    */program/modules/tests/support/__init__.py:F401
+    */utils/inclusion_tags.py:F401

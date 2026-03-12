@@ -64,6 +64,7 @@ admin_site.register(ProgramModule, ProgramModuleAdmin)
 class ArchiveClassAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
     search_fields = ['id', 'description', 'title', 'program', 'teacher', 'category']
+    pass
 admin_site.register(ArchiveClass, ArchiveClassAdmin)
 
 class ProgramAdmin(admin.ModelAdmin):

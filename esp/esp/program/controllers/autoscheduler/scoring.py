@@ -499,6 +499,7 @@ class NumSectionsScorer(BaseScorer):
     def update_move_section(self, section, start_roomslot):
         """Update the internal state to reflect the moving of the specified
         already-scheduled section to start at the specified roomslot."""
+        pass
 
     @util.timed_func("numsectionsscorer")
     def update_unschedule_section(self, section):
@@ -511,7 +512,7 @@ class NumSectionsScorer(BaseScorer):
     def update_swap_sections(self, section1, section2):
         """Update the internal state to reflect the swapping of the two
         specified sections."""
-
+        pass
 
 class NumSubjectsScorer(BaseScorer):
     """Schedule as many unique classes (i.e. subjects) as possible."""
@@ -550,6 +551,7 @@ class NumSubjectsScorer(BaseScorer):
     def update_move_section(self, section, start_roomslot):
         """Update the internal state to reflect the moving of the specified
         already-scheduled section to start at the specified roomslot."""
+        pass
 
     @util.timed_func("NumSubjectsScorer")
     def update_unschedule_section(self, section):
@@ -604,6 +606,7 @@ class NumTeachersScorer(BaseScorer):
     def update_move_section(self, section, start_roomslot):
         """Update the internal state to reflect the moving of the specified
         already-scheduled section to start at the specified roomslot."""
+        pass
 
     @util.timed_func("NumTeachersScorer")
     def update_unschedule_section(self, section):
@@ -619,7 +622,7 @@ class NumTeachersScorer(BaseScorer):
     def update_swap_sections(self, section1, section2):
         """Update the internal state to reflect the swapping of the two
         specified sections."""
-
+        pass
 
 class ResourceCriteriaScorer(BaseScorer):
     """Match ResourceCriteria (according to given weights) as well as
