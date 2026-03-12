@@ -12,23 +12,39 @@
 
   {% block main %}
 
-    <div class="container">
-      <div class="row-fluid">
-        {% block sidebar %}
-          <div style="margin-bottom: 20px;">
-            <h3>Navigation</h3>
-            {% load navbar %}
-            {% navbar_gen request.path None navbar_list %}
-            {% include "users/loginbox_content.html" %}
-          </div>
-        {% endblock sidebar %}
-
-        <div id="main" class="span12 resizable">
-          {% block content %}
-          {% endblock content %}
-        </div>
-      </div>
+<div class="container">
+  {% if request.COOKIES.esp_testing_role %}
+  <div
+    style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+    <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
+    You are logged in as a test account.
+    <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to
+      Admin</a>
+  </div>
+  {% endif %}
+  <div class="row-fluid">
+    {% block sidebar %}
+    <div style="margin-bottom: 20px;">
+      <h3>Navigation</h3>
+      {% load navbar %}
+      {% navbar_gen request.path None navbar_list %}
+      {% include "users/loginbox_content.html" %}
     </div>
+    {% endblock sidebar %}
+
+    <div id="main" class="span12 resizable">
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">
+        {{ message }}
+      </div>
+      {% endfor %}
+      {% endif %}
+      {% block content %}
+      {% endblock content %}
+    </div>
+  </div>
+</div>
   {% endblock main %}
 
 {% endblock body %}
