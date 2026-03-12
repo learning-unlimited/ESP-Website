@@ -284,7 +284,7 @@ class ProgramAccountingController(BaseAccountingController):
             return 'Sibling discount'
         elif transfer.destination == self.default_program_account():
             req_desc = "required" if line_item.required else "optional"
-            return "Cost ({})".format(req_desc)
+            return f"Cost ({req_desc})"
         else:
             return 'Unrelated!?'
 
@@ -414,13 +414,13 @@ class IndividualAccountingController(ProgramAccountingController):
     ##  and to recover their account status from such a string
 
     def get_id(self):
-        return '%d/%d' % (self.program.id, self.user.id)
+        return f'{self.program.id}/{self.user.id}'
 
     def get_identifier(self):
         #   A brief string containing information about the user and
         #   which purchases are included at this time
-        purchases_str = ';'.join(['%d,%.2f' % (t.line_item_id, t.amount) for t in self.get_transfers()])
-        return '%s:%s' % (self.get_id(), purchases_str)
+        purchases_str = ';'.join([f'{t.line_item_id},{t.amount:.2f}' for t in self.get_transfers()])
+        return f'{self.get_id()}:{purchases_str}'
 
     @staticmethod
     def from_id(id):
@@ -474,23 +474,22 @@ class IndividualAccountingController(ProgramAccountingController):
             # Line Item Type after it's been created.
             if transfer.line_item.program != iac.program:
                 raise ReconciliationError(
-                    "Failed on processing Transfer %d: program changed" % transfer.id)
+                    f"Failed on processing Transfer {transfer.id}: program changed")
 
             # Check for duplicate payment
             if transfer.paid_in:
                 raise DuplicatePaymentError(
-                    "Failed on processing Transfer %d: already paid" % transfer.id)
+                    f"Failed on processing Transfer {transfer.id}: already paid")
 
             # Check to see if the amount changed
             if '%.2f' % transfer.amount != saved_amount:
                 if trusted:
                     transfer.amount = float(saved_amount)
                 else:
-                    msg = "Failed on processing Transfer %d: amount changed while " + \
-                          "user was paying. The user was billed $%s for this item " + \
-                          "and paid, but the item is now $%.2f"
-                    raise ReconciliationError(
-                        msg % (transfer.id, saved_amount, transfer.amount))
+                    msg = f"Failed on processing Transfer {transfer.id}: amount changed while " \
+                          f"user was paying. The user was billed ${saved_amount} for this item " \
+                          f"and paid, but the item is now ${transfer.amount:.2f}"
+                    raise ReconciliationError(msg)
 
             # Mark as paid!
             transfer.paid_in = payment
@@ -698,7 +697,7 @@ class IndividualAccountingController(ProgramAccountingController):
 
         if total != target_full:
             # This will cause all changes to be rolled back
-            raise ValueError("Transfers do not sum to target: %.2f" % target_full)
+            raise ValueError(f"Transfers do not sum to target: {target_full:.2f}")
 
     @staticmethod
     def updatePaid(program, user, paid=True, in_full=False):
@@ -711,4 +710,4 @@ class IndividualAccountingController(ProgramAccountingController):
                 iac.submit_payment(iac.amount_due())
 
     def __str__(self):
-        return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())
+        return f'Accounting for {self.user.name()} at {self.program.niceName()}'

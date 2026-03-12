@@ -3,14 +3,14 @@
 {% block fulltitle %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }} - {% block title %}Home{% endblock title %}{% endblock fulltitle %}
 
 {% block stylesheets %}
-  {{ block.super }}
-  {#  Default stylesheets, no customization   #}
-  <link rel="stylesheet" type="text/css" href="/media/theme_editor/bootstrap_initial.css"/>
+{{ block.super }}
+{# Default stylesheets, no customization #}
+<link rel="stylesheet" type="text/css" href="/media/theme_editor/bootstrap_initial.css" />
 {% endblock stylesheets %}
 
 {% block body %}
 
-  {% block main %}
+{% block main %}
 
     <div class="container">
       {% if request.COOKIES.esp_testing_role %}
@@ -30,12 +30,19 @@
         {% endif %}
         {% endblock sidebar %}
 
-        <div id="main" class="span12 resizable">
-          {% block content %}
-          {% endblock content %}
-        </div>
+    <div id="main" class="span12 resizable">
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">
+        {{ message }}
       </div>
+      {% endfor %}
+      {% endif %}
+      {% block content %}
+      {% endblock content %}
     </div>
-  {% endblock main %}
+  </div>
+</div>
+{% endblock main %}
 
 {% endblock body %}
