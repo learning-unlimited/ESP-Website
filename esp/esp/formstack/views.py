@@ -1,4 +1,5 @@
-from django.http import HttpResponse, Http404
+from django.conf import settings
+from django.http import HttpResponse, Http404, HttpResponseForbidden
 from django.dispatch import receiver
 from django.views.decorators.csrf import csrf_exempt
 from esp.formstack.signals import formstack_post_signal
@@ -10,7 +11,10 @@ def formstack_webhook(request):
         form_id = data.pop('FormID')
         submission_id = data.pop('UniqueID')
         handshake_key = data.pop('HandshakeKey', None)
-        # TODO: verify handshake key
+        # Verify handshake key if configured
+        expected_key = getattr(settings, 'FORMSTACK_HANDSHAKE_KEY', None)
+        if expected_key and handshake_key != expected_key:
+            return HttpResponseForbidden('Invalid handshake key')
         formstack_post_signal.send(sender=None, form_id=form_id, submission_id=submission_id, fields=data)
         return HttpResponse()
     else:
@@ -19,15 +23,12 @@ def formstack_webhook(request):
 from django.contrib.auth import authenticate
 from django.http import HttpResponse, Http404, HttpResponseServerError, \
     HttpResponseForbidden, HttpResponseNotFound
-from django.dispatch import receiver
 from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from esp.program.models import Program
 from esp.users.models import ESPUser
 import json
 
-@csrf_exempt
 @never_cache
 @require_POST
 def medicalsyncapi(request):

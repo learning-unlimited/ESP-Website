@@ -263,6 +263,10 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 # that set a cookie on the top-level domain
 CSRF_COOKIE_NAME = 'esp_csrftoken'
 
+# Formstack webhook handshake key for verifying incoming webhook requests.
+# Set this to your Formstack webhook handshake key via environment variable.
+FORMSTACK_HANDSHAKE_KEY = os.environ.get('FORMSTACK_HANDSHAKE_KEY', '')
+
 if SENTRY_DSN:
     # If SENTRY_DSN is set, send errors to Sentry via the Raven exception
     # handler. Note that our exception middleware (i.e., ESPErrorMiddleware)

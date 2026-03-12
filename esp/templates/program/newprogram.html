@@ -63,6 +63,7 @@ In addition to importing the settings listed in the form below, using this progr
 
 <div id="alumni_form">
   <form action="{{ request.path }}" method="post">
+  {% csrf_token %}
   {% autoescape off %}
   {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
 
