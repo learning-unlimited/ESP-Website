@@ -61,18 +61,18 @@ class ESPUserTest(TestCase):
         self.basic_user.backend = request.backend
 
         login(request, self.user)
-        self.assertEqual(request.user, self.user, "Failed to log in as '%s'" % self.user)
+        self.assertEqual(request.user, self.user, f"Failed to log in as '{self.user}'")
 
         request.user.switch_to_user(request, self.basic_user, None, None)
-        self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
+        self.assertEqual(request.user, self.basic_user, f"Failed to morph into '{self.basic_user}'")
 
         request.user.switch_back(request)
-        self.assertEqual(request.user, self.user, "Failed to morph back into '%s'" % self.user)
+        self.assertEqual(request.user, self.user, f"Failed to morph back into '{self.user}'")
 
         blocked_illegal_morph = True
         try:
             request.user.switch_to_user(request, self.basic_user, None, None)
-            self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
+            self.assertEqual(request.user, self.basic_user, f"Failed to morph into '{self.basic_user}'")
         except ESPError():
             blocked_illegal_morph = True
 
@@ -101,8 +101,8 @@ class ESPUserTest(TestCase):
         testGrade = 11
         curYear = ESPUser.current_schoolyear()
         gradYear = curYear + (12 - testGrade)
-        self.client.get("/manage/userview?username=student&graduation_year="+str(gradYear))
-        self.assertTrue(studentUser.getGrade() == testGrade, "Grades don't match: %s %s" % (studentUser.getGrade(), testGrade))
+        self.client.get(f"/manage/userview?username=student&graduation_year={gradYear!s}")
+        self.assertTrue(studentUser.getGrade() == testGrade, f"Grades don't match: {studentUser.getGrade()} {testGrade}")
 
         # Clean up
         if (c1):
@@ -176,7 +176,7 @@ class PasswordRecoveryTest(TestCase):
                          "Token should not be valid for a different user")
 
         # Use the token to reset the password via the view
-        reset_url = '/myesp/resetpassword/%s/%s/' % (uid, token)
+        reset_url = f'/myesp/resetpassword/{uid}/{token}/'
         response = self.client.get(reset_url)
         # Django's PasswordResetConfirmView redirects to set-password URL
         # after validating the token on GET
@@ -281,7 +281,7 @@ class ValidHostEmailFieldTest(TestCase):
         # Hardcoding 'esp.mit.edu' here might be a bad idea
         # But at least it verifies that A records work in place of MX
         for domain in [ 'esp.mit.edu', 'gmail.com', 'yahoo.com' ]:
-            self.assertTrue( ValidHostEmailField().clean( 'fakeaddress@%s' % domain ) == 'fakeaddress@%s' % domain )
+            self.assertTrue( ValidHostEmailField().clean( f'fakeaddress@{domain}' ) == f'fakeaddress@{domain}' )
     def testFakeDomain(self):
         # If we have an internet connection, bad domains raise ValidationError.
         # This should be the *only* kind of error we ever raise!
@@ -298,7 +298,7 @@ class UserForwarderTest(TestCase):
         self.users = [self.ua, self.ub, self.uc]
     def test_run(self):
         def fwd_info(user):
-            return '%s forwards by: %s' % (user.username, user.forwarders_out.all())
+            return f'{user.username} forwards by: {user.forwarders_out.all()}'
         # Ensure that users have no forwarders by default
         for user in self.users:
             self.assertTrue(UserForwarder.follow(user) == (user, False), fwd_info(user))
@@ -381,11 +381,11 @@ class AjaxExistenceChecker(TestCase):
 
         response = self.client.get(self.path)
         for key in self.keys:
-            self.assertContains(response, key, msg_prefix="Key %s missing from Ajax response to %s" % (key, self.path), status_code=200)
+            self.assertContains(response, key, msg_prefix=f"Key {key} missing from Ajax response to {self.path}", status_code=200)
 
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def test_run(self):
-        self.path = '/learn/%s/ajax_schedule' % self.program.getUrlBase()
+        self.path = f'/learn/{self.program.getUrlBase()}/ajax_schedule'
         self.keys = ['student_schedule_html']
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
@@ -844,7 +844,7 @@ class StudentInfoFormGradeTest(TestCase):
         errors = form.errors.get('graduation_year', [])
         self.assertTrue(
             any('required' in e.lower() for e in errors),
-            "Expected a 'required' error for graduation_year, got: %s" % errors,
+            f"Expected a 'required' error for graduation_year, got: {errors}",
         )
 
     def test_no_auto_default_to_lowest_grade(self):

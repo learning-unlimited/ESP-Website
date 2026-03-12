@@ -111,7 +111,7 @@ When there are already accounts with this email address (depending on some tags)
         #form is valid, and not caring about multiple accounts
         email = urllib.parse.quote(form.cleaned_data['email'])
         initial_role = urllib.parse.quote(form.cleaned_data['initial_role'])
-        return HttpResponseRedirect(reverse('esp.users.views.user_registration_phase2')+'?email='+email+'&initial_role='+initial_role)
+        return HttpResponseRedirect(f"{reverse('esp.users.views.user_registration_phase2')}?email={email}&initial_role={initial_role}")
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
                                   request,
@@ -173,10 +173,10 @@ def activate_account(request):
     if u.is_active:
         raise ESPError('The user account supplied has already been activated. If you have lost your password, visit the <a href="/myesp/passwdrecover/">password recovery form</a>.  Otherwise, please <a href="/accounts/login/?next=/myesp/profile/">log in</a>.', log=False)
 
-    if not u.password.endswith("_%s" % request.GET['key']):
+    if not u.password.endswith(f"_{request.GET['key']}"):
         raise ESPError("Incorrect key.  Please try again to click the link in your email, or copy the url into your browser.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
-    u.password = u.password[:-(len("_%s" % request.GET['key']))]
+    u.password = u.password[:-(len(f"_{request.GET['key']}"))]
     u.is_active = True
     u.save()
 
@@ -223,7 +223,7 @@ class GradeChangeRequestView(CreateView):
         change_request.save()
         messages.add_message(self.request, messages.SUCCESS, "Your grade change request was sent! You will receive an email containing your approval status shortly.")
 
-        log.info('grade change request sent by user %s'%(self.request.user,))
+        log.info(f'grade change request sent by user {self.request.user}')
 
         return HttpResponseRedirect(self.success_url)
 
