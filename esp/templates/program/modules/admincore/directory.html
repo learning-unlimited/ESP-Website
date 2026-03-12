@@ -202,14 +202,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             </button></a>
         </div>
         {% endif %}
-        {% if manage_admin_morph %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/admin_morph"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-user"></i> Morph into User</div>
-                <div class="module_link_caption">see the website from a user's point of view</div>
-            </button></a>
-        </div>
-        {% endif %}
+
         {% if manage_selectList %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/selectList"><button type="button" class="module_link_large">
