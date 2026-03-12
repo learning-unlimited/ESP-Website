@@ -169,8 +169,8 @@ class OnSiteAttendance(ProgramModuleObj):
                 minute = 0, second = 0, microsecond = 0)
             user = sr.user
             time = start_time
-            # loop through hours until we get to the end time of the section
-            while(True):
+            # Skip impossible time windows, and otherwise count each covered hour.
+            while time <= end_time:
                 if time in att_dict:
                     # Only count each student a maximum of one time per hour
                     if user not in att_dict[time]:
@@ -178,8 +178,6 @@ class OnSiteAttendance(ProgramModuleObj):
                 else:
                     att_dict[time] = [user]
                 time = time + datetime.timedelta(hours = 1)
-                if time > end_time:
-                    break
         return att_dict
 
     @aux_call
