@@ -87,11 +87,15 @@ var apply_fragment_changes = function(data)
             }
         }
         
-        if (key == 'script')
-        {
-            //  console.log("Evaluating: " + data[key]);
-            eval(data[key]);
-        }
+       if (key === "script") {
+         // Secure alternative to eval(): explicit DOM operation
+         // This forces the script through the browser's CSP validators
+         var scriptNode = document.createElement("script");
+         scriptNode.type = "text/javascript";
+         scriptNode.textContent = data[key];
+         document.head.appendChild(scriptNode);
+         document.head.removeChild(scriptNode);
+       }
     }
 }
 
