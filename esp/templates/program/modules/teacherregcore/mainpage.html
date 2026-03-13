@@ -1,55 +1,72 @@
-{% extends "main.html" %}
+{% extends "main.html" %} {% block title %}{{program.niceName}} Registration{%
+endblock %} {% block stylesheets %} {{ block.super }}
+<link
+  rel="stylesheet"
+  href="/media/styles/teacherregcore-mainpage.css"
+  type="text/css"
+/>
+{% endblock %} {% block content %} {% load render_qsd %}
 
-{% block title %}{{program.niceName}} Registration{% endblock %}
+<div class="teacher-reg-landing">
+  <section class="teacher-reg-hero">
+    <h1>Teach for {{ program.niceName }}</h1>
+    {% inline_program_qsd_block program "teach:teacherreg" %}
+    <p>
+      Complete the steps below to finish teacher registration. If you have any
+      questions, please
+      <a href="mailto:{{ program.director_email }}"
+        >contact the program directors</a
+      >.
+    </p>
+    {% end_inline_program_qsd_block %}
+  </section>
 
-{% block content %}
+  <div class="row-fluid teacher-reg-overview-row">
+    <div class="span12">
+      <section class="teacher-reg-checklist-panel">
+        {% ifequal options.progress_mode 1 %} {% include
+        "program/modules/checkboxes.html" %} {% endifequal %} {% ifequal
+        options.progress_mode 2 %} {% include "program/modules/progressbar.html"
+        %} {% endifequal %}
+      </section>
+    </div>
+  </div>
 
-<h1>Teacher registration for {{program.niceName}}</h1>
-
-{% load render_qsd %}
-{% inline_program_qsd_block program "teach:teacherreg" %}
-<p>
-Please complete the following steps to teach for {{ program.niceName }}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."  If you have any questions, please <a href="mailto:{{ program.director_email}}">contact the program directors</a>.
-</p>
-{% end_inline_program_qsd_block %}
-
-{% ifequal options.progress_mode 1 %}
-    {% include "program/modules/checkboxes.html" %}
-{% endifequal %}
-{% ifequal options.progress_mode 2 %}
-    {% include "program/modules/progressbar.html" %}
-{% endifequal %}
-<br />
-
-{% if records %}
-{% render_inline_program_qsd program record_steps %}
-<div class="row-fluid">
-<div class="span10 offset1">
-<table class="table table-condensed" align="center" width="400">
-<tr class="well"><th>Other Registration Requirements</th><th>Done?</th></tr>
-{% for record in records %}
-    <tr>
+  {% if records %}
+  <section class="teacher-reg-records-panel">
+    {% render_inline_program_qsd program record_steps %}
+    <h2>Other Registration Requirements</h2>
+    <table class="table table-condensed">
+      <tr class="well">
+        <th>Requirement</th>
+        <th>Done?</th>
+      </tr>
+      {% for record in records %}
+      <tr>
         <td>{{ record.full_event }}</td>
         <td>
-            {% if record.isCompleted %}
-                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
-            {% else %}
-                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
-            {% endif %}
+          {% if record.isCompleted %}
+          <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+          {% else %}
+          <i
+            class="glyphicon glyphicon-remove not-done-sign"
+            aria-label="Not done"
+          ></i>
+          {% endif %}
         </td>
-    </tr>
-{% endfor %}
-</table>
-</div>
-</div>
-{% endif %}
+      </tr>
+      {% endfor %}
+    </table>
+  </section>
+  {% endif %}
 
-{% for module in modules %}
-{% if module.useTemplate or module.getTemplate %}
+  <section class="teacher-reg-modules">
+    {% for module in modules %} {% if module.useTemplate or module.getTemplate
+    %}
     <a name="module-{{module.id}}"></a>
-    <br />
-    {% include module.getTemplate %}
-{% endif %}
-{% endfor %}
+    <div class="teacher-reg-module-block">{% include module.getTemplate %}</div>
+    {% endif %} {% endfor %}
+  </section>
+</div>
 
 {% endblock %}
