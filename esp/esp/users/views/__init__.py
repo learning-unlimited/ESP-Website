@@ -3,6 +3,8 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
+from django.utils.html import format_html
+from django.utils.http import is_safe_url
 from django.template import RequestContext
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -23,13 +25,14 @@ from esp.web.views.main import DefaultQSDView
 def HttpMetaRedirect(location='/'):
     response = HttpResponse()
     response.status = 200
-    response.content = """
+    # format_html automatically escapes dangerous characters to prevent XSS
+    response.content = format_html("""
     <html><head>
-    <meta http-equiv="refresh" content="0; url=%s">
+    <meta http-equiv="refresh" content="0; url={0}">
     </head>
-    <body>Thank you for logging in.  Please click <a href="%s">here</a> if you are not redirected.</body>
+    <body>Thank you for logging in.  Please click <a href="{0}">here</a> if you are not redirected.</body>
     </html>
-    """ % (location, location)
+    """, location)
     return response
 
 mask_locations = ['/', '/myesp/signout', '/myesp/signout/', '/admin/logout/']
@@ -75,6 +78,14 @@ class CustomLoginView(LoginView):
     def handle_authenticated_user(self, request):
         """Handle redirects for users who are already logged in."""
         next_url = request.GET.get('next', '')
+
+        # SECURITY FIX: Validate next_url to prevent Open Redirects
+        if next_url and not is_safe_url(
+            url=next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure()
+        ):
+            next_url = '/'
 
         if not RegistrationProfile.objects.filter(user=request.user).exists():
             reply = HttpMetaRedirect('/myesp/profile')
@@ -156,7 +167,13 @@ def signout(request):
     request._cached_user = request.user
 
     redirect_path = request.GET.get('redirect')
-    if redirect_path:
+    
+   # SECURITY FIX: Validate redirect_path to prevent Open Redirects
+    if redirect_path and is_safe_url(
+        url=redirect_path,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure()
+    ):
         return HttpResponseRedirect(redirect_path)
 
     return render_to_response('registration/logged_out.html', request, {})
