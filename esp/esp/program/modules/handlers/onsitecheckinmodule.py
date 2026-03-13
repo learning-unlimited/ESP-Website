@@ -38,6 +38,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, 
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
+from esp.program.modules.forms.rapidcheckin import RapidCheckinStudentWidget
 from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.models  import RegistrationProfile, StudentRegistration
 from django.db.models    import Max, Min
@@ -236,6 +237,8 @@ class OnSiteCheckinModule(ProgramModuleObj):
         else:
             form = StudentSearchForm()
 
+        # Use widget that does not inject autocomplete script; template sets up filter-aware autocomplete
+        form.fields['target_user'].widget = RapidCheckinStudentWidget()
         context['module'] = self
         context['form'] = form
         return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
@@ -304,11 +307,14 @@ class OnSiteCheckinModule(ProgramModuleObj):
         json_data = {}
         if request.method == 'POST' and 'code' in request.POST:
             code = request.POST['code']
-            students = ESPUser.objects.filter(id=code)
-            if not students.exists():
+            try:
+                student = ESPUser.objects.get(id=code)
+            except ValueError:
+                json_data['message'] = '%s is not a valid user ID (must be numeric)!' % code
+                return HttpResponse(json.dumps(json_data), content_type='text/json')
+            except ESPUser.DoesNotExist:
                 json_data['message'] = '%s is not a user!' % code
             else:
-                student = students[0]
                 info_string = student.name() + " (" + str(code) + ")"
                 if student.isStudent():
                     self.student = student
