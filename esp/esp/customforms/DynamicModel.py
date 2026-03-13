@@ -19,7 +19,7 @@ def get_file_upload_path(instance, filename):
     Returns the upload path for the file that is to be saved.
     Files are saved in the directory MEDIA_ROOT/uploaded/Response_[form_id]
     """
-    save_dir = 'uploaded/%s' % instance.__class__.__name__
+    save_dir = f'uploaded/{instance.__class__.__name__}'
     save_dir = os.path.join(settings.MEDIA_ROOT, save_dir)
     save_path = os.path.join(save_dir, filename)
     return save_path
@@ -89,7 +89,7 @@ class DynamicModelHandler:
         self.form = form
         self.field_list = []
         self.fields = fields
-        self._tname = 'customforms\".\"customforms_response_%d' % form.id
+        self._tname = f'customforms"."customforms_response_{form.id}'
         # Keep track of the models being linked to (see docstring)
         self.link_models_list = []
 
@@ -148,7 +148,7 @@ class DynamicModelHandler:
         # Checking for only_fkey links
         if self.form.link_type and self.form.link_type != '-1' and self.form.link_type in cf_cache.only_fkey_models:
             model_cls = cf_cache.only_fkey_models[self.form.link_type]
-            self.field_list.append( ('link_%s' % model_cls.__name__, self._getLinkModelField(model_cls)) )
+            self.field_list.append( (f'link_{model_cls.__name__}', self._getLinkModelField(model_cls)) )
 
         # Check for linked fields-
         # Insert a foreign-key to the parent model for link fields
@@ -160,12 +160,12 @@ class DynamicModelHandler:
             else:
                 new_field = self._getModelField(field)
                 if new_field:
-                    self.field_list.append( ('question_%s' % str(field_id), new_field) )
+                    self.field_list.append( (f'question_{field_id}', new_field) )
 
         for model in link_models:
             if model:
                 new_field = self._getLinkModelField(model)
-                self.field_list.append( ('link_%s' % model.__name__, new_field) )
+                self.field_list.append( (f'link_{model.__name__}', new_field) )
                 self.link_models_list.append(model.__name__)
 
         return self.field_list
@@ -214,7 +214,7 @@ class DynamicModelHandler:
             model = cf_cache.modelForLinkField(field.field_type)
             return 'link_'+model.__name__
 
-        return "question_%d" % field.id
+        return f"question_{field.id}"
 
     def addField(self, field):
         with connection.schema_editor() as schema_editor:
@@ -257,7 +257,7 @@ class DynamicModelHandler:
             model = self.createDynModel()
             link_model_cls = cf_cache.modelForLinkField(field.field_type)
             if link_model_cls.__name__ in self.link_models_list:
-                field_name = 'link_%s' % link_model_cls.__name__
+                field_name = f'link_{link_model_cls.__name__}'
                 schema_editor.remove_field(model, model._meta.get_field(field_name))
                 self.link_models_list.remove(link_model_cls.__name__)
 
@@ -274,7 +274,7 @@ class DynamicModelHandler:
                 # Add in the FK-column for this model
                 model = self.createDynModel()
                 new_field = self._getLinkModelField(link_model_cls)
-                new_field.column = 'link_%s' % link_model_cls.__name__
+                new_field.column = f'link_{link_model_cls.__name__}'
                 schema_editor.add_field(model, new_field)
                 self.link_models_list.append(link_model_cls.__name__)
 
@@ -288,7 +288,7 @@ class DynamicModelHandler:
                 # Old FK column needs to go
                 model = self.createDynModel()
                 old_model_cls = cf_cache.only_fkey_models[old_link_type]
-                old_field_name = 'link_%s_id' % old_model_cls.__name__
+                old_field_name = f'link_{old_model_cls.__name__}_id'
                 schema_editor.remove_field(model, model._meta.get_field(old_field_name))
 
             form.link_type = new_link_type
@@ -300,7 +300,7 @@ class DynamicModelHandler:
                 model = self.createDynModel()
                 new_model_cls = cf_cache.only_fkey_models[new_link_type]
                 new_field = self._getLinkModelField(new_model_cls)
-                new_field.column = 'link_%s_id' % new_model_cls.__name__
+                new_field.column = f'link_{new_model_cls.__name__}_id'
                 schema_editor.add_field(model, new_field)
 
     def createDynModel(self):
@@ -309,7 +309,7 @@ class DynamicModelHandler:
         """
 
         _db_table = self._tname
-        _model_name = 'Response_%d' % self.form.id
+        _model_name = f'Response_{self.form.id}'
 
         # Removing any existing model definitions from Django's cache
         self.purgeDynModel()
@@ -333,7 +333,7 @@ class DynamicModelHandler:
         Purges the model from Django's app registry cache.
         """
 
-        _model_name = 'Response_%d' % self.form.id
+        _model_name = f'Response_{self.form.id}'
         try:
             # TODO: private API, please fix
             del apps.get_app_config(self._app_label).models[_model_name.lower()]

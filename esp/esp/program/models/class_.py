@@ -127,7 +127,7 @@ class ClassSizeRange(models.Model):
             return cls.objects.filter(program=prog)
 
     def range_str(self):
-        return "%d-%d" %(self.range_min, self.range_max)
+        return f"{self.range_min}-{self.range_max}"
 
     def __str__(self):
         return "Class Size Range: " + self.range_str()
@@ -332,7 +332,7 @@ class ClassSection(models.Model):
                                'id': str(v.id)})
 
         for value in values:
-            value['ajax_str'] = '%ss%s: %s' % (value['parent_class__emailcode'], value['secnum'], value['parent_class__title'])
+            value['ajax_str'] = f'{value["parent_class__emailcode"]}s{value["secnum"]}: {value["parent_class__title"]}'
         return values
 
     @classmethod
@@ -493,7 +493,7 @@ class ClassSection(models.Model):
         return self.parent_class.title
 
     def __str__(self):
-        return '%s: %s' % (self.emailcode(), self.title())
+        return f'{self.emailcode()}: {self.title()}'
 
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
@@ -737,7 +737,7 @@ class ClassSection(models.Model):
 
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
-            errors.append( 'Room %s does not exist at the times requested by %s.' % (base_room.name, self.emailcode()) )
+            errors.append( f'Room {base_room.name} does not exist at the times requested by {self.emailcode()}.' )
             if not allow_partial:
                 return (status, errors)
 
@@ -748,8 +748,8 @@ class ClassSection(models.Model):
                 occupiers_str = ''
                 occupiers_set = r.assignments()
                 if occupiers_set.exists(): # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
-                    occupiers_str = ' by %s during %s' % ((occupiers_set[0].target or occupiers_set[0].target_subj).emailcode(), r.event.pretty_time())
-                errors.append( 'Room %s is occupied%s.' % ( base_room.name, occupiers_str ) )
+                    occupiers_str = f' by {(occupiers_set[0].target or occupiers_set[0].target_subj).emailcode()} during {r.event.pretty_time()}'
+                errors.append( f'Room {base_room.name} is occupied{occupiers_str}.' )
                 # If we don't allow partial fulfillment, undo and quit.
                 if not allow_partial:
                     for r2 in rooms_to_assign[:i]:
@@ -871,7 +871,7 @@ class ClassSection(models.Model):
             sm.remove_section(self)
             for exp in relevantConstraints:
                 if not exp.evaluate(sm, recursive=False):
-                    return "You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
+                    return f"You can't remove this class from your schedule because it would violate the requirement that you {exp.requirement.label}.  You can go back and correct this."
         return False
 
     def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False, webapp=False):
@@ -895,7 +895,7 @@ class ClassSection(models.Model):
 
             for exp in relevantConstraints:
                 if not exp.evaluate(sm, recursive=autocorrect_constraints):
-                    return "Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
+                    return f"Adding <i>{self.title()}</i> to your schedule requires that you {exp.requirement.label}.  You can go back and correct this."
 
         scrmi = self.parent_program.studentclassregmoduleinfo
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
@@ -928,7 +928,7 @@ class ClassSection(models.Model):
         if scrmi.use_priority:
             priority = user.getRegistrationPriority(self.parent_class.parent_program, self.meeting_times.all())
             if priority > scrmi.priority_limit:
-                return 'You are only allowed to select up to %s top classes' % (scrmi.priority_limit)
+                return f'You are only allowed to select up to {scrmi.priority_limit} top classes'
 
         # this user *can* add this class!
         return False
@@ -961,10 +961,10 @@ class ClassSection(models.Model):
             available = t.getAvailableTimes(self.parent_program, ignore_classes=ignore_classes, ignore_sections=[self])
             for e in meeting_times:
                 if e not in available:
-                    return "The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
+                    return f"The teacher {t.name()} has not indicated availability during {e.pretty_time()}."
             conflicts = self.conflicts(t, meeting_times)
             if conflicts:
-                return "The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
+                return f"The teacher {t.name()} is teaching {conflicts[0].emailcode()} during {conflicts[1].pretty_time()}."
             # Fallback in case we couldn't come up with details
         return False
 
@@ -1049,14 +1049,14 @@ class ClassSection(models.Model):
         email_ssis = include_lottery_students and all([sec.isCancelled() for sec in self.parent_class.get_sections() if sec!=self])
 
         context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
-        context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+        context['full_group_name'] = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
         context['site_url'] = Site.objects.get_current().domain
         context['email_students'] = email_students
         context['num_students'] = self.num_students(student_verbs)
         context['email_ssis'] = email_ssis
 
-        email_title = 'Class Cancellation at %s - Section %s' % (self.parent_program.niceName(), self.emailcode())
-        ssi_email_title = 'Class Cancellation at %s - Class %s' % (self.parent_program.niceName(), self.parent_class.emailcode())
+        email_title = f'Class Cancellation at {self.parent_program.niceName()} - Section {self.emailcode()}'
+        ssi_email_title = f'Class Cancellation at {self.parent_program.niceName()} - Class {self.parent_class.emailcode()}'
 
         if email_students:
             #   Send email to each student
@@ -1072,8 +1072,7 @@ class ClassSection(models.Model):
             for student in students_to_email:
                 to_email = [student.get_email_sendto_address()]
                 from_email = ESPUser.email_sendto_address(self.parent_program.director_email,
-                                                          '%s at %s' % (self.parent_program.program_type,
-                                                                        settings.INSTITUTION_NAME))
+                                                          f'{self.parent_program.program_type} at {settings.INSTITUTION_NAME}')
                 #   Here we render the template to include the username, and also whether the student is registered
                 context['classreg'] = students_to_email[student]
                 context['user'] = student
@@ -1097,7 +1096,7 @@ class ClassSection(models.Model):
             email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
         to_email = [ESPUser.email_sendto_address(self.parent_program.director_email, 'Directors')]
         from_email = ESPUser.email_sendto_address(self.parent_program.director_email,
-                                                  '%s Web Site' % (self.parent_program.program_type))
+                                                  f'{self.parent_program.program_type} Web Site')
         send_mail(email_title, email_content, from_email, to_email)
 
         #   Send email to teachers
@@ -1105,8 +1104,7 @@ class ClassSection(models.Model):
             context['director_email'] = self.parent_program.director_email
             email_content = render_to_string('email/class_cancellation_teacher.txt', context)
             from_email = ESPUser.email_sendto_address(self.parent_program.director_email,
-                                                      '%s at %s' % (self.parent_program.program_type,
-                                                                    settings.INSTITUTION_NAME))
+                                                      f'{self.parent_program.program_type} at {settings.INSTITUTION_NAME}')
             if email_ssis:
                 email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
             teachers = self.parent_class.get_teachers()
@@ -1343,7 +1341,7 @@ class ClassSection(models.Model):
             blank_responses.delete()
 
         # Remove the student from any existing class mailing lists
-        list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
+        list_names = [f"{self.emailcode()}-students", f"{self.parent_class.emailcode()}-students"]
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
@@ -1352,7 +1350,7 @@ class ClassSection(models.Model):
         if prereg_verb is None:
             scrmi = self.parent_program.studentclassregmoduleinfo
             if scrmi and scrmi.use_priority:
-                prereg_verb = 'Priority/%d' % priority
+                prereg_verb = f'Priority/{priority}'
             else:
                 prereg_verb = 'Enrolled'
 
@@ -1394,10 +1392,10 @@ class ClassSection(models.Model):
                         app.save()
 
             #   Add the student to the class mailing lists, if they exist
-            list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
+            list_names = [f"{self.emailcode()}-students", f"{self.parent_class.emailcode()}-students"]
             for list_name in list_names:
                 add_list_member(list_name, user)
-            add_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user)
+            add_list_member(f"{self.parent_program.program_type}_{self.parent_program.program_instance}-students", user)
 
             return True
         else:
@@ -1408,9 +1406,7 @@ class ClassSection(models.Model):
         if self.duration is None:
             return 'N/A'
 
-        return '%s:%02d' % \
-               (int(self.duration),
-            int(round((self.duration - int(self.duration)) * 60)))
+        return f'{int(self.duration)}:{int(round((self.duration - int(self.duration)) * 60)):02d}'
 
 
     def save(self, *args, **kwargs):
@@ -1695,7 +1691,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return self.category.symbol+str(self.id)
 
     def url(self):
-        return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
+        return f"{self.parent_program.url}/Classes/{self.emailcode()}"
 
     def got_index_qsd(self):
         """ Returns if this class has an associated index.html QSD. """
@@ -1706,9 +1702,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def __str__(self):
         if self.title != "":
-            return "%s: %s" % (self.id, self.title)
+            return f"{self.id}: {self.title}"
         else:
-            return "%s: (none)" % self.id
+            return f"{self.id}: (none)"
 
     def delete(self, adminoverride = False):
         if self.num_students() > 0 and not adminoverride:
@@ -1731,11 +1727,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
-        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
+        return ", ".join([ f"{u.first_name} {u.last_name}" for u in self.get_teachers() ])
 
     def pretty_moderators(self):
         """ Return a prettified string listing of the class's moderators """
-        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.moderators() ])
+        return ", ".join([ f"{u.first_name} {u.last_name}" for u in self.moderators() ])
 
     def isFull(self, ignore_changes=False, timeslot=None, webapp=False):
         """ A class subject is full if all of its sections are full. """
@@ -2085,13 +2081,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         result.year = date_dir[0][:4]
         if len(date_dir) > 1:
             result.date = date_dir[1]
-        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.get_teachers()]
+        teacher_strs = [f'{t.first_name} {t.last_name}' for t in self.get_teachers()]
         result.teacher = ' and '.join(teacher_strs)
         result.category = self.category.category[:32]
         result.title = self.title
         result.description = self.class_info
         if self.prereqs and len(self.prereqs) > 0:
-            result.description += '\n\nThe prerequisites for this class were: %s' % self.prereqs
+            result.description += f'\n\nThe prerequisites for this class were: {self.prereqs}'
         result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.get_teachers()]) + '|'
         all_students = self.students()
         result.student_ids = '|' + '|'.join([str(s.id) for s in all_students]) + '|'
@@ -2142,8 +2138,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             teachers = self.get_teachers()
             for t in teachers:
                 if not t.getTaughtClasses(self.parent_program).filter(status__gte=10).exists():
-                    mailing_list_name = "%s_%s" % (self.parent_program.program_type, self.parent_program.program_instance)
-                    teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
+                    mailing_list_name = f"{self.parent_program.program_type}_{self.parent_program.program_instance}"
+                    teachers_list_name = f"{mailing_list_name}-teachers"
                     remove_list_member(teachers_list_name, t.email)
 
     class Meta:
@@ -2169,7 +2165,7 @@ class ClassCategories(models.Model):
         db_table = 'program_classcategories'
 
     def __str__(self):
-        return '%s (%s)' % (self.category, self.symbol)
+        return f'{self.category} ({self.symbol})'
 
 
 @cache_function
