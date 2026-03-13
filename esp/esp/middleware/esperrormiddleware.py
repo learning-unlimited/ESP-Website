@@ -37,6 +37,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import sys
+from datetime import datetime
 
 from django.conf import settings
 from django.db.models.base import ObjectDoesNotExist
@@ -163,6 +164,25 @@ class ESPErrorMiddleware(MiddlewareMixin):
     False in the settings.py. Otherwise, it doesn't do any of that.
     """
 
+    # Maps exception type name -> (friendly title, friendly description)
+    _ERROR_MESSAGES = {
+        'ESPError_Log': (
+            'Something went wrong',
+            'The website encountered an error and our team has been notified. '
+            'Please try again or contact us if the problem persists.',
+        ),
+        'ESPError_NoLog': (
+            "We couldn't complete that request",
+            'Your request could not be processed. Please check what you '
+            'submitted and try again.',
+        ),
+        'Http403': (
+            'Access Denied',
+            'You do not have permission to view this page. '
+            'Try logging in with an account that has the required access.',
+        ),
+    }
+
     def process_exception(self, request, exception):
         from esp.utils.web import render_to_response
 
@@ -176,6 +196,7 @@ class ESPErrorMiddleware(MiddlewareMixin):
             log_level = logging.ERROR
             template = 'error.html'
             status = 500
+            error_type = 'ESPError_Log'
         elif (isinstance(exception, ESPError_NoLog) or
               exception == ESPError_NoLog):
             log_level = logging.INFO
@@ -183,16 +204,36 @@ class ESPErrorMiddleware(MiddlewareMixin):
             # TODO(benkraft): this should probably be a 4xx, since if we're not
             # bothering to log it we probably don't think it was our fault.
             status = 500
+            error_type = 'ESPError_NoLog'
         elif isinstance(exception, Http403):
             log_level = logging.INFO
             template = '403.html'
             status = 403
+            error_type = 'Http403'
         else:
             return None
 
         exc_info = sys.exc_info()
         logger.log(log_level, exc_info[1], exc_info=exc_info)
-        context = {'error': exc_info[1]}
+
+        error_title, error_description = self._ERROR_MESSAGES.get(
+            error_type, ('An error has occurred', 'Please try again.')
+        )
+
+        # Safely retrieve the Sentry event ID if available
+        error_id = None
+        if hasattr(request, 'sentry') and isinstance(request.sentry, dict):
+            error_id = request.sentry.get('id')
+
+        context = {
+            'error': exc_info[1],
+            'error_type': error_type,
+            'error_title': error_title,
+            'error_description': error_description,
+            'error_id': error_id,
+            'error_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'error_url': request.build_absolute_uri(),
+        }
         try:
             # attempt to set up variables the template needs
             # - actually, some things will fail to be set up due to our
@@ -201,16 +242,15 @@ class ESPErrorMiddleware(MiddlewareMixin):
             # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
             #   TEMPLATE in main?
             context = RequestContext(request, context).flatten()
-        except:
+        except BaseException:
             # well, we couldn't, but at least display something
             # (actually it will immediately fail on main because someone
-            # removed the safe version of the template and
-            # miniblog_for_user doesn't silently fail but best not to put
+            # removed the safe version of the template but best not to put
             # in ugly hacks and make random variables just happen to work.)
             pass
-        # TODO(benkraft): merge our various error templates (403, 500, error).
-        # They're all slightly different, but should probably be more similar
-        # and share code.
+        # All error templates now extend error_base.html, which provides
+        # a consistent layout with two-tier information (user vs admin)
+        # and a pre-filled report button. This resolves the TODO above.
         response = render_to_response(template, request, context)
         response.status_code = status
         return response

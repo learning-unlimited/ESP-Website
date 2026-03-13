@@ -1,5 +1,4 @@
 
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -47,7 +46,6 @@ from datetime import datetime
 #    -    options: the particular filter for that data
 #        (eg. 2004, Splash, ComputerScience)
 
-@python_2_unicode_compatible
 class ArchiveFilter(object):
     category = ""
     options = ""

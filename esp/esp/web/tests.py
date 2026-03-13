@@ -49,6 +49,7 @@ import logging
 logger = logging.getLogger(__name__)
 import re
 import os
+import subprocess
 import tempfile
 
 # Make sure that we can actually download the homepage
@@ -58,11 +59,19 @@ class PageTest(TestCase):
     # Util Functions
     def assertStringContains(self, string, contents):
         if not (contents in string):
+<<<<<<< refactor/fstring-web-middleware
             self.assert_(False, f"'{contents}' not in '{string}'")
 
     def assertNotStringContains(self, string, contents):
         if contents in string:
             self.assert_(False, f"'{contents}' are in '{string}' and shouldn't be")
+=======
+            self.fail("'%s' not in '%s'" % (contents, string))
+
+    def assertNotStringContains(self, string, contents):
+        if contents in string:
+            self.fail("'%s' are in '%s' and shouldn't be" % (contents, string))
+>>>>>>> main
 
 
     def testHomePage(self):
@@ -291,11 +300,22 @@ class JavascriptSyntaxTest(TestCase):
                     file_list.append(f'{dirpath}/{file}')
                     num_files += 1
 
+<<<<<<< refactor/fstring-web-middleware
         file_args = ' '.join([f'--js {file}' for file in file_list])
         os.system(f'java -jar {closure_path}/compiler.jar {file_args} --js_output_file {closure_output_code} 2> {closure_output_file}')
         checkfile = open(closure_output_file)
 
         results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
+=======
+        cmd = ['java', '-jar', '%s/compiler.jar' % closure_path]
+        for file in file_list:
+            cmd.extend(['--js', file])
+        cmd.extend(['--js_output_file', closure_output_code])
+        with open(closure_output_file, 'w') as err_file:
+            subprocess.run(cmd, stderr=err_file, stdout=subprocess.DEVNULL, check=True)
+        with open(closure_output_file) as checkfile:
+            results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
+>>>>>>> main
 
         if len(results) > 0:
             closure_result = results[-1].split(',')

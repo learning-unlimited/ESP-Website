@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -42,7 +41,6 @@ from django.db.models.query import Q
 from esp.db.fields import AjaxForeignKey
 from argcache import cache_function
 
-@python_2_unicode_compatible
 class NavBarCategory(models.Model):
     include_auto_links = models.BooleanField(default=False)
     name = models.CharField(max_length=64)
@@ -92,7 +90,6 @@ def default_navbarcategory():
         NavBarCategory._default = NavBarCategory.objects.filter(name='default')[0]
     return NavBarCategory._default
 
-@python_2_unicode_compatible
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
 

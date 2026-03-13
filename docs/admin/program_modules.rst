@@ -490,11 +490,6 @@ This module provides one view, get_materials.  From this view you can see all of
 
 Uploaded files can also be managed at a lower level using the file browser (/admin/filebrowser/browse).
 
-User morphing capability (AdminMorph)
--------------------------------------
-
-This module provides one view, admin_morph.  You can use the user search to find someone in the system (typically a teacher or student) and then morph into them so you can see the site from that user's perspective.  You will need to click the "Unmorph" link when you are done in order to avoid seeing permissions errors (using the "back" button in your browser will not work).  Morphing into administrators is not permitted as this constitutes a security risk.
-
 Application Review for Admin (AdminReviewApps)
 ----------------------------------------------
 
