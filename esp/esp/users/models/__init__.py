@@ -37,6 +37,7 @@ from datetime import datetime, timedelta, date
 from pytz import country_names
 import json
 import logging
+import string
 
 logger = logging.getLogger(__name__)
 import functools
@@ -45,6 +46,7 @@ from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
+from django.apps import apps
 from phonenumber_field.modelfields import PhoneNumberField
 from localflavor.us.forms import USStateSelect
 
@@ -193,7 +195,7 @@ class BaseESPUser(object):
 
 
     @classmethod
-    def ajax_autocomplete(cls, data, QObject = None):
+    def ajax_autocomplete(cls, data, QObject = None, grade = None, last_name_range = None, prog = None):
         """
         Filter is a dictionary, where the keys are ESPUser model fields
         and the values are the filters on those fields
@@ -206,52 +208,94 @@ class BaseESPUser(object):
         #this feels kind of weird because it's selecting
         #from three keys using the same value
         names = data.strip().split(',')
-        last = names[0]
-        username = names[0]
-        idstr = names[0]
-        q_names = Q(last_name__istartswith = last.strip())
-        if len(names) > 1:
-          first = ','.join(names[1:])
-          if len(first.strip()) > 0:
-            q_names = q_names & Q(first_name__istartswith = first.strip())
+        last = names[0].strip()
+        username = names[0].strip()
+        idstr = names[0].strip()
 
-        q_username = Q(username__istartswith = username.strip())
-        q_id = Q(id__istartswith = idstr.strip())
+        # Search by last name STARTING with term
+        q_names = Q(last_name__istartswith = last)
+
+        if len(names) > 1:
+            first = ','.join(names[1:]).strip()
+            if len(first) > 0:
+                q_names = q_names & Q(first_name__istartswith = first)
+        else:
+            # If only one name is provided, also try searching by first name
+            q_names = q_names | Q(first_name__istartswith = last)
+
+        q_username = Q(username__istartswith = username)
+        q_id = Q(id__istartswith = idstr)
 
         query_set = cls.objects.filter(q_names | q_username | q_id)
 
-        if QObject:
-            query_set = query_set.filter(QObject).distinct()
+        if grade and prog:
+            # Normalize prog to a Program instance and filter by calculated graduation year.
+            Program = apps.get_model('program', 'Program')
+            try:
+                if isinstance(prog, (int, str)):
+                    prog = Program.objects.get(id=prog)
+                schoolyear = cls.program_schoolyear(prog)
+                yog = cls.YOGFromGrade(grade, schoolyear)
+                query_set = query_set.filter(
+                    registrationprofile__student_info__graduation_year=yog,
+                    registrationprofile__program=prog,
+                )
+            except (ValueError, TypeError, Program.DoesNotExist):
+                # If grade or program cannot be interpreted, skip grade filtering.
+                pass
 
-        values = query_set.order_by('last_name', 'first_name', 'id').values('first_name', 'last_name', 'username', 'id')
+        if last_name_range:
+            # last_name_range format: "A-G", "H-N", "O-Z" (case-insensitive)
+            parts = last_name_range.split('-')
+            if len(parts) == 2:
+                start_char = (parts[0].strip() or 'A')[:1].upper()
+                end_char = (parts[1].strip() or 'Z')[:1].upper()
+                if start_char.isalpha() and end_char.isalpha():
+                    try:
+                        idx_start = string.ascii_uppercase.index(start_char)
+                        idx_end = string.ascii_uppercase.index(end_char)
+                        if idx_start <= idx_end:
+                            letters = list(string.ascii_uppercase[idx_start:idx_end + 1])
+                            q_last = Q()
+                            for letter in letters:
+                                q_last = q_last | Q(last_name__istartswith=letter)
+                            query_set = query_set.filter(q_last)
+                    except ValueError:
+                        pass
+
+        if QObject:
+            query_set = query_set.filter(QObject)
+
+        query_set = query_set.distinct().order_by('last_name', 'first_name', 'id')
+        values = query_set.values('first_name', 'last_name', 'username', 'id')
 
         for value in values:
             value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['username'])
         return values
 
     @classmethod
-    def ajax_autocomplete_student(cls, data):
-        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Student")))
+    def ajax_autocomplete_student(cls, data, **kwargs):
+        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Student")), **kwargs)
 
     @classmethod
-    def ajax_autocomplete_teacher(cls, data):
-        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Teacher")))
+    def ajax_autocomplete_teacher(cls, data, **kwargs):
+        return cls.ajax_autocomplete(data, QObject = Q(groups=Group.objects.get(name="Teacher")), **kwargs)
 
     @classmethod
-    def ajax_autocomplete_approved_teacher(cls, data, prog = None):
+    def ajax_autocomplete_approved_teacher(cls, data, prog = None, **kwargs):
         if prog:
             QObject = Q(classsubject__status__gt=0, classsubject__parent_program__id=prog)
         else:
             QObject = Q(classsubject__status__gt=0)
-        return cls.ajax_autocomplete(data, QObject)
+        return cls.ajax_autocomplete(data, QObject, prog=prog, **kwargs)
 
     @classmethod
-    def ajax_autocomplete_student_lottery(cls, data, prog = None):
+    def ajax_autocomplete_student_lottery(cls, data, prog = None, **kwargs):
         if prog:
             QObject = Q(phasezerorecord__program=prog)
         else:
             QObject = Q(phasezerorecord__program__isnull=False)
-        return cls.ajax_autocomplete(data, QObject)
+        return cls.ajax_autocomplete(data, QObject, prog=prog, **kwargs)
 
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
@@ -423,6 +467,7 @@ class BaseESPUser(object):
         return ''
 
     def getTaughtPrograms(self):
+        from esp.program.models import Program
         taught_programs = Program.objects.filter(classsubject__teachers=self)
         taught_programs = taught_programs.distinct()
         return taught_programs
@@ -733,6 +778,7 @@ class BaseESPUser(object):
             rts = RegistrationType.objects.all()
 
         srs = self.studentregistration_set.filter(relationship__in=rts)
+        from esp.program.models import StudentRegistration
         if valid_only:
             srs = srs.filter(StudentRegistration.is_valid_qobject())
         sections = ClassSection.objects.filter(id__in=srs.values_list('section', flat=True))
@@ -762,6 +808,7 @@ class BaseESPUser(object):
         return self.getSections(None, verbs=['Enrolled'])
 
     def getLearntPrograms(self):
+        from esp.program.models import Program
         learnt_programs = Program.objects.filter(id__in = list(self.getSections().values_list('parent_class__parent_program', flat = True)))
         return learnt_programs
 
@@ -1173,7 +1220,7 @@ class BaseESPUser(object):
     @staticmethod
     def getRankInClass(student, subject, default=10):
         from esp.program.models.app_ import StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication
-        from esp.program.models import StudentRegistration
+        from esp.program.models import StudentRegistration, ClassSubject
         if isinstance(subject, int):
             subject = ClassSubject.objects.get(id=subject)
         if not StudentAppQuestion.objects.filter(subject=subject).count():
@@ -2699,6 +2746,7 @@ class Permission(ExpirableModel):
 
     @classmethod
     def program_by_perm(cls, user, perm):
+        from esp.program.models import Program
         """Find all program that user has perm"""
         implies = [perm]
         implies+=[x for x, y in cls.implications.items() if perm in y]
@@ -2736,6 +2784,7 @@ class Permission(ExpirableModel):
         if m:
             (section, prog1, prog2, rest) = m.groups()
             prog_url = prog1 + "/" + prog2
+            from esp.program.models import Program, ClassSubject
             try:
                 prog = Program.objects.get(url=prog_url)
             except Program.DoesNotExist:
@@ -2885,5 +2934,4 @@ class GradeChangeRequest(TimeStampedModel):
 # We can't import these earlier because of circular stuff...
 from esp.users.models.forwarder import UserForwarder # Don't delete, needed for app loading
 from esp.cal.models import Event
-from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration
 from esp.resources.models import Resource
