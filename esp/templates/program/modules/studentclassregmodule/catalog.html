@@ -92,6 +92,13 @@ Viewing classes for: {{ timeslot.friendly_name }}
    <a name="top"></a>Jump to Categories
   </th>
  </tr>
+ {% if separate_catalog %}
+ <tr>
+  <td colspan="2" style="padding: 10px 20px; font-style: italic; color: #555;">
+   To browse available classes, please select a category below. Each category page will display all classes offered in that subject area.
+  </td>
+ </tr>
+ {% endif %}
 
 {% for category in categories %}
 {% if forloop.counter0|divisibleby:2 %}
