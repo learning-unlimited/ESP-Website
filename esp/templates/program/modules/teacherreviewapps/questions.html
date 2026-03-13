@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}Specify Application Questions{% endblock %}
 
@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css"/>
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <h2>Your Application Questions</h2>
 
 <p>
@@ -25,7 +25,7 @@ The directors would like you to specify up to {{ clrmi.num_teacher_questions }} 
     {{ f }}
 {% endfor %}
 <tr>
-    <td colspan="2" align="center"><input type="submit" class="fancybutton" value="Submit Questions" /></td>
+    <td colspan="2" align="center"><input type="submit" class="btn btn-primary" value="Submit Questions" /></td>
 </tr>
 </table>
 </form>

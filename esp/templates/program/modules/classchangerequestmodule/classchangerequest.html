@@ -1,9 +1,9 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 {% load render_qsd %}
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
-{% block content %}
+{% block module_content %}
 {% if success %}
 <div class="alert alert-success">
     <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
