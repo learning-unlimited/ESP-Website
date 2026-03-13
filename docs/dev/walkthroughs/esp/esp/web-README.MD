@@ -113,12 +113,6 @@
 |------|------|------|-------------|
 | `csrf_failure` | Function | `views/csrf.py` | Custom CSRF failure view that tries to render `403_csrf_failure.html` with program context; falls back to Django's default on any exception. |
 
-### Views — `views/json_utils.py`
-
-| Name | Type | File | Description |
-|------|------|------|-------------|
-| `JsonResponse` | Class | `views/json_utils.py` | `HttpResponse` subclass that JSON-serializes any Python object; marked deprecated in favour of `@json_response`. |
-
 ### Forms (`forms/`)
 
 | Name | Type | File | Description |
@@ -209,8 +203,6 @@
 ## Notes & Gotchas
 
 - **`program()` is not a program-module view itself.** It only resolves the `Program` object and calls `ProgramModuleObj.findModule`. All actual program page logic lives in `/program/modules/`. If a module isn't found, this view raises a plain 404.
-
-- **`JsonResponse` is explicitly deprecated.** The inline comment `# TODO(benkraft): replace users of this with @json_response, and remove.` has been there for years. Do not add new usages of `JsonResponse`; use the `@json_response` decorator from `esp.utils.web` instead.
 
 - **`get_primary_nav` uses two separate nav lists with different purposes.** `known_navlinks` (7 items) gates whether the tag renders anything at all — if the first URL path segment is not in this list the function returns `{}`. `basic_navlinks` (also 7 items, different set) controls which sections are *iterated* when building nav link dicts. These two lists overlap but are not identical; `contactinfo` is in `known_navlinks` but maps to a subsection under `about`, while admin/onsite links are injected separately based on user role. Adding a new top-level section requires updating *both* lists and the `sections` dict in [templatetags/topbar.py](templatetags/topbar.py).
 
