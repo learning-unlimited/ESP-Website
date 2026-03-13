@@ -291,14 +291,7 @@ class JavascriptSyntaxTest(TestCase):
                     file_list.append(f'{dirpath}/{file}')
                     num_files += 1
 
-<<<<<<< refactor/fstring-web-middleware
-        file_args = ' '.join([f'--js {file}' for file in file_list])
-        os.system(f'java -jar {closure_path}/compiler.jar {file_args} --js_output_file {closure_output_code} 2> {closure_output_file}')
-        checkfile = open(closure_output_file)
-
-        results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
-=======
-        cmd = ['java', '-jar', '%s/compiler.jar' % closure_path]
+        cmd = ['java', '-jar', f"'{closure_path}'/compiler.jar'"]
         for file in file_list:
             cmd.extend(['--js', file])
         cmd.extend(['--js_output_file', closure_output_code])
@@ -306,7 +299,6 @@ class JavascriptSyntaxTest(TestCase):
             subprocess.run(cmd, stderr=err_file, stdout=subprocess.DEVNULL, check=True)
         with open(closure_output_file) as checkfile:
             results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
->>>>>>> main
 
         if len(results) > 0:
             closure_result = results[-1].split(',')
