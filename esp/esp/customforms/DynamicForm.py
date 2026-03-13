@@ -402,7 +402,7 @@ class ComboForm(SessionWizardView):
             else:
                 try:
                     new_instance = v['model'].objects.create(**v['data'])
-                except:
+                except Exception:
                     # show some error message
                     pass
             if v['instance'] is not None:
@@ -756,7 +756,8 @@ class FormHandler:
                 # Join together responses from compound fields
                 if isinstance(ans, list):
                     write_ans = " ".join(ans)
-                else: write_ans = ans
+                else:
+                    write_ans = ans
 
                 if isinstance(write_ans, datetime):
                     write_ans = write_ans.replace(tzinfo=None)
