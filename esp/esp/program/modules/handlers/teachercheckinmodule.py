@@ -515,4 +515,3 @@ class TeacherCheckinModule(ProgramModuleObj):
     class Meta:
         proxy = True
         app_label = 'modules'
-        
