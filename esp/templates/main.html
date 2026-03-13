@@ -20,7 +20,7 @@
         <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
       </div>
       {% endif %}
-      <div class="row-fluid">
+      <div class="row">
         {% block sidebar %}
           <h3>Navigation</h3>
           {% load navbar %}
@@ -28,7 +28,7 @@
           {% include "users/loginbox_content.html" %}
         {% endblock sidebar %}
 
-        <div id="main" class="span12 resizable">
+        <div id="main" class="col-12 resizable">
           {% block content %}
           {% endblock content %}
         </div>
