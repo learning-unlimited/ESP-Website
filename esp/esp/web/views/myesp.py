@@ -267,7 +267,18 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         try:
             new_data['timezone'] = curUser.preferences.timezone
         except Exception:
-            new_data['timezone'] = settings.TIME_ZONE
+            inferred_tz = None
+            if regProf and regProf.contact_user and regProf.contact_user.address_city:
+                user_city = regProf.contact_user.address_city.strip().lower()
+                from esp.users.forms.user_profile import TIMEZONE_CHOICES
+                for tz_name, label in TIMEZONE_CHOICES:
+                    if tz_name and '/' in tz_name:
+                        parts = tz_name.split('/')
+                        tz_city = (parts[-1] if len(parts) > 1 else parts[0]).replace('_', ' ').lower()
+                        if user_city == tz_city:
+                            inferred_tz = tz_name
+                            break
+            new_data['timezone'] = inferred_tz or settings.TIME_ZONE
         new_data = regProf.updateForm(new_data, role)
 
         if regProf.student_info and regProf.student_info.dob:

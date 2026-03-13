@@ -42,6 +42,7 @@ from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
 from django.http import Http404
+from django.utils import timezone
 
 from argcache import cache_function
 
@@ -266,14 +267,27 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @no_auth
     @cached_module_view
     def timeslots(prog):
-        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy MM/DD HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'short_description', 'label', 'start', 'end'))
-        for i in range(len(timeslots)):
-            timeslot_start = Event.objects.get(pk=timeslots[i]['id']).start
+        timeslots_qs = prog.getTimeSlots().values('id', 'short_description', 'start', 'end')
+        timeslots = []
+        for ts_row in timeslots_qs:
+            ts_obj = Event.objects.get(pk=ts_row['id'])
+
+            start_local = timezone.localtime(ts_obj.start)
+            end_local = timezone.localtime(ts_obj.end)
+
+            ts_data = {
+                'id': ts_row['id'],
+                'short_description': ts_obj.short_time(),
+                'label': ts_obj.short_time(),
+                'start': start_local.timetuple()[:6],
+                'end': end_local.timetuple()[:6],
+            }
+
+            timeslot_start = ts_obj.start
             timeslots_before = Event.objects.filter(start__lt=timeslot_start)
-            timeslots[i]['starting_sections'] = list(ClassSection.objects.exclude(meeting_times__in=timeslots_before).filter(meeting_times=timeslots[i]['id']).order_by('id').values_list('id', flat=True))
-            timeslots[i]['sections'] = list(ClassSection.objects.filter(meeting_times=timeslots[i]['id']).order_by('id').values_list('id', flat=True))
-            timeslots[i]['start'] = timeslots[i]['start'].timetuple()[:6]
-            timeslots[i]['end'] = timeslots[i]['end'].timetuple()[:6]
+            ts_data['starting_sections'] = list(ClassSection.objects.exclude(meeting_times__in=timeslots_before).filter(meeting_times=ts_row['id']).order_by('id').values_list('id', flat=True))
+            ts_data['sections'] = list(ClassSection.objects.filter(meeting_times=ts_row['id']).order_by('id').values_list('id', flat=True))
+            timeslots.append(ts_data)
 
         return {'timeslots': timeslots}
     timeslots.cached_function.depend_on_model(Event)
