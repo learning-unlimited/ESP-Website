@@ -45,7 +45,6 @@ from esp.themes.controllers import ThemeController
 from esp.program.models import Program
 from esp.web.views.navBar import makeNavBar
 from esp.tagdict.models import Tag
-from django.conf import settings
 import django.shortcuts
 
 def get_from_id(id, module, strtype = 'object', error = True):
@@ -57,7 +56,7 @@ def get_from_id(id, module, strtype = 'object', error = True):
         foundobj = module.objects.get(id = newid)
     except (ValueError, TypeError, module.DoesNotExist):
         if error:
-            raise ESPError('Could not find the %s with id %s.' % (strtype, id), log=False)
+            raise ESPError(f'Could not find the {strtype} with id {id}.', log=False)
         return None
     return foundobj
 
@@ -167,5 +166,5 @@ def zip_download(files = [], zipname = 'files'):
             zf.write(file, os.path.basename(os.path.normpath(file)))
     zf.close()
     response = HttpResponse(file_like.getvalue(), content_type='application/zip')
-    response['Content-Disposition']='attachment; filename=%s.zip' % zipname
+    response['Content-Disposition']=f'attachment; filename={zipname}.zip'
     return response
