@@ -27,7 +27,8 @@ class StripeTotalsTest(TestCase):
             'secret_key': 'sk_test_123',
             'donation_text': 'Donation to Learning Unlimited'
         }
-        Tag.setTag('stripe_settings', target=self.program, value=json.dumps(stripe_config))
+        from django.conf import settings
+        settings.STRIPE_CONFIG = stripe_config
 
         # Create a "Student payment" transfer to establish a start time
         self.lit_payment = LineItemType.objects.create(text="Student payment", program=self.program)
@@ -55,7 +56,10 @@ class StripeTotalsTest(TestCase):
                     'amount': 5000,
                     'amount_refunded': 1000,
                     'created': 1673740800, # 2023-01-15
-                    'description': 'Student payment for Test Program'
+                    'description': 'Student payment for Test Program',
+                    'balance_transaction': {
+                        'fee': 150
+                    }
                 }
             ],
             'has_more': False
@@ -68,11 +72,13 @@ class StripeTotalsTest(TestCase):
         self.assertEqual(totals['gross_amount'], Decimal('50.00'))
         self.assertEqual(totals['gross_count'], 1)
         self.assertEqual(totals['refunded_amount'], Decimal('10.00'))
+        self.assertEqual(totals['total_stripe_fees'], Decimal('1.50'))
         self.assertTrue(totals['is_configured'])
 
     def test_get_cc_totals_not_configured(self):
         # Remove tag
-        Tag.unSetTag('stripe_settings', target=self.program)
+        from django.conf import settings
+        settings.STRIPE_CONFIG = {}
 
         totals = self.module._get_cc_totals(self.program)
         self.assertIsNone(totals)

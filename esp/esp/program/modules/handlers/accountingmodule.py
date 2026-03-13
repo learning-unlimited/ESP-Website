@@ -64,18 +64,22 @@ class AccountingModule(ProgramModuleObj):
     CC_FEE_RATE = 0.022
 
     def _get_cc_totals(self, prog):
-        # Load CC settings
-        tag_data_str = Tag.getProgramTag('stripe_settings', prog)
-        if not tag_data_str:
-            return None # CC not configured
+        # Load Stripe settings exactly mimicking refund_views
+        stripe_settings = {
+            'offer_donation': True,
+            'donation_text': 'Donation to Learning Unlimited',
+        }
+        if hasattr(settings, 'STRIPE_CONFIG'):
+            stripe_settings.update(settings.STRIPE_CONFIG)
 
-        settings_dict = {}
         try:
-            settings_dict.update(json.loads(tag_data_str))
+            tag_data_str = Tag.getProgramTag('stripe_settings', prog)
+            if tag_data_str:
+                stripe_settings.update(json.loads(tag_data_str))
         except (ValueError, TypeError):
             pass
 
-        secret_key = settings_dict.get('secret_key')
+        secret_key = stripe_settings.get('secret_key')
         if not secret_key:
             return None
 
@@ -90,6 +94,7 @@ class AccountingModule(ProgramModuleObj):
                 'gross_amount': Decimal('0.00'),
                 'gross_count': 0,
                 'refunded_amount': Decimal('0.00'),
+                'total_stripe_fees': Decimal('0.00'),
                 'donation_amount': Decimal('0.00'),
                 'donation_count': 0,
                 'cc_donation_fees': Decimal('0.00'),
@@ -104,7 +109,7 @@ class AccountingModule(ProgramModuleObj):
         transfers = pac.all_transfers()
         donation_amount = Decimal('0.00')
         donation_count = 0
-        donation_text = settings_dict.get('donation_text', 'Donation to Learning Unlimited')
+        donation_text = stripe_settings.get('donation_text', 'Donation to Learning Unlimited')
 
         donation_lineitem_id = None
         for t in transfers:
@@ -122,6 +127,7 @@ class AccountingModule(ProgramModuleObj):
             'gross_amount': Decimal('0.00'),
             'gross_count': 0,
             'refunded_amount': Decimal('0.00'),
+            'total_stripe_fees': Decimal('0.00'),
             'cc_donation_fees': (Decimal(str(donation_count)) * Decimal('0.01')) + (donation_amount * Decimal(str(self.CC_FEE_RATE))),
             'donation_amount': donation_amount,
             'donation_count': donation_count,
@@ -170,6 +176,11 @@ class AccountingModule(ProgramModuleObj):
                     totals['gross_count'] += 1
                     totals['gross_amount'] += Decimal(str(charge.get('amount', 0))) / 100
                     totals['refunded_amount'] += Decimal(str(charge.get('amount_refunded', 0))) / 100
+
+                    bt = charge.get('balance_transaction')
+                    if bt and isinstance(bt, dict):
+                        totals['total_stripe_fees'] += Decimal(str(bt.get('fee', 0))) / 100
+
                 has_more = data.get('has_more', False)
                 if has_more and charges:
                     starting_after = charges[-1]['id']
@@ -198,13 +209,13 @@ class AccountingModule(ProgramModuleObj):
             context['prog_results'] = user_accounting(user, [prog])
 
         if not user:
-            context['cc_enabled'] = bool(Tag.getProgramTag('stripe_settings', prog))
+            context['cc_enabled'] = bool(Tag.getProgramTag('stripe_settings', prog)) or bool(getattr(settings, 'STRIPE_CONFIG', {}).get('secret_key'))
             if context['cc_enabled'] and request.GET.get('fetch_cc_totals') == '1':
                 cc_totals = self._get_cc_totals(prog)
                 if cc_totals and not cc_totals.get('error'):
-                     cc_totals['chapter_gross'] = cc_totals['gross_amount'] - cc_totals['donation_amount']
-                     cc_totals['lu_gross'] = cc_totals['donation_amount']
-                     cc_totals['lu_net_base'] = cc_totals['donation_amount'] - cc_totals['cc_donation_fees']
+                    cc_totals['chapter_gross'] = cc_totals['gross_amount'] - cc_totals['donation_amount']
+                    cc_totals['lu_gross'] = cc_totals['donation_amount']
+                    cc_totals['lu_net_base'] = cc_totals['donation_amount'] - cc_totals['cc_donation_fees']
                 context['cc_totals'] = cc_totals
 
         context['target_user'] = user
