@@ -48,7 +48,8 @@ div .module_link_large {
     padding: 6px;
     text-align: center;
     float: left;
-    height: 75px;
+    min-height: 75px;
+    height: auto;
     border-radius: 4px;
 }
 
@@ -59,7 +60,8 @@ div .module_link_large_dead {
     padding: 6px;
     text-align: center;
     float: left;
-    height: 75px;
+    min-height: 75px;
+    height: auto;
     border-radius: 4px;
 	cursor: default; 
 	background-color: gray;

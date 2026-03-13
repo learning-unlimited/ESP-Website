@@ -1,6 +1,5 @@
 """A schedule manipulator. Stores and makes changes to an AS_schedule."""
 
-from __future__ import absolute_import
 import logging
 
 from esp.program.controllers.autoscheduler.scoring import CompositeScorer

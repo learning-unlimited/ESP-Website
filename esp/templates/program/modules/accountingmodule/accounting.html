@@ -129,6 +129,13 @@ table {
         <td style="text-align:right;"><em>Total Paid</em></td>
         <td style="text-align:right;"><em>${{ result.paid|floatformat:"2" }}</em></td>
     </tr>
+    {% if result.refunded > 0 %}
+    <tr>
+        <td style="border-top: none;"></td>
+        <td style="text-align:right;"><em>Total Refunded</em></td>
+        <td style="text-align:right;"><em>${{ result.refunded|floatformat:"2" }}</em></td>
+    </tr>
+    {% endif %}
     <tr>
         <td style="border-top: none;"></td>
         <td style="text-align:right;"><strong>Balance</strong></td>

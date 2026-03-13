@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -106,7 +105,7 @@ class FinAidApproveModule(ProgramModuleObj):
                 try:
                     req.approve(dollar_amount = amount_max_dec, discount_percent = percent)
                     users_approved.append(req.user.name())
-                except:
+                except (ValueError, TypeError):
                     users_error.append(req.user.name())
 
         context["requests"] = reqs

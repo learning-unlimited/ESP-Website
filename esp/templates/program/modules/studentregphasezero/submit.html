@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 {% load render_qsd %}
 
 {% block title %} Student Registration for {{program.niceName}} {% endblock %}
@@ -48,10 +48,10 @@ input {
 </style>
 {% endblock %}
 
-{% block content %}
-<h1>Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+{% block module_content %}
+<h1>Program Lottery for {{program.niceName}}</h1>
 {% inline_program_qsd_block program "learn:studentregphasezero/top" %}
-Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. Only students selected in the student lottery may proceed to register for classes.
+Welcome to the Program Lottery for {{program.niceName}}. Any student that submits interest to the program before the lottery closes will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. Only students selected in the program lottery may proceed to register for classes.
 {% end_inline_program_qsd_block %}
 
 <hr>

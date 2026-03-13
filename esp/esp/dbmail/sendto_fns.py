@@ -4,7 +4,6 @@ functions that take a user, and return a list of associated sendto addresses.
 These addresses are (email address, name) pairs.
 """
 
-from __future__ import absolute_import
 import re
 
 def send_to_self(user):
@@ -13,7 +12,7 @@ def send_to_self(user):
     """
     try:
         return [user.get_email_sendto_address_pair()]
-    except:
+    except Exception:
         return []
 
 def _send_to_contact(contact):
@@ -33,7 +32,7 @@ def _send_to_contact(contact):
                 contact_info = getattr(profile, 'contact_' + contact, profile.contact_guardian)
                 if contact_info and contact_info.email:
                     return [contact_info.get_email_sendto_address_pair()]
-        except:
+        except Exception:
             pass
         return []
     sendto_fn.__doc__ = sendto_fn.__doc__ % contact
@@ -63,7 +62,7 @@ def _send_to_combination(sendto_fns):
                         # Duplicate emails are ignored.
                         emails.append(address_pair[0])
                         address_pairs.append(address_pair)
-            except:
+            except Exception:
                 pass
         return address_pairs
 
@@ -72,7 +71,7 @@ def _send_to_combination(sendto_fns):
 
     # Append the name and docstring of each component function, with some formatting.
     for fn in sendto_fns:
-        sendto_fn.__doc__ += "\n%s:\n%s" % (fn.__name__, re.sub('\n *', '\n    ', fn.__doc__).strip('\n'))
+        sendto_fn.__doc__ += f"\n{fn.__name__}:\n{re.sub(chr(10) + ' *', chr(10) + '    ', fn.__doc__).strip(chr(10))}"
 
     return sendto_fn
 
