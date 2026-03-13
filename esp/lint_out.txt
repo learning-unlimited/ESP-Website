@@ -1,0 +1,54 @@
+Collecting flake8==5.0.4
+  Downloading flake8-5.0.4-py2.py3-none-any.whl.metadata (4.1 kB)
+Collecting importlib-metadata<5.0
+  Downloading importlib_metadata-4.13.0-py3-none-any.whl.metadata (4.9 kB)
+Collecting mccabe<0.8.0,>=0.7.0 (from flake8==5.0.4)
+  Downloading mccabe-0.7.0-py2.py3-none-any.whl.metadata (5.0 kB)
+Collecting pycodestyle<2.10.0,>=2.9.0 (from flake8==5.0.4)
+  Downloading pycodestyle-2.9.1-py2.py3-none-any.whl.metadata (31 kB)
+Collecting pyflakes<2.6.0,>=2.5.0 (from flake8==5.0.4)
+  Downloading pyflakes-2.5.0-py2.py3-none-any.whl.metadata (3.8 kB)
+Collecting importlib-metadata<5.0
+  Downloading importlib_metadata-4.2.0-py3-none-any.whl.metadata (3.9 kB)
+Requirement already satisfied: zipp>=0.5 in /usr/local/lib/python3.7/site-packages (from importlib-metadata<5.0) (3.15.0)
+Requirement already satisfied: typing-extensions>=3.6.4 in /usr/local/lib/python3.7/site-packages (from importlib-metadata<5.0) (4.7.1)
+Downloading flake8-5.0.4-py2.py3-none-any.whl (61 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 61.9/61.9 kB 1.5 MB/s eta 0:00:00
+Downloading importlib_metadata-4.2.0-py3-none-any.whl (16 kB)
+Downloading mccabe-0.7.0-py2.py3-none-any.whl (7.3 kB)
+Downloading pycodestyle-2.9.1-py2.py3-none-any.whl (41 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 41.5/41.5 kB 3.6 MB/s eta 0:00:00
+Downloading pyflakes-2.5.0-py2.py3-none-any.whl (66 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 66.1/66.1 kB 1.2 MB/s eta 0:00:00
+Installing collected packages: pyflakes, pycodestyle, mccabe, importlib-metadata, flake8
+  Attempting uninstall: pyflakes
+    Found existing installation: pyflakes 2.3.1
+    Uninstalling pyflakes-2.3.1:
+      Successfully uninstalled pyflakes-2.3.1
+  Attempting uninstall: pycodestyle
+    Found existing installation: pycodestyle 2.7.0
+    Uninstalling pycodestyle-2.7.0:
+      Successfully uninstalled pycodestyle-2.7.0
+  Attempting uninstall: mccabe
+    Found existing installation: mccabe 0.6.1
+    Uninstalling mccabe-0.6.1:
+      Successfully uninstalled mccabe-0.6.1
+  Attempting uninstall: importlib-metadata
+    Found existing installation: importlib-metadata 6.7.0
+    Uninstalling importlib-metadata-6.7.0:
+      Successfully uninstalled importlib-metadata-6.7.0
+  Attempting uninstall: flake8
+    Found existing installation: flake8 3.9.2
+    Uninstalling flake8-3.9.2:
+      Successfully uninstalled flake8-3.9.2
+Successfully installed flake8-5.0.4 importlib-metadata-4.2.0 mccabe-0.7.0 pycodestyle-2.9.1 pyflakes-2.5.0
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+esp/program/modules/handlers/studentclassregmodule.py:455:1: W293 blank line contains whitespace
+esp/program/modules/tests/issue_561_test.py:9:1: W293 blank line contains whitespace
+esp/program/modules/tests/issue_561_test.py:16:1: W293 blank line contains whitespace
+esp/program/modules/tests/issue_561_test.py:19:1: W293 blank line contains whitespace
+esp/program/modules/tests/issue_561_test.py:25:1: W293 blank line contains whitespace
+esp/program/modules/tests/issue_561_test.py:33:1: W293 blank line contains whitespace
+esp/program/modules/tests/issue_561_test.py:43:1: W293 blank line contains whitespace
+esp/program/modules/tests/issue_561_test.py:48:1: W293 blank line contains whitespace
+esp/program/modules/tests/issue_561_test.py:53:1: W293 blank line contains whitespace

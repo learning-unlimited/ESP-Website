@@ -35,8 +35,6 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
-from esp.miniblog.models import AnnouncementLink, Entry
-from esp.miniblog.views import preview_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSubject
 from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect
@@ -83,6 +81,37 @@ def myesp_switchback(request):
         raise ESPError('You were not another user!', log=False)
 
     return HttpResponseRedirect(user.switch_back(request))
+
+def myesp_stop_testing(request):
+    """Return from a testing-mode session to the original admin account."""
+    from django.contrib.auth import login as auth_login, logout as auth_logout
+    from esp.users.models import ESPUser
+
+    testing = request.session.get('testing_mode')
+    if not testing:
+        return HttpResponseRedirect('/')
+
+    admin_user_id = testing['admin_user_id']
+    program_url = testing['program_url']
+
+    auth_logout(request)
+    try:
+        admin_user = ESPUser.objects.get(pk=admin_user_id)
+        if not admin_user.isAdministrator():
+            import logging
+            logging.getLogger(__name__).warning(
+                'stop_testing: session admin_user_id=%d is not an administrator; rejecting restore',
+                admin_user_id,
+            )
+            return HttpResponseRedirect('/')
+        admin_user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
+        auth_login(request, admin_user)
+    except ESPUser.DoesNotExist:
+        return HttpResponseRedirect('/')
+
+    response = HttpResponseRedirect('/manage/%s/admin_testing/' % program_url)
+    response.delete_cookie('esp_testing_role')
+    return response
 
 @login_required
 def edit_profile(request):
@@ -196,7 +225,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             replacement_data = form.data.copy()
             try:
                 replacement_data['k12school'] = form.fields['k12school'].clean(form.data['k12school']).id
-            except:
+            except Exception:
                 pass
             form = FormClass(curUser, replacement_data)
             if prog_input is None:

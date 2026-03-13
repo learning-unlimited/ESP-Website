@@ -1,0 +1,10 @@
+Resolves #2570
+
+Provides an option to generate teacher, moderator, and volunteer schedules and nametags sorted chronologically by the time of their first class, rather than alphabetically by name. Handled entirely via the ESPWebsite printables backend logic and the options/selectoptions forms.
+
+### New Features Details:
+*   Added `_generate_schedules()` refactoring in `programprintables.py` into a unified handler capable of filtering and aggregating `first_start` calculations for `scheditems`.
+*   Added matching handlers `teacherschedulesbytime`, `moderatorschedulesbytime`, and `teachermoderatorschedulesbytime`. 
+*   Exposed new functionality seamlessly within `esp/templates/program/modules/programprintables/options.html` via the "Other Schedules and Nametags" dropdown.
+*   Updated `nametagmodule.py`'s `nametag_data` logic to conditionally accept parameter `sort_by_time` flag to perform identical `min(cls.meeting_times.all())` matching sort for name batches.
+*   Added explicit UI check box targeting teachers/moderators to the print batch options in `selectoptions.html`.
