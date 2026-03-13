@@ -143,25 +143,19 @@ class TeacherCheckinModule(ProgramModuleObj):
                               "%m/%d/%Y %H:%M".
         """
         json_data = {'message': 'User not found'}
+        # print("POST DATA:", request.POST)
         teachers = []
-
-        if 'teacher' in request.POST:
-            teacher_query = request.POST.get('teacher', '').strip()
+        teacher_query = request.POST.get('teacherid') or request.POST.get('teacher')
+        if teacher_query:
+            teacher_query = teacher_query.strip()
 
             if teacher_query.isdigit():
+                # print("Looking up teacher by ID:", teacher_query)
                 teachers = ESPUser.objects.filter(id=int(teacher_query))
             else:
-                teachers = ESPUser.objects.filter(
-                    Q(username__icontains=teacher_query) |
-                    Q(first_name__icontains=teacher_query) |
-                    Q(last_name__icontains=teacher_query)
-                )
+                # print("Looking up teacher by username:", teacher_query)
+                teachers = ESPUser.objects.filter(username__iexact=teacher_query)
 
-        elif 'teacherid' in request.POST:
-            teacher_id = request.POST.get('teacherid')
-
-            if teacher_id and teacher_id.isdigit():
-                teachers = ESPUser.objects.filter(id=int(teacher_id))
         if teachers and teachers.exists():
             json_data['name'] = teachers[0].name()
             json_data['username'] = teachers[0].username
