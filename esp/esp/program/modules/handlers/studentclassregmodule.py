@@ -483,7 +483,8 @@ class StudentClassRegModule(ProgramModuleObj):
         #   Override both grade limits and size limits during onsite registration
         #   Classes are sorted like the catalog
         classes = list(ClassSubject.objects.catalog(self.program, ts))
-        if not (is_onsite and 'filter' not in request.GET):
+        should_filter_invalid = (not is_onsite) or ('filter' in request.GET)
+        if should_filter_invalid:
             if user_grade != 0:
                 classes = [c for c in classes if c.grade_min <= user_grade and c.grade_max >= user_grade]
             classes = [c for c in classes if not c.isRegClosed()]
