@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -43,6 +42,7 @@ from inspect import getargspec
 from functools import wraps
 import json
 
+
 class OptionalDecorator(object):
     """ A simple decorator to turn a function into a no-op.  If the argument evaluates
         to true, it's transparent.  Otherwise it generates a decorator that causes
@@ -61,13 +61,18 @@ class OptionalDecorator(object):
         else:
             return _do_nothing
 
+
 enable_with_setting = OptionalDecorator
 
-def json_response(field_map={}):
+
+def json_response(field_map=None):
     """ Converts a serializable data structure into the appropriate HTTP response.
         Allows changing the field names using field_map, which might be complicated
         if related lookups were used.
     """
+
+    if field_map is None:
+        field_map = {}
 
     # Here instead of at the top because of circular imports
     from esp.utils.web import render_to_response
@@ -112,6 +117,7 @@ def json_response(field_map={}):
 
     return dec
 
+
 class CachedModuleViewDecorator(object):
     """ Employs some of the techniques used by the cached inclusion tag to
         make caching a simple program module view easier. """
@@ -146,5 +152,6 @@ class CachedModuleViewDecorator(object):
 
     def __getattr__(self, attr):
         return getattr(self.inner_func, attr)
+
 
 cached_module_view = CachedModuleViewDecorator
