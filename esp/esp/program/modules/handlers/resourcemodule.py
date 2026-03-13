@@ -629,8 +629,8 @@ class ResourceModule(ProgramModuleObj):
             return response
 
         #   Group contiguous blocks of time for the program
-        time_options = self.program.getTimeSlots(types=['Class Time Block', 'Open Class Time Block'])
-        time_groups = self.program.getTimeGroups(types=['Class Time Block', 'Open Class Time Block'])
+        time_options = self.program.getTimeSlots(types=['Class Time Block', 'Open Class Time Block', 'Compulsory'])
+        time_groups = self.program.getTimeGroups(types=['Class Time Block', 'Open Class Time Block', 'Compulsory'])
 
         #   Retrieve remaining context information
         context['timeslots'] = [{'selections': group} for group in time_groups]
