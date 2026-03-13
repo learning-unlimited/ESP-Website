@@ -1,0 +1,83 @@
+{% extends "main.html" %}
+
+{% block title %}{{ program.niceName }} — Testing Mode{% endblock %}
+
+{% block content %}
+<br />
+<h1>Admin Testing Mode — {{ program.niceName }}</h1>
+
+{% if reset %}
+<div class="alert alert-success">
+    <strong>Reset complete.</strong>
+    All registration data produced by the test accounts has been wiped.
+</div>
+{% endif %}
+
+<p>
+    Use this page to test student and teacher registration flows without
+    affecting real participant data.  Each program has a dedicated
+    <em>test student</em> and <em>test teacher</em> account with real
+    permissions (no admin access).
+</p>
+
+<p>
+    When you click <strong>Start Testing</strong>, you will be logged in
+    as that test account with real (non-admin) permissions.  A banner at
+    the top of the page will let you return to your admin session at any
+    time.
+</p>
+
+<h3>Start Testing</h3>
+<ul>
+    <li>
+        <a href="/manage/{{ program.getUrlBase }}/start_testing/student"
+           class="btn btn-default">
+            Start Testing as Student
+        </a>
+        {% if accounts.Student %}
+            <small class="text-muted">(account: {{ accounts.Student.username }})</small>
+        {% else %}
+            <small class="text-muted">(account will be created on first use)</small>
+        {% endif %}
+    </li>
+    <li style="margin-top: 8px;">
+        <a href="/manage/{{ program.getUrlBase }}/start_testing/teacher"
+           class="btn btn-default">
+            Start Testing as Teacher
+        </a>
+        {% if accounts.Teacher %}
+            <small class="text-muted">(account: {{ accounts.Teacher.username }})</small>
+        {% else %}
+            <small class="text-muted">(account will be created on first use)</small>
+        {% endif %}
+    </li>
+</ul>
+
+<h3>Reset Testing Data</h3>
+<p>
+    Delete all registration data (enrollments, records, profiles, and more)
+    created by the test accounts.
+    This cannot be undone.
+</p>
+{% if accounts.Student or accounts.Teacher %}
+<form method="post" action="/manage/{{ program.getUrlBase }}/reset_testing/">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-warning"
+            onclick="return confirm('This will wipe all test registration data. Continue?');">
+        Reset Testing Data
+    </button>
+</form>
+{% else %}
+<p class="text-muted">No test accounts have been provisioned yet.</p>
+{% endif %}
+
+<h3>Advanced Cleanup</h3>
+<p>
+    To wipe registration data for any specific user (not just test accounts),
+    use the
+    <a href="/manage/{{ program.getUrlBase }}/wipe_test_data/">Wipe User Data</a>
+    tool.
+</p>
+
+{% include "program/modules/admincore/returnlink.html" %}
+{% endblock %}
