@@ -95,7 +95,7 @@ $j(function(){
             data.undo = true;
         $j.post('ajaxteachercheckin', data, "json").done(callback)
         .fail(function(){
-            alert("An error occurred while attempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
+            alert("An error occurred while attempting to " + (undo?"un-check-in ":"check-in ") + id + ".");
             if (errorCallback) {
                 errorCallback();
             }
@@ -313,7 +313,11 @@ $j(function(){
                 input.val("");
             }
             else if(e.which==13){
-                checkInById(input.val(), function(response) {
+                var selectedButton = $j(".selected .checkin:enabled");
+                if(selectedButton.length > 0) {
+                    selectedButton.trigger("click");
+                } else {
+                    checkInById(input.val(), function(response) {
                     if (response.username) {
                         var username = response.username;
                         var tds = []
@@ -344,8 +348,10 @@ $j(function(){
                     input.next(".message").html(response.message);
                     input.next(".message").show();
                     setTimeout("$j('#shortcuts-box input').next('.message').fadeOut(); ", 4000);
+                    }
                 });
                 input.val("");
+                }
             }
             else if(e.which==191 && e.shiftKey){ // Shift + ?
                 window.open($j(".selected a")[0].href); // Open userview page
