@@ -1,11 +1,18 @@
-{% extends "main.html" %} {% block title %}{{program.niceName}} Registration{%
-endblock %} {% block stylesheets %} {{ block.super }}
+{% extends "main.html" %}
+
+{% block title %}{{ program.niceName }} Registration{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
 <link
   rel="stylesheet"
   href="/media/styles/teacherregcore-mainpage.css"
   type="text/css"
 />
-{% endblock %} {% block content %} {% load render_qsd %}
+{% endblock %}
+
+{% block content %}
+{% load render_qsd %}
 
 <div class="teacher-reg-landing">
   <section class="teacher-reg-hero">
@@ -13,10 +20,7 @@ endblock %} {% block stylesheets %} {{ block.super }}
     {% inline_program_qsd_block program "teach:teacherreg" %}
     <p>
       Complete the steps below to finish teacher registration. If you have any
-      questions, please
-      <a href="mailto:{{ program.director_email }}"
-        >contact the program directors</a
-      >.
+      questions, please <a href="mailto:{{ program.director_email }}">contact the program directors</a>.
     </p>
     {% end_inline_program_qsd_block %}
   </section>
@@ -24,10 +28,12 @@ endblock %} {% block stylesheets %} {{ block.super }}
   <div class="row-fluid teacher-reg-overview-row">
     <div class="span12">
       <section class="teacher-reg-checklist-panel">
-        {% ifequal options.progress_mode 1 %} {% include
-        "program/modules/checkboxes.html" %} {% endifequal %} {% ifequal
-        options.progress_mode 2 %} {% include "program/modules/progressbar.html"
-        %} {% endifequal %}
+        {% if options.progress_mode == 1 %}
+        {% include "program/modules/checkboxes.html" %}
+        {% endif %}
+        {% if options.progress_mode == 2 %}
+        {% include "program/modules/progressbar.html" %}
+        {% endif %}
       </section>
     </div>
   </div>
@@ -48,10 +54,7 @@ endblock %} {% block stylesheets %} {{ block.super }}
           {% if record.isCompleted %}
           <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
           {% else %}
-          <i
-            class="glyphicon glyphicon-remove not-done-sign"
-            aria-label="Not done"
-          ></i>
+          <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
           {% endif %}
         </td>
       </tr>
@@ -61,11 +64,14 @@ endblock %} {% block stylesheets %} {{ block.super }}
   {% endif %}
 
   <section class="teacher-reg-modules">
-    {% for module in modules %} {% if module.useTemplate or module.getTemplate
-    %}
-    <a name="module-{{module.id}}"></a>
-    <div class="teacher-reg-module-block">{% include module.getTemplate %}</div>
-    {% endif %} {% endfor %}
+    {% for module in modules %}
+    {% if module.useTemplate or module.getTemplate %}
+    <a name="module-{{ module.id }}"></a>
+    <div class="teacher-reg-module-block">
+      {% include module.getTemplate %}
+    </div>
+    {% endif %}
+    {% endfor %}
   </section>
 </div>
 
