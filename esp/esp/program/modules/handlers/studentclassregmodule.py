@@ -197,11 +197,8 @@ class StudentClassRegModule(ProgramModuleObj):
                 'enrolled_past': """Students who have enrolled in a past program""",
                 'attended_past': """Students who have attended a past program"""}
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return (len(user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def makeSelfCheckinLink(self):
