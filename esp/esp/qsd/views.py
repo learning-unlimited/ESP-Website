@@ -201,8 +201,8 @@ def qsd(request, url):
         data, n_stripped = strip_base64_images(data)
         if n_stripped > 0:
             messages.warning(request,
-                '%d embedded image(s) were removed. '
-                'Please use the image upload button in the toolbar to add images.' % n_stripped)
+                f'{n_stripped} embedded image(s) were removed. '
+                'Please use the image upload button in the toolbar to add images.')
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
