@@ -86,6 +86,13 @@
     {% endblock %}
 
     <div id="main" class="span9 resizable">
+      {% if request.COOKIES.esp_testing_role %}
+      <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+        <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
+        You are logged in as a test account.
+        <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
+      </div>
+      {% endif %}
       {% if request.mod_required %}
       <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
@@ -104,13 +111,6 @@
         {% endif %}
       </div>
       {% endif %}
-      {% if request.COOKIES.esp_testing_role %}
-      <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
-        <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
-        You are logged in as a test account.
-        <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
-      </div>
-      {% endif %}
       {% if active_program_tags %}
       <div class="alert alert-info alert-dismissible" role="alert">
         <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -121,6 +121,11 @@
         {% endfor %}
         &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
       </div>
+      {% endif %}
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
       {% endif %}
       {% block content %}
       {% endblock content %}

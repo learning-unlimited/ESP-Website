@@ -131,7 +131,7 @@ class TeacherEventsManageModule(ProgramModuleObj):
 
     setup_title = "Set up events for teachers to attend before the program"
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         return Event.objects.filter(program=self.program, event_type__is_teacher_type=True).exists()
 
     class Meta:
