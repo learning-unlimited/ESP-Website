@@ -59,20 +59,11 @@ class PageTest(TestCase):
     # Util Functions
     def assertStringContains(self, string, contents):
         if not (contents in string):
-<<<<<<< refactor/fstring-web-middleware
-            self.assert_(False, f"'{contents}' not in '{string}'")
+            self.fail(f"'{contents}' not in '{string}'")
 
     def assertNotStringContains(self, string, contents):
         if contents in string:
-            self.assert_(False, f"'{contents}' are in '{string}' and shouldn't be")
-=======
-            self.fail("'%s' not in '%s'" % (contents, string))
-
-    def assertNotStringContains(self, string, contents):
-        if contents in string:
-            self.fail("'%s' are in '%s' and shouldn't be" % (contents, string))
->>>>>>> main
-
+            self.fail(f"'{contents}' are in '{string}' and shouldn't be")
 
     def testHomePage(self):
         """ Make sure that we can actually download the homepage """
