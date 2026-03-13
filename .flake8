@@ -29,3 +29,6 @@ per-file-ignores =
     */program/modules/tests/__init__.py:F401
     */program/modules/tests/support/__init__.py:F401
     */utils/inclusion_tags.py:F401
+    */program/modules/handlers/*:F401
+    */program/models/__init__.py:F841
+    */program/modules/handlers/resourcemodule.py:F841
