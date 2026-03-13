@@ -192,7 +192,7 @@ class ProgramPrintables(ProgramModuleObj):
                 clsid = int(request.GET['clsid'])
                 cls   = ClassSubject.objects.get(parent_program = self.program,
                                           id             = clsid)
-            except:
+            except (ValueError, ClassSubject.DoesNotExist):
                 raise ESPError('Could not get the class object.')
 
             cls_dict = {}
@@ -1470,7 +1470,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         try:
             context['colors'] = request.GET['colors'].split(',')
-        except:
+        except KeyError:
             context['colors'] = ['Yellow', 'Blue', 'Pink', 'Green', 'Turquoise', 'Purple', 'Brown', 'Black']
 
         if extra:
