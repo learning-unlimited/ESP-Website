@@ -4,12 +4,12 @@
 
 {% block xtrajs %}
 {{block.super}}
-<script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js" integrity="sha384-xhQ9YmnetTk5ZOvzunKEBR9ZByNFffCgUsiu2Mr5twXT4QZvUu/L6zmip92F1XK7" crossorigin="anonymous"></script>
 <script src="/media/scripts/jodit_base64_upload.js"></script>
 {% endblock %}
 {% block stylesheets %}
 {{block.super}}
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.css" integrity="sha384-hAKZA9RH01+qXnQ2UyyYbAgDAz7jnfgWRMyUd2FqrxXHsDl6wbtvYCwzFYJtU3Fc" crossorigin="anonymous">
 <style type="text/css">
 .listtable, .listtable th, .listtable td{ border: 1px solid #999; border-collapse: collapse;}
 #divmaintext .unchosen { background-color: #CCC; }
@@ -128,7 +128,7 @@ var editor = new Jodit("#emailbody", {
   extraButtons: [
     {
       name: 'insertDate',
-      iconURL: '/media/default_images/template_tag.svg',
+      iconURL: '/media/images/template_tag.svg',
       mode: 3,
       list: {
         '{% templatetag openvariable %}user.name{% templatetag closevariable %}': 'User\'s Full Name',

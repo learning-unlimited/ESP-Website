@@ -1,4 +1,4 @@
-// Taken from jquery-migrate since toggle() was removed in jQuery 1.9
+﻿// Taken from jquery-migrate since toggle() was removed in jQuery 1.9
 $j.fn.clicktoggle = function( fn, fn2 ) {
 	// Save reference to arguments for access in closure
 	var args = arguments,
@@ -543,7 +543,7 @@ var createLabel=function(labeltext, required, help_text) {
         str+=':';
     if(required) str+='<span class="asterisk">'+'*'+'</span>';
     str+='</div>';
-    if(help_text) str+=' <img src="/media/default_images/question_mark.jpg" class="qmark" title="' + help_text + '">'
+    if(help_text) str+=' <img src="/media/images/question_mark.jpg" class="qmark" title="' + help_text + '">'
     str+='<br>';
     return str;
 };

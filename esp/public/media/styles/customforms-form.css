@@ -1,4 +1,4 @@
-/* Form view */
+﻿/* Form view */
 .help_text {
 	font-size: 14px;
 	font-style: italic;
@@ -68,7 +68,7 @@ label.error {
 	padding-bottom: 2px;
 	font-weight: bold;
 	color: #EA5200;
-	background: url(../default_images/unchecked.gif) no-repeat;
+	background: url(../images/unchecked.gif) no-repeat;
 	font-size: 12px; 
 }
 
