@@ -83,14 +83,14 @@ class TeacherClassRegModule(ProgramModuleObj):
         # We only want to surface the main entry point to register a class,
         # which is the 'makeaclass' or 'copyclasses' view.
         # Everything else (ajaxstudentattendance, editclass, etc.) should be hidden.
-        if view_name not in ["makeaclass", "copyaclass"]:
+        if view_name not in ["makeaclass", "copyclasses"]:
             return None
 
         base = program.getUrlBase()
 
         entries = {
             "makeaclass": ("Register Your Classes (Teacher Lookup)", "Other", ["teacher", "classes", "registration", "lookup", "add"]),
-            "copyaclass": ("Copy Your Classes", "Other", ["teacher", "classes", "registration", "copy"]),
+            "copyclasses": ("Copy Your Classes", "Other", ["teacher", "classes", "registration", "copy"]),
         }
 
         title, category, keywords = entries[view_name]
@@ -100,7 +100,6 @@ class TeacherClassRegModule(ProgramModuleObj):
             title=title,
             category=category,
             keywords=keywords,
-            disambiguation_label=title.split(" (")[1].strip(")") if "(" in title else None,
         )
 
     @property
