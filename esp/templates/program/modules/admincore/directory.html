@@ -5,321 +5,397 @@
 {% block xtrajs %}
 {{ block.super }}
 <script type="text/javascript">
-  <!--
-
-      function updateDocs(docs) {
-      document.getElementById('adminhelp').innerHTML = docs;
-      }
-      //-->
-</script>
-
-<script type="text/javascript">
-function initialize()
-{
-    $j("div.module_link_large").button();
-    if($j(".iscompleted").length > 0) {
-        $j("#completed_steps").on("click", function() {
-            $j(".iscompleted").toggle();
+    function initialize() {
+        // Timeline Zoom Slider
+        $j(".zoom-slider").on("input", function () {
+            var scale = $j(this).val() / 50;
+            $j(".horizontal-timeline").css({
+                "transform": "scale(" + scale + ")",
+                "transform-origin": "left center"
+            });
         });
-    } else {
-        $j("#completed_steps").hide()
-    }
-}
 
-$j(document).ready(initialize);
+        // Search Bar Filtering
+        $j(".dashboard-search-bar").prop("disabled", false).attr("placeholder", "Search modules...");
+        $j(".dashboard-search-bar").on("keyup", function () {
+            var query = $j(this).val().toLowerCase();
+            $j(".pill-btn, .large-pill-btn").each(function () {
+                var text = $j(this).text().toLowerCase();
+                if (text.indexOf(query) === -1) {
+                    $j(this).hide();
+                } else {
+                    $j(this).show();
+                }
+            });
+        });
+
+        // Timeline/Checklist Toggle
+        $j(".switch input").on("change", function () {
+            if ($j(this).is(":checked")) {
+                // Checklist Mode: Hide the horizontal timeline
+                $j(".horizontal-timeline-wrapper").slideUp();
+            } else {
+                // Timeline Mode: Show the horizontal timeline
+                $j(".horizontal-timeline-wrapper").slideDown();
+            }
+        });
+        $j(".switch input").trigger("change");
+
+
+        // Ranked By Toggle
+        $j(".ranked-by-menu").hide();
+        $j(".ranked-by-btn").on("click", function () {
+            $j(".ranked-by-menu").slideToggle();
+        });
+
+        // Filter Logic
+        $j("#filter-required-only").on("change", function () {
+            if ($j(this).is(":checked")) {
+                $j('.checklist-item[data-priority="optional"]').hide();
+            } else {
+                $j('.checklist-item[data-priority="optional"]').show();
+            }
+        });
+
+        // Capture original checklist ordering on page load
+        (function () {
+            var ul = $j(".task-checklist-actual");
+            ul.children('li.checklist-item').each(function (index) {
+                // Store the original index so we can restore it later
+                $j(this).attr('data-original-index', index);
+            });
+        })();
+
+        $j("#filter-sort-done").on("change", function () {
+            var ul = $j(".task-checklist-actual");
+            var listitems = ul.children('li.checklist-item').get();
+            if ($j(this).is(":checked")) {
+                listitems.sort(function (a, b) {
+                    var compA = $j(a).attr('data-status') === 'completed' ? 1 : 0;
+                    var compB = $j(b).attr('data-status') === 'completed' ? 1 : 0;
+                    return (compA < compB) ? -1 : (compA > compB) ? 1 : 0;
+                });
+                $j.each(listitems, function (idx, itm) { ul.append(itm); });
+            } else {
+                // Restore original ordering using the stored data-original-index
+                listitems.sort(function (a, b) {
+                    var idxA = parseInt($j(a).attr('data-original-index'), 10);
+                    var idxB = parseInt($j(b).attr('data-original-index'), 10);
+                    if (isNaN(idxA)) { idxA = 0; }
+                    if (isNaN(idxB)) { idxB = 0; }
+                    return idxA - idxB;
+                });
+                $j.each(listitems, function (idx, itm) {
+                    ul.append(itm);
+                });
+            }
+        });
+
+        // Smart Banner Logic
+        var requiredPending = $j('.checklist-item[data-priority="required"][data-status="pending"]').length;
+        var optionalPending = $j('.checklist-item[data-priority="optional"][data-status="pending"]').length;
+        var banner = $j("#smart-warning-banner");
+        var bannerTitle = $j("#banner-title");
+        var bannerMsg = $j("#banner-msg");
+
+        banner.removeClass("banner-green banner-orange banner-red");
+
+        if (requiredPending > 0) {
+            banner.addClass("banner-red");
+            bannerTitle.html('<i class="glyphicon glyphicon-remove-sign"></i> ACTION REQUIRED');
+            bannerMsg.text("You have " + requiredPending + " incomplete mandatory setup tasks. Your program cannot launch until these are resolved.");
+        } else if (optionalPending > 0) {
+            banner.addClass("banner-orange");
+            bannerTitle.html('<i class="glyphicon glyphicon-exclamation-sign"></i> ALMOST DONE');
+            bannerMsg.text("All mandatory tasks are complete! You have " + optionalPending + " optional tasks remaining.");
+        } else {
+            banner.addClass("banner-green");
+            bannerTitle.html('<i class="glyphicon glyphicon-ok-circle"></i> ALL SYSTEMS GO');
+            bannerMsg.text("Your program is fully configured and ready!");
+        }
+    }
+
+    $j(document).ready(initialize);
 </script>
 
 {% endblock %}
 
 {% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" href="/media/styles/management.css" type="text/css" />
-
-    <style type="text/css">
-    .nocheckmark { border: 1px solid black; }
-    </style>
+{{ block.super }}
+<link rel="stylesheet" href="/media/default_styles/management_v2.css" type="text/css" />
 {% endblock %}
 
 {% block content %}
 
 {% load render_qsd %}
 
-<h1>Admin Portal for {{ program.niceName }} (ID: {{ program.id }})</h1>
+<div class="dashboard-v2-container">
+    <!-- Left Sidebar -->
+    <div class="dashboard-sidebar-left">
+        <div class="gantt-widget">
+            <div class="gantt-icon">
+                <i class="glyphicon glyphicon-stats"></i>
+            </div>
+            <h4>Gantt Chart</h4>
+            <p class="text-muted">(Power Zoom)</p>
+            <div class="slider-container">
+                <input type="range" min="1" max="100" value="50" class="zoom-slider">
+            </div>
+            <div class="zoom-controls">
+                <span>-</span>
+                <span class="zoom-label">Zoom</span>
+                <span>+</span>
+            </div>
+        </div>
+    </div>
 
-{% inline_program_qsd_block program "manage:main_top" %}
-Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="https://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
-{% end_inline_program_qsd_block %}
+    <!-- Main Card -->
+    <div class="dashboard-main-card">
+        <!-- Smart Warning Banner -->
+        <div id="smart-warning-banner" class="warning-banner banner-green">
+            {% if messages %}
+            <ul class="messages"
+                style="list-style: none; padding: 0; margin-bottom: 10px; color: #d64545; font-weight: bold;">
+                {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</li>
+                    {% endfor %}
+            </ul>
+            {% endif %}
+            <h2 id="banner-title"><i class="glyphicon glyphicon-ok-circle"></i> ALL SYSTEMS GO</h2>
+            <div id="banner-msg" class="banner-msg">Your program is fully configured and ready!</div>
+        </div>
 
-<div class="row-fluid">
-    <div class="span10 offset1">
-        <table class="table table-condensed" align="center" width="400">
-            <tr class="well"><th width="85%">Steps to Set Up This Program</th><th>Done?</th></tr>
-            {% for module in modules %}
-            {% if module.isStep and not module.isCompleted %}
-            <tr>
-                <td>{{ module.makeSetupLink }}</td>
-                <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-            {% for step in extra_steps %}
-            {% if not step.3 %}
-            <tr>
-                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></td>
-                <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-            {% for step in extra_steps_optional %}
-            {% if not step.3 %}
-            <tr>
-                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a> (optional)</td>
-                <td><i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i></td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-            <tr class="well" id="completed_steps"><th colspan="2">Completed Steps (click to expand)</th></tr>
-            {% for module in modules %}
-            {% if module.isStep and module.isCompleted %}
-            <tr class="iscompleted" hidden>
-                <td>{{ module.makeSetupLink }}</td>
-                <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-            {% for step in extra_steps %}
-            {% if step.3 %}
-            <tr class="iscompleted" hidden>
-                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></td>
-                <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-            {% for step in extra_steps_optional %}
-            {% if step.3 %}
-            <tr class="iscompleted" hidden>
-                <td><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a> (optional)</td>
-                <td><i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i></td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-        </table>
+        <div class="horizontal-timeline-wrapper">
+            <div class="horizontal-timeline" id="setup_timeline">
 
+                {% for module in modules %}
+                {% if module.isStep and not module.isCompleted %}
+                <div class="timeline-step-icon step-not-done">
+                    <div class="step-icon-inner bg-light-blue"><i class="glyphicon glyphicon-folder-open"></i></div>
+                    <div class="step-label">{{ module.makeSetupLink }}</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                {% for step in extra_steps %}
+                {% if not step.3 %}
+                <div class="timeline-step-icon step-not-done">
+                    <div class="step-icon-inner bg-light-orange"><i class="glyphicon glyphicon-list-alt"></i></div>
+                    <div class="step-label"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></div>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                <!-- Completed Steps -->
+                {% for module in modules %}
+                {% if module.isStep and module.isCompleted %}
+                <div class="timeline-step-icon iscompleted">
+                    <div class="step-icon-inner bg-light-green"><i class="glyphicon glyphicon-ok"></i></div>
+                    <div class="step-label">{{ module.makeSetupLink }}</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+            </div>
+        </div>
+
+        <div class="search-bar-wrapper">
+            <input type="text" placeholder="" class="dashboard-search-bar" disabled>
+            <i class="glyphicon glyphicon-search search-icon"></i>
+        </div>
+
+        <div class="pill-grid">
+            {% if manage_resources %}<a href="/manage/{{ program.getUrlBase }}/resources"
+                class="pill-btn pill-blue">Resources <span class="pill-plus">+</span></a>{% endif %}
+            {% if manage_deadlines %}<a href="/manage/{{ program.getUrlBase }}/deadlines"
+                class="pill-btn pill-orange">Deadlines <span class="pill-plus">+</span></a>{% endif %}
+            {% if manage_teacher_events %}<a href="/manage/{{ program.getUrlBase }}/teacher_events"
+                class="pill-btn pill-gray">Teach Events <span class="pill-plus">+</span></a>{% endif %}
+
+            {% if manage_lunch_constraints %}<a href="/manage/{{ program.getUrlBase }}/lunch_constraints"
+                class="pill-btn pill-blue">Lunch Rules <span class="pill-plus">+</span></a>{% endif %}
+            {% if manage_registrationtype_management %}<a
+                href="/manage/{{ program.getUrlBase }}/registrationtype_management" class="pill-btn pill-gray">Reg Types
+                <span class="pill-plus">-</span></a>{% endif %}
+            {% if manage_surveys %}<a href="/manage/{{ program.getUrlBase }}/surveys"
+                class="pill-btn pill-orange">Surveys <span class="pill-plus">+</span></a>{% endif %}
+
+            {% if manage_settings %}<a href="/manage/{{ program.getUrlBase }}/settings"
+                class="pill-btn pill-gray">Settings <span class="pill-plus">+</span></a>{% endif %}
+            {% if manage_modules %}<a href="/manage/{{ program.getUrlBase }}/modules" class="pill-btn pill-blue">Modules
+                <span class="pill-plus">+</span></a>{% endif %}
+            {% if manage_tags %}<a href="/manage/{{ program.getUrlBase }}/tags" class="pill-btn pill-gray">Tags
+                <span class="pill-plus">+</span></a>{% endif %}
+            {% if manage_commpanel %}<a href="/manage/{{ program.getUrlBase }}/commpanel"
+                class="pill-btn pill-orange">Email <span class="pill-plus">+</span></a>{% endif %}
+
+            {% if manage_dashboard %}<a href="/manage/{{ program.getUrlBase }}/dashboard"
+                class="pill-btn pill-gray">Dashboard <span class="pill-plus">+</span></a>{% endif %}
+            {% if manage_get_materials %}<a href="/manage/{{ program.getUrlBase }}/get_materials"
+                class="pill-btn pill-blue">Documents <span class="pill-plus">+</span></a>{% endif %}
+            {% if manage_volunteering %}<a href="/manage/{{ program.getUrlBase }}/volunteering"
+                class="pill-btn pill-orange">Volunteers <span class="pill-plus">+</span></a>{% endif %}
+        </div>
+
+        <div class="bottom-action-buttons">
+            {% if manage_ajax_scheduling %}
+            <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" class="large-pill-btn pill-blue-dark">
+                <i class="glyphicon glyphicon-calendar"></i> Scheduling
+            </a>
+            {% endif %}
+            {% if manage_selectidoptions %}
+            <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="large-pill-btn pill-orange-dark">
+                <i class="glyphicon glyphicon-list-alt"></i> Name Tags
+            </a>
+            {% endif %}
+        </div>
+
+        <div style="margin-top: 40px; text-align: center;">
+            <a href="https://wiki.learningu.org/Main_Page" target="_blank" style="color: #999; font-size: 1.5em;"
+                title="Help & Documentation"><i class="glyphicon glyphicon-question-sign"></i></a>
+        </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="dashboard-sidebar-right">
+        <div class="toggle-switch-wrapper">
+            <span class="toggle-label">Timeline</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider round"></span>
+            </label>
+            <span class="toggle-label">Checklist</span>
+        </div>
+
+        <div class="task-checklist-widget">
+            <h4 style="margin-top: 0; font-weight: bold; font-size: 14px;">Task Checklist</h4>
+            <ul class="mock-checklist task-checklist-actual">
+                {% for module in modules %}
+                {% if module.isStep %}
+                <li class="checklist-item" data-priority="required"
+                    data-status="{% if module.isCompleted %}completed{% else %}pending{% endif %}">
+                    <input type="checkbox" {% if module.isCompleted %}checked{% endif %} disabled>
+                    <div class="mock-line-text">{{ module.makeSetupLink }}</div>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% for step in extra_steps %}
+                <li class="checklist-item" data-priority="required"
+                    data-status="{% if step.3 %}completed{% else %}pending{% endif %}">
+                    <input type="checkbox" {% if step.3 %}checked{% endif %} disabled>
+                    <div class="mock-line-text"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></div>
+                </li>
+                {% endfor %}
+
+                {% for step in extra_steps_optional %}
+                <li class="checklist-item" data-priority="optional"
+                    data-status="{% if step.3 %}completed{% else %}pending{% endif %}">
+                    <input type="checkbox" {% if step.3 %}checked{% endif %} disabled>
+                    <div class="mock-line-text"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a> <span
+                            class="text-muted">(optional)</span></div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="ranked-by-dropdown">
+            <div class="ranked-by-label">maybe on top?</div>
+            <div class="ranked-by-btn-group">
+                <button class="ranked-by-btn">ranked by... <i
+                        class="glyphicon glyphicon-chevron-down pull-right"></i></button>
+                <button class="filter-btn"><i class="glyphicon glyphicon-filter"></i></button>
+            </div>
+            <div class="ranked-by-menu">
+                <label><input type="checkbox" id="filter-required-only"> Required Only</label>
+                <label><input type="checkbox" id="filter-sort-done"> Sort Completed to Bottom</label>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="module_group" id="module_group_1">
-    <div class="module_group_header">
-        Configure Your Program
-    </div>
-    <div class="button_wrapper">
-        {% if manage_resources %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/resources"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Resources</div>
-                <div class="module_link_caption">timeslots, classrooms</div>
-            </button></a>
-        </div>
-        {% endif %}
-        {% if manage_deadlines %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/deadlines"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-time"></i> Deadlines</div>
-                <div class="module_link_caption">open/close registration</div>
-            </button></a>
-        </div>
-        {% endif %}
-        {% if manage_teacher_events %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/teacher_events"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-comment"></i> Teacher Training/Interviews</div>
-                <div class="module_link_caption">edit/monitor teacher events</div>
-            </button></a>
-        </div>
-        {% endif %}
-        {% if manage_lunch_constraints %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/lunch_constraints"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-cutlery"></i> Lunch Constraints</div>
-                <div class="module_link_caption">rules for your students' schedules</div>
-            </button></a>
-        </div>
-        {% endif %}
-        {% if manage_registrationtype_management %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/registrationtype_management"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-blackboard"></i> Student Reg. Types</div>
-                <div class="module_link_caption">what classes students see on their schedule</div>
-            </button></a>
-        </div>
-        {% endif %}
-        {% if manage_surveys %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/surveys"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Surveys</div>
-                <div class="module_link_caption">create/edit surveys; review results</div>
-            </button></a>
-        </div>
-        {% endif %}
-        {% if manage_settings %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/settings"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-wrench"></i> Program Settings</div>
-                <div class="module_link_caption">manage settings for the program/registration</div>
-            </button></a>
-        </div>
-        {% endif %}
-        {% if manage_modules %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/modules"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-list"></i> Manage Modules</div>
-                <div class="module_link_caption">sequence/requiredness of student/teacher modules</div>
-            </button></a>
-        </div>
-        {% endif %}
-        {% if manage_tags %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/tags"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-cog"></i> Tag Settings</div>
-                <div class="module_link_caption">miscellaneous settings, for experts only</div>
-            </button></a>
-        </div>
-        {% endif %}
-        </ul>
-    </div>
-</div>
-
-<div class="module_group" id="module_group_2">
-    <div class="module_group_header">
-        Coordinate with Participants
-    </div>
-    <div class="button_wrapper">
-        {% if manage_commpanel %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-envelope"></i> Email</div>
-                <div class="module_link_caption">communications panel</div>
-            </button></a>
-        </div>
-        {% endif %}
-
-        {% if manage_selectList %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/selectList"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Arbitrary User List</div>
-                <div class="module_link_caption">get a list of users</div>
-            </button></a>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<div class="module_group" id="module_group_3">
-    <div class="module_group_header">
-        Manage Logistics
-    </div>
-    <div class="button_wrapper">
-        {% if manage_dashboard %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-dashboard"></i> Dashboard</div>
-                <div class="module_link_caption">review classes and stats</div>
-            </button></a>
-        </div>
-        {% endif %}
-        {% if manage_ajax_scheduling %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-calendar"></i> Scheduling</div>
-                <div class="module_link_caption">assign rooms and times</div>
-            </button></a>
-        </div class="module_button">
-        {% endif %}
-        {% if manage_get_materials %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Documents</div>
-                <div class="module_link_caption">upload and view files</div>
-            </button></a>
-        </div class="module_button">
-        {% endif %}
-        {% if manage_volunteering %}
-        <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-bullhorn"></i> Volunteers</div>
-                <div class="module_link_caption">create shifts, view signups</div>
-            </button></a>
-        </div>
-        {% endif %}
-    </div>
-</div>
-<table width="100%">
-<tr>
-<td width="50%" style="vertical-align: top;">
-<div class="module_group" id="module_group_4">
-    <div class="module_group_header_half">
-        Quick Links
-    </div>
-    <div class="module_group_body">
-    <ul>
-        {% if learn_catalog %}<li><a href="/learn/{{ program.getUrlBase }}/catalog">Catalog</a></li>{% endif %}
-        {% if learn_studentreg %}<li><a href="/learn/{{ program.getUrlBase }}/studentreg">Student Reg</a></li>{% endif %}
-        {% if teach_teacherreg %}<li><a href="/teach/{{ program.getUrlBase }}/teacherreg">Teacher Reg</a></li>{% endif %}
-        {% if volunteer_signup %}<li><a href="/volunteer/{{ program.getUrlBase }}/signup">Volunteer Reg</a></li>{% endif %}
-        {% if onsite_main %}<li><a href="/onsite/{{ program.getUrlBase }}/main">Onsite</a></li>{% endif %}
-        {% if manage_refund %}<li><a href="/accounting/refund?program={{ program.id }}">Refunds</a></li>{% endif %}
-    </ul>
-    </div>
-</div>
-</td>
-<td width="50%" style="vertical-align: top;">
-<div class="module_group" id="module_group_5">
-    <div class="module_group_header_half">
-        Generate Printables
-    </div>
-    <div class="module_group_body">
-    <ul>
-        {% if manage_catalog %}<li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>{% endif %}
-        {% if manage_studentschedules %}<li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>
-        <li><a href="/manage/{{ program.getUrlBase }}/studentscheduleform">Student Schedule Formatter</a></li>{% endif %}
-        {% if manage_selectidoptions %}<li><a href="/manage/{{ program.getUrlBase }}/selectidoptions">Nametags</a></li>{% endif %}
-        {% if manage_printoptions %}<li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>{% endif %}
-    </ul>
-    </div>
-</div>
-</td>
-</tr>
-</table>
-
-<div class="module_group_header">Additional Modules</div>
+<div class="module_group_header" style="margin-top: 40px;">Additional Modules & Info</div>
 <div id="additional_modules" class="module_group_body">
-<table border="0" width="100%">
-<tr>
- <td width="50%">
-<ul>
-{% for module in modules_alph %}
-    {% if not module.isAdminPortalFeatured %}
-      {% if not module.useTemplate %}
-        <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
-      {% endif %}
-    {% endif %}
-{% endfor %}
-</ul>
-</td>
-<td style="vertical-align: top;">
-<div class="helpbox">
-<h4><span>Help</span></h4>
-<div id="adminhelp">
-Please select an option to the left to continue, or look down below to select further options.
-</div> <!-- div#adminhelp -->
-</div> <!-- div#helpbox -->
-</td>
-</tr>
-</table>
-</div> <!-- div#additional_modules -->
+    <table border="0" width="100%">
+        <tr>
+            <td width="33%" style="vertical-align: top;">
+                <h5>Quick Links</h5>
+                <ul>
+                    {% if learn_catalog %}
+                    <li><a href="/learn/{{ program.getUrlBase }}/catalog">Catalog</a></li>
+                    {% endif %}
 
-<td colspan="2">
-{% render_inline_program_qsd program "manage:main_bottom" %}
-</td>
+                    {% if learn_studentreg %}
+                    <li><a href="/learn/{{ program.getUrlBase }}/studentreg">Student Reg</a></li>
+                    {% endif %}
+
+                    {% if teach_teacherreg %}
+                    <li><a href="/teach/{{ program.getUrlBase }}/teacherreg">Teacher Reg</a></li>
+                    {% endif %}
+
+                    {% if volunteer_signup %}
+                    <li><a href="/volunteer/{{ program.getUrlBase }}/signup">Volunteer Reg</a></li>
+                    {% endif %}
+
+                    {% if onsite_main %}
+                    <li><a href="/onsite/{{ program.getUrlBase }}/main">Onsite</a></li>
+                    {% endif %}
+
+                    {% if manage_refund %}
+                    <li><a href="/accounting/refund?program={{ program.id }}">Refunds</a></li>
+                    {% endif %}
+                </ul>
+            </td>
+            <td width="33%" style="vertical-align: top;">
+                <h5>Printables</h5>
+                <ul>
+                    {% if manage_catalog %}
+                    <li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>
+                    {% endif %}
+
+                    {% if manage_studentschedules %}
+                    <li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>
+                    <li><a href="/manage/{{ program.getUrlBase }}/studentscheduleform">Student Schedule Formatter</a>
+                    </li>
+                    {% endif %}
+
+                    {% if manage_printoptions %}
+                    <li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>
+                    {% endif %}
+                </ul>
+            </td>
+            <td width="33%" style="vertical-align: top;">
+                <h5>Other</h5>
+                <ul>
+                    {% for module in modules_alph %}
+                    {% if not module.isAdminPortalFeatured %}
+                    {% if not module.useTemplate %}
+                    <li>
+                        {% autoescape off %}
+                        {{ module.makeLink }}
+                        {% endautoescape %}
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if manage_admin_morph %}
+                    <li><a href="/manage/{{ program.getUrlBase }}/admin_morph">Morph into
+                            User</a></li>
+                    {% endif %}
+
+                    {% if manage_selectList %}
+                    <li><a href="/manage/{{ program.getUrlBase }}/selectList">Arbitrary User
+                            List</a></li>
+                    {% endif %}
+                </ul>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div style="width: 100%; margin-top: 20px;">
+    {% render_inline_program_qsd program "manage:main_bottom" %}
+</div>
 
 {% endblock %}
