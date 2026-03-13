@@ -67,9 +67,8 @@ class ProgramCreationForm(BetterModelForm):
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     grade_min = forms.IntegerField(label="grade_min" , min_value=0)
     grade_max = forms.IntegerField(label="grade_max" , min_value=0)
-    # program_size_max = forms.IntegerField(label = 'Program Max Size', min_value = 0, help_text='Set to 0 for no cap.')
     base_cost         = forms.IntegerField(label = 'Cost of Program Admission $', min_value = 0 )
-    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None,
+    sibling_discount  = forms.DecimalField(min_value = 0, max_digits=9, decimal_places=2, required=False, initial=None,
                                            help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
     program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
     program_module_questions   = forms.MultipleChoiceField(choices=[],
@@ -157,7 +156,7 @@ class ProgramCreationForm(BetterModelForm):
 
             # Only run validation if both fields are filled out
             if g_min is not None and g_max is not None:
-                if g_min >= g_max:
+                if g_min > g_max:
                     # Using the syntax you requested to attach the error to a specific field
                     self.add_error('grade_max', "The maximum grade must be strictly greater than the minimum grade.")
 

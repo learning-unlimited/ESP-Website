@@ -96,6 +96,8 @@ ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attr
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """
+    progress_mode = forms.IntegerField(min_value=0)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -111,6 +113,11 @@ class TeacherRegSettingsForm(BetterModelForm):
 
 class StudentRegSettingsForm(BetterModelForm):
     """ Form for changing student class registration settings. """
+    class_cap_multiplier = forms.DecimalField(min_value=0, max_digits=3, decimal_places=2)
+    class_cap_offset = forms.IntegerField(min_value=0)
+    priority_limit = forms.IntegerField(min_value=0)
+    progress_mode = forms.IntegerField(min_value=0)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
