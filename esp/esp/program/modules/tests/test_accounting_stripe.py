@@ -54,7 +54,8 @@ class StripeTotalsTest(TestCase):
                     'id': 'ch_1',
                     'amount': 5000,
                     'amount_refunded': 1000,
-                    'created': 1673740800 # 2023-01-15
+                    'created': 1673740800, # 2023-01-15
+                    'description': 'Student payment for Test Program'
                 }
             ],
             'has_more': False
