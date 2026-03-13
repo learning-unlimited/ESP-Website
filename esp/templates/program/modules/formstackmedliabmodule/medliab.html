@@ -1,9 +1,9 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}Medical and Emergency Contact Information for {{program.niceName}}{% endblock %}
 {% block content_title %}{{program.niceName}} Student Registration{% endblock %}
 
-{% block content %}
+{% block module_content %}
 <h1>Medical and Emergency Contact Information for {{ program.niceName }}</h1>
 
 <div class="Administrator hidden"><strong>Admins: to let a student (or yourself) skip the medical form, click <a href="/manage/{{program.url}}/medicalbypass">here</a>.</strong></div>
@@ -12,6 +12,11 @@
 {% render_inline_program_qsd program "learn:medliab" %}
 
 {% with user.getLastProfile as profile %}
+{% if completed %}
+<div class="alert alert-info">
+    <strong>Note:</strong> You have already completed this medical form. However, you may fill it out again if you need to update your information.
+</div>
+{% endif %}
 
 <form method="post" action="https://www.formstack.com/forms/index.php">
     <input type="hidden" name="form" value="{{formstack_id}}" />

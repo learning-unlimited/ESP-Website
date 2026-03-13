@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-import six
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -218,7 +214,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
         q_phasezero = Q(phasezerorecord__program=self.program)
         entrants = ESPUser.objects.filter(q_phasezero).distinct()
-        context['grade_caps'] = sorted(six.iteritems(prog.grade_caps()))
+        context['grade_caps'] = sorted(prog.grade_caps().items())
 
         recs = PhaseZeroRecord.objects.filter(program=prog).order_by('time')
         timess = [("number of lottery students", [(rec.user.count(), rec.time) for rec in recs], True)]
@@ -278,7 +274,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
     setup_title = "Set up the 'program size by grade' tag for the student lottery"
     setup_path = "tags/learn"
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         return Tag.getProgramTag("program_size_by_grade", self.program) is not None
 
     class Meta:

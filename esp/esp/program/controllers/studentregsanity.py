@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
-import six
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -70,7 +67,7 @@ class StudentRegSanityController(object):
             if csvwriter is None:
                 closeatend = True
                 if directory is None: directory = self.options['directory']
-                filefullname = directory +'/santitize_walkins_log.csv'
+                filefullname = directory +'/sanitize_walkins_log.csv'
                 csvfile = open(filefullname, 'ab+')
                 csvwriter = csv.writer(csvfile)
             csvwriter.writerow(['Sanitizing Walkins'])
@@ -100,7 +97,7 @@ class StudentRegSanityController(object):
             if csvwriter is None:
                 closeatend = True
                 if directory is None: directory = self.options['directory']
-                filefullname = directory +'/santitize_lunch_log.csv'
+                filefullname = directory +'/sanitize_lunch_log.csv'
                 csvfile = open(filefullname, 'ab+')
                 csvwriter = csv.writer(csvfile)
             csvwriter.writerow(['Sanitizing Lunch Blocks'])
@@ -145,12 +142,12 @@ class StudentRegSanityController(object):
             print('-------------Known Bugs-----------------')
             print("Guys, I'm not course 6 for a reason~shulinye")
             return None
-        if isinstance(checks, six.string_types):
+        if isinstance(checks, str):
             checks = [checks]
         if csvlog:
             import csv
             if directory is None: directory = self.options['directory']
-            filefullname = directory + '/'+ datetime.now().strftime("%Y-%m-%d_") + 'santitize_log.csv'
+            filefullname = directory + '/'+ datetime.now().strftime("%Y-%m-%d_") + 'sanitize_log.csv'
             csvfile = open(filefullname, 'ab+')
             csvwriter = csv.writer(csvfile)
         self.reports = {}

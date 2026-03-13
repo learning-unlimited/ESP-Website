@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -375,7 +374,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         """
         try:
             lock_level = int(request.POST.get('lock_level', '0'))
-        except:
+        except (ValueError, TypeError):
             lock_level = 0
 
         if request.method == 'POST':

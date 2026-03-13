@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -102,7 +101,7 @@ class UserGroupModule(ProgramModuleObj):
         users = filterobj.getList(ESPUser)
         try:
             users = users.distinct()
-        except:
+        except (TypeError, AttributeError):
             pass
 
         if not users:

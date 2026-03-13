@@ -1,8 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
-import six
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,7 +42,6 @@ from django.db.models.query import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-
 
 from esp.users.models    import ESPUser, Record
 from esp.program.models import RegistrationProfile
@@ -232,7 +227,7 @@ class OnSiteClassList(ProgramModuleObj):
         result = {'user': None, 'user_grade': 0, 'sections': [], 'messages': []}
         try:
             result['user'] = int(request.GET['user'])
-        except:
+        except (ValueError, TypeError, KeyError):
             result['messages'].append('Error: no user specified.')
         if result['user']:
             result['user_grade'] = ESPUser.objects.get(id=result['user']).getGrade(program=prog)
@@ -247,12 +242,12 @@ class OnSiteClassList(ProgramModuleObj):
         result = {'user': None, 'sections': [], 'messages': []}
         try:
             user = ESPUser.objects.get(id=int(request.GET['user']))
-        except:
+        except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
             user = None
             result['messages'].append('Error: could not find user %s' % request.GET.get('user', None))
         try:
             desired_sections = json.loads(request.GET['sections'])
-        except:
+        except (ValueError, KeyError):
             result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
             desired_sections = None
 
@@ -316,7 +311,6 @@ class OnSiteClassList(ProgramModuleObj):
         json.dump(result, resp)
         return resp
 
-
     """ End of highly model-dependent JSON views    """
 
     @aux_call
@@ -329,7 +323,7 @@ class OnSiteClassList(ProgramModuleObj):
         try:
             user = int(request.GET.get('user', None))
             user_obj = ESPUser.objects.get(id=user)
-        except:
+        except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
 
         printer = request.GET.get('printer', None)
@@ -465,20 +459,18 @@ class OnSiteClassList(ProgramModuleObj):
 
     def makeLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
-        strings = [six.u('<a href="%s" title="%s" class="vModuleLink" >%s</a>') % \
+        strings = ['<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1], call[1]) for call in calls]
         return "</li><li>".join(strings)
 
     def makeButtonLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
-        strings = [six.u("""<div class="module_button">\
+        strings = ["""<div class="module_button">\
                                 <a href="%s"><button type="button" class="module_link_large">
                                     <div class="module_link_main">%s</div>
                                 </button></a>
-                            </div>""") % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
+                            </div>""" % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
         return "".join(strings)
-
-
 
     class Meta:
         proxy = True

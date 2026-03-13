@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -62,5 +61,5 @@ def diff_templateoverride(request, template_id):
     context['version'] = override_obj.version
     context['diff'] = HtmlDiff().make_table(
             original_lines, override_lines,
-            'original', 'override (version {})'.format(template_id))
+            'original', f'override (version {template_id})')
     return render_to_response('utils/diff_templateoverride.html', request, context)
