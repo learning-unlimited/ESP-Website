@@ -7,12 +7,9 @@ an AS_Schedule, then we expect these two different ways to always agree with
 each other. Conversely, it is expected to be impossible for a schedule to fail
 a consistency check unless there are bugs in the code.
 """
-from __future__ import absolute_import
 import logging
 
 from esp.program.controllers.autoscheduler import util
-import six
-from six.moves import zip
 
 logger = logging.getLogger(__name__)
 
@@ -39,25 +36,25 @@ class ConsistencyChecker:
     def check_availability_dict_consistency(self, schedule):
         """Ensure that room and teacher availability dicts agree with their
         availability lists and that keys agree with values"""
-        for room in six.itervalues(schedule.classrooms):
-            for time, roomslot in six.iteritems(room.availability_dict):
+        for room in schedule.classrooms.values():
+            for time, roomslot in room.availability_dict.items():
                 if time != (roomslot.timeslot.start, roomslot.timeslot.end):
                     raise ConsistencyError(
                         ("Room availability dict key/value mismatch for "
                          "room {}").format(room.name))
             if set(room.availability) != set(
-                    six.itervalues(room.availability_dict)):
+                    room.availability_dict.values()):
                 raise ConsistencyError(
                     "Room {} availability list and dict don't match"
                     .format(room.name))
-        for teacher in six.itervalues(schedule.teachers):
-            for time, timeslot in six.iteritems(teacher.availability_dict):
+        for teacher in schedule.teachers.values():
+            for time, timeslot in teacher.availability_dict.items():
                 if time != (timeslot.start, timeslot.end):
                     raise ConsistencyError(
                         ("Teacher availability dict key/value mismatch for "
                          "teacher {}").format(teacher.id))
             if set(t.id for t in teacher.availability) != set(
-                    t.id for t in six.itervalues(teacher.availability_dict)):
+                    t.id for t in teacher.availability_dict.values()):
                 raise ConsistencyError(
                     "Teacher {} availability list and dict don't match"
                     .format(teacher.id))
@@ -95,14 +92,14 @@ class ConsistencyChecker:
     def check_resource_dict_consistency(self, schedule):
         """Ensure that sections' resource request dicts and rooms' furnishings
         dicts have key/value consistency."""
-        for section in six.itervalues(schedule.class_sections):
-            for restype_name, request in six.iteritems(section.resource_requests):
+        for section in schedule.class_sections.values():
+            for restype_name, request in section.resource_requests.items():
                 if request.name != restype_name:
                     raise ConsistencyError(
                         "Section {} had request {} listed under name {}"
                         .format(section.id, request.name, restype_name))
-        for room in six.itervalues(schedule.classrooms):
-            for restype_name, furnishing in six.iteritems(room.furnishings):
+        for room in schedule.classrooms.values():
+            for restype_name, furnishing in room.furnishings.items():
                 if furnishing.name != restype_name:
                     raise ConsistencyError(
                         "Room {} had furnishing {} listed under name {}"
@@ -114,13 +111,13 @@ class ConsistencyChecker:
         # Find all the roomslots we can find, and make sure they're consistent
         # with their sources.
         existing_roomslots = set()
-        for room in six.itervalues(schedule.classrooms):
+        for room in schedule.classrooms.values():
             for roomslot in room.availability:
                 if roomslot.room != room:
                     raise ConsistencyError(
                             "Room and roomslot were inconsistent")
             existing_roomslots.update(room.availability)
-        for section in six.itervalues(schedule.class_sections):
+        for section in schedule.class_sections.values():
             for roomslot in section.assigned_roomslots:
                 if roomslot.assigned_section != section:
                     raise ConsistencyError(
@@ -163,7 +160,7 @@ class ConsistencyChecker:
     def check_roomslot_next_and_index_consistency(self, schedule):
         """Checks that all roomslots' next and index values are set
         correctly."""
-        for room in six.itervalues(schedule.classrooms):
+        for room in schedule.classrooms.values():
             for i, roomslot in enumerate(room.availability):
                 if i != roomslot.index():
                     raise ConsistencyError((
@@ -189,17 +186,17 @@ class ConsistencyChecker:
     def check_schedule_dicts_consistency(self, schedule):
         """Check the schedule's sections, teachers, and classroom dicts for
         key/value consistency."""
-        for section_id, section in six.iteritems(schedule.class_sections):
+        for section_id, section in schedule.class_sections.items():
             if section.id != section_id:
                 raise ConsistencyError(
                     "Section {} was listed under id {}".format(
                         section.id, section_id))
-        for teacher_id, teacher in six.iteritems(schedule.teachers):
+        for teacher_id, teacher in schedule.teachers.items():
             if teacher.id != teacher_id:
                 raise ConsistencyError(
                     "Teacher {} was listed under id {}".format(
                         teacher.id, teacher_id))
-        for room_name, room in six.iteritems(schedule.classrooms):
+        for room_name, room in schedule.classrooms.items():
             if room.name != room_name:
                 raise ConsistencyError(
                     "Room {} was listed under name {}".format(
@@ -208,15 +205,15 @@ class ConsistencyChecker:
     def check_sorting_consistency(self, schedule):
         """Checks whether section assigned roomslots, classroom availability,
         and teacher availability are sorted."""
-        for section in six.itervalues(schedule.class_sections):
+        for section in schedule.class_sections.values():
             if not self.roomslot_sorting_helper(section.assigned_roomslots):
                 raise ConsistencyError(
                     "Section assigned roomslots weren't sorted.")
-        for classroom in six.itervalues(schedule.classrooms):
+        for classroom in schedule.classrooms.values():
             if not self.roomslot_sorting_helper(classroom.availability):
                 raise ConsistencyError(
                     "Classroom availability wasn't sorted.")
-        for teacher in six.itervalues(schedule.teachers):
+        for teacher in schedule.teachers.values():
             if not all(t1 < t2 for t1, t2 in
                        zip(teacher.availability, teacher.availability[1:])):
                 raise ConsistencyError(
@@ -225,8 +222,8 @@ class ConsistencyChecker:
     def check_teacher_taught_sections_consistency(self, schedule):
         """Make sure that the taught_sections dict has keys matching values,
         and that all sections are listed by their teachers, and vice versa."""
-        for teacher in six.itervalues(schedule.teachers):
-            for section_id, section in six.iteritems(teacher.taught_sections):
+        for teacher in schedule.teachers.values():
+            for section_id, section in teacher.taught_sections.items():
                 if section_id != section.id:
                     raise ConsistencyError(
                         "Teacher {} taught_sections had key/value mismatch"
@@ -235,7 +232,7 @@ class ConsistencyChecker:
                     raise ConsistencyError(
                         ("Teacher {} taught_sections listed a section the "
                          "teacher wasn't teaching").format(teacher.id))
-        for section in six.itervalues(schedule.class_sections):
+        for section in schedule.class_sections.values():
             for teacher in section.teachers:
                 if section.id not in teacher.taught_sections:
                     raise ConsistencyError(

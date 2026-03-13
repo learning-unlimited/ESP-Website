@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
 from django import forms
 from django.utils.safestring import mark_safe
 from django.db.models import IntegerField, Case, When, Count
@@ -12,8 +10,6 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program
 from esp.utils.widgets import DateTimeWidget, DateWidget
 from esp.tagdict.models import Tag
-import six
-from six.moves import range
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -23,6 +19,7 @@ class TimeslotForm(forms.Form):
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     openclass = forms.BooleanField(required=False, label='Open Class Timeslot', help_text="Check this if the timeslot should be used for open classes only. If in doubt, don't check this.")
+    compulsory = forms.BooleanField(required=False, label='Compulsory Timeslot', help_text="Check this if the timeslot should be compulsory for all students.")
     group = forms.IntegerField(required=False, label='Group')
 
     def __init__(self, *args, **kwargs):
@@ -30,7 +27,7 @@ class TimeslotForm(forms.Form):
             program = kwargs.pop('program')
         else:
             raise KeyError('Need to supply program as named argument to TimeslotForm')
-        super(TimeslotForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields['group'].help_text=mark_safe("""All timeslots with this value will always be included in the same timeslot group.
                                                     Note that the assigned value is solely for grouping purposes; the blocks displayed on
                                                     availability forms will be numbered consecutively based on the first timeslot in the block.
@@ -46,6 +43,14 @@ class TimeslotForm(forms.Form):
         self.fields['hours'].initial = int(length // 3600)
         self.fields['minutes'].initial = int(length // 60 - 60 * self.fields['hours'].initial)
         self.fields['group'].initial = slot.group
+        self.fields['openclass'].initial = (slot.event_type == EventType.get_from_desc("Open Class Time Block"))
+        self.fields['compulsory'].initial = (slot.event_type == EventType.get_from_desc("Compulsory"))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('openclass') and cleaned_data.get('compulsory'):
+           raise forms.ValidationError("A timeslot cannot be both 'Open Class' and 'Compulsory' at the same time.")
+        return cleaned_data
 
     def save_timeslot(self, program, slot):
         slot.short_description = self.cleaned_data['name']
@@ -54,12 +59,13 @@ class TimeslotForm(forms.Form):
         slot.end = slot.start + timedelta(hours=self.cleaned_data['hours'], minutes=self.cleaned_data['minutes'])
         if self.cleaned_data['openclass']:
             slot.event_type = EventType.get_from_desc("Open Class Time Block")
+        elif self.cleaned_data['compulsory']:
+            slot.event_type = EventType.get_from_desc("Compulsory")
         else:
             slot.event_type = EventType.get_from_desc("Class Time Block")    # default event type for now
         slot.group = self.cleaned_data['group']
         slot.program = program
         slot.save()
-
 
 class ResourceTypeForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -71,7 +77,7 @@ class ResourceTypeForm(forms.Form):
     hidden = forms.BooleanField(label='Hidden?', required=False, help_text='Should this resource type be hidden during teacher registration?')
 
     def __init__(self, *args, **kwargs):
-        super(ResourceTypeForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if not Tag.getBooleanTag('allow_global_restypes'):
             self.fields['is_global'].widget = forms.HiddenInput()
 
@@ -115,14 +121,12 @@ class ResourceTypeForm(forms.Form):
 class ResourceChoiceForm(forms.Form):
     choice = forms.CharField(required=False, max_length=50, widget=forms.TextInput)
 
-
 def setup_furnishings(restype_list):
     #   Populate the available choices for furnishings based on a particular program.
     return ((str(r.id), r.name + (" (Hidden)" if r.hidden else "")) for r in restype_list)
 
 def setup_timeslots(program):
     return ((str(e.id), e.short_description) for e in program.getTimeSlots())
-
 
 class EquipmentForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -134,11 +138,11 @@ class EquipmentForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         if isinstance(args[0], Program):
-            self.base_fields['resource_type'].choices = tuple([(six.u(''), '(type)')] + list(setup_furnishings(args[0].getResourceTypes())))
+            self.base_fields['resource_type'].choices = tuple([('', '(type)')] + list(setup_furnishings(args[0].getResourceTypes())))
             self.base_fields['times_available'].choices = setup_timeslots(args[0])
-            super(EquipmentForm, self).__init__(*args[1:], **kwargs)
+            super().__init__(*args[1:], **kwargs)
         else:
-            super(EquipmentForm, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
     def load_equipment(self, program, resource):
         self.fields['id'].initial = resource.id
@@ -177,11 +181,9 @@ class ClassroomForm(forms.Form):
 
         if isinstance(args[0], Program):
             self.base_fields['times_available'].choices = setup_timeslots(args[0])
-            super(ClassroomForm, self).__init__(*args[1:], **kwargs)
+            super().__init__(*args[1:], **kwargs)
         else:
-            super(ClassroomForm, self).__init__(*args, **kwargs)
-
-
+            super().__init__(*args, **kwargs)
 
     #   The next two functions are interesting because there is not a simple one to one
     #   relationship between the form and the classroom (Resource).  Instead, the form
@@ -288,8 +290,8 @@ def FurnishingFormForProgram(prog):
         choice = forms.CharField(required=False, max_length=200, widget=forms.TextInput(attrs={'placeholder': '(option)', 'style': 'margin-left: 8px'}))
         def __init__(self, *args, **kwargs):
             furnishings = setup_furnishings(prog.getResourceTypes())
-            self.base_fields['furnishing'].choices = tuple([(six.u(''), '(furnishing)')] + list(furnishings))
-            super(FurnishingForm, self).__init__(*args, **kwargs)
+            self.base_fields['furnishing'].choices = tuple([('', '(furnishing)')] + list(furnishings))
+            super().__init__(*args, **kwargs)
     return FurnishingForm
 
 class ClassroomImportForm(forms.Form):
@@ -299,7 +301,7 @@ class ClassroomImportForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         cur_prog = kwargs.pop('cur_prog', None)
-        super(ClassroomImportForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         progs = Resource.objects.filter(res_type=ResourceType.get_or_create('Classroom')).values_list('event__program', flat = True).distinct()
         qs = Program.objects.filter(id__in=progs)
         if cur_prog is not None:
@@ -312,7 +314,7 @@ class TimeslotImportForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         cur_prog = kwargs.pop('cur_prog', None)
-        super(TimeslotImportForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         qs = Program.objects.annotate(vr_count = Count(
             Case(When(event__event_type__description='Class Time Block', then=1), default=None, output_field=IntegerField()
             ))).filter(vr_count__gt=0)
@@ -325,7 +327,7 @@ class ResTypeImportForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         cur_prog = kwargs.pop('cur_prog', None)
-        super(ResTypeImportForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         qs = Program.objects.annotate(rt_count = Count('resourcetype')).filter(rt_count__gt=0)
         if cur_prog is not None:
             qs = qs.exclude(id=cur_prog.id)
@@ -337,7 +339,7 @@ class EquipmentImportForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         cur_prog = kwargs.pop('cur_prog', None)
-        super(EquipmentImportForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         progs = Resource.objects.filter(is_unique=True).exclude(res_type=ResourceType.get_or_create('Classroom')).values_list('event__program', flat = True).distinct()
         qs = Program.objects.filter(id__in=progs)
         if cur_prog is not None:
