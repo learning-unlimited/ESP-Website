@@ -93,7 +93,7 @@ class EventTest(TestCase):
     def test_short_time(self):
         result = self.event.short_time()
         self.assertIn('9', result)
-        self.assertIn('AM', result)
+        self.assertIn('am', result)
 
     def test_pretty_time(self):
         result = self.event.pretty_time()

@@ -103,12 +103,9 @@ class Event(models.Model):
         return f'{hours} hr {minutes} min'
 
     def __str__(self):
-        start_local = timezone.localtime(self.start)
-        return start_local.strftime('%a %b %d: ') + self.short_time()
+        return self.short_time()
 
     def short_time(self):
-        day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
         start_local = timezone.localtime(self.start)
         end_local = timezone.localtime(self.end)
 
@@ -120,9 +117,15 @@ class Event(models.Model):
         if end_local.minute != 0:
             end_minutes = f':{end_local.minute:02d}'
         if (start_local.hour < 12) != (end_local.hour < 12):
-            start_ampm = start_local.strftime(' %p')
+            start_ampm = start_local.strftime(' %p').lower()
 
-        return f'{(start_local.hour % 12) or 12}{start_minutes}{start_ampm} to {(end_local.hour % 12) or 12}{end_minutes} {end_local.strftime("%p")}'
+        date_str = start_local.strftime('%a %b %d')
+        end_ampm = end_local.strftime('%p').lower()
+        if start_local.date() != end_local.date():
+            end_date_str = end_local.strftime('%a %b %d ')
+            return f'{date_str} {(start_local.hour % 12) or 12}{start_minutes}{start_ampm} - {end_date_str}{(end_local.hour % 12) or 12}{end_minutes} {end_ampm}'
+
+        return f'{date_str} {(start_local.hour % 12) or 12}{start_minutes}{start_ampm}-{(end_local.hour % 12) or 12}{end_minutes} {end_ampm}'
 
     @staticmethod
     def total_length(event_list):
