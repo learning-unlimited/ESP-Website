@@ -3,51 +3,67 @@
 {% block fulltitle %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }} - {% block title %}Home{% endblock title %}{% endblock fulltitle %}
 
 {% block stylesheets %}
-  {{ block.super }}
-  {#  Default stylesheets, no customization   #}
-  <link rel="stylesheet" type="text/css" href="/media/theme_editor/bootstrap_initial.css"/>
-  <style>
-    .skip-nav {
-      position: absolute;
-      top: -40px;
-      left: 0;
-      background: #000;
-      color: #fff;
-      padding: 8px;
-      text-decoration: none;
-      z-index: 100;
-    }
-    .skip-nav:focus {
-      top: 0;
-    }
-  </style>
+{{ block.super }}
+{# Default stylesheets, no customization #}
+<link rel="stylesheet" type="text/css" href="/media/theme_editor/bootstrap_initial.css" />
+<style>
+  .skip-nav {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #000;
+    color: #fff;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 100;
+  }
+  .skip-nav:focus {
+    top: 0;
+  }
+</style>
 {% endblock stylesheets %}
 
 {% block body %}
 
-  <a href="#main-content" class="skip-nav">Skip to main content</a>
+<a href="#main-content" class="skip-nav">Skip to main content</a>
 
-  {% block main %}
+{% block main %}
 
-    <div class="container">
-      <div class="row-fluid">
-        <aside aria-label="Sidebar">
-          {% block sidebar %}
-            <nav aria-label="Main navigation">
-              <h3>Navigation</h3>
-              {% load navbar %}
-              {% navbar_gen request.path None navbar_list %}
-            </nav>
-            {% include "users/loginbox_content.html" %}
-          {% endblock sidebar %}
-        </aside>
+<div class="container">
+  {% if request.COOKIES.esp_testing_role %}
+  <div
+    style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+    <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
+    You are logged in as a test account.
+    <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to
+      Admin</a>
+  </div>
+  {% endif %}
+  <div class="row-fluid">
+    <aside aria-label="Sidebar">
+      {% block sidebar %}
+      <nav aria-label="Main navigation">
+        <h3>Navigation</h3>
+        {% load navbar %}
+        {% navbar_gen request.path None navbar_list %}
+      </nav>
+      {% include "users/loginbox_content.html" %}
+      {% endblock sidebar %}
+    </aside>
 
-        <main id="main-content" class="span12 resizable">
-          {% block content %}
-          {% endblock content %}
-        </main>
+    <main id="main-content" class="span12 resizable">
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">
+        {{ message }}
       </div>
-    </div>
-  {% endblock main %}
+      {% endfor %}
+      {% endif %}
+      {% block content %}
+      {% endblock content %}
+    </main>
+  </div>
+</div>
+{% endblock main %}
 
 {% endblock body %}

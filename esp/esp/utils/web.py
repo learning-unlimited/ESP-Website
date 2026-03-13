@@ -45,7 +45,6 @@ from esp.themes.controllers import ThemeController
 from esp.program.models import Program
 from esp.web.views.navBar import makeNavBar
 from esp.tagdict.models import Tag
-from django.conf import settings
 import django.shortcuts
 
 def get_from_id(id, module, strtype = 'object', error = True):
@@ -55,9 +54,9 @@ def get_from_id(id, module, strtype = 'object', error = True):
     try:
         newid    = int(id)
         foundobj = module.objects.get(id = newid)
-    except:
+    except (ValueError, TypeError, module.DoesNotExist):
         if error:
-            raise ESPError('Could not find the %s with id %s.' % (strtype, id), log=False)
+            raise ESPError(f'Could not find the {strtype} with id {id}.', log=False)
         return None
     return foundobj
 
@@ -109,6 +108,12 @@ def error500(request, template_name='500.html'):
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
     context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER
     context['request'] = request
+    from datetime import datetime
+    context['error_type'] = '500'
+    context['error_title'] = 'Server Error'
+    context['error_description'] = 'An unexpected server error occurred. Please try again in a moment.'
+    context['error_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    context['error_url'] = request.build_absolute_uri()
     t = loader.get_template(template_name) # You need to create a 500.html template.
 
     # If possible, we want to render this page with our custom
@@ -161,5 +166,5 @@ def zip_download(files = [], zipname = 'files'):
             zf.write(file, os.path.basename(os.path.normpath(file)))
     zf.close()
     response = HttpResponse(file_like.getvalue(), content_type='application/zip')
-    response['Content-Disposition']='attachment; filename=%s.zip' % zipname
+    response['Content-Disposition']=f'attachment; filename={zipname}.zip'
     return response

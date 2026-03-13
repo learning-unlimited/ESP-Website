@@ -193,7 +193,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             if hasattr(module, 'onConfirm'):
                 module.onConfirm(request)
-            if not module.isCompleted() and module.isRequired():
+            if not module.isCompleted(request.user) and module.isRequired():
                 completedAll = False
             context = module.prepare(context)
 
@@ -266,7 +266,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context["request"] = request
             context["program"] = prog
             return HttpResponse( Template(receipt_text).render( Context(context) ) )
-        except:
+        except Exception:
             return self.goToCore(tl)
 
     @cache_function
@@ -302,7 +302,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             # If completed all required modules so far...
             if context['completedAll']:
-                if not module.isCompleted() and module.isRequired():
+                if not module.isCompleted(request.user) and module.isRequired():
                     context['completedAll'] = False
 
             context = module.prepare(context)

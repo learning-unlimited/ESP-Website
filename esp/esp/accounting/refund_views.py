@@ -44,7 +44,7 @@ from django.contrib.sites.models import Site
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from esp.accounting.controllers import ProgramAccountingController
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.forms import RefundSearchForm
 from esp.accounting.models import Transfer
 from esp.dbmail.models import send_mail
@@ -128,12 +128,10 @@ def _send_refund_notification_email(program, refund_results, is_error=False):
     domain_name = Site.objects.get_current().domain
 
     if is_error:
-        subject = '[ ESP Refund ERROR ] Stripe refund error on %s for %s' % (
-            domain_name, program.niceName())
+        subject = f'[ ESP Refund ERROR ] Stripe refund error on {domain_name} for {program.niceName()}'
         template = 'accounting/refund_error_email.txt'
     else:
-        subject = '[ ESP Refund ] Stripe refunds issued on %s for %s' % (
-            domain_name, program.niceName())
+        subject = f'[ ESP Refund ] Stripe refunds issued on {domain_name} for {program.niceName()}'
         template = 'accounting/refund_success_email.txt'
 
     context = {
@@ -297,16 +295,20 @@ def process_refund(request):
             )
             result['success'] = True
             result['stripe_refund_id'] = stripe_refund.id
+
+            iac = IndividualAccountingController(program, transfer.user)
+            iac.record_refund(req['amount'], transaction_id=stripe_refund.id)
+
         except stripe.error.InvalidRequestError as e:
             result['error_message'] = str(e)
             has_errors = True
-            logger.error("Stripe refund InvalidRequestError for charge %s: %s",
-                         transfer.transaction_id, str(e))
+            logger.warning("Stripe refund InvalidRequestError for charge %s: %s",
+                           transfer.transaction_id, str(e))
         except stripe.error.StripeError as e:
             result['error_message'] = str(e)
             has_errors = True
-            logger.error("Stripe refund error for charge %s: %s",
-                         transfer.transaction_id, str(e))
+            logger.warning("Stripe refund error for charge %s: %s",
+                           transfer.transaction_id, str(e))
 
         refund_results.append(result)
 
