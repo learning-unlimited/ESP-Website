@@ -38,6 +38,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, 
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
+from esp.program.modules.forms.rapidcheckin import RapidCheckinStudentWidget
 from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.models  import RegistrationProfile, StudentRegistration
 from django.db.models    import Max, Min
@@ -236,6 +237,8 @@ class OnSiteCheckinModule(ProgramModuleObj):
         else:
             form = StudentSearchForm()
 
+        # Use widget that does not inject autocomplete script; template sets up filter-aware autocomplete
+        form.fields['target_user'].widget = RapidCheckinStudentWidget()
         context['module'] = self
         context['form'] = form
         return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
