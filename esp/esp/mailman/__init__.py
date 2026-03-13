@@ -6,6 +6,7 @@ from esp.users.models import ESPUser
 from tempfile import NamedTemporaryFile
 from django.contrib.auth.models import User
 from django.db.models import Q
+import hashlib
 
 if settings.USE_MAILMAN:
     MM_PATH = settings.MAILMAN_PATH
@@ -78,15 +79,10 @@ def set_list_owner_password(list_name, password=None):
     If 'password' isn't specified, a random password will be generated.
     Return the password that is ultimately used.
     """
-    data_str_template = """import sha
-mlist.password = sha.new('%s').hexdigest()
-del sha
-"""
     if not password:
         password = ESPUser.objects.make_random_password()
-
-    data_str = data_str_template % (password)
-
+    hashed = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    data_str = "mlist.password = '%s'\n" % hashed
     apply_raw_list_settings(list_name, data_str)
     return password
 
@@ -98,15 +94,10 @@ def set_list_moderator_password(list_name, password=None):
     If 'password' isn't specified, a random password will be generated.
     Return the password that is ultimately used.
     """
-    data_str_template = """import sha
-mlist.mod_password = sha.new('%s').hexdigest()
-del sha
-"""
     if not password:
         password = ESPUser.objects.make_random_password()
-
-    data_str = data_str_template % (password)
-
+    hashed = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    data_str = "mlist.mod_password = '%s'\n" % hashed
     apply_raw_list_settings(list_name, data_str)
     return password
 
