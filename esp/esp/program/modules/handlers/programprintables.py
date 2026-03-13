@@ -612,8 +612,9 @@ class ProgramPrintables(ProgramModuleObj):
                 class_objects = teacher.getTaughtSections(self.program)
             else:
                 class_objects = teacher.getModeratingSectionsFromProgram(self.program)
-            classes = sorted([ cls for cls in class_objects
-                    if cls.isAccepted() and cls.meeting_times.exists() ])
+            classes = [ cls for cls in class_objects
+                    if cls.isAccepted() and cls.meeting_times.exists() ]
+            classes.sort(key=lambda s: s._sort_key())
             # now we sort them by time/title
 
             if  extra and 'secondday' in extra:
@@ -1033,7 +1034,8 @@ class ProgramPrintables(ProgramModuleObj):
     def get_student_classlist(program, student, verbs = ['Enrolled'], valid_only = True):
         # get list of valid classes
         classes = [ cls for cls in student.getSections(program = program, verbs = verbs, valid_only = valid_only)]
-        classes = sorted([ cls for cls in classes if cls.isAccepted() ])
+        classes = [ cls for cls in classes if cls.isAccepted() ]
+        classes.sort(key=lambda s: s._sort_key())
         return classes
 
     @staticmethod
@@ -1044,9 +1046,10 @@ class ProgramPrintables(ProgramModuleObj):
             classes += [ cls for cls in teacher.getTaughtSectionsFromProgram(program)]
         if moderating:
             classes += [ cls for cls in teacher.getModeratingSectionsFromProgram(program)]
-        classes = sorted([ cls for cls in classes
+        classes = [ cls for cls in classes
                     if cls.meeting_times.exists()
-                    and cls.status >= 0 ])
+                    and cls.status >= 0 ]
+        classes.sort(key=lambda s: s._sort_key())
 
         scheditems = []
         for cls in classes:
@@ -1375,9 +1378,10 @@ class ProgramPrintables(ProgramModuleObj):
 
         for student in students:
             # get list of valid classes
-            classes = sorted([ cls for cls in student.getEnrolledSections()
+            classes = [ cls for cls in student.getEnrolledSections()
                     if cls.parent_program == self.program
-                    and cls.isAccepted()                       ])
+                    and cls.isAccepted()                       ]
+            classes.sort(key=lambda s: s._sort_key())
             # now we sort them by time/title
 
             for cls in classes:
@@ -1861,7 +1865,11 @@ class ProgramPrintables(ProgramModuleObj):
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
-        sections = sorted(self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED))
+        sections = list(self.program.sections().filter(
+            status=ClassStatus.ACCEPTED,
+            parent_class__status=ClassStatus.ACCEPTED,
+        ).prefetch_related('meeting_times'))
+        sections.sort(key=lambda s: s._sort_key())
 
         rooms = {}
 
