@@ -16,9 +16,11 @@ class TemplateOverrideAdmin(VersionAdmin):
     list_display_links = ['id', 'name', ]
 
 class PrinterAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['name', 'printer_type']
 
 class PrintRequestAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['user', 'printer', 'time_requested', 'time_executed']
     list_filter = ['printer', 'time_requested', 'time_executed']
     date_hierarchy = 'time_requested'

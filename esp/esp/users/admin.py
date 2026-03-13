@@ -11,16 +11,19 @@ from esp.utils.admin_user_search import default_user_search
 import datetime
 
 class UserForwarderAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('source', 'target')
     search_fields = default_user_search('source') + default_user_search('target')
 admin_site.register(UserForwarder, UserForwarderAdmin)
 
 class ZipCodeAdmin(admin.ModelAdmin):
+    save_as = True
     search_fields = ('=zip_code',)
     list_display = ('zip_code', 'latitude', 'longitude')
 admin_site.register(ZipCode, ZipCodeAdmin)
 
 class ZipCodeSearchesAdmin(admin.ModelAdmin):
+    save_as = True
     def count(obj):
         return len(obj.zipcodes.split(','))
     count.short_description = "Number of zip codes"
@@ -29,6 +32,7 @@ class ZipCodeSearchesAdmin(admin.ModelAdmin):
 admin_site.register(ZipCodeSearches, ZipCodeSearchesAdmin)
 
 class UserAvailabilityAdmin(admin.ModelAdmin):
+    save_as = True
     def parent_program(obj): #because 'event__program' for some reason doesn't want to work...
         return obj.event.program
     list_display = ['id', 'user', 'event', parent_program]
@@ -53,11 +57,13 @@ class ESPUserAdmin(UserAdmin):
 admin_site.register(ESPUser, ESPUserAdmin)
 
 class RecordTypeAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['id', 'name', 'description']
     search_fields = ['name', 'description']
 admin_site.register(RecordType, RecordTypeAdmin)
 
 class RecordAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['id', 'user', 'event', 'program', 'time',]
     list_filter = ['event', 'program', 'time']
     search_fields = default_user_search()
@@ -81,6 +87,7 @@ class ExpiredListFilter(admin.SimpleListFilter):
             return queryset.filter(end_date__lte=datetime.datetime.now())
 
 class PermissionAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['id', 'user', 'role', 'permission_type', 'program', 'start_date', 'end_date']
     search_fields = default_user_search() + ['permission_type', 'program__url']
     list_filter = ['permission_type', 'program', 'role', ExpiredListFilter]
@@ -108,11 +115,13 @@ class PermissionAdmin(admin.ModelAdmin):
 admin_site.register(Permission, PermissionAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['id', 'user', 'e_mail', 'phone_day']
     search_fields = default_user_search() + ['e_mail']
 admin_site.register(ContactInfo, ContactInfoAdmin)
 
 class UserInfoAdmin(admin.ModelAdmin):
+    save_as = True
     search_fields = default_user_search()
 
 class StudentInfoAdmin(UserInfoAdmin):
@@ -138,6 +147,7 @@ class EducatorInfoAdmin(UserInfoAdmin):
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
 class K12SchoolAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']
     formfield_overrides = {
         models.TextField: {'widget': forms.TextInput(attrs={'size': '50',}),},
@@ -153,6 +163,7 @@ class K12SchoolAdmin(admin.ModelAdmin):
 admin_site.register(K12School, K12SchoolAdmin)
 
 class GradeChangeRequestAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['requesting_student', 'claimed_grade', 'approved', 'acknowledged_by', 'acknowledged_time', 'created']
     readonly_fields = ['grade_before_request', 'requesting_student', 'acknowledged_by', 'acknowledged_time', 'claimed_grade']
     search_fields = default_user_search('requesting_student')

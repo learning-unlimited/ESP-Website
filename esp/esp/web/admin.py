@@ -38,10 +38,12 @@ from esp.admin import admin_site
 from esp.web.models import NavBarEntry, NavBarCategory
 
 class NavBarEntryAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('category', 'sort_rank', 'text', 'link')
     list_filter = ('category',)
 
 class NavBarCategoryAdmin(admin.ModelAdmin):
+    save_as = True
     def delete_model(self, request, obj):
         if obj.name == "default":
             self.message_user(

@@ -44,6 +44,7 @@ from esp.application.models import FormstackAppSettings, FormstackStudentProgram
 from esp.utils.admin_user_search import default_user_search
 
 class FormstackAppSettingsAdmin(admin.ModelAdmin):
+    save_as = True
     fields = ['program', 'api_key', 'forms_for_api_key',
               'form_id', 'form_fields',
               'username_field', 'coreclass_fields',
@@ -99,6 +100,7 @@ class FormstackStudentClassAppInline(admin.TabularInline):
     max_num = 0
 
 class FormstackStudentProgramAppAdmin(admin.ModelAdmin):
+    save_as = True
     fields = ['submission_id', 'program', 'user',
               'admin_status', 'admin_comment',
               'admissions_pretty',
@@ -151,6 +153,7 @@ class FormstackStudentProgramAppAdmin(admin.ModelAdmin):
 admin_site.register(FormstackStudentProgramApp, FormstackStudentProgramAppAdmin)
 
 class FormstackStudentClassAppAdmin(admin.ModelAdmin):
+    save_as = True
     fields = ['user', 'student_preference', 'subject',
               'admin_status', 'admin_comment',
               'teacher_rating', 'teacher_ranking', 'teacher_comment',
