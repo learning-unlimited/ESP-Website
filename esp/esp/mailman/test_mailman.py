@@ -277,3 +277,25 @@ class SetListModeratorPasswordTest(ProgramFrameworkTest):
         from esp.mailman import set_list_moderator_password
         self.assertIsNone(set_list_moderator_password("mylist", password="pw"))
 
+@override_settings(**_MAILMAN_ON)
+class AddListMemberTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.add_list_members")
+    def test_delegates_to_add_list_members_with_list(self, mock_alm):
+        from esp.mailman import add_list_member
+        mock_alm.return_value = (b"", b"")
+        add_list_member("mylist", "user@example.com")
+        mock_alm.assert_called_once_with("mylist", ["user@example.com"])
+
+    @patch("esp.mailman.add_list_members")
+    def test_user_object_wrapped_in_list(self, mock_alm):
+        from esp.mailman import add_list_member
+        mock_alm.return_value = (b"", b"")
+        add_list_member("mylist", self.student)
+        mock_alm.assert_called_once_with("mylist", [self.student])
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import add_list_member
+        self.assertIsNone(add_list_member("mylist", "user@example.com"))
+
