@@ -78,13 +78,5 @@ MIDDLEWARE_LOCAL = []
 
 # Set DB name for this site
 DATABASE_NAME = 'test_django'
-DATABASE_USER = 'postgres'
-DATABASE_PASSWORD = ''
-
-############
-# Selenium #
-############
-
-SELENIUM_TESTSERVER_HOST = 'localhost'
-SELENIUM_TESTSERVER_PORT = 8000
-SELENIUM_DRIVER = 'Chrome'
+DATABASE_USER = 'testuser'
+DATABASE_PASSWORD = 'testpassword'

@@ -53,8 +53,8 @@ class UserSearchErrorHandlingTest(TestCase):
         mock_filter.side_effect = ESPError("Calculation error", log=False)
         mock_prepare.return_value = {'prepared': 'context'}
         mock_render.return_value = "rendered_error_page"
-        # Execute (same signature as selectList: request, tl, one, two, module, extra, prog)
-        response = inner_selectlist(module, self.request, None, None, None, None, self.program)
+        # Execute (same signature as selectList: self, request, tl, one, two, module, extra, prog)
+        response = inner_selectlist(module, self.request, None, None, None, None, None, self.program)
         # Verify
         mock_render.assert_called()
         args, kwargs = mock_render.call_args
