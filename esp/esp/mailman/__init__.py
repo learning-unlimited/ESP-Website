@@ -53,7 +53,7 @@ def apply_raw_list_settings(list_name, data):
     """
     with NamedTemporaryFile() as f:
         f.write(data)
-        f.file.flush()
+        f.flush()
         return call([MM_PATH + "config_list", "-i", f.name, list_name])
 
 
@@ -68,7 +68,7 @@ def apply_list_settings(list_name, data):
 
     with NamedTemporaryFile() as f:
         f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in data.items() ) )
-        f.file.flush()
+        f.flush()
         return call([MM_PATH + "config_list", "-i", f.name, list_name])
 
 
