@@ -450,3 +450,47 @@ class ListContentsTest(ProgramFrameworkTest):
     def test_disabled_returns_none(self):
         from esp.mailman import list_contents
         self.assertIsNone(list_contents("mylist"))
+
+@override_settings(**_MAILMAN_ON)
+class ListMembersTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.ESPUser")
+    @patch("esp.mailman.list_contents")
+    def test_filters_by_email_and_esp_username(self, mock_lc, mock_esp):
+        from esp.mailman import list_members
+        mock_lc.return_value = ["user@example.com", "jsmith@esp.mit.edu"]
+        mock_esp.objects.filter.return_value = MagicMock()
+        list_members("mylist")
+        mock_esp.objects.filter.assert_called_once()
+
+    @patch("esp.mailman.ESPUser")
+    @patch("esp.mailman.list_contents")
+    def test_username_extracted_from_esp_mit_edu_addresses(self, mock_lc, mock_esp):
+        from esp.mailman import list_members
+        mock_lc.return_value = ["jsmith@esp.mit.edu"]
+        mock_esp.objects.filter.return_value = MagicMock()
+        list_members("mylist")
+        mock_esp.objects.filter.assert_called_once()
+
+    @patch("esp.mailman.ESPUser")
+    @patch("esp.mailman.list_contents")
+    def test_non_esp_domain_not_split_as_username(self, mock_lc, mock_esp):
+        from esp.mailman import list_members
+        mock_lc.return_value = ["user@gmail.com"]
+        mock_esp.objects.filter.return_value = MagicMock()
+        list_members("mylist")
+        mock_esp.objects.filter.assert_called_once()
+
+    @patch("esp.mailman.ESPUser")
+    @patch("esp.mailman.list_contents")
+    def test_empty_list_still_calls_filter(self, mock_lc, mock_esp):
+        from esp.mailman import list_members
+        mock_lc.return_value = []
+        mock_esp.objects.filter.return_value = MagicMock()
+        list_members("mylist")
+        mock_esp.objects.filter.assert_called_once()
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import list_members
+        self.assertIsNone(list_members("mylist"))
