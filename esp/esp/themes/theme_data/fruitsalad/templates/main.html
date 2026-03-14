@@ -217,6 +217,17 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
           {% endif %}
         </div>
         {% endif %}
+          {% if active_program_tags %}
+          <div class="alert alert-info alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <strong>Admin notice:</strong>
+            This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
+            {% for tag in active_program_tags %}
+              <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+            {% endfor %}
+            &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
+          </div>
+          {% endif %}
         {% if messages %}
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }}">{{ message }}</div>
