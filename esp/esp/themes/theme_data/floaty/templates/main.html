@@ -84,30 +84,6 @@
         <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
     </div>
     
-    <!-- Announcements -->
-    {% load preview %}
-    {% if request.path == "/teach/index.html" %}
-        {% miniblog_for_user AnonymousUser as announcements teach 3 %}
-    {% else %}
-        {% miniblog_for_user AnonymousUser as announcements learn 3 %}
-    {% endif %}
-
-    {% if not announcements.announcementList|length_is:0 %}
-    {% for announce in announcements.announcementList %}
-    <div class="box">
-        {% if announce.makeUrl %}
-        <div class="box_header"><a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a></div>
-        {% else %}
-        <div class="box_header">{{ announce.makeTitle }}</div>{{ announce.content }}
-        {% endif %}
-    </div>
-    {% endfor %}
-    {% if announcements.overflowed %}
-    <div class="box" id="divannouncemore">
-        <div class="box_header"><a href="/myesp/home/">More Notices...</a></div>
-    </div>
-    {% endif %}
-    {% endif %}
 
     <!-- Onsite -->
     <div class="box onsite hidden">
@@ -141,6 +117,22 @@
             <strong>No (non-admin) roles have permission to view this page!</strong>
         {% endif %}
     </div>
+    {% endif %}
+    {% if active_program_tags %}
+    <div class="alert alert-info alert-dismissible" role="alert">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <strong>Admin notice:</strong>
+      This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
+      {% for tag in active_program_tags %}
+        <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+      {% endfor %}
+      &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
+    </div>
+    {% endif %}
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
     {% endif %}
     {% block content %}
     {% endblock %}

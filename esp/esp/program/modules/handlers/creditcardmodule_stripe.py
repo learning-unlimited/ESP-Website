@@ -86,12 +86,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """ Whether the user has fully paid for this program. """
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return IndividualAccountingController(self.program, user).has_paid(in_full=True)
     have_paid = isCompleted
 
@@ -115,7 +112,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
     def _extracost_requires_payment(self):
         """Check if the student selected extra cost items that require CC payment."""
         from esp.accounting.models import Transfer
-        tag_value = Tag.getTag('creditcard_required_for_extracosts', self.program, default='')
+        tag_value = Tag.getProgramTag('creditcard_required_for_extracosts', program=self.program, default='')
         if not tag_value:
             return False
         request = get_current_request()
@@ -188,7 +185,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         for module in modules:
             if module.id == self.id:
                 continue
-            if not module.isCompleted() and module.isRequired():
+            if not module.isCompleted(request.user) and module.isRequired():
                 completedAll = False
         if not completedAll and not request.user.isAdmin(prog):
             raise ESPError("Please go back and ensure that you have completed all required steps of registration before paying by credit card.", log=False)
@@ -220,6 +217,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['financial_aid'] = iac.amount_finaid()
         context['sibling_discount'] = iac.amount_siblingdiscount()
         context['amount_paid'] = iac.amount_paid()
+        context['amount_refunded'] = iac.amount_refunded()
 
         #   Load donation amount separately, since the client-side code needs to know about it separately.
         donation_prefs = iac.get_preferences([donate_type,]) if offer_donation else None
