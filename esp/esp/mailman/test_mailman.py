@@ -238,3 +238,42 @@ class SetListOwnerPasswordTest(ProgramFrameworkTest):
     def test_disabled_returns_none(self):
         from esp.mailman import set_list_owner_password
         self.assertIsNone(set_list_owner_password("mylist", password="pw"))
+
+@override_settings(**_MAILMAN_ON)
+class SetListModeratorPasswordTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.apply_raw_list_settings")
+    def test_provided_password_returned(self, mock_apply):
+        from esp.mailman import set_list_moderator_password
+        result = set_list_moderator_password("mylist", password="modpass")
+        self.assertEqual(result, "modpass")
+
+    @patch("esp.mailman.apply_raw_list_settings")
+    def test_mod_password_attribute_used(self, mock_apply):
+        from esp.mailman import set_list_moderator_password
+        set_list_moderator_password("mylist", password="modpass")
+        written = mock_apply.call_args[0][1]
+        self.assertIn("mod_password", written)
+
+    @patch("esp.mailman.apply_raw_list_settings")
+    def test_password_is_sha256_hashed(self, mock_apply):
+        import hashlib
+        from esp.mailman import set_list_moderator_password
+        set_list_moderator_password("mylist", password="modpass")
+        written = mock_apply.call_args[0][1]
+        expected = hashlib.sha256("modpass".encode()).hexdigest()
+        self.assertIn(expected, written)
+
+    @patch("esp.mailman.ESPUser")
+    @patch("esp.mailman.apply_raw_list_settings")
+    def test_random_password_generated_when_none(self, mock_apply, mock_esp):
+        from esp.mailman import set_list_moderator_password
+        mock_esp.objects.make_random_password.return_value = "rand-mod"
+        result = set_list_moderator_password("mylist")
+        self.assertEqual(result, "rand-mod")
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import set_list_moderator_password
+        self.assertIsNone(set_list_moderator_password("mylist", password="pw"))
+
