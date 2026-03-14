@@ -48,6 +48,22 @@ class CompositeConstraintCheckSwapSectionsTest(unittest.TestCase):
 
         self.assertIs(result, violation)
 
+    def test_stops_after_first_violation(self):
+        """Stops evaluating child constraints after the first violation."""
+        violation = constraints.ConstraintViolation("FakeConstraint", "reason")
+        mock_bad = MagicMock()
+        mock_bad.check_swap_sections.return_value = violation
+        mock_after = MagicMock()
+
+        composite = self._make_composite([mock_bad, mock_after])
+        result = composite.check_swap_sections(
+            self.section1, self.section2, self.schedule)
+
+        self.assertIs(result, violation)
+        mock_bad.check_swap_sections.assert_called_once_with(
+            self.section1, self.section2, self.schedule)
+        mock_after.check_swap_sections.assert_not_called()
+
     def test_returns_none_when_no_violations(self):
         """Returns None when all child constraints pass."""
         composite = self._make_composite([
@@ -57,14 +73,39 @@ class CompositeConstraintCheckSwapSectionsTest(unittest.TestCase):
             self.section1, self.section2, self.schedule)
         self.assertIsNone(result)
 
+    def test_precondition_violation_for_mismatched_swap_lengths(self):
+        """PreconditionConstraint rejects swaps with mismatched slot counts."""
+        composite = self._make_composite([
+            constraints.PreconditionConstraint(),
+        ])
+        result = composite.check_swap_sections(
+            self.section1, self.section2, self.schedule)
+
+        self.assertIsInstance(result, constraints.ConstraintViolation)
+        self.assertEqual(result.constraint_name, "PreconditionConstraint")
+        self.assertIn("same number of roomslots", result.reason)
+
     def test_teacher_availability_violation_detected(self):
-        """Detects a real availability violation during a swap check."""
+        """Detects an availability violation for an otherwise valid swap."""
+        classroom = self.schedule.classrooms["26-100"]
+        self.section1.clear_roomslots()
+        self.section1.assign_roomslots(classroom.availability[4:6])
+        self.section1.duration = self.section2.duration
+
+        precondition = constraints.PreconditionConstraint()
+        self.assertIsNone(precondition.check_swap_sections(
+            self.section1, self.section2, self.schedule))
+
         composite = self._make_composite([
             constraints.TeacherAvailabilityConstraint(),
         ])
         result = composite.check_swap_sections(
             self.section1, self.section2, self.schedule)
         self.assertIsInstance(result, constraints.ConstraintViolation)
+        self.assertEqual(
+            result.constraint_name,
+            "TeacherAvailabilityConstraint")
+        self.assertIn("won't be available", result.reason)
 
 
 if __name__ == "__main__":
