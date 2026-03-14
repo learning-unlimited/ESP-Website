@@ -1127,7 +1127,7 @@ class BaseESPUser(object):
 
         return schoolyear + 12 - grade
 
-    def set_student_grad_year(self, grad_year):
+    def set_student_grad_year(self, grad_year, validate=True):
         """ Update the user's graduation year if they are a student. """
 
         #   Check that the user is a student.
@@ -1139,8 +1139,9 @@ class BaseESPUser(object):
         #   Retrieve the user's most recent registration profile and create a StudentInfo if needed.
         profile = self.getLastProfile()
         if profile.student_info is None:
-            profile.student_info = StudentInfo(user=self)
-            profile.student_info.save()
+            student_info = StudentInfo(user=self)
+            student_info.save()
+            profile.student_info = student_info
             profile.save()
 
         #   Update the graduation year.
@@ -1151,11 +1152,12 @@ class BaseESPUser(object):
         except (ValueError, TypeError):
             return
 
-        #   Only allow years corresponding to configured grade options.
-        #   This prevents unreasonable values (e.g. very large or negative).
-        valid_grad_years = set(ESPUser.YOGFromGrade(grade) for grade in ESPUser.grade_options())
-        if parsed_year not in valid_grad_years:
-            return
+        if validate:
+            #   Only allow years corresponding to configured grade options.
+            #   This prevents unreasonable values (e.g. very large or negative).
+            valid_grad_years = set(ESPUser.YOGFromGrade(grade) for grade in ESPUser.grade_options())
+            if parsed_year not in valid_grad_years:
+                return
 
         student_info = profile.student_info
         student_info.graduation_year = parsed_year
@@ -1164,7 +1166,7 @@ class BaseESPUser(object):
     def set_grade(self, grade):
         """ Convenience function for setting a student's grade based on the
             current school year. """
-        self.set_student_grad_year(ESPUser.YOGFromGrade(int(grade)))
+        self.set_student_grad_year(ESPUser.YOGFromGrade(int(grade)), validate=False)
 
     @staticmethod
     def getRankInClass(student, subject, default=10):
