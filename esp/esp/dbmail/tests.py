@@ -96,7 +96,7 @@ class ActionHandlerTest(TestCase):
     def test_getattribute_delegates_to_obj(self):
         class FakeObj:
             def foo(self, user):
-                return 'result_%s' % user
+                return f'result_{user}'
 
         handler = ActionHandler(FakeObj(), 'testuser')
         result = handler.foo('testuser')
