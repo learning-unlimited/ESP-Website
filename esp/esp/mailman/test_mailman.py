@@ -146,3 +146,51 @@ class ApplyRawListSettingsTest(ProgramFrameworkTest):
     def test_disabled_returns_none(self):
         from esp.mailman import apply_raw_list_settings
         self.assertIsNone(apply_raw_list_settings("mylist", b"data"))
+
+@override_settings(**_MAILMAN_ON)
+class ApplyListSettingsTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_dict_keys_and_values_serialised(self, mock_call):
+        import tempfile
+        from esp.mailman import apply_list_settings
+
+        written = []
+        original_ntf = tempfile.NamedTemporaryFile
+
+        class CapturingNTF:
+            def __init__(self, **kwargs):
+                self._f = original_ntf(**kwargs)
+                self.name = self._f.name
+            def write(self, data):
+                written.append(data)
+                return self._f.write(data)
+            def flush(self):
+                return self._f.flush()
+            def __enter__(self):
+                self._f.__enter__()
+                return self
+            def __exit__(self, *args):
+                return self._f.__exit__(*args)
+
+        with patch("esp.mailman.NamedTemporaryFile", CapturingNTF):
+            apply_list_settings("mylist", {"archive": True, "max_message_size": 40})
+
+        combined = b"".join(written).decode("utf-8")
+        self.assertIn("archive", combined)
+        self.assertIn("max_message_size", combined)
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_returns_call_result(self, mock_call):
+        from esp.mailman import apply_list_settings
+        self.assertEqual(apply_list_settings("mylist", {"x": "y"}), 0)
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_empty_dict_does_not_raise(self, mock_call):
+        from esp.mailman import apply_list_settings
+        self.assertEqual(apply_list_settings("mylist", {}), 0)
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import apply_list_settings
+        self.assertIsNone(apply_list_settings("mylist", {"k": "v"}))
