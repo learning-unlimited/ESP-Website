@@ -10,21 +10,21 @@ def cleanup_duplicate_profiles(apps, schema_editor):
     """
     Delete all duplicate registration profiles, keeping only the most recent
     profile for each (user, program) pair.
-    
+
     This addresses the issue where before PR #2794, the system was creating
     new registration profiles nearly every time a user submitted the profile
     form, resulting in hundreds of duplicate profiles per user per program.
     """
     RegistrationProfile = apps.get_model('program', 'RegistrationProfile')
-    
+
     # Find all (user_id, program_id) pairs that have more than one profile
     duplicates = RegistrationProfile.objects.values('user_id', 'program_id') \
         .annotate(count=Count('id')) \
         .filter(count__gt=1)
-    
+
     deleted_count = 0
     user_program_pairs = 0
-    
+
     print("\n" + "="*70)
     print("Starting cleanup of duplicate registration profiles...")
     print("="*70)
