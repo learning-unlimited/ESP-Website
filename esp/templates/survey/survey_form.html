@@ -28,14 +28,14 @@
                 {% for sec in sections %}
                 <tr>
                     <td class="underline" align="center">{{ sec }}</td>
-                    <td class="underline" align="center">{% if not sec.started %}<span style="color: grey">Not available</span>{% elif sec.completed %}<span style="color: green">Completed</span>{% else %}<a class="btn fancybutton no-dec" href="{{ request.path }}?{% if survey_id %}survey_id={{ survey_id }}&{% endif %}sec={{ sec.id }}">Take Survey</a>{% endif %}</td>
+                    <td class="underline" align="center">{% if not sec.started %}<span style="color: grey">Not available</span>{% elif sec.completed %}<span style="color: green">Completed</span>{% else %}<a class="btn btn-primary no-dec" href="{{ request.path }}?{% if survey_id %}survey_id={{ survey_id }}&{% endif %}sec={{ sec.id }}">Take Survey</a>{% endif %}</td>
                 </tr>
                 {% endfor %}
             {% endif %}
             {% if general_survey %}
                 <tr>
                     <td class="underline" align="center">General Program Survey</td>
-                    <td class="underline" align="center">{% if not general_available %}<span style="color: grey">Not available</span>{% elif general_done %}<span style="color: green">Completed</span>{% else %}<a class="btn fancybutton no-dec" href="{{ request.path }}?{% if survey_id %}survey_id={{ survey_id }}&{% endif %}general">Take Survey</a>{% endif %}</td>
+                    <td class="underline" align="center">{% if not general_available %}<span style="color: grey">Not available</span>{% elif general_done %}<span style="color: green">Completed</span>{% else %}<a class="btn btn-primary no-dec" href="{{ request.path }}?{% if survey_id %}survey_id={{ survey_id }}&{% endif %}general">Take Survey</a>{% endif %}</td>
                 </tr>
             {% endif %}
         </table>
@@ -62,13 +62,13 @@
         <tr>
             <td align="center">
                 Click the button below to finish your survey. Thank you so much for your time!<br /><br />
-                <input type="Submit" class="fancybutton" value="Submit Survey" /><br />
+                <input type="Submit" class="btn btn-primary" value="Submit Survey" /><br />
             </td>
         </tr>
     </table>
 
     </form>
     <br /><br />
-    <a class="btn fancybutton no-dec" href="{{ request.path }}">Return to Survey List</a>
+    <a class="btn btn-primary no-dec" href="{{ request.path }}">Return to Survey List</a>
 {% endif %}
 </div>
