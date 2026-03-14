@@ -65,3 +65,33 @@ class CreateListTest(ProgramFrameworkTest):
         from esp.mailman import create_list
         self.assertIsNone(create_list("mylist", "owner@example.com"))
 
+@override_settings(**_MAILMAN_ON)
+class LoadListSettingsTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_absolute_path_used_unchanged(self, mock_call):
+        from esp.mailman import load_list_settings
+        load_list_settings("mylist", "/abs/path/settings.cfg")
+        args = mock_call.call_args[0][0]
+        self.assertIn("/abs/path/settings.cfg", args)
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_relative_path_joined_to_project_root(self, mock_call):
+        from esp.mailman import load_list_settings
+        with self.settings(PROJECT_ROOT="/srv/esp"):
+            load_list_settings("mylist", "configs/list.cfg")
+        args = mock_call.call_args[0][0]
+        self.assertIn("/srv/esp/configs/list.cfg", args)
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_list_name_in_command(self, mock_call):
+        from esp.mailman import load_list_settings
+        load_list_settings("targetlist", "/some/file.cfg")
+        args = mock_call.call_args[0][0]
+        self.assertIn("targetlist", args)
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import load_list_settings
+        self.assertIsNone(load_list_settings("mylist", "/some/file.cfg"))
+
