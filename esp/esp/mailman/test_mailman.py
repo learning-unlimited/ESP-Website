@@ -348,3 +348,61 @@ class AddListMembersTest(ProgramFrameworkTest):
         from esp.mailman import add_list_members
         self.assertIsNone(add_list_members("mylist", ["user@example.com"]))
 
+@override_settings(**_MAILMAN_ON)
+class RemoveListMemberTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.Popen")
+    def test_email_string_piped_to_stdin(self, mock_popen):
+        mock_popen.return_value = _popen()
+        from esp.mailman import remove_list_member
+        remove_list_member("mylist", "gone@example.com")
+        communicated = mock_popen.return_value.communicate.call_args[0][0]
+        self.assertIn(b"gone@example.com", communicated)
+
+    @patch("esp.mailman.Popen")
+    def test_user_object_email_extracted(self, mock_popen):
+        mock_popen.return_value = _popen()
+        from esp.mailman import remove_list_member
+        remove_list_member("mylist", self.student)
+        communicated = mock_popen.return_value.communicate.call_args[0][0]
+        self.assertIn(self.student.email.encode("iso-8859-1", "replace"), communicated)
+
+    @patch("esp.mailman.Popen")
+    def test_list_of_emails_joined_and_encoded(self, mock_popen):
+        mock_popen.return_value = _popen()
+        from esp.mailman import remove_list_member
+        remove_list_member("mylist", ["a@example.com", "b@example.com"])
+        communicated = mock_popen.return_value.communicate.call_args[0][0]
+        self.assertIn(b"a@example.com", communicated)
+        self.assertIn(b"b@example.com", communicated)
+        self.assertIn(b"\n", communicated)
+
+    @patch("esp.mailman.Popen")
+    def test_queryset_like_object_with_filter_attr(self, mock_popen):
+        mock_popen.return_value = _popen()
+        from esp.mailman import remove_list_member
+        u1, u2 = MagicMock(), MagicMock()
+        u1.email = "qs1@example.com"
+        u2.email = "qs2@example.com"
+        mock_qs = MagicMock()
+        mock_qs.filter = MagicMock()
+        mock_qs.__iter__ = MagicMock(return_value=iter([u1, u2]))
+        remove_list_member("mylist", mock_qs)
+        communicated = mock_popen.return_value.communicate.call_args[0][0]
+        self.assertIn(b"qs1@example.com", communicated)
+        self.assertIn(b"qs2@example.com", communicated)
+
+    @patch("esp.mailman.Popen")
+    def test_nouserack_noadminack_flags_in_command(self, mock_popen):
+        mock_popen.return_value = _popen()
+        from esp.mailman import remove_list_member
+        remove_list_member("mylist", "x@example.com")
+        cmd = mock_popen.call_args[0][0]
+        self.assertIn("--nouserack", cmd)
+        self.assertIn("--noadminack", cmd)
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import remove_list_member
+        self.assertIsNone(remove_list_member("mylist", "user@example.com"))
+
