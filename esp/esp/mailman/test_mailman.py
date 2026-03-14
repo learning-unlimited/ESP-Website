@@ -494,3 +494,51 @@ class ListMembersTest(ProgramFrameworkTest):
     def test_disabled_returns_none(self):
         from esp.mailman import list_members
         self.assertIsNone(list_members("mylist"))
+
+@override_settings(**_MAILMAN_ON)
+class AllListsTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.Popen")
+    def test_returns_list_names(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"list1\nlist2\nlist3\n")
+        from esp.mailman import all_lists
+        result = all_lists()
+        self.assertIn("list1", result)
+        self.assertIn("list2", result)
+        self.assertIn("list3", result)
+
+    @patch("esp.mailman.Popen")
+    def test_advertised_flag_added_by_default(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"")
+        from esp.mailman import all_lists
+        all_lists()
+        cmd = mock_popen.call_args[0][0]
+        self.assertIn("-a", cmd)
+
+    @patch("esp.mailman.Popen")
+    def test_advertised_flag_absent_when_show_nonpublic(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"")
+        from esp.mailman import all_lists
+        all_lists(show_nonpublic=True)
+        cmd = mock_popen.call_args[0][0]
+        self.assertNotIn("-a", cmd)
+
+    @patch("esp.mailman.Popen")
+    def test_blank_lines_excluded(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"list1\n\nlist2\n")
+        from esp.mailman import all_lists
+        result = all_lists()
+        self.assertNotIn("", result)
+        self.assertEqual(len(result), 2)
+
+    @patch("esp.mailman.Popen")
+    def test_returns_strings_not_bytes(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"mylist\n")
+        from esp.mailman import all_lists
+        result = all_lists()
+        self.assertTrue(all(isinstance(r, str) for r in result))
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import all_lists
+        self.assertIsNone(all_lists())
