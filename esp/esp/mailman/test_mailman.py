@@ -542,3 +542,69 @@ class AllListsTest(ProgramFrameworkTest):
     def test_disabled_returns_none(self):
         from esp.mailman import all_lists
         self.assertIsNone(all_lists())
+
+_FIND_MEMBER_OUTPUT = (
+    b"user@example.com found in:\n"
+    b"    list-alpha\n"
+    b"    list-beta\n"
+)
+
+
+@override_settings(**_MAILMAN_ON)
+class ListsContainingTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.Popen")
+    def test_returns_indented_list_names(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=_FIND_MEMBER_OUTPUT)
+        from esp.mailman import lists_containing
+        result = lists_containing("user@example.com")
+        self.assertIn("list-alpha", result)
+        self.assertIn("list-beta", result)
+
+    @patch("esp.mailman.Popen")
+    def test_header_lines_excluded(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=_FIND_MEMBER_OUTPUT)
+        from esp.mailman import lists_containing
+        result = lists_containing("user@example.com")
+        self.assertFalse(any("found in" in r for r in result))
+
+    @patch("esp.mailman.Popen")
+    def test_email_string_turned_into_exact_regex(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"")
+        from esp.mailman import lists_containing
+        lists_containing("exact@example.com")
+        cmd = mock_popen.call_args[0][0]
+        self.assertTrue(any("exact@example.com" in arg for arg in cmd))
+
+    @patch("esp.mailman.Popen")
+    def test_user_object_regex_includes_email_and_username(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"")
+        from esp.mailman import lists_containing
+        lists_containing(self.student)
+        cmd = mock_popen.call_args[0][0]
+        self.assertTrue(
+            any(self.student.email in arg and self.student.username in arg
+                for arg in cmd)
+        )
+
+    @patch("esp.mailman.Popen")
+    def test_no_matching_lists_returns_empty(self, mock_popen):
+        mock_popen.return_value = _popen(
+            stdout=b"user@example.com found in:\n"
+        )
+        from esp.mailman import lists_containing
+        result = lists_containing("user@example.com")
+        self.assertEqual(result, [])
+
+    @patch("esp.mailman.Popen")
+    def test_result_items_are_strings(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=_FIND_MEMBER_OUTPUT)
+        from esp.mailman import lists_containing
+        result = lists_containing("user@example.com")
+        self.assertTrue(all(isinstance(r, str) for r in result))
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import lists_containing
+        self.assertIsNone(lists_containing("user@example.com"))
+
