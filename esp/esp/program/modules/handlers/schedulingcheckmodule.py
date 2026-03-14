@@ -750,32 +750,49 @@ class SchedulingCheckRunner:
             return 'Medium'
         return 'Low'
 
-    def _trace_dependency_chain(self, start_moderator, first_dependency, dependency_graph):
-        chain = [start_moderator, first_dependency]
-        current = first_dependency
+    def _trace_dependency_chains(self, start_moderator, first_dependency, dependency_graph):
+        """Trace all dependency branches from one starting dependency edge."""
+        stack = [(start_moderator, [start_moderator, first_dependency])]
+        chains = []
 
-        while True:
+        while stack:
+            _, chain = stack.pop()
+            current = chain[-1]
             next_candidates = sorted(
                 dependency_graph.get(current, set()),
                 key=lambda user: user.username,
             )
+
             if not next_candidates:
-                return chain, False
-
-            if start_moderator in next_candidates:
-                chain.append(start_moderator)
-                return chain, True
-
-            novel_candidates = [candidate for candidate in next_candidates if candidate not in chain]
-            if novel_candidates:
-                next_moderator = novel_candidates[0]
-                chain.append(next_moderator)
-                current = next_moderator
+                chains.append((chain, False))
                 continue
 
-            # Found an internal cycle that doesn't return to the start moderator.
-            chain.append(next_candidates[0])
-            return chain, False
+            extended = False
+            for candidate in next_candidates:
+                if candidate == start_moderator:
+                    chains.append((chain + [start_moderator], True))
+                    extended = True
+                elif candidate not in chain:
+                    stack.append((start_moderator, chain + [candidate]))
+                    extended = True
+                else:
+                    # Internal cycle not returning to the start moderator.
+                    chains.append((chain + [candidate], False))
+                    extended = True
+
+            if not extended:
+                chains.append((chain, False))
+
+        # Deduplicate equivalent chain signatures.
+        deduped = []
+        seen = set()
+        for chain, has_loop in chains:
+            signature = (tuple(user.username for user in chain), has_loop)
+            if signature in seen:
+                continue
+            seen.add(signature)
+            deduped.append((chain, has_loop))
+        return deduped
 
     def moderator_movement_dependency_loops(self):
         """
@@ -810,18 +827,19 @@ class SchedulingCheckRunner:
                     continue
 
                 for first_dependency in sorted(dependency_graph[moderator], key=lambda user: user.username):
-                    chain, has_loop = self._trace_dependency_chain(moderator, first_dependency, dependency_graph)
-                    dependency_count = max(len(chain) - 1, 0)
-                    chain_str = ' -> '.join(user.username for user in chain)
-                    output_rows.append({
-                        "Current Block": current_slot,
-                        "Next Block": next_slot,
-                        self.p.getModeratorTitle().capitalize(): moderator,
-                        "Dependency Chain": chain_str,
-                        "Dependency Count": dependency_count,
-                        "Severity": self._dependency_severity(dependency_count, has_loop),
-                        "Loop": "Yes" if has_loop else "No",
-                    })
+                    chains = self._trace_dependency_chains(moderator, first_dependency, dependency_graph)
+                    for chain, has_loop in chains:
+                        dependency_count = max(len(chain) - 1, 0)
+                        chain_str = ' -> '.join(user.username for user in chain)
+                        output_rows.append({
+                            "Current Block": current_slot,
+                            "Next Block": next_slot,
+                            self.p.getModeratorTitle().capitalize(): moderator,
+                            "Dependency Chain": chain_str,
+                            "Dependency Count": dependency_count,
+                            "Severity": self._dependency_severity(dependency_count, has_loop),
+                            "Loop": "Yes" if has_loop else "No",
+                        })
 
                 reported_starts.add(moderator)
 
