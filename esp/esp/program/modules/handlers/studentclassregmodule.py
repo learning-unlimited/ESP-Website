@@ -197,11 +197,8 @@ class StudentClassRegModule(ProgramModuleObj):
                 'enrolled_past': """Students who have enrolled in a past program""",
                 'attended_past': """Students who have attended a past program"""}
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return (len(user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def makeSelfCheckinLink(self):
@@ -341,7 +338,7 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             try:
                 sec_ids = [int(x) for x in extra.split(',')]
-            except:
+            except (ValueError, TypeError, AttributeError):
                 pass
 
         for sec_id in sec_ids:
@@ -356,6 +353,9 @@ class StudentClassRegModule(ProgramModuleObj):
                 addbutton_str2 = render_to_string(self.baseDir()+'addbutton_catalog.html', button_context)
                 json_data['addbutton_fillslot_sec%d_html' % sec_id] = addbutton_str1
                 json_data['addbutton_catalog_sec%d_html' % sec_id] = addbutton_str2
+            except ClassSection.DoesNotExist:
+                # Section doesn't exist, skip it
+                continue
             except Exception as inst:
                 raise AjaxError('Encountered an error retrieving updated buttons: %s' % inst)
 
@@ -427,7 +427,7 @@ class StudentClassRegModule(ProgramModuleObj):
                     #   Rewrite the registration button if possible.  This requires telling
                     #   the ajax_schedule view what section was added/changed.
                     extra = request.POST['section_id']
-                except:
+                except KeyError:
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
@@ -464,7 +464,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         try:
             extra = int(extra)
-        except:
+        except (ValueError, TypeError):
             raise ESPError('Please use the link at the main registration page.', log=False)
         user = request.user
         ts = Event.objects.filter(id=extra, program=prog)
@@ -627,6 +627,9 @@ class StudentClassRegModule(ProgramModuleObj):
             clsid = extra
 
         classes = ClassSubject.objects.filter(id = clsid)
+
+        if not classes.exists():
+            raise Http404("Class not found")
 
         target_class = classes[0]
 
