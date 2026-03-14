@@ -406,3 +406,47 @@ class RemoveListMemberTest(ProgramFrameworkTest):
         from esp.mailman import remove_list_member
         self.assertIsNone(remove_list_member("mylist", "user@example.com"))
 
+@override_settings(**_MAILMAN_ON)
+class ListContentsTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.Popen")
+    def test_returns_email_list_from_stdout(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"a@example.com\nb@example.com\n")
+        from esp.mailman import list_contents
+        result = list_contents("mylist")
+        self.assertIn("a@example.com", result)
+        self.assertIn("b@example.com", result)
+
+    @patch("esp.mailman.Popen")
+    def test_empty_strings_stripped(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"a@example.com\n\n")
+        from esp.mailman import list_contents
+        result = list_contents("mylist")
+        self.assertNotIn("", result)
+
+    @patch("esp.mailman.Popen")
+    def test_bytes_decoded_to_strings(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"user@test.com\n")
+        from esp.mailman import list_contents
+        result = list_contents("mylist")
+        self.assertTrue(all(isinstance(r, str) for r in result))
+
+    @patch("esp.mailman.Popen")
+    def test_empty_output_returns_empty_list(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"")
+        from esp.mailman import list_contents
+        result = list_contents("mylist")
+        self.assertEqual(result, [])
+
+    @patch("esp.mailman.Popen")
+    def test_list_name_passed_in_command(self, mock_popen):
+        mock_popen.return_value = _popen(stdout=b"")
+        from esp.mailman import list_contents
+        list_contents("specificlist")
+        cmd = mock_popen.call_args[0][0]
+        self.assertIn("specificlist", cmd)
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import list_contents
+        self.assertIsNone(list_contents("mylist"))
