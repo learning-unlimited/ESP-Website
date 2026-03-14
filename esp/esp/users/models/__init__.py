@@ -1140,6 +1140,7 @@ class BaseESPUser(object):
         profile = self.getLastProfile()
         if profile.student_info is None:
             profile.student_info = StudentInfo(user=self)
+            profile.student_info.save()
             profile.save()
 
         #   Update the graduation year.
