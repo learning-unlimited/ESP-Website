@@ -210,6 +210,8 @@ def lists_containing(user):
     #
     # We only want the lists; grab those:
 
-    lists = [x.strip() for x in data]
-    lists = [x for x in lists if x]
-    return lists
+    lists =[
+        line.strip() for line in data
+        if line.startswith(' ') or line.startswith('\t')
+        ]
+    return [lst for lst in lists if lst]
