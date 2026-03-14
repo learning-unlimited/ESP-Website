@@ -299,3 +299,52 @@ class AddListMemberTest(ProgramFrameworkTest):
         from esp.mailman import add_list_member
         self.assertIsNone(add_list_member("mylist", "user@example.com"))
 
+@override_settings(**_MAILMAN_ON)
+class AddListMembersTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.Popen")
+    def test_email_strings_piped_to_stdin(self, mock_popen):
+        mock_popen.return_value = _popen()
+        from esp.mailman import add_list_members
+        add_list_members("mylist", ["a@example.com", "b@example.com"])
+        communicated = mock_popen.return_value.communicate.call_args[0][0]
+        self.assertIn(b"a@example.com", communicated)
+        self.assertIn(b"b@example.com", communicated)
+
+    @patch("esp.mailman.Popen")
+    def test_list_name_in_command(self, mock_popen):
+        mock_popen.return_value = _popen()
+        from esp.mailman import add_list_members
+        add_list_members("targetlist", ["x@example.com"])
+        cmd = mock_popen.call_args[0][0]
+        self.assertIn("targetlist", cmd)
+
+    @patch("esp.mailman.Popen")
+    def test_empty_members_produces_empty_bytes(self, mock_popen):
+        mock_popen.return_value = _popen()
+        from esp.mailman import add_list_members
+        add_list_members("mylist", [])
+        communicated = mock_popen.return_value.communicate.call_args[0][0]
+        self.assertEqual(communicated, b"")
+
+    @patch("esp.mailman.Popen")
+    def test_output_is_iso8859_encoded_bytes(self, mock_popen):
+        mock_popen.return_value = _popen()
+        from esp.mailman import add_list_members
+        add_list_members("mylist", ["user@example.com"])
+        communicated = mock_popen.return_value.communicate.call_args[0][0]
+        self.assertIsInstance(communicated, bytes)
+
+    @patch("esp.mailman.Popen")
+    def test_multiple_members_separated_by_newline(self, mock_popen):
+        mock_popen.return_value = _popen()
+        from esp.mailman import add_list_members
+        add_list_members("mylist", ["a@x.com", "b@x.com"])
+        communicated = mock_popen.return_value.communicate.call_args[0][0]
+        self.assertIn(b"\n", communicated)
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import add_list_members
+        self.assertIsNone(add_list_members("mylist", ["user@example.com"]))
+
