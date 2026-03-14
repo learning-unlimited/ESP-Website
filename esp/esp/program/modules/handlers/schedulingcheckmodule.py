@@ -5,6 +5,7 @@ from esp.resources.models import ResourceRequest
 from copy import deepcopy
 from esp.cal.models import *
 from datetime import date
+from collections import defaultdict
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
@@ -186,6 +187,7 @@ class SchedulingCheckRunner:
             diags.extend([
                 ('unavailable_moderators', self.p.getModeratorTitle().capitalize() + "s helping when they aren't available"),
                 ('mismatched_moderators', self.p.getModeratorTitle().capitalize() + 's with category mismatches'),
+                ('moderator_movement_dependency_loops', self.p.getModeratorTitle().capitalize() + ' movement dependency loops'),
             ])
         return diags
 
@@ -705,3 +707,140 @@ class SchedulingCheckRunner:
                     if e not in available:
                         l.append({self.p.getModeratorTitle(): m, "Time": e, "Section": s})
         return self.formatter.format_table(l, {"headings": ["Section", self.p.getModeratorTitle(), "Time"]})
+
+    def _consecutive_timeslot_pairs(self):
+        pairs = []
+        timeslots = sorted(self.p.getTimeSlotList(), key=lambda ts: ts.start)
+        for i in range(len(timeslots) - 1):
+            current_slot = timeslots[i]
+            next_slot = timeslots[i + 1]
+            if current_slot.start.date() == next_slot.start.date():
+                pairs.append((current_slot, next_slot))
+        return pairs
+
+    def _moderator_room_assignments(self):
+        """Build moderator->room and room->moderators maps for each timeslot."""
+        by_moderator = defaultdict(dict)
+        by_room = defaultdict(lambda: defaultdict(set))
+
+        for section in self._all_class_sections():
+            meeting_times = set(section.get_meeting_times())
+            if not meeting_times:
+                continue
+
+            room_by_timeslot = {}
+            for assignment in section.resourceassignment_set.all():
+                resource = assignment.resource
+                if resource.event in meeting_times and resource.res_type.name == 'Classroom':
+                    room_by_timeslot[resource.event] = resource.name
+
+            for timeslot, room_name in room_by_timeslot.items():
+                for moderator in section.get_moderators():
+                    by_moderator[timeslot][moderator] = room_name
+                    by_room[timeslot][room_name].add(moderator)
+
+        return by_moderator, by_room
+
+    def _dependency_severity(self, chain_length, has_loop):
+        if has_loop:
+            return 'High'
+        if chain_length >= 5:
+            return 'High'
+        if chain_length >= 3:
+            return 'Medium'
+        return 'Low'
+
+    def _trace_dependency_chain(self, start_moderator, first_dependency, dependency_graph):
+        chain = [start_moderator, first_dependency]
+        current = first_dependency
+
+        while True:
+            next_candidates = sorted(
+                dependency_graph.get(current, set()),
+                key=lambda user: user.username,
+            )
+            if not next_candidates:
+                return chain, False
+
+            if start_moderator in next_candidates:
+                chain.append(start_moderator)
+                return chain, True
+
+            novel_candidates = [candidate for candidate in next_candidates if candidate not in chain]
+            if novel_candidates:
+                next_moderator = novel_candidates[0]
+                chain.append(next_moderator)
+                current = next_moderator
+                continue
+
+            # Found an internal cycle that doesn't return to the start moderator.
+            chain.append(next_candidates[0])
+            return chain, False
+
+    def moderator_movement_dependency_loops(self):
+        """
+        Moderators with room-switch dependencies across consecutive blocks.
+        A loop indicates a chain that returns to the starting moderator.
+        """
+        moderator_rooms, room_moderators = self._moderator_room_assignments()
+        output_rows = []
+
+        for current_slot, next_slot in self._consecutive_timeslot_pairs():
+            dependency_graph = defaultdict(set)
+            current_assignments = moderator_rooms.get(current_slot, {})
+            next_assignments = moderator_rooms.get(next_slot, {})
+
+            for moderator, current_room in current_assignments.items():
+                next_room = next_assignments.get(moderator)
+                if next_room is None or next_room == current_room:
+                    continue
+
+                replacements = room_moderators.get(next_slot, {}).get(current_room, set())
+                for replacement in replacements:
+                    if replacement == moderator:
+                        continue
+                    replacement_current_room = current_assignments.get(replacement)
+                    if replacement_current_room is None or replacement_current_room == current_room:
+                        continue
+                    dependency_graph[moderator].add(replacement)
+
+            reported_starts = set()
+            for moderator in sorted(dependency_graph.keys(), key=lambda user: user.username):
+                if moderator in reported_starts:
+                    continue
+
+                for first_dependency in sorted(dependency_graph[moderator], key=lambda user: user.username):
+                    chain, has_loop = self._trace_dependency_chain(moderator, first_dependency, dependency_graph)
+                    dependency_count = max(len(chain) - 1, 0)
+                    chain_str = ' -> '.join(user.username for user in chain)
+                    output_rows.append({
+                        "Current Block": current_slot,
+                        "Next Block": next_slot,
+                        self.p.getModeratorTitle().capitalize(): moderator,
+                        "Dependency Chain": chain_str,
+                        "Dependency Count": dependency_count,
+                        "Severity": self._dependency_severity(dependency_count, has_loop),
+                        "Loop": "Yes" if has_loop else "No",
+                    })
+
+                reported_starts.add(moderator)
+
+        return self.formatter.format_table(
+            output_rows,
+            {
+                "headings": [
+                    "Current Block",
+                    "Next Block",
+                    self.p.getModeratorTitle().capitalize(),
+                    "Dependency Chain",
+                    "Dependency Count",
+                    "Severity",
+                    "Loop",
+                ]
+            },
+            help_text=(
+                "Tracks moderator room switches across consecutive blocks and reports "
+                "movement dependency chains. Rows marked Loop=Yes are hard loops that "
+                "return to the same moderator and typically require manual intervention."
+            ),
+        )
