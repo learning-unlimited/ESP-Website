@@ -194,3 +194,47 @@ class ApplyListSettingsTest(ProgramFrameworkTest):
     def test_disabled_returns_none(self):
         from esp.mailman import apply_list_settings
         self.assertIsNone(apply_list_settings("mylist", {"k": "v"}))
+
+@override_settings(**_MAILMAN_ON)
+class SetListOwnerPasswordTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.apply_raw_list_settings")
+    def test_provided_password_returned(self, mock_apply):
+        from esp.mailman import set_list_owner_password
+        result = set_list_owner_password("mylist", password="secret123")
+        self.assertEqual(result, "secret123")
+
+    @patch("esp.mailman.apply_raw_list_settings")
+    def test_password_is_sha256_hashed(self, mock_apply):
+        import hashlib
+        from esp.mailman import set_list_owner_password
+        set_list_owner_password("mylist", password="secret123")
+        written = mock_apply.call_args[0][1]
+        expected = hashlib.sha256("secret123".encode()).hexdigest()
+        self.assertIn(expected, written)
+
+    @patch("esp.mailman.apply_raw_list_settings")
+    def test_no_deprecated_sha_module_in_config(self, mock_apply):
+        from esp.mailman import set_list_owner_password
+        set_list_owner_password("mylist", password="pw")
+        written = mock_apply.call_args[0][1]
+        self.assertNotIn("import sha", written)
+
+    @patch("esp.mailman.ESPUser")
+    @patch("esp.mailman.apply_raw_list_settings")
+    def test_random_password_generated_when_none_given(self, mock_apply, mock_esp):
+        from esp.mailman import set_list_owner_password
+        mock_esp.objects.make_random_password.return_value = "rand-pw"
+        result = set_list_owner_password("mylist")
+        self.assertEqual(result, "rand-pw")
+
+    @patch("esp.mailman.apply_raw_list_settings")
+    def test_correct_list_name_forwarded(self, mock_apply):
+        from esp.mailman import set_list_owner_password
+        set_list_owner_password("specificlist", password="pw")
+        self.assertEqual(mock_apply.call_args[0][0], "specificlist")
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import set_list_owner_password
+        self.assertIsNone(set_list_owner_password("mylist", password="pw"))
