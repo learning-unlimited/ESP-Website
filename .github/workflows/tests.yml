@@ -39,8 +39,8 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_django
         ports:
           - 5432:5432
@@ -94,9 +94,9 @@ jobs:
       env:
         CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
-        # Match PostgreSQL service credentials so connection uses testuser, not runner user (e.g. root)
-        DATABASE_USER: testuser
-        DATABASE_PASSWORD: testpassword
+        # Match PostgreSQL service credentials (use postgres role to avoid "role root does not exist")
+        DATABASE_USER: postgres
+        DATABASE_PASSWORD: postgres
         DATABASE_NAME: test_django
       run: deploy/ci/script
     - name: Upload Coverage to Codecov
