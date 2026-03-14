@@ -43,4 +43,9 @@ local_fabfile.py
 
 # Mac
 .DS_Store
+
+# Node.js
+node_modules/
 .docker-setup-done
+esp/db.sqlite3
+esp/esp/db.sqlite3
