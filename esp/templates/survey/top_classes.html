@@ -1,148 +1,137 @@
-{% extends "elements/html" %}
+{% extends "main.html" %}
 
 {% block title %}{{ program.niceName }} Top-Rated Classes{% endblock %}
 
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/management.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/top_classes.css" type="text/css" />
+{% endblock %}
+
 {% block javascript %}
+{{ block.super }}
 <script type="text/javascript">
-    <!--
-        function MM_preloadImages() { return 0; } // Does nothing; just makes the body onload function happy.
-        function getelems() {
-            e = [];
-            r = [];
-            if (document.getElementsByTagName) { e = document.getElementsByTagName("tbody"); }
-            else if (document.all) { e = document.all; }
-            for ( i = 0; i < e.length; i++ ) {
-                if ( e[i].id.substr(0,6) == "class_" )
-                    r[r.length] = e[i];
-            }
-            return e;
-        }
-        
-        function hidecat(cat) {
-            e = getelems();
-            for ( i = 0; i < e.length; i++ ) {
-                if ( e[i].id.charAt(6) == cat ) {
-                    e[i].style.display = "none";
-                }
+    function getClassBodies() {
+        var elems = document.querySelectorAll("tbody[id^='class_']");
+        return elems;
+    }
+
+    function toggleCategory(cat, checked) {
+        var elems = getClassBodies();
+        for (var i = 0; i < elems.length; i++) {
+            if (elems[i].id.charAt(6) === cat) {
+                elems[i].style.display = checked ? "" : "none";
             }
         }
-        
-        function showcat(cat) {
-            e = getelems();
-            for ( i = 0; i < e.length; i++ ) {
-                if ( e[i].id.charAt(6) == cat ) {
-                    e[i].style.display = "";
-                }
-            }
-        }
-        
-        function togglecat(cat, checked) {
-            if (checked) { showcat(cat); }
-            else { hidecat(cat); }
-        }
-    //-->
+    }
 </script>
 {% endblock %}
 
-{% block stylesheets %}
-<style type="text/css">
-    body {
-        font-size: small;
-        font-family: sans-serif;
-    }
-    table {
-        border: 2px solid #000000;
-        border-spacing: 0px;
-        clear: both;
-        margin: 1em 0.2em;
-    }
-    th, td {
-        text-align: center;
-        border-left: 1px solid #000000;
-        padding: 0.2em;
-        padding-top: 0em;
-    }
-    tr.newclass td {
-        border-top: 1px solid #000000;
-        padding-top: 0.2em;
-    }
-    div#filterform, div#catsform {
-        text-align: left;
-        float: left;
-        margin: 1em;
-    }
-</style>
-{% endblock %}
-
-{% block body %}
+{% block content %}
 
 <h1>{{ program.niceName }} Top-Rated Classes</h1>
 
-<div>
-<center>
-
 {% if perclass_data %}
-<div id="filterform">
-<h2>Filter results</h2>
-<form action="" method="get">
-    <div><input type="text" size="3" name="rating_cut" id="rating_cut" value="{{ rating_cut }}" /><label for="rating_cut"> Minimum rating</label></div>
-    <div><input type="text" size="3" name="num_cut" id="num_cut" value="{{ num_cut }}" /><label for="num_cut"> Minimum number of ratings</label></div>
-    <div><input type="submit" value="Filter" /></div>
-</form>
+
+<div class="top-classes-filters">
+    {# ---- Filter Panel ---- #}
+    <div class="filter-panel panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title"><span class="glyphicon glyphicon-filter"></span> Filter Results</h3>
+        </div>
+        <div class="panel-body">
+            <form action="" method="get" class="form-inline">
+                <div class="form-group">
+                    <label for="rating_cut">Minimum rating</label>
+                    <input type="text" class="form-control input-sm" size="4" name="rating_cut" id="rating_cut" value="{{ rating_cut }}" />
+                </div>
+                <div class="form-group" style="margin-left:12px;">
+                    <label for="num_cut">Min. number of ratings</label>
+                    <input type="text" class="form-control input-sm" size="4" name="num_cut" id="num_cut" value="{{ num_cut }}" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" style="margin-left:12px;">
+                    <span class="glyphicon glyphicon-search"></span> Filter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {# ---- Category Panel ---- #}
+    <div class="filter-panel panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title"><span class="glyphicon glyphicon-th-list"></span> Show Categories</h3>
+        </div>
+        <div class="panel-body">
+            <div class="category-grid">
+                {% for cat in categories %}
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" id="cat_{{ cat.symbol }}" checked="checked"
+                               onchange="toggleCategory('{{ cat.symbol }}', this.checked)" />
+                        {{ cat }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 </div>
 
-<div id="catsform">
-<h2>Show categories</h2>
-<form action="#" method="get">
-    {% for cat in categories %}
-        <div><input type="checkbox" name="cat_{{ cat.symbol }}" id="cat_{{ cat.symbol }}" checked="checked" onchange="togglecat(&quot;{{ cat.symbol }}&quot;, this.checked)" /><label for="cat_{{ cat.symbol }}">{{ cat }}</label></div>
-    {% endfor %}
-</form>
+{# ---- Data Table ---- #}
+<div class="top-classes-table-wrap table-responsive">
+    <table class="table table-striped table-hover table-bordered top-classes-table">
+        <thead>
+            <tr>
+                <th>Class ID</th>
+                <th>Class Name</th>
+                <th>Rating</th>
+                <th>Num. Ratings</th>
+                <th>Teacher First Name</th>
+                <th>Teacher Last Name</th>
+                <th>Teacher Email</th>
+                <th>Teacher ID</th>
+            </tr>
+        </thead>
+        {% for c in perclass_data|dictsortreversed:"avg" %}
+        <tbody id="class_{{ c.class.emailcode }}">
+            <tr>
+                <td rowspan="{{ c.numteachers }}">{{ c.class.emailcode }}</td>
+                <td rowspan="{{ c.numteachers }}">{{ c.class.title }}</td>
+                <td rowspan="{{ c.numteachers }}" class="rating-cell">{{ c.avg|floatformat:2 }}</td>
+                <td rowspan="{{ c.numteachers }}">{{ c.numratings }}</td>
+                <td>{{ c.teacher.first_name }}</td>
+                <td>{{ c.teacher.last_name }}</td>
+                <td>{{ c.teacher.email }}</td>
+                <td>{{ c.teacher.id }}</td>
+            </tr>
+            {% if c.coteachers %}
+            {% for teacher in c.coteachers %}
+            <tr>
+                <td>{{ teacher.first_name }}</td>
+                <td>{{ teacher.last_name }}</td>
+                <td>{{ teacher.email }}</td>
+                <td>{{ teacher.id }}</td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+        </tbody>
+        {% endfor %}
+    </table>
 </div>
-<table>
-    <thead>
-    <tr>
-        <th>Class ID</th>
-        <th>Class Name</th>
-        <th>Class Rating</th>
-        <th>Num. Ratings</th>
-        <th>Teacher First Name</th>
-        <th>Teacher Last Name</th>
-        <th>Teacher Email</th>
-        <th>Teacher ID</th>
-    </tr>
-    </thead>
-{% for c in perclass_data|dictsortreversed:"avg" %}
-    <tbody id="class_{{c.class.emailcode}}">
-        <tr class="newclass">
-            <td rowspan="{{ c.numteachers }}">{{ c.class.emailcode }}</td>
-            <td rowspan="{{ c.numteachers }}">{{ c.class.title }}</td>
-            <td rowspan="{{ c.numteachers }}">{{ c.avg|floatformat:2 }}</td>
-            <td rowspan="{{ c.numteachers }}">{{ c.numratings }}</td>
-            <td>{{ c.teacher.first_name }}</td>
-            <td>{{ c.teacher.last_name }}</td>
-            <td>{{ c.teacher.email }}</td>
-            <td>{{ c.teacher.id }}</td>
-        </tr>
-    {% if c.coteachers %}
-    {% for teacher in c.coteachers %}
-        <tr>
-            <td>{{ teacher.first_name }}</td>
-            <td>{{ teacher.last_name }}</td>
-            <td>{{ teacher.email }}</td>
-            <td>{{ teacher.id }}</td>
-        </tr>
-    {% endfor %}
-    {% endif %}
-    </tbody>
-{% endfor %}
+
 {% else %}
-	<h1>There are no responses for this survey yet!</h1>
+
+<div class="top-classes-empty">
+    <span class="glyphicon glyphicon-info-sign"></span>
+    <p>There are no responses for this survey yet.</p>
+    <p><small>Once students submit survey responses, top-rated classes will appear here.</small></p>
+</div>
+
 {% endif %}
 
-</table>
-
-</center>
-</div>
+<p>
+    <a class="btn btn-primary" href="/manage/{{ program.getUrlBase }}/main">Return to the main program management page</a>
+    <a class="btn btn-default" href="/manage/{{ program.getUrlBase }}/surveys" style="margin-left: 8px;">Return to survey management</a>
+</p>
 
 {% endblock %}

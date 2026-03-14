@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -55,6 +54,7 @@ from urllib.parse import quote
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
+from django.core.exceptions import ImproperlyConfigured
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -69,13 +69,14 @@ class CoreModule(object):
     """
     pass
 
-@python_2_unicode_compatible
 class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
     required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=False, default="")
+    link_title = models.CharField(max_length=64, blank=True, null=False, default="",
+                                  help_text="Override the default link title for this program. Leave blank to use the module's default.")
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
@@ -197,7 +198,7 @@ class ProgramModuleObj(models.Model):
                     m.request = request
                     if request.user.updateOnsite(request) and not isinstance(m, RegProfileModule):
                         continue
-                    if not isinstance(m, CoreModule) and not m.isCompleted() and m.main_view:
+                    if not isinstance(m, CoreModule) and not m.isCompleted(request.user) and m.main_view:
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
@@ -275,13 +276,17 @@ class ProgramModuleObj(models.Model):
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
     get_full_path.depend_on_model('program.Program')
 
+    def get_link_title(self):
+        return self.link_title or self.module.link_title
+
     def makeLink(self):
+        title = self.get_link_title()
         if not self.module.module_type == 'manage':
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                (self.get_full_path(), self.module.link_title, self.module.link_title)
+                (self.get_full_path(), title, title)
         else:
             link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
+               (self.get_full_path(), title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
 
         return mark_safe(link)
 
@@ -291,7 +296,7 @@ class ProgramModuleObj(models.Model):
     def get_setup_title(self):
         if hasattr(self, 'setup_title') and self.setup_title is not None and str(self.setup_title).strip() != '':
             return self.setup_title
-        return self.module.link_title
+        return self.get_link_title()
 
     def get_setup_path(self):
         if hasattr(self, 'setup_path') and self.setup_path is not None and str(self.setup_path).strip() != '':
@@ -325,7 +330,7 @@ class ProgramModuleObj(models.Model):
     def isAdminPortalFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""
-        return self.module.handler in ['AdminCore', 'AdminMorph', 'AdminMaterials',
+        return self.module.handler in ['AdminCore', 'AdminMaterials',
                                        'ListGenModule', 'ResourceModule', 'CommModule',
                                        'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
                                        'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsManageModule',
@@ -336,7 +341,19 @@ class ProgramModuleObj(models.Model):
         return self.module.handler in ['OnSiteCheckinModule', 'TeacherCheckinModule', 'OnSiteCheckoutModule',
                                        'OnsiteClassSchedule', 'OnSiteClassList', 'OnSiteRegister',
                                        'OnSiteAttendance', 'OnsitePaidItemsModule']
-    def isCompleted(self):
+    def _resolve_user(self, user):
+        """Return the user to use for per-user module logic.
+
+        Precedence: explicit argument > self.user (set by getModules) >
+        get_current_request().user (fallback for template calls).
+        """
+        if user is not None:
+            return user
+        if hasattr(self, 'user'):
+            return self.user
+        return get_current_request().user
+
+    def isCompleted(self, user=None):
         return False
 
     def isRequired(self):
@@ -714,7 +731,7 @@ def meets_deadline(extension=''):
     """
     return meets_any_deadline([extension])
 
-def meets_any_deadline(extensions=[]):
+def meets_any_deadline(extensions=None):
     """
     Decorate a function to check if at least one deadline is met.
 
@@ -722,6 +739,28 @@ def meets_any_deadline(extensions=[]):
     if at least one of the deadlines is met, or a function that generates an
     error page if none of the deadlines are met.
     """
+    if extensions is None:
+        extensions = []
+
+    _tl_prefixes = ('Student', 'Teacher', 'Volunteer')
+    valid_perms = Permission.deadline_types
+    invalid_exts = []
+
+    for ext in extensions:
+        if not any((prefix + ext) in valid_perms for prefix in _tl_prefixes):
+            invalid_exts.append(ext)
+
+    if invalid_exts:
+        raise ImproperlyConfigured(
+            "@meets_deadline(...) / @meets_any_deadline(...) use an invalid permission extension. "
+            "Invalid permission extensions: {invalid}. "
+            "Valid deadline choices are: {valid}.".format(
+                invalid=", ".join(invalid_exts),
+                valid=", ".join(sorted(p for p in valid_perms
+                                       if p.startswith(_tl_prefixes))),
+            )
+        )
+
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             for ext in extensions:
