@@ -62,7 +62,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # the ProgramModuleObj's user if we ever cache isCompleted().
         for student in self.students:
             get_current_request().user = student
-            self.assertTrue( not self.moduleobj.isCompleted(), "The profile should be incomplete at first." )
+            self.assertTrue( not self.moduleobj.isCompleted(student), "The profile should be incomplete at first." )
 
         # First student: getLastForProgram should not save a profile
         get_current_request().user = self.students[0]
@@ -88,7 +88,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # Continue testing
         self.assertTrue( self.students[1].registrationprofile_set.count() >= 1, "Profile failed to save." )
         self.assertTrue( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.assertTrue( not self.moduleobj.isCompleted(), "Profile too old but accepted anyway." )
+        self.assertTrue( not self.moduleobj.isCompleted(self.students[1]), "Profile too old but accepted anyway." )
         self.assertTrue( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
 
         get_current_request().user = self.students[2]
