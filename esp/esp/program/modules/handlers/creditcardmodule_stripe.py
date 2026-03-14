@@ -41,6 +41,7 @@ from esp.program.modules.handlers.donationmodule import DonationModule
 
 from django.conf import settings
 from django.db import transaction
+from django.http import HttpResponse
 from django.db.models.query import Q
 from django.contrib.sites.models import Site
 from django.template.loader import render_to_string
@@ -50,6 +51,17 @@ import stripe
 import json
 import re
 
+def verify_request_authenticity(request):
+    """
+    Only allow requests with the correct secret token.
+    """
+    token = request.headers.get("X-Webhook-Token")
+    if token == "my-secret-token":
+        return True
+    return False
+
+ 
+ 
 class CreditCardModule_Stripe(ProgramModuleObj):
     doc = """Accept credit card payments via Stripe."""
 
@@ -267,6 +279,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         group_name = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
 
         iac = IndividualAccountingController(self.program, request.user)
+        
+        # --- Step 1: Verify request authenticity ---
+        # This ensures that only legitimate requests can proceed to payment processing.
+        if not verify_request_authenticity(request):
+            return HttpResponse("Unauthorized", status=403)
+            
 
         #   Set donation transfer
         form = None
@@ -338,7 +356,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                         metadata={
                             'ponumber': request.POST['ponumber'],
                         },
-                    )
+                    )       
+        
+                        
 
                     #   Now that the charge has been performed by Stripe, save its
                     #   transaction ID for our records.
