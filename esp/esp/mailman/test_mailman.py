@@ -26,3 +26,42 @@ _MAILMAN_OFF = dict(
     MAILMAN_PATH="/usr/sbin/",
     MAILMAN_PASSWORD="",
 )
+
+@override_settings(**_MAILMAN_ON)
+class CreateListTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_email_string_owner(self, mock_call):
+        from esp.mailman import create_list
+        result = create_list("mylist", "owner@example.com")
+        self.assertEqual(result, 0)
+        mock_call.assert_called_once_with([
+            "/usr/lib/mailman/bin/newlist", "-q",
+            "mylist", "owner@example.com", "test-admin-password",
+        ])
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_user_object_owner_extracts_email(self, mock_call):
+        from esp.mailman import create_list
+        create_list("mylist", self.admin_user)
+        args = mock_call.call_args[0][0]
+        self.assertIn(self.admin_user.email, args)
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_custom_admin_password(self, mock_call):
+        from esp.mailman import create_list
+        create_list("mylist", "owner@example.com", admin_password="custom")
+        args = mock_call.call_args[0][0]
+        self.assertIn("custom", args)
+
+    @patch("esp.mailman.call", return_value=1)
+    def test_error_return_code_propagated(self, mock_call):
+        from esp.mailman import create_list
+        result = create_list("badlist", "owner@example.com")
+        self.assertEqual(result, 1)
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import create_list
+        self.assertIsNone(create_list("mylist", "owner@example.com"))
+
