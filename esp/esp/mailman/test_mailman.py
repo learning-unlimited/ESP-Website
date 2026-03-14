@@ -95,3 +95,54 @@ class LoadListSettingsTest(ProgramFrameworkTest):
         from esp.mailman import load_list_settings
         self.assertIsNone(load_list_settings("mylist", "/some/file.cfg"))
 
+@override_settings(**_MAILMAN_ON)
+class ApplyRawListSettingsTest(ProgramFrameworkTest):
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_bytes_data_calls_config_list(self, mock_call):
+        from esp.mailman import apply_raw_list_settings
+        result = apply_raw_list_settings("mylist", b"key = 'value'\n")
+        self.assertEqual(result, 0)
+        cmd = mock_call.call_args[0][0]
+        self.assertIn("config_list", cmd[0])
+        self.assertIn("-i", cmd)
+        self.assertIn("mylist", cmd)
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_string_data_accepted(self, mock_call):
+        from esp.mailman import apply_raw_list_settings
+        result = apply_raw_list_settings("mylist", "key = 'value'\n")
+        self.assertEqual(result, 0)
+
+    @patch("esp.mailman.call", return_value=0)
+    def test_correct_content_written_to_tempfile(self, mock_call):
+        import tempfile
+        from esp.mailman import apply_raw_list_settings
+
+        written = []
+        original_ntf = tempfile.NamedTemporaryFile
+
+        class CapturingNTF:
+            def __init__(self, **kwargs):
+                self._f = original_ntf(**kwargs)
+                self.name = self._f.name
+            def write(self, data):
+                written.append(data)
+                return self._f.write(data)
+            def flush(self):
+                return self._f.flush()
+            def __enter__(self):
+                self._f.__enter__()
+                return self
+            def __exit__(self, *args):
+                return self._f.__exit__(*args)
+
+        with patch("esp.mailman.NamedTemporaryFile", CapturingNTF):
+            apply_raw_list_settings("mylist", b"expected-content")
+
+        self.assertIn(b"expected-content", written)
+
+    @override_settings(**_MAILMAN_OFF)
+    def test_disabled_returns_none(self):
+        from esp.mailman import apply_raw_list_settings
+        self.assertIsNone(apply_raw_list_settings("mylist", b"data"))
