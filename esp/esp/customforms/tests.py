@@ -72,12 +72,12 @@ class CustomFormsTest(TestCase):
         self.client.logout()
         for url in urls:
             response = self.client.get(url)
-            self.assertRedirects(response, '/accounts/login/?next=%s' % url)
+            self.assertRedirects(response, f'/accounts/login/?next={url}')
 
         self.client.login(username=self.student.username, password='password')
         for url in urls:
             response = self.client.get(url)
-            self.assertRedirects(response, '/accounts/login/?next=%s' % url)
+            self.assertRedirects(response, f'/accounts/login/?next={url}')
 
         self.client.login(username=self.admin.username, password='password')
         for url in urls:
@@ -155,32 +155,32 @@ class CustomFormsTest(TestCase):
 
         #   - Make sure you can view the form as a student
         self.client.login(username=self.student.username, password='password')
-        response = self.client.get("/customforms/view/%d/" % form.id)
+        response = self.client.get(f"/customforms/view/{form.id}/")
         self.assertEqual(response.status_code, 200)
 
         #   - Build an initial set of responses
         responses_initial = {}
-        responses_initial['question_%d' % field_id_map['ShortText']] = 'Dumb'
-        responses_initial['question_%d' % field_id_map['Your phone no.']] = '(201) 426-5797'
-        responses_initial['question_%d' % field_id_map['Your gender']] = 'F'
-        responses_initial['question_%d' % field_id_map['Choose an option']] = 'A'
-        responses_initial['question_%d' % field_id_map['True/false']] = 'on'
-        responses_initial['question_%d' % field_id_map['NonRequired']] = 'test'
+        responses_initial[f'question_{field_id_map["ShortText"]}'] = 'Dumb'
+        responses_initial[f'question_{field_id_map["Your phone no."]}'] = '(201) 426-5797'
+        responses_initial[f'question_{field_id_map["Your gender"]}'] = 'F'
+        responses_initial[f'question_{field_id_map["Choose an option"]}'] = 'A'
+        responses_initial[f'question_{field_id_map["True/false"]}'] = 'on'
+        responses_initial[f'question_{field_id_map["NonRequired"]}'] = 'test'
 
         #   - Make sure validation catches incorrect response
         #     (for the question with a correct answer)
         post_dict = {'combo_form-current_step': '0'}
         post_dict.update(responses_initial)
-        response = self.client.post("/customforms/view/%d/" % form.id, post_dict)
+        response = self.client.post(f"/customforms/view/{form.id}/", post_dict)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Incorrect answer')
         responses_corrected = responses_initial
-        responses_corrected['question_%d' % field_id_map['ShortText']] = 'Smart'
-        responses_initial['question_%d' % field_id_map['Choose an option']] = 'B'
+        responses_corrected[f'question_{field_id_map["ShortText"]}'] = 'Smart'
+        responses_initial[f'question_{field_id_map["Choose an option"]}'] = 'B'
         post_dict.update(responses_corrected)
-        response = self.client.post("/customforms/view/%d/" % form.id, post_dict)
-        self.assertRedirects(response, "/customforms/success/%s/" % form.id)
-        response = self.client.get("/customforms/success/%d/" % form.id)
+        response = self.client.post(f"/customforms/view/{form.id}/", post_dict)
+        self.assertRedirects(response, f"/customforms/success/{form.id}/")
+        response = self.client.get(f"/customforms/success/{form.id}/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, form_data['success_message'])
 

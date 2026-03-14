@@ -307,6 +307,67 @@ class ProgramTagTest(ProgramFrameworkTest):
                 self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
 
 
+class GetNondefaultProgramTagsTest(ProgramFrameworkTest):
+    def setUp(self):
+        super().setUp()
+        # Remove any pre-existing test tags for this program
+        Tag.objects.filter(key__in=["test", "test_bool"]).delete()
+
+    def test_no_tags_set(self):
+        '''When no program-specific tags exist, result should be empty.'''
+        result = Tag.get_nondefault_program_tags(self.program)
+        self.assertEqual(result, [])
+
+    def test_program_tag_returned(self):
+        '''A tag set for the program with is_setting=True appears in the result.'''
+        Tag.setTag("test", target=self.program, value="hello")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertIn("test", keys)
+        entry = next(d for d in result if d['key'] == "test")
+        self.assertEqual(entry['value'], "hello")
+
+    def test_global_tag_not_returned(self):
+        '''A global tag (no target) is not included in program tag results.'''
+        Tag.setTag("test", target=None, value="global")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test", keys)
+
+    def test_non_setting_tag_excluded(self):
+        '''A tag with is_setting=False is excluded from the result.'''
+        # 'student_lottery_run' is in all_program_tags with is_setting=False
+        Tag.setTag("student_lottery_run", target=self.program, value="True")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertNotIn("student_lottery_run", keys)
+
+    def test_result_contains_help_text(self):
+        '''Each entry in the result includes the help_text from the tag definition.'''
+        Tag.setTag("test", target=self.program, value="x")
+        result = Tag.get_nondefault_program_tags(self.program)
+        entry = next((d for d in result if d['key'] == "test"), None)
+        self.assertIsNotNone(entry)
+        self.assertIn('help_text', entry)
+
+    def test_tag_at_default_value_excluded(self):
+        '''A tag stored in the DB but set to its default value is not shown in the banner.'''
+        # 'test_bool' has default=False; setting it to its default should hide it
+        all_program_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=self.program, value="False")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test_bool", keys)
+
+    def test_tag_at_nondefault_value_included(self):
+        '''A tag stored with a value different from the default is shown in the banner.'''
+        all_program_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=self.program, value="True")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertIn("test_bool", keys)
+
+
 class TagRegistrationTest(SimpleTestCase):
     """
     Statically scan the codebase for Tag.getTag(), Tag.getProgramTag(), and
