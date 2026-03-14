@@ -425,7 +425,7 @@ class ProgramHappenTest(TestCase):
                 class_dict[field] = 'foo'
 
         # Check that stuff went through correctly
-        response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
+        self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
 
         # check prog.classes
         classes = self.prog.classes()
@@ -475,7 +475,7 @@ class ProgramHappenTest(TestCase):
 
         # Student logs in and signs up for classes
         self.loginStudent()
-        response = self.client.get('%sstudentreg' % self.prog.get_learn_url())
+        self.client.get('%sstudentreg' % self.prog.get_learn_url())
         reg_dict = {
             'class_id': self.classsubject.id,
             'section_id': sec.id,
@@ -484,7 +484,7 @@ class ProgramHappenTest(TestCase):
         # Try signing up for a class.
         self.client.post('%saddclass' % self.prog.get_learn_url(), reg_dict)
 
-        sr = StudentRegistration.objects.all()[0]
+        StudentRegistration.objects.all()[0]
 
         enrolled = RegistrationType.get_cached(name='Enrolled',
                                                category='student')
@@ -932,8 +932,7 @@ class ScheduleMapTest(ProgramFrameworkTest):
         section2 = section_list[1]
         ts1 = timeslot_list[0]
         ts2 = timeslot_list[1]
-        modules = program.getModules()
-        scrmi = program.studentclassregmoduleinfo
+
 
         #   Check that the map starts out empty
         sm = ScheduleMap(student, program)
@@ -982,14 +981,14 @@ class BooleanLogicTest(TestCase):
     def runTest(self):
         #   Create a logic expression with default values
         exp, created = BooleanExpression.objects.get_or_create(label='bltestexp')
-        a = exp.add_token('1')
+        exp.add_token('1')
         exp.add_token('not')
-        b = exp.add_token('0')
+        exp.add_token('0')
         exp.add_token('not')
         exp.add_token('or')
-        c = exp.add_token('0')
+        exp.add_token('0')
         exp.add_token('and')
-        d = exp.add_token('1')
+        exp.add_token('1')
         e = exp.add_token('0')
         exp.add_token('and')
         exp.add_token('not')
@@ -1015,8 +1014,7 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         student = self.students[0]
         program = self.program
         (section_list, timeslot_list) = randomized_attrs(program)
-        modules = program.getModules()
-        scrmi = program.studentclassregmoduleinfo
+
 
         #   Prepare two sections
         section1 = section_list[0]
@@ -1561,7 +1559,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_notification_email_sent(self):
         """Creating a flag with notify_teacher_by_email=True sends personalized email to each teacher."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_notify_type,
             comment='Please fix ASAP', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1581,7 +1578,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_no_notification_when_disabled(self):
         """Creating a flag with notify_teacher_by_email=False sends no email."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_visible_type,
             comment='FYI', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1671,15 +1667,11 @@ Source: esp/esp/program/controllers/classreg.py
 
 Tests ClassCreationController and ClassCreationValidationError.
 """
-from django.contrib.auth.models import Group
-
 from esp.program.controllers.classreg import (
     ClassCreationController,
     ClassCreationValidationError,
 )
-from esp.program.models import Program
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser
 
 
 def _setup_roles():
@@ -1728,19 +1720,13 @@ and repeat sending logic.
 """
 from unittest.mock import patch, MagicMock
 
-from django.contrib.auth.models import Group
 from django.core import mail
 
 from esp.cal.models import install as install_cal
 from esp.program.controllers.confirmation import ConfirmationEmailController
-from esp.program.models import Program
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser, Record, RecordType
+from esp.users.models import Record, RecordType
 
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
 
 
 class ConfirmationEmailControllerTest(TestCase):
@@ -1889,7 +1875,7 @@ class ManageDocsViewTest(TestCase):
         self.client.login(username='docstestadmin', password=self.password)
         # Mock open so it doesn't crash trying to open a fake image
         from unittest.mock import mock_open
-        with patch('esp.program.views.open', mock_open(read_data=b'fakeimage')) as m:
+        with patch('esp.program.views.open', mock_open(read_data=b'fakeimage')) as _:
             response = self.client.get('/manage/docs/test_image.png')
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response['Content-Type'], 'image/png')
@@ -1954,8 +1940,7 @@ class GradeCacheInvalidationTest(TestCase):
 
     def test_getLastForProgram_invalidates_on_studentinfo_change(self):
         """getLastForProgram should return updated student_info after change."""
-        profile1 = RegistrationProfile.getLastForProgram(self.student, self.program)
-        initial_yog = profile1.student_info.graduation_year
+        RegistrationProfile.getLastForProgram(self.student, self.program)
 
         # Modify graduation_year
         new_yog = ESPUser.YOGFromGrade(9, ESPUser.program_schoolyear(self.program))
@@ -1971,8 +1956,7 @@ class GradeCacheInvalidationTest(TestCase):
 
     def test_getLastProfile_invalidates_on_studentinfo_change(self):
         """getLastProfile should return updated student_info after change."""
-        profile1 = RegistrationProfile.getLastProfile(self.student)
-        initial_yog = profile1.student_info.graduation_year
+        RegistrationProfile.getLastProfile(self.student)
 
         new_yog = ESPUser.YOGFromGrade(11, ESPUser.program_schoolyear(self.program))
         self.student_info.graduation_year = new_yog

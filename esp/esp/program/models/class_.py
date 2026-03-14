@@ -169,9 +169,7 @@ class ClassManager(Manager):
         queries for the category's title (cls.category_txt)
         and the total # of media.
         """
-        now = datetime.datetime.now()
 
-        enrolled_type = RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
 
         if initial_queryset:
             classes = initial_queryset
@@ -264,8 +262,8 @@ class ClassManager(Manager):
             for s in c._sections:
                 s.parent_class = c
             c._sections.sort(key=lambda s:s.id)
-            c.parent_program = p # So that if we set attributes on one instance of the program,
-                                 # they show up for all instances.
+            c.parent_program = p  # So that if we set attributes on one instance of the program,
+            # they show up for all instances.
 
         return classes
     catalog_cached.depend_on_model('program.ClassSubject')
@@ -767,7 +765,6 @@ class ClassSection(models.Model):
 
             base_list = list_of_lists[0]
             for other_list in list_of_lists[1:]:
-                i = 0
                 for elt in base_list:
                     if elt not in other_list:
                         base_list.remove(elt)
@@ -818,7 +815,6 @@ class ClassSection(models.Model):
 
         #   Start with all rooms the program has.
         #   Filter the ones that are available at all times needed by the class.
-        filter_qs = []
         ordered_times = self.meeting_times.order_by('start')
         first_time = ordered_times[0]
         possible_rooms = self.parent_program.getAvailableClassrooms(first_time)
@@ -954,7 +950,7 @@ class ClassSection(models.Model):
         """
         # check if proposed times are the same as the current meeting_times
         current_times = self.meeting_times.all()
-        if all(time in current_times for time in meeting_times):
+        if all(t in current_times for t in meeting_times):
             return False
         # otherwise, check if all teachers are available
         for t in self.teachers:
@@ -979,7 +975,7 @@ class ClassSection(models.Model):
          ...
         }
         """
-        now = datetime.datetime.now()
+
 
         rmap = RegistrationType.get_map()
         result = {}
@@ -1258,8 +1254,6 @@ class ClassSection(models.Model):
         )
 
         txtTimes = []
-        eventList = []
-
         # For now, use meeting times lookup instead of resource assignments.
         """
         classroom_type = ResourceType.get_or_create('Classroom')
@@ -1583,8 +1577,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def add_section(self, duration=None, status=None):
         """ Add a ClassSection belonging to this class. Can be run multiple times. """
-
-        section_index = self.sections.count() + 1
 
         if duration is None:
             duration = self.duration

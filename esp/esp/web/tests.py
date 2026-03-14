@@ -268,7 +268,6 @@ class JavascriptSyntaxTest(TestCase):
 
         for path_tup in path_gen:
             dirpath = path_tup[0]
-            dirnames = path_tup[1]
             filenames = path_tup[2]
             exclude = False
             for name in exclude_names:

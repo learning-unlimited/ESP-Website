@@ -228,7 +228,6 @@ class StudentClassRegModule(ProgramModuleObj):
     def prepare(self, context={}):
         user = get_current_request().user
         program = self.program
-        scrmi = self.program.studentclassregmoduleinfo
         return self.prepare_static(user, program, context=context, scrm = self)
 
     @staticmethod
@@ -242,7 +241,6 @@ class StudentClassRegModule(ProgramModuleObj):
         prevTimeSlot = None
         blockCount = 0
 
-        is_onsite = user.isOnsite(program)
         scrmi = program.studentclassregmoduleinfo
 
         #   Filter out volunteer timeslots
@@ -280,11 +278,9 @@ class StudentClassRegModule(ProgramModuleObj):
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
-            daybreak = False
             if prevTimeSlot is not None:
                 if not Event.contiguous(prevTimeSlot, timeslot):
                     blockCount += 1
-                    daybreak = True
 
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
@@ -511,8 +507,6 @@ class StudentClassRegModule(ProgramModuleObj):
         scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
 
-        prog_color = prog.getColor()
-        collapse_full_classes = Tag.getBooleanTag('collapse_full_classes', prog)
         class_blobs = []
 
         category_header_str = """

@@ -267,8 +267,6 @@ def lottery_student_reg(request, program = None):
     if not request.user.isStudent():
         raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
-    context = {}
-
     return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, {})
 
 @login_required
@@ -283,8 +281,6 @@ def lottery_student_reg_simple(request, program = None):
     # First check whether the user is actually a student.
     if not request.user.isStudent():
         raise ESPError("You must be a student in order to access Splash student registration.", log=False)
-
-    context = {}
 
     return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
@@ -745,7 +741,7 @@ def newprogram(request):
             default_restypes = Tag.getTag('default_restypes')
             if default_restypes:
                 resource_type_labels = json.loads(default_restypes)
-                resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
+                [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
             # If a template program was chosen, load modules based on that program's
             if template_prog is not None:
                 # Force all ProgramModuleObjs and their extensions to be created now

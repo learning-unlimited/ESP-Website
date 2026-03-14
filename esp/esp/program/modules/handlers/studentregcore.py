@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from argcache            import cache_function
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.tagdict.models import Tag
@@ -72,8 +72,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})
 
     def students(self, QObject = False):
-        now = datetime.now()
-
         q_confirmed = Q(record__event__name = "reg_confirmed", record__program=self.program)
         q_attended = Q(record__event__name= "attended", record__program=self.program)
         # if we don't do list(values_list()), it breaks downstream queries for some weird reason I don't understand -WG
@@ -200,8 +198,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if completedAll:
             if new_reg:
                 rt = RecordType.objects.get(name="reg_confirmed")
-                rec = Record.objects.create(user=user, event=rt,
-                                            program=prog)
+                Record.objects.create(user=user, event=rt,
+                                      program=prog)
         else:
             raise ESPError("You must finish all the necessary steps first, then click on the Save button to finish registration.", log=False)
 

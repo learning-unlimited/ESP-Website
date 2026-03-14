@@ -148,7 +148,7 @@ def onSubmit(request):
 
                             # inserting other attributes, if any
                             for atype, aval in field['data']['attrs'].items():
-                                new_attr = Attribute.objects.create(field=new_field, attr_type=atype, value=aval)
+                                Attribute.objects.create(field=new_field, attr_type=atype, value=aval)
 
                 dynH = DMH(form=form, fields=fields)
                 dynH.createTable()

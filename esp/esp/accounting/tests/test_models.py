@@ -235,28 +235,13 @@ Source: esp/esp/accounting/controllers.py
 Tests GlobalAccountingController, ProgramAccountingController, and
 IndividualAccountingController.
 """
-from decimal import Decimal
-
-from django.contrib.auth.models import Group
-
 from esp.accounting.controllers import (
     GlobalAccountingController,
     IndividualAccountingController,
     ProgramAccountingController,
 )
-from esp.accounting.models import (
-    Account,
-    LineItemType,
-    Transfer,
-)
-from esp.program.models import Program
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser
 
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
 
 
 class GlobalAccountingControllerTest(TestCase):
@@ -497,4 +482,3 @@ class IndividualAccountingControllerTest(TestCase):
         types = [t['type'] for t in results[0]['transfers']]
         self.assertIn('Refund', types)
         self.assertEqual(results[0]['refunded'], Decimal('15.00'))
-

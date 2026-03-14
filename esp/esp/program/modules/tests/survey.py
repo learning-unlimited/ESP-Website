@@ -110,7 +110,7 @@ class SurveyTest(ProgramFrameworkTest):
 
         #   Check that we have a SurveyRecord with the right answers associated with it
         self.assertEqual(SurveyResponse.objects.filter(survey=survey).count(), 1)
-        record = SurveyResponse.objects.filter(survey=survey)[0]
+        SurveyResponse.objects.filter(survey=survey)[0]
         self.assertEqual(Answer.objects.filter(question=question_base).count(), 1)
         answer_base = Answer.objects.filter(question=question_base)[0]
         self.assertEqual(answer_base.answer, 'Yes')

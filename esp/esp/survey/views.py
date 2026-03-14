@@ -40,7 +40,7 @@ import openpyxl
 import re
 from io import BytesIO
 from django.db import models
-from django.db.models import Q
+
 from esp.users.models import ESPUser, Record, RecordType, admin_required
 from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
 from esp.survey.models import Question, Survey, SurveyResponse, Answer

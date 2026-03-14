@@ -46,23 +46,27 @@ from django.db.models.query import Q
 
 @login_required
 def myesp_passwd(request):
-        """ Change password """
-        if request.user.username == 'onsite':
-                raise ESPError("Sorry, you're not allowed to change the password of this user. It's special.", log=False)
+    """Change password"""
+    if request.user.username == "onsite":
+        raise ESPError(
+            "Sorry, you're not allowed to change the password of this user. It's special.",
+            log=False,
+        )
 
-        if request.method == "POST":
-                form = UserPasswdForm(user=request.user, data=request.POST)
-                if form.is_valid():
-                        new_data = form.cleaned_data
-                        user = authenticate(username=request.user.username,
-                                            password=new_data['password'])
+    if request.method == "POST":
+        form = UserPasswdForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            new_data = form.cleaned_data
+            user = authenticate(
+                username=request.user.username, password=new_data["password"]
+            )
 
-                        user.set_password(new_data['newpasswd'])
-                        user.save()
-                        login(request, user)
-                        return render_to_response('users/passwd.html', request, {'Success': True})
-        else:
-                form = UserPasswdForm(user=request.user)
+            user.set_password(new_data["newpasswd"])
+            user.save()
+            login(request, user)
+            return render_to_response("users/passwd.html", request, {"Success": True})
+    else:
+        form = UserPasswdForm(user=request.user)
 
         return render_to_response('users/passwd.html', request, {'Problem': False,
                                                     'form': form,
@@ -82,6 +86,7 @@ def myesp_switchback(request):
 
     return HttpResponseRedirect(user.switch_back(request))
 
+
 def myesp_stop_testing(request):
     """Return from a testing-mode session to the original admin account."""
     from django.contrib.auth import login as auth_login, logout as auth_logout
@@ -99,6 +104,7 @@ def myesp_stop_testing(request):
         admin_user = ESPUser.objects.get(pk=admin_user_id)
         if not admin_user.isAdministrator():
             import logging
+
             logging.getLogger(__name__).warning(
                 'stop_testing: session admin_user_id=%d is not an administrator; rejecting restore',
                 admin_user_id,
@@ -112,6 +118,7 @@ def myesp_stop_testing(request):
     response = HttpResponseRedirect('/manage/%s/admin_testing/' % program_url)
     response.delete_cookie('esp_testing_role')
     return response
+
 
 @login_required
 def edit_profile(request):
@@ -191,9 +198,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 regProf = RegistrationProfile.getLastForProgram(curUser, prog)
 
             if regProf.id is None:
-                old_regProf = RegistrationProfile.getLastProfile(curUser)
-            else:
-                old_regProf = regProf
+                RegistrationProfile.getLastProfile(curUser)
 
             regProf.contact_user = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_user, '')
 

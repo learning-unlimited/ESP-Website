@@ -451,15 +451,15 @@ class AccountCreationTest(TestCase):
         url = "/myesp/register/"
         if Tag.getBooleanTag("ask_about_duplicate_accounts"):
             url+="information/"
-        response = self.client.post(url,
-                                   data={"username":"username",
-                                         "password":"passw",
-                                         "confirm_password":"passw",
-                                         "first_name":"first",
-                                         "last_name":"last",
-                                         "email":"tsutton125@gmail.com",
-                                         "confirm_email":"tsutton125@gmail.com",
-                                         "initial_role":"Teacher"})
+        self.client.post(url,
+                         data={"username":"username",
+                               "password":"passw",
+                               "confirm_password":"passw",
+                               "first_name":"first",
+                               "last_name":"last",
+                               "email":"tsutton125@gmail.com",
+                               "confirm_email":"tsutton125@gmail.com",
+                               "initial_role":"Teacher"})
 
         #test that the user was created properly
         try:
@@ -568,7 +568,7 @@ class TestChangeRequestView(TestCase):
         c.login(username=self.user.username, password=self.password)
 
         #   Submit a valid grade change request
-        response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this email', 'claimed_grade': 10 })
+        c.post("/myesp/grade_change_request", { "reason": 'I should not get this email', 'claimed_grade': 10 })
 
         #   Check that an email was sent with the right from/to
         self.assertEqual(len(mail.outbox), 1)

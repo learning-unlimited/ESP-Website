@@ -28,11 +28,9 @@ def csrf_failure(request, reason=""):
         if match:
             one, two = match.groups()
             try:
-                prog = Program.by_prog_inst(one, two)
+                Program.by_prog_inst(one, two)
             except Program.DoesNotExist:
-                prog = None
-        else:
-            prog = None
+                pass
 
         response = render_to_response('403_csrf_failure.html', request, c)
         response = HttpResponseForbidden(str(response.content, encoding='UTF-8'),

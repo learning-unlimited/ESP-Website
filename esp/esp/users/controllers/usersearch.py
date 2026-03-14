@@ -142,7 +142,7 @@ class UserSearchController(object):
                 if criteria.get(field, '').strip():
                     #   Check that it's a valid regular expression
                     try:
-                        rc = re.compile(criteria[field])
+                        re.compile(criteria[field])
                     except re.error:
                         raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
                     filter_dict = {'%s__iregex' % field: criteria[field]}

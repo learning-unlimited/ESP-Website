@@ -144,7 +144,7 @@ class SchedulingCheckRunner:
 
     def run_diagnostics(self, diagnostics=None):
         if diagnostics is None:
-             diagnostics = self.all_diagnostics()
+            diagnostics = self.all_diagnostics()
         return [getattr(self, diag)() for diag in diagnostics]
 
     # Update this to add a scheduling check.
@@ -471,10 +471,10 @@ class SchedulingCheckRunner:
             teachers = s.parent_class.get_teachers()
             admin_teachers = [t for t in teachers if t.isAdministrator()]
             for a in admin_teachers:
-                 mt =  s.get_meeting_times()
-                 for t in mt:
-                      d[t][name_string].append(a.name())
-                      d[t][key_string].append(str(a))
+                mt = s.get_meeting_times()
+                for t in mt:
+                    d[t][name_string].append(a.name())
+                    d[t][key_string].append(str(a))
         for k in d:
             d[k][num_string] = len(d[k][key_string])
         for l in d:
@@ -506,16 +506,16 @@ class SchedulingCheckRunner:
                     else:
                         l_resources.append({ "Section": s, "First Hour": first_hour, "Unfulfilled Request": u, "Classroom": classroom })
             for moderator in s.get_moderators():
-               mod_recs = ModeratorRecord.objects.filter(program=s.parent_class.parent_program, user=moderator)
-               if mod_recs.count() == 0 or s.parent_class.category not in mod_recs[0].class_categories.all():
-                   if mod_recs.count() == 0:
-                       mod_recs_text = "No selection"
-                   else:
-                       mod_recs_text = [cat.category for cat in list(mod_recs[0].class_categories.all())]
-                   if not mod_recs_text:
-                       mod_recs_text.append("No Selection")
-                   mod_recs_list = ", ".join(mod_recs_text)
-                   l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, self.p.getModeratorTitle(): moderator })
+                mod_recs = ModeratorRecord.objects.filter(program=s.parent_class.parent_program, user=moderator)
+                if mod_recs.count() == 0 or s.parent_class.category not in mod_recs[0].class_categories.all():
+                    if mod_recs.count() == 0:
+                        mod_recs_text = "No selection"
+                    else:
+                        mod_recs_text = [cat.category for cat in list(mod_recs[0].class_categories.all())]
+                    if not mod_recs_text:
+                        mod_recs_text.append("No Selection")
+                    mod_recs_list = ", ".join(mod_recs_text)
+                    l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, self.p.getModeratorTitle(): moderator })
         self.l_wrong_classroom_type = l_classrooms
         self.l_missing_resources = l_resources
         self.l_mod_missing = l_mod
@@ -528,8 +528,7 @@ class SchedulingCheckRunner:
 
     def missing_resources_by_hour(self):
         self._calculate_classes_missing_resources()
-        key_string = "Unfulfilled Request Numbers"
-        num_string = "num"
+
         def ts_dict():
             return { }
 

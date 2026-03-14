@@ -156,7 +156,7 @@ class MailingLabels(ProgramModuleObj):
 
             infos = [user.getLastProfile().contact_user for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
 
-            infos_filtered = [ info for info in infos if (info is not None and info.undeliverable != True) ]
+
 
         output = MailingLabels.gen_addresses(infos, combine)
 

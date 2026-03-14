@@ -91,7 +91,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         s = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', response.content.decode('UTF-8'))
         filterid = s.groups()[0]
         s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content.decode('UTF-8'))
-        listcount = s.groups()[0]
+        s.groups()[0]
 
         #   Enter email information
         post_data = {
@@ -110,7 +110,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertFalse(m[0].processed)
 
         #   Send out email
-        msgs = process_messages()
+        process_messages()
         send_email_requests()
 
         #   Check that the email was sent to all students

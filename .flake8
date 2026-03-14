@@ -4,22 +4,19 @@ ignore = E,F,W
 
 # Currently enabled checks:
 #   E101: mixed tabs and spaces
+#   E11x: other indentation issues (expected indented block, unexpected
+#         indent, not a multiple of four)
 #   F82x: undefined name, local variable referenced before assignment
+#   F811: redefinition of unused name
 #   F831: duplicate arg in function definition
+#   F841: unused local variable
 #   W191: indentation contains tabs
 #   W29x: whitespace at end of line or on blank line
 #   W601: `has_key` instead of `in`
 #   W603: <> instead of !=
 #   W604: backticks instead of `repr`
-select = E10,F82,F831,W191,W29,W601,W603,W604
-
-# Errors we'd like to turn on sometime soon, but which still require some
-# cleanup first:
-#   E11x: other indentation issues (expected indented block, unexpected
-#         indent, not a multiple of four)
-#   F811: redefinition of unused name
-#   F841: unused name
+select = E10,E11,F82,F811,F831,F841,W191,W29,W601,W603,W604
 
 # Ignore /env, since that's where we by default put the virtualenv, which has
 # lots of code that's not ours.  Also exclude .git, for speed.
-exclude = .git,env
+exclude = .git,env,useful_scripts,seltests

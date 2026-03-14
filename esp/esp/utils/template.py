@@ -87,7 +87,6 @@ class Loader(base.Loader):
         if hash_val == INVALID_HASH:
             raise TemplateDoesNotExist('Template override not found')
         if hash_val not in self.cache:
-            template = Template(Loader.get_override_contents(template_name), None, template_name)
             self.cache[hash_val] = Loader.get_override_contents(template_name)
         return self.cache[hash_val]
 

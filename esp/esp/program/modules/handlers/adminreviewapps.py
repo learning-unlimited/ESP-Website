@@ -96,10 +96,7 @@ class AdminReviewApps(ProgramModuleObj):
             except StudentApplication.DoesNotExist:
                 student.app = None
 
-            if student.app:
-                reviews = student.app.reviews.all()
-            else:
-                reviews = []
+
 
             if StudentRegistration.valid_objects().filter(user=student, section__parent_class=cls, relationship__name='Accepted').count() > 0:
                 student.status = 'Accepted'
@@ -154,12 +151,8 @@ class AdminReviewApps(ProgramModuleObj):
     @aux_call
     @needs_admin
     def view_app(self, request, tl, one, two, module, extra, prog):
-        scrmi = prog.studentclassregmoduleinfo
-        reg_nodes = scrmi.reg_verbs()
-
         try:
             cls = ClassSubject.objects.get(id = extra)
-            section = cls.default_section()
         except ClassSubject.DoesNotExist:
             raise ESPError('Cannot find class.', log=False)
 

@@ -37,7 +37,7 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         self.client.login(username='admin', password='password')
 
         # Try to set the values
-        r = self.client.post("/manage/"+self.program.url+"/registrationtype_management/", { 'display_names': ["Enrolled", self.testRT] })
+        self.client.post("/manage/"+self.program.url+"/registrationtype_management/", { 'display_names': ["Enrolled", self.testRT] })
 
         # Check that the tag was created
         self.assertTrue(len(Tag.objects.filter(key='display_registration_names')) > 0)

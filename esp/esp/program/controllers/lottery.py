@@ -255,7 +255,6 @@ class LotteryAssignmentController(object):
             if ts_day not in dates:
                 dates.append(ts_day)
         lunch_by_day = [[] for x in dates]
-        ts_count = 0
         for ts in lunch_timeslots:
             d = date(ts.start.year, ts.start.month, ts.start.day)
             lunch_by_day[dates.index(d)].append(ts.id)
@@ -540,7 +539,7 @@ class LotteryAssignmentController(object):
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
         with numpy.errstate(divide=np_errstate, invalid=np_errstate):
-            interest_fractions = numpy.nan_to_num(interest_assigned.astype(float) / interest_requested)
+
 
         if self.effective_priority_limit > 1:
             for i in range(1, self.effective_priority_limit+1):

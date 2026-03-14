@@ -23,7 +23,6 @@ class CustomIndexDashboard(Dashboard):
     Custom index dashboard for esp.
     """
     def init_with_context(self, context):
-        site_name = get_admin_site_name(context)
         # append a link list module for "quick links"
         self.children.append(modules.LinkList(
             _('Quick links'),

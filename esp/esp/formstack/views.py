@@ -1,7 +1,21 @@
-from django.http import HttpResponse, Http404
+from django.contrib.auth import authenticate
 from django.dispatch import receiver
+from django.http import (
+    Http404,
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseNotFound,
+    HttpResponseServerError,
+)
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+import json
+
 from esp.formstack.signals import formstack_post_signal
+from esp.program.models import Program
+from esp.users.models import ESPUser
+
 
 @csrf_exempt
 def formstack_webhook(request):
@@ -9,23 +23,13 @@ def formstack_webhook(request):
         data = request.POST.dict()
         form_id = data.pop('FormID')
         submission_id = data.pop('UniqueID')
-        handshake_key = data.pop('HandshakeKey', None)
+        data.pop('HandshakeKey', None)
         # TODO: verify handshake key
         formstack_post_signal.send(sender=None, form_id=form_id, submission_id=submission_id, fields=data)
         return HttpResponse()
     else:
         raise Http404
 
-from django.contrib.auth import authenticate
-from django.http import HttpResponse, Http404, HttpResponseServerError, \
-    HttpResponseForbidden, HttpResponseNotFound
-from django.dispatch import receiver
-from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from esp.program.models import Program
-from esp.users.models import ESPUser
-import json
 
 @csrf_exempt
 @never_cache

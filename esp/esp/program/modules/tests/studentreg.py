@@ -45,7 +45,7 @@ import re
 
 class StudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        from esp.program.modules.base import ProgramModule, ProgramModuleObj
+        from esp.program.modules.base import ProgramModule
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update( {
@@ -316,4 +316,3 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(iac.amount_due(), program_cost - 20)
         spi = SplashInfo.getForUser(student, self.program)
         self.assertEqual(spi.siblingname, 'Test Name')
-

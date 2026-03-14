@@ -104,7 +104,7 @@ class ProgramPrintables(ProgramModuleObj):
                 single_select = False
 
             if ids is None:
-                transfers = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item', 'user').select_related()
+                pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item', 'user').select_related()
             else:
                 lineitems = pac.all_transfers().filter(line_item__id__in=ids).order_by('line_item', 'user').select_related()
         else:
@@ -190,7 +190,7 @@ class ProgramPrintables(ProgramModuleObj):
            'clsid' in request.GET:
             try:
                 clsid = int(request.GET['clsid'])
-                cls   = ClassSubject.objects.get(parent_program = self.program,
+                ClassSubject.objects.get(parent_program = self.program,
                                           id             = clsid)
             except (ValueError, ClassSubject.DoesNotExist):
                 raise ESPError('Could not get the class object.')
@@ -982,7 +982,7 @@ class ProgramPrintables(ProgramModuleObj):
         if key == 'receipt':
             #   Take the user's most recent registration profile.
             from django.conf import settings
-            prof = user.getLastProfile()
+            user.getLastProfile()
 
             iac = IndividualAccountingController(self.program, user)
 
@@ -1191,7 +1191,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_onsite_no_switchback
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
 
-        context = {'module': self }
+
 
         if onsite:
             students = [ESPUser.objects.get(id=request.GET['userid'])]
@@ -1464,8 +1464,7 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         students = ESPUser.objects.filter(filterObj.get_Q()).distinct().order_by('last_name')
-        lastnames = students.values_list('last_name')
-        num_lastnames = len(lastnames)
+
         context = {'name_groups': []}
 
         try:

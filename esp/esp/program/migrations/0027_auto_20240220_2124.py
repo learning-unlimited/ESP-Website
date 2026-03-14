@@ -18,7 +18,7 @@ def create_info_redirect(apps, schema_editor):
     PlainRedirect = apps.get_model('dbmail', 'PlainRedirect')
     prs = PlainRedirect.objects.filter(original = "info")
     if not prs.exists():
-        redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+        PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
 
 class Migration(migrations.Migration):
 

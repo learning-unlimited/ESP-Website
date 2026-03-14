@@ -68,7 +68,7 @@ def find_executable(executable, path=None):
 class DependenciesTestCase(unittest.TestCase):
     def tryImport(self, mod):
         try:
-            foo = __import__(mod)
+            __import__(mod)
         except Exception as e:
             logger.info("Error importing required module '%s': %s", mod, e)
             self._failed_import = True

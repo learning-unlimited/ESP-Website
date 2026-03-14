@@ -182,7 +182,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
     @transaction.atomic
     def test_get_resource_pairs(self):
-        prog = self.program
         new_res_type1 = ResourceType.get_or_create('NewResource1', program = self.program)
         new_res_type2 = ResourceType.get_or_create('NewResource2', program = self.program)
         sec = random.choice(self.cls.sections.all())

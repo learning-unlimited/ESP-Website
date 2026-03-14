@@ -84,9 +84,7 @@ class CustomFormsCache:
                             field_instance = self.getCustomFieldInstance(field, f'{model.form_link_name}_{field}')
                             generic_field_type = 'custom'
 
-                        model_field = field
-                        if hasattr(model, 'link_compound_fields') and field_name in model.link_compound_fields:
-                            model_field = model.link_compound_fields[field_name]
+
 
                         self.link_fields[model.form_link_name]['fields'].update({ field_name: {
                             'model_field': field,
@@ -177,4 +175,3 @@ class CustomFormsCache:
             if field in options['fields']: return options['model']
 
 cf_cache = CustomFormsCache()
-

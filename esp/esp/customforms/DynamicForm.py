@@ -398,10 +398,10 @@ class ComboForm(SessionWizardView):
                 # TODO-> the following update won't work for fk fields.
                 v['instance'].__dict__.update(v['data'])
                 v['instance'].save()
-                curr_instance = v['instance']
+
             else:
                 try:
-                    new_instance = v['model'].objects.create(**v['data'])
+                    v['model'].objects.create(**v['data'])
                 except Exception:
                     # show some error message
                     pass
@@ -808,5 +808,3 @@ class FormHandler:
                 module = ''
             metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
-
-

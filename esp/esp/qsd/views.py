@@ -52,7 +52,7 @@ from django.views.decorators.cache import cache_control
 from esp.varnish.varnish import purge_page
 from urllib.parse import urlparse
 from bleach import clean
-from django.contrib import messages
+
 
 from django.conf import settings
 from django.utils.html import escape as html_escape

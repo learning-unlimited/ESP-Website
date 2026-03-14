@@ -261,8 +261,6 @@ class ResourceModule(ProgramModuleObj):
             if import_mode == 'preview':
                 context['prog'] = self.program
                 response = render_to_response(self.baseDir()+'timeslot_import.html', request, context)
-            else:
-                extra = 'timeslot'
 
         return (response, context)
 
@@ -306,8 +304,6 @@ class ResourceModule(ProgramModuleObj):
                 context['prog'] = self.program
                 context['new_restypes'] = sorted(res_type_list, key = lambda x: (not x.hidden, x.priority_default), reverse = True)
                 response = render_to_response(self.baseDir()+'restype_import.html', request, context)
-            else:
-                extra = 'restype'
 
         return (response, context)
 
@@ -399,8 +395,6 @@ class ResourceModule(ProgramModuleObj):
                     new_rooms.append(room)
                 context['new_rooms'] = new_rooms
                 response = render_to_response(self.baseDir()+'classroom_import.html', request, context)
-            else:
-                extra = 'classroom'
 
         return (response, context)
 
@@ -579,8 +573,6 @@ class ResourceModule(ProgramModuleObj):
                 result = self.program.collapsed_dict(new_equipment_list)
                 context['new_equipment'] = [result[key] for key in sorted(result.keys())]
                 response = render_to_response(self.baseDir()+'equipment_import.html', request, context)
-            else:
-                extra = 'equipment'
 
         return(response, context)
 
@@ -629,7 +621,6 @@ class ResourceModule(ProgramModuleObj):
             return response
 
         #   Group contiguous blocks of time for the program
-        time_options = self.program.getTimeSlots(types=['Class Time Block', 'Open Class Time Block', 'Compulsory'])
         time_groups = self.program.getTimeGroups(types=['Class Time Block', 'Open Class Time Block', 'Compulsory'])
 
         #   Retrieve remaining context information

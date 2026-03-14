@@ -463,7 +463,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
         context = {'cls': cls, 'module': self,}
@@ -485,7 +485,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         target_class = classes[0]
         context_form = FileUploadForm()

@@ -379,8 +379,8 @@ class AssignmentGroup(models.Model):
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
-    resource = models.ForeignKey(Resource, on_delete=models.CASCADE)     #   Note: this really points to a bunch of Resources.
-                                                                         #   See resources() below.
+    # Note: this really points to a bunch of Resources. See resources() below.
+    resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
 
     target = models.ForeignKey('program.ClassSection', null=True, on_delete=models.CASCADE)
     target_subj = models.ForeignKey('program.ClassSubject', null=True, on_delete=models.CASCADE)

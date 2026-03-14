@@ -25,7 +25,7 @@ class PasswordResetForm(forms.Form):
         if self.cleaned_data['username'].strip() == '': return ''
 
         try:
-            user = ESPUser.objects.get(username=self.cleaned_data['username'])
+            ESPUser.objects.get(username=self.cleaned_data['username'])
         except ESPUser.DoesNotExist:
             raise forms.ValidationError("User '%s' does not exist." % self.cleaned_data['username'])
 

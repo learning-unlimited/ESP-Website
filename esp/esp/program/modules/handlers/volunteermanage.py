@@ -193,7 +193,6 @@ class VolunteerManage(ProgramModuleObj):
         elif 'user' in request.POST:
             target_id = request.POST['user']
         else:
-            context = {}
             return HttpResponseRedirect( '/manage/%s/%s/volunteering' % (one, two) )
 
         try:
