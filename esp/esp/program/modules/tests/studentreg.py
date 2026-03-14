@@ -476,6 +476,43 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
     # Test 6: change_grade_form is present in template context
     # ------------------------------------------------------------------
 
+    def test_creates_student_info_when_missing(self):
+        """If a student's most recent profile has no StudentInfo row, an admin
+        grade update should recreate it and persist the new graduation year."""
+        profile = self.student.getLastProfile()
+        profile.student_info = None
+        profile.save()
+
+        self.client.login(username=self.admin.username, password='password')
+        url = self.userview_base + '&graduation_year=' + str(self.new_grad_year)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        updated_info = self.student.getLastProfile().student_info
+        self.assertIsNotNone(updated_info)
+        self.assertEqual(
+            updated_info.graduation_year, self.new_grad_year,
+            "Expected StudentInfo to be recreated and graduation year updated.",
+        )
+
+    def test_out_of_range_graduation_year_does_not_change_grade(self):
+        """Passing a graduation year outside configured grade options should be
+        ignored safely, leaving the existing graduation year unchanged."""
+        self.client.login(username=self.admin.username, password='password')
+
+        for invalid_year in ('-100', '999999'):
+            response = self.client.get(
+                self.userview_base + '&graduation_year=' + invalid_year
+            )
+            self.assertEqual(response.status_code, 200)
+
+            info = self.student.getLastProfile().student_info
+            self.assertEqual(
+                info.graduation_year, self.initial_grad_year,
+                "Graduation year changed unexpectedly for invalid input %s"
+                % invalid_year,
+            )
+
     def test_change_grade_form_in_context(self):
         """A GET to userview without a graduation_year param should still
         include 'change_grade_form' in the template context so the UI can

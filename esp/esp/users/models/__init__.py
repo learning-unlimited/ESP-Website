@@ -1149,6 +1149,13 @@ class BaseESPUser(object):
             parsed_year = int(grad_year)
         except (ValueError, TypeError):
             return
+
+        #   Only allow years corresponding to configured grade options.
+        #   This prevents unreasonable values (e.g. very large or negative).
+        valid_grad_years = set(ESPUser.YOGFromGrade(grade) for grade in ESPUser.grade_options())
+        if parsed_year not in valid_grad_years:
+            return
+
         student_info = profile.student_info
         student_info.graduation_year = parsed_year
         student_info.save()
