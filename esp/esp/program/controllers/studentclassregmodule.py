@@ -54,7 +54,10 @@ class RegistrationTypeController(object):
                 return set(cls.default_names)
         display_names = Tag.getProgramTag(key=cls.key, program=prog)
         if display_names:
-            display_names = json.loads(display_names) + cls.default_names
+            try:
+                display_names = json.loads(display_names) + cls.default_names
+            except (TypeError, ValueError):
+                display_names = cls.default_names
         else:
             display_names = cls.default_names
         if "All" in display_names:

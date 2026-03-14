@@ -512,15 +512,19 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
         response = self._get_studentreg()
         self.assertEqual(response.status_code, 200)
 
-    def test_malformed_tag_raises_json_error(self):
+    def test_malformed_tag_falls_back_to_default(self):
         """
-        A tag value that is not valid JSON causes json.JSONDecodeError to be
-        raised by the controller.  This documents the current (unguarded)
-        behaviour so that any future defensive fix is intentional and tested.
+        A malformed JSON tag value should be ignored safely: the controller
+        falls back to default_names and the student reg page still renders.
         """
         Tag.objects.get_or_create(key='display_registration_names', value='not_valid_json')
-        with self.assertRaises(json.JSONDecodeError):
-            RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
+
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
 
     def test_none_program_returns_default(self):
         """
