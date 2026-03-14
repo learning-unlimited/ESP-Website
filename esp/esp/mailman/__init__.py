@@ -185,7 +185,7 @@ def all_lists(show_nonpublic=False):
     raw = Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0]
     if isinstance(raw, bytes):
         raw = raw.decode('utf-8', errors='replace')
-    return raw.split('\n')
+    return [lst for lst in raw.split('\n') if lst.strip()]
 
 @enable_with_setting(settings.USE_MAILMAN)
 def lists_containing(user):
