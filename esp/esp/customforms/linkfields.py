@@ -81,7 +81,7 @@ class CustomFormsCache:
                             field_instance = all_form_fields[field]
                             generic_field_type = self.getGenericType(field_instance)
                         else:
-                            field_instance = self.getCustomFieldInstance(field, '%s_%s' % (model.form_link_name, field))
+                            field_instance = self.getCustomFieldInstance(field, f'{model.form_link_name}_{field}')
                             generic_field_type = 'custom'
 
                         model_field = field
@@ -141,7 +141,7 @@ class CustomFormsCache:
                 kwargs['name'] = field_name
             return field_class(*args, **kwargs)
         else:
-            raise Exception('Cannot understand field type: %s' % field)
+            raise Exception(f'Cannot understand field type: {field}')
 
     def isLinkField(self, field):
         """
@@ -160,7 +160,7 @@ class CustomFormsCache:
         if hasattr(model, 'link_compound_fields') and field in model.link_compound_fields:
             return model.link_compound_fields[field]
         else:
-            raise Exception('%s is not a compound field on %s' % (field, model))
+            raise Exception(f'{field} is not a compound field on {model}')
 
     def getLinkFieldData(self, field):
         """
