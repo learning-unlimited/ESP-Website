@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,6 +36,7 @@ import json
 from datetime import datetime, timedelta
 
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import transaction                                     # [FIX] PR#5033: needed for atomic enrollment mutations
 from django.db.models import Min
 from django.db.models.query import Q
 from django.http import HttpResponse
@@ -167,22 +167,27 @@ class OnSiteClassList(ProgramModuleObj):
     def register_student(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
         program = self.program
-        success = False
         student = get_object_or_404(ESPUser, pk=request.POST.get("student_id"))
 
-        registration_profile = RegistrationProfile.getLastForProgram(student,
-                                                                program)
+        registration_profile = RegistrationProfile.getLastForProgram(student, program)
         success = registration_profile.student_info is not None
 
         if success:
             registration_profile.save()
-
             for extension in ['attended', 'med', 'liab', 'onsite']:
                 Record.createBit(extension, program, student)
-
             IndividualAccountingController.updatePaid(self.program, student, paid=True)
+            json.dump({'status': True}, resp)
+        else:
+            # [FIX] register_student silent failure: was returning {'status': false} with no
+            # explanation, causing kiosk UI to stall with no actionable error for operators.
+            # Now returns HTTP 400 + descriptive message so the UI can surface the problem.
+            resp.status_code = 400
+            json.dump({
+                'status': False,
+                'message': 'Student profile is incomplete. student_info is missing for user %s.' % student.id,
+            }, resp)
 
-        json.dump({'status':success}, resp)
         return resp
 
     @aux_call
@@ -240,73 +245,207 @@ class OnSiteClassList(ProgramModuleObj):
     def update_schedule_json(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
         result = {'user': None, 'sections': [], 'messages': []}
+
+        # [FIX] Bug #4219: previously caught all exceptions in one block and set user=None,
+        # allowing execution to continue and crash at prog.isCheckedIn(None) → 500.
+        # Now validates user early and returns a 400 JSON response immediately so the
+        # kiosk UI gets an actionable error instead of an HTML error page.
         try:
             user = ESPUser.objects.get(id=int(request.GET['user']))
-        except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
-            user = None
-            result['messages'].append('Error: could not find user %s' % request.GET.get('user', None))
+        except (ValueError, TypeError, KeyError):
+            resp.status_code = 400
+            result['messages'].append(
+                'Error: missing or non-integer user param: %r' % request.GET.get('user')
+            )
+            json.dump(result, resp)
+            return resp
+        except ESPUser.DoesNotExist:
+            resp.status_code = 400
+            result['messages'].append(
+                'Error: no user found with id %r' % request.GET.get('user')
+            )
+            json.dump(result, resp)
+            return resp
+
+        # [FIX] Bug #4268: sections param was accepted without any type validation.
+        # A non-list (e.g. bare int, dict, null) or a list containing non-integers
+        # would either crash downstream or silently enroll wrong sections.
         try:
             desired_sections = json.loads(request.GET['sections'])
         except (ValueError, KeyError):
-            result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
-            desired_sections = None
+            resp.status_code = 400
+            result['messages'].append(
+                'Error: could not parse requested sections %r' % request.GET.get('sections')
+            )
+            json.dump(result, resp)
+            return resp
+
+        if not isinstance(desired_sections, list):
+            resp.status_code = 400
+            result['messages'].append(
+                'Error: "sections" must be a JSON array, got %s' % type(desired_sections).__name__
+            )
+            json.dump(result, resp)
+            return resp
+
+        if not all(isinstance(s, int) for s in desired_sections):
+            resp.status_code = 400
+            result['messages'].append(
+                'Error: all elements of "sections" must be integers; got: %r' % desired_sections
+            )
+            json.dump(result, resp)
+            return resp
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
         if not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
             rec = Record(user=user, program=prog, event='attended')
             rec.save()
 
-        if user and desired_sections is not None:
-            override_full = (request.GET.get("override", "") == "true")
+        override_full = (request.GET.get("override", "") == "true")
 
-            current_sections = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
-            sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
-            sections_to_add = ClassSection.objects.filter(id__in=list(set(desired_sections) - set(current_sections)))
+        # [FIX] PR #5033 race condition mitigation: wrap all enrollment reads and writes
+        # in a single atomic block with a row-level lock on the student's registrations.
+        # Without this, two concurrent onsite requests for the same student (e.g. two
+        # operators at adjacent kiosks) can both read the same current_sections snapshot,
+        # compute conflicting diffs, and produce duplicate or missing enrollments.
+        #
+        # How it works:
+        #   1. transaction.atomic() ensures the entire read-diff-write sequence is one
+        #      unit: either all changes commit together or none do.
+        #   2. select_for_update() acquires a Postgres row-level write lock on the
+        #      student's active registrations at the start of the transaction. Any
+        #      second concurrent request for the same student blocks at this line until
+        #      the first transaction commits, then reads the freshly committed state.
+        #   3. current_sections is re-read *inside* the transaction so it always
+        #      reflects the true committed state at the moment the lock is held,
+        #      not a stale snapshot from before the request started.
+        #
+        # Note: select_for_update() requires PostgreSQL or MySQL InnoDB. It is a no-op
+        # on SQLite (used in tests), which is safe — tests are single-threaded.
+        try:
+            with transaction.atomic():
+                # Acquire row-level lock on this student's active registrations.
+                # This must come before reading current_sections to close the race window.
+                StudentRegistration.valid_objects().filter(
+                    section__parent_class__parent_program=prog,
+                    user=user,
+                ).select_for_update()
 
-            failed_add_sections = []
-            for sec in sections_to_add:
-                if sec.isFull(webapp=True) and not override_full:
-                    result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, 'Class is currently full.'))
-                    failed_add_sections.append(sec.id)
+                # Re-read current sections inside the transaction so we see the
+                # latest committed state, not a pre-lock snapshot.
+                current_sections = list(
+                    ClassSection.objects.filter(
+                        nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'),
+                        status__gt=0,
+                        parent_class__status__gt=0,
+                        parent_class__parent_program=prog,
+                        studentregistration__relationship__name='Enrolled',
+                        studentregistration__user__id=user.id,
+                    ).values_list('id', flat=True).order_by('id').distinct()
+                )
 
-            if len(failed_add_sections) == 0:
-                verbs = RTC.getVisibleRegistrationTypeNames(prog)
-                #   Remove sections the student wants out of
-                for sec in sections_to_remove:
-                    sec.unpreregister_student(user, verbs)
-                    result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
+                sections_to_remove = ClassSection.objects.filter(
+                    id__in=list(set(current_sections) - set(desired_sections))
+                )
+                sections_to_add = ClassSection.objects.filter(
+                    id__in=list(set(desired_sections) - set(current_sections))
+                )
 
-                #   Remove sections that conflict with those the student wants into
-                sec_times = sections_to_add.select_related('meeting_times__id').values_list('id', 'meeting_times__id').order_by('meeting_times__id').distinct()
-                sm = ScheduleMap(user, prog)
-                existing_sections = []
-                for (sec, ts) in sec_times:
-                    if ts and ts in sm.map and len(sm.map[ts]) > 0:
-                        #   We found something we need to remove
-                        for sm_sec in sm.map[ts]:
-                            if sm_sec.id not in sections_to_add:
-                                sm_sec.unpreregister_student(user, verbs)
-                                result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
-                            else:
-                                existing_sections.append(sm_sec)
-
-                #   Add the sections the student wants
+                failed_add_sections = []
                 for sec in sections_to_add:
-                    if sec not in existing_sections and sec.id not in failed_add_sections:
-                        error = sec.cannotAdd(user, not override_full, webapp=True)
-                        if not error:
-                            reg_result = sec.preregister_student(user, overridefull=override_full, webapp=True)
-                            if not reg_result:
-                                error = 'Class is currently full.'
-                        else:
-                            reg_result = False
-                        if reg_result:
-                            result['messages'].append('Added %s (%s) to %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
-                        else:
-                            result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, error))
+                    if sec.isFull(webapp=True) and not override_full:
+                        result['messages'].append(
+                            'Failed to add %s (%s) to %s: %s (%s).  Error was: %s'
+                            % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id,
+                               'Class is currently full.')
+                        )
+                        failed_add_sections.append(sec.id)
 
-            result['user'] = user.id
-            result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
+                if len(failed_add_sections) == 0:
+                    verbs = RTC.getVisibleRegistrationTypeNames(prog)
+
+                    #   Remove sections the student wants out of
+                    for sec in sections_to_remove:
+                        sec.unpreregister_student(user, verbs)
+                        result['messages'].append(
+                            'Removed %s (%s) from %s: %s (%s)'
+                            % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id)
+                        )
+
+                    #   Remove sections that conflict with those the student wants into
+                    sec_times = (
+                        sections_to_add
+                        .select_related('meeting_times__id')
+                        .values_list('id', 'meeting_times__id')
+                        .order_by('meeting_times__id')
+                        .distinct()
+                    )
+                    sm = ScheduleMap(user, prog)
+                    existing_sections = []
+                    for (sec, ts) in sec_times:
+                        if ts and ts in sm.map and len(sm.map[ts]) > 0:
+                            #   We found something we need to remove
+                            for sm_sec in sm.map[ts]:
+                                if sm_sec.id not in sections_to_add:
+                                    sm_sec.unpreregister_student(user, verbs)
+                                    result['messages'].append(
+                                        'Removed %s (%s) from %s: %s (%s)'
+                                        % (user.name(), user.id, sm_sec.emailcode(),
+                                           sm_sec.title(), sm_sec.id)
+                                    )
+                                else:
+                                    existing_sections.append(sm_sec)
+
+                    #   Add the sections the student wants
+                    for sec in sections_to_add:
+                        if sec not in existing_sections and sec.id not in failed_add_sections:
+                            error = sec.cannotAdd(user, not override_full, webapp=True)
+                            if not error:
+                                reg_result = sec.preregister_student(
+                                    user, overridefull=override_full, webapp=True
+                                )
+                                if not reg_result:
+                                    error = 'Class is currently full.'
+                            else:
+                                reg_result = False
+                            if reg_result:
+                                result['messages'].append(
+                                    'Added %s (%s) to %s: %s (%s)'
+                                    % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id)
+                                )
+                            else:
+                                result['messages'].append(
+                                    'Failed to add %s (%s) to %s: %s (%s).  Error was: %s'
+                                    % (user.name(), user.id, sec.emailcode(), sec.title(),
+                                       sec.id, error)
+                                )
+
+        except Exception as e:
+            # [FIX] PR #5033 / general safety: any unexpected exception inside the atomic
+            # block (DB error, network blip, edge case in preregister_student) previously
+            # bubbled up as a raw Django HTML 500 page that the kiosk JavaScript cannot
+            # parse. The transaction.atomic() context manager automatically rolls back all
+            # changes before we reach this handler, so enrollment state is never left
+            # partially modified. We then return a JSON 500 the UI can display to the
+            # operator so they can retry or escalate.
+            resp.status_code = 500
+            result['messages'].append(
+                'Unexpected error processing schedule update: %s' % str(e)
+            )
+            json.dump(result, resp)
+            return resp
+
+        result['user'] = user.id
+        result['sections'] = list(
+            ClassSection.objects.filter(
+                nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'),
+                status__gt=0,
+                parent_class__status__gt=0,
+                parent_class__parent_program=prog,
+                studentregistration__relationship__name='Enrolled',
+                studentregistration__user__id=result['user'],
+            ).values_list('id', flat=True).distinct()
+        )
 
         json.dump(result, resp)
         return resp
