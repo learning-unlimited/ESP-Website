@@ -47,12 +47,13 @@ from esp.users.models    import ESPUser, Record
 from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
 
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student_in_grade, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_onsite_no_switchback, needs_student_in_grade, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
 from esp.utils.models import Printer, PrintRequest
+from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
@@ -335,6 +336,18 @@ class OnSiteClassList(ProgramModuleObj):
 
         json.dump(result, resp)
         return resp
+
+    @aux_call
+    @needs_onsite_no_switchback
+    def schedule_pdf(self, request, tl, one, two, module, extra, prog):
+        user_param = request.GET.get('user', None)
+        try:
+            user_id = int(user_param)
+            user_obj = ESPUser.objects.get(id=user_id)
+        except (ValueError, TypeError, ESPUser.DoesNotExist):
+            return HttpResponse("Error: could not find user %s." % user_param, status=400)
+
+        return ProgramPrintables.get_student_schedules(request, [user_obj], prog, onsite=False)
 
     @aux_call
     @needs_onsite
