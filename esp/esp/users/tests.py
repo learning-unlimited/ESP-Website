@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from django import forms
 from django.core import mail
@@ -485,6 +486,66 @@ class AccountCreationTest(TestCase):
         match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
         self.assertEqual(match.group("user"), u.username)
         self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
+
+    def test_live_email_validation_endpoint(self):
+        Tag.setTag('ask_about_duplicate_accounts', value='true')
+
+        user = ESPUser.objects.create(email='livecheck@example.com')
+        user.makeRole('Teacher')
+
+        taken_response = self.client.get('/myesp/register/check-email/', {
+            'email': 'livecheck@example.com',
+            'initial_role': 'Teacher',
+        })
+        self.assertEqual(taken_response.status_code, 200)
+        taken_payload = json.loads(taken_response.content.decode('utf-8'))
+        self.assertTrue(taken_payload['valid'])
+        self.assertFalse(taken_payload['available'])
+
+        invalid_response = self.client.get('/myesp/register/check-email/', {
+            'email': 'invalid-email',
+            'initial_role': 'Teacher',
+        })
+        self.assertEqual(invalid_response.status_code, 200)
+        invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+        self.assertFalse(invalid_payload['valid'])
+        self.assertIsNone(invalid_payload['available'])
+
+        free_response = self.client.get('/myesp/register/check-email/', {
+            'email': 'newaddress@example.com',
+            'initial_role': 'Teacher',
+        })
+        self.assertEqual(free_response.status_code, 200)
+        free_payload = json.loads(free_response.content.decode('utf-8'))
+        self.assertTrue(free_payload['valid'])
+        self.assertTrue(free_payload['available'])
+
+    def test_live_username_validation_endpoint(self):
+        ESPUser.objects.create(username='AlreadyTaken123', password='password')
+
+        taken_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'AlreadyTaken123',
+        })
+        self.assertEqual(taken_response.status_code, 200)
+        taken_payload = json.loads(taken_response.content.decode('utf-8'))
+        self.assertTrue(taken_payload['valid'])
+        self.assertFalse(taken_payload['available'])
+
+        invalid_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'bad*name',
+        })
+        self.assertEqual(invalid_response.status_code, 200)
+        invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+        self.assertFalse(invalid_payload['valid'])
+        self.assertIsNone(invalid_payload['available'])
+
+        free_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'FreeName123',
+        })
+        self.assertEqual(free_response.status_code, 200)
+        free_payload = json.loads(free_response.content.decode('utf-8'))
+        self.assertTrue(free_payload['valid'])
+        self.assertTrue(free_payload['available'])
 
 from esp.users.models import GradeChangeRequest
 
