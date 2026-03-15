@@ -48,12 +48,9 @@ Design principles:
 - Fixtures use ProgramFrameworkTest where a full program environment is
   needed, and minimal manual fixtures otherwise.
 
-Known source bug (not fixed here):
-  sanitize() / sanitize_walkin() / sanitize_lunch() open the CSV log file
-  in binary mode ('ab+') but pass the file handle to csv.writer, which
-  requires text mode in Python 3.  Tests for csvlog=True therefore patch
-  the open() call so they can exercise the dispatch logic without hitting
-  the Python 3 csv/binary incompatibility.
+NOTE:
+  The csvlog=True tests patch open() to avoid filesystem I/O during
+  unit tests, using StringIO instead of real files.
 """
 
 import datetime
@@ -588,10 +585,8 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         We patch open() so no actual file I/O occurs, then verify that the
         dispatch logic still runs and returns the expected dict structure.
 
-        NOTE: The source opens the file in binary mode ('ab+') but passes it
-        to csv.writer, which requires text mode in Python 3.  This test
-        therefore patches open() to return a text-mode StringIO so the
-        dispatch path can be exercised without hitting that source-level bug.
+        NOTE: We patch open() to return a text-mode StringIO so no actual
+        file I/O occurs during the test.
         """
         fake_file = io.StringIO()
         with patch('esp.program.controllers.studentregsanity.open', return_value=fake_file):
