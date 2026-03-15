@@ -171,7 +171,14 @@ class OnSiteAttendance(ProgramModuleObj):
             time = start_time
             # loop through hours until we get to the end time of the section
             if end_time < start_time:
-                continue
+                # If the original section end time-of-day is earlier than the start time-of-day,
+                # treat this as a cross-midnight class and shift the end time forward by one day.
+                if section_end_dt.time() < start_time.time():
+                    end_time = end_time + datetime.timedelta(days=1)
+                
+                # If after adjustment the end time is still invalid, skip this record.
+                if end_time < start_time:
+                    continue
 
             while(True):
                 if time in att_dict:
