@@ -761,7 +761,7 @@ class AjaxAutocompleteViewTest(TestCase):
             'model_module': 'esp.users.models',
             'model_name': 'K12School',
             'ajax_data': 'Spring',
-            'prog': '1',
+            'prog': '',
         }
         params.update(kwargs)
         return self.client.get('/admin/ajax_autocomplete/', params)
