@@ -42,9 +42,11 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
     """Validate that all program modules have some property."""
 
     CALL_DECORATORS = {'main_call', 'aux_call'}
+    AUTH_DECORATORS = {'no_auth'}
     GRADE_DECORATORS = {'meets_grade'}
     DEADLINE_DECORATORS = {'meets_deadline', 'meets_any_deadline'}
     CAP_DECORATORS = {'meets_cap'}
+    CACHE_DECORATORS = {'cache_control'}
 
     @staticmethod
     def _decorator_name(decorator):
@@ -76,9 +78,15 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
         """Check that module view decorators are ordered as expected.
 
         Outside to inside, expected decorator order is approximately:
-        @main_call/@aux_call, then auth (@needs_*),
+        @main_call/@aux_call, then auth (@needs_* or @no_auth),
         then @meets_grade, then @meets_deadline/@meets_any_deadline,
         then @meets_cap.
+
+        This only inspects decorators declared directly on handler methods via
+        AST, so it intentionally does not reason about wrappers applied later at
+        runtime or through function attributes assigned after definition. For
+        public views, it also checks the security-sensitive relative order of
+        @no_auth and @cache_control when both are present.
         """
         handlers_dir = Path(__file__).resolve().parents[1] / 'handlers'
         failures = []
@@ -111,7 +119,11 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
                     call_pos = min(call_positions)
                     auth_positions = [
                         i for i, name in enumerate(decorator_names)
-                        if name and name.startswith('needs_')
+                        if name and (name.startswith('needs_') or name in self.AUTH_DECORATORS)
+                    ]
+                    no_auth_positions = [
+                        i for i, name in enumerate(decorator_names)
+                        if name == 'no_auth'
                     ]
                     grade_positions = [
                         i for i, name in enumerate(decorator_names)
@@ -124,6 +136,10 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
                     cap_positions = [
                         i for i, name in enumerate(decorator_names)
                         if name in self.CAP_DECORATORS
+                    ]
+                    cache_positions = [
+                        i for i, name in enumerate(decorator_names)
+                        if name in self.CACHE_DECORATORS
                     ]
 
                     method_name = '{}.{}'.format(class_node.name, func_node.name)
@@ -193,6 +209,16 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
                     if deadline_positions and cap_positions and min(deadline_positions) > min(cap_positions):
                         failures.append(
                             '{}:{} {} has @meets_cap outside deadline decorators. Found: {}'.format(
+                                handler_file.as_posix(),
+                                func_node.lineno,
+                                method_name,
+                                decorator_list,
+                            )
+                        )
+
+                    if no_auth_positions and cache_positions and min(no_auth_positions) > min(cache_positions):
+                        failures.append(
+                            '{}:{} {} has cache decorators outside @no_auth. Found: {}'.format(
                                 handler_file.as_posix(),
                                 func_node.lineno,
                                 method_name,
