@@ -207,9 +207,9 @@ def onSubmit(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError('No program with ID %i' % (metadata['link_id']))
+                        return ESPError(f'No program with ID {metadata["link_id"]}')
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError('Program does not have %s enabled' % (metadata['link_module']))
+                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -217,7 +217,7 @@ def onSubmit(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
+                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
 
                 for page in metadata['pages']:
                     new_page = Page.objects.create(form=form, seq=int(page['seq']))
@@ -276,8 +276,10 @@ def onModify(request):
                 metadata = json.loads(request.body)
                 try:
                     form = Form.objects.get(id=int(metadata['form_id']))
+
                 except (Form.DoesNotExist, ValueError):
-                    raise ESPError('Form %s not found' % metadata['form_id'], log=False)
+                    raise ESPError(f'Form {metadata["form_id"]} not found', log=False)
+
                 dmh = DMH(form=form)
                 link_models_list = []
                 dmh._getModelFieldList()
@@ -300,9 +302,9 @@ def onModify(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError('No program with ID %i' % (metadata['link_id']))
+                        return ESPError(f'No program with ID {metadata["link_id"]}')
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError('Program does not have %s enabled' % (metadata['link_module']))
+                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -310,7 +312,7 @@ def onModify(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
+                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
 
                 if form.link_type != metadata['link_type'] or form.link_id != metadata['link_id']:
                     dmh.change_only_fkey(form, form.link_type, metadata['link_type'], metadata['link_id'])
