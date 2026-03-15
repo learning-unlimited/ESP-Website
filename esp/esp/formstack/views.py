@@ -2,6 +2,8 @@ from django.http import HttpResponse, Http404
 from django.dispatch import receiver
 from django.views.decorators.csrf import csrf_exempt
 from esp.formstack.signals import formstack_post_signal
+import hmac
+from django.conf import settings
 
 @csrf_exempt
 def formstack_webhook(request):
@@ -10,7 +12,13 @@ def formstack_webhook(request):
         form_id = data.pop('FormID')
         submission_id = data.pop('UniqueID')
         handshake_key = data.pop('HandshakeKey', None)
-        # TODO: verify handshake key
+
+        expected_key = getattr(settings, 'FORMSTACK_HANDSHAKE_KEY', None)
+        if expected_key and not hmac.compare_digest(
+            handshake_key or '', expected_key
+        ):
+            return HttpResponseForbidden('Invalid handshake key')
+
         formstack_post_signal.send(sender=None, form_id=form_id, submission_id=submission_id, fields=data)
         return HttpResponse()
     else:

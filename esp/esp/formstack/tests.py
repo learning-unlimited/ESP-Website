@@ -44,3 +44,42 @@ class FormstackSubmissionTest(TestCase):
     def test_repr(self):
         sub = FormstackSubmission(200)
         self.assertEqual(repr(sub), '<FormstackSubmission: 200>')
+
+from unittest.mock import patch
+
+class FormstackWebhookVerificationTest(TestCase):
+
+    def test_valid_key_accepted(self):
+        with self.settings(FORMSTACK_HANDSHAKE_KEY='secret123'):
+            response = self.client.post(
+                '/formstack_webhook/',
+                data={
+                    'FormID': '123',
+                    'UniqueID': 'abc',
+                    'HandshakeKey': 'secret123'
+                }
+            )
+            self.assertEqual(response.status_code, 200)
+
+    def test_invalid_key_rejected(self):
+        with self.settings(FORMSTACK_HANDSHAKE_KEY='secret123'):
+            response = self.client.post(
+                '/formstack_webhook/',
+                data={
+                    'FormID': '123',
+                    'UniqueID': 'abc',
+                    'HandshakeKey': 'wrongkey'
+                }
+            )
+            self.assertEqual(response.status_code, 403)
+
+    def test_missing_key_rejected(self):
+        with self.settings(FORMSTACK_HANDSHAKE_KEY='secret123'):
+            response = self.client.post(
+                '/formstack_webhook/',
+                data={
+                    'FormID': '123',
+                    'UniqueID': 'abc'
+                }
+            )
+            self.assertEqual(response.status_code, 403)
