@@ -1,3 +1,4 @@
+import re
 from django import forms
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
@@ -110,6 +111,20 @@ class UserRegForm(forms.Form):
     def clean_confirm_password(self):
         if not (('confirm_password' in self.cleaned_data) and ('password' in self.cleaned_data)) or (self.cleaned_data['confirm_password'] != self.cleaned_data['password']):
             raise forms.ValidationError('Ensure the password and password confirmation are equal.')
+        if len(self.cleaned_data['password']) < 8:
+            raise forms.ValidationError("Password must be at least 8 characters long.")
+
+        if not re.search(r"[A-Z]", self.cleaned_data['password']):
+            raise forms.ValidationError("Password must contain at least one uppercase letter.")
+
+        if not re.search(r"[a-z]", self.cleaned_data['password']):
+            raise forms.ValidationError("Password must contain at least one lowercase letter.")
+
+        if not re.search(r"[0-9]", self.cleaned_data['password']):
+            raise forms.ValidationError("Password must contain at least one digit.")
+
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", self.cleaned_data['password']):
+            raise forms.ValidationError("Password must contain at least one special character.")
         return self.cleaned_data['confirm_password']
 
     def clean_confirm_email(self):

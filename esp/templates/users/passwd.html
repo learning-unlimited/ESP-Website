@@ -13,9 +13,20 @@
 Your password has been successfully changed.
 </p>
 {% else %}
+
+{% if form.non_field_errors %}
+  <div class="form_error_alert" style="border: 1px solid red;">
+    {% for error in form.non_field_errors %}
+      <p>{{ error }}</p>
+    {% endfor %}
+  </div>
+{% endif %}
+
 <br />
-<p>Welcome to the change password page. To change your password, please fill out the following form:
-</p>
+<div>
+  <p>Welcome to the change password page. To change your password, please fill out the following form:</p>
+  
+</div>
 
 <br />
 
@@ -53,6 +64,14 @@ Your password has been successfully changed.
 </tr>
 
 </table>
+<label><b>Your Password must contains :</b></label>
+  <ul>
+    <li>At least 8 Character</li>
+    <li>At least 1 number (1,2,3,4.....)</li>
+    <li>At least one lowercase alphabet</li>
+    <li>At least one uppercase alphabet</li>
+    <li>One of these special character : (@,#,!,%,$....)</li>
+  </ul>
 
 <p style="text-align: center"><input type='submit' value='-  Change My Password  -' class='btn btn-primary'></p>
 </form>
