@@ -30,7 +30,7 @@ h1 {
   font-size: 18pt;
   color: #00003C;
   font-family: georgia;
-  font-weight: bold;
+  font-style: bold;
 }
 
 body {
@@ -44,7 +44,7 @@ body {
   width: 800px;
   margin-left: auto;
   margin-right: auto;
- /*  background: #141414; */
+  background: #141414;
 }
 
 #footer {
@@ -58,24 +58,12 @@ body {
 }
 
 #topleft {
-  /*    background: #141414;  */
+  //    background: #141414;
   background: #00003C;
   width: 200px;
   height: 180px;
   float: left;
 
-}
-
-#topleft a {
-    background-color: #BCCAF5;
-    font-size: 2em;
-    text-align: center;
-    vertical-align: middle;
-    padding-top: 20px;
-    padding-bottom: 20px;
-    padding-left: 10px;
-    padding-right: 10px;
-    border: 2px solid #FFFFFF;
 }
 
 #title_bar {
@@ -127,13 +115,13 @@ table.loginform {
   margin: 15px;
 }
 
-#nav_buttons {
+/*#nav_buttons {
   background: #00003C;
   width: 600px;
   height: 40px;
   float: right;
   text-align: center;
-}
+}*/
 
 a.navbutton {
     padding: 4px;
@@ -162,7 +150,7 @@ a.navbutton:hover {
   width: 200px;
   height: 30px;
   vertical-align: middle;
-  /*    border-bottom: 1px dashed #497CCA;  */
+  //    border-bottom: 1px dashed #497CCA;
 }
 
 
@@ -182,7 +170,7 @@ a.navbutton:hover {
 #navbar p {
   color: #FFFFFF;
   margin: 0pt;
-  /* margin-bottom: pt; */
+//  margin-bottom: pt;
 }
 
 #navbar a:link {
