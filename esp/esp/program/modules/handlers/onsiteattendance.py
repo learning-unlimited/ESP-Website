@@ -164,7 +164,8 @@ class OnSiteAttendance(ProgramModuleObj):
             # each hour starting from when they are marked and ending at the end of the class
             # Also, for multi-week programs (e.g. Sprout), we want to adjust the start and end times based on the attendance sr
             start_time = sr.start_date.replace(minute = 0, second = 0, microsecond = 0)
-            end_time = sr.section.end_time().end.replace(
+            section_end_dt = sr.section.end_time().end
+            end_time = section_end_dt.replace(
                 year = sr.start_date.year, month = sr.start_date.month, day = sr.start_date.day,
                 minute = 0, second = 0, microsecond = 0)
             user = sr.user
