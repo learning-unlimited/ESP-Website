@@ -36,11 +36,11 @@ python /app/esp/manage.py migrate --noinput
 
 # Collect static files only on first run,
 # or when FORCE_SETUP=1 is set (e.g., after pulling new code).
-MARKER_FILE="/app/.docker-setup-done"
-if [ ! -f "$MARKER_FILE" ] || [ "${FORCE_SETUP:-0}" = "1" ]; then
+COLLECTSTATIC_MARKER_FILE="/app/.collectstatic-done"
+if [ ! -f "$COLLECTSTATIC_MARKER_FILE" ] || [ "${FORCE_SETUP:-0}" = "1" ]; then
     echo ">>> Collecting static files..."
     python /app/esp/manage.py collectstatic --noinput -v 0
-    touch "$MARKER_FILE"
+    touch "$COLLECTSTATIC_MARKER_FILE"
 else
     echo ">>> Skipping collectstatic (already done)."
     echo ">>> To force re-run, use: FORCE_SETUP=1 docker compose up"
