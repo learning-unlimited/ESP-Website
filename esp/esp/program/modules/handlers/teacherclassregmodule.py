@@ -98,16 +98,14 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['open_class_category'] = self.program.open_class_category.category
         return context
 
-    def noclasses(self):
+
+    def noclasses(self, user=None):
         """ Returns true of there are no classes in this program """
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return not self.clslist(user).exists()
 
-    def isCompleted(self):
-        return not self.noclasses()
+    def isCompleted(self, user=None):
+        return not self.noclasses(user)
 
     def get_resource_pairs(self):
         items = []
@@ -1006,7 +1004,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
 
         # Search for teachers with names that start with search string
-        if not 'name' in request.GET or 'name' in request.POST:
+        if 'name' not in request.GET and 'name' not in request.POST:
             return self.goToCore(tl)
 
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
