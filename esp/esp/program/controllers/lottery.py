@@ -539,7 +539,7 @@ class LotteryAssignmentController(object):
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
         with numpy.errstate(divide=np_errstate, invalid=np_errstate):
-
+            pass
 
         if self.effective_priority_limit > 1:
             for i in range(1, self.effective_priority_limit+1):
