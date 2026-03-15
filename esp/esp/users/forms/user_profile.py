@@ -14,55 +14,6 @@ import pytz
 from pytz import country_names
 from phonenumber_field.formfields import PhoneNumberField
 
-def get_timezone_choices():
-    choices = []
-    now = datetime.utcnow()
-
-    timezone_country = {}
-    for country_code, timezones in pytz.country_timezones.items():
-        for tz in timezones:
-            timezone_country[tz] = pytz.country_names[country_code]
-
-    seen_labels = set()
-
-    for tz_name in pytz.common_timezones:
-        parts = tz_name.split('/')
-        if len(parts) > 1:
-            city = parts[-1].replace('_', ' ')
-        else:
-            city = parts[0].replace('_', ' ')
-
-        country = timezone_country.get(tz_name, '')
-
-        tz = pytz.timezone(tz_name)
-        offset = tz.utcoffset(now)
-        if offset is not None:
-            offset_seconds = offset.total_seconds()
-        else:
-            offset_seconds = 0
-
-        total_minutes = int(offset_seconds / 60)
-
-        sign = '+' if total_minutes >= 0 else '-'
-        hours_offset = abs(total_minutes) // 60
-        minutes_offset = abs(total_minutes) % 60
-
-        gmt_str = "GMT%s%d:%02d" % (sign, hours_offset, minutes_offset)
-
-        if country:
-            label = "%s, %s (%s)" % (city, country, gmt_str)
-        else:
-            label = "%s (%s)" % (city, gmt_str)
-
-        if label not in seen_labels:
-            seen_labels.add(label)
-            choices.append((offset_seconds, label, tz_name))
-
-    choices.sort(key=lambda x: x[1])
-    return [(tz_name, label) for _, label, tz_name in choices]
-
-TIMEZONE_CHOICES = get_timezone_choices()
-
 class DropdownOtherWidget(forms.MultiWidget):
     """
     A widget that presents a dropdown list of choices, as well as an 'Other...' textbox
@@ -108,7 +59,6 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_state = forms.ChoiceField(required=True, choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
     address_zip = StrippedCharField(required=True, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
-    timezone = forms.ChoiceField(required=False, choices=TIMEZONE_CHOICES, label='Preferred Timezone (for online programs)')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

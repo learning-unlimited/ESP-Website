@@ -11,7 +11,7 @@ from esp.utils.admin_user_search import default_user_search
 from django.utils import timezone
 
 class UserPreferencesAdmin(admin.ModelAdmin):
-    list_display = ['user', 'timezone']
+    list_display = ['user']
     search_fields = default_user_search('user')
 admin_site.register(UserPreferences, UserPreferencesAdmin)
 

@@ -2985,7 +2985,7 @@ class GradeChangeRequest(TimeStampedModel):
 
 class UserPreferences(models.Model):
     user = models.OneToOneField('users.ESPUser', related_name='preferences', on_delete=models.CASCADE)
-    timezone = models.CharField(max_length=50, default='America/New_York')
+
 
     def __str__(self):
         return str(self.user) + " Preferences"
