@@ -41,6 +41,7 @@ def render_class_copy_row(cls, user=None):
     return {'cls': cls,
             'program': cls.parent_program,
             'crmi': cls.parent_program.classregmoduleinfo,
+            'email_host_sender': settings.EMAIL_HOST_SENDER,
             'user': user}
 render_class_copy_row.cached_function.depend_on_cache(
     render_class_teacher_list_row.cached_function,
