@@ -566,13 +566,11 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return resp"""
 
-    @cache_control(public=True, max_age=3600)
     @no_auth
     @aux_call
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # Check Student/Catalog deadline if one exists.
-        # Note: we avoid caching 403 responses so stale closed/open transitions
         # are not served to clients.
         if self._catalog_deadline_closed(prog):
             response = HttpResponse(json.dumps({'error': 'Catalog is closed'}),
@@ -583,6 +581,7 @@ class StudentClassRegModule(ProgramModuleObj):
         classes = ClassSubject.objects.catalog(self.program)
 
         resp = HttpResponse(content_type='application/json')
+        resp['Cache-Control'] = 'public, max-age=3600'
 
         json.dump(list(classes), resp, default=json_encode)
 
