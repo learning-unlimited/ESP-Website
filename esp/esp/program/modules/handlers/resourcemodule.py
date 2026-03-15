@@ -1,8 +1,4 @@
 
-from __future__ import absolute_import
-import six
-from six.moves import map
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -581,7 +577,7 @@ class ResourceModule(ProgramModuleObj):
             if import_mode == 'preview':
                 context['prog'] = self.program
                 result = self.program.collapsed_dict(new_equipment_list)
-                context['new_equipment'] = [result[key] for key in sorted(six.iterkeys(result))]
+                context['new_equipment'] = [result[key] for key in sorted(result.keys())]
                 response = render_to_response(self.baseDir()+'equipment_import.html', request, context)
             else:
                 extra = 'equipment'
@@ -633,8 +629,8 @@ class ResourceModule(ProgramModuleObj):
             return response
 
         #   Group contiguous blocks of time for the program
-        time_options = self.program.getTimeSlots(types=['Class Time Block', 'Open Class Time Block'])
-        time_groups = self.program.getTimeGroups(types=['Class Time Block', 'Open Class Time Block'])
+        time_options = self.program.getTimeSlots(types=['Class Time Block', 'Open Class Time Block', 'Compulsory'])
+        time_groups = self.program.getTimeGroups(types=['Class Time Block', 'Open Class Time Block', 'Compulsory'])
 
         #   Retrieve remaining context information
         context['timeslots'] = [{'selections': group} for group in time_groups]
@@ -759,7 +755,7 @@ class ResourceModule(ProgramModuleObj):
 
     setup_title = "Set up timeslots, resources, and classrooms"
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         return self.program.getTimeSlots().exists() and self.program.getResourceTypes().exists() and self.program.getClassrooms().exists()
 
     class Meta:

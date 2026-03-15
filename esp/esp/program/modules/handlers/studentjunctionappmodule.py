@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -71,13 +69,10 @@ class StudentJunctionAppModule(ProgramModuleObj):
         return {'studentapps_complete': """Students who have completed the student application""",
                 'studentapps':          """Students who have started the student application"""}
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """ This step is completed if the student has marked their application as complete or answered questions for
         all of their classes.  I know this is slow sometimes.  -Michael P"""
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         app = user.getApplication(self.program)
 
         #   Check if the application is empty or marked as completed.
@@ -108,7 +103,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
         return True
 
     def deadline_met(self):
-        return super(StudentJunctionAppModule, self).deadline_met('/Applications')
+        return super().deadline_met('/Applications')
 
     @main_call
     @needs_student_in_grade
@@ -123,9 +118,10 @@ class StudentJunctionAppModule(ProgramModuleObj):
             for form in forms:
                 if form.is_valid():
                     form.target.update(form)
-            if request.POST['submitform'].lower() == 'complete':
+            submitform = request.POST.get('submitform', '').lower()
+            if submitform == 'complete':
                 app.done = True
-            if request.POST['submitform'].lower() == 'mark as unfinished':
+            elif submitform == 'mark as unfinished':
                 app.done = False
             app.save()
             return self.goToCore(tl)

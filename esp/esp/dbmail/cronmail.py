@@ -1,7 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -39,7 +36,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 import math
-import time
 
 from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail
 from datetime import datetime, timedelta
@@ -48,9 +44,7 @@ from django.template.loader import render_to_string
 
 from django.conf import settings
 
-
 _ONE_WEEK = timedelta(weeks=1)
-
 
 def process_messages():
     """Go through all unprocessed messages and process them.
@@ -109,10 +103,6 @@ def send_email_requests():
                                           sent__isnull=True,
                                           tries__lte=retries)
 
-    wait = getattr(settings, 'EMAILTIMEOUT', None)
-    if wait is None:
-        wait = 1.5
-
     num_sent = 0
     errors = [] # if any messages failed to deliver
 
@@ -145,8 +135,6 @@ def send_email_requests():
                 logger.warning("Encountered error while sending to " + mailtxt.send_to + ": " + exception_type_str)
             else:
                 num_sent += 1
-
-            time.sleep(wait)
 
     if num_sent > 0:
         logger.info('Sent %d messages', num_sent)

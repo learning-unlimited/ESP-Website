@@ -3,8 +3,6 @@
 # Adds lunches in an empty block for users who don't have one.  Chooses the
 # lunch randomly for users with both lunch blocks free.
 
-from __future__ import absolute_import
-from __future__ import print_function
 from script_setup import *
 
 import random
@@ -13,7 +11,6 @@ from esp.cal.models import Event
 from esp.program.models import Program, StudentRegistration, RegistrationType
 from esp.program.models.class_ import ClassSection
 from esp.users.models import ESPUser
-import six
 
 program = Program.objects.get(id=115)  # Change me! (Splash 2014)
 relationship = RegistrationType.objects.get(name='Enrolled')
@@ -55,7 +52,7 @@ for timeblock_id, section_id in lunches:
         lunchtimes_by_day[date].append(timeblock_id)
 
 for user in users:
-    for day, lunchtimes in six.iteritems(lunchtimes_by_day):
+    for day, lunchtimes in lunchtimes_by_day.items():
         # If the user has any lunch already, continue to the next day/user
         if any(sections_by_user_timeblock.get((user.id, lunchtime_id), 0)
                in lunch_ids for lunchtime_id in lunchtimes):

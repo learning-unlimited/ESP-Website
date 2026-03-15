@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -44,7 +43,7 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
             'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
             'num_teachers': 1, 'classes_per_teacher': 2, 'sections_per_class': 1
             } )
-        super(AvailabilityModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         # Get and remember the instance of AvailabilityModule
         am = ProgramModule.objects.get(handler='AvailabilityModule', module_type='teach')
@@ -65,7 +64,7 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
         timeslots = self.program.getTimeSlots().values_list( 'id', flat=True )
 
         # Check that the teacher starts out without availability set
-        self.assertTrue( not self.moduleobj.isCompleted() )
+        self.assertTrue( not self.moduleobj.isCompleted(self.teachers[0]) )
 
         # Log in as the teacher
         self.assertTrue( self.client.login( username=self.teachers[0].username, password='password' ), "Couldn't log in as teacher %s" % self.teachers[0].username )
@@ -74,12 +73,12 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
         # Available for one timeslot
         response = self.client.post( self.moduleobj.get_full_path(), data={ 'timeslots': timeslots[:1] } )
         self.assertTrue( response.status_code == 302 )
-        self.assertTrue( not self.moduleobj.isCompleted() )
+        self.assertTrue( not self.moduleobj.isCompleted(self.teachers[0]) )
         # Two timeslots
         response = self.client.post( self.moduleobj.get_full_path(), data={ 'timeslots': timeslots[:2] } )
         self.assertTrue( response.status_code == 302 )
-        self.assertTrue( not self.moduleobj.isCompleted() )
+        self.assertTrue( not self.moduleobj.isCompleted(self.teachers[0]) )
         # Three timeslots
         response = self.client.post( self.moduleobj.get_full_path(), data={ 'timeslots': timeslots } )
         self.assertTrue( response.status_code == 302 )
-        self.assertTrue( self.moduleobj.isCompleted() )
+        self.assertTrue( self.moduleobj.isCompleted(self.teachers[0]) )

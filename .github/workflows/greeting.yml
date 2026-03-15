@@ -1,0 +1,37 @@
+name: Greetings
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            👋 Thanks for opening your first issue here! We appreciate you taking the time to report this.
+
+            **What happens next:**
+            - A maintainer will review your issue and may ask follow-up questions
+            - Please check the [existing issues](https://github.com/learning-unlimited/ESP-Website/issues) to see if this has been reported before
+            - For setup help, see our [documentation](https://github.com/learning-unlimited/ESP-Website/tree/main/docs)
+
+            We're a volunteer-run project, so responses may take some time. Thank you for your patience! 🙏
+          pr-message: |
+            🎉 Thanks for your first pull request! We're excited to have you contribute to ESP-Website.
+
+            **Review process:**
+            - A maintainer will review your changes as soon as possible
+            - Please ensure your PR follows our [contributing guidelines](https://github.com/learning-unlimited/ESP-Website/wiki#i-want-to-get-involved)
+            - Make sure CI checks pass (lint and tests)
+
+            We're a volunteer-run project, so reviews may take some time. Thank you for your contribution! 🚀

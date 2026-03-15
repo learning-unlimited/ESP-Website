@@ -1,8 +1,8 @@
-from __future__ import absolute_import
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, StudentRegistration, RegistrationProfile, ProgramModule
+from esp.program.modules.base import ProgramModuleObj
 
 
 class RegistrationTypeManagementTest(ProgramFrameworkTest):
@@ -13,7 +13,7 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         modules.append(ProgramModule.objects.get(handler='StudentRegCore'))
         modules.append(ProgramModule.objects.get(handler='AdminCore'))
 
-        super(RegistrationTypeManagementTest, self).setUp(modules=modules)
+        super().setUp(modules=modules)
         self.schedule_randomly()
 
         # Create registration types
@@ -64,3 +64,289 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         # Check the displayed types again
         r = self.client.get("/learn/"+self.program.url+"/studentreg")
         self.assertContains(r, self.testRT, status_code=200)
+
+
+class ModuleManagementConstraintsTest(ProgramFrameworkTest):
+    """Tests that backend enforces module ordering/required constraints on save,
+    and that the view exposes constraint metadata for the UI.  Issue #3656."""
+
+    def setUp(self):
+        # RegProfileModule returns two module_properties entries (learn + teach),
+        # so there are two ProgramModule rows with that handler.
+        modules = [ProgramModule.objects.get(handler='AdminCore')]
+        modules += list(ProgramModule.objects.filter(handler='RegProfileModule'))
+        modules.append(ProgramModule.objects.get(handler='AvailabilityModule'))
+        modules.append(ProgramModule.objects.get(handler='StudentRegConfirm'))
+
+        super(ModuleManagementConstraintsTest, self).setUp(modules=modules)
+
+        self.adminUser, created = ESPUser.objects.get_or_create(username='admin_constraints')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+
+    def _url(self):
+        return '/manage/' + self.program.url + '/modules/'
+
+    def _post_empty_order(self):
+        """POST empty module lists to the modules view.
+
+        The constraint-override block at the end of the POST branch fires
+        unconditionally, so even an empty submission re-enforces constraints.
+        """
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.post(self._url(), {
+            'learn_req': '', 'learn_not_req': '',
+            'teach_req': '', 'teach_not_req': '',
+        })
+        self.assertIn(r.status_code, [200, 302])
+
+    def test_reg_profile_enforced_after_illegal_post(self):
+        """RegProfileModule is always seq=0 and required=True after any save."""
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+            pmo.seq = 500
+            pmo.required = False
+            pmo.save()
+
+        self._post_empty_order()
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+            self.assertEqual(pmo.seq, 0)
+            self.assertTrue(pmo.required)
+
+    def test_availability_always_required_after_illegal_post(self):
+        """AvailabilityModule is always required=True after any save."""
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='AvailabilityModule'):
+            pmo.required = False
+            pmo.save()
+
+        self._post_empty_order()
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='AvailabilityModule'):
+            self.assertTrue(pmo.required)
+
+    def test_confirm_reg_enforced_after_illegal_post(self):
+        """StudentRegConfirm is always seq=99999 and required=False after any save."""
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='StudentRegConfirm'):
+            pmo.seq = 1
+            pmo.required = True
+            pmo.save()
+
+        self._post_empty_order()
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='StudentRegConfirm'):
+            self.assertEqual(pmo.seq, 99999)
+            self.assertFalse(pmo.required)
+
+    def test_context_includes_module_constraints_dict(self):
+        """The modules view includes a module_constraints dict in the template context."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('module_constraints', r.context)
+        self.assertIsInstance(r.context['module_constraints'], dict)
+
+    def test_reg_profile_flagged_in_constraints(self):
+        """RegProfileModule appears in module_constraints as required_locked and position_locked."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        constraints = r.context['module_constraints']
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+            if pmo.inModulesList():
+                key = str(pmo.id)
+                self.assertIn(key, constraints)
+                self.assertTrue(constraints[key]['required_locked'])
+                self.assertTrue(constraints[key]['position_locked'])
+
+    def test_confirm_reg_flagged_in_constraints(self):
+        """StudentRegConfirm appears in module_constraints as not_required_locked and position_locked."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        constraints = r.context['module_constraints']
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='StudentRegConfirm'):
+            if pmo.inModulesList():
+                key = str(pmo.id)
+                self.assertIn(key, constraints)
+                self.assertTrue(constraints[key]['not_required_locked'])
+                self.assertTrue(constraints[key]['position_locked'])
+
+    def test_context_includes_position_locked_ids_set(self):
+        """The modules view includes a position_locked_ids set in the template context."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('position_locked_ids', r.context)
+        self.assertIsInstance(r.context['position_locked_ids'], (set, frozenset))
+
+    def test_reg_profile_in_position_locked_ids(self):
+        """RegProfileModule (position_locked) appears in position_locked_ids."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        position_locked_ids = r.context['position_locked_ids']
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+            if pmo.inModulesList():
+                self.assertIn(pmo.id, position_locked_ids)
+
+    def test_availability_not_in_position_locked_ids(self):
+        """AvailabilityModule is required_locked only; it must NOT appear in position_locked_ids
+        so admins can still reorder it within its list."""
+        self.client.login(username='admin_constraints', password='password')
+        r = self.client.get(self._url())
+        self.assertEqual(r.status_code, 200)
+        constraints = r.context['module_constraints']
+        position_locked_ids = r.context['position_locked_ids']
+
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='AvailabilityModule'):
+            if pmo.inModulesList():
+                # Should be in constraints (required_locked) but not position-frozen.
+                self.assertIn(str(pmo.id), constraints)
+                self.assertTrue(constraints[str(pmo.id)]['required_locked'])
+                self.assertFalse(constraints[str(pmo.id)]['position_locked'])
+                self.assertNotIn(pmo.id, position_locked_ids)
+
+
+class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
+    """Tests for the per-program link_title override on the Module Management page."""
+
+    def setUp(self):
+        modules = []
+        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule'))
+        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule'))
+        modules.append(ProgramModule.objects.get(handler='AdminCore'))
+
+        super(ModuleManagementLinkTitleTest, self).setUp(modules=modules)
+
+        # Force lazy creation of ProgramModuleObj rows so they exist
+        # before individual tests query for them.
+        self.program.getModules()
+
+        self.adminUser, created = ESPUser.objects.get_or_create(username='admin_modmgmt')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+
+    def _modules_url(self):
+        return '/manage/' + self.program.url + '/modules/'
+
+    def test_get_link_title_default_fallback(self):
+        """get_link_title() returns the module's default title when link_title is blank."""
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        pmo.link_title = ""
+        pmo.save()
+        self.assertEqual(pmo.get_link_title(), pmo.module.link_title)
+
+    def test_get_link_title_override(self):
+        """get_link_title() returns the per-program override when it is set."""
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        pmo.link_title = "My Custom Title"
+        pmo.save()
+        self.assertEqual(pmo.get_link_title(), "My Custom Title")
+
+    def test_module_management_saves_link_title(self):
+        """Submitting the module management form saves link_title for each module."""
+        self.client.login(username='admin_modmgmt', password='password')
+
+        learn_mods = [m for m in self.program.getModules(tl='learn') if m.inModulesList()]
+        teach_mods = [m for m in self.program.getModules(tl='teach') if m.inModulesList()]
+
+        learn_req_ids    = [str(m.id) for m in learn_mods if m.required]
+        learn_not_req_ids = [str(m.id) for m in learn_mods if not m.required]
+        teach_req_ids    = [str(m.id) for m in teach_mods if m.required]
+        teach_not_req_ids = [str(m.id) for m in teach_mods if not m.required]
+
+        all_ids = learn_req_ids + learn_not_req_ids + teach_req_ids + teach_not_req_ids
+
+        post_data = {
+            'learn_req':     ','.join(learn_req_ids),
+            'learn_not_req': ','.join(learn_not_req_ids),
+            'teach_req':     ','.join(teach_req_ids),
+            'teach_not_req': ','.join(teach_not_req_ids),
+        }
+        for mod_id in all_ids:
+            post_data['%s_label' % mod_id]      = ''
+            post_data['%s_link_title' % mod_id] = 'Custom Title for %s' % mod_id
+
+        r = self.client.post(self._modules_url(), post_data)
+        self.assertIn(r.status_code, [200, 302])
+
+        for mod_id in all_ids:
+            pmo = ProgramModuleObj.objects.get(id=int(mod_id))
+            self.assertEqual(pmo.link_title, 'Custom Title for %s' % mod_id)
+
+    def _step_module_ids(self, tl=None):
+        """Return the PMO IDs for learn/teach step modules, mirroring the handler's
+        reset loop exactly: getModules(tl=...) filtered by inModulesList()."""
+        if tl is None:
+            learn_ids = [m.id for m in self.program.getModules(tl='learn') if m.inModulesList()]
+            teach_ids = [m.id for m in self.program.getModules(tl='teach') if m.inModulesList()]
+            return learn_ids + teach_ids
+        return [m.id for m in self.program.getModules(tl=tl) if m.inModulesList()]
+
+    def test_module_management_resets_link_title(self):
+        """POSTing with default_link_title resets all link_title overrides to empty."""
+        self.client.login(username='admin_modmgmt', password='password')
+
+        # Mirror the handler's reset loop: getModules filtered by inModulesList()
+        step_ids = self._step_module_ids()
+
+        for mid in step_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
+            pmo.link_title = "Custom Title"
+            pmo.save()
+
+        r = self.client.post(self._modules_url(), {'default_link_title': 'on'})
+        self.assertIn(r.status_code, [200, 302])
+
+        for mid in step_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
+            self.assertEqual(pmo.link_title, "")
+
+    def test_module_management_link_title_reset_independent(self):
+        """default_link_title alone triggers the reset without requiring other reset flags."""
+        self.client.login(username='admin_modmgmt', password='password')
+
+        # Mirror the handler's reset loop: getModules filtered by inModulesList()
+        learn_mods = [m for m in self.program.getModules(tl='learn') if m.inModulesList()]
+        teach_mods = [m for m in self.program.getModules(tl='teach') if m.inModulesList()]
+        step_ids = [m.id for m in learn_mods + teach_mods]
+
+        # The handler's override section always forces certain modules' seq/required
+        # (e.g. RegProfileModule -> seq=0, CreditCard -> seq=10000, etc.) on every
+        # POST regardless of which reset flags are sent.  Exclude those so we can
+        # test seq independence on unaffected modules.
+        forced_override_names = frozenset({
+            'RegProfileModule', 'StudentRegConfirm', 'AvailabilityModule',
+            'StudentRegTwoPhase',
+        })
+        non_override_ids = [
+            m.id for m in learn_mods + teach_mods
+            if type(m).__name__ not in forced_override_names
+            and 'CreditCardModule' not in type(m).__name__
+            and 'AcknowledgementModule' not in type(m).__name__
+        ]
+
+        for mid in step_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
+            pmo.link_title = "Should be cleared"
+            pmo.save()
+
+        for mid in non_override_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
+            pmo.seq = 999
+            pmo.save()
+
+        # Only send default_link_title — seq should NOT change for non-override modules
+        r = self.client.post(self._modules_url(), {'default_link_title': 'on'})
+        self.assertIn(r.status_code, [200, 302])
+
+        for mid in step_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
+            self.assertEqual(pmo.link_title, "")
+        for mid in non_override_ids:
+            pmo = ProgramModuleObj.objects.get(id=mid)
+            # seq should be unchanged (not reset) because default_seq was not sent
+            self.assertEqual(pmo.seq, 999)

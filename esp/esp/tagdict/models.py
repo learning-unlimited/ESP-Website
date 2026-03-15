@@ -1,11 +1,8 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 import logging
-import six
 logger = logging.getLogger(__name__)
 
 from django.db import models
+from django.db.utils import ProgrammingError, OperationalError
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from argcache import cache_function
@@ -17,7 +14,6 @@ from esp.tagdict import all_global_tags, all_program_tags
 # documentation, as described at
 # http://www.djangoproject.com/documentation/models/generic_relations/
 
-@python_2_unicode_compatible
 class Tag(models.Model):
     """A tag on an item."""
     key = models.SlugField(db_index=True)
@@ -67,7 +63,7 @@ class Tag(models.Model):
                 elif key in all_global_tags:
                     result = all_global_tags[key].get('default')
 
-        if isinstance(result, six.string_types) and (result.lower() == "false" or
+        if isinstance(result, str) and (result.lower() == "false" or
                                                result.lower() == "true"):
             logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
                            key)
@@ -80,7 +76,7 @@ class Tag(models.Model):
         return the corresponding value as a string,
         or the value specified by the 'default' argument if no such value exists.
         """
-        if default is not None and not isinstance(default, six.string_types):
+        if default is not None and not isinstance(default, str):
             logger.warning("_getTag() called with non-string default for key %s",
                            key)
 
@@ -92,6 +88,13 @@ class Tag(models.Model):
                 return cls.objects.get(key=key, content_type__isnull=True, object_id__isnull=True).value
         except cls.DoesNotExist:
             return default
+        except (ProgrammingError, OperationalError) as e:
+            # Table may not exist yet (e.g. during migrations when another app's
+            # migration runs code that touches Tag before tagdict has been migrated).
+            err = str(e).lower()
+            if 'does not exist' in err or 'no such table' in err:
+                return default
+            raise
     _getTag.depend_on_row('tagdict.Tag', lambda tag: {'key': tag.key, 'target': tag.target})
     _getTag = classmethod(_getTag)
 
@@ -124,7 +127,7 @@ class Tag(models.Model):
                     res = all_program_tags[key].get('default')
                 elif key in all_global_tags:
                     res = all_global_tags[key].get('default')
-        if (not boolean) and isinstance(res, six.string_types) and \
+        if (not boolean) and isinstance(res, str) and \
            (res.lower() == "false" or res.lower() == "true"):
             logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
                            key)
@@ -184,6 +187,30 @@ class Tag(models.Model):
             tag.save()
 
         return tag.value
+
+    @classmethod
+    def get_nondefault_program_tags(cls, program):
+        """
+        Return a list of dicts describing tags that have been explicitly set for
+        the given program (i.e., Tag rows exist with that program as the target
+        and the key is in all_program_tags with is_setting=True).
+
+        Each dict has keys: 'key', 'value', 'help_text'.
+        """
+        ct = ContentType.objects.get_for_model(program)
+        program_tag_rows = cls.objects.filter(content_type=ct, object_id=program.id)
+        result = []
+        for tag in program_tag_rows:
+            if tag.key in all_program_tags and all_program_tags[tag.key].get('is_setting', False):
+                default = all_program_tags[tag.key].get('default')
+                if default is not None and tag.value == str(default):
+                    continue
+                result.append({
+                    'key': tag.key,
+                    'value': tag.value,
+                    'help_text': all_program_tags[tag.key].get('help_text', ''),
+                })
+        return result
 
     @classmethod
     def unSetTag(cls, key, target=None):

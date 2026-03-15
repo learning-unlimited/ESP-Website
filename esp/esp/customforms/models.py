@@ -1,18 +1,12 @@
-from __future__ import with_statement
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 import logging
-import six
 logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, connection
-from django.db.utils import DatabaseError
+from django.db.utils import DatabaseError, ProgrammingError
 from esp.users.models import ESPUser
 from esp.program.models import Program
 
-@python_2_unicode_compatible
 class Form(models.Model):
     title = models.CharField(max_length=40, blank=True)
     description = models.TextField(blank=True)
@@ -26,17 +20,15 @@ class Form(models.Model):
     success_url = models.CharField(max_length=200, blank=True)
 
     def __str__(self):
-        return '%s (created by %s)' % (self.title, self.created_by.username)
+        return f'{self.title} (created by {self.created_by.username})'
 
-@python_2_unicode_compatible
 class Page(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE)
     seq = models.IntegerField(default=-1)
 
     def __str__(self):
-        return 'Page %d of %s' % (self.seq, self.form.title)
+        return f'Page {self.seq} of {self.form.title}'
 
-@python_2_unicode_compatible
 class Section(models.Model):
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
     title = models.CharField(max_length=40)
@@ -44,9 +36,8 @@ class Section(models.Model):
     seq = models.IntegerField()
 
     def __str__(self):
-        return 'Sec. %d: %s' % (self.seq, six.text_type(self.title))
+        return f'Sec. {self.seq}: {self.title}'
 
-@python_2_unicode_compatible
 class Field(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE)
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
@@ -57,7 +48,7 @@ class Field(models.Model):
     required = models.BooleanField(default=False)
 
     def __str__(self):
-        return '%s' % (self.label)
+        return f'{self.label}'
 
     def set_attribute(self, atype, value):
         from esp.customforms.models import Attribute
@@ -103,7 +94,7 @@ def create_schema(db):
     transaction.set_autocommit(False)
     try:
         db.execute("CREATE SCHEMA customforms")
-    except:
+    except (DatabaseError, ProgrammingError):
         transaction.rollback()
     else:
         transaction.commit()

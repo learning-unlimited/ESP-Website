@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -44,7 +43,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update({'num_students': 3,})
-        super(RegProfileModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         # Get and remember the instance of this module
         m = ProgramModule.objects.get(handler='RegProfileModule', module_type='learn')
@@ -63,7 +62,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # the ProgramModuleObj's user if we ever cache isCompleted().
         for student in self.students:
             get_current_request().user = student
-            self.assertTrue( not self.moduleobj.isCompleted(), "The profile should be incomplete at first." )
+            self.assertTrue( not self.moduleobj.isCompleted(student), "The profile should be incomplete at first." )
 
         # First student: Test non-saving of initial program profile
         get_current_request().user = self.students[0]
@@ -75,7 +74,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         prof.save()
         self.assertTrue( self.students[0].registrationprofile_set.count() >= 1, "Profile failed to save." )
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.assertTrue( self.moduleobj.isCompleted(), "Profile id wiped." )
+        self.assertTrue( self.moduleobj.isCompleted(self.students[0]), "Profile id wiped." )
         self.assertTrue( self.students[0].registrationprofile_set.all()[0].program == self.program, "Profile failed to migrate to program." )
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
 
@@ -91,7 +90,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # Continue testing
         self.assertTrue( self.students[1].registrationprofile_set.count() >= 1, "Profile failed to save." )
         self.assertTrue( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.assertTrue( not self.moduleobj.isCompleted(), "Profile too old but accepted anyway." )
+        self.assertTrue( not self.moduleobj.isCompleted(self.students[1]), "Profile too old but accepted anyway." )
         self.assertTrue( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
 
         get_current_request().user = self.students[2]

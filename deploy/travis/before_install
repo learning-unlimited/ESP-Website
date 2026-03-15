@@ -1,9 +1,0 @@
-#!/bin/bash
-set -euf -o pipefail
-
-sudo add-apt-repository ppa:deadsnakes/ppa
-
-sudo apt update
-
-# install pip
-sudo apt -y install python3-pip

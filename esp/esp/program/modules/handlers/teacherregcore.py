@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -60,7 +59,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 
         context['completedAll'] = True
         for module in modules:
-            if not module.isCompleted() and module.isRequired():
+            if not module.isCompleted(request.user) and module.isRequired():
                 context['completedAll'] = False
 
             context = module.prepare(context)

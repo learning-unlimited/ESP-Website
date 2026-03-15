@@ -1,17 +1,15 @@
-from __future__ import absolute_import
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, meets_deadline
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, Record, RecordType
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
-import six
 
 def studentacknowledgementform_factory(prog):
     name = "StudentAcknowledgementForm"
     bases = (forms.Form,)
 
-    label = six.u("By checking this box, I acknowledge that I have read and understood the above contract, and agree to abide by it. I understand that should I break this contract, I may be asked to leave the program.")
+    label = "By checking this box, I acknowledge that I have read and understood the above contract, and agree to abide by it. I understand that should I break this contract, I may be asked to leave the program."
 
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
@@ -29,11 +27,8 @@ class StudentAcknowledgementModule(ProgramModuleObj):
             "choosable": 0,
         }
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user,
                                      program=self.program,
                                      event__name="studentacknowledgement").exists()
@@ -53,7 +48,7 @@ class StudentAcknowledgementModule(ProgramModuleObj):
                 return self.goToCore(tl)
             else:
                 rec.delete()
-        elif self.isCompleted():
+        elif self.isCompleted(request.user):
             context['form'] = studentacknowledgementform_factory(prog)({'acknowledgement': True})
         else:
             context['form'] = studentacknowledgementform_factory(prog)()
