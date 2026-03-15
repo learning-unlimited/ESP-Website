@@ -23,10 +23,10 @@ class AjaxForeignKeyFieldBase:
             if objects.count() == 1:
                 obj = objects[0]
                 if hasattr(obj, 'ajax_str'):
-                    init_val = obj.ajax_str() + " (%s)" % data
+                    init_val = obj.ajax_str() + f" ({data})"
                     old_init_val = str(obj)
                 else:
-                    old_init_val = init_val = str(obj) + " (%s)" % data
+                    old_init_val = init_val = str(obj) + f" ({data})"
         elif isinstance(data, str):
             pass
         else:
@@ -118,7 +118,7 @@ $j(function () {
 
         #   Add HTML for shadow field if desired
         if self.shadow_field:
-            html += '<input type="hidden" id="id_%s" name="%s" value="%s"/>' % (self.shadow_field, self.shadow_field, old_init_val)
+            html += f'<input type="hidden" id="id_{self.shadow_field}" name="{self.shadow_field}" value="{old_init_val}"/>'
 
         return mark_safe(javascript + html)
 
