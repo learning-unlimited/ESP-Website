@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.program.models import FinancialAidRequest, SplashInfo
 from esp.accounting.models import FinancialAidGrant, LineItemType
+from esp.users.models import Permission
 
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -317,3 +318,75 @@ class StudentRegTest(ProgramFrameworkTest):
         spi = SplashInfo.getForUser(student, self.program)
         self.assertEqual(spi.siblingname, 'Test Name')
 
+    def test_catalog_deadline(self):
+        """Test that catalog respects Student/Catalog deadline."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # No deadline configured - catalog should work
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+        # Active deadline - catalog should work
+        perm = Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=1)
+        )
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+        # Expired deadline - should show error
+        perm.end_date = timezone.now() - timedelta(hours=1)
+        perm.save()
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+
+
+    def test_catalog_json_open(self):
+        """catalog_json returns 200 with JSON when catalog is open."""
+        import json
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # No deadline at all — should be open
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        data = json.loads(response.content)
+        self.assertIsInstance(data, list)
+
+        # Active deadline — should still be open
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=1),
+        )
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertIsInstance(data, list)
+
+    def test_catalog_json_closed(self):
+        """catalog_json returns 403 with no-store cache header when catalog is closed."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # Expired deadline — catalog should be closed
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response['Cache-Control'], 'no-store')
