@@ -228,6 +228,12 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.deadline_met(extension) or \
                    super().deadline_met('/Classes/Lottery')
 
+    def _catalog_deadline_closed(self, prog):
+        """Return True if a Student/Catalog deadline exists and is currently closed."""
+        if Permission.objects.filter(permission_type='Student/Catalog', program=prog, user__isnull=True).exists():
+            return not Permission.null_user_has_perm('Student/Catalog', prog)
+        return False
+
     def prepare(self, context={}):
         user = get_current_request().user
         program = self.program
@@ -568,11 +574,14 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
-        # Check Student/Catalog deadline if one exists
-        if Permission.objects.filter(permission_type='Student/Catalog', program=prog, user__isnull=True).exists():
-            if not Permission.null_user_has_perm('Student/Catalog', prog):
-                return HttpResponse(json.dumps({'error': 'Catalog is closed'}),
+        # Check Student/Catalog deadline if one exists.
+        # Note: we avoid caching 403 responses so stale closed/open transitions
+        # are not served to clients.
+        if self._catalog_deadline_closed(prog):
+            response = HttpResponse(json.dumps({'error': 'Catalog is closed'}),
                                     content_type='application/json', status=403)
+            response['Cache-Control'] = 'no-store'
+            return response
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
 
@@ -610,11 +619,9 @@ class StudentClassRegModule(ProgramModuleObj):
     @no_auth
     @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        # Check Student/Catalog deadline if one exists (no user check to preserve caching)
-        if Permission.objects.filter(permission_type='Student/Catalog', program=prog, user__isnull=True).exists():
-            if not Permission.null_user_has_perm('Student/Catalog', prog):
-                return render_deadline_for_tl('learn', request,
-                        {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
+        if self._catalog_deadline_closed(prog):
+            return render_deadline_for_tl('learn', request,
+                    {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
     @disable_csrf_cookie_update
@@ -622,11 +629,9 @@ class StudentClassRegModule(ProgramModuleObj):
     @no_auth
     @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
-        # Check Student/Catalog deadline if one exists
-        if Permission.objects.filter(permission_type='Student/Catalog', program=prog, user__isnull=True).exists():
-            if not Permission.null_user_has_perm('Student/Catalog', prog):
-                return render_deadline_for_tl('learn', request,
-                        {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
+        if self._catalog_deadline_closed(prog):
+            return render_deadline_for_tl('learn', request,
+                    {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
         #   Get the ProgramPrintables module for the program
         from esp.program.modules.handlers.programprintables import ProgramPrintables
         for module in prog.getModules():
