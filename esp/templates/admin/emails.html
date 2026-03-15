@@ -49,8 +49,8 @@ tr.email-details {
 {% block content %}
 
 <p>This page lets you monitor emails that have been sent through the website via a program's comm panel.</p>
-<form action="/manage/emails" method="get">
-<p>Currently showing emails since <input name="start_date" type="date" onchange="$j(this).parents('form').submit();return false;" value="{{ start_date|date:"Y-m-d" }}"></p>
+<form action="/manage/emails" method="get" aria-label="Filter emails by start date">
+<p>Currently showing emails since <input name="start_date" type="date" onchange="$j(this).parents('form').submit();return false;" value="{{ start_date|date:"Y-m-d" }}" aria-label="Filter emails from this start date"></p>
 </form>
 <p>If you notice any problems (emails aren't getting processed, emails won't send, emails are not sent to everyone, etc.), please contact <a href="mailto:websupport@learningu.org">websupport</a>.</p>
 
@@ -58,7 +58,7 @@ tr.email-details {
 <p>There are no emails to monitor.</p>
 {% else %}
 <p>Click on a row for more details:</p>
-<table class="emails-table">
+<table class="emails-table" role="table" aria-label="Monitored emails list">
     <tr>
         <th style="width:5%;"></th>
         <th style="width:50%;">Subject</th>
@@ -67,7 +67,7 @@ tr.email-details {
         <th># Emails Sent</th>
     </tr>
     {% for req in requests %}
-        <tr class="email-header">
+        <tr class="email-header" tabindex="0" role="button" aria-expanded="false" aria-label="Click to expand email details">
             <td>+</td>
             <td><b>{{ req.subject }}</b></td>
             <td style="text-align:center;">{% if req.processed %}&#10003;{% else %}&#10005;{% endif %}</td>

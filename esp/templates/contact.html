@@ -15,14 +15,6 @@
       $j("#id_anonymous").change(function() {
         $j("#id_sender").attr('required', !this.checked);
       });
-
-      // Ensure button always starts with btn-primary, removing any stale btn-success from browser cache
-      $j(".contact-send").removeClass("btn-success").addClass("btn-primary");
-
-      // Toggle button to btn-success when form is submitted for visual feedback
-      $j(".contact-send").on("click", function() {
-        $j(this).removeClass("btn-primary").addClass("btn-success");
-      });
     });
   </script>
 {% endblock %}
@@ -38,12 +30,13 @@
   If you would like, we can email you a link to reset your password.
   The email will remind you of your username.
   {% end_inline_qsd_block %}
-  <form action="/myesp/passwdrecover/" method="post">
+  <form action="/myesp/passwdrecover/" method="post" aria-labelledby="recovery-heading">
+  <h2 id="recovery-heading" class="sr-only">Password Recovery</h2>
     <input type="hidden" name="email" value="{{contact_form.cleaned_data.sender}}" />
-    <input type="submit" name="recoverpassword" value="Reset my password" />
+    <input type="submit" name="recoverpassword" value="Reset my password" aria-label="Reset my password via email" />
   </form>
-  <form action="{{ request.path }}" method="post" class="contact-form">
-    <input type="submit" name="sendanyway" value="I want to send this message anyway" />
+  <form action="{{ request.path }}" method="post" class="contact-form" aria-labelledby="contact-heading">
+    <input type="submit" name="sendanyway" value="I want to send this message anyway" aria-label="Skip password recovery and send message anyway" />
 {% else %}
   {% inline_qsd_block "contact_header_text" %}
   # Contact Us
@@ -57,12 +50,12 @@
   If your child is or wants to be a student at one of our programs, while we do appreciate your interest, we'd rather hear from the child directly.
   We're an all-volunteer organization, so we sometimes take a while to respond to email, and we have an obligation to answer mail from our students first.
   {% end_inline_qsd_block %}
-  <form action="{{ request.path }}" method="post" class="contact-form">
+  <form action="{{ request.path }}" method="post" class="contact-form" aria-labelledby="contact-heading">
 {% endif %}
 
-<h2>Contact Form</h2>
+<h2 id="contact-heading">Contact Form</h2>
 {% if contact_form.errors %}
-<div class="errors">
+<div class="errors" role="alert" aria-live="polite">
   There
   {% if contact_form.errors|length_is:1 %}is an error{% else %}are errors{% endif %}
   in the below form. Please fix and resubmit.
@@ -74,7 +67,7 @@
       {{ contact_form }}
       <tr>
         <td></td>
-        <td><input type="submit" name="sendemail" value="Send!" class="btn btn-primary contact-send" /></td>
+        <td><input type="submit" name="sendemail" value="Send!" class="btn btn-primary contact-send" aria-label="Send contact form message" /></td>
       </tr>
     </tbody>
   </table>
