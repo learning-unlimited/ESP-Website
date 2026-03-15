@@ -24,28 +24,21 @@ class TimezoneMiddleware:
         if program is None:
             program = getattr(request, 'program', None)
 
-        if program and program.is_online:
-            tzname = None
-            if hasattr(request, 'user') and request.user.is_authenticated:
-                try:
-                    # UserPreferences is linked to ESPUser via 'preferences' related name.
-                    tzname = request.user.preferences.timezone
-                except Exception:
-                    pass
+        tzname = request.COOKIES.get('user_timezone')
+        if tzname:
+            import urllib.parse
+            tzname = urllib.parse.unquote(tzname)
 
-            if not tzname:
-                tzname = request.session.get('django_timezone')
+        if not tzname and program and program.is_online:
+            tzname = request.session.get('django_timezone')
 
-            if tzname:
-                try:
-                    # Activate the timezone for the duration of the request
-                    timezone.activate(pytz.timezone(tzname))
-                except Exception:
-                    timezone.deactivate()
-            else:
+        if tzname:
+            try:
+                # Activate the timezone for the duration of the request
+                timezone.activate(pytz.timezone(tzname))
+            except Exception:
                 timezone.deactivate()
         else:
-            # For in-person programs, use the default TIME_ZONE (deactivate active tz)
             timezone.deactivate()
 
         return None

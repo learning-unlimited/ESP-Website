@@ -144,6 +144,15 @@
       gtag('config', '{{ "google_analytics_id"|getTag }}');
     </script>
     {% endif %}
+
+    <script type="text/javascript">
+      (function() {
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz) {
+          document.cookie = "user_timezone=" + encodeURIComponent(tz) + "; path=/; max-age=31536000; SameSite=Lax";
+        }
+      })();
+    </script>
     {% endblock javascript %}
   </head>
   
