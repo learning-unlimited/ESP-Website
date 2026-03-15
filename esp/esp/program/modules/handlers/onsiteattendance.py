@@ -176,7 +176,7 @@ class OnSiteAttendance(ProgramModuleObj):
                 # treat this as a cross-midnight class and shift the end time forward by one day.
                 if section_end_dt.time() < start_time.time():
                     end_time = end_time + datetime.timedelta(days=1)
-                
+
                 # If after adjustment the end time is still invalid, skip this record.
                 if end_time < start_time:
                     continue
