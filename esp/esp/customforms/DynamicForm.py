@@ -686,15 +686,13 @@ class FormHandler:
                 response['username'] = user.username
 
             # Add in links
+            # Note: .values() returns FK fields with _id suffix (e.g. link_ModelName_id)
             if only_fkey_model is not None:
-                if only_fkey_model.objects.filter(pk=response["link_%s" % only_fkey_model.__name__]).exists():
-                    inst = only_fkey_model.objects.get(pk=response["link_%s" % only_fkey_model.__name__])
-                else: inst = None
+                fk_key = f"link_{only_fkey_model.__name__}_id"
+                pk_val = response.get(fk_key)
+                inst = only_fkey_model.objects.filter(pk=pk_val).first() if pk_val is not None else None
                 response["link_%s" % only_fkey_model.__name__] = str(inst)
-                if only_fkey_model.objects.filter(pk=response[f"link_{only_fkey_model.__name__}_id"]).exists():
-                    inst = only_fkey_model.objects.get(pk=response[f"link_{only_fkey_model.__name__}_id"])
-                else: inst = None
-                response[f"link_{only_fkey_model.__name__}_id"] = str(inst)
+                response[fk_key] = str(inst)
 
             # Now, put in the additional fields in response
             for qname, data in add_fields.items():
