@@ -561,11 +561,15 @@ def top_classes(request, tl, program, instance):
                     continue
 
                 teachers = list(cls.get_teachers())
+                enrollment = sum(
+                    sec.num_students() for sec in cls.get_sections()
+                )
                 class_data = {
                     'class': cls,
                     'numratings': votes,
                     # For favorite class, "avg" is the vote count
                     'avg': votes,
+                    'enrollment': enrollment,
                     'teacher': (
                         teachers[0] if len(teachers) > 0 else None
                     ),
