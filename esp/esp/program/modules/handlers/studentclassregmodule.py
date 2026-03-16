@@ -435,7 +435,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise AjaxError(inst)
 
     @staticmethod
-    def sort_categories(classes, prog):
+    def sort_categories(classes, prog, force_sort=False):
         categories = {}
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'symbol':cls.category.symbol}
@@ -449,10 +449,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         catalog_sort_split = catalog_sort.split('__')
         if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
-            categories_sort = sorted(list(categories.values()), key = lambda cat: cat[catalog_sort_split[1]])
+            sort_field = catalog_sort_split[1]
+        elif force_sort:
+            # Separate catalog pages always need a category list, even when class sorting
+            # is not category-based.
+            sort_field = 'symbol'
         else:
-            categories_sort = None
-        return categories_sort
+            return None
+        return sorted(list(categories.values()), key = lambda cat: cat[sort_field])
 
     @aux_call
     @needs_student_in_grade
@@ -500,13 +504,40 @@ class StudentClassRegModule(ProgramModuleObj):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
-
-        categories_sort = self.sort_categories(classes, self.program)
+        separate_catalog = Tag.getBooleanTag('separate_catalog_pages', prog)
+        is_category_page = separate_catalog and bool(extra)
+        categories_sort = self.sort_categories(classes, self.program, force_sort=separate_catalog)
 
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
-        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories_sort, 'collapse_full': collapse_full}
+
+        selected_category = None
+        if separate_catalog:
+            if is_category_page:
+                try:
+                    category_id = int(extra)
+                    category_qs = ClassSubject.objects.filter(category_id=category_id)
+                    classes = ClassSubject.objects.catalog(self.program, initial_queryset=category_qs)
+                    for cat in categories_sort:
+                        if cat['id'] == category_id:
+                            selected_category = cat
+                            break
+                except ValueError:
+                    classes = []
+            else:
+                classes = []
+
+        context = {
+            'classes': classes,
+            'one': one,
+            'two': two,
+            'categories': categories_sort,
+            'collapse_full': collapse_full,
+            'separate_catalog': separate_catalog,
+            'selected_category': selected_category,
+            'category_page': is_category_page,
+        }
 
         scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
@@ -514,6 +545,10 @@ class StudentClassRegModule(ProgramModuleObj):
         prog_color = prog.getColor()
         collapse_full_classes = Tag.getBooleanTag('collapse_full_classes', prog)
         class_blobs = []
+
+        category_list_href = "#top"
+        if separate_catalog:
+            category_list_href = "/learn/%s/catalog" % prog.getUrlBase()
 
         category_header_str = """
     <div class="cat_wrapper" data-category="%d">
@@ -523,7 +558,7 @@ class StudentClassRegModule(ProgramModuleObj):
            %s
         </p>
         <p class="linktop">
-           <a href="#top">[ Return to Category List ]</a>
+           <a href="%s">[ Return to Category List ]</a>
         </p>
 """
 
@@ -533,7 +568,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 class_category_id = cls.category.id
                 if (class_category_id != None):
                     class_blobs.append('</div>')
-                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category))
+                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category, category_list_href))
             class_blobs.append(render_class_direct(cls))
             class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)
