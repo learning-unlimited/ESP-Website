@@ -217,7 +217,7 @@ class GetFieldFilterTest(TestCase):
             name = "ESP"
         self.assertEqual(get_field(Obj(), "name"), "ESP")
 
-    def test_returns_method_result(self):
+    def test_returns_attribute_value(self):
         class Obj:
             value = 42
         self.assertEqual(get_field(Obj(), "value"), 42)
@@ -243,7 +243,7 @@ class TruncatewordsCharTest(TestCase):
     """Tests for truncatewords_char filter."""
 
     def test_short_string_not_truncated(self):
-        # "hello" is 5 chars; limit 20 → no truncation
+        # "hello world" is 11 chars; limit 50 → no truncation
         result = truncatewords_char("hello world", 50)
         self.assertNotIn("...", result)
 
@@ -253,8 +253,8 @@ class TruncatewordsCharTest(TestCase):
 
     def test_truncated_result_within_limit(self):
         result = truncatewords_char("one two three four five six seven", 15)
-        # strip leading space from result
-        self.assertLessEqual(len(result.strip()), 20)
+        # strip leading space from result; words fit under 15 chars + " ..." suffix
+        self.assertLessEqual(len(result.strip()), 18)
 
     def test_invalid_arg_returns_original(self):
         original = "hello world"
