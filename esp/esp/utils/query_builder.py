@@ -156,6 +156,31 @@ class SelectInput(object):
             raise ESPError('Invalid choice %s for input %s'
                            % (value, self.field_name))
 
+class SelectQInput(object):
+    """An input represented by an HTML <select> with a fixed set of options. Each
+       option has a fixed Q object.
+
+    Arguments:
+        `options`: a dict where the keys are ids and the values are dictionaries with a user-friendly title
+            and Q object.  The ids should be strings.
+    """
+    def __init__(self, options):
+        self.options = options
+        # TODO: warn if option ids are not strings.
+
+    def spec(self):
+        return {
+            'reactClass': 'SelectInput',
+            'options': [{'name': k, 'title': v['title']}
+                        for k, v in self.options.items()],
+        }
+
+    def as_q(self, value):
+        if value in self.options:
+            return self.options[value]['Q']
+        else:
+            return Q()
+
 
 class ConstantInput(object):
     """An input which adds a fixed Q object to the filter.

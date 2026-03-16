@@ -1,0 +1,5 @@
+{% include "django/forms/widgets/datetime.html" %}
+<span id="{{ id }}-info"><span id="{{ id }}-gi"></span><span id="{{ id }}-duration"></span></span>
+<script type="text/javascript">
+    setupDatepickerDurationLabel('{{ jquerywidget }}', '{{ id }}', '{{ media_url }}', '{{ date_format }}', '{{ time_format }}');
+</script>

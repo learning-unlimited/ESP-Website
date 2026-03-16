@@ -6,7 +6,6 @@ from django import forms
 from django.conf import settings
 from django.forms import widgets
 from django.template import Template, Context
-from django.utils.encoding import force_unicode
 from django.utils.safestring import mark_safe
 
 import django.utils.formats
@@ -16,17 +15,12 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 
-# DATETIMEWIDGET
-calEnable = u"""
-<span id="{id}-info"><span id="{id}-gi"></span> <span id="{id}-duration"></span></span>
-<script type="text/javascript">
-    setupDatepickerDurationLabel('{widget}', '{id}', '{media_url}', '{date_format}', '{time_format}');
-</script>"""
-
-class DateTimeWidget(forms.widgets.TextInput):
+class DateTimeWidget(forms.widgets.DateTimeInput):
+    template_name = 'django/forms/widgets/datetimepicker.html'
     dformat = 'mm/dd/yy'
     tformat = 'hh:mm'
     pythondformat = '%m/%d/%Y %H:%M'
+    jquerywidget = 'datetimepicker'
 
     # Note -- these are not actually used in the deadlines template, since we don't include
     # the entire form, just use variables from. They're here now mainly for responsibility
@@ -37,32 +31,20 @@ class DateTimeWidget(forms.widgets.TextInput):
         js = ('scripts/jquery-ui.js',
               'scripts/jquery-ui.timepicker.js')
 
-    def prepare_render_attrs(self, name, value, attrs=None):
-        """ Base function for preparing information needed to render the widget. """
+    def __init__(self, attrs=None):
+        super(DateTimeWidget, self).__init__(attrs)
+        self.format = self.pythondformat
 
-        if value is None: value = ''
-        final_attrs = self.build_attrs(attrs, type=self.input_type, name=name)
-
-        if value != '':
-            try:
-                final_attrs['value'] = value.strftime(self.pythondformat)
-            except:
-                final_attrs['value'] = value
-
-        if not 'id' in final_attrs:
-            final_attrs['id'] = u'%s_id' % (name)
-        return final_attrs
-
-    def render(self, name, value, attrs=None):
-        final_attrs = self.prepare_render_attrs(name, value, attrs)
-        id = final_attrs['id']
-        cal = calEnable.format(
-                widget='datetimepicker',
-                id=id,
-                media_url=settings.MEDIA_URL,
-                date_format=self.dformat,
-                time_format=self.tformat)
-        return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
+    def get_context(self, name, value, attrs):
+        context = super(DateTimeWidget, self).get_context(name, value, attrs)
+        context.update({
+            'id': attrs['id'] if 'id' in attrs else u'%s_id' % (name),
+            'jquerywidget': self.jquerywidget,
+            'media_url': settings.MEDIA_URL,
+            'date_format': self.dformat,
+            'time_format': self.tformat,
+        })
+        return context
 
     def value_from_datadict(self, data, files, name):
         dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
@@ -85,22 +67,13 @@ class DateTimeWidget(forms.widgets.TextInput):
 class DateWidget(DateTimeWidget):
     """ A stripped down version of the DateTimeWidget that uses jQuery UI's
         built in datepicker. """
-
-    def render(self, name, value, attrs=None):
-        final_attrs = self.prepare_render_attrs(name, value, attrs)
-        id = final_attrs['id']
-        cal = calEnable.format(
-                widget='datepicker',
-                id=id,
-                media_url=settings.MEDIA_URL,
-                date_format=self.dformat,
-                time_format=self.tformat)
-        return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
+    pythondformat = '%m/%d/%Y'
+    jquerywidget = 'datepicker'
 
 class ClassAttrMergingSelect(forms.Select):
 
-    def build_attrs(self, extra_attrs=None, **kwargs):
-        attrs = dict(self.attrs, **kwargs)
+    def build_attrs(self, base_attrs, extra_attrs=None):
+        attrs = base_attrs.copy()
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
             if 'class' in attrs and 'class' in extra_attrs \
@@ -166,29 +139,12 @@ class SplitDateWidget(forms.MultiWidget):
 
 class BlankSelectWidget(forms.Select):
     """ A <select> widget whose first entry is blank. """
+    template_name = 'django/forms/widgets/blankselect.html'
 
     def __init__(self, blank_choice=('',''), *args, **kwargs):
         super(forms.Select, self).__init__(*args, **kwargs)
         self.blank_value = blank_choice[0]
         self.blank_label = blank_choice[1]
-
-    # Copied from django/forms/widgets.py
-    def render(self, name, value, attrs=None, choices=()):
-        from django.utils.html import escape, conditional_escape
-        from django.utils.encoding import force_unicode
-        from django.utils.safestring import mark_safe
-
-        if value is None: value = ''
-        final_attrs = self.build_attrs(attrs, name=name)
-        output = [u'<select%s>' % forms.utils.flatatt(final_attrs)]
-        output.append( u'<option value="%s" selected="selected">%s</option>' %
-                       (escape(self.blank_value), conditional_escape(force_unicode(self.blank_label))) )
-        options = self.render_options(choices, [value])
-        if options:
-            output.append(options)
-        output.append('</select>')
-        return mark_safe(u'\n'.join(output))
-
 
 class NullRadioSelect(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
@@ -346,7 +302,7 @@ $j(document).ready({{ name }}_setup);
 
     def render(self, name, value, attrs=None):
         if value is None: value = ''
-        self.build_attrs(attrs, name=name)
+        self.build_attrs(attrs)
         context = {}
         context['name'] = name
         context['value'] = json.dumps(value)
@@ -358,28 +314,13 @@ $j(document).ready({{ name }}_setup);
         result = json.loads(data[name])
         return result
 
-#adapted from https://djangosnippets.org/snippets/863/
-class ChoiceWithOtherRenderer(forms.RadioSelect.renderer):
-    """RadioFieldRenderer that renders its last choice with a placeholder."""
-    def __init__(self, *args, **kwargs):
-        super(ChoiceWithOtherRenderer, self).__init__(*args, **kwargs)
-        self.choices, self.other = self.choices, self.choices[-1]
-
-    def __iter__(self):
-        for input in super(ChoiceWithOtherRenderer, self).__iter__():
-            yield input
-        id = '%s_%s' % (self.attrs['id'], self.other[0]) if 'id' in self.attrs else ''
-        label_for = ' for="%s"' % id if id else ''
-        checked = '' if not force_unicode(self.other[0]) == self.value else 'checked="true" '
-        yield '<label%s><input type="radio" id="%s" value="%s" name="%s" %s/> %s</label> %%s' % (
-            label_for, id, self.other[0], self.name, checked, self.other[1])
-
-
 class ChoiceWithOtherWidget(forms.MultiWidget):
     """MultiWidget for use with ChoiceWithOtherField."""
+    template_name = 'django/forms/widgets/choicewithother.html'
+
     def __init__(self, choices):
         widgets = [
-            forms.RadioSelect(choices=choices, renderer=ChoiceWithOtherRenderer),
+            forms.RadioSelect(choices=choices),
             forms.TextInput
         ]
         super(ChoiceWithOtherWidget, self).__init__(widgets)
@@ -388,12 +329,6 @@ class ChoiceWithOtherWidget(forms.MultiWidget):
         if not value:
             return [None, None]
         return value
-
-    def format_output(self, rendered_widgets):
-        """Format the output by substituting the "other" choice into the first widget."""
-        rendered_widgets[0] = rendered_widgets[0] + '%s'
-        return rendered_widgets[0] % rendered_widgets[1]
-
 
 class ChoiceWithOtherField(forms.MultiValueField):
     def __init__(self, *args, **kwargs):

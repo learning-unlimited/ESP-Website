@@ -209,15 +209,15 @@ li.tabcolor9 a { background-color: @tabcolor9_base_color; }
 #page.tabcolor9 #login_arrow2 { border-right: 10px solid @tabcolor9_accent2_color; }
 
 #menu li.tabcolor0 .accent { background-color: @tabcolor0_accent1_color; height: 106px; }
-#menu li.tabcolor1 .accent { background-color: @tabcolor1_accent1_color; height: 35px; }
-#menu li.tabcolor2 .accent { background-color: @tabcolor2_accent1_color; height: 35px; }
-#menu li.tabcolor3 .accent { background-color: @tabcolor3_accent1_color; height: 35px; }
-#menu li.tabcolor4 .accent { background-color: @tabcolor4_accent1_color; height: 35px; }
-#menu li.tabcolor5 .accent { background-color: @tabcolor5_accent1_color; height: 35px; }
-#menu li.tabcolor6 .accent { background-color: @tabcolor6_accent1_color; height: 35px; }
-#menu li.tabcolor7 .accent { background-color: @tabcolor7_accent1_color; height: 35px; }
-#menu li.tabcolor8 .accent { background-color: @tabcolor8_accent1_color; height: 35px; }
-#menu li.tabcolor9 .accent { background-color: @tabcolor9_accent1_color; height: 35px; }
+#menu li.tabcolor1 .accent { background-color: @tabcolor1_accent1_color; }
+#menu li.tabcolor2 .accent { background-color: @tabcolor2_accent1_color; }
+#menu li.tabcolor3 .accent { background-color: @tabcolor3_accent1_color; }
+#menu li.tabcolor4 .accent { background-color: @tabcolor4_accent1_color; }
+#menu li.tabcolor5 .accent { background-color: @tabcolor5_accent1_color; }
+#menu li.tabcolor6 .accent { background-color: @tabcolor6_accent1_color; }
+#menu li.tabcolor7 .accent { background-color: @tabcolor7_accent1_color; }
+#menu li.tabcolor8 .accent { background-color: @tabcolor8_accent1_color; }
+#menu li.tabcolor9 .accent { background-color: @tabcolor9_accent1_color; }
 
 /*
  * Utilities
@@ -302,13 +302,13 @@ width: 121px;
     width: 20px;
     border-top-left-radius: @rounding_radius;
     border-bottom-left-radius: @rounding_radius;
-    height: 35px;
+    height: 100%;
     z-index: -1;
 }
 
 #menu a {
 display: block;
-height: 35px;
+word-break: break-word;
 border-top-left-radius: @rounding_radius; 
 border-bottom-left-radius: @rounding_radius;
 /*width: 100%;*/
@@ -374,8 +374,8 @@ margin-bottom: 10px;
     border-style: solid;
     border-width: 11px;
     padding-left: 0px;
-    border-top-color: white;
-    border-left-color: white;
+    border-top-color: @bodyBackground;
+    border-left-color: @bodyBackground;
     border-top-right-radius: 0px;
     margin: 0px;
     top: 0.0em;
@@ -384,8 +384,8 @@ margin-bottom: 10px;
 #search_box .leftedge {
     border-style: solid;
     border-width: 14px;
-    border-top-color: white;
-    border-left-color: white;
+    border-top-color: @bodyBackground;
+    border-left-color: @bodyBackground;
     float: left;
 }
 
@@ -861,9 +861,9 @@ table.plaintable th {
 #content th.small { font-size: .8em }
 #content label.header { font-weight: bold; }
 #content select, input[type=text], input[type=url], input[type=email], input[type=number], input[type=file], input[type=password], textarea { border: 1px solid #b7b7b7; }
-#content select.required, input[type=text].required, input[type=url].required, input[type=email].required, input[type=number].required, input[type=password].required, input[type=file].required, textarea.required { border: 1px solid #FFb7b7; }
+#content select:required, input[type=text]:required, input[type=url]:required, input[type=email]:required, input[type=number]:required, input[type=password]:required, input[type=file]:required, textarea:required { border: 1px solid #FFb7b7; }
 #content select:focus, input[type=text]:focus, input[type=url]:focus, input[type=email]:focus, input[type=number]:focus, input[type=password]:focus, textarea:focus { border: 1px solid red; }
-#content select:focus.required, input[type=text]:focus.required, input[type=url]:focus.required, input[type=email]:focus.required, input[type=number]:focus.required, input[type=password]:focus.required, textarea:focus.required { border: 1px solid #F00; }
+#content select:focus:required, input[type=text]:focus:required, input[type=url]:focus:required, input[type=email]:focus:required, input[type=number]:focus:required, input[type=password]:focus:required, textarea:focus:required { border: 1px solid #F00; }
 .form_error { font-size: 80%; font-style: italic; color: #C00; }
 
 

@@ -9,16 +9,11 @@ get_id_re = re.compile('.*\((\d+)\)$')
 
 class AjaxForeignKeyFieldBase:
 
-    def render(self, *args, **kwargs):
+    def render(self, name, value, attrs=None, renderer=None):
         """
         Renders the actual ajax widget.
         """
-        if len(args) == 1:
-            data = args[0]
-        else:
-            data = args[1]
-
-        old_init_val = init_val = data
+        old_init_val = init_val = data = value
 
         if isinstance(data, int):
             if hasattr(self, "field"):

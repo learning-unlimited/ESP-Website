@@ -161,4 +161,5 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 {% elif query %}
 No classes were found.
 {% endif %}
+{% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}

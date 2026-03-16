@@ -48,6 +48,8 @@ from datetime import datetime
 from django.contrib.auth.models import Group
 
 class TeacherEventsModule(ProgramModuleObj):
+    doc = """Allows teachers to sign up for one or more teacher events (e.g. interviews, training)."""
+
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherEventsModule, self).__init__(*args, **kwargs)
@@ -144,7 +146,7 @@ class TeacherEventsModule(ProgramModuleObj):
                         send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
                               """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
                               (request.user.first_name, request.user.last_name, event_name) , \
-                              ('%s <%s>' % (request.user.first_name + ' ' + request.user.last_name, request.user.email,)), \
+                              (request.user.get_email_sendto_address()), \
                               [self.program.getDirectorCCEmail()], True)
 
                 # Register for training
@@ -197,13 +199,16 @@ class TeacherEventsModule(ProgramModuleObj):
         training_times = self.getTimes('training')
 
         for ts in list( interview_times ) + list( training_times ):
-            ts.teachers = [ x.user.first_name + ' ' + x.user.last_name + ' <' + x.user.email + '>' for x in self.entriesBySlot( ts ) ]
+            ts.teachers = self.entriesBySlot( ts )
 
         context['prog'] = prog
         context['interview_times'] = interview_times
         context['training_times'] = training_times
 
         return render_to_response( self.baseDir()+'teacher_events.html', request, context )
+
+    def isStep(self):
+        return Event.objects.filter(program=self.program, event_type__in=self.event_types().values()).exists()
 
     class Meta:
         proxy = True

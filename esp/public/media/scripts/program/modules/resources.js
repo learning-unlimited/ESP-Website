@@ -35,14 +35,14 @@ function update_furnishing_choices(furnishing_select_obj, value) {
         var num = $j(furnishing_select_obj).attr('id').split("-")[1];
         $j('#id_furnishings-' + num + '-choice').remove();
         if (choices.length > 1) {
-            $j(furnishing_select_obj).after($j('<select>').css('margin-left', '4px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('type', 'text'));
+            $j(furnishing_select_obj).after($j('<select>').css('margin-left', '8px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('type', 'text'));
             $j('#id_furnishings-' + num + '-choice').append($j('<option>').text('(option)'));
             var i;
             for (i in choices) {
                 $j('#id_furnishings-' + num + '-choice').append($j('<option>').val(choices[i]).text(choices[i]));
             }
         } else {
-            $j(furnishing_select_obj).after($j('<input>').css('margin-left', '4px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('maxlength', '50').attr('placeholder', '(option)').attr('type', 'text'));
+            $j(furnishing_select_obj).after($j('<input>').css('margin-left', '8px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('maxlength', '200').attr('placeholder', '(option)').attr('type', 'text'));
         }
         if (value) {
             $j('#id_furnishings-' + num + '-choice').val(value);
@@ -77,26 +77,26 @@ function update_floating_choices(floating_select_obj, floating_choice_obj, value
     getChoices(furnishing, function(response) {
         var choices = response.choices;
         if (choices.length > 1) {
-            $j(floating_choice_obj).after($j('<select>').attr('id','id_choice').attr('name','choice').attr('type', 'text'));
+            $j(floating_choice_obj).after($j('<select>').attr('id','equipment_choice').attr('name','choice').attr('type', 'text'));
             $j(floating_choice_obj).remove();
-            $j("#id_choice").append($j('<option>').text('(choice)').hide().css("display", "none"));
-            $j("#id_choice > option")[0].disabled = true;
+            $j("#equipment_choice").append($j('<option>').text('(choice)').hide().css("display", "none"));
+            $j("#equipment_choice > option")[0].disabled = true;
             var i;
             for (i in choices) {
-                $j('#id_choice').append($j('<option>').val(choices[i]).text(choices[i]));
+                $j('#equipment_choice').append($j('<option>').val(choices[i]).text(choices[i]));
             }
         } else {
-            $j(floating_choice_obj).after($j('<input>').attr('id','id_choice').attr('name','choice').attr('maxlength', '50').attr('type', 'text'));
+            $j(floating_choice_obj).after($j('<input>').attr('id','equipment_choice').attr('name','choice').attr('maxlength', '200').attr('type', 'text'));
             $j(floating_choice_obj).remove();
         }
         if (value) {
-            $j("#id_choice").val(value);
+            $j("#equipment_choice").val(value);
         }
     });
 }
 
 //Setup floating resources form
-var res_type = $j("#id_resource_type");
+var res_type = $j("#equipment_resource_type");
 var null_opt = $j(res_type).find("option")[0];
 //Hide null option in resource type dropdown
 $j(null_opt).hide();
@@ -106,11 +106,11 @@ null_opt.disabled = true;
 //Convert option field to dropdown if necessary
 //Make sure to preserve selected value
 if ($j(res_type).val()) {
-    update_floating_choices($j(res_type), $j("#id_choice"), $j("#id_choice").val());
+    update_floating_choices($j(res_type), $j("#equipment_choice"), $j("#equipment_choice").val());
 }
 
 //Whenever a new floating resource type is selected, update the option field
-$j('#id_resource_type').change(function() {
-    update_floating_choices($j(res_type), $j("#id_choice"));
+$j('#equipment_resource_type').change(function() {
+    update_floating_choices($j(res_type), $j("#equipment_choice"));
 });
 

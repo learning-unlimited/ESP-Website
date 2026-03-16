@@ -131,7 +131,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
 
         # Test that you can't successfully call checkIn() or undoCheckIn()
         # for a user who is not teaching a class for the program.
-        self.assertIn('is not a teacher for',
+        self.assertIn('is not a teacher',
                       self.checkIn(teacher=self.teacher2))
         self.assertIn('was not checked in for',
                       self.undoCheckIn(teacher=self.teacher2))

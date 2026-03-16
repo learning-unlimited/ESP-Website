@@ -44,6 +44,8 @@ from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 class CreditCardModule_Cybersource(ProgramModuleObj):
+    doc = """Accept credit card payments via Cybersource."""
+
     @classmethod
     def module_properties(cls):
         return {

@@ -46,6 +46,8 @@ from django.db.models.query import Q
 __all__ = ['AdminReviewApps']
 
 class AdminReviewApps(ProgramModuleObj):
+    doc = """View student applications and select students to be admitted for the program."""
+
     @classmethod
     def module_properties(cls):
         return {

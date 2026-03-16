@@ -85,7 +85,7 @@ class AdminMorph(ProgramModuleObj):
         else:
             query = saved_queries['program']
 
-        user, found = search_for_user(request, ESPUser.objects.filter(query))
+        user, found = search_for_user(request, ESPUser.objects.filter(query), add_to_context = {'module': self.module.link_title})
 
         if not found:
             return user

@@ -112,10 +112,10 @@ class Survey(models.Model):
         prog = self.program
         if prog:
             if self.category == 'teach':
-                filters = [x.strip() for x in Tag.getProgramTag('survey_teacher_filter', prog, default = "class_submitted").split(",") if x.strip()]
+                filters = [x.strip() for x in Tag.getProgramTag('survey_teacher_filter', prog).split(",") if x.strip()]
                 return len(set().union(*[prog.teachers().get(filter, []) for filter in filters]))
             elif self.category == 'learn':
-                filters = [x.strip() for x in Tag.getProgramTag('survey_student_filter', prog, default = "classreg").split(",") if x.strip()]
+                filters = [x.strip() for x in Tag.getProgramTag('survey_student_filter', prog).split(",") if x.strip()]
                 return len(set().union(*[prog.students().get(filter, []) for filter in filters]))
             else:
                 return 0

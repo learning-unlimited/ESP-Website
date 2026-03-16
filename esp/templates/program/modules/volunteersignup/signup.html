@@ -6,6 +6,12 @@
 {{ block.super }}
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 <link rel="stylesheet" href="/media/default_styles/availability.css" type="text/css" />
+<style>
+label.required:after {
+  content:"*";
+  color:red;
+}
+</style>
 {% endblock %}    
 
 {% block xtrajs %}
@@ -44,6 +50,10 @@ $j(document).ready(function () {
             //  They are not cancelling all shifts; submit the form normally
             $j("#volunteer_shift_form").submit();
         }
+    });
+    
+    $j("[required]").each(function() {
+        $j(this).prev("label").addClass("required");
     });
 });
 
@@ -110,6 +120,7 @@ The directors have been notified that you are no longer able to volunteer at {{ 
         {% endif %}
         {% if form.comments %}
         {{ form.comments.label_tag }}
+        <span style="font-size: smaller">{{ form.comments.help_text }}</span>
         {{ form.comments.errors }}
         {{ form.comments }}
         {% endif %}
@@ -121,13 +132,13 @@ The directors have been notified that you are no longer able to volunteer at {{ 
         {% include "program/modules/availability.html" %}
         <div hidden id="checkboxes">
           {% for request in form.requests %}
-            <input {% if request.is_checked %}checked="checked" {% endif %}id="{{ request.id_for_label }}" name="{{ request.name }}" type="checkbox" value="{{ request.choice_value }}" data-hover="{{ request.choice_label }}">
+            <input {% if request.data.selected %}checked {% endif %}id="{{ request.id_for_label }}" name="{{ request.data.name }}" type="checkbox" value="{{ request.data.value }}" data-hover="{{ request.data.label }}">
           {% endfor %}
         </div>
         {{ form.requests.errors }}
         <br><br>
         <div class="noclick">
-        {{ form.confirm }}<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>
+        {{ form.confirm }} {{ form.confirm.help_text }}
         </div>
         {{ form.non_field_errors }}
         <br><br>

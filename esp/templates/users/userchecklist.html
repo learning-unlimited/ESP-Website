@@ -11,8 +11,6 @@
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
-<br />
-<br />
 
 <script type="text/javascript">
     function checkAll(checkId){
@@ -23,7 +21,7 @@
     }
 </script>
 
-<h1>Select users</h1>
+<h1>{% if module %}{{ module }}{% else %}Select Users{% endif %}</h1>
 
 <p>
 Please check off the users you'd like to be included in your list:

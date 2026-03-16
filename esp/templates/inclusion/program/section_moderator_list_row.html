@@ -1,0 +1,64 @@
+{# expects program and section #}
+
+<tr{% if not sec.isReviewed %} style="color: gray"{% endif %}{% if sec.isRejected or sec.isCancelled %} style="color: red"{% endif %}>
+  <td style="padding-top: 10px; padding-bottom: 10px" class="clsleft classname bordertop2" colspan="7">
+  {% block sec_title %}
+    <span title="{{sec}}">
+      {{ sec }}
+    </span>
+  {% endblock %}
+  </td>
+</tr>
+
+<tr>
+  <td class="clsleft" colspan="2"><b>Teachers (<a href="mailto:{{ sec.parent_class.emailcode }}-teachers@{{ email_host_sender }}">email</a>): </b></td>
+  <td class="clsmiddle" colspan="3">{% for t in sec.parent_class.get_teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
+  {% block cls_row_1_buttons %}
+  <td style="padding-top: 10px; padding-bottom: 10px" class="clsright" colspan="2"{% if sec.get_moderators.count > 1 %} rowspan="2"{% endif %}>
+    {% if not sec.isRejected and not sec.isCancelled %}
+    {% if sec.parent_class.got_index_qsd %}
+    <a class="abutton" href="/learn/{{ sec.parent_class.url }}/index.html"
+       title="{{ sec.parent_class }}...">Visit web page</a></br></br>
+    {% endif %}
+    {% endif %}
+    <a href="/teach/{{ program.getUrlBase }}/class_docs/{{sec.parent_class.id}}" title="Upload/manage files" class="abutton">Manage Documents</a>
+  </td>
+  {% endblock %}
+</tr>
+
+{% if sec.get_moderators.count > 1 %}
+<tr>
+  <td class="clsleft" colspan="2"><b>Co{{ program.getModeratorTitle|lower }}s: </b></td>
+  <td class="clsmiddle" colspan="3">{% for m in sec.get_moderators %}{% ifnotequal m request.user %}<a href="mailto:{{ m.email }}">{{ m.first_name }} {{ m.last_name }}</a>{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
+</tr>
+{% endif %}
+
+<tr>
+  <td class="clsleft" valign="middle">
+    Status:
+    {% if sec.isReviewed %}
+        {% if sec.isAccepted %}
+        <span style="font-weight: bold; color: #0C0;">Accepted{% if sec.isHidden %} (Hidden){% endif %}</span>
+        {% elif sec.isCancelled %}
+        <span style="font-weight: bold; color: #C00;">Cancelled</span>
+        {% else %}
+        <span style="font-weight: bold; color: #C00;">Rejected</span>
+        {% endif %}
+    {% else %}
+    <span style="font-weight: bold; color: #00C;">Unreviewed</span>
+    {% endif %}
+  </td>
+  <td class="clsmiddle" valign="middle" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
+  <td class="clsmiddle" valign="middle">{{ sec.num_students }} / {{ sec.capacity }} students
+    <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>)
+    {% if sec.meeting_times.count > 0 %}<br />(<a href="/teach/{{ program.getUrlBase }}/section_attendance/{{ sec.id }}">attendance</a>){% endif %}
+  </td>
+  <td class="clsright" valign="middle">
+  {% block cls_row_5_buttons %}
+    <a href="mailto:{{ sec.emailcode }}-students@{{ email_host_sender }}"
+       title="Email Section's Students" class="abutton">
+      Email S{{ sec.index }} Students
+    </a>
+  {% endblock %}
+  </td>
+</tr>

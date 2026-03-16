@@ -43,8 +43,9 @@ from esp.program.models  import StudentApplication
 from django              import forms
 from esp.middleware.threadlocalrequest import get_current_request
 
-# student class picker module
 class StudentJunctionAppModule(ProgramModuleObj):
+    doc = """Allows students to submit applications for a program."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -132,6 +133,8 @@ class StudentJunctionAppModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'application.html', request, {'forms': forms, 'app': app})
 
+    def isStep(self):
+        return self.program.isUsingStudentApps()
 
     class Meta:
         proxy = True

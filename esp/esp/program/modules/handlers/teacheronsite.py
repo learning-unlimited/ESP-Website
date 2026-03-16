@@ -39,6 +39,8 @@ from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegMo
 from django.db.models import Count
 
 class TeacherOnsite(ProgramModuleObj, CoreModule):
+    doc = """Provides a mobile-friendly interface for common onsite functions for teachers."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -60,14 +62,14 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context = self.onsitecontext(request, tl, one, two, prog)
 
         classes_observed = user.get_observing_sections_from_program(program = prog)
-        classes_all = [cls for cls in user.getTaughtSections(program = prog)
+        classes_all = [cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program = prog)
                    if cls.meeting_times.all().exists()
                    and cls.resourceassignment_set.all().exists()
                    and cls.status > 0]
         classes_all.extend(classes_observed) # this is used to see what to display in the onsite module
         classes_all.sort() # by time and title
 
-        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog, default="Note: Please make sure to check in before your first class today.")
+        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog)
         context['webapp_page'] = 'schedule'
         context['crmi'] = prog.classregmoduleinfo
         context['classes'] = classes_all
@@ -82,8 +84,8 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     def onsitemap(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'map'
-        context['center'] = Tag.getProgramTag('program_center', program = prog, default='{lat: 37.427490, lng: -122.170267}')
-        context['API_key'] = Tag.getTag('google_cloud_api_key', default='')
+        context['center'] = Tag.getProgramTag('program_center', program = prog)
+        context['API_key'] = Tag.getTag('google_cloud_api_key')
 
         #extra should be a classroom id
         if extra:
@@ -114,10 +116,10 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         if extra:
             secid = extra
             sections = ClassSection.objects.filter(id = secid)
-            if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+            if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
-            sections = user.getTaughtSections(program = prog).annotate(
+            sections = user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
                 num_meeting_times=Count("meeting_times")).filter(
                 num_meeting_times__gt=0, status__gt=0)
         context['sections'] = sections
@@ -137,10 +139,10 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         if extra:
             secid = extra
             sections = ClassSection.objects.filter(id = secid)
-            if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+            if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
-            sections = user.getTaughtSections(program = prog).annotate(
+            sections = user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
                 num_meeting_times=Count("meeting_times")).filter(
                 num_meeting_times__gt=0, status__gt=0)
         section_list = []
@@ -182,7 +184,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         return context
 
     def isStep(self):
-        return Tag.getBooleanTag('teacher_webapp_isstep', program=self.program, default=False)
+        return Tag.getBooleanTag('teacher_webapp_isstep', program=self.program)
 
     class Meta:
         proxy = True

@@ -1,7 +1,10 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 <head>
 
-<script type='text/javascript' src='/media/scripts/jquery.js'></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
+<script type='text/javascript' src='/media/scripts/common.js'></script>
 <script>
 scroll_offset = 0;
 interval_handle = -1;
@@ -34,23 +37,23 @@ function scroll()
     setElementStyleById("scroller_bottom", "top", scroll_offset + elt1.offsetHeight + "px");
 
     if(start_times[next_start_time]){
-        if($(start_times[next_start_time]).position().top < -scroll_offset + 24){
-            $(".fixed_header1").css("top", $(start_times[next_start_time]).position().top + scroll_offset);
+        if($j(start_times[next_start_time]).position().top < -scroll_offset + 24){
+            $j(".fixed_header1").css("top", $j(start_times[next_start_time]).position().top + scroll_offset);
         }
-        if($(start_times[next_start_time]).position().top < -scroll_offset){
-            $(".fixed_header1").removeClass("fixed_header1").css("top", "");
-            $(start_times[next_start_time]).addClass("fixed_header1");
+        if($j(start_times[next_start_time]).position().top < -scroll_offset){
+            $j(".fixed_header1").removeClass("fixed_header1").css("top", "");
+            $j(start_times[next_start_time]).addClass("fixed_header1");
             next_start_time++;
         }
     }
 
     if(categories[next_category]){
-        if($(categories[next_category]).position().top < -scroll_offset + 48){
-            $(".fixed_header2").css("top", $(categories[next_category]).position().top + scroll_offset - 24);
+        if($j(categories[next_category]).position().top < -scroll_offset + 48){
+            $j(".fixed_header2").css("top", $j(categories[next_category]).position().top + scroll_offset - 24);
         }
-        if($(categories[next_category]).position().top < -scroll_offset + 24){
-            $(".fixed_header2").removeClass("fixed_header2").css("top", "");
-            $(categories[next_category]).addClass("fixed_header2");
+        if($j(categories[next_category]).position().top < -scroll_offset + 24){
+            $j(".fixed_header2").removeClass("fixed_header2").css("top", "");
+            $j(categories[next_category]).addClass("fixed_header2");
             next_category++;
         }
     }
@@ -62,13 +65,13 @@ function reset()
 {
     if (interval_handle != -1)
         clearInterval(interval_handle);
-    categories = $(".category");
-    start_times = $(".start_time");
+    categories = $j(".category");
+    start_times = $j(".start_time");
     next_category = 0;
     next_start_time = 0;
     scroll_offset = 0;
-    $(".fixed_header1").removeClass("fixed_header1").css("top", "");
-    $(".fixed_header2").removeClass("fixed_header2").css("top", "");
+    $j(".fixed_header1").removeClass("fixed_header1").css("top", "");
+    $j(".fixed_header2").removeClass("fixed_header2").css("top", "");
     scroll();
     setTimeout(start_scrolling, 50);
 }
@@ -78,7 +81,7 @@ function start_scrolling()
     interval_handle = setInterval(scroll, 50);
 }
 
-$(function(){
+$j(function(){
     var startOffset = parseInt(sessionStorage.onsiteClassListOffset);
     reset();
     if(startOffset)

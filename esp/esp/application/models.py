@@ -84,6 +84,9 @@ field id.""")
         self.username_field = api_response['id']
         self.save()
 
+    class Meta:
+        verbose_name_plural = 'Formstack app settings'
+
 class StudentProgramApp(models.Model):
     """ A student's application to the program. """
 

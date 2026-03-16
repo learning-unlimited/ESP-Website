@@ -11,9 +11,9 @@ label .commpanel_list_preferred {
     max-width: 100%;
 }
 
-#filter_accordion h4 {
-    font-weight: bold;
-    font-style: normal;
+.ui-accordion h4 {
+    font-weight: bold !important;
+    font-style: normal !important;
 }
 
 #tabs {
@@ -62,8 +62,8 @@ div #recipient_type_options {
     margin-top: 10px;
 }
 
-div #filter_accordion {
-    margin-bottom: 10px;
+div .ui-accordion {
+    margin-bottom: 10px !important;
 }
 
 div .ui-accordion-content {

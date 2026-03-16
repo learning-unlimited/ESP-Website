@@ -57,7 +57,7 @@ table.sortable thead {
 {% for cls in classes %}
 <tr>
  <!-- <td>{{ forloop.counter }}</td> -->
- <td sorttable_customkey="{{ cls.id }}">{{ cls.emailcode }}</td>
+ <td data-st-key="{{ cls.id }}">{{ cls.emailcode }}</td>
  <td>{{ cls.title }}</td>
  <td>{{ cls.class_info|truncatewords_html:10 }}
  <td>{% for teacher in cls.teachers.all %}{% if teacher.id == cls.split_teacher.id %}<b>{% endif %}{{ teacher.name_last_first }}{% if teacher.id == cls.split_teacher.id %}</b>{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>

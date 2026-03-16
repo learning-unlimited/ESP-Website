@@ -43,7 +43,7 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord
+from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord, ModeratorRecord
 
 from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
@@ -362,3 +362,9 @@ class PhaseZeroRecordAdmin(admin.ModelAdmin):
     search_fields = ['user__username']
     list_filter = ['program']
 admin_site.register(PhaseZeroRecord, PhaseZeroRecordAdmin)
+
+class ModeratorRecordAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'program', 'will_moderate', 'num_slots')
+    search_fields = ['user__username']
+    list_filter = ['program', 'will_moderate']
+admin_site.register(ModeratorRecord, ModeratorRecordAdmin)

@@ -32,9 +32,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import numpy
-import numpy.random
-
 from datetime import date, datetime
 import logging
 logger = logging.getLogger(__name__)

@@ -129,6 +129,8 @@ def json_encode(obj):
 
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
+    doc = """Allows students to directly enroll in classes."""
+
     @classmethod
     def module_properties(cls):
         return [ {
@@ -478,14 +480,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
-        collapse_full = Tag.getBooleanTag('collapse_full_classes', prog, True)
+        collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories_sort, 'collapse_full': collapse_full}
 
         scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
 
         prog_color = prog.getColor()
-        collapse_full_classes = Tag.getBooleanTag('collapse_full_classes', prog, True)
+        collapse_full_classes = Tag.getBooleanTag('collapse_full_classes', prog)
         class_blobs = []
 
         category_header_str = """<hr size="1"/>

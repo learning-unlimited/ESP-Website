@@ -50,6 +50,8 @@ body {
 
 #student_selector_area {
     position: relative;
+    height: 100px;
+    font-size: 1.1em;
 }
 
 #compact-classes-body td {
@@ -160,10 +162,6 @@ table.narrow {
     display: none;
 }
 
-#student_selector_area {
-    height: 100px;
-}
-
 input #student_selector {
     border: 1px solid #999999;
 }
@@ -177,7 +175,7 @@ span {
     font-weight: bold;
 }
 
-.tooltip_teachers {
+.tooltip_teachers, .teacher {
     font-style: italic;
 }
 
@@ -185,7 +183,7 @@ span {
     font-style: italic;
 }
 
-#messages, #category_controls, #settings_controls, #class_search_controls {
+#messages, #category_controls, #settings_controls, #class_search_controls, #sort_controls {
     text-align: left;
     background-color: #EEF3FF;
     border: 1px solid #99CCFF;
@@ -270,7 +268,7 @@ span {
     width: 600px !important;
 }
 
-.title {
+.title, .teacher {
     padding-left: 5px;
     padding-right: 5px;
 }

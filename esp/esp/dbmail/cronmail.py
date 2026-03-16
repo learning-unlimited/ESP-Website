@@ -126,8 +126,19 @@ def send_email_requests():
         for mailtxt in mailtxts[:batch_size].iterator():
             exception = mailtxt.send()
             if exception is not None:
-                errors.append({'email': mailtxt, 'exception': str(exception)})
-                logger.warning("Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(exception))
+                # In the line below, we don't use str(exception) because if the user-defined exception doesn't define
+                # __str__() then str(exception) will return an empty string. Then we won't know what the exception is.
+                # There are many cases in the logs where the errors show exception as empty string, which indicates that
+                # there was an exception but we have no idea what it was. At least str(type(exception)) will show us
+                # the type (class name) of the exception.
+                exception_type_str = str(type(exception))
+
+                errors.append({'email': mailtxt, 'exception': exception_type_str})
+
+                # Do not use str(mailtxt.send_to) in the line below. If the mailtxt.send_to contains a non-ascii
+                # character, then the str() will cause a UnicodeEncodeError, but directly concatenating with +
+                # works fine.
+                logger.warning("Encountered error while sending to " + mailtxt.send_to + ": " + exception_type_str)
             else:
                 num_sent += 1
 

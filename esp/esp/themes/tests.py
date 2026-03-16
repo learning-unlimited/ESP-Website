@@ -123,6 +123,12 @@ class ThemesTest(TestCase):
                     #   have a non-trivial form (e.g. key = value fails validation).
                     settings_dict = {
                         'theme': theme_name,
+                        'full_group_name': 'themetest',
+                        'titlebar_prefix': 'themetest',
+                        'welcome_message': 'themetest',
+                        'title_text': 'themetest',
+                        'subtitle_text': 'themetest',
+                        'contact_info': 'themetest',
                         'just_selected': 'True',
                         'front_page_style': 'bubblesfront.html',
                         'facebook_link': 'http://somehost.net',
@@ -135,7 +141,7 @@ class ThemesTest(TestCase):
 
                     #   If theme setup succeeded, we will be redirected to the landing page.
                     response = self.client.post('/themes/setup/', settings_dict, follow=True)
-                    self.assertTrue(('http://testserver/themes/', 302) in response.redirect_chain)
+                    self.assertTrue(('/themes/', 302) in response.redirect_chain)
 
                 #   Check that the CSS stylesheet has been included in the page.
                 self.assertTrue('/media/styles/theme_compiled.css' in response.content)

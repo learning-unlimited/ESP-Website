@@ -51,6 +51,11 @@ users to whom you are sending this email.
 <br />
 </p>
 
+<p>
+<strong>Public:</strong> {% if public_view %}Yes{% else %}No{% endif %}
+<br />
+</p>
+
 <br />
 <p>
 <strong>Email body:</strong>
@@ -70,6 +75,9 @@ users to whom you are sending this email.
 <input type="hidden" name="replyto" value="{{replyto}}" />
 <input type="hidden" name="subject" value="{{subject}}" />
 <input type="hidden" name="body" value="{{body}}" />
+{% if public_view %}
+<input type="hidden" name="public_view" value="on" />
+{% endif %}
 <input type="hidden" name="listcount" value="{{listcount}}" />
 <input type="hidden" name="selected" value="{{selected}}" />
 <input type="submit" value="Edit Your Email" id="submitform" class="btn btn-default" />
@@ -81,6 +89,9 @@ users to whom you are sending this email.
 <input type="hidden" name="replyto" value="{{replyto}}" />
 <input type="hidden" name="subject" value="{{subject}}" />
 <input type="hidden" name="body" value="{{body}}" />
+{% if public_view %}
+<input type="hidden" name="public_view" value="on" />
+{% endif %}
 <input type="submit" value="Send Message!" id="submitform" class="btn btn-primary" />
 </form>
 

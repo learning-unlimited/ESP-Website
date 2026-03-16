@@ -5,6 +5,7 @@ from esp.program.modules.forms.teacherreg import TeacherClassRegForm, TeacherOpe
 from esp.resources.forms import ResourceRequestFormSet
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
+from esp.users.models import ESPUser
 
 from esp.dbmail.models import send_mail
 from django.core.exceptions import ValidationError
@@ -176,7 +177,7 @@ class ClassCreationController(object):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/availabilitymodule/update_email.txt', email_context)
-        email_to = ['%s <%s>' % (teacher.name(), teacher.email)]
+        email_to = [teacher.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def teacher_has_time(self, user, hours):
@@ -275,12 +276,12 @@ class ClassCreationController(object):
         if recipients:
             send_mail(subject, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
+                      (ESPUser.email_sendto_address(self.program.director_email, '%s Class Registration' % (self.program.program_type))), \
                       recipients, False)
 
         if self.program.director_email:
             mail_ctxt['admin'] = True
             send_mail(subject, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
+                      (ESPUser.email_sendto_address(self.program.director_email, '%s Class Registration' % (self.program.program_type))), \
                       [self.program.getDirectorCCEmail()], False)

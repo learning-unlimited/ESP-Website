@@ -57,7 +57,7 @@ class ThemeConfigurationForm(forms.Form):
 
     @classmethod
     def load_from_tag(cls, theme_name=None, just_selected=False):
-        data = json.loads(Tag.getTag('theme_template_control', default='{}'))
+        data = json.loads(Tag.getTag('theme_template_control'))
         if theme_name is None:
             tc = ThemeController()
             theme_name = tc.get_current_theme()

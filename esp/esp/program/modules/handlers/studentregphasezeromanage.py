@@ -47,6 +47,8 @@ from django.db.models.query import Q
 import copy, datetime, json, re
 
 class StudentRegPhaseZeroManage(ProgramModuleObj):
+    doc = """Track registration for the student lottery and/or run the student lottery."""
+
     def isCompleted(self):
         return get_current_request().user.can_skip_phase_zero(self.program)
 
@@ -94,7 +96,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         elif post.get('mode') == 'manual':
             usernames = filter(None, re.split(r'[;,\s]\s*', post.get('usernames')))
 
-            #check that all usernames are valid
+            # check that all usernames are valid
             for username in usernames:
                 try:
                     student = ESPUser.objects.get(username=username)
@@ -113,16 +115,20 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 else:
                     messages.append(username + " is not a student")
 
+        else:
+            messages.append("Lottery mode " + post.get('mode') + " is not supported")
+
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
         # Assign OverridePhaseZero permission and Student/All permissions
         if len(messages) == 0:
-            #Add users to winners group once we are sure there were no problems
+            # Add users to winners group once we are sure there were no problems
             winners.user_set.add(*students)
             override_perm = Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
-            studentAll_perm = Permission(permission_type='Student/All', role=winners, start_date=datetime.datetime.now(), program=prog)
             override_perm.save()
-            studentAll_perm.save()
+            if 'perms' in post:
+                studentAll_perm = Permission(permission_type='Student/All', role=winners, start_date=datetime.datetime.now(), program=prog)
+                studentAll_perm.save()
             # Add tag to indicate student lottery has been run
             Tag.setTag('student_lottery_run', target=prog, value='True')
             messages.append("The student lottery has been run successfully")
@@ -139,25 +145,35 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         entrants = ESPUser.objects.filter(q_phasezero).distinct()
         context['grade_caps'] = sorted(prog.grade_caps().iteritems())
 
-        recs = PhaseZeroRecord.objects.filter(program=prog)
-        timess = [("number of lottery students", [(rec.user.count(), rec.time) for rec in recs])]
+        recs = PhaseZeroRecord.objects.filter(program=prog).order_by('time')
+        timess = [("number of lottery students", [(rec.user.count(), rec.time) for rec in recs], True)]
         timess_data, start = BigBoardModule.make_graph_data(timess)
         context["left_axis_data"] = [{"axis_name": "#", "series_data": timess_data}]
         context["first_hour"] = start
 
         grades = range(prog.grade_min, prog.grade_max + 1)
         stats = {}
+        invalid_grades = set()
 
-        #Calculate grade counts
+        # Calculate grade counts
         for grade in grades:
             stats[grade] = {}
             stats[grade]['in_lottery'] = 0
         for entrant in entrants:
-            stats[entrant.getGrade(prog)]['in_lottery'] += 1
+            grade = entrant.getGrade(prog)
+            if grade in grades:
+                stats[grade]['in_lottery'] += 1
+            else:
+                # Catch students that somehow don't have a valid grade
+                invalid_grades.add(entrant)
+                if 'Invalid Grade' not in stats:
+                    stats['Invalid Grade'] = {}
+                    stats['Invalid Grade']['in_lottery'] = 0
+                stats['Invalid Grade']['in_lottery'] += 1
 
-        #Run lottery if requested
+        # Run lottery if requested
         if request.POST:
-            if Tag.getBooleanTag('student_lottery_run', prog, default=False):
+            if Tag.getBooleanTag('student_lottery_run', prog):
                 context['error'] = "You've already run the student lottery!"
             else:
                 if "confirm" in request.POST:
@@ -167,19 +183,30 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 else:
                     context['error'] = "You did not confirm that you would like to run the lottery"
 
-        #If lottery has been run, calculate acceptance stats
-        if Tag.getBooleanTag('student_lottery_run', prog, default=False):
-            for grade in grades:
+        # If lottery has been run, calculate acceptance stats
+        if Tag.getBooleanTag('student_lottery_run', prog):
+            context['lottery_run'] = True
+            for grade in stats:
                 stats[grade]['num_accepted'] = stats[grade]['per_accepted'] = 0
             winners = ESPUser.objects.filter(groups__name=role).distinct()
             for winner in winners:
-                stats[winner.getGrade(prog)]['num_accepted'] += 1
-            for grade in grades:
+                grade = winner.getGrade(prog)
+                if grade in grades:
+                    stats[grade]['num_accepted'] += 1
+                else:
+                    # Catch students that somehow don't have a valid grade
+                    invalid_grades.add(winner)
+                    if 'Invalid Grade' not in stats:
+                        stats['Invalid Grade'] = {}
+                        stats['Invalid Grade']['num_accepted'] = 0
+                    stats['Invalid Grade']['num_accepted'] += 1
+            for grade in stats:
                 if stats[grade]['in_lottery'] == 0:
                     stats[grade]['per_accepted'] = "NA"
                 else:
                     stats[grade]['per_accepted'] = round(stats[grade]['num_accepted'],1)/stats[grade]['in_lottery']*100
         context['stats'] = stats
+        context['invalid_grades'] = invalid_grades
         return render_to_response('program/modules/studentregphasezero/status.html', request, context)
 
     class Meta:

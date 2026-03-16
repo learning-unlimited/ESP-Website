@@ -1,0 +1,5 @@
+{% for q in class_data %}
+    {% with sec.num_students as num_participants %}
+        <tr><td>{% include "survey/answers.html" %}</td></tr>
+    {% endwith %}
+{% endfor %}

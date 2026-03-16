@@ -87,6 +87,7 @@ class DonationForm(forms.Form):
 
 
 class DonationModule(ProgramModuleObj):
+    doc = """Solicit donations from students."""
 
     event = "donation_done"
 
@@ -109,7 +110,7 @@ class DonationModule(ProgramModuleObj):
             'donation_options':[10, 20, 50],
         }
 
-        tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program, "{}"))
+        tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings
@@ -176,7 +177,7 @@ class DonationModule(ProgramModuleObj):
         # credit card payment has occured. For now, just do the same thing we
         # do in other accounting modules, and don't allow changes after payment
         # has occured.
-        if iac.amount_due() <= 0:
+        if iac.has_paid():
             raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
 
         form = None

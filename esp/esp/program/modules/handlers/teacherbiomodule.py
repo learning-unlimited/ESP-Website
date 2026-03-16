@@ -40,7 +40,8 @@ from django.db.models.query   import Q
 
 # reg profile module
 class TeacherBioModule(ProgramModuleObj):
-    """ Module for teacher to edit their biography for each program. """
+    doc = """Module for teacher to edit their biography for each program."""
+
     @classmethod
     def module_properties(cls):
         return {

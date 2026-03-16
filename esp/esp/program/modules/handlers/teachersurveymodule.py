@@ -41,7 +41,7 @@ from esp.survey.views   import survey_view, survey_review, survey_graphical, sur
 import datetime
 
 class TeacherSurveyModule(ProgramModuleObj):
-    """ A module for people to take surveys. """
+    doc = """Allows teachers to take post-program/class surveys."""
 
     @classmethod
     def module_properties(cls):
@@ -65,7 +65,7 @@ class TeacherSurveyModule(ProgramModuleObj):
         return {'teacher_survey': """Teachers who filled out the survey"""}
 
     def isStep(self):
-        return (Tag.getBooleanTag('teacher_survey_isstep', program=self.program, default=False) and
+        return (Tag.getBooleanTag('teacher_survey_isstep', program=self.program) and
                 self.program.getTimeSlots()[0].start < datetime.datetime.now() and
                 self.program.getSurveys().filter(category__in = ["learn","teach"]).exists())
 

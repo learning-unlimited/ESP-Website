@@ -33,8 +33,10 @@
 Congratulations!<br />
 <br />
 The email is in the process of being sent. To avoid being marked as a spam source, it will take approximately <strong>{{time}}</strong> seconds to email everyone on the list, so please be patient!
-
-<br />
+<br /><br />
+{% if req_id %}
+<a href="/email/{{ req_id }}" target="_blank">The email is viewable by the public at this link.</a>
+{% endif %}
 </p>
 
 {% include "program/modules/admincore/returnlink.html" %}

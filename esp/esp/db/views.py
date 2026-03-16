@@ -2,7 +2,6 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core import serializers
 from django.http import HttpResponse
 import json
-from django.db.models.query import QuerySet
 
 """ Removed the staff-only restriction and instead pass a flag to ajax_autocomplete if the user
     is not a staff member.  The staff bit is checked at the per-function level, so that students
@@ -52,15 +51,12 @@ def ajax_autocomplete(request):
     else:
         query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff, prog)
 
-    if type(query_set) is QuerySet:
-        raise NotImplementedError
-    else:
-        output = list(query_set[:limit])
-        output2 = []
-        for item in output:
-            output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
+    output = list(query_set[:limit])
+    output2 = []
+    for item in output:
+        output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
 
-        content = json.dumps({'result':output2})
+    content = json.dumps({'result':output2})
 
     return HttpResponse(content,
                         content_type = 'javascript/javascript')

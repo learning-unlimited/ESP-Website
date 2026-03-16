@@ -51,6 +51,8 @@ from django.db.models.query import Q
 import random, copy, datetime, re
 
 class StudentRegPhaseZero(ProgramModuleObj):
+    doc = """Allows students to enter a lottery for admission to the program."""
+
     def students(self, QObject = False):
         q_phasezero = Q(phasezerorecord__program=self.program)
 
@@ -98,10 +100,10 @@ class StudentRegPhaseZero(ProgramModuleObj):
         else:
             #Student must win the lottery to progress
             #Figure out if lottery is open/closed, if it has already been run, and if student has entered yet
-            lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+            lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
             in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
-            lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
-            num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+            lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
+            num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
             context['lottery_perm'] = lottery_perm
             context['lottery_run'] = lottery_run
             context['num_allowed_users'] = num_allowed_users
@@ -115,7 +117,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     #Lottery hasn't opened yet
                     #Show generic deadline error page
                     context['moduleObj'] = self
-                    context['extension'] = ('the deadline Student/Classes/PhaseZero was')
+                    context['extension'] = ('the deadline Student/PhaseZero was')
                     return render_to_response('errors/program/deadline-learn.html', request, context)
                 elif request.method == 'POST':
                     #Lottery is open, student just entered
@@ -148,10 +150,10 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context['one'] = one
         context['two'] = two
         user = request.user
-        lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+        lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
-        lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
-        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+        lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
+        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
         context['lottery_perm'] = lottery_perm
         context['lottery_run'] = lottery_run
         context['num_allowed_users'] = num_allowed_users
@@ -285,9 +287,9 @@ class StudentRegPhaseZero(ProgramModuleObj):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/studentregphasezero/joingroup_confirmation_email.txt', email_context)
-        email_to = ['%s <%s>' % (student.name(), student.email)]
+        email_to = [student.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
-        
+
     def send_other_joined_group_confirmation_email(self, student,joined_student, note=None):
         email_title = 'Student Lottery Confirmation for %s: %s' % (self.program.niceName(), student.name())
         email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
@@ -298,7 +300,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/studentregphasezero/other_joined_group_confirmation_email.txt', email_context)
-        email_to = ['%s <%s>' % (student.name(), student.email)]
+        email_to = [student.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def send_leavegroup_confirmation_email(self, student, note=None):
@@ -310,7 +312,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/studentregphasezero/leavegroup_confirmation_email.txt', email_context)
-        email_to = ['%s <%s>' % (student.name(), student.email)]
+        email_to = [student.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def isStep(self):

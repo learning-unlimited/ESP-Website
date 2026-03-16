@@ -181,7 +181,7 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.static',
-                'django.core.context_processors.request',
+                'django.template.context_processors.request',
             ],
             'loaders': [
                 'admin_tools.template_loaders.Loader',
@@ -196,6 +196,8 @@ TEMPLATES = [
         },
     },
 ]
+
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
@@ -255,7 +257,6 @@ INSTALLED_APPS = (
     'admin_tools.theming',
     'admin_tools.menu',
     'admin_tools.dashboard',
-    #'grappelli',
     'filebrowser',
     'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.admindocs',
@@ -309,13 +310,16 @@ CONTACTFORM_EMAIL_ADDRESSES = {}
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
 CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
+JQUERY_VERSION = '1.12.4'
+JQUERY_HASH = 'sha512-jGsMH83oKe9asCpkOVkBnUrDDTp8wl+adkB2D+//JtlxO4SrLoJdhbOysIFQJloQFD+C4Fl1rMsQZF76JjV0eQ=='
+
+JQUERY_UI_VERSION = '1.12.1'
+
 # allow configuration of additional Javascript to be placed on website
 # configuration should include <script></script> tags
 ADDITIONAL_TEMPLATE_SCRIPTS = ''
 
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
-
-DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
 DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CachePanel',
@@ -347,7 +351,7 @@ DEBUG_TOOLBAR_CONFIG = {
         'argcache.signals.cache_deleted',
     ],
     'SHOW_TEMPLATE_CONTEXT': True,
-    'INSERT_BEFORE': '</div>',
+    'INSERT_BEFORE': '</body>',
     'ENABLE_STACKTRACES' : True,
     'RENDER_PANELS': None,
     'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
@@ -368,6 +372,8 @@ CYBERSOURCE_CONFIG = {
     'post_url': '',
     'merchant_id': '',
 }
+
+FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'
 
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)

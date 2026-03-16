@@ -141,8 +141,8 @@ class LineItemOptions(models.Model):
 
 class FinancialAidGrant(models.Model):
     request = AjaxForeignKey(FinancialAidRequest)
-    amount_max_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='Enter a number here to grant a dollar value of financial aid.  The grant will cover this amount or the full cost of the program, whichever is less.')
-    percent = models.PositiveIntegerField(blank=True, null=True, help_text='Enter an integer between 0 and 100 here to grant a certain percentage discount to the program after the above dollar credit is applied.  0 means no additional discount, 100 means no payment required.')
+    amount_max_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='Enter a number here to grant a dollar value of financial aid.  The grant will cover this amount or the full cost, whichever is less.')
+    percent = models.PositiveIntegerField(blank=True, null=True, help_text='Enter an integer between 0 and 100 here to grant a certain percentage discount after the above dollar credit is applied.  0 means no additional discount, 100 means no payment required.')
     timestamp = models.DateTimeField(auto_now=True)
     finalized = models.BooleanField(default=False, editable=False)
 

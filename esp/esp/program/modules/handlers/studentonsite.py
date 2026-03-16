@@ -47,6 +47,8 @@ from django.http import HttpResponseRedirect
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 
 class StudentOnsite(ProgramModuleObj, CoreModule):
+    doc = """Serves a mobile-friendly interface for common onsite functions for students."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -108,8 +110,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     def onsitemap(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'map'
-        context['center'] = Tag.getProgramTag('program_center', program = prog, default='{lat: 37.427490, lng: -122.170267}')
-        context['API_key'] = Tag.getTag('google_cloud_api_key', default='')
+        context['center'] = Tag.getProgramTag('program_center', program = prog)
+        context['API_key'] = Tag.getTag('google_cloud_api_key')
 
         #extra should be a classroom id
         if extra:
@@ -201,7 +203,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return context
 
     def isStep(self):
-        return Tag.getBooleanTag('student_webapp_isstep', program=self.program, default=False)
+        return Tag.getBooleanTag('student_webapp_isstep', program=self.program)
 
     class Meta:
         proxy = True

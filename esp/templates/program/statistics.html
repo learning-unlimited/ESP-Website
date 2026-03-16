@@ -6,30 +6,14 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<style type="text/css">
-#statistics_form_contents ul
-{
-    list-style-type: none;
-    padding-left: 0px;
-}
-#statistics_form_contents select[multiple]
-{
-    border: 1px solid #999999;
-    font-size: 0.9em;
-}
-#statistics_form_contents input[type=submit]
-{
-    border: 1px solid #999999;
-    background-color: #99CCFF;
-    font-size: 1.5em;
-    padding: 3px 15px 3px 15px;
-}
-#statistics_form_contents input[type=submit]:hover
-{
-    background-color: #999999;
-}
-</style>
+<link rel="stylesheet" href="/media/styles/statistics.css" type="text/css" />
 {% endblock %}
+
+{% block xtrajs %}
+  <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
+  <script type="text/javascript" src="//code.highcharts.com/highcharts-more.js"></script>
+  <script type="text/javascript" src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+{% endblock xtrajs %}
 
 {% block content %}
 

@@ -103,6 +103,7 @@ class StudentLunchSelectionForm(forms.Form):
 
 
 class StudentLunchSelection(ProgramModuleObj):
+    doc = """Allows students to enroll in lunch blocks."""
 
     @classmethod
     def module_properties(cls):
@@ -154,6 +155,9 @@ class StudentLunchSelection(ProgramModuleObj):
         context['forms'] = forms
 
         return render_to_response(self.baseDir()+'select_lunch.html', request, context)
+
+    def isStep(self):
+        return Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()
 
     class Meta:
         proxy = True

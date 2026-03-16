@@ -34,7 +34,7 @@
         selectionPalette: []
     },
     spectrums = [],
-    IE = $.browser.msie,
+    IE = (/msie|trident/i).test(navigator.userAgent),
     replaceInput = [
         "<div class='sp-replacer'>",
             "<div class='sp-preview'></div>",
@@ -639,7 +639,7 @@
         var offset = {};
         var maxHeight = 0;
         var maxWidth = 0;
-        var IE = $.browser.msie;
+        var IE = (/msie|trident/i).test(navigator.userAgent);
         var hasTouch = ('ontouchstart' in window);
 
         var duringDragEvents = {};

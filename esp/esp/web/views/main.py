@@ -50,6 +50,7 @@ import datetime
 import re
 import json
 
+from esp.dbmail.models import MessageRequest
 from esp.web.models import NavBarCategory
 from esp.utils.web import render_to_response
 from esp.web.views.navBar import makeNavBar
@@ -112,6 +113,14 @@ def program(request, tl, one, two, module, extra = None):
 
     raise Http404
 
+@cache_control(max_age=180)
+def public_email(request, email_id):
+    email_req = MessageRequest.objects.filter(id=email_id, public=True)
+    if email_req.count() == 1:
+        return render_to_response('public_email.html', request, {'email_req': email_req[0]})
+    else:
+        raise ESPError('Invalid email id.', log=False)
+
 def archives(request, selection, category = None, options = None):
     """ Return a page with class archives """
 
@@ -168,7 +177,7 @@ def contact(request, section='esp'):
             to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
 
             if len(form.cleaned_data['name'].strip()) > 0:
-                email = '%s <%s>' % (form.cleaned_data['name'], email)
+                email = ESPUser.email_sendto_address(email, form.cleaned_data['name'])
 
             if ok_to_send:
                 t = loader.get_template('email/comment')
@@ -235,7 +244,7 @@ def registration_redirect(request):
 
     #   If we have 1 program, automatically redirect to registration for that program.
     #   Most chapters will want this, but it can be disabled by a Tag.
-    if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect', default=True):
+    if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect'):
         ctxt['prog'] = progs[0]
         return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:

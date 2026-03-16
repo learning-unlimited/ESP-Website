@@ -1,9 +1,17 @@
+<p>{{ num_users }} users were matched by the query.</p>
 <h2>How Students Heard About You</h2>
 
-<p>Query matched {{ num_students }} students.  Here are the most popular ways they heard about the program:</p>
-<ul>
-{% for pair in heardabout_data %}
-    <li>{{ pair.0 }}: {{ pair.1 }} students
+<p>Here are the most popular ways they heard about the program:</p>
+<table>
+<tr>
+<th>Heard About</th>
+<th># of Students</th>
+</tr>
+{% for heard_about, num in heardabout_data %}
+<tr>
+    <td>{{ heard_about }}</td>
+    <td>{{ num }}</td>
+</tr>
 {% endfor %}
-</ul>
+</table>
 <p>(Note: Because much of these entries were typed by the student, they are hard to group and you may find duplicates.)</p>

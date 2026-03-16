@@ -59,6 +59,7 @@ from esp.utils.query_utils import nest_Q
 
 
 class LotteryStudentRegModule(ProgramModuleObj):
+    doc = """Allows students to enter a lottery for particular classes."""
 
     def students(self, QObject = False):
         q = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')

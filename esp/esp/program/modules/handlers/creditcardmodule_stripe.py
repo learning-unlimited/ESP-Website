@@ -53,6 +53,8 @@ import json
 import re
 
 class CreditCardModule_Stripe(ProgramModuleObj):
+    doc = """Accept credit card payments via Stripe."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -74,13 +76,18 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
         DEFAULTS.update(settings.STRIPE_CONFIG)
-        tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program, "{}"))
+        tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings
 
     def get_setting(self, name, default=None):
         return self.apply_settings().get(name, default)
+
+    def line_item_type(self):
+        pac = ProgramAccountingController(self.program)
+        (donate_type, created) = pac.get_lineitemtypes().get_or_create(program=self.program, text=self.get_setting('donation_text'))
+        return donate_type
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """

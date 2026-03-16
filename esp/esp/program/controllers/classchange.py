@@ -821,13 +821,7 @@ class ClassChangeController(object):
             self.timeout = 2
         f = open(os.getenv("HOME")+'/'+"classchanges.txt", 'w')
         self.subject = "[" + self.program.niceName() + "] Class Change"
-        while True:
-            print("Do you want to send from '%s'? Press Enter if so," % (self.from_email,))
-            new_email = raw_input("or enter a new email in this format if not:")
-            if new_email:
-                self.from_email = new_email
-            else:
-                break
+        self.from_email = ESPUser.email_sendto_address(self.program.director_email, self.program.niceName())
         self.bcc = [self.from_email]
         self.extra_headers = {}
         self.extra_headers['Reply-To'] = self.from_email

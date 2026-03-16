@@ -6,6 +6,7 @@ from django.contrib.auth.models import Group
 import random
 
 class BulkCreateAccountModule(ProgramModuleObj):
+    doc = """Create a bulk set of accounts (e.g. for outreach)."""
 
     MAX_PREFIX_LENGTH = 30
     MAX_NUMBER_OF_ACCOUNTS = 1000  # backstop so that an errant request can't fill up the DB with accounts

@@ -1,11 +1,11 @@
 from django.core.cache import cache
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     """
     This clears the cache just like /manage/flushcache
     """
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
         _cache = cache
         while hasattr(_cache, "_wrapped_cache"):
             _cache = _cache._wrapped_cache

@@ -28,6 +28,11 @@ Quagga.onDetected(function(result) {
 
 prog_url = $j('#attendancescript').data('prog_url');
 
+function update_checkboxes(table) {
+    $j(table).find("[name=attending_total]").html($j(table).find("[name=attending]:checked").length);
+    $j(table).find("[name=checkedin_total]").html($j(table).find("[name=checkedin]:checked").length);
+}
+
 $j(function(){
     function markAttendance(username, secid, undo = false, callback, errorCallback){
         refresh_csrf_cookie();
@@ -49,12 +54,12 @@ $j(function(){
                 alert(response.error);
                 $me.prop("checked", !checked);
             } else {
-                $me.closest("td").attr("sorttable_customkey", (checked) ? 2 : 1);
+                $me.closest("td").attr("data-st-key", (checked) ? 2 : 1);
                 // If this is the webapp, we want to toggle the icons as well
                 $me.siblings("i").html(checked ? "check_box" : "check_box_outline_blank");
                 if (response.checkedin) {
                     $checkedin.prop("checked", true);
-                    $checkedin.closest("td").attr("sorttable_customkey", 2);
+                    $checkedin.closest("td").attr("data-st-key", 2);
                     // If this is the webapp, we want to toggle the icons as well
                     $checkedin.siblings("i").html("check_box");
                 }
@@ -62,6 +67,7 @@ $j(function(){
             }
             $msg.text("");
             $me.prop('disabled', false);
+            update_checkboxes($me.parents("table"));
         }, function(error) {
             alert("An error (" + error.statusText + ") occurred while attempting to update attendance for " + username + ".");
             $me.prop("checked", !checked);
@@ -71,5 +77,9 @@ $j(function(){
             $me.siblings("i").html(!checked ? "check_box" : "check_box_outline_blank");
         });
         $msg.text('Updating attendance...');
+    });
+
+    $j("table.sortable").each(function(i, e){
+        update_checkboxes(e);
     });
 });

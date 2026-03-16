@@ -9,7 +9,7 @@ register = template.Library()
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
 def render_qsd(qsd):
     # check whether we should display the date and author footer (only affects non-administrator users)
-    display_date_author_tag = Tag.getTag('qsd_display_date_author', default='Both')
+    display_date_author_tag = Tag.getTag('qsd_display_date_author')
     display_date_author = 2 # display date and author
 
     if display_date_author_tag == 'Date':
@@ -70,8 +70,9 @@ class InlineQSDNode(template.Node):
             title += ' - ' + unicode(program)
 
         qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
+        context.update({'qsdrec': qsd_obj, 'inline': True})
         # Note: this is django's render_to_response, not ours!
-        return render_to_response("inclusion/qsd/render_qsd.html", {'qsdrec': qsd_obj, 'inline': True}, context_instance=context).content
+        return render_to_response("inclusion/qsd/render_qsd.html", context.flatten()).content
 
 @register.tag
 def inline_qsd_block(parser, token):

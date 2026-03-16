@@ -1,0 +1,221 @@
+{% extends "main.html" %}
+
+{% block title %}Communications Portal{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script src="https://code.highcharts.com/maps/highmaps.js"></script>
+<script src="https://code.highcharts.com/maps/modules/data.js"></script>
+<script src="https://code.highcharts.com/maps/modules/drilldown.js"></script>
+<script src="https://code.highcharts.com/maps/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/maps/modules/offline-exporting.js"></script>
+<script src="https://code.highcharts.com/mapdata/countries/us/us-all.js"></script>
+{% endblock %}
+{% block stylesheets %}
+{{block.super}}
+<link href="https://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+
+<h1>User Map</h1>
+<p>
+The geographic distribution of the {{ num_users }} selected users is charted below.
+You can go back to select a different set of users.
+Clicking on a state will zoom in on the zip codes of the state (warning: map downloads may be up to 80 MB).
+Clicking on the button in the top right of the graph provides options to download or print the chart.
+</p>
+
+<br />
+<select id="axisType">
+    <option value="logarithmic" selected>logarithmic color scale</option>
+    <option value="linear">linear color scale</option>
+</select>
+<div id="container" style="width: 100%; max-height: 500px; margin: 0 auto"></div>
+
+<script>
+var states = JSON.parse('{{ states|safe }}')
+var zipcodes = JSON.parse('{{ zipcodes|safe }}')
+var data = Highcharts.geojson(Highcharts.maps['countries/us/us-all']),
+    separators = Highcharts.geojson(Highcharts.maps['countries/us/us-all'], 'mapline'),
+    // Some responsiveness
+    small = $j('#container').width() < 400;
+
+/**
+ * Custom Axis extension to allow inclusion of zero values on a logarithmic
+ * color axis. Note that the scale is not mathematically correct, as a true
+ * logarithmic axis never reaches zero.
+ * Based on https://jsfiddle.net/gh/get/library/pure/highcharts/highcharts/tree/master/samples/highcharts/coloraxis/logarithmic-with-emulate-negative-values/
+ */
+(function (H) {
+    H.addEvent(H.Axis, 'afterInit', function () {
+        var logarithmic = this.logarithmic;
+        if (logarithmic) {
+            // Avoid errors for zeros on a log axis
+            this.positiveValuesOnly = false;
+
+            // Override the converter functions
+            logarithmic.log2lin = num => {
+                var adjustedNum = num;
+                if (adjustedNum < 10) {
+                    adjustedNum += (10 - num) / 10;
+                }
+                return Math.log(adjustedNum) / Math.LN10;
+            };
+            logarithmic.lin2log = num => {
+                var result = Math.pow(10, Math.abs(num));
+                if (result < 10) {
+                    result = (10 * (result - 1)) / (10 - 1);
+                }
+                return result;
+            };
+        }
+    });
+}(Highcharts));
+
+// Set drilldown pointers
+$j.each(data, function (i) {
+    this.drilldown = this.properties['hc-key'];
+    this.mapkey = this.properties['hc-a2'].toLowerCase() + '_' + this.name.toLowerCase().replace(" ", "_");
+    this.value = states[this.properties['hc-a2']] || 0;
+});
+
+// Instantiate the map
+chart = Highcharts.mapChart('container', {
+    chart: {
+        events: {
+            drilldown: function (e) {
+                if (!e.seriesOptions) {
+                    var chart = this;
+
+                    // Show the spinner
+                    chart.showLoading('<i class="icon-spinner icon-spin icon-3x"></i>'); // Font Awesome spinner
+
+                    // Load the drilldown map
+                    // Some of these are 70+ MB...
+                    $j.getJSON('https://raw.githubusercontent.com/OpenDataDE/State-zip-code-GeoJSON/master/' + e.point.mapkey + '_zip_codes_geo.min.json', function(data) {
+                        data = Highcharts.geojson(data);
+                        $j.each(data, function (i) {
+                            // assign value based on zip code data
+                            this.value = zipcodes[this.properties['ZCTA5CE10']] || 0;
+                            this.name = this.properties['ZCTA5CE10'];
+                        });
+
+                        // Hide loading and add series
+                        chart.hideLoading();
+                        chart.addSeriesAsDrilldown(e.point, {
+                            name: e.point.name,
+                            data: data,
+                            dataLabels: {
+                                enabled: true,
+                                format: '{point.name}'
+                            }
+                        });
+                    });
+                }
+
+                this.setTitle(null, { text: e.point.name });
+            },
+            drillup: function () {
+                this.setTitle(null, { text: '' });
+            }
+        }
+    },
+
+    title: {
+        text: ''
+    },
+
+    subtitle: {
+        text: '',
+        floating: true,
+        align: 'right',
+        y: 50,
+        style: {
+            fontSize: '16px'
+        }
+    },
+
+    legend: small ? {} : {
+        layout: 'vertical',
+        align: 'right',
+        verticalAlign: 'middle'
+    },
+
+    colorAxis: {
+        id: 'axis-color',
+        type: 'logarithmic',
+        reversed: false,
+        min: 0,
+        minColor: '#E6E7E8',
+        maxColor: '#005645'
+    },
+
+    mapNavigation: {
+        enabled: true,
+        buttonOptions: {
+            verticalAlign: 'bottom'
+        }
+    },
+
+    plotOptions: {
+        map: {
+            states: {
+                hover: {
+                    color: '#EEDD66'
+                }
+            }
+        }
+    },
+
+    series: [{
+        data: data,
+        name: 'USA',
+        dataLabels: {
+            enabled: true,
+            format: '{point.properties.postal-code}'
+        }
+    }, {
+        type: 'mapline',
+        data: separators,
+        color: 'silver',
+        enableMouseTracking: false,
+        animation: {
+            duration: 500
+        }
+    }],
+
+    drilldown: {
+        activeDataLabelStyle: {
+            color: '#FFFFFF',
+            textDecoration: 'none',
+            textOutline: '1px #000000'
+        },
+        drillUpButton: {
+            relativeTo: 'spacingBox',
+            position: {
+                x: 0,
+                y: 60
+            }
+        }
+    }
+});
+
+// When input is changed, update axis type
+// Based on http://jsfiddle.net/nrebyagr/1/
+$j(function () {
+    $j('#axisType').change(function () {
+        chart.get('axis-color').update({
+            type: this.value,
+            reversed: false,
+            min: 0,
+            minColor: '#E6E7E8',
+            maxColor: '#005645'
+        }, true);
+    });
+});
+</script>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

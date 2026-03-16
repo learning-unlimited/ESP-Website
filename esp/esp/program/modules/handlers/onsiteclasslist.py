@@ -59,6 +59,8 @@ from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
 
 class OnSiteClassList(ProgramModuleObj):
+    doc = """Display lists of classes for onsite registration purposes."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -386,6 +388,9 @@ class OnSiteClassList(ProgramModuleObj):
         else:
             window_start = time_now + timedelta(-1, 85200)  # 20 minutes ago
             curtime = Event.objects.filter(start__gte=window_start, event_type__description='Class Time Block').order_by('start')
+            # If there are no events after the current time, just pick the first event of the program
+            if curtime.count() == 0:
+                curtime = Event.objects.filter(program=self.program, event_type__description='Class Time Block').order_by('start')
 
         end_id = int(options.get('end', -1))
         if end_id != -1:
@@ -398,10 +403,11 @@ class OnSiteClassList(ProgramModuleObj):
             sort_spec = extra
 
         #   Enforce a maximum refresh speed to avoid server overload.
-        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh', default='10'))
+        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh'))
         if int(context['refresh']) < min_refresh:
             context['refresh'] = min_refresh
 
+        classes = []
         if curtime:
             curtime = curtime[0]
             if endtime:
@@ -456,6 +462,12 @@ class OnSiteClassList(ProgramModuleObj):
         strings = [u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1], call[1]) for call in calls]
         return "</li><li>".join(strings)
+
+    def makeButtonLink(self):
+        calls = [("classchange_grid","Grid-based Class Changes Interface"), ("classList","Scrolling Class List"), (self.get_main_view(),self.module.link_title)]
+        strings = [u'<a href="%s"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">%s</div></button></a>' % \
+                ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
+        return "<br>".join(strings)
 
 
 

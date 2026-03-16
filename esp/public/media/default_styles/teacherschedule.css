@@ -1,0 +1,80 @@
+body {
+    font-family: georgia;
+    margin: 0;
+    font-size: 12px;
+}
+.title {
+    text-align: center;
+    font-size: 12pt;
+    font-family: georgia;
+}
+.title span {
+    font-weight:bolder;
+    text-decoration: underline;
+    font-size:16pt;
+}
+.facts {
+    text-align: center;
+    border: 0;
+}
+.facts th {
+    text-align: right;
+    font-size: 12pt;
+    font-weight: bold;
+}
+.facts td {
+    text-align: left;
+    font-size: 12pt;
+}
+.facts td.paid {
+    border: 1px solid black;
+    text-align: center;
+}
+.title {
+    padding: 0 0 0 0;
+    vertical-align: top;
+}
+.schedule {
+    width: 85%;
+    max-width: 660px;
+    border: 1px solid black;
+}
+.schedule td {
+    border: 1px solid black;
+}
+.schedule th {
+    border: 1px solid black;
+    vertical-align: top;
+}
+.schedule td {
+    vertical-align: top;
+}
+.schedule th.day {
+    border-bottom: 0;
+}
+.schedule td.oldday {
+    border-bottom: 0;
+    border-top: 0;
+}
+td.newday {
+    border-width: 2px 1px 0 1px;
+}
+#pagebreak {
+    page-break-after: always;
+}
+.description {
+    text-align: center;
+    padding: .2in 0 .2in 0;
+}
+.hr {
+    display: block;
+    height: 1px;
+    background: transparent;
+    width: 100%;
+    border: none;
+    border-top: solid 5px #000;
+}
+.header {
+    width: 90%;
+    max-width: 700px;
+}

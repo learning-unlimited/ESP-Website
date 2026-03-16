@@ -165,7 +165,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         else:
             del self.fields['class_size_max']
 
-        if Tag.getBooleanTag('use_class_size_optimal', default=False):
+        if Tag.getBooleanTag('use_class_size_optimal'):
             if not crmi.use_class_size_optimal:
                 del self.fields['class_size_optimal']
 
@@ -244,7 +244,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Hide fields as desired.
         tag_data = Tag.getProgramTag('teacherreg_hide_fields', prog)
         if tag_data:
-            for field_name in tag_data.split(','):
+            for field_name in [x.strip().lower() for x in tag_data.split(',')]:
                 hide_field(self.fields[field_name])
 
         tag_data = Tag.getProgramTag('teacherreg_default_min_grade', prog)

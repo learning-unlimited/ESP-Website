@@ -41,10 +41,13 @@ import sys
 from django.conf import settings
 from django.db.models.base import ObjectDoesNotExist
 from django.http import HttpResponse, Http404
-from django.shortcuts import render_to_response
-from django.template import RequestContext, Context
+from django.template import RequestContext
 from django.utils.translation import ugettext as _
 
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    MiddlewareMixin = object
 
 # TODO(benkraft): replace with the django version
 class Http403(Exception):
@@ -90,7 +93,7 @@ def ESPError(message=None, log=True):
         return cls(message)
 
 """ Adapted from http://www.djangosnippets.org/snippets/802/ """
-class AjaxErrorMiddleware(object):
+class AjaxErrorMiddleware(MiddlewareMixin):
     '''Return AJAX errors to the browser in a sensible way.
 
     Includes some code from http://www.djangosnippets.org/snippets/650/
@@ -153,7 +156,7 @@ class AjaxErrorMiddleware(object):
 AjaxError = AjaxErrorMiddleware.AjaxError
 
 
-class ESPErrorMiddleware(object):
+class ESPErrorMiddleware(MiddlewareMixin):
     """ This middleware handles errors appropriately.
     It will display a friendly error if there indeed was one
     (and emails the admin). This, of course, is only true if DEBUG is
@@ -161,6 +164,7 @@ class ESPErrorMiddleware(object):
     """
 
     def process_exception(self, request, exception):
+        from esp.utils.web import render_to_response
 
         if exception == ESPError_Log or exception == ESPError_NoLog:
             # TODO(benkraft): remove remaining instances of this.
@@ -189,17 +193,6 @@ class ESPErrorMiddleware(object):
         exc_info = sys.exc_info()
         logger.log(log_level, exc_info[1], exc_info=exc_info)
         context = {'error': exc_info[1]}
-        context_instance = self._get_context(request)
-        # TODO(benkraft): merge our various error templates (403, 500, error).
-        # They're all slightly different, but should probably be more similar
-        # and share code.
-        response = render_to_response(
-            template, context, context_instance=context_instance)
-        response.status_code = status
-        return response
-
-    @staticmethod
-    def _get_context(request):
         try:
             # attempt to set up variables the template needs
             # - actually, some things will fail to be set up due to our
@@ -207,11 +200,17 @@ class ESPErrorMiddleware(object):
             #   just silently fail...
             # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
             #   TEMPLATE in main?
-            return RequestContext(request)
+            context = RequestContext(request, context).flatten()
         except:
             # well, we couldn't, but at least display something
             # (actually it will immediately fail on main because someone
             # removed the safe version of the template and
             # miniblog_for_user doesn't silently fail but best not to put
             # in ugly hacks and make random variables just happen to work.)
-            return Context()
+            pass
+        # TODO(benkraft): merge our various error templates (403, 500, error).
+        # They're all slightly different, but should probably be more similar
+        # and share code.
+        response = render_to_response(template, request, context)
+        response.status_code = status
+        return response

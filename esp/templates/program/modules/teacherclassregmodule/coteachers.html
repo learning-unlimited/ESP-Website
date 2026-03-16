@@ -35,7 +35,11 @@
 
 {% if conflict %}
     <p>
-    <b><font color="red">{{ conflict }}</font> has a conflicting schedule.</b><br />
+    <b><font color="red">{{ conflict.name }}</font> has a conflicting schedule.</b><br />
+    </p>
+{% elif unavailableuser %}
+    <p>
+    <b><font color="red">{{ unavailableuser.name }}</font> is not available when this class is scheduled ({{ unavailabletimes|join:", " }}).</b><br />
     </p>
 {% endif %}
 

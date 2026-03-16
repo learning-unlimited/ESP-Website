@@ -84,6 +84,11 @@ setInterval(write_updated_time,1000);
 
   <div class="main">
     <table class="teacherschedule">
+      <colgroup>
+       <col span="1" class="time">
+       <col span="1" class="cls">
+       <col span="1" class="edit">
+      </colgroup>
       <thead>
         <th colspan="3" class="user_info">
             <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
@@ -101,29 +106,25 @@ setInterval(write_updated_time,1000);
                 </tr>
             {% endifchanged %}
             <tr class="schedule_row">
-                <td rowspan="2" class="time">{{ cls.time_blocks.0.short_time }} ET</td>
+                <td class="time">{{ cls.time_blocks.0.short_time }} ET</td>
                 <td class="cls">
                     {% if cls in observed_classes %}
-						<b>{{ cls.parent_class.title }}</b> (Observer) 
-					{% else %}
-						<b>{{ cls.parent_class.title }}</b>
-					{% endif %}
+                        <b>{{ cls.parent_class.title }}</b> (Observer)
+                    {% else %}
+                        <b>{{ cls.parent_class.title }}</b>{% if request.user in cls.get_moderators %}</br>({{ program.getModeratorTitle }}){% endif %}
+                    {% endif %}
+                    <br>{{ cls.prettyrooms|join:", " }}&nbsp;<a class="no-dec" title="Directions" href="/teach/{{one}}/{{two}}/onsitemap/{{ cls.initial_rooms.0.id }}"><i class="material-icons md-3">directions</i></a>
                 </td>
-					{% if cls in observed_classes %}
-		        		<td rowspan="2" class="list">
-		                    <a class="no-dec" title="Class Roster" href="/teach/{{one}}/{{two}}/section_students/{{ cls.id }}"><i class="material-icons md-4">assignment</i></a>
-		                </td>
-					{% else %}
-		                <td rowspan="2" class="list">
-		                    <a class="no-dec" title="More Details" href="/teach/{{one}}/{{two}}/onsitedetails/{{ cls.id }}"><i class="material-icons md-4">list</i></a>
-		                    <a class="no-dec" title="Class Roster" href="/teach/{{one}}/{{two}}/section_students/{{ cls.id }}"><i class="material-icons md-4">assignment</i></a>
-		                </td>
-					{% endif %}
-            </tr>
-            <tr class="schedule_row">
-                <td class="location">
-                    {{ cls.prettyrooms|join:", " }}
-                </td>
+                {% if cls in observed_classes %}
+                    <td class="list">
+                        <a class="no-dec" title="Class Roster" href="/teach/{{one}}/{{two}}/section_students/{{ cls.id }}"><i class="material-icons md-4">assignment</i></a>
+                    </td>
+                {% else %}
+                    <td class="list">
+                        <a class="no-dec" title="More Details" href="/teach/{{one}}/{{two}}/onsitedetails/{{ cls.id }}"><i class="material-icons md-4">list</i></a>
+                        <a class="no-dec" title="Class Roster" href="/teach/{{one}}/{{two}}/section_students/{{ cls.id }}"><i class="material-icons md-4">assignment</i></a>
+                    </td>
+                {% endif %}
             </tr>
         {% endfor %}
       </tbody>

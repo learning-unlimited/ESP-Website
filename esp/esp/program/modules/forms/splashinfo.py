@@ -87,14 +87,14 @@ class SplashInfoForm(forms.Form):
             self.fields['lunchsat'].choices = tag_struct['lunchsat']
             self.fields['lunchsun'].choices = tag_struct['lunchsun']
 
-        if not Tag.getBooleanTag('splashinfo_siblingdiscount', program=program, default=True):
+        if not Tag.getBooleanTag('splashinfo_siblingdiscount', program=program):
             del self.fields['siblingdiscount']
             del self.fields['siblingname']
 
-        if not Tag.getBooleanTag('splashinfo_lunchsat', program=program, default=True):
+        if not Tag.getBooleanTag('splashinfo_lunchsat', program=program):
             del self.fields['lunchsat']
 
-        if not Tag.getBooleanTag('splashinfo_lunchsun', program=program, default=True):
+        if not Tag.getBooleanTag('splashinfo_lunchsun', program=program):
             del self.fields['lunchsun']
 
     def load(self, splashinfo):

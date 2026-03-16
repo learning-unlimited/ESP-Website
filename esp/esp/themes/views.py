@@ -214,7 +214,7 @@ def editor(request):
         #   Re-generate the CSS for the current theme given the supplied settings
         if vars:
             tc.customize_theme(vars)
-        if palette:
+        if palette != None:
             tc.set_palette(palette)
 
     #   Get current theme and customization settings

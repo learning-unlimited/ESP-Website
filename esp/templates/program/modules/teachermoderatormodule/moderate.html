@@ -1,0 +1,42 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} {{ program.getModeratorTitle }} Signup{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <style>
+        #id_will_moderate {
+            margin: 0px;
+        }
+        #id_will_moderate + br {
+            display: none;
+        }
+        #id_will_moderate + br + span {
+            padding-left: 5px;
+        }
+    </style>
+{% endblock %}
+
+{% block xtrajs %}
+    <script type="text/javascript" src="/media/scripts/program/modules/moderate.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ program.getModeratorTitle }} Signup for {{program.niceName}} </h1>
+<br />
+{% load render_qsd %}
+{% inline_program_qsd_block program "teach:moderator_instructions" %}
+For this program, we are looking for volunteers to serve as {{ program.getModeratorTitle|lower }}s for classes. Please check the box below and fill out the form if you are available to serve as a {{ program.getModeratorTitle|lower }}.
+{% end_inline_program_qsd_block %}
+
+<div id="program_form">
+<form id="moderate_form" action="{{ request.path }}" method="post">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+{{ form }}
+<tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Submit" /></td></tr>
+<!--do some fun javascript to hide all fields but the checkbox unless the checkbox is checked, and if the checkbox is unchecked, wipe the other fields and set the timeslots to 0-->
+</table>
+</form>
+</div>
+{% endblock %}

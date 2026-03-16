@@ -1,0 +1,36 @@
+{% extends "main.html" %}
+
+{% block title %}Email Public View{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style>
+#subject {
+    text-indent: -4.2em;
+    padding-left: 4.2em;
+    font-size: 1.1em;
+    line-height: 1.2em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% load render_qsd %}
+
+<h1>Email Public View</h1>
+
+{% inline_qsd_block "email_public_view" %}
+<p>This is the public view of the following email. Please note that certain details may be excluded in the interest of the privacy of our users.</p>
+{% end_inline_qsd_block %}
+
+<h2 id="subject">Subject: <u>{{ email_req.subject }}</u></h2>
+<h2>Send Date: {{ email_req.created_at|date:"DATE_FORMAT" }}</h2>
+<h2>Message Text:</h2>
+{% autoescape off %}
+<div id="msgtext">
+<p>{{ email_req.msgtext }}</p>
+</div>
+{% endautoescape %}
+  
+
+{% endblock %}

@@ -45,6 +45,8 @@ from esp.users.models import ESPUser
 from django.db.models.query import Q
 
 class SplashInfoModule(ProgramModuleObj):
+    doc = """Serves a form during student registration that asks for lunch preferences and if a student has a sibling(s)."""
+
     @classmethod
     def module_properties(cls):
       return {
@@ -98,9 +100,9 @@ class SplashInfoModule(ProgramModuleObj):
 
     def prepare(self, context={}):
         context['splashinfo'] = SplashInfo.getForUser(get_current_request().user, self.program)
-        context['splashinfo'].include_siblingdiscount = Tag.getBooleanTag('splashinfo_siblingdiscount', program=self.program, default=True)
-        context['splashinfo'].include_lunchsat = Tag.getBooleanTag('splashinfo_lunchsat', program=self.program, default=True)
-        context['splashinfo'].include_lunchsun = Tag.getBooleanTag('splashinfo_lunchsun', program=self.program, default=True)
+        context['splashinfo'].include_siblingdiscount = Tag.getBooleanTag('splashinfo_siblingdiscount', program=self.program)
+        context['splashinfo'].include_lunchsat = Tag.getBooleanTag('splashinfo_lunchsat', program=self.program)
+        context['splashinfo'].include_lunchsun = Tag.getBooleanTag('splashinfo_lunchsun', program=self.program)
 
         return context
 

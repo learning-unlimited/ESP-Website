@@ -209,6 +209,21 @@ color: #006600;
     vertical-align: middle;
 }
 
+.add-class-cell {
+    text-align: center;
+}
+
+.create-class-link {
+    font-size: large;
+    padding: 5px;
+    display: inline-block;
+    background-color: inherit;
+}
+
+.create-class-link:hover {
+    background-color: inherit;
+}
+
 .teachbutton {
     margin: 0 !important;
 }

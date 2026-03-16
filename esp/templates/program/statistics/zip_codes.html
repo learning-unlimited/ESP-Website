@@ -1,7 +1,15 @@
+<p>{{ num_users }} users were matched by the query.</p>
 <h2>Zip Code Info</h2>
-<p>Of {{ num_students }} students, {{ invalid }} had invalid Zip codes.</p>
-<ul>
-{% for pair in zip_data %}
-    <li>Zip code {{ pair.0 }}: {{ pair.1 }} students
+<p>{{ invalid }} users had invalid Zip codes.</p>
+<table>
+<tr>
+<th>Zip Code</th>
+<th># of Students</th>
+</tr>
+{% for zip_code, num in zip_data %}
+<tr>
+    <td>{{ zip_code }}</td>
+    <td>{{ num }}</td>
+</tr>
 {% endfor %}
-</ul>
+</table>

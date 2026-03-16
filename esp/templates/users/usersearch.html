@@ -11,10 +11,8 @@
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
-<br />
-<br />
 
-<h1>Search For User</h1>
+<h1>{% if module %}{{ module }}{% else %}Search For User{% endif %}</h1>
 
 <center>
 <p>
@@ -91,14 +89,14 @@ miles from <input type="text" size="5" name="zipcode" value="02139" />.</td>
 
 <tr><td><label><strong>Grade Limits (students):</strong></label></td> <td>
 Min: 
-<input type="text" size="3" name="grade_min" value="" /> &nbsp;&nbsp;&nbsp;
+<input type="text" size="3" name="grade_min" value="" /><br>
 Max:
 <input type="text" size="3" name="grade_max" value="" /></td>
 </tr>
 
 <tr><td><label><strong>Graduation Year (teachers):</strong></label></td> <td>
 Min: 
-<input type="text" size="3" name="gradyear_min" value="" /> &nbsp;&nbsp;&nbsp;
+<input type="text" size="3" name="gradyear_min" value="" /><br>
 Max:
 <input type="text" size="3" name="gradyear_max" value="" /></td>
 </tr>

@@ -329,13 +329,6 @@ Student Surveys (SurveyModule)
 
 Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only students that registered for a class ('classreg') are allowed to fill out the survey. This can be modified with the 'survey_student_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future).
 
-Text Message Reminders (TextMessageModule)
-------------------------------------------
-
-With this module, students will be prompted to enter a phone number at which you will send reminders about the program (typically around the closing of registration, or the day before the program).  You can get a list of these numbers using the user list generator.
-
-This module does *NOT* send text messages. For that functionality, see the "Group Text Module" below.
-
 Formstack Application Module
 ----------------------------
 
@@ -503,6 +496,11 @@ Views provided
 * /teach/<program>/onsitesurvey -- Webapp version of the teacher survey (see above for more details). Also has a tab for teachers to view results from the student surveys for their class(es). Both of these interfaces have the same functionality as the main teacher survey pages but with slightly different styling.
 * /teach/<program>/onsitedetails -- Shows the details and links (classrooms, times, teachers, enrollment, documents, website) for a specific section (or all sections).
 * /teach/<program>/onsiteroster -- Shows the roster for a specific section (or all sections). If only a specific section is selected, this page also allows for marking attendance.
+
+Moderator Form & More (TeacherModeratorModule)
+----------------------------------------------
+
+This adds a form to teacher registration for people to indicate their interest in moderating for your program. The term "Moderator" can be changed for your program through the "Moderator title" program tag, so this module can also be used for observers, teaching assistants, and more. Once teachers have filled out the moderator form, admins can assign moderators to class sections via a new pane in the scheduler. Moderators then have access to information about their section assignments and can take attendance for their assigned sections through the website or the teacher webapp. In addition, moderator information is added throughout the website-- dashboard, teacher big board, printables, and more.
 
 Volunteer modules
 =================

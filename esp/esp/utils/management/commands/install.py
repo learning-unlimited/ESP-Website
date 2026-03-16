@@ -33,15 +33,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 from django.db.models import get_apps
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     """Install initial data on all apps.
 
     Call app.models.install() on all apps that have such a function.
     """
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
         # get_apps() returns a list of the app.models modules of all
         # installed apps.
         for app in filter(lambda app: hasattr(app, 'install'), get_apps()):

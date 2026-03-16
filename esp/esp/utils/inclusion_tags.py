@@ -50,8 +50,15 @@ from esp.program.templatetags.class_render import render_class_row
 from esp.program.templatetags.class_render_row import render_class_copy_row
 from esp.program.templatetags.class_render_row import render_class_teacher_list_row
 
+from esp.program.templatetags.section_render_row import render_section_moderator_list_row
+
 from esp.qsd.templatetags.render_qsd import render_qsd
 from esp.qsd.templatetags.render_qsd import render_inline_qsd
+
+from esp.survey.templatetags.survey import render_responses_for_program
+from esp.survey.templatetags.survey import render_responses_for_program_pdf
+from esp.survey.templatetags.survey import render_responses_for_section
+from esp.survey.templatetags.survey import render_responses_for_section_pdf
 
 from esp.web.templatetags.navbar import navbar_gen
 

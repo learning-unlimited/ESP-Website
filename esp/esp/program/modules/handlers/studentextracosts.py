@@ -66,6 +66,7 @@ class MultiSelectCostItem(forms.Form):
 
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
+    doc = """Serves a form during student registration for students to purchase other items."""
 
     @classmethod
     def module_properties(cls):
@@ -80,10 +81,6 @@ class StudentExtraCosts(ProgramModuleObj):
     def __init__(self, *args, **kwargs):
         super(StudentExtraCosts, self).__init__(*args, **kwargs)
         self.event = "extra_costs_done"
-
-    def have_paid(self):
-        iac = IndividualAccountingController(self.program, get_current_request().user)
-        return (iac.amount_due() <= 0)
 
     def studentDesc(self):
         """ Return a description for each line item type that students can be filtered by. """
@@ -136,11 +133,11 @@ class StudentExtraCosts(ProgramModuleObj):
         This module should ultimately deal with things like optional lab fees, etc.
         Right now it doesn't.
         """
-        if self.have_paid():
+        iac = IndividualAccountingController(self.program, get_current_request().user)
+        if iac.has_paid():
             raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
 
         #   Determine which line item types we will be asking about
-        iac = IndividualAccountingController(self.program, get_current_request().user)
         costs_list = iac.get_lineitemtypes(optional_only=True).filter(max_quantity__lte=1, lineitemoptions__isnull=True)
         multicosts_list = iac.get_lineitemtypes(optional_only=True).filter(max_quantity__gt=1, lineitemoptions__isnull=True)
         multiselect_list = iac.get_lineitemtypes(optional_only=True).filter(lineitemoptions__isnull=False)
@@ -283,6 +280,10 @@ class StudentExtraCosts(ProgramModuleObj):
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
                                   { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
+
+    def isStep(self):
+        pac = ProgramAccountingController(self.program)
+        return pac.get_lineitemtypes(optional_only=True).exists()
 
     class Meta:
         proxy = True
