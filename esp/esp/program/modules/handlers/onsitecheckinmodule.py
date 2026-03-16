@@ -35,9 +35,11 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.forms.onsite import OnsiteBarcodeCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
+from esp.program.modules.forms.rapidcheckin import RapidCheckinStudentWidget
 from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.models  import RegistrationProfile, StudentRegistration
 from django.db.models    import Max, Min
@@ -61,6 +63,21 @@ class OnSiteCheckinModule(ProgramModuleObj):
             "seq": 1,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Only list the main check-in page; AJAX/aux views (ajax_status, ajaxbarcodecheckin,
+        # checkin, barcodecheckin as aux) are not meant for direct admin navigation.
+        if view_name != "rapidcheckin":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="onsite_rapidcheckin",
+            url="/onsite/%s/rapidcheckin" % base,
+            title="Student Check-In",
+            category="Other",
+            keywords=["student", "check-in", "onsite", "payments", "forms"],
+        )
 
     def updatePaid(self, paid=True):
         IndividualAccountingController.updatePaid(self.program, self.student, paid, in_full=True)
@@ -226,16 +243,18 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         rec = Record(user=student, event=rt, program=prog)
                         rec.save()
                     context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
-                    if request.is_ajax():
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
                 else:
                     context['message'] = '%s %s is not a student and has not been checked in' % (student.first_name, student.last_name)
-                    if request.is_ajax():
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
                 form = StudentSearchForm(initial={'target_user': student.id})
         else:
             form = StudentSearchForm()
 
+        # Use widget that does not inject autocomplete script; template sets up filter-aware autocomplete
+        form.fields['target_user'].widget = RapidCheckinStudentWidget()
         context['module'] = self
         context['form'] = form
         return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
@@ -304,11 +323,14 @@ class OnSiteCheckinModule(ProgramModuleObj):
         json_data = {}
         if request.method == 'POST' and 'code' in request.POST:
             code = request.POST['code']
-            students = ESPUser.objects.filter(id=code)
-            if not students.exists():
+            try:
+                student = ESPUser.objects.get(id=code)
+            except ValueError:
+                json_data['message'] = '%s is not a valid user ID (must be numeric)!' % code
+                return HttpResponse(json.dumps(json_data), content_type='text/json')
+            except ESPUser.DoesNotExist:
                 json_data['message'] = '%s is not a user!' % code
             else:
-                student = students[0]
                 info_string = student.name() + " (" + str(code) + ")"
                 if student.isStudent():
                     self.student = student
