@@ -96,6 +96,46 @@ class CSVQuestionImporter:
         self.csv_file = csv_file
         self.target_survey = target_survey
         self.validator = QuestionValidator()
+    
+    @classmethod
+    def export_questions(cls, survey):
+        """Export questions from a survey to CSV format.
+        
+        Args:
+            survey: Survey object to export questions from
+            
+        Returns:
+            String containing CSV data with all questions
+        """
+        output = io.StringIO()
+        writer = csv.DictWriter(
+            output,
+            fieldnames=['question_name', 'question_type', 'param_values', 'per_class', 'sequence']
+        )
+        
+        # Write header row
+        writer.writeheader()
+        
+        # Query all questions ordered by sequence
+        questions = Question.objects.filter(survey=survey).order_by('seq')
+        
+        # Write each question as a row
+        for question in questions:
+            # Format param_values as pipe-delimited string
+            param_values_str = '|'.join(question.param_values)
+            
+            # Format per_class as true/false
+            per_class_str = 'true' if question.per_class else 'false'
+            
+            writer.writerow({
+                'question_name': question.name,
+                'question_type': question.question_type.name,
+                'param_values': param_values_str,
+                'per_class': per_class_str,
+                'sequence': question.seq
+            })
+        
+        return output.getvalue()
         
     def validate(self) -> Dict:
         """Validate CSV structure and content without creating objects.
@@ -394,7 +434,6 @@ class QuestionValidator:
         duplicates = []
         
         for question_data in questions:
-            # Check if a question with the same name AND type exists
             try:
                 existing_question = Question.objects.get(
                     survey=survey,
@@ -523,13 +562,76 @@ class TemplateManager:
     
     @classmethod
     def list_templates(cls, category: str = None):
-        """List available templates, optionally filtered by category."""
-        pass
+        """List available templates, optionally filtered by category.
+        
+        Args:
+            category: Optional category filter (e.g., 'student', 'teacher')
+            
+        Returns:
+            List of template filenames (without path)
+        """
+        import os
+        from django.conf import settings
+        
+        # Build full path to template directory
+        template_path = os.path.join(settings.PROJECT_ROOT, cls.TEMPLATE_DIR)
+        
+        # Check if directory exists
+        if not os.path.exists(template_path):
+            return []
+        
+        # List all CSV files in the directory
+        templates = []
+        for filename in os.listdir(template_path):
+            if filename.endswith('.csv'):
+                # Filter by category if specified
+                if category is None:
+                    templates.append(filename)
+                else:
+                    # Template naming convention: {category}_{description}.csv
+                    if filename.startswith(f"{category}_"):
+                        templates.append(filename)
+        
+        return sorted(templates)
     
     @classmethod
-    def load_template(cls, template_name: str):
-        """Load template as CSVQuestionImporter instance."""
-        pass
+    def load_template(cls, template_name: str, target_survey=None):
+        """Load template as CSVQuestionImporter instance.
+        
+        Args:
+            template_name: Name of the template file (with or without .csv extension)
+            target_survey: Optional Survey object to import into
+            
+        Returns:
+            CSVQuestionImporter instance initialized with template data
+            
+        Raises:
+            FileNotFoundError: If template file does not exist
+        """
+        import os
+        from django.conf import settings
+        
+        # Ensure .csv extension
+        if not template_name.endswith('.csv'):
+            template_name = f"{template_name}.csv"
+        
+        # Build full path to template file
+        template_path = os.path.join(
+            settings.PROJECT_ROOT,
+            cls.TEMPLATE_DIR,
+            template_name
+        )
+        
+        # Check if file exists
+        if not os.path.exists(template_path):
+            raise FileNotFoundError(f"Template '{template_name}' not found at {template_path}")
+        
+        # Read template file
+        with open(template_path, 'r', encoding='utf-8') as f:
+            csv_content = f.read()
+        
+        # Return CSVQuestionImporter instance
+        return CSVQuestionImporter(csv_content, target_survey)
 
 
 class ImportLogger:

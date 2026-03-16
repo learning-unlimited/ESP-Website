@@ -1,0 +1,79 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+{% if result.success %}
+<div class="messagelist">
+    <div class="success">
+        <p>Import completed successfully!</p>
+    </div>
+</div>
+
+<fieldset class="module aligned">
+    <h2>Import Summary</h2>
+
+    <div class="form-row">
+        <div>
+            <label>Survey:</label>
+            <p><strong>{{ survey.name }}</strong></p>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div>
+            <label>Questions Created:</label>
+            <p><strong>{{ result.created_count }}</strong></p>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div>
+            <label>Questions Updated:</label>
+            <p><strong>{{ result.updated_count }}</strong></p>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div>
+            <label>Questions Skipped:</label>
+            <p><strong>{{ result.skipped_count }}</strong></p>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div>
+            <label>Total Questions Processed:</label>
+            <p><strong>{{ result.created_count|add:result.updated_count|add:result.skipped_count }}</strong></p>
+        </div>
+    </div>
+</fieldset>
+
+{% else %}
+<div class="messagelist">
+    <div class="error">
+        <p>Import failed. Please review the errors below:</p>
+    </div>
+</div>
+
+<fieldset class="module aligned">
+    <h2>Errors</h2>
+
+    <ul class="errorlist">
+        {% for error in result.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+</fieldset>
+{% endif %}
+
+<div class="submit-row">
+    <a href="{% url 'admin:survey_survey_changelist' %}" class="button default">Return to Survey List</a>
+    {% if result.success %}
+    <a href="{% url 'admin:survey_survey_change' survey.id %}" class="button">View Survey</a>
+    {% endif %}
+</div>
+{% endblock %}

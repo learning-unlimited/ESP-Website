@@ -1,0 +1,82 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="errornote">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <fieldset class="module aligned">
+        <h2>Import Source</h2>
+
+        <div class="form-row">
+            {{ form.import_source.errors }}
+            <div>
+                <label for="{{ form.import_source.id_for_label }}">{{ form.import_source.label }}:</label>
+                {{ form.import_source }}
+                {% if form.import_source.help_text %}
+                <p class="help">{{ form.import_source.help_text }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-row" id="csv_file_row">
+            {{ form.csv_file.errors }}
+            <div>
+                <label for="{{ form.csv_file.id_for_label }}">{{ form.csv_file.label }}:</label>
+                {{ form.csv_file }}
+                {% if form.csv_file.help_text %}
+                <p class="help">{{ form.csv_file.help_text }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-row" id="template_row" style="display: none;">
+            {{ form.template.errors }}
+            <div>
+                <label for="{{ form.template.id_for_label }}">{{ form.template.label }}:</label>
+                {{ form.template }}
+                {% if form.template.help_text %}
+                <p class="help">{{ form.template.help_text }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="submit-row">
+        <input type="submit" value="Continue" class="default" />
+        <a href="{% url 'admin:survey_survey_changelist' %}" class="button cancel-link">Cancel</a>
+    </div>
+</form>
+
+<script type="text/javascript">
+    (function () {
+        var importSourceField = document.getElementById('{{ form.import_source.id_for_label }}');
+        var csvFileRow = document.getElementById('csv_file_row');
+        var templateRow = document.getElementById('template_row');
+
+        function updateVisibility() {
+            var selectedValue = importSourceField.value;
+            if (selectedValue === 'upload') {
+                csvFileRow.style.display = 'block';
+                templateRow.style.display = 'none';
+            } else if (selectedValue === 'template') {
+                csvFileRow.style.display = 'none';
+                templateRow.style.display = 'block';
+            }
+        }
+
+        importSourceField.addEventListener('change', updateVisibility);
+        updateVisibility();
+    })();
+</script>
+{% endblock %}

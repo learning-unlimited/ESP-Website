@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<p class="help">
+    The following questions already exist in the survey. Please choose how to handle each duplicate:
+</p>
+
+<ul>
+    <li><strong>Skip:</strong> Do not import this question (keep existing question unchanged)</li>
+    <li><strong>Replace:</strong> Update the existing question with new parameters and sequence</li>
+    <li><strong>Rename:</strong> Create a new question with a modified name (adds a suffix)</li>
+</ul>
+
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="resolve_duplicates" value="1" />
+
+    {% if form.non_field_errors %}
+    <div class="errornote">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <fieldset class="module aligned">
+        <h2>Duplicate Questions</h2>
+
+        {% for field in form %}
+        <div class="form-row">
+            {{ field.errors }}
+            <div>
+                <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                {{ field }}
+                {% if field.help_text %}
+                <p class="help">{{ field.help_text }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </fieldset>
+
+    <div class="submit-row">
+        <input type="submit" value="Import Questions" class="default" />
+        <a href="{% url 'admin:survey_survey_changelist' %}" class="button cancel-link">Cancel</a>
+    </div>
+</form>
+{% endblock %}

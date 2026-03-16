@@ -1,0 +1,9 @@
+question_name,question_type,param_values,per_class,sequence
+Overall Program Rating,Rating,1|5,false,1
+Would you recommend this program to a friend?,Yes/No,,false,2
+What did you like most about the program?,Free Response,,false,3
+What could be improved?,Free Response,,false,4
+How challenging was the material?,Rating,1|5,true,5
+How engaging was the instructor?,Rating,1|5,true,6
+Did you learn something new?,Yes/No,,true,7
+Would you take another class with this instructor?,Yes/No,,true,8
