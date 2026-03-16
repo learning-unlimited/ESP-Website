@@ -52,7 +52,7 @@ class ThemesTest(TestCase):
 
         for url in urls:
             response = self.client.get(url)
-            self.assertRedirects(response, '/accounts/login/?next=%s' % url)
+            self.assertRedirects(response, f'/accounts/login/?next={url}')
 
         self.client.login(username=self.admin.username, password='password')
         for url in urls:
@@ -88,7 +88,7 @@ class ThemesTest(TestCase):
         # should be doing all these tests in some sort of tmpdir to avoid
         # touching anything of the user's.
         images_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
-        # Really we should use a tempdir, but on vagrant it may be on a
+        # Really we should use a tempdir, but on Docker it may be on a
         # different file system, which causes problems, so we do a hackier
         # thing instead.
         images_backup_dir = os.path.join(settings.MEDIA_ROOT, 'images',
@@ -158,7 +158,7 @@ class ThemesTest(TestCase):
                 self.assertTrue(len(open(css_filename).read()) > 1000)  #   Hacky way to check that content is substantial
 
                 #   Check that the template override is marked with the theme name.
-                self.assertTrue(('<!-- Theme: %s -->' % theme_name) in str(response.content, encoding='UTF-8'))
+                self.assertTrue((f'<!-- Theme: {theme_name} -->') in str(response.content, encoding='UTF-8'))
 
             self.client.logout()
 
@@ -204,7 +204,7 @@ class ThemesTest(TestCase):
         #   Test that we can change a parameter and the right value appears in the stylesheet
         def verify_linkcolor(color_str):
             css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
-            regexp = r'\n\s*?a\s*?{.*?color:\s*?%s;.*?}' % color_str
+            regexp = rf'\n\s*?a\s*?{{.*?color:\s*?{color_str};.*?}}'
             with open(css_filename) as f:
                 self.assertEqual(len(re.findall(regexp, f.read(), flags=(re.DOTALL | re.I))), 1)
 

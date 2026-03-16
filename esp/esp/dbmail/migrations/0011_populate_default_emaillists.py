@@ -12,6 +12,7 @@ def create_default_emaillists(apps, schema_editor):
     """
     EmailList = apps.get_model('dbmail', 'EmailList')
     
+
     # Only create defaults if no EmailList entries exist
     # (to avoid duplicating on existing sites)
     if EmailList.objects.exists():
@@ -23,6 +24,13 @@ def create_default_emaillists(apps, schema_editor):
             'seq': 10,
             'handler': 'SectionList',
             'description': 'Section mailing lists (e.g., S123C1-students)',
+
+    default_lists = [
+        {
+            'regex': r'^\w(\d+)s(\d+)-(class|teachers|students)$',
+            'seq': 10,
+            'handler': 'SectionList',
+            'description': 'Individual sections of a class',
             'admin_hold': False,
             'cc_all': False,
         },
@@ -31,6 +39,10 @@ def create_default_emaillists(apps, schema_editor):
             'seq': 20,
             'handler': 'ClassList',
             'description': 'Class mailing lists (e.g., S123-students)',
+            'regex': r'^\w(\d+)-(class|teachers|students)$',
+            'seq': 20,
+            'handler': 'ClassList',
+            'description': 'Email Class Rosters',
             'admin_hold': False,
             'cc_all': False,
         },
@@ -39,6 +51,10 @@ def create_default_emaillists(apps, schema_editor):
             'seq': 30,
             'handler': 'PlainList',
             'description': 'Plain redirect lists (looks up in PlainRedirect table)',
+            'regex': r'^(.*)$',
+            'seq': 30,
+            'handler': 'PlainList',
+            'description': 'Manual Email List Redirects',
             'admin_hold': False,
             'cc_all': False,
         },
@@ -47,11 +63,16 @@ def create_default_emaillists(apps, schema_editor):
             'seq': 40,
             'handler': 'UserEmail',
             'description': 'User email forwarding (forwards to user\'s email address)',
+            'regex': r'^(.*)$',
+            'seq': 40,
+            'handler': 'UserEmail',
+            'description': 'Mail list for all teachers.',
             'admin_hold': False,
             'cc_all': False,
         },
     ]
     
+
     for list_data in default_lists:
         EmailList.objects.create(**list_data)
 
@@ -70,8 +91,17 @@ def remove_default_emaillists(apps, schema_editor):
         r'^([a-zA-Z0-9_\.\-]+)$',
     ]
     
+
+    # Remove only the default entries we created
+    default_regexes = [
+        r'^\w(\d+)s(\d+)-(class|teachers|students)$',
+        r'^\w(\d+)-(class|teachers|students)$',
+        r'^(.*)$',
+    ]
+
     for regex in default_regexes:
         EmailList.objects.filter(regex=regex).delete()
+
 
 
 class Migration(migrations.Migration):

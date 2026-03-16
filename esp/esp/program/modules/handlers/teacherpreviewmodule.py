@@ -171,7 +171,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         try:
             qs = ClassSubject.objects.filter(id=int(extra))
             cls = qs[0]
-        except (ValueError, IndexError):
+        except (ValueError, IndexError, TypeError):
             raise Http404('The requested class could not be found.')
         cls = ClassSubject.objects.catalog(cls.parent_program, force_all=True, initial_queryset=qs)[0]
         return render_to_response(self.baseDir()+'catalogpreview.html', request, {'class': cls})
