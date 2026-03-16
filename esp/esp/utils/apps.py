@@ -12,3 +12,11 @@ class InstallConfig(AppConfig):
 
     def ready(self):
         signals.post_migrate.connect(run_install, sender=self)
+
+
+class UtilsConfig(AppConfig):
+    """
+    App config for esp.utils module.
+    """
+    name = 'esp.utils'
+    label = 'esp_utils'
