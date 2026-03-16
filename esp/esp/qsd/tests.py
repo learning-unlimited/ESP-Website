@@ -40,6 +40,8 @@ from esp.users.models import ESPUser
 from django.template import Template, Context
 from django.urls import reverse
 
+from esp.qsd.seltests import TestQsdCachePurging  # Run Selenium tests with regular tests
+
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
 
@@ -141,6 +143,438 @@ class QSDCorrectnessTest(TestCase):
 
             #   Delete the new QSD so we can start again.
             qsd_rec_new.delete()
+
+    def testUnauthorizedAccess(self):
+        # Create QSD with desired URL
+        qsd_rec_new = QuasiStaticData()
+        qsd_rec_new.url = 'learn/foo'
+        qsd_rec_new.name = "learn:foo"
+        qsd_rec_new.author = self.author
+        qsd_rec_new.nav_category = default_navbarcategory()
+        qsd_rec_new.content = "Testing 123"
+        qsd_rec_new.title = "Test QSD page"
+        qsd_rec_new.description = ""
+        qsd_rec_new.keywords = ""
+        qsd_rec_new.save()
+
+        edit_url = '/learn/foo.edit.html'
+
+        # Array of users without edit permission: unauthenticated (None) and student
+        unauthorized_users = [None, self.users[2]]
+
+        for user in unauthorized_users:
+            self.client.logout()
+            if user is not None:
+                self.client.login(username=user[0], password=user[1])
+
+            # Test GET to *.edit.html
+            response = self.client.get(edit_url, follow=True)
+            self.assertRedirects(response, '/learn/foo.html')
+
+            messages = list(response.context['messages'])
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(str(messages[0]), "You don't have permission to edit this page.")
+
+            # Test POST to *.edit.html
+            response = self.client.post(edit_url, {
+                'post_edit': '1',
+                'content': 'hacked',
+                'nav_category': qsd_rec_new.nav_category.id,
+                'title': 'Hacked',
+                'description': '',
+                'keywords': ''
+            }, follow=True)
+            self.assertRedirects(response, '/learn/foo.html')
+
+            messages = list(response.context['messages'])
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(str(messages[0]), "Sorry, you do not have permission to edit this page.")
+
+        qsd_rec_new.delete()
+
+    def testUnauthorizedEditNonexistentPage(self):
+        """Editing a nonexistent QSD page without permission returns 404."""
+        edit_url = '/learn/nonexistent_page.edit.html'
+
+        # Verify the page truly doesn't exist
+        self.client.logout()
+        response = self.client.get('/learn/nonexistent_page.html')
+        self.assertEqual(response.status_code, 404)
+
+        # Users without edit permission: unauthenticated (None) and student
+        unauthorized_users = [None, self.users[2]]
+
+        for user in unauthorized_users:
+            self.client.logout()
+            if user is not None:
+                self.client.login(username=user[0], password=user[1])
+
+            # Attempting to edit a nonexistent page should give 404, not 500
+            response = self.client.get(edit_url)
+            self.assertEqual(response.status_code, 404)
+
+
+class QSDImageUploadTest(TestCase):
+    """Tests for the ajax_qsd_image_upload endpoint (#2679)."""
+
+    UPLOAD_URL = '/admin/ajax_qsd_image_upload/'
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='upload_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='upload_student')
+        self.student.set_password('password')
+        self.student.save()
+
+        # Track files created during tests for cleanup
+        self._created_files = []
+
+    def tearDown(self):
+        import os
+        for path in self._created_files:
+            if os.path.exists(path):
+                os.remove(path)
+
+    def _make_image_file(self, name='test.png', size=100, content_type='image/png'):
+        """Create a minimal in-memory image file for upload testing."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        # Minimal valid 1x1 PNG (67 bytes)
+        png_header = (
+            b'\x89PNG\r\n\x1a\n'  # PNG signature
+            b'\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01'
+            b'\x08\x02\x00\x00\x00\x90wS\xde'
+            b'\x00\x00\x00\x0cIDATx'
+            b'\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05'
+            b'\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82'
+        )
+        content = png_header
+        if size > len(png_header):
+            # Pad to desired size (file won't be valid PNG but extension check is what matters)
+            content = png_header + b'\x00' * (size - len(png_header))
+        return SimpleUploadedFile(name, content, content_type=content_type)
+
+    def _track_response_files(self, response):
+        """Extract file paths from successful upload response for cleanup."""
+        import json
+        import os
+        from django.conf import settings
+        if response.status_code == 200:
+            data = json.loads(response.content)
+            if data.get('success') and data.get('data', {}).get('files'):
+                for url in data['data']['files']:
+                    # Convert URL to filesystem path
+                    rel_path = url.lstrip('/')
+                    if rel_path.startswith('media/'):
+                        rel_path = rel_path[len('media/'):]
+                    full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+                    self._created_files.append(full_path)
+
+    def test_upload_requires_authentication(self):
+        """Anonymous users get 401."""
+        self.client.logout()
+        f = self._make_image_file()
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 401)
+
+    def test_upload_requires_admin(self):
+        """Non-admin users get 403."""
+        self.client.login(username='upload_student', password='password')
+        f = self._make_image_file()
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 403)
+
+    def test_upload_rejects_get(self):
+        """GET requests get 405."""
+        self.client.login(username='upload_admin', password='password')
+        response = self.client.get(self.UPLOAD_URL)
+        self.assertEqual(response.status_code, 405)
+
+    def test_upload_rejects_no_files(self):
+        """POST with no files gets 400."""
+        self.client.login(username='upload_admin', password='password')
+        response = self.client.post(self.UPLOAD_URL, {})
+        self.assertEqual(response.status_code, 400)
+
+    def test_upload_rejects_invalid_extension(self):
+        """Files with disallowed extensions are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='malicious.exe', content_type='application/x-executable')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('Invalid file type', data['data']['messages'][0])
+
+    def test_upload_rejects_non_image_content_type(self):
+        """Files with non-image content type are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='script.png', content_type='text/html')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('does not appear to be an image', data['data']['messages'][0])
+
+    def test_upload_rejects_oversized_file(self):
+        """A single file exceeding 25MB per-file limit is rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(size=26 * 1024 * 1024)  # 26 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('per-file size limit', data['data']['messages'][0])
+
+    def test_upload_allows_multiple_files_under_per_file_limit(self):
+        """Multiple files each under 25MB are accepted (no combined limit)."""
+        self.client.login(username='upload_admin', password='password')
+        f1 = self._make_image_file(name='test1.png', size=15 * 1024 * 1024)  # 15 MB
+        f2 = self._make_image_file(name='test2.png', size=15 * 1024 * 1024)  # 15 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f1, 'files[1]': f2})
+        self._track_response_files(response)
+        self.assertEqual(response.status_code, 200)
+        import json
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['data']['files']), 2)
+
+    def test_upload_rejects_oversized_in_multi_file_batch(self):
+        """If any file in a batch exceeds 25MB, the entire batch is rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f1 = self._make_image_file(name='small.png', size=1024)  # 1 KB
+        f2 = self._make_image_file(name='huge.png', size=26 * 1024 * 1024)  # 26 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f1, 'files[1]': f2})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('huge.png', data['data']['messages'][0])
+        self.assertIn('per-file size limit', data['data']['messages'][0])
+
+    def test_oversized_error_escapes_filename(self):
+        """Filenames in size-limit errors are HTML-escaped to prevent XSS."""
+        self.client.login(username='upload_admin', password='password')
+        xss_name = '<img src=x onerror=alert(1)>.png'
+        f = self._make_image_file(name=xss_name, size=26 * 1024 * 1024)
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        msg = data['data']['messages'][0]
+        self.assertNotIn('<img', msg)
+        self.assertIn('&lt;img', msg)
+
+    def test_upload_valid_png(self):
+        """A valid PNG upload succeeds and returns correct JSON."""
+        import json
+        import os
+        from django.conf import settings
+
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='photo.png')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['data']['files']), 1)
+        self.assertEqual(data['data']['isImages'], [True])
+
+        # Verify the URL looks correct
+        image_url = data['data']['files'][0]
+        self.assertTrue(image_url.startswith('/media/uploaded/qsd_images/'))
+        self.assertTrue(image_url.endswith('.png'))
+
+        # Verify file actually exists on disk
+        rel_path = image_url.lstrip('/')[len('media/'):]  # strip /media/
+        full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+        self.assertTrue(os.path.exists(full_path))
+
+    def test_upload_valid_jpg(self):
+        """A valid JPG upload succeeds."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='photo.jpg', content_type='image/jpeg')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['data']['files'][0].endswith('.jpg'))
+
+    def test_upload_valid_gif(self):
+        """A valid GIF upload succeeds."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='animated.gif', content_type='image/gif')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['data']['files'][0].endswith('.gif'))
+
+    def test_upload_valid_webp(self):
+        """A valid WebP upload succeeds."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='modern.webp', content_type='image/webp')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['data']['files'][0].endswith('.webp'))
+
+    def test_upload_generates_uuid_filename(self):
+        """Uploaded files get UUID filenames, not the original name."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='../../etc/passwd.png')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        image_url = data['data']['files'][0]
+        filename = image_url.split('/')[-1]
+        # UUID hex is 32 chars + .png = should not contain original name
+        self.assertNotIn('passwd', filename)
+        self.assertNotIn('..', filename)
+        self.assertEqual(len(filename), 32 + 4)  # uuid hex + .png
+
+    def test_upload_rejects_no_extension(self):
+        """Files without extensions are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='noextension')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+
+    def test_upload_handles_missing_filename(self):
+        """Files with no filename (None) are handled safely and rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='temp.png')
+        f.name = None  # Simulate missing filename
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('Invalid file type', data['data']['messages'][0])
+
+    def test_multi_file_bad_second_no_orphan(self):
+        """When one file in a batch fails validation, no files are saved.
+
+        Uses non-'files[0]' keys to trigger the fallback collection path
+        that gathers files from all request.FILES keys.
+        """
+        import os
+        from django.conf import settings
+
+        upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploaded/qsd_images')
+        # Snapshot existing files before the request
+        before = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
+
+        self.client.login(username='upload_admin', password='password')
+        good = self._make_image_file(name='valid.png')
+        bad = self._make_image_file(name='evil.exe', content_type='application/x-executable')
+        # Use keys other than 'files[0]' so the fallback loop collects both
+        response = self.client.post(self.UPLOAD_URL, {
+            'upload_a': good,
+            'upload_b': bad,
+        })
+        self.assertEqual(response.status_code, 400)
+
+        # Verify no NEW files were created on disk
+        after = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
+        new_files = after - before
+        self.assertEqual(new_files, set(), "Orphaned files found after failed batch upload: %s" % new_files)
+
+
+class QSDBase64StrippingTest(TestCase):
+    """Tests that base64 images are stripped when saving QSD content (#3612)."""
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='strip_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+    def _create_qsd(self, url_path, name):
+        """Helper to create a QSD page for testing."""
+        from esp.web.models import default_navbarcategory
+        qsd_rec = QuasiStaticData()
+        qsd_rec.url = url_path
+        qsd_rec.name = name
+        qsd_rec.author = self.admin
+        qsd_rec.nav_category = default_navbarcategory()
+        qsd_rec.content = 'Original content'
+        qsd_rec.title = 'Test Page'
+        qsd_rec.description = ''
+        qsd_rec.keywords = ''
+        qsd_rec.save()
+        return qsd_rec
+
+    def test_qsd_edit_strips_base64(self):
+        """Full-page QSD edit strips base64 images from content."""
+        qsd_rec = self._create_qsd('learn/teststrip', 'learn:teststrip')
+        self.client.login(username='strip_admin', password='password')
+
+        self.client.post('/learn/teststrip.edit.html', {
+            'post_edit': '1',
+            'nav_category': qsd_rec.nav_category.id,
+            'content': '<p>Hello</p><img src="data:image/png;base64,iVBORw0KGgo"/><p>World</p>',
+            'title': 'Test Page',
+            'description': '',
+            'keywords': '',
+        })
+        qsd_rec.refresh_from_db()
+        self.assertNotIn('data:image', qsd_rec.content)
+        self.assertIn('Hello', qsd_rec.content)
+        self.assertIn('World', qsd_rec.content)
+
+    def test_ajax_qsd_strips_base64(self):
+        """Inline AJAX QSD edit strips base64 images."""
+        qsd_rec = self._create_qsd('learn/testajaxstrip', 'learn:testajaxstrip')
+        self.client.login(username='strip_admin', password='password')
+
+        response = self.client.post('/admin/ajax_qsd', {
+            'cmd': 'update',
+            'url': 'learn/testajaxstrip',
+            'data': '<p>Text</p><img src="data:image/png;base64,HUGE_BLOB"/>',
+        }, HTTP_REFERER='http://testserver/learn/index.html')
+
+        self.assertEqual(response.status_code, 200)
+        qsd_rec.refresh_from_db()
+        self.assertNotIn('data:image', qsd_rec.content)
+        self.assertIn('Text', qsd_rec.content)
+
+    def test_qsd_edit_preserves_normal_images(self):
+        """Normal image URLs are not stripped by the base64 filter."""
+        qsd_rec = self._create_qsd('learn/testpreserve', 'learn:testpreserve')
+        self.client.login(username='strip_admin', password='password')
+
+        self.client.post('/learn/testpreserve.edit.html', {
+            'post_edit': '1',
+            'nav_category': qsd_rec.nav_category.id,
+            'content': '<p>Photo:</p><img src="/media/uploaded/qsd_images/abc123.png"/>',
+            'title': 'Test Page',
+            'description': '',
+            'keywords': '',
+        })
+        qsd_rec.refresh_from_db()
+        self.assertIn('/media/uploaded/qsd_images/abc123.png', qsd_rec.content)
+
 
 class QSDAdminAuthorTest(TestCase):
 
