@@ -1,7 +1,8 @@
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.views import _safe_redirect_target
 
+@override_settings(ALLOWED_HOSTS=['example.com'])
 class RedirectSafetyTests(TestCase):
     def setUp(self):
         super().setUp()
