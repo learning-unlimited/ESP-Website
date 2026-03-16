@@ -87,10 +87,27 @@ class NameTagModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
-    def nametag_data(self, users_list1, user_title1, users_list2 = ESPUser.objects.none(), user_title2 = None, program = None):
+    def nametag_data(self, users_list1, user_title1, users_list2=ESPUser.objects.none(), user_title2=None, program=None, sort_by_time=False):
+        import datetime
         users = []
-        users_list = [ user for user in users_list1 | users_list2]
-        users_list = sorted([x for x in users_list if len(x.first_name+x.last_name)])
+        users_list = [user for user in users_list1 | users_list2 if len(user.first_name + user.last_name)]
+
+        if sort_by_time and program:
+            def get_user_first_start(user):
+                earliest = datetime.datetime.max
+                class_objects = user.getTaughtOrModeratingSectionsFromProgram(program)
+                classes = [cls for cls in class_objects
+                        if cls.meeting_times.all().exists()
+                        and cls.resourceassignment_set.all().exists()
+                        and cls.status > 0]
+                for cls in classes:
+                    cls_earliest = min((mt.start for mt in cls.meeting_times.all()), default=datetime.datetime.max)
+                    if cls_earliest < earliest:
+                        earliest = cls_earliest
+                return earliest
+            users_list.sort(key=lambda x: (get_user_first_start(x), x.last_name.lower(), x.first_name.lower()))
+        else:
+            users_list = sorted(users_list)
 
         for user in users_list:
             prof = RegistrationProfile.getLastProfile(user)
@@ -123,6 +140,7 @@ class NameTagModule(ProgramModuleObj):
         if 'type' not in request.POST:
             raise ESPError("You need to select the TYPE of Name Tag to print. (students,teachers,etc)", log=False)
         idtype = request.POST['type']
+        sort_by_time_flag = request.POST.get('sort_by_time') in ['True', 'true', '1', 'on']
 
         users = []
 
@@ -133,7 +151,7 @@ class NameTagModule(ProgramModuleObj):
             data = ListGenModule.processPost(request)
             usc = UserSearchController()
             filterObj = usc.filter_from_postdata(prog, data)
-            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title, program = prog)
+            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'students':
             user_title = "Student"
@@ -143,13 +161,13 @@ class NameTagModule(ProgramModuleObj):
             else:
                 students = ESPUser.objects.filter(student_dict['confirmed']).distinct()
 
-            users = self.nametag_data(students, user_title, program = prog)
+            users = self.nametag_data(students, user_title, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'teacher':
             user_title = "Teacher"
             teachers = self.program.teachers()['class_approved'].distinct()
 
-            users = self.nametag_data(teachers, user_title)
+            users = self.nametag_data(teachers, user_title, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'teachermoderators':
             user_title = "Teacher"
@@ -158,14 +176,14 @@ class NameTagModule(ProgramModuleObj):
             teachers = teacher_dict['class_approved'].distinct()
             moderators = teacher_dict['assigned_moderator'].distinct()
 
-            users = self.nametag_data(teachers, user_title, moderators, user_title2)
+            users = self.nametag_data(teachers, user_title, moderators, user_title2, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'moderators':
             user_title = self.program.getModeratorTitle()
             teacher_dict = self.program.teachers()
             moderators = teacher_dict['assigned_moderator'].distinct()
 
-            users = self.nametag_data(moderators, user_title)
+            users = self.nametag_data(moderators, user_title, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'other':
             user_title = request.POST['blanktitle']
