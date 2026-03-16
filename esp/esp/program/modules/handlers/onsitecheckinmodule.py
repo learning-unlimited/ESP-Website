@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.forms.onsite import OnsiteBarcodeCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
@@ -63,6 +64,21 @@ class OnSiteCheckinModule(ProgramModuleObj):
             "seq": 1,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Only list the main check-in page; AJAX/aux views (ajax_status, ajaxbarcodecheckin,
+        # checkin, barcodecheckin as aux) are not meant for direct admin navigation.
+        if view_name != "rapidcheckin":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="onsite_rapidcheckin",
+            url="/onsite/%s/rapidcheckin" % base,
+            title="Student Check-In",
+            category="Other",
+            keywords=["student", "check-in", "onsite", "payments", "forms"],
+        )
 
     def updatePaid(self, paid=True):
         IndividualAccountingController.updatePaid(self.program, self.student, paid, in_full=True)

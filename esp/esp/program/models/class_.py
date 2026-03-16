@@ -174,7 +174,7 @@ class ClassManager(Manager):
 
         enrolled_type = RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
 
-        if initial_queryset:
+        if initial_queryset is not None:
             classes = initial_queryset
         else:
             classes = self.all()

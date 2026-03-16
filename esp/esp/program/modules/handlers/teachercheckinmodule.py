@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.forms.onsite import TeacherCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 from esp.program.models import RegistrationProfile
 from esp.program.models.class_ import ClassSubject, ClassSection
@@ -69,6 +70,21 @@ class TeacherCheckinModule(ProgramModuleObj):
             "seq": 10,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Only list the main teacher check-in page; AJAX/aux views (ajaxteachercheckin,
+        # ajaxteachertext, ajaxclassdetail, etc.) are not meant for direct admin navigation.
+        if view_name != "teachercheckin":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="onsite_teachercheckin",
+            url="/onsite/%s/teachercheckin" % base,
+            title="Teacher Check-In",
+            category="Other",
+            keywords=["teacher", "check-in", "onsite", "attendance"],
+        )
 
     def checkIn(self, teacher, prog, when=None):
         """Check teacher into program for the rest of the day (given by 'when').

@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
@@ -305,6 +306,19 @@ class ListGenModule(ProgramModuleObj):
             "seq": 500,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "selectList":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_selectList",
+            url="/manage/%s/selectList" % base,
+            title="Arbitrary User List",
+            category="Coordinate",
+            keywords=["user list", "search users", "export", "mailing list"],
+        )
 
     @aux_call
     @needs_admin

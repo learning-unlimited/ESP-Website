@@ -72,6 +72,11 @@ class OnSiteClassList(ProgramModuleObj):
             "choosable": 1,
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Views are JSON/API (full_status, catalog_status, get_schedule_json, etc.); do not list in admin search.
+        return None
+
     @cache_function
     def section_data(sec):
         sect = {}
