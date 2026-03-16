@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission, UserPreferences
+from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
 from esp.program.models import Program, RegistrationProfile, ClassSubject
 from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect
