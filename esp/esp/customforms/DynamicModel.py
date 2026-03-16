@@ -93,12 +93,36 @@ class DynamicModelHandler:
         # Keep track of the models being linked to (see docstring)
         self.link_models_list = []
 
+    def _get_lock_timeout(self):
+        """
+         Return the current PostgreSQL lock_timeout setting.
+        """
+        if connection.vendor != 'postgresql':
+          return None
+
+        with connection.cursor() as cursor:
+          cursor.execute("SHOW lock_timeout")
+          return cursor.fetchone()[0]
+
     def _set_lock_timeout(self):
         """
-        Prevent schema operations from hanging indefinitely if database tables are locked
+       Prevent schema operations from hanging indefinitely if database tables are locked.
         """
+        if connection.vendor != 'postgresql':
+           return
+
         with connection.cursor() as cursor:
-            cursor.execute("SET LOCAL lock_timeout = '5s'")
+          cursor.execute("SET LOCAL lock_timeout = '5s'")
+
+    def _restore_lock_timeout(self, previous_timeout):
+        """
+        Restore the previous PostgreSQL lock_timeout setting.
+       """
+        if connection.vendor != 'postgresql' or previous_timeout is None:
+           return
+
+        with connection.cursor() as cursor:
+          cursor.execute("SET LOCAL lock_timeout = %s", [previous_timeout])
 
     def __marinade__(self):
         """
@@ -179,27 +203,36 @@ class DynamicModelHandler:
 
     def createTable(self):
         # """
-        # Sets up the database table using self.field_list
+       # Sets up the database table using self.field_list
         # """
 
-        if not self.field_list:
-            self._getModelFieldList()
+      if not self.field_list:
+        self._getModelFieldList()
 
-        try:
-            if transaction.get_autocommit():
-                with transaction.atomic():
-                    self._set_lock_timeout()
-                    with connection.schema_editor() as schema_editor:
-                        schema_editor.create_model(self.createDynModel())
-            else:
+        previous_timeout = None
+
+      try:
+         if transaction.get_autocommit():
+            with transaction.atomic():
                 self._set_lock_timeout()
                 with connection.schema_editor() as schema_editor:
                     schema_editor.create_model(self.createDynModel())
+         else:
+            previous_timeout = self._get_lock_timeout()
+            self._set_lock_timeout()
+            try:
+                with connection.schema_editor() as schema_editor:
+                    schema_editor.create_model(self.createDynModel())
+            finally:
+                self._restore_lock_timeout(previous_timeout)
 
-        except OperationalError:
+      except OperationalError as e:
+        error_message = str(e).lower()
+        if "lock timeout" in error_message or "canceling statement due to lock timeout" in error_message:
             raise Exception(
                 "Custom form table creation failed due to a database lock. Please try again."
             )
+        raise
 
     @transaction.atomic
     def deleteTable(self):
