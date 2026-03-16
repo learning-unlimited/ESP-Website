@@ -1267,6 +1267,21 @@ class ProgramPrintables(ProgramModuleObj):
             raise ESPError("Generating multi-page schedules in PNG format is "
                            "not supported.")
 
+        # When printing schedules for multiple students (batch print), exclude
+        # those who have opted out of paper schedule printing.  Individual
+        # admin-driven prints (len == 1) are never filtered, so an admin can
+        # still print a single schedule on request.
+        if len(students) > 1:
+            opted_out_ids = set(
+                Record.objects.filter(
+                    event__name='opt_out_paper_schedule',
+                    program=prog,
+                    user__in=students,
+                ).values_list('user_id', flat=True)
+            )
+            if opted_out_ids:
+                students = [s for s in students if s.id not in opted_out_ids]
+
         # to avoid a query per student, get all the classes and SRs upfront
         all_classes = ClassSection.objects.filter(
             nest_Q(StudentRegistration.is_valid_qobject(),
