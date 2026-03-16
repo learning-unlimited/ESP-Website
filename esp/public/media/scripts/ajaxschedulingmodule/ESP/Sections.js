@@ -317,13 +317,16 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
     /**
      * Get the timeslots available for scheduling this section.
-     * Returns an array of two lists.
+     * Returns an array of three lists.
      *
      * The first has all the timeslots where all teachers/moderators are available and
      * none are teaching or moderating.
      *
      * The second has all the timeslots where teachers/moderators are available but
-     * already teaching or moderating
+     * already teaching or moderating.
+     *
+     * The third has timeslots where all teachers are available but at least one
+     * moderator is unavailable (removing the moderator would allow scheduling).
      *
      * @param section: The section to check availability.
      * @param ignore_sections: An optional array of sections to ignore.
@@ -331,25 +334,27 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.getAvailableTimeslots = function(section, ignore_sections=[]) {
         var availableTimeslots = [];
         var already_teaching_or_moderating = [];
+        var moderator_only_unavailable = [];
         if(this.matrix.sectionInfoPanel.override){
             $j.each(this.matrix.timeslots.timeslots, function(index, timeslot) {
                 availableTimeslots.push(timeslot.id);
             }.bind(this));
         } else {
-            var availabilities = []
+            var teacher_availabilities_list = [];
+            var moderator_availabilities_list = [];
             // Get teacher availabilities
             $j.each(section.teacher_data, function(index, teacher) {
-                var teacher_availabilities = teacher.availability.slice();
-                teacher_availabilities = teacher_availabilities.filter(function(val) {
+                var teacher_avail = teacher.availability.slice();
+                teacher_avail = teacher_avail.filter(function(val) {
                     return this.matrix.timeslots.get_by_id(val);
                 }.bind(this));
                 $j.each(teacher.sections, function(index, section_id) {
                     var assignment = this.scheduleAssignments[section_id];
                     if(assignment && section_id != section.id && !ignore_sections.includes(this.getById(section_id))) {
                         $j.each(assignment.timeslots, function(index, timeslot_id) {
-                            var availability_index = teacher_availabilities.indexOf(timeslot_id);
+                            var availability_index = teacher_avail.indexOf(timeslot_id);
                             if(availability_index >= 0) {
-                                teacher_availabilities.splice(availability_index, 1);
+                                teacher_avail.splice(availability_index, 1);
                                 already_teaching_or_moderating.push(timeslot_id);
                             }
                         }.bind(this));
@@ -361,55 +366,72 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                         var assignment = this.scheduleAssignments[section_id];
                         if(assignment && section_id != section.id && !ignore_sections.includes(this.getById(section_id))) {
                             $j.each(assignment.timeslots, function(index, timeslot_id) {
-                                var availability_index = teacher_availabilities.indexOf(timeslot_id);
+                                var availability_index = teacher_avail.indexOf(timeslot_id);
                                 if(availability_index >= 0) {
-                                    teacher_availabilities.splice(availability_index, 1);
+                                    teacher_avail.splice(availability_index, 1);
                                     already_teaching_or_moderating.push(timeslot_id);
                                 }
                             }.bind(this));
                         }
                     }.bind(this));
                 }
-                availabilities.push(teacher_availabilities);
+                teacher_availabilities_list.push(teacher_avail);
             }.bind(this));
             // Get moderator availabilities
             $j.each(section.moderator_data, function(index, moderator) {
-                var moderator_availabilities = moderator.availability.slice();
-                moderator_availabilities = moderator_availabilities.filter(function(val) {
+                var mod_avail = moderator.availability.slice();
+                mod_avail = mod_avail.filter(function(val) {
                     return this.matrix.timeslots.get_by_id(val);
                 }.bind(this));
                 $j.each(moderator.sections, function(index, section_id) {
                     var assignment = this.scheduleAssignments[section_id];
                     if(assignment && section_id != section.id && !ignore_sections.includes(this.getById(section_id))) {
                         $j.each(assignment.timeslots, function(index, timeslot_id) {
-                            var availability_index = moderator_availabilities.indexOf(timeslot_id);
+                            var availability_index = mod_avail.indexOf(timeslot_id);
                             if(availability_index >= 0) {
-                                moderator_availabilities.splice(availability_index, 1);
+                                mod_avail.splice(availability_index, 1);
                                 already_teaching_or_moderating.push(timeslot_id);
                             }
                         }.bind(this));
                     }
                 }.bind(this));
-                // In case a teacher of this section is also a moderator of other sections
+                // In case a moderator of this section is also a teacher of other sections
                 if(moderator.id in teacher_data) {
                     $j.each(teacher_data[moderator.id].sections, function(index, section_id) {
                         var assignment = this.scheduleAssignments[section_id];
                         if(assignment && section_id != section.id && !ignore_sections.includes(this.getById(section_id))) {
                             $j.each(assignment.timeslots, function(index, timeslot_id) {
-                                var availability_index = moderator_availabilities.indexOf(timeslot_id);
+                                var availability_index = mod_avail.indexOf(timeslot_id);
                                 if(availability_index >= 0) {
-                                    moderator_availabilities.splice(availability_index, 1);
+                                    mod_avail.splice(availability_index, 1);
                                     already_teaching_or_moderating.push(timeslot_id);
                                 }
                             }.bind(this));
                         }
                     }.bind(this));
                 }
-                availabilities.push(moderator_availabilities);
+                moderator_availabilities_list.push(mod_avail);
             }.bind(this));
-            availableTimeslots = _.intersection(...availabilities); // From the lodash library
+
+            // Compute teacher-only intersection
+            var teacher_only_available = teacher_availabilities_list.length > 0
+                ? _.intersection(...teacher_availabilities_list)
+                : [];
+
+            // Compute combined intersection (same result as before)
+            var all_availabilities = teacher_availabilities_list.concat(moderator_availabilities_list);
+            availableTimeslots = all_availabilities.length > 0
+                ? _.intersection(...all_availabilities)
+                : [];
+
+            // Timeslots where all teachers are free but at least one moderator is not
+            if (section.moderator_data.length > 0) {
+                moderator_only_unavailable = _.difference(teacher_only_available, availableTimeslots);
+                // Subtract timeslots already shown as yellow — yellow takes priority
+                moderator_only_unavailable = _.difference(moderator_only_unavailable, already_teaching_or_moderating);
+            }
         }
-        return [availableTimeslots, already_teaching_or_moderating];
+        return [availableTimeslots, already_teaching_or_moderating, moderator_only_unavailable];
     };
 
     /**
