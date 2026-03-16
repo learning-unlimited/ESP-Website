@@ -1192,6 +1192,12 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
+    def _sort_key(self):
+        """Return a sort key tuple that works with prefetched meeting_times."""
+        start = self.start_time_prefetchable()
+        # Sort None start times after real ones
+        return (start is None, start or datetime.datetime.min, self.title())
+
     def isFull(self, ignore_changes=False, webapp=False):
         if len(self.get_meeting_times()) == 0:
             return True
@@ -2069,6 +2075,30 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return None
         else:
             return eventList[0]
+
+    def start_time_prefetchable(self):
+        """Like ClassSection.start_time_prefetchable, but for subjects.
+
+        Returns the earliest start time across all sections.  If sections
+        and their meeting_times have been prefetched, this will not hit the DB.
+        """
+        starts = []
+        for section in self.get_sections():
+            st = section.start_time_prefetchable()
+            if st is not None:
+                starts.append(st)
+        return min(starts) if starts else None
+
+    def _sort_key(self):
+        """Return a sort key tuple that works with prefetched data.
+
+        Use as:
+            subjects = qs.prefetch_related('sections__meeting_times')
+            sorted(subjects, key=lambda s: s._sort_key())
+        """
+        start = self.start_time_prefetchable()
+        # Sort None start times after real ones
+        return (start is None, start or datetime.datetime.min, self.title)
 
     def getArchiveClass(self):
         result = ArchiveClass.objects.filter(original_id=self.id)
