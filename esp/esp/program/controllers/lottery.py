@@ -484,17 +484,22 @@ class LotteryAssignmentController(object):
         for lunch_section in lunch_sections:
             for timeblock in lunch_section.meeting_times.all():
                 lunch_by_timeblock[timeblock.id] = lunch_section.id
-        
+
         # Get section indices for lunch sections
+        # self.section_indices and self.timeslot_indices are numpy arrays
+        # mapping object IDs to indices (or -1 if not present), so we must
+        # look up the index and ensure it is valid instead of using `in`.
         lunch_section_indices = {}
         for ts_id, sec_id in lunch_by_timeblock.items():
-            if sec_id in self.section_indices:
+            sec_index = self.section_indices[sec_id]
+            if sec_index >= 0:
                 ts_index = self.timeslot_indices[ts_id]
-                lunch_section_indices[ts_index] = self.section_indices[sec_id]
-        
+                if ts_index >= 0:
+                    lunch_section_indices[ts_index] = sec_index
+
         # Track assignments for logging
         total_assignments = 0
-        
+
         # For each day, assign students to lunches
         for day_index in range(self.lunch_timeslots.shape[0]):
             if len(self.lunch_timeslots[day_index]) == 0:
