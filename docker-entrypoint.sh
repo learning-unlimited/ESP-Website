@@ -43,7 +43,7 @@ if [ ! -f "$MARKER_FILE" ] || [ "${FORCE_SETUP:-0}" = "1" ]; then
 else
     echo ">>> Skipping migrations and collectstatic (already done)."
     echo ">>> To force them to run again:"
-    echo ">>> a) Delete the .docker-setup-done file."
+    echo ">>> a) Delete the `.docker-setup-done` file"
     echo ">>> b) Run the following command:"
     echo ">>>    docker compose up"
 fi
