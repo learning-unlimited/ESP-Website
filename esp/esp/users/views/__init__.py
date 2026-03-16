@@ -20,16 +20,29 @@ from esp.web.views.main import DefaultQSDView
 
 #   This is a huge hack while we figure out what to do about logins and cookies.
 #   - Michael P 12/28/2011
+from django.utils.html import escape
+from django.utils.http import is_safe_url
+
+def _safe_redirect_target(request, target):
+    if is_safe_url(
+        url=target,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return target
+    return ''
+
 def HttpMetaRedirect(location='/'):
+    escaped_location = escape(location)
     response = HttpResponse()
     response.status = 200
     response.content = """
     <html><head>
     <meta http-equiv="refresh" content="0; url=%s">
     </head>
-    <body>Thank you for logging in.  Please click <a href="%s">here</a> if you are not redirected.</body>
+    <body>Thank you for logging in. Please click <a href="%s">here</a> if you are not redirected.</body>
     </html>
-    """ % (location, location)
+    """ % (escaped_location, escaped_location)
     return response
 
 mask_locations = ['/', '/myesp/signout', '/myesp/signout/', '/admin/logout/']
@@ -74,7 +87,7 @@ class CustomLoginView(LoginView):
 
     def handle_authenticated_user(self, request):
         """Handle redirects for users who are already logged in."""
-        next_url = request.GET.get('next', '')
+        next_url = _safe_redirect_target(request, request.GET.get('next', ''))
 
         if not RegistrationProfile.objects.filter(user=request.user).exists():
             reply = HttpMetaRedirect('/myesp/profile')
@@ -155,7 +168,7 @@ def signout(request):
     #   Tag the (now anonymous) user object so our middleware knows to delete cookies
     request._cached_user = request.user
 
-    redirect_path = request.GET.get('redirect')
+    redirect_path = _safe_redirect_target(request, request.GET.get('redirect'))
     if redirect_path:
         return HttpResponseRedirect(redirect_path)
 
