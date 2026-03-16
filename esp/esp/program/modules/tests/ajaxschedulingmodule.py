@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.tests import ProgramFrameworkTest
-from esp.program.modules.tests.support import TestProgramManager
+from esp.program.modules.tests.support import ProgramManager
 from esp.program.modules.module_ext import AJAXChangeLog
 import json
 import time
@@ -48,7 +48,7 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
             'num_teachers': 3, 'classes_per_teacher': 2, 'sections_per_class': 1
             })
         super().setUp(*args, **kwargs)
-        self.program_manager = TestProgramManager(self.client, self.program, self.teachers, self.rooms, self.timeslots)
+        self.program_manager = ProgramManager(self.client, self.program, self.teachers, self.rooms, self.timeslots)
 
         # Set the section durations to 1:50
         for sec in self.program.sections():
