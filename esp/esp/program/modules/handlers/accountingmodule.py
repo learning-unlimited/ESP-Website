@@ -212,15 +212,10 @@ class AccountingModule(ProgramModuleObj):
             context['cc_enabled'] = bool(Tag.getProgramTag('stripe_settings', prog)) or bool(getattr(settings, 'STRIPE_CONFIG', {}).get('secret_key'))
             if context['cc_enabled'] and request.GET.get('fetch_cc_totals') == '1':
                 cc_totals = self._get_cc_totals(prog)
-                if cc_totals and not cc_totals.get('error'):
-                    cc_totals['chapter_gross'] = cc_totals['gross_amount'] - cc_totals['donation_amount']
-                    cc_totals['lu_gross'] = cc_totals['donation_amount']
-                    cc_totals['lu_net_base'] = cc_totals['donation_amount'] - cc_totals['cc_donation_fees']
                 context['cc_totals'] = cc_totals
 
         context['target_user'] = user
         context['form'] = form
-        context['DEBUG'] = settings.DEBUG
         return render_to_response(self.baseDir()+'accounting.html', request, context)
 
     def isStep(self):

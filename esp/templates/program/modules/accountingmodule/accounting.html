@@ -57,15 +57,10 @@ table {
                 <input class="button" type="submit" value="View credit card payment totals for {{ program.niceName }}" />
             </form>
         {% elif cc_totals.error %}
-            <p style="color: red;">Error retrieving payment totals: 
-                {% if DEBUG %}{{ cc_totals.error }}{% else %}Please try refreshing the page.{% endif %}
-            </p>
-            {% if not DEBUG %}
-                <p>If the error persists, please contact <a href="mailto:cfo@learningu.org">cfo@learningu.org</a> to retrieve this information manually.</p>
-            {% else %}
-                <p><i>(Technical details shown because DEBUG=True)</i></p>
-            {% endif %}
+            <p style="color: red;">Error retrieving payment totals: {{ cc_totals.error }}</p>
+            <p>If the error persists, please contact <a href="mailto:cfo@learningu.org">cfo@learningu.org</a> to retrieve this information manually.</p>
         {% else %}
+            <p><strong>Registration Count:</strong> {{ cc_totals.gross_count }}</p>
             <table class="table" style="width: auto; min-width: 500px; margin-bottom: 0;">
                 <tr>
                     <th style="text-align:left;">Description</th>
@@ -102,6 +97,7 @@ table {
                     <td style="text-align:right;"></td>
                     <td style="text-align:right;">
                         <input type="number" id="additional_donation" value="0.00" step="0.01" min="0" style="width: 80px; text-align: right;" onchange="updateNet();" onkeyup="updateNet();">
+                        <div id="donation_error" style="color: red; display: none; font-size: 0.9em; margin-top: 5px;">* Net amount to chapter cannot be negative</div>
                     </td>
                 </tr>
                 <tr style="background-color: #eee;">
@@ -136,7 +132,13 @@ table {
                     document.getElementById('total_lu').innerText = initial_lu.toFixed(2);
                     
                     var net = initial_chapter - initial_lu;
-                    document.getElementById('net_chapter').innerText = net.toFixed(2);
+                    if (net < 0) {
+                        document.getElementById('net_chapter').innerText = "0.00";
+                        document.getElementById('donation_error').style.display = 'block';
+                    } else {
+                        document.getElementById('net_chapter').innerText = net.toFixed(2);
+                        document.getElementById('donation_error').style.display = 'none';
+                    }
                 }
                 updateNet();
             </script>
