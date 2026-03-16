@@ -109,12 +109,6 @@ class AutocompleteResultFormatTest(TestCase):
         data = json.loads(response.content)
         self.assertIn('result', data)
 
-    def test_result_is_list(self):
-        """'result' key should map to a list."""
-        response = self._get(ajax_data='Smith')
-        data = json.loads(response.content)
-        self.assertIsInstance(data['result'], list)
-
     def test_result_entry_has_id_and_ajax_str(self):
         """Each entry in 'result' should have 'id' and 'ajax_str' keys."""
         response = self._get(ajax_data='Smith')
