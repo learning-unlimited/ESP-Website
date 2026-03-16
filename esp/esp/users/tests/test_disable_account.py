@@ -16,11 +16,11 @@ class DisableAccountTests(TestCase):
     def test_get_does_not_mutate(self):
         """Verify that GET requests with query parameters no longer mutate state."""
         self.assertTrue(self.user.is_active)
-        
+
         # Simulating the old GET vector
         response = self.client.get(self.url, {'disable': ''})
         self.assertEqual(response.status_code, 200)
-        
+
         # State should not have changed
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
@@ -54,7 +54,7 @@ class DisableAccountTests(TestCase):
         # But we can enforce CSRF checking in this test explicitly:
         csrf_client = Client(enforce_csrf_checks=True)
         csrf_client.login(username='testuser', password='password')
-        
+
         # Without CSRF token in POST data
         response = csrf_client.post(self.url, {'action': 'disable'})
         self.assertEqual(response.status_code, 403)
