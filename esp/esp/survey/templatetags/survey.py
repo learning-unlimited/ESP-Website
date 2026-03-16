@@ -236,13 +236,13 @@ def histogram(answer_list, args='format=html'):
         image_path = os.path.join(HISTOGRAM_DIR, png_filename)
     if not os.path.exists(image_path):
         subprocess.call(['gs', '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
-                         '-dDEVICEWIDTHPOINTS=216', '-dDEVICEHEIGHTPOINTS=162',
-                         '-sDEVICE=png16m', '-R96',
+                         '-dDEVICEWIDTHPOINTS=220', '-dDEVICEHEIGHTPOINTS=165',
+                         '-sDEVICE=png16m', '-r288',
                          '-sOutputFile=' + image_path, file_name])
     if args_dict.get('format') == 'tex':
         return f'\\includegraphics[width={image_width}in]{{{image_path}}}'
     if args_dict.get('format') == 'html':
-        return f'<img src="/media/{HISTOGRAM_PATH}{png_filename}" />'
+        return f'<img src="/media/{HISTOGRAM_PATH}{png_filename}" style="width: 288px; max-width: 100%; height: auto;"/>'
 
 @register.filter
 def answer_to_list(ans):
