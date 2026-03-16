@@ -7,7 +7,7 @@ Covers all template filters and helper functions:
   regexsite, truncatewords_char, as_form_label
 """
 
-from esp.tests.util import CacheFlushTestCase as TestCase
+from django.test import SimpleTestCase as TestCase
 from esp.web.templatetags.main import (
     count_matching_chars,
     mux_tl,
@@ -243,18 +243,20 @@ class TruncatewordsCharTest(TestCase):
     """Tests for truncatewords_char filter."""
 
     def test_short_string_not_truncated(self):
-        # "hello world" is 11 chars; limit 50 → no truncation
-        result = truncatewords_char("hello world", 50)
-        self.assertNotIn("...", result)
+        # "hello world" is 11 chars; limit 50 → no truncation, exact input preserved
+        original = "hello world"
+        result = truncatewords_char(original, 50)
+        self.assertEqual(result.strip(), original)
 
     def test_long_string_truncated(self):
         result = truncatewords_char("one two three four five", 10)
         self.assertIn("...", result)
 
     def test_truncated_result_within_limit(self):
-        result = truncatewords_char("one two three four five six seven", 15)
-        # strip leading space from result; words fit under 15 chars + " ..." suffix
-        self.assertLessEqual(len(result.strip()), 18)
+        limit = 15
+        result = truncatewords_char("one two three four five six seven", limit)
+        # stripped result should be at most limit + len(" ...") chars
+        self.assertLessEqual(len(result.strip()), limit + len(" ..."))
 
     def test_invalid_arg_returns_original(self):
         original = "hello world"
