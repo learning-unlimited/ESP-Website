@@ -32,7 +32,9 @@ There are two ways to access tags:
 
 1. **Tag Settings page** (recommended for common settings):
 
-   Navigate to ``https://[yoursite].learningu.org/​manage/tag_settings/``.
+   Navigate to ``https://[yoursite].learningu.org/manage/tags/`` for global
+   tag settings, or to ``https://[yoursite].learningu.org/manage/<program>/tags/``
+   for a specific program.
    This page shows all tags that are marked as user-facing settings, grouped
    by category, with help text for each one.  You only see the tags that are
    safe to adjust through the settings UI.
@@ -70,10 +72,14 @@ Tag Categories
 Tags are grouped into the following categories on the Tag Settings page:
 
 * **teach** — settings that affect teacher registration and class creation.
+* **class** — settings that affect individual classes (e.g., scheduling and
+  display).
 * **learn** — settings that affect student registration and the course catalog.
 * **manage** — site-management settings (names, contact info, etc.).
 * **onsite** — settings relevant during the day of the event.
 * **volunteer** — settings for the volunteer sign-up form.
+* **moderate** — settings related to moderating or approving content and
+  activity.
 * **theme** — settings related to the visual theme.
 
 Common Tags Reference
