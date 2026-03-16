@@ -12,6 +12,7 @@ class TimezoneMiddleware:
     def process_view(self, request, view_func, view_args, view_kwargs):
         program = None
 
+        # Try to get program from positional arguments (standard program views)
         if len(view_args) >= 3:
             one = view_args[1]
             two = view_args[2]
@@ -20,7 +21,14 @@ class TimezoneMiddleware:
             except Exception:
                 pass
 
-        # Fallback to request.program if not already set
+        if program is None:
+            path_parts = [p for p in request.path.split('/') if p]
+            if len(path_parts) >= 3 and path_parts[0] in ['learn', 'teach', 'onsite', 'manage', 'volunteer']:
+                try:
+                    program = Program.by_prog_inst(path_parts[1], path_parts[2])
+                except Exception:
+                    pass
+
         if program is None:
             program = getattr(request, 'program', None)
 
@@ -28,6 +36,10 @@ class TimezoneMiddleware:
         if tzname:
             import urllib.parse
             tzname = urllib.parse.unquote(tzname)
+
+        # For in-person programs, always use the default TIME_ZONE.
+        if program and not program.is_online:
+            tzname = None
 
         if not tzname and program and program.is_online:
             tzname = request.session.get('django_timezone')
