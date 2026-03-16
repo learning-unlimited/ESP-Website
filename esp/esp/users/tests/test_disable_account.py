@@ -1,14 +1,18 @@
-from django.test import RequestFactory, Client
+from django.test import Client
 from django.urls import reverse
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser
+
 
 class DisableAccountTests(TestCase):
     def setUp(self):
         super().setUp()
         self.client = Client()
-        self.user, created = ESPUser.objects.get_or_create(username='testuser', email='test@example.com')
+        self.user, created = ESPUser.objects.get_or_create(
+            username='testuser', email='test@example.com'
+        )
         self.user.set_password('password')
+        self.user.is_active = True
         self.user.save()
         self.client.login(username='testuser', password='password')
         self.url = reverse('disable_account')
@@ -25,18 +29,26 @@ class DisableAccountTests(TestCase):
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
 
-    def test_post_mutates_state(self):
-        """Verify that a valid POST properly toggles is_active."""
+    def test_post_disable(self):
+        """Verify that a valid POST with action=disable sets is_active to False."""
         self.assertTrue(self.user.is_active)
 
-        # Disable account
         response = self.client.post(self.url, {'action': 'disable'})
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_active)
 
-        # Enable account
-        response = self.client.post(self.url, {'action': 'enable'})
+    def test_post_enable(self):
+        """Verify that a valid POST with action=enable sets is_active to True."""
+        # Start with an inactive user, use force_login to bypass ModelBackend
+        # which rejects inactive users in Django 2.x.
+        self.user.is_active = False
+        self.user.save()
+
+        enable_client = Client()
+        enable_client.force_login(self.user)
+
+        response = enable_client.post(self.url, {'action': 'enable'})
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
@@ -47,11 +59,7 @@ class DisableAccountTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_csrf_protection_enforced(self):
-        """Verify that CSRF is required for POST since we didn't specify csrf_exempt."""
-        # Django's test Client automatically handles CSRF by default for convenience,
-        # but if we construct a raw request with an invalid token via a separate client setup
-        # or manual enforcement toggle, it block. It is implicitly tested by removing exemption.
-        # But we can enforce CSRF checking in this test explicitly:
+        """Verify that CSRF is required for POST since we did not use csrf_exempt."""
         csrf_client = Client(enforce_csrf_checks=True)
         csrf_client.login(username='testuser', password='password')
 
