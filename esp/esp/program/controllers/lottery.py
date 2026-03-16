@@ -464,7 +464,7 @@ class LotteryAssignmentController(object):
         For students with multiple lunch blocks free, randomly distribute them
         to equalize the number of students in each lunch block.
         """
-        
+
         # Get all lunch sections for this program
         lunch_sections = ClassSection.objects.filter(
             parent_class__parent_program=self.program,
@@ -473,12 +473,12 @@ class LotteryAssignmentController(object):
             status__gt=0,
             registration_status=0
         ).prefetch_related('meeting_times')
-        
+
         if not lunch_sections.exists():
             if self.options['stats_display']:
                 logger.info('   No lunch sections found, skipping lunch assignment')
             return
-        
+
         # Build mapping of lunch sections by timeblock
         lunch_by_timeblock = {}
         for lunch_section in lunch_sections:
@@ -504,16 +504,16 @@ class LotteryAssignmentController(object):
         for day_index in range(self.lunch_timeslots.shape[0]):
             if len(self.lunch_timeslots[day_index]) == 0:
                 continue
-                
+
             # Get timeslot indices for this day's lunches
             day_lunch_timeslots = []
             for ts_id in self.lunch_timeslots[day_index]:
                 if ts_id in self.timeslot_indices:
                     day_lunch_timeslots.append(self.timeslot_indices[ts_id])
-            
+
             if not day_lunch_timeslots:
                 continue
-            
+
             # For each student
             for student_index in range(self.num_students):
                 # Check if student already has a lunch this day
@@ -524,10 +524,10 @@ class LotteryAssignmentController(object):
                         if self.student_sections[student_index, sec_index]:
                             has_lunch = True
                             break
-                
+
                 if has_lunch:
                     continue
-                
+
                 # Find available lunch blocks for this student
                 available_lunches = []
                 for ts_index in day_lunch_timeslots:
@@ -535,24 +535,24 @@ class LotteryAssignmentController(object):
                     if not self.student_schedules[student_index, ts_index]:
                         if ts_index in lunch_section_indices:
                             available_lunches.append(ts_index)
-                
+
                 if not available_lunches:
                     # Student has no lunch blocks free (shouldn't happen)
                     if self.options['stats_display']:
-                        logger.warning('   Student %d has no lunch blocks free on day %d', 
+                        logger.warning('   Student %d has no lunch blocks free on day %d',
                                      self.student_ids[student_index], day_index)
                     continue
-                
+
                 # Randomly choose one of the available lunch blocks
                 chosen_lunch_ts = numpy.random.choice(available_lunches)
                 chosen_lunch_sec = lunch_section_indices[chosen_lunch_ts]
-                
+
                 # Assign student to this lunch section
                 self.student_sections[student_index, chosen_lunch_sec] = True
                 self.student_schedules[student_index, chosen_lunch_ts] = True
                 self.student_enrollments[student_index, chosen_lunch_ts] = self.section_ids[chosen_lunch_sec]
                 total_assignments += 1
-        
+
         if self.options['stats_display']:
             logger.info('   Assigned %d lunch blocks to students', total_assignments)
 
