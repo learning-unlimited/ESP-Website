@@ -1,159 +1,201 @@
-{% extends "main.html" %}
-
-{% block title %}Sign up to volunteer{% endblock %}
-
-{% block stylesheets %}
-{{ block.super }}
+{% extends "main.html" %} {% block title %}Sign up to Volunteer for {{
+program.niceName }}{% endblock %} {% block stylesheets %} {{ block.super }}
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-<link rel="stylesheet" href="/media/default_styles/availability.css" type="text/css" />
+<link
+  rel="stylesheet"
+  href="/media/default_styles/availability.css"
+  type="text/css"
+/>
 <style>
-label.required:after {
-  content:"*";
-  color:red;
-}
+  label.required:after {
+    content: "*";
+    color: red;
+  }
+  .volunteer-banner {
+    background-color: #dff0d8;
+    border: 1px solid #d0e9c6;
+    border-radius: 6px;
+    padding: 20px 25px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .volunteer-banner h1 {
+    color: #3c763d;
+    margin: 0;
+  }
 </style>
-{% endblock %}    
-
-{% block xtrajs %}
-<script type="text/javascript" src="/media/scripts/program/modules/availability.js"></script>
+{% endblock %} {% block xtrajs %}
+<script
+  type="text/javascript"
+  src="/media/scripts/program/modules/availability.js"
+></script>
 
 <script type="text/javascript">
-function confirm_cancellation() {
-    $j("input[name=clear_requests]").val("True");
-    $j("#confirm_cancellation_dialog").dialog("close");
-    $j("#volunteer_shift_form").trigger("submit");
-}
+  function confirm_cancellation() {
+      $j("input[name=clear_requests]").val("True");
+      $j("#confirm_cancellation_dialog").dialog("close");
+      $j("#volunteer_shift_form").trigger("submit");
+  }
 
-function decline_cancellation() {
-    $j("#confirm_cancellation_dialog").dialog("close");
-}
+  function decline_cancellation() {
+      $j("#confirm_cancellation_dialog").dialog("close");
+  }
 
-$j(document).ready(function () {
-    Availability.init({{ isAdmin|yesno:"true,false" }});
+  $j(document).ready(function () {
+      Availability.init({{ isAdmin|yesno:"true,false" }});
 
-    $j("#confirm_cancellation_dialog").dialog({
-        autoOpen: false,
-        buttons: [ { text: "Confirm", click: confirm_cancellation }, {text: "Cancel", click: decline_cancellation} ]
-    });
-    $j("#volunteer_form_submit").click(function (event) {   
-        //  Check if the user has previous requests and is asking to clear all of them
-        var checkboxes_checked = $j("input[name=requests]:checked");
-        if (($j("input[name=has_previous_requests]").val() == "True") &&
-            (checkboxes_checked.length == 0)) {
-            //  If so, prevent the form from being submitted - we want a confirmation
-            event.preventDefault();
-            
-            //  Show the confirmation dialog
-            $j("#confirm_cancellation_dialog").dialog("open");
-        }
-        else {
-            //  They are not cancelling all shifts; submit the form normally
-            $j("#volunteer_shift_form").submit();
-        }
-    });
-    
-    $j("[required]").each(function() {
-        $j(this).prev("label").addClass("required");
-    });
-});
+      $j("#confirm_cancellation_dialog").dialog({
+          autoOpen: false,
+          buttons: [ { text: "Confirm", click: confirm_cancellation }, {text: "Cancel", click: decline_cancellation} ]
+      });
+      $j("#volunteer_form_submit").click(function (event) {
+          //  Check if the user has previous requests and is asking to clear all of them
+          var checkboxes_checked = $j("input[name=requests]:checked");
+          if (($j("input[name=has_previous_requests]").val() == "True") &&
+              (checkboxes_checked.length == 0)) {
+              //  If so, prevent the form from being submitted - we want a confirmation
+              event.preventDefault();
 
+              //  Show the confirmation dialog
+              $j("#confirm_cancellation_dialog").dialog("open");
+          }
+          else {
+              //  They are not cancelling all shifts; submit the form normally
+              $j("#volunteer_shift_form").submit();
+          }
+      });
+
+      $j("[required]").each(function() {
+          $j(this).prev("label").addClass("required");
+      });
+  });
 </script>
-{% endblock %}
+{% endblock %} {% block content %}
 
-{% block content %}
-<h1>{% if isAdmin %}Manage {% endif %}Volunteer for {{ program.niceName }}</h1>
+<div class="volunteer-banner">
+  <h1>
+    &#x1F91D; {% if isAdmin %}Manage {% endif %}Volunteer to Help Run {{
+    program.niceName }}!
+  </h1>
+</div>
+
+<div class="alert alert-info">
+  <strong>This page is for general volunteers</strong> helping with logistics,
+  check-in, setup, and program operations. If you would like to
+  <strong>teach a class</strong>, please use the
+  <a href="{{ program.get_teach_url }}teacherreg">Teacher Registration</a> page
+  instead.
+</div>
 
 {% if complete %}
 <div class="alert alert-success">
-<h3>Thanks!</h3>
-<p>
-Thank you, {{ complete_name }}, for volunteering! You will receive reminder emails on {{ complete_email }} as the program nears. (And, we have your phone number, {{ complete_phone }}, in case there are any emergencies or we need to contact you urgently.)
-</p>
-<p>If you would like to change your volunteer commitments, please fill out the form below again.</p>
+  <h3>Thanks!</h3>
+  <p>
+    Thank you, {{ complete_name }}, for volunteering! You will receive reminder
+    emails on {{ complete_email }} as the program nears. (And, we have your
+    phone number, {{ complete_phone }}, in case there are any emergencies or we
+    need to contact you urgently.)
+  </p>
+  <p>
+    If you would like to change your volunteer commitments, please fill out the
+    form below again.
+  </p>
 </div>
-{% load render_qsd %}
-{% render_inline_program_qsd program "volunteer_complete" %}
-{% endif %}
-{% if cancelled %}
+{% load render_qsd %} {% render_inline_program_qsd program "volunteer_complete"
+%} {% endif %} {% if cancelled %}
 <div class="alert alert-info">
-<h3>Volunteer Shifts Cancelled</h3>
-<p>
-The directors have been notified that you are no longer able to volunteer at {{ program.name }}.
-</p>
+  <h3>Volunteer Shifts Cancelled</h3>
+  <p>
+    The directors have been notified that you are no longer able to volunteer at
+    {{ program.name }}.
+  </p>
 </div>
-{% load render_qsd %}
-{% render_inline_program_qsd program "volunteer_cancelled" %}
-{% endif %}
-
-{% load render_qsd %}
-{% render_inline_program_qsd program "volunteer_signup" %}
+{% load render_qsd %} {% render_inline_program_qsd program "volunteer_cancelled"
+%} {% endif %} {% load render_qsd %} {% render_inline_program_qsd program
+"volunteer_signup" %}
 
 <div id="program_form">
   <form method="POST" id="volunteer_shift_form" action="{{ request.path }}">
-    {% for hidden in form.hidden_fields %}
-        {{ hidden }}
-    {% endfor %}
+    {% for hidden in form.hidden_fields %} {{ hidden }} {% endfor %}
     <center>
-      <p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</p>
+      <p>
+        {% if request.user.email %}Since you are logged in, your information is
+        pre-filled but you can change it for the purposes of contacting you
+        about volunteering.{% else %}If you have an account, please
+        <a href="/myesp/login?next={{ request.path }}">click here</a> to log in
+        and return to this page.{% endif %}
+      </p>
       {% if form.errors %}
-        <div class="alert alert-danger">
-            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-                Please correct the errors in the form.
-        </div>
+      <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        Please correct the errors in the form.
+      </div>
       {% endif %}
       <div class="noclick">
-        {{ form.name.label_tag }}
-        {{ form.name.errors }}
-        {{ form.name }}
-        {{ form.email.label_tag }}
-        {{ form.email.errors }}
-        {{ form.email }}
-        {{ form.phone.label_tag }}
-        {{ form.phone.errors }}
-        {{ form.phone }}
+        {{ form.name.label_tag }} {{ form.name.errors }} {{ form.name }}
+        {{ form.email.label_tag }} {{ form.email.errors }} {{ form.email }}
+        {{ form.phone.label_tag }} {{ form.phone.errors }} {{ form.phone }}
         {% if form.shirt_size %}
-        {{ form.shirt_size.label_tag }}
-        {{ form.shirt_size.errors }}
-        {{ form.shirt_size }}
+          {{ form.shirt_size.label_tag }} {{ form.shirt_size.errors }} {{ form.shirt_size }}
         {% endif %}
         {% if form.shirt_type %}
-        {{ form.shirt_type.label_tag }}
-        {{ form.shirt_type.errors }}
-        {{ form.shirt_type }}
+          {{ form.shirt_type.label_tag }} {{ form.shirt_type.errors }} {{ form.shirt_type }}
         {% endif %}
         {% if form.comments %}
-        {{ form.comments.label_tag }}
-        <span style="font-size: smaller">{{ form.comments.help_text }}</span>
-        {{ form.comments.errors }}
-        {{ form.comments }}
+          {{ form.comments.label_tag }}
+          <span style="font-size: smaller">{{ form.comments.help_text }}</span>
+          {{ form.comments.errors }} {{ form.comments }}
         {% endif %}
       </div>
-      <br>
+      <br />
       <div>
-        Please sign up to volunteer for specific timeslots by selecting them below. Hovering over a timeslot will display details for that timeslot.
-        <br><br>
+        Please sign up to volunteer for specific timeslots by selecting them
+        below. Hovering over a timeslot will display details for that timeslot.
+        <br /><br />
         {% include "program/modules/availability.html" %}
         <div hidden id="checkboxes">
           {% for request in form.requests %}
-            <input {% if request.data.selected %}checked {% endif %}id="{{ request.id_for_label }}" name="{{ request.data.name }}" type="checkbox" value="{{ request.data.value }}" data-hover="{{ request.data.label }}">
+          <input
+            {%
+            if
+            request.data.selected
+            %}checked
+            {%
+            endif
+            %}id="{{ request.id_for_label }}"
+            name="{{ request.data.name }}"
+            type="checkbox"
+            value="{{ request.data.value }}"
+            data-hover="{{ request.data.label }}"
+          />
           {% endfor %}
         </div>
         {{ form.requests.errors }}
-        <br><br>
+        <br /><br />
         <div class="noclick">
-        {{ form.confirm }} {{ form.confirm.help_text }}
+          {{ form.confirm }} {{ form.confirm.help_text }}
         </div>
         {{ form.non_field_errors }}
-        <br><br>
-        <input style="display: block" id="volunteer_form_submit" type="button" value="Submit" class="btn btn-primary" />
+        <br /><br />
+        <input
+          style="display: block"
+          id="volunteer_form_submit"
+          type="button"
+          value="Sign Up to Volunteer!"
+          class="btn btn-success btn-lg"
+        />
       </div>
     </center>
   </form>
 </div>
-<div id="confirm_cancellation_dialog" title="Confirm Cancellation">You have unchecked all volunteer shifts.  If you must cancel your volunteer commitments, please click "Confirm" to notify the directors.  Otherwise, click "Cancel".</div>
+<div id="confirm_cancellation_dialog" title="Confirm Cancellation">
+  You have unchecked all volunteer shifts. If you must cancel your volunteer
+  commitments, please click "Confirm" to notify the directors. Otherwise, click
+  "Cancel".
+</div>
 
 <div class="summary_div" hidden>
-  <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
-  <span class="summary" style="background-color: #00FF00;">Available</span>
+  <span class="summary" style="background-color: #efefef">Not Available</span>
+  <span class="summary" style="background-color: #00ff00">Available</span>
 </div>
 {% endblock %}
