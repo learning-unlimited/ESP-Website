@@ -601,10 +601,10 @@ class ProgramFrameworkTest(TestCase):
                 'program_modules': settings['modules'],
                 'class_categories': [x.id for x in self.categories],
                 'admins': [x.id for x in self.admins],
-                'teacher_reg_start': '2000-01-01 00:00:00',
-                'teacher_reg_end':   '3001-01-01 00:00:00',
-                'student_reg_start': '2000-01-01 00:00:00',
-                'student_reg_end':   '3001-01-01 00:00:00',
+                'teacher_reg_start': (timezone.now() - timedelta(days=365)).strftime('%Y-%m-%d %H:%M:%S'),
+                'teacher_reg_end':   (timezone.now() + timedelta(days=365)).strftime('%Y-%m-%d %H:%M:%S'),
+                'student_reg_start': (timezone.now() - timedelta(days=365)).strftime('%Y-%m-%d %H:%M:%S'),
+                'student_reg_end':   (timezone.now() + timedelta(days=365)).strftime('%Y-%m-%d %H:%M:%S'),
                 'base_cost':         settings['base_cost'],
                 'sibling_discount':  settings['sibling_discount'],
             }
@@ -885,7 +885,8 @@ class ProgramCapTest(ProgramFrameworkTest):
             # Join the program!
             StudentRegistration.objects.create(
                 user=user, section=self.program.sections()[0],
-                relationship=enrolled)
+                relationship=enrolled,
+                start_date=timezone.now() - timedelta(days=1))
         for user in self.eleventh_graders[2:]:
             # Assert that no more 11th graders may join.
             self.assertFalse(self.program.user_can_join(user))
@@ -1237,15 +1238,18 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                     sections = [s for s in self.program.sections() if e in s.meeting_times.all()]
                     if len(sections) == 0: continue
                     pri = random.choice(sections)
-                    StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+                    StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt,
+                                                              defaults={'start_date': timezone.now() - timedelta(days=1)})
             for sec in self.program.sections():
                 # 0.25 prob of adding a section as interested
                 if random.random() < 0.25:
-                    StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt)
+                    StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt,
+                                                              defaults={'start_date': timezone.now() - timedelta(days=1)})
             # Make sure the student actually entered the lottery
             if StudentRegistration.objects.filter(user=student, section__parent_class__parent_program=self.program).count() == 0:
                 pri = random.choice(self.program.sections())
-                StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+                StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt,
+                                                          defaults={'start_date': timezone.now() - timedelta(days=1)})
 
     def testLottery(self):
         # Run the lottery!
