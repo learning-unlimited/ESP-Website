@@ -69,7 +69,7 @@ Quick Start
 
    a) Delete the `.docker-setup-done` file.
    b) Run the following command::
-    
+
       docker compose up
 
 4. Once you see ``Starting development server at http://0.0.0.0:8000/``,
