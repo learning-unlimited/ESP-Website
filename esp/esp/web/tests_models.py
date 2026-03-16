@@ -145,9 +145,11 @@ class DefaultNavBarCategoryTest(TestCase):
         # Remove cached _default so each test starts fresh
         if hasattr(NavBarCategory, '_default'):
             del NavBarCategory._default
+        # Ensure a 'default' category exists for tests that expect one
+        if not NavBarCategory.objects.filter(name='default').exists():
+            _make_category('default')
 
     def test_returns_default_category(self):
-        # install() already creates a 'default' category; just verify it's returned
         result = default_navbarcategory()
         self.assertIsNotNone(result)
         self.assertEqual(result.name, 'default')
@@ -162,7 +164,8 @@ class DefaultNavBarCategoryTest(TestCase):
     def test_caches_result(self):
         r1 = default_navbarcategory()
         r2 = default_navbarcategory()
-        self.assertEqual(r1, r2)
+        self.assertIsNotNone(r1)
+        self.assertIs(r1, r2)
 
 
 # ---------------------------------------------------------------------------
