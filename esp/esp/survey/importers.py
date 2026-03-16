@@ -181,22 +181,46 @@ class CSVQuestionImporter:
             List of QuestionData objects
             
         Raises:
-            ValueError: If required columns are missing
+            ValueError: If required columns are missing or CSV is malformed
+            UnicodeDecodeError: If file encoding is not supported
         """
         # Handle both file objects and strings
         if isinstance(self.csv_file, str):
             csv_content = io.StringIO(self.csv_file)
         else:
-            # Read file content and decode if necessary
-            content = self.csv_file.read()
-            if isinstance(content, bytes):
-                content = content.decode('utf-8')
-            csv_content = io.StringIO(content)
-            # Reset file pointer for potential re-reading
-            if hasattr(self.csv_file, 'seek'):
-                self.csv_file.seek(0)
+            # Read file content and decode with error handling
+            try:
+                content = self.csv_file.read()
+                if isinstance(content, bytes):
+                    # Try UTF-8 first, then fall back to other encodings
+                    try:
+                        content = content.decode('utf-8')
+                    except UnicodeDecodeError:
+                        # Try UTF-16
+                        try:
+                            content = content.decode('utf-16')
+                        except UnicodeDecodeError:
+                            # Try Latin-1 as last resort
+                            try:
+                                content = content.decode('latin-1')
+                            except UnicodeDecodeError:
+                                raise ValueError(
+                                    "Unable to decode CSV file. Please ensure the file is encoded in UTF-8, UTF-16, or Latin-1."
+                                )
+                csv_content = io.StringIO(content)
+                # Reset file pointer for potential re-reading
+                if hasattr(self.csv_file, 'seek'):
+                    self.csv_file.seek(0)
+            except Exception as e:
+                if isinstance(e, ValueError):
+                    raise
+                raise ValueError(f"Error reading CSV file: {str(e)}")
         
-        reader = csv.DictReader(csv_content)
+        # Parse CSV with error handling for malformed data
+        try:
+            reader = csv.DictReader(csv_content)
+        except csv.Error as e:
+            raise ValueError(f"Malformed CSV file: {str(e)}")
         
         # Validate required columns are present
         if not reader.fieldnames:
@@ -210,37 +234,42 @@ class CSVQuestionImporter:
             )
         
         questions = []
-        for row_num, row in enumerate(reader, start=2):  # Start at 2 (after header)
-            # Parse param_values from pipe-delimited string
-            param_values_str = row.get('param_values', '').strip()
-            if param_values_str:
-                param_values = [v.strip() for v in param_values_str.split('|')]
-            else:
-                param_values = []
-            
-            # Parse per_class boolean
-            per_class_str = row.get('per_class', '').strip().lower()
-            per_class = self._parse_boolean(per_class_str)
-            
-            # Parse sequence integer
-            sequence_str = row.get('sequence', '').strip()
-            sequence = None
-            if sequence_str:
-                try:
-                    sequence = int(sequence_str)
-                except ValueError:
-                    # Let validator handle this error
-                    sequence = sequence_str
-            
-            question_data = QuestionData(
-                row_number=row_num,
-                question_name=row.get('question_name', '').strip(),
-                question_type_name=row.get('question_type', '').strip(),
-                param_values=param_values,
-                per_class=per_class,
-                sequence=sequence
-            )
-            questions.append(question_data)
+        try:
+            for row_num, row in enumerate(reader, start=2):  # Start at 2 (after header)
+                # Parse param_values from pipe-delimited string
+                param_values_str = row.get('param_values', '').strip()
+                if param_values_str:
+                    param_values = [v.strip() for v in param_values_str.split('|')]
+                else:
+                    param_values = []
+                
+                # Parse per_class boolean
+                per_class_str = row.get('per_class', '').strip().lower()
+                per_class = self._parse_boolean(per_class_str)
+                
+                # Parse sequence integer
+                sequence_str = row.get('sequence', '').strip()
+                sequence = None
+                if sequence_str:
+                    try:
+                        sequence = int(sequence_str)
+                    except ValueError:
+                        # Let validator handle this error
+                        sequence = sequence_str
+                
+                question_data = QuestionData(
+                    row_number=row_num,
+                    question_name=row.get('question_name', '').strip(),
+                    question_type_name=row.get('question_type', '').strip(),
+                    param_values=param_values,
+                    per_class=per_class,
+                    sequence=sequence
+                )
+                questions.append(question_data)
+        except csv.Error as e:
+            raise ValueError(f"Malformed CSV data at row {row_num}: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Error parsing CSV data: {str(e)}")
         
         return questions
     
@@ -278,7 +307,7 @@ class CSVQuestionImporter:
         Returns:
             ImportResult with counts and any errors
         """
-        from django.db import transaction
+        from django.db import transaction, IntegrityError, OperationalError
         
         if duplicate_strategy is None:
             duplicate_strategy = {}
@@ -313,58 +342,84 @@ class CSVQuestionImporter:
                 for dup in duplicates
             }
             
-            # Begin transaction
-            with transaction.atomic():
-                for question_data in questions:
-                    key = f"{question_data.question_name}|{question_data.question_type_name}"
-                    
-                    # Check if this is a duplicate
-                    if key in duplicate_map:
-                        duplicate = duplicate_map[key]
-                        strategy = duplicate_strategy.get(key, 'skip')
+            # Begin transaction with database error handling
+            try:
+                with transaction.atomic():
+                    for question_data in questions:
+                        key = f"{question_data.question_name}|{question_data.question_type_name}"
                         
-                        if strategy == 'skip':
-                            # Skip strategy: do not create question
-                            skipped_count += 1
-                            continue
+                        # Check if this is a duplicate
+                        if key in duplicate_map:
+                            duplicate = duplicate_map[key]
+                            strategy = duplicate_strategy.get(key, 'skip')
                             
-                        elif strategy == 'replace':
-                            # Replace strategy: update existing question
-                            existing = duplicate.existing_question
-                            
-                            # Update param_values
-                            existing._param_values = '|'.join(question_data.param_values)
-                            
-                            # Update sequence if provided
-                            if question_data.sequence is not None:
-                                existing.seq = question_data.sequence
-                            
-                            existing.save()
-                            updated_count += 1
-                            continue
-                            
-                        elif strategy == 'rename':
-                            # Rename strategy: append suffix and create new question
-                            # Find a unique name by appending a suffix
-                            base_name = question_data.question_name
-                            suffix = 1
-                            new_name = f"{base_name}_{suffix}"
-                            
-                            # Keep incrementing suffix until we find a unique name
-                            while Question.objects.filter(
-                                survey=self.target_survey,
-                                name=new_name,
-                                question_type__name=question_data.question_type_name
-                            ).exists():
-                                suffix += 1
+                            if strategy == 'skip':
+                                # Skip strategy: do not create question
+                                skipped_count += 1
+                                continue
+                                
+                            elif strategy == 'replace':
+                                # Replace strategy: update existing question
+                                existing = duplicate.existing_question
+                                
+                                # Update param_values
+                                existing._param_values = '|'.join(question_data.param_values)
+                                
+                                # Update sequence if provided
+                                if question_data.sequence is not None:
+                                    existing.seq = question_data.sequence
+                                
+                                try:
+                                    existing.save()
+                                    updated_count += 1
+                                except IntegrityError as e:
+                                    raise ValueError(f"Database integrity error updating question '{question_data.question_name}': {str(e)}")
+                                continue
+                                
+                            elif strategy == 'rename':
+                                # Rename strategy: append suffix and create new question
+                                # Find a unique name by appending a suffix
+                                base_name = question_data.question_name
+                                suffix = 1
                                 new_name = f"{base_name}_{suffix}"
+                                
+                                # Keep incrementing suffix until we find a unique name
+                                while Question.objects.filter(
+                                    survey=self.target_survey,
+                                    name=new_name,
+                                    question_type__name=question_data.question_type_name
+                                ).exists():
+                                    suffix += 1
+                                    new_name = f"{base_name}_{suffix}"
+                                
+                                # Create with new name
+                                question_data.question_name = new_name
+                        
+                        # Create new question (either not a duplicate or renamed)
+                        try:
+                            self._create_question(question_data)
+                            created_count += 1
+                        except IntegrityError as e:
+                            raise ValueError(f"Database integrity error creating question '{question_data.question_name}': {str(e)}")
+                        except Question.DoesNotExist:
+                            raise ValueError(f"Question type '{question_data.question_type_name}' not found in database")
                             
-                            # Create with new name
-                            question_data.question_name = new_name
-                    
-                    # Create new question (either not a duplicate or renamed)
-                    self._create_question(question_data)
-                    created_count += 1
+            except OperationalError as e:
+                return ImportResult(
+                    success=False,
+                    created_count=0,
+                    updated_count=0,
+                    skipped_count=0,
+                    errors=[f"Database connection error: {str(e)}. Please try again later."]
+                )
+            except IntegrityError as e:
+                return ImportResult(
+                    success=False,
+                    created_count=0,
+                    updated_count=0,
+                    skipped_count=0,
+                    errors=[f"Database integrity error: {str(e)}"]
+                )
             
             return ImportResult(
                 success=True,
@@ -374,13 +429,23 @@ class CSVQuestionImporter:
                 errors=[]
             )
             
-        except Exception as e:
+        except ValueError as e:
+            # CSV parsing or validation errors
             return ImportResult(
                 success=False,
                 created_count=0,
                 updated_count=0,
                 skipped_count=0,
-                errors=[f"Import failed: {str(e)}"]
+                errors=[str(e)]
+            )
+        except Exception as e:
+            # Catch-all for unexpected errors
+            return ImportResult(
+                success=False,
+                created_count=0,
+                updated_count=0,
+                skipped_count=0,
+                errors=[f"Unexpected error during import: {str(e)}"]
             )
     
     def _create_question(self, question_data: QuestionData):
@@ -637,14 +702,81 @@ class TemplateManager:
 class ImportLogger:
     """Logs import operations for audit trail."""
     
+    def __init__(self):
+        """Initialize logger with Django logging framework."""
+        import logging
+        import json
+        self.logger = logging.getLogger('esp.survey.import')
+        self.json = json
+    
     def log_start(self, user, surveys, source):
-        """Record import session start."""
-        pass
+        """Record import session start.
+        
+        Args:
+            user: Admin user performing the import
+            surveys: List of Survey objects being imported into
+            source: String describing import source ('upload' or template name)
+        """
+        from django.utils import timezone
+        
+        survey_names = [survey.name for survey in surveys]
+        
+        log_data = {
+            'event': 'import_start',
+            'timestamp': timezone.now().isoformat(),
+            'admin_user': user.username if user else 'unknown',
+            'admin_user_id': user.id if user else None,
+            'target_surveys': survey_names,
+            'survey_count': len(surveys),
+            'source': source
+        }
+        
+        self.logger.info(self.json.dumps(log_data))
     
     def log_complete(self, created, updated, skipped):
-        """Record successful completion."""
-        pass
+        """Record successful completion.
+        
+        Args:
+            created: Count of questions created
+            updated: Count of questions updated
+            skipped: Count of questions skipped
+        """
+        from django.utils import timezone
+        
+        log_data = {
+            'event': 'import_complete',
+            'timestamp': timezone.now().isoformat(),
+            'status': 'success',
+            'questions_created': created,
+            'questions_updated': updated,
+            'questions_skipped': skipped,
+            'total_processed': created + updated + skipped
+        }
+        
+        self.logger.info(self.json.dumps(log_data))
     
     def log_failure(self, errors):
-        """Record validation or execution failures."""
-        pass
+        """Record validation or execution failures.
+        
+        Args:
+            errors: List of error messages or ValidationError objects
+        """
+        from django.utils import timezone
+        
+        # Convert ValidationError objects to strings if needed
+        error_messages = []
+        for error in errors:
+            if isinstance(error, ValidationError):
+                error_messages.append(f"Row {error.row_number}, {error.field}: {error.message}")
+            else:
+                error_messages.append(str(error))
+        
+        log_data = {
+            'event': 'import_failure',
+            'timestamp': timezone.now().isoformat(),
+            'status': 'failed',
+            'error_count': len(error_messages),
+            'errors': error_messages
+        }
+        
+        self.logger.error(self.json.dumps(log_data))

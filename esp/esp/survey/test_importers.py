@@ -1436,3 +1436,206 @@ class DuplicateResolutionFormTest(TestCase):
         # Should have no fields
         self.assertEqual(len(form.fields), 0)
         self.assertTrue(form.is_valid())
+
+
+
+class ImportLoggerTest(TestCase):
+    """Tests for ImportLogger audit logging functionality."""
+    
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.survey = Survey.objects.create(
+            name='Test Survey',
+            program=self.program,
+            category='learn',
+        )
+        
+        # Create a test user
+        from esp.users.models import ESPUser
+        self.user = ESPUser.objects.create_user(
+            username='testadmin',
+            email='testadmin@example.com',
+            password='testpass'
+        )
+
+    def test_log_start_creates_log_entry(self):
+        """Test that log_start creates a log entry with correct data."""
+        from esp.survey.importers import ImportLogger
+        import logging
+        import json
+        
+        # Capture log output
+        with self.assertLogs('esp.survey.import', level='INFO') as cm:
+            logger = ImportLogger()
+            logger.log_start(self.user, [self.survey], 'CSV upload')
+        
+        # Verify log was created
+        self.assertEqual(len(cm.output), 1)
+        
+        # Parse the JSON log data
+        log_message = cm.output[0]
+        # Extract JSON from log message (format: "INFO:logger_name:json_data")
+        json_start = log_message.index('{')
+        log_data = json.loads(log_message[json_start:])
+        
+        # Verify log data
+        self.assertEqual(log_data['event'], 'import_start')
+        self.assertEqual(log_data['admin_user'], 'testadmin')
+        self.assertEqual(log_data['admin_user_id'], self.user.id)
+        self.assertEqual(log_data['target_surveys'], ['Test Survey'])
+        self.assertEqual(log_data['survey_count'], 1)
+        self.assertEqual(log_data['source'], 'CSV upload')
+        self.assertIn('timestamp', log_data)
+
+    def test_log_start_with_multiple_surveys(self):
+        """Test that log_start handles multiple surveys correctly."""
+        from esp.survey.importers import ImportLogger
+        import json
+        
+        # Create additional surveys
+        survey2 = Survey.objects.create(
+            name='Survey 2',
+            program=self.program,
+            category='teach',
+        )
+        survey3 = Survey.objects.create(
+            name='Survey 3',
+            program=self.program,
+            category='learn',
+        )
+        
+        with self.assertLogs('esp.survey.import', level='INFO') as cm:
+            logger = ImportLogger()
+            logger.log_start(self.user, [self.survey, survey2, survey3], 'Template: student_feedback')
+        
+        # Parse log data
+        log_message = cm.output[0]
+        json_start = log_message.index('{')
+        log_data = json.loads(log_message[json_start:])
+        
+        # Verify multiple surveys logged
+        self.assertEqual(log_data['survey_count'], 3)
+        self.assertEqual(len(log_data['target_surveys']), 3)
+        self.assertIn('Test Survey', log_data['target_surveys'])
+        self.assertIn('Survey 2', log_data['target_surveys'])
+        self.assertIn('Survey 3', log_data['target_surveys'])
+
+    def test_log_complete_creates_log_entry(self):
+        """Test that log_complete creates a log entry with counts."""
+        from esp.survey.importers import ImportLogger
+        import json
+        
+        with self.assertLogs('esp.survey.import', level='INFO') as cm:
+            logger = ImportLogger()
+            logger.log_complete(created=5, updated=2, skipped=1)
+        
+        # Parse log data
+        log_message = cm.output[0]
+        json_start = log_message.index('{')
+        log_data = json.loads(log_message[json_start:])
+        
+        # Verify log data
+        self.assertEqual(log_data['event'], 'import_complete')
+        self.assertEqual(log_data['status'], 'success')
+        self.assertEqual(log_data['questions_created'], 5)
+        self.assertEqual(log_data['questions_updated'], 2)
+        self.assertEqual(log_data['questions_skipped'], 1)
+        self.assertEqual(log_data['total_processed'], 8)
+        self.assertIn('timestamp', log_data)
+
+    def test_log_failure_creates_error_log(self):
+        """Test that log_failure creates an error log entry."""
+        from esp.survey.importers import ImportLogger, ValidationError
+        import json
+        
+        errors = [
+            ValidationError(row_number=2, field='question_type', message='Invalid type'),
+            ValidationError(row_number=3, field='question_name', message='Name too long'),
+        ]
+        
+        with self.assertLogs('esp.survey.import', level='ERROR') as cm:
+            logger = ImportLogger()
+            logger.log_failure(errors)
+        
+        # Parse log data
+        log_message = cm.output[0]
+        json_start = log_message.index('{')
+        log_data = json.loads(log_message[json_start:])
+        
+        # Verify log data
+        self.assertEqual(log_data['event'], 'import_failure')
+        self.assertEqual(log_data['status'], 'failed')
+        self.assertEqual(log_data['error_count'], 2)
+        self.assertEqual(len(log_data['errors']), 2)
+        self.assertIn('Row 2, question_type: Invalid type', log_data['errors'][0])
+        self.assertIn('Row 3, question_name: Name too long', log_data['errors'][1])
+        self.assertIn('timestamp', log_data)
+
+    def test_log_failure_with_string_errors(self):
+        """Test that log_failure handles string error messages."""
+        from esp.survey.importers import ImportLogger
+        import json
+        
+        errors = [
+            'Template file not found',
+            'Database connection error',
+        ]
+        
+        with self.assertLogs('esp.survey.import', level='ERROR') as cm:
+            logger = ImportLogger()
+            logger.log_failure(errors)
+        
+        # Parse log data
+        log_message = cm.output[0]
+        json_start = log_message.index('{')
+        log_data = json.loads(log_message[json_start:])
+        
+        # Verify log data
+        self.assertEqual(log_data['error_count'], 2)
+        self.assertIn('Template file not found', log_data['errors'])
+        self.assertIn('Database connection error', log_data['errors'])
+
+    def test_log_start_with_no_user(self):
+        """Test that log_start handles None user gracefully."""
+        from esp.survey.importers import ImportLogger
+        import json
+        
+        with self.assertLogs('esp.survey.import', level='INFO') as cm:
+            logger = ImportLogger()
+            logger.log_start(None, [self.survey], 'CSV upload')
+        
+        # Parse log data
+        log_message = cm.output[0]
+        json_start = log_message.index('{')
+        log_data = json.loads(log_message[json_start:])
+        
+        # Verify user is logged as 'unknown'
+        self.assertEqual(log_data['admin_user'], 'unknown')
+        self.assertIsNone(log_data['admin_user_id'])
+
+    def test_json_format_is_valid(self):
+        """Test that all log entries produce valid JSON."""
+        from esp.survey.importers import ImportLogger, ValidationError
+        import json
+        
+        logger = ImportLogger()
+        
+        # Test log_start
+        with self.assertLogs('esp.survey.import', level='INFO') as cm:
+            logger.log_start(self.user, [self.survey], 'test')
+        json_start = cm.output[0].index('{')
+        json.loads(cm.output[0][json_start:])  # Should not raise
+        
+        # Test log_complete
+        with self.assertLogs('esp.survey.import', level='INFO') as cm:
+            logger.log_complete(1, 2, 3)
+        json_start = cm.output[0].index('{')
+        json.loads(cm.output[0][json_start:])  # Should not raise
+        
+        # Test log_failure
+        with self.assertLogs('esp.survey.import', level='ERROR') as cm:
+            logger.log_failure(['error'])
+        json_start = cm.output[0].index('{')
+        json.loads(cm.output[0][json_start:])  # Should not raise

@@ -204,6 +204,124 @@ Existing Question,Yes/No,,false,2"""
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Resolve Duplicate Questions', response.content)
 
+    def test_batch_import_results_reporting(self):
+        """Test that batch import results are reported separately for each survey."""
+        # Create a second survey
+        survey2 = Survey.objects.create(
+            name='Test Survey 2',
+            program=self.program,
+            category='learn'
+        )
+        
+        # Create valid CSV content
+        csv_content = """question_name,question_type,param_values,per_class,sequence
+Question 1,Yes/No,,false,1
+Question 2,Multiple Choice,Option A|Option B|Option C,false,2"""
+        
+        csv_file = io.BytesIO(csv_content.encode('utf-8'))
+        csv_file.name = 'test.csv'
+        
+        # Import into both surveys
+        queryset = Survey.objects.filter(id__in=[self.survey.id, survey2.id])
+        request = self._create_request(
+            method='POST',
+            data={'import_source': 'upload'},
+            files={'csv_file': csv_file}
+        )
+        
+        response = self.admin.import_questions(request, queryset)
+        
+        # Should redirect after successful import
+        self.assertEqual(response.status_code, 302)
+        
+        # Check that messages were created
+        messages_list = list(messages.get_messages(request))
+        
+        # Should have summary message
+        summary_messages = [m for m in messages_list if 'Batch import complete' in str(m)]
+        self.assertEqual(len(summary_messages), 1)
+        self.assertIn('2 survey(s) succeeded', str(summary_messages[0]))
+        self.assertIn('0 survey(s) failed', str(summary_messages[0]))
+        
+        # Should have per-survey success messages
+        survey_messages = [m for m in messages_list if '✓' in str(m)]
+        self.assertEqual(len(survey_messages), 2)
+        
+        # Verify both surveys have the questions
+        self.assertEqual(self.survey.question_set.count(), 2)
+        self.assertEqual(survey2.question_set.count(), 2)
+        
+        # Verify message content includes counts
+        for msg in survey_messages:
+            self.assertIn('2 created', str(msg))
+
+    def test_batch_import_with_failures(self):
+        """Test that batch import continues on failure and reports errors separately."""
+        # Create a second survey
+        survey2 = Survey.objects.create(
+            name='Test Survey 2',
+            program=self.program,
+            category='learn'
+        )
+        
+        # Create a third survey
+        survey3 = Survey.objects.create(
+            name='Test Survey 3',
+            program=self.program,
+            category='learn'
+        )
+        
+        # Add an existing question to survey2 to create a duplicate scenario
+        Question.objects.create(
+            survey=survey2,
+            name='Question 1',
+            question_type=self.qt_yesno,
+            seq=1,
+            per_class=False
+        )
+        
+        # Create valid CSV content
+        csv_content = """question_name,question_type,param_values,per_class,sequence
+Question 1,Yes/No,,false,1
+Question 2,Multiple Choice,Option A|Option B|Option C,false,2"""
+        
+        csv_file = io.BytesIO(csv_content.encode('utf-8'))
+        csv_file.name = 'test.csv'
+        
+        # Import into all three surveys
+        queryset = Survey.objects.filter(id__in=[self.survey.id, survey2.id, survey3.id])
+        request = self._create_request(
+            method='POST',
+            data={'import_source': 'upload'},
+            files={'csv_file': csv_file}
+        )
+        
+        response = self.admin.import_questions(request, queryset)
+        
+        # Should redirect after import
+        self.assertEqual(response.status_code, 302)
+        
+        # Check messages
+        messages_list = list(messages.get_messages(request))
+        
+        # Should have summary message
+        summary_messages = [m for m in messages_list if 'Batch import complete' in str(m)]
+        self.assertEqual(len(summary_messages), 1)
+        self.assertIn('3 survey(s) succeeded', str(summary_messages[0]))
+        
+        # Should have per-survey messages
+        success_messages = [m for m in messages_list if '✓' in str(m)]
+        self.assertEqual(len(success_messages), 3)
+        
+        # Verify survey1 has 2 questions
+        self.assertEqual(self.survey.question_set.count(), 2)
+        
+        # Verify survey2 has 2 questions (1 existing + 1 new, 1 skipped)
+        self.assertEqual(survey2.question_set.count(), 2)
+        
+        # Verify survey3 has 2 questions
+        self.assertEqual(survey3.question_set.count(), 2)
+
 
 class SurveyAdminExportTest(TestCase):
     def setUp(self):
