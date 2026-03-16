@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest, PlainRedirect
@@ -89,6 +90,19 @@ class CommModule(ProgramModuleObj):
             "seq": 10,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "commpanel":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_commpanel",
+            url="/manage/%s/commpanel" % base,
+            title="Email (Communications Panel)",
+            category="Coordinate",
+            keywords=["email", "communications", "commpanel", "messages"],
+        )
 
     @staticmethod
     def get_mailer_warnings(listcount, filterid, sendto_fn_name):

@@ -13,8 +13,8 @@
 <div id="page" style="margin:0 auto; width:920px;">
 <div id="top_area">
 <div id="logo_area">
-    <div id="main_logo"><a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}"/></a></div>
-    <div id="lu_logo"><a href="http://www.learningu.org/"><img src="/media/images/theme/lu_logo_mini.png"/></a></div>
+    <div id="main_logo"><a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{ theme.full_group_name }} logo" /></a></div>
+    <div id="lu_logo"><a href="http://www.learningu.org/"><img src="/media/images/theme/lu_logo_mini.png" alt="Learning Unlimited logo" /></a></div>
     <div id="logo_blurb">
         Supported by <br /><a href="http://www.learningu.org/">Learning Unlimited</a>
     </div>
@@ -116,6 +116,17 @@
         {% else %}
             <strong>No (non-admin) roles have permission to view this page!</strong>
         {% endif %}
+    </div>
+    {% endif %}
+    {% if active_program_tags %}
+    <div class="alert alert-info alert-dismissible" role="alert">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <strong>Admin notice:</strong>
+      This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
+      {% for tag in active_program_tags %}
+        <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+      {% endfor %}
+      &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
     </div>
     {% endif %}
     {% if messages %}

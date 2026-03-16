@@ -56,12 +56,9 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             "choosable": 2,
             }
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """ Whether the user has fully paid for this program. """
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return IndividualAccountingController(self.program, user).has_paid(in_full=True)
     have_paid = isCompleted
 
