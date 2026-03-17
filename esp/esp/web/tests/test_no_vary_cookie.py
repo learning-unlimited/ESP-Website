@@ -62,18 +62,3 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
             ),
             "",
         )
-
-    def setUp(self):
-        super().setUp()
-
-        from esp.qsd.models import QuasiStaticData
-
-        qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.name = "learn:index"
-        qsd_rec_new.author = self.admins[0]
-        qsd_rec_new.nav_category = default_navbarcategory()
-        qsd_rec_new.content = "This is the content of the test QSD page"
-        qsd_rec_new.title = "Test QSD page"
-        qsd_rec_new.description = ""
-        qsd_rec_new.keywords = ""
-        qsd_rec_new.save()

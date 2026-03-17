@@ -25,8 +25,8 @@ class JavascriptSyntaxTest(TestCase):
                 )
             return
 
-        closure_output_code = tempfile.gettempdir() + "/closure_output.js"
-        closure_output_file = tempfile.gettempdir() + "closure.out"
+        closure_output_code = os.path.join(tempfile.gettempdir(), "closure_output.js")
+        closure_output_file = os.path.join(tempfile.gettempdir(), "closure.out")
 
         base_path = settings.MEDIA_ROOT + "scripts/"
         exclude_names = ["yui", "extjs", "jquery", "showdown"]
@@ -54,7 +54,7 @@ class JavascriptSyntaxTest(TestCase):
         with open(closure_output_file, "w") as err_file:
             subprocess.run(cmd, stderr=err_file, stdout=subprocess.DEVNULL, check=True)
 
-        with open(closure_output_code) as checkfile:
+        with open(closure_output_file) as checkfile:
             results = [line.rstrip("\n") for line in checkfile.readlines() if len(line.strip()) > 0]
 
         if len(results) > 0:
