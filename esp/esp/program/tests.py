@@ -2014,6 +2014,10 @@ class PhaseZeroRecordTest(ProgramFrameworkTest):
         with self.assertRaises(ValidationError) as cm:
             record.full_clean()
         self.assertIn('program', cm.exception.message_dict)
+        self.assertEqual(
+            cm.exception.message_dict['program'][0],
+            'This field cannot be null.'
+        )
 
     def test_phasezerorecord_admin_form_requires_program(self):
         """The admin form for PhaseZeroRecord should require the program field."""
@@ -2031,15 +2035,15 @@ class PhaseZeroRecordTest(ProgramFrameworkTest):
         self.assertIn('program', form.errors)
 
     def test_phasezerorecord_admin_form_error_message(self):
-        """The admin form should show an error for missing program."""
+        """The admin form should show the custom error for missing program."""
         from esp.program.admin import PhaseZeroRecordAdminForm
         form = PhaseZeroRecordAdminForm(data={})
         form.is_valid()
-        # Either default "required" or custom "Program is required" message
-        error_text = str(form.errors['program'])
-        self.assertTrue(
-            'required' in error_text.lower() or 'Program is required' in error_text,
-            "Error should mention that program is required, got: %s" % error_text
+        error_text = str(form.errors['program'][0])
+        self.assertEqual(
+            error_text,
+            "Program is required. Please select a program.",
+            "Form should use custom error message when program is missing"
         )
 
     def test_phasezerorecord_admin_form_valid_with_program(self):
