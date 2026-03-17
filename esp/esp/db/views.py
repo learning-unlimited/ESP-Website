@@ -15,7 +15,7 @@ def autocomplete_wrapper(function, data, is_staff, **kwargs):
     if is_staff:
         return function(data, **kwargs)
     else:
-        if 'allow_non_staff' in function.__func__.__code__.co_varnames:
+        if getattr(function.__func__, 'allow_non_staff', False):
             return function(data, **kwargs)
         else:
             return []
