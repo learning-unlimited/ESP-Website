@@ -200,8 +200,9 @@ class CustomFormHandler():
                         else:
                             raise Exception(f'Could not find linked field: {model_field}')
 
-                    # TODO -> enforce "Required" constraint server-side as well, or trust the client-side code?
                     form_field.__dict__.update(field_attrs)
+                    # Explicitly set required for server-side validation (Django's is_valid() enforces this)
+                    form_field.required = field.get('required', False)
                     form_field.widget.attrs.update({'class': ''})
                     if form_field.required:
                         # Add a class 'required' to the widget
