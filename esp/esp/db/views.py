@@ -65,4 +65,4 @@ def ajax_autocomplete(request):
     content = json.dumps({'result': output2})
 
     return HttpResponse(content,
-                        content_type='javascript/javascript')
+                        content_type='application/json')
