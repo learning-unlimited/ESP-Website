@@ -42,7 +42,10 @@ if [ ! -f "$MARKER_FILE" ] || [ "${FORCE_SETUP:-0}" = "1" ]; then
     touch "$MARKER_FILE"
 else
     echo ">>> Skipping migrations and collectstatic (already done)."
-    echo ">>> To force re-run, use: FORCE_SETUP=1 docker compose up"
+    echo ">>> To force them to run again:"
+    echo ">>> a) Delete the $MARKER_FILE file."
+    echo ">>> b) Run the following command:"
+    echo ">>>    docker compose up"
 fi
 
 # Change to the esp directory before starting the server
