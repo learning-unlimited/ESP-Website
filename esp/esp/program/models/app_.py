@@ -105,7 +105,7 @@ class BaseAppElement(object):
     def update(self, form):
         # FIX: guard against models without a 'date' field (e.g. StudentAppResponse)
         if hasattr(self, 'date'):
-            self.date = datetime.datetime.now()
+            self.date = timezone.now()
         for field_name in self._field_names:
             if field_name in form.cleaned_data:
                 setattr(self, field_name, form.cleaned_data[field_name])
@@ -170,8 +170,8 @@ class StudentApplication(models.Model):
 
     # FIX: null=True allows Django Admin to instantiate an empty "Add" form without
     # immediately hitting the NOT NULL DB constraint before the user submits.
-    program = models.ForeignKey(Program, editable=False, on_delete=models.CASCADE, null=True)
-    user    = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE, null=True)
+    program = models.ForeignKey(Program, editable=False, on_delete=models.CASCADE)
+    user    = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
 
     questions = models.ManyToManyField(StudentAppQuestion)
     responses = models.ManyToManyField(StudentAppResponse)
@@ -248,20 +248,29 @@ class StudentApplication(models.Model):
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-@receiver(post_save, sender=StudentApplication)
+@receiver(
+    post_save,
+    sender=StudentApplication,
+    dispatch_uid="student_application_post_save",
+    weak=False,
+)
 def student_application_post_save(sender, instance, created, **kwargs):
     """Set questions for the student application after it is first created.
 
-    Key fixes vs. original:
+    Notes:
     - Only fires on `created`, not every save.
     - Uses raw FK id fields (user_id / program_id) to avoid DB lookups on
-      potentially incomplete instances (root cause of the IntegrityError).
-    - Disconnects/reconnects the signal around set_questions() to prevent
-      recursive re-entry from M2M operations bubbling back into post_save.
+      potentially incomplete instances.
+    - Does not mutate global signal connections; re-entry is guarded
+      with an instance-level flag.
     """
-    if created and instance.user_id and instance.program_id:
-        post_save.disconnect(student_application_post_save, sender=StudentApplication)
-        try:
-            instance.set_questions()
-        finally:
-            post_save.connect(student_application_post_save, sender=StudentApplication)
+    if not created:
+        return
+
+    if getattr(instance, "_questions_set", False):
+        return
+
+    if instance.user_id and instance.program_id:
+        instance._questions_set = True
+        instance.set_questions()
+
