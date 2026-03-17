@@ -17,29 +17,44 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    searchInput.addEventListener('keyup', function() {
-        var searchTerm = this.value.toLowerCase();
-        
+    // Helper to filter visible classes based on the current search term
+    function filterClasses(searchTerm) {
+        console.log("Inside filterClasses with searchTerm = ", searchTerm);
+        var normalizedTerm = (searchTerm || '').toLowerCase();
         var classRows = document.querySelectorAll('.class_row');
-        
+
         classRows.forEach(function(row) {
             // Get searchable data from data attributes
             var classId = (row.getAttribute('data-class-id') || '').toLowerCase();
             var classTitle = (row.getAttribute('data-class-title') || '').toLowerCase();
             var classTeacher = (row.getAttribute('data-class-teacher') || '').toLowerCase();
-            
+
             // Search in specific fields only
-            var matchFound = searchTerm === "" || 
-                            classId.indexOf(searchTerm) !== -1 ||
-                            classTitle.indexOf(searchTerm) !== -1 ||
-                            classTeacher.indexOf(searchTerm) !== -1;
-            
+            var matchFound = normalizedTerm === "" ||
+                            classId.indexOf(normalizedTerm) !== -1 ||
+                            classTitle.indexOf(normalizedTerm) !== -1 ||
+                            classTeacher.indexOf(normalizedTerm) !== -1;
             if (matchFound) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';
             }
         });
+    }
+
+    var isComposing = false;
+    searchInput.addEventListener('compositionstart', function() {
+        isComposing = true;
+    });
+    searchInput.addEventListener('compositionend', function() {
+        isComposing = false;
+        filterClasses(this.value);
+    });
+    searchInput.addEventListener('input', function() {
+        if (isComposing) {
+            return;
+        }
+        filterClasses(this.value);
     });
 });
 
