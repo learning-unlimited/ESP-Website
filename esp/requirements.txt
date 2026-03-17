@@ -27,7 +27,7 @@ pytest-cov==4.1.0 # Coverage measurement compatible with pytest-xdist parallel r
 pytest-django==4.5.2 # Django integration for pytest
 pytest-xdist==3.3.1 # Parallel test execution via -n auto
 ipython==7.34.0 # Used for shell_plus
-Markdown==2.3.1 # Used in QSD
+Markdown==3.4.4 # Used in QSD
 numpy==1.16.6 # Used mainly in the lottery and class change controller
 pillow==8.3.2 # Required for ImageField, which we use in teacher bios
 psycopg2==2.8.6 # Talks to postgres
