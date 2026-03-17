@@ -195,7 +195,13 @@ def histogram(answer_list, args='format=html'):
         except ValueError:
             context['results'].append({'value': ans, 'freq': 1})
 
-    context['results'].sort(key=lambda x: x['value'])
+    # sorting key to handle text & number labels
+    def sort_key(x):
+        try:
+            return (0, float(x['value']), '')
+        except ValueError:
+            return (1, 0, x['value'])
+    context['results'].sort(key=sort_key)
 
     #   Compute simple stats so postscript doesn't have to
     max_freq = 0
