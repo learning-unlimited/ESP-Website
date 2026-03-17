@@ -5,7 +5,6 @@ logger = logging.getLogger(__name__)
 from django.db import models, transaction, connection
 from django.db.utils import DatabaseError, ProgrammingError
 from esp.users.models import ESPUser
-from esp.program.models import Program
 
 class Form(models.Model):
     title = models.CharField(max_length=40, blank=True)
