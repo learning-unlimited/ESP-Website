@@ -374,14 +374,19 @@ class TeacherClassRegModule(ProgramModuleObj):
                     section = sections[0]
                     json_data['secid'] = section.id
                     if request.POST.get('undo', 'false').lower() == 'true':
-                        #should we also delete the program attendance record?
                         srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
                         if srs.exists():
                             for sr in srs:
-                                sr.expire() #or delete??
+                                sr.expire()
                             json_data['message'] = '%s is no longer marked as attending.' % student.name()
                         else:
                             json_data['message'] = '%s was not marked as attending.' % student.name()
+                        if request.POST.get('undo_checkin', 'false').lower() == 'true':
+                            rt = RecordType.objects.get(name="attended")
+                            recs = Record.objects.filter(user=student, program=prog, event=rt)
+                            if recs.exists():
+                                recs.delete()
+                                json_data['uncheckedin'] = True
                     else:
                         if not prog.isCheckedIn(student):
                             rt = RecordType.objects.get(name="attended")
