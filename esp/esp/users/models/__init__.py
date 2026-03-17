@@ -1463,20 +1463,36 @@ def expire_upcoming_records_on_deactivation(**kwargs):
 def expire_user_records_for_upcoming_programs(user):
     """Expire a user's registrations and permissions for programs that haven't ended yet."""
     from esp.program.models import (
-        Program, StudentRegistration, StudentSubjectInterest, VolunteerOffer
+        Program, StudentRegistration, StudentSubjectInterest, VolunteerOffer, Event
     )
+    from django.db.models import Max
+    from itertools import chain
 
     now = datetime.now()
 
-    upcoming_program_ids = []
-    for program in Program.objects.all():
-        datetime_range = program.datetime_range()
-        if datetime_range is not None:
-            start, end = datetime_range
-            if end >= now:
-                upcoming_program_ids.append(program.id)
-        else:
-            upcoming_program_ids.append(program.id)
+    # Determine upcoming programs using DB-side aggregation over Events:
+    # - Programs with at least one "Class Time Block" Event whose latest end >= now
+    # - Programs with no "Class Time Block" Events at all (matches previous datetime_range() None behavior)
+    class_time_events = Event.objects.filter(event_type__name="Class Time Block")
+
+    # Programs that have any "Class Time Block" events
+    program_ids_with_class_times = class_time_events.values_list("program_id", flat=True).distinct()
+
+    # Among those, keep programs whose latest class-time end is in the future or now
+    upcoming_with_events = (
+        class_time_events
+        .values("program_id")
+        .annotate(latest_end=Max("end"))
+        .filter(latest_end__gte=now)
+        .values_list("program_id", flat=True)
+    )
+
+    # Programs with no "Class Time Block" events at all are treated as upcoming
+    programs_without_events = Program.objects.exclude(
+        id__in=program_ids_with_class_times
+    ).values_list("id", flat=True)
+
+    upcoming_program_ids = list(chain(upcoming_with_events, programs_without_events))
 
     if not upcoming_program_ids:
         return
