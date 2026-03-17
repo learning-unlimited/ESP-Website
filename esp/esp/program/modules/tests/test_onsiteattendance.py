@@ -23,6 +23,8 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
     def test_times_attending_class_skips_invalid_time_windows(self):
         valid_student, invalid_student = self.students[:2]
         section_start = self.section.start_time().start
+        section_end = self.section.end_time().end
+        invalid_start = section_end + timedelta(minutes=1)
 
         StudentRegistration.objects.create(
             user=valid_student,
@@ -34,12 +36,12 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
             user=invalid_student,
             section=self.section,
             relationship=self.attended,
-            start_date=section_start + timedelta(hours=4),
+            start_date=invalid_start,
         )
 
         attendance = self.module.times_attending_class(self.program)
         expected_hour = section_start.replace(minute=0, second=0, microsecond=0)
-        invalid_hour = (section_start + timedelta(hours=4)).replace(
+        invalid_hour = invalid_start.replace(
             minute=0,
             second=0,
             microsecond=0,
