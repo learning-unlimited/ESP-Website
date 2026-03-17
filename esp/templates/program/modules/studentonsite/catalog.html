@@ -17,23 +17,33 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // Cache the class rows and precompute their searchable data once
+    var classRows = Array.prototype.slice.call(document.querySelectorAll('.class_row'));
+    classRows.forEach(function(row) {
+        // Precompute searchable data from data attributes (lowercased once)
+        var classId = (row.getAttribute('data-class-id') || '').toLowerCase();
+        var classTitle = (row.getAttribute('data-class-title') || '').toLowerCase();
+        var classTeacher = (row.getAttribute('data-class-teacher') || '').toLowerCase();
+        row._searchData = {
+            id: classId,
+            title: classTitle,
+            teacher: classTeacher
+        };
+    });
+
     // Helper to filter visible classes based on the current search term
     function filterClasses(searchTerm) {
-        console.log("Inside filterClasses with searchTerm = ", searchTerm);
         var normalizedTerm = (searchTerm || '').toLowerCase();
-        var classRows = document.querySelectorAll('.class_row');
 
         classRows.forEach(function(row) {
-            // Get searchable data from data attributes
-            var classId = (row.getAttribute('data-class-id') || '').toLowerCase();
-            var classTitle = (row.getAttribute('data-class-title') || '').toLowerCase();
-            var classTeacher = (row.getAttribute('data-class-teacher') || '').toLowerCase();
+            // Use precomputed searchable data
+            var data = row._searchData;
 
             // Search in specific fields only
             var matchFound = normalizedTerm === "" ||
-                            classId.indexOf(normalizedTerm) !== -1 ||
-                            classTitle.indexOf(normalizedTerm) !== -1 ||
-                            classTeacher.indexOf(normalizedTerm) !== -1;
+                            data.id.indexOf(normalizedTerm) !== -1 ||
+                            data.title.indexOf(normalizedTerm) !== -1 ||
+                            data.teacher.indexOf(normalizedTerm) !== -1;
             if (matchFound) {
                 row.style.display = '';
             } else {
