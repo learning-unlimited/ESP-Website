@@ -1,0 +1,73 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Survey Administration - CSV Import Preview{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/survey_manage.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+<h1>CSV Import Preview for {{ program.niceName }}</h1>
+
+<h2>Import Questions into: {{ survey.name }} ({{ survey.category }})</h2>
+
+{% if errors %}
+<div class="alert alert-warning">
+    <h3>Validation Errors</h3>
+    <p>The following rows had errors and will not be imported:</p>
+    <table width="100%" cellpadding="4" cellspacing="0">
+        <tr>
+            <th width="15%">Row</th>
+            <th width="85%">Error</th>
+        </tr>
+        {% for error in errors %}
+        <tr>
+            <td class="underline">{% if error.row_number == 0 %}Header{% else %}{{ error.row_number }}{% endif %}</td>
+            <td class="underline">{{ error.message }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+{% if parsed_rows %}
+<form method="post" action="/manage/{{ program.url }}/surveys/csv_import">
+    <input type="hidden" name="import_confirm" value="yes" />
+    <input type="hidden" name="survey_id" value="{{ survey.id }}" />
+
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="6">Questions to Import ({{ parsed_rows|length }} valid)</th></tr>
+        <tr>
+            <th width="5%">Row</th>
+            <th width="30%">Question Text</th>
+            <th width="20%">Question Type</th>
+            <th width="10%">Per Class</th>
+            <th width="5%">Seq</th>
+            <th width="30%">Param Values</th>
+        </tr>
+        {% for row in parsed_rows %}
+        <tr>
+            <td class="underline">{{ row.row_number }}</td>
+            <td class="underline">{{ row.question_text }}</td>
+            <td class="underline">{{ row.question_type_name }}</td>
+            <td class="underline">{% if row.per_class %}&#10003;{% endif %}</td>
+            <td class="underline">{{ row.seq }}</td>
+            <td class="underline">{{ row.param_values }}</td>
+        </tr>
+        <input type="hidden" name="row_data" value='{{ row.json_data }}' />
+        {% endfor %}
+        <tr><td colspan="6" align="center"><input class="btn btn-primary" type="submit" value="Confirm Import" /></td></tr>
+    </table>
+</form>
+{% else %}
+{% if not errors %}
+<p>No valid rows found in the CSV file.</p>
+{% endif %}
+{% endif %}
+
+<br />
+<a class="btn" href="/manage/{{ program.getUrlBase }}/surveys/manage">Return to survey management</a>
+
+{% endblock %}

@@ -12,7 +12,7 @@
 {% block xtrajs %}
     {{ block.super }}
     <script type="text/javascript">
-        var question_types = {{ question_types|safe }};
+        var question_types = JSON.parse('{{ question_types|escapejs }}');
     </script>
 {% endblock %}
 
@@ -47,6 +47,18 @@ Each step below is a form that you can expand or contract by clicking on the hea
         <tr><th colspan="2">Import a survey from a previous program</th></tr>
         {{ import_survey_form }}
         <tr><td colspan="2" align="center"><input class="btn btn-primary" type="submit" value="Import Survey" /></td></tr>
+    </table>
+    </form>
+    <br />
+    <form method="post" action="/manage/{{ program.url }}/surveys/csv_import" enctype="multipart/form-data">
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2">Import questions from a CSV file</th></tr>
+        {{ csv_import_form.as_table }}
+        <tr><td colspan="2" align="center">
+            <input class="btn btn-primary" type="submit" value="Upload & Preview" />
+            &nbsp;
+            <a class="btn" href="/manage/{{ program.url }}/surveys/csv_template">Download CSV Template</a>
+        </td></tr>
     </table>
     </form>
     <br />
