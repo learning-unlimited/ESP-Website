@@ -161,11 +161,15 @@ class BigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_prefs(self, prog):
-        num_srs = StudentRegistration.valid_objects().filter(
+        srs = set(StudentRegistration.valid_objects().filter(
             Q(relationship__name='Interested') |
             Q(relationship__name__contains='Priority/'),
-            section__parent_class__parent_program=prog).count()
-        return num_srs + self.num_ssis(prog)
+            section__parent_class__parent_program=prog).values_list('user_id', 'section__parent_class_id').distinct())
+
+        ssis = set(StudentSubjectInterest.valid_objects().filter(
+            subject__parent_program=prog).values_list('user_id', 'subject_id').distinct())
+
+        return len(srs | ssis)
 
     @cache_function_for(105)
     def num_medical(self, prog):

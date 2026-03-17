@@ -1805,6 +1805,45 @@ class ConfirmationEmailControllerTest(TestCase):
         self.assertEqual(mock_send_mail.call_count, 2)
 
 
+class BigBoardModuleTest(ProgramFrameworkTest):
+    def test_double_count_prefs(self):
+        """
+        Test that Lottery stats do not double-count students who both priority and star a class.
+        This tests that BigBoardModule.num_prefs removes duplicate class preferences.
+        """
+        from esp.program.models import StudentSubjectInterest, StudentRegistration, RegistrationType
+        from esp.program.modules.handlers.bigboardmodule import BigBoardModule
+
+        # Create one user and two preferences (star and priority) for the same class
+        user = self.students[0]
+        prog = self.program
+
+        # We need a section to link to
+        cls = prog.classes()[0]
+        sec = cls.get_sections()[0]
+
+        # Ensure BigBoardModule instance exists
+        module = BigBoardModule()
+
+        # Pre-execution checks
+        self._flush_cache()
+        self.assertEqual(module.num_prefs(prog), 0)
+
+        # 1. Add a star (StudentSubjectInterest) to the parent_class
+        StudentSubjectInterest.objects.create(user=user, subject=sec.parent_class)
+        self._flush_cache()
+        self.assertEqual(module.num_prefs(prog), 1)
+
+        # 2. Add a Priority/1 (StudentRegistration) to the section
+        rt, _ = RegistrationType.objects.get_or_create(name='Priority/1', category='student')
+        StudentRegistration.objects.create(user=user, section=sec, relationship=rt)
+
+        # Because we only consider distinct (user, subject) pairs for preferences,
+        # it should still be 1 preference (not 2).
+        self._flush_cache()
+        self.assertEqual(module.num_prefs(prog), 1)
+
+
 class ManageDocsViewTest(TestCase):
     """Tests for the /manage/docs documentation viewer."""
 
