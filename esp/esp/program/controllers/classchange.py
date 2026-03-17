@@ -480,7 +480,7 @@ class ClassChangeController(object):
         #   Populate section overlap matrix
         for i in range(self.num_sections):
             group_ids = numpy.nonzero(self.parent_classes == self.parent_classes[i])[0]
-            self.same_subject[tuple(numpy.meshgrid(group_ids, group_ids))] = True
+            self.same_subject[numpy.ix_(group_ids, group_ids)] = True
 
             sec_times = numpy.transpose(numpy.nonzero(self.section_schedules[i,:]))
             for [ts_ind,] in sec_times:
