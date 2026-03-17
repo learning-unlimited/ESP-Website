@@ -5,13 +5,12 @@ Covers:
   - bio_not_found()         — 404 response
   - bio_user()              — inactive, hidden, old_url, defaults, active
   - bio()                   — username lookup, old_url, not found
-  - bio_edit()              — auth required, lookup, old_url redirect
   - bio_edit_user_program() — permission checks, GET form, POST save
 
 PR 5/6 — esp/web module coverage improvement
 """
 
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory
 from django.contrib.auth.models import AnonymousUser
 
 from esp.tests.util import CacheFlushTestCase
@@ -132,10 +131,12 @@ class BioUserTest(CacheFlushTestCase):
 
     def test_old_url_returns_redirect(self):
         teacher = _make_teacher('oldurl_teacher')
+        teacherbio = TeacherBio.getLastBio(teacher)
         request = self.factory.get('/')
         request.user = AnonymousUser()
         response = bio_user(request, teacher, old_url=True)
         self.assertEqual(response.status_code, 301)
+        self.assertEqual(response['Location'], teacherbio.url())
 
     def test_active_teacher_returns_200(self):
         teacher = _make_teacher('active_teacher')
@@ -153,6 +154,7 @@ class BioUserTest(CacheFlushTestCase):
         request.user = AnonymousUser()
         response = bio_user(request, teacher, old_url=False)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context_data['bio'].picture, 'images/not-available.jpg')
 
     def test_empty_slugbio_filled_with_default(self):
         teacher = _make_teacher('noslug_teacher')
@@ -163,6 +165,7 @@ class BioUserTest(CacheFlushTestCase):
         request.user = AnonymousUser()
         response = bio_user(request, teacher, old_url=False)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context_data['bio'].slugbio, 'ESP Teacher')
 
     def test_empty_bio_filled_with_default(self):
         teacher = _make_teacher('nobio_teacher')
@@ -173,6 +176,7 @@ class BioUserTest(CacheFlushTestCase):
         request.user = AnonymousUser()
         response = bio_user(request, teacher, old_url=False)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context_data['bio'].bio, 'Not Available.')
 
 
 # ---------------------------------------------------------------------------
@@ -205,7 +209,7 @@ class BioViewTest(CacheFlushTestCase):
         request.user = AnonymousUser()
         response = bio(request, tl='teach', username=teacher.username)
         # should NOT be a redirect — it's the current URL pattern
-        self.assertNotEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 200)
 
 
 # ---------------------------------------------------------------------------
@@ -252,19 +256,22 @@ class BioEditUserProgramTest(CacheFlushTestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_old_url_returns_301(self):
+        lastbio = TeacherBio.getLastBio(self.teacher)
         request = self.factory.get('/')
         request.user = self.teacher
         response = bio_edit_user_program(
             request, self.teacher, None, old_url=True
         )
         self.assertEqual(response.status_code, 301)
+        self.assertEqual(response['Location'], lastbio.edit_url())
 
     def test_valid_post_saves_and_redirects(self):
+        # Omit 'hidden' to simulate an unchecked checkbox (BooleanField treats
+        # the string 'False' as truthy, so we must omit it for hidden=False).
         request = self.factory.post('/', {
             'bio_submitted': '1',
             'slugbio': 'Math lover',
             'bio': 'I teach math.',
-            'hidden': False,
         })
         request.user = self.teacher
         response = bio_edit_user_program(request, self.teacher, None)
@@ -273,6 +280,7 @@ class BioEditUserProgramTest(CacheFlushTestCase):
         bio_obj = TeacherBio.getLastBio(self.teacher)
         self.assertEqual(bio_obj.slugbio, 'Math lover')
         self.assertEqual(bio_obj.bio, 'I teach math.')
+        self.assertFalse(bio_obj.hidden)
 
     def test_post_without_bio_submitted_key_renders_form(self):
         request = self.factory.post('/', {
@@ -284,11 +292,11 @@ class BioEditUserProgramTest(CacheFlushTestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_post_slugbio_too_long_rerenders_form(self):
+        # Omit 'hidden' to avoid BooleanField coercing the string 'False' as truthy.
         request = self.factory.post('/', {
             'bio_submitted': '1',
             'slugbio': 'x' * 51,   # max_length=50
             'bio': 'Some bio.',
-            'hidden': False,
         })
         request.user = self.teacher
         response = bio_edit_user_program(request, self.teacher, None)
