@@ -13,6 +13,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     
     var searchInput = document.getElementById('student_class_search');
+    if (!searchInput) {
+        return;
+    }
 
     searchInput.addEventListener('keyup', function() {
         var searchTerm = this.value.toLowerCase();
