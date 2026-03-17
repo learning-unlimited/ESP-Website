@@ -15,6 +15,14 @@ except ImportError:
 def get_current_request():
     return getattr(_threading_local, 'request', None)
 
+def clear_current_request():
+    """Remove the thread-local request, if any.
+
+    Useful in tests where a stale request may reference a rolled-back user.
+    """
+    if hasattr(_threading_local, 'request'):
+        del _threading_local.request
+
 def AutoRequestContext(*args, **kwargs):
     request = get_current_request()
     if request is None:
