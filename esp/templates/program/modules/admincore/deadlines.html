@@ -17,63 +17,63 @@
 {{ block.super }}
 <script type="text/javascript" src="/media/scripts/jquery.jstree.js"></script>
 
-<script>
-    $(document).ready(function () {
-
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie !== "") {
-                var cookies = document.cookie.split(";");
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = $.trim(cookies[i]);
-                    if (cookie.substring(0, name.length + 1) === (name + "=")) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
+<script type="text/javascript">
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
-            return cookieValue;
         }
+    }
+    return cookieValue;
+}
 
-        var csrftoken = getCookie("csrftoken");
+var csrftoken = getCookie('csrftoken');
 
-        $(document).on("click", ".ajax-deadline", function (e) {
-            e.preventDefault();
+$(document).on('click', '.ajax-deadline', function(e) {
+    e.preventDefault();
+    var $this = $(this);
+    if ($this.hasClass('disabled')) return;
 
-            var button = $(this);
-            var url = button.data("url");
+    $this.addClass('disabled');
 
-            button.prop("disabled", true);
+    var $th = $this.closest('th');
+    var url = $th.hasClass('is_open') ? $this.data('close-url') : $this.data('open-url');
 
-            $.ajax({
-                url: url,
-                type: "POST",
-                headers: {
-                    "X-CSRFToken": csrftoken
-                },
-                success: function () {
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: {csrfmiddlewaretoken: csrftoken},
+        success: function(data) {
+            if (typeof data === "string" && data.indexOf("message_bad") !== -1) {
+                alert("Failed to update deadline.");
+                $this.removeClass('disabled');
+                return;
+            }
 
-                    if (button.hasClass("btn-danger")) {
-                        button.removeClass("btn-danger")
-                            .addClass("btn-success")
-                            .text("Open");
-                    } else {
-                        button.removeClass("btn-success")
-                            .addClass("btn-danger")
-                            .text("Close");
-                    }
+            var isOpening = !$th.hasClass('is_open');
 
-                    button.prop("disabled", false);
-                },
-                error: function () {
-                    alert("Failed to update deadline.");
-                    button.prop("disabled", false);
-                }
-            });
+            $th.toggleClass('is_open is_closed');
+            $this.text(isOpening ? 'Close' : 'Open');
+            $this.toggleClass('btn-success btn-danger');
 
-        });
+            var temp = $this.data('open-url');
+            $this.data('open-url', $this.data('close-url'));
+            $this.data('close-url', temp);
 
+            $this.removeClass('disabled');
+        },
+        error: function() {
+            alert('Error occurred. Please try again.');
+            $this.removeClass('disabled');
+        }
     });
+});
 </script>
 {% endblock %}
 {% block content %}
@@ -153,19 +153,21 @@
                                 style="color: royalblue;">(recursive)</span>{% endif %}<br>
                             <span class="bituri">{{ perm_type }}</span>
                             <br /><br />
-
                             {% if details.is_open %}
-                            <button {% if details.implied_open %}disabled
-                                title="Can not be closed due to implied deadline" {% endif %} type="button"
-                                class="btn btn-danger ajax-deadline"
-                                data-url="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}">
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}"
+                                class="btn btn-danger ajax-deadline {% if details.implied_open %}disabled{% endif %}"
+                                {% if details.implied_open %}title="Can not be closed due to implied deadline"{% endif %}
+                                data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"
+                                data-close-url="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}">
                                 Close
-                            </button>
+                            </a>
                             {% else %}
-                            <button type="button" class="btn btn-success ajax-deadline"
-                                data-url="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}">
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"
+                                class="btn btn-success ajax-deadline"
+                                data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"
+                                data-close-url="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}">
                                 Open
-                            </button>
+                            </a>
                             {% endif %}
                         </th>
                         {% for perm in details.perms %}
@@ -180,9 +182,7 @@
                                 {% else %}
                                 <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
                                 {% if details.perms|length > 1 %}
-                                <a
-                                    href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline"><button
-                                        type="button" class="btn btn-danger btn-small">Delete</button></a>
+                                <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline" class="btn btn-danger btn-small">Delete</a>
                                 {% endif %}
                                 {% endif %}
                             </td>
@@ -252,33 +252,38 @@
                         <th></th>
                     </tr>
                     {% endif %}
-                    <tr style="border-top: 1px solid grey;">
-                    <th>{{ perm.user }}</th>
-                    <th class="{% if perm.is_valid %}is_open{% else %}is_closed{% endif %}">
-                        {{ perm.permission_type|perm_nice_name }}<br>
-                        <span class="bituri">{{ perm.permission_type }}</span>
-                        <br /><br />
-                        {% if perm.is_valid %}
-                        <button type="button" class="btn btn-danger ajax-deadline"
-                            data-url="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}">
-                            Close
-                        </button>
-                        {% else %}
-                        <button type="button" class="btn btn-success ajax-deadline"
-                            data-url="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}">
-                            Open
-                        </button> {% endif %}
-                    </th>
-                    <td>
-                        {{ perm.form.id }}
-                        <b>Start:</b><br>{{ perm.form.start_date }}<br>
-                        <b>End:</b><br>{{ perm.form.end_date }}
-                    </td>
-                    <td align="center" valign="center">
-                        <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
-                        <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission"><button
-                                type="button" class="btn btn-danger btn-small">Delete</button></a>
-                    </td>
+                    <tr
+                        style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
+                        <th>{{ perm.user }}</th>
+                        <th class="{% if perm.is_valid %}is_open{% else %}is_closed{% endif %}">
+                            {{ perm.permission_type|perm_nice_name }}<br>
+                            <span class="bituri">{{ perm.permission_type }}</span>
+                            <br /><br />
+                            {% if perm.is_valid %}
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}"
+                                class="btn btn-danger ajax-deadline"
+                                data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"
+                                data-close-url="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}">
+                                Close
+                            </a>
+                            {% else %}
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"
+                                class="btn btn-success ajax-deadline"
+                                data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"
+                                data-close-url="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}">
+                                Open
+                            </a>
+                            {% endif %}
+                        </th>
+                        <td>
+                            {{ perm.form.id }}
+                            <b>Start:</b><br>{{ perm.form.start_date }}<br>
+                            <b>End:</b><br>{{ perm.form.end_date }}
+                        </td>
+                        <td align="center" valign="center">
+                            <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission" class="btn btn-danger btn-small">Delete</a>
+                        </td>
                     </tr>
                     {% empty %}
                     <td colspan="3">No permissions set</td>
@@ -286,9 +291,9 @@
                     {% endfor %}
                 </tbody>
             </table>
-    </div>
-
     </form>
+
+    </div>
 
     <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="create_perm_form">
 
