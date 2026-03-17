@@ -589,6 +589,13 @@ all_program_tags = {
         'category': 'manage',
         'is_setting': True,
     },
+    'separate_catalog_pages': {
+        'is_boolean': True,
+        'help_text': 'Show category-specific catalog pages instead of a single combined catalog page.',
+        'default': False,
+        'category': 'learn',
+        'is_setting': True,
+    },
     # These help_text tags are in order of the fields in TeacherClassRegForm
     'teacherreg_help_text_title': {
         'is_boolean': False,
@@ -1135,6 +1142,14 @@ all_program_tags = {
         'category': 'learn',
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
+    },
+    'twophase_min_classes': {
+        'is_boolean': False,
+        'help_text': 'The minimum number of classes a student must select before submitting two-phase registration',
+        'default': '0',
+        'category': 'learn',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
     },
     'survey_teacher_filter': {
         'is_boolean': False,
