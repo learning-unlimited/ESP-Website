@@ -37,9 +37,15 @@ class AutocompleteAuthTest(TestCase):
     def test_unauthenticated_request_redirects(self):
         """Anonymous requests should not reach the view."""
         response = Client().get(AUTOCOMPLETE_URL, self._base_params())
-        self.assertNotEqual(
-            response.status_code, 200,
-            "Unauthenticated requests should not return 200"
+        # Unauthenticated users should be redirected to the admin login page.
+        self.assertEqual(
+            response.status_code, 302,
+            "Unauthenticated requests should be redirected to the login page"
+        )
+        self.assertIn(
+            '/admin/login',
+            response['Location'],
+            "Unauthenticated requests should redirect to the admin login URL",
         )
 
     def test_missing_model_module_returns_400(self):
@@ -75,9 +81,12 @@ class AutocompleteAuthTest(TestCase):
         params = self._base_params()
         params['model_name'] = 'FakeModel'
 
-        # Change: Expect an AttributeError because the view crashes
-        with self.assertRaises(AttributeError):
-            self.client.get(AUTOCOMPLETE_URL, params)
+        response = self.client.get(AUTOCOMPLETE_URL, params)
+        self.assertEqual(
+            response.status_code,
+            400,
+            "Invalid model_name should return HTTP 400, not crash"
+        )
 
 
 class AutocompleteResultFormatTest(TestCase):
@@ -150,15 +159,22 @@ class AutocompleteESPUserSearchTest(TestCase):
         self.client.login(username='staffsearcher', password='pw')
 
     def _search(self, query):
-        return self.client.get(AUTOCOMPLETE_URL, {
+        response = self.client.get(AUTOCOMPLETE_URL, {
             'model_module': 'esp.users.models',
             'model_name': 'ESPUser',
             'ajax_data': query,
             'prog': '',
         })
+        self.assertEqual(
+            response.status_code, 200,
+            "Autocomplete search should return HTTP 200 OK"
+        )
+        return response
 
     def _result_ids(self, query):
-        return [e['id'] for e in json.loads(self._search(query).content)['result']]
+        response = self._search(query)
+        data = json.loads(response.content)
+        return [e['id'] for e in data['result']]
 
     def test_search_by_last_name(self):
         """Users can be found by last name prefix."""
@@ -290,8 +306,8 @@ class AutocompleteNonStaffAccessTest(TestCase):
 
         @classmethod
         def patched_ajax(cls, data, allow_non_staff=True, **kwargs):
-            # Ignore unexpected kwargs (e.g. grade/last_name_range/prog) passed by view
-            return original_ajax(cls, data, allow_non_staff=allow_non_staff)
+            # Forward any additional kwargs so the test reflects production semantics
+            return original_ajax(cls, data, allow_non_staff=allow_non_staff, **kwargs)
 
         with patch.object(K12School, 'ajax_autocomplete', patched_ajax):
             response = self.client.get(AUTOCOMPLETE_URL, {
