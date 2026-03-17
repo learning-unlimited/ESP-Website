@@ -48,7 +48,12 @@ from django.template.loader import render_to_string
 from esp.middleware import ESPError
 from esp.utils.sanitize import strip_base64_images
 
+import logging
+import os
 import re
+import subprocess
+
+logger = logging.getLogger(__name__)
 
 # Match /learn/, /teach/, or /volunteer/ + ProgramName/Instance (program url = two path segments)
 _PROGRAM_URL_PATTERN = re.compile(
@@ -331,7 +336,25 @@ class CommModule(ProgramModuleObj):
 
         newmsg_request.save()
 
-        context = {}
+        # Auto-trigger email processing so admins don't have to wait for the
+        # cron job.  dbmail_cron.py uses fcntl file locking to prevent
+        # concurrent execution, so this is safe even if the cron is running.
+        from django.conf import settings
+        dbmail_cron_path = os.path.join(settings.PROJECT_ROOT, 'dbmail_cron.py')
+        auto_trigger_ok = False
+        try:
+            subprocess.Popen(
+                [dbmail_cron_path],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True,
+                start_new_session=True,
+            )
+            auto_trigger_ok = True
+        except Exception:
+            logger.exception('Failed to auto-trigger email processing after commpanel submit')
+
+        context = {'auto_trigger_ok': auto_trigger_ok}
         if public_view:
             context['req_id'] = newmsg_request.id
         return render_to_response(self.baseDir()+'finished.html', request, context)
