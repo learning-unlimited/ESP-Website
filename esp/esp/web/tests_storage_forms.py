@@ -2,16 +2,16 @@
 Unit tests for:
   - esp/web/storage.py          (LowercaseExtensionStorage)
   - esp/web/forms/__init__.py   (ResizeImageField)
-  - esp/web/forms/contact_form.py  (ContactForm)
   - esp/web/forms/bioedit_form.py  (BioEditForm)
   - esp/web/forms/fileupload_form.py (FileUploadForm, FileUploadForm_Admin, FileRenameForm)
 
-PR 2/6 — web module coverage improvement
+PR 2/11 — web module coverage improvement
 """
 
-import io
 from unittest.mock import patch, MagicMock
 
+from django import forms
+from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
@@ -75,48 +75,39 @@ class LowercaseExtensionStorageNormalizeTest(TestCase):
 
 
 class LowercaseExtensionStorageSaveTest(TestCase):
-    """Tests for LowercaseExtensionStorage.save()"""
+    """Tests for LowercaseExtensionStorage.save()
+
+    Copilot fix: use patch.object(FileSystemStorage, ...) directly instead of
+    fragile __bases__[0] inheritance-chain access.
+    """
 
     def setUp(self):
         self.storage = LowercaseExtensionStorage()
 
     def test_save_lowercases_extension(self):
         content = SimpleUploadedFile("test.JPG", b"fake-image-data")
-        with patch.object(
-            LowercaseExtensionStorage.__bases__[0],
-            "save",
-            return_value="test.jpg"
-        ) as mock_save:
-            result = self.storage.save("test.JPG", content)
-            # The name passed to parent must be lowercased
+        with patch.object(FileSystemStorage, "save", return_value="test.jpg") as mock_save:
+            self.storage.save("test.JPG", content)
             call_args = mock_save.call_args[0]
             self.assertEqual(call_args[0], "test.jpg")
 
     def test_save_passes_content_unchanged(self):
         content = SimpleUploadedFile("photo.PNG", b"fake-png-data")
-        with patch.object(
-            LowercaseExtensionStorage.__bases__[0],
-            "save",
-            return_value="photo.png"
-        ) as mock_save:
+        with patch.object(FileSystemStorage, "save", return_value="photo.png") as mock_save:
             self.storage.save("photo.PNG", content)
             call_args = mock_save.call_args[0]
             self.assertEqual(call_args[1], content)
 
     def test_save_no_extension_passes_name_unchanged(self):
         content = SimpleUploadedFile("README", b"data")
-        with patch.object(
-            LowercaseExtensionStorage.__bases__[0],
-            "save",
-            return_value="README"
-        ) as mock_save:
+        with patch.object(FileSystemStorage, "save", return_value="README") as mock_save:
             self.storage.save("README", content)
             call_args = mock_save.call_args[0]
             self.assertEqual(call_args[0], "README")
 
 
 # ---------------------------------------------------------------------------
-# ResizeImageField
+# ResizeImageField — __init__
 # ---------------------------------------------------------------------------
 
 class ResizeImageFieldInitTest(TestCase):
@@ -132,9 +123,77 @@ class ResizeImageFieldInitTest(TestCase):
 
     def test_not_required_accepts_empty(self):
         field = ResizeImageField(required=False)
-        # clean(None, initial=None) on a non-required field should return None
         result = field.clean(None, initial=None)
         self.assertIsNone(result)
+
+
+# ---------------------------------------------------------------------------
+# ResizeImageField — clean() branches (100 % coverage for forms/__init__.py)
+# ---------------------------------------------------------------------------
+
+class ResizeImageFieldCleanTest(TestCase):
+    """Tests for ResizeImageField.clean() — every branch exercised."""
+
+    def _mock_pil_image(self):
+        """PIL Image mock that writes fake bytes to the buffer on save()."""
+        img = MagicMock()
+        img.format = 'JPEG'
+        img.save.side_effect = lambda buf, fmt: buf.write(b'\xff\xd8\xff')
+        return img
+
+    def test_returns_file_unchanged_when_size_is_none(self):
+        """size=None skips the resize block entirely — file returned as-is."""
+        fake = SimpleUploadedFile("shot.jpg", b"data")
+        field = ResizeImageField(size=None, required=False)
+        with patch.object(forms.FileField, 'clean', return_value=fake):
+            result = field.clean(fake, initial=None)
+        self.assertIs(result, fake)
+
+    def test_resize_via_read_attribute(self):
+        """File has .read — BytesIO branch taken; extension is lowercased."""
+        fake = SimpleUploadedFile("shot.JPG", b"data")
+        field = ResizeImageField(size=(100, 100), required=False)
+        mock_img = self._mock_pil_image()
+        with patch.object(forms.FileField, 'clean', return_value=fake), \
+             patch('PIL.Image.open', return_value=mock_img), \
+             patch('PIL.Image.ANTIALIAS', new=1, create=True):
+            result = field.clean(fake, initial=None)
+        self.assertIsInstance(result, SimpleUploadedFile)
+        self.assertTrue(result.name.endswith('.jpg'))   # extension lowercased
+
+    def test_resize_via_temporary_file_path(self):
+        """File has .temporary_file_path — path string passed to Image.open."""
+        fake = MagicMock()
+        fake.name = "upload.JPG"
+        fake.temporary_file_path.return_value = "/tmp/upload.JPG"
+        field = ResizeImageField(size=(100, 100), required=False)
+        mock_img = self._mock_pil_image()
+        with patch.object(forms.FileField, 'clean', return_value=fake), \
+             patch('PIL.Image.open', return_value=mock_img) as mock_open, \
+             patch('PIL.Image.ANTIALIAS', new=1, create=True):
+            field.clean(fake, initial=None)
+        mock_open.assert_called_once_with("/tmp/upload.JPG")
+
+    def test_unreadable_file_raises_validation_error(self):
+        """Neither .read nor .temporary_file_path — raises ValidationError."""
+        fake = MagicMock(spec=['name'])   # only .name — no read or temp_file_path
+        fake.name = "mystery.jpg"
+        field = ResizeImageField(size=(100, 100), required=False)
+        with patch.object(forms.FileField, 'clean', return_value=fake):
+            with self.assertRaises(forms.ValidationError) as ctx:
+                field.clean(fake, initial=None)
+        self.assertIn('Image unreadable', str(ctx.exception))
+
+    def test_ioerror_in_pil_raises_validation_error(self):
+        """IOError during Image.open — raises ValidationError('Image resize failed.')."""
+        fake = SimpleUploadedFile("shot.jpg", b"data")
+        field = ResizeImageField(size=(100, 100), required=False)
+        with patch.object(forms.FileField, 'clean', return_value=fake), \
+             patch('PIL.Image.open', side_effect=IOError("corrupt")), \
+             patch('PIL.Image.ANTIALIAS', new=1, create=True):
+            with self.assertRaises(forms.ValidationError) as ctx:
+                field.clean(fake, initial=None)
+        self.assertIn('Image resize failed', str(ctx.exception))
 
 
 # ---------------------------------------------------------------------------
@@ -158,16 +217,12 @@ class BioEditFormTest(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_slugbio_max_length_enforced(self):
-        form = BioEditForm(data={
-            'slugbio': 'x' * 51,  # max_length=50
-        })
+        form = BioEditForm(data={'slugbio': 'x' * 51})  # max_length=50
         self.assertFalse(form.is_valid())
         self.assertIn('slugbio', form.errors)
 
     def test_slugbio_at_max_length_valid(self):
-        form = BioEditForm(data={
-            'slugbio': 'x' * 50,
-        })
+        form = BioEditForm(data={'slugbio': 'x' * 50})
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_hidden_field_false(self):
