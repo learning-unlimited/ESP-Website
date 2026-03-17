@@ -463,7 +463,6 @@ class UserSearchController(object):
         return context
 
     def create_filter(self, request, program, template=None, target_path=None, add_to_context={}):
-        from esp.program.modules.handlers.listgenmodule import ListGenModule
         """ Function to obtain a list of users, possibly requiring multiple requests.
             Similar to the old get_user_list function.
 
@@ -472,6 +471,7 @@ class UserSearchController(object):
             the intermediate user search form.  This allows printable links
             to skip the search step when admins want all users of a type.
         """
+        from esp.program.modules.handlers.listgenmodule import ListGenModule
 
         if template is None:
             template = 'users/usersearch/usersearch_default.html'
@@ -486,16 +486,23 @@ class UserSearchController(object):
 
         #   Allow GET requests with auto_submit=true to bypass the search form
         if request.method == 'GET' and request.GET.get('auto_submit') == 'true':
+            #   Keys that are conceptually multi-valued and must always be
+            #   lists, matching the behavior of ListGenModule.processPost.
+            multi_value_keys = {
+                'regtypes', 'teaching_times', 'teacher_events',
+                'class_times', 'groups_include', 'groups_exclude',
+            }
             data = {}
             for key in request.GET:
                 if key == 'auto_submit':
                     continue
-                #   Handle keys that may have multiple values
                 values = request.GET.getlist(key)
-                if len(values) > 1:
+                if key in multi_value_keys:
+                    data[key] = values
+                elif len(values) > 1:
                     data[key] = values
                 else:
-                    data[key] = request.GET[key]
+                    data[key] = values[0]
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
                 filterObj = self.filter_from_postdata(program, data)
                 return (filterObj, True)

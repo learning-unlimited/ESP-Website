@@ -49,7 +49,7 @@ $j(function () {
     
     $j("#item_type").on("change", function (){
         // Get user-selected options
-        var url = "./selectList?recipient_type=Student&base_list=extracosts_" + $j("#item_type").val() + "&auto_submit=true";
+        var url = "./selectList?recipient_type=Student&base_list=extracosts_" + $j("#item_type").val();
         
         // Update href
         $j("#line_item_list a").attr('href', url);
