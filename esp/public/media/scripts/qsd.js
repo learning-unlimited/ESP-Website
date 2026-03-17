@@ -132,22 +132,37 @@ function qsd_toggle_history(qsd_url, edit_id)
         for (var i = 0; i < versions.length; i++) {
             var v = versions[i];
             var escapedSnippet = $j('<span>').text(v.snippet).html();
+            var escapedDate = $j('<span>').text(v.date).html();
+            var escapedAuthor = v.author ? $j('<span>').text(v.author).html() : '<em>Unknown</em>';
             html += '<tr>';
-            html += '<td style="white-space:nowrap;">' + v.date + '</td>';
-            html += '<td>' + (v.author || '<em>Unknown</em>') + '</td>';
+            html += '<td style="white-space:nowrap;">' + escapedDate + '</td>';
+            html += '<td>' + escapedAuthor + '</td>';
             html += '<td><small class="qsd_history_snippet">' + escapedSnippet + '</small></td>';
             html += '<td style="white-space:nowrap;">';
-            html += '<button type="button" class="btn btn-xs btn-default" '
-                  + 'onclick="qsd_preview_version(\'' + edit_id + '\', ' + v.version_id + ')">'
+            html += '<button type="button" class="btn btn-xs btn-default qsd-view-btn" '
+                  + 'data-edit-id="' + edit_id + '" data-version-id="' + v.version_id + '">'
                   + '<span class="glyphicon glyphicon-eye-open"></span> View</button> ';
-            html += '<button type="button" class="btn btn-xs btn-warning" '
-                  + 'onclick="qsd_restore_version(\'' + qsd_url + '\', \'' + edit_id + '\', ' + v.version_id + ', \'' + v.date.replace(/\\/g, "\\\\").replace(/'/g, "\\'") + '\')">'
+            html += '<button type="button" class="btn btn-xs btn-warning qsd-restore-btn" '
+                  + 'data-qsd-url="' + qsd_url + '" data-edit-id="' + edit_id + '" '
+                  + 'data-version-id="' + v.version_id + '" data-version-date="' + escapedDate + '">'
                   + '<span class="glyphicon glyphicon-repeat"></span> Restore</button>';
             html += '</td>';
             html += '</tr>';
         }
         html += '</tbody></table></div>';
         $panel.html(html);
+
+        // Delegated event handlers (avoids inline onclick escaping issues)
+        // Use .off() first to prevent duplicate bindings on repeated toggle
+        $panel.off('click', '.qsd-view-btn').on('click', '.qsd-view-btn', function() {
+            var $btn = $j(this);
+            qsd_preview_version($btn.data('edit-id'), $btn.data('version-id'));
+        });
+        $panel.off('click', '.qsd-restore-btn').on('click', '.qsd-restore-btn', function() {
+            var $btn = $j(this);
+            qsd_restore_version($btn.data('qsd-url'), $btn.data('edit-id'),
+                                $btn.data('version-id'), $btn.data('version-date'));
+        });
     }).fail(function(req) {
         $panel.html('<p style="padding:8px; color:red;">Error loading history: ' + req.responseText + '</p>');
     });
@@ -188,25 +203,63 @@ function qsd_cancel_preview(edit_id)
 
 function qsd_restore_version(qsd_url, edit_id, version_id, version_date)
 {
-    if (!confirm('Restore this page to the version from ' + version_date + '?\n\nThis will create a new revision with the old content.')) {
-        return;
-    }
+    // Remove any existing modal
+    $j("#qsd-restore-modal").remove();
 
-    refresh_csrf_cookie();
-    $j.post("/admin/ajax_qsd_restore", {
-        version_id: version_id,
-        csrfmiddlewaretoken: csrf_token()
-    }, function(data) {
-        alert("Version restored successfully. The page will now reload.");
-        window.location.reload(true);
-    }).fail(function(req) {
-        alert("Error restoring version: " + req.responseText);
+    var modalHtml =
+        '<div class="modal fade" id="qsd-restore-modal" tabindex="-1" role="dialog">'
+      + '  <div class="modal-dialog" role="document">'
+      + '    <div class="modal-content">'
+      + '      <div class="modal-header">'
+      + '        <button type="button" class="close" data-dismiss="modal">&times;</button>'
+      + '        <h4 class="modal-title"><span class="glyphicon glyphicon-repeat"></span> Restore Version</h4>'
+      + '      </div>'
+      + '      <div class="modal-body">'
+      + '        <p>Restore this page to the version from <strong>' + $j('<span>').text(version_date).html() + '</strong>?</p>'
+      + '        <p class="text-muted">This will create a new revision with the old content.</p>'
+      + '      </div>'
+      + '      <div class="modal-footer">'
+      + '        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>'
+      + '        <button type="button" class="btn btn-warning" id="qsd-restore-confirm-btn">'
+      + '          <span class="glyphicon glyphicon-repeat"></span> Restore'
+      + '        </button>'
+      + '      </div>'
+      + '    </div>'
+      + '  </div>'
+      + '</div>';
+
+    $j("body").append(modalHtml);
+    var $modal = $j("#qsd-restore-modal");
+    $modal.modal("show");
+
+    $j("#qsd-restore-confirm-btn").on("click", function() {
+        var $btn = $j(this);
+        $btn.prop("disabled", true).html('<span class="glyphicon glyphicon-refresh"></span> Restoring...');
+
+        refresh_csrf_cookie();
+        $j.post("/admin/ajax_qsd_restore", {
+            version_id: version_id,
+            csrfmiddlewaretoken: csrf_token()
+        }, function(data) {
+            $modal.find(".modal-body").html(
+                '<div class="alert alert-success" style="margin-bottom:0;">'
+              + '<span class="glyphicon glyphicon-ok"></span> Version restored successfully. Reloading page...'
+              + '</div>'
+            );
+            $modal.find(".modal-footer").remove();
+            setTimeout(function() { window.location.reload(true); }, 1000);
+        }).fail(function(req) {
+            $btn.prop("disabled", false).html('<span class="glyphicon glyphicon-repeat"></span> Restore');
+            $modal.find(".modal-body").append(
+                '<div class="alert alert-danger" style="margin-top:10px;">'
+              + '<span class="glyphicon glyphicon-exclamation-sign"></span> Error: ' + $j('<span>').text(req.responseText).html()
+              + '</div>'
+            );
+        });
     });
 
-    $j.post("/varnish/purge_page", {
-        page: $j(location).attr('pathname'),
-        csrfmiddlewaretoken: csrf_token()
-    });
+    // Cleanup on close
+    $modal.on("hidden.bs.modal", function() { $j(this).remove(); });
 }
 
 

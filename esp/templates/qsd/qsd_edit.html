@@ -17,6 +17,7 @@
 <script src="https://unpkg.com/tiny-markdown-editor/dist/tiny-mde.min.js"></script>
 {% else %}
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
+<script src="/media/scripts/jodit_base64_upload.js"></script>
 {% endif %}
 <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
 <script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
@@ -80,35 +81,65 @@ var editor = new Jodit("#qsd_content", {
   "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
   "toolbarAdaptive": false,
   "saveModeInStorage": true,
+  "uploader": {
+    "url": "/admin/ajax_qsd_image_upload/",
+    "format": "json",
+    "headers": { "X-CSRFToken": csrf_token() },
+    "data": { "qsd_url": "{{ qsdrec.url|escapejs }}" },
+    "isSuccess": function(resp) { return resp.success; },
+    "getMessage": function(resp) {
+      return resp.data && resp.data.messages ? resp.data.messages.join("\n") : "";
+    },
+    "process": function(resp) {
+      return { files: resp.data.files || [], baseurl: "", error: resp.success ? 0 : 1, msg: "" };
+    },
+    "defaultHandlerSuccess": function(data) {
+      for (var i = 0; i < data.files.length; i++) {
+        editor.selection.insertImage(data.files[i]);
+      }
+    },
+    "error": function(e) {
+      editor.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
+    }
+  }
 });
+espHandleBase64Paste(editor);
 {% endif %}
 
-$j(document).ready(function() {
-  $j.initialize(".jodit_toolbar_btn-image input[name=url]", function() {
-    $j(this).after("Upload files <a href='/admin/filebrowser/browse/' target='_blank'>here");
-  });
-});
-
 {% if qsdrec.id %}
-// Override qsd_preview_version for full-page editor: show in a preview panel below
-qsd_preview_version = function(edit_id, version_id) {
-    var $previewDiv = $j("#qsd_version_preview_" + edit_id);
-    $j.get("/admin/ajax_qsd_version_preview", { version_id: version_id }, function(data) {
-        $previewDiv.html(
-            '<div class="alert alert-warning" style="margin-bottom:8px;">'
-            + '<span class="glyphicon glyphicon-time"></span> '
-            + 'Preview of historical version '
-            + '<button type="button" class="btn btn-xs btn-default" onclick="$j(this).closest(\'.alert\').parent().slideUp(200);">'
-            + 'Close preview</button></div>'
-            + '<h3>' + $j('<span>').text(data.title).html() + '</h3>'
-            + '<div style="border:1px solid #ccc; padding:12px; background:#fffff0;">'
-            + data.content_html + '</div>'
-        );
-        $previewDiv.slideDown(200);
-    }).fail(function(req) {
-        alert("Error loading version preview: " + req.responseText);
-    });
-};
+// Wrap qsd_preview_version for full-page editor: use preview panel if available,
+// otherwise fall back to the inline editor implementation from qsd.js.
+(function() {
+    var _original_preview = qsd_preview_version;
+    qsd_preview_version = function(edit_id, version_id) {
+        var $previewDiv = $j("#qsd_version_preview_" + edit_id);
+        if (!$previewDiv.length) {
+            // No full-page preview container; delegate to original inline behavior
+            if (typeof _original_preview === "function") {
+                return _original_preview(edit_id, version_id);
+            }
+            return;
+        }
+        $j.get("/admin/ajax_qsd_version_preview", { version_id: version_id }, function(data) {
+            $previewDiv.html(
+                '<div class="alert alert-warning" style="margin-bottom:8px;">'
+                + '<span class="glyphicon glyphicon-time"></span> '
+                + 'Preview of historical version '
+                + '<button type="button" class="btn btn-xs btn-default qsd-close-preview-btn">'
+                + 'Close preview</button></div>'
+                + '<h3>' + $j('<span>').text(data.title).html() + '</h3>'
+                + '<div style="border:1px solid #ccc; padding:12px; background:#fffff0;">'
+                + data.content_html + '</div>'
+            );
+            $previewDiv.slideDown(200);
+            $previewDiv.find('.qsd-close-preview-btn').on('click', function() {
+                $previewDiv.slideUp(200);
+            });
+        }).fail(function(req) {
+            alert("Error loading version preview: " + req.responseText);
+        });
+    };
+})();
 {% endif %}
 </script>
 {% endblock %}

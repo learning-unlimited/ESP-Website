@@ -87,6 +87,7 @@ urlpatterns += [
     url(r'^admin/ajax_qsd_history/?$', esp.qsd.views.ajax_qsd_history),
     url(r'^admin/ajax_qsd_version_preview/?$', esp.qsd.views.ajax_qsd_version_preview),
     url(r'^admin/ajax_qsd_restore/?$', esp.qsd.views.ajax_qsd_restore),
+    url(r'^admin/ajax_qsd_image_upload/?$', esp.qsd.views.ajax_qsd_image_upload),
     url(r'^admin/ajax_autocomplete/?', esp.db.views.ajax_autocomplete),
     url(r'^admin/filebrowser/', filebrowser_site.urls),
     url(r'^admin/', admin_site.urls),
