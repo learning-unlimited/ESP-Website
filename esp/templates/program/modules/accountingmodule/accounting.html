@@ -133,7 +133,7 @@ table {
                     
                     var net = initial_chapter - initial_lu;
                     if (net < 0) {
-                        document.getElementById('net_chapter').innerText = "0.00";
+                        document.getElementById('net_chapter').innerText = net.toFixed(2);
                         document.getElementById('donation_error').style.display = 'block';
                     } else {
                         document.getElementById('net_chapter').innerText = net.toFixed(2);
