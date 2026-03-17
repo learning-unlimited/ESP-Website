@@ -634,6 +634,15 @@ function register_student(student_id, dialog)
             },
 
             error: function () {
+                // On failure, remove the placeholder student entry and
+                // restore the dialog so the user can retry or cancel.
+                if (data.students && data.students[student_id]) {
+                    delete data.students[student_id];
+                }
+                // Re-enable the register button in case it was disabled.
+                $j("#dialog-confirm-button-register").button("enable");
+                // Provide basic user-visible feedback about the failure.
+                window.alert("Registration failed due to a network or server error. Please try again.");
             }
     });
 }
@@ -729,9 +738,6 @@ function autocomplete_select_item(event, ui)
             set_current_student(parseInt(student_id));
         }
         
-    }    
-    else
-    {
     }
 }
 

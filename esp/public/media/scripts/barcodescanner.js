@@ -52,10 +52,16 @@ $j(function() {
                 },
             }, function(err) {
                   if (err) {
-                      return
+                      if (window.console && console.error) {
+                          console.error('Failed to initialize barcode scanner:', err);
+                      }
+                      if (typeof this.handleScannerError === 'function') {
+                          this.handleScannerError(err);
+                      }
+                      return;
                   }
                   Quagga.start();
-              });
+              }.bind(this));
             return scanner;
         },
         querySelectedReaders: function() {
@@ -78,6 +84,23 @@ $j(function() {
                 .classList.remove('hide');
             document.querySelector('.overlay--inline')
                 .classList.remove('show');
+        },
+        handleScannerError: function(err) {
+            // Restore UI so the user can retry scanning
+            this.hideOverlay();
+            this.attachListeners();
+
+            // Try to show an inline error message if an element is available
+            var errorElement = document.querySelector('.scanner-error');
+            var message = 'Unable to start the barcode scanner. ' +
+                          'Please check your camera permissions and try again.';
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            } else {
+                // Fallback to an alert if no error container exists
+                alert(message);
+            }
         },
         lastResult : null
     };
