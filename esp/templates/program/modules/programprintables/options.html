@@ -49,7 +49,7 @@ Please select from options below.
             </select>
         </div>
         <div class="module_button" id="student_schedules">
-            <a href="./studentschedules/pdf/?recipient_type=Student&base_list=enrolled" title="Generate Student Schedules">
+            <a href="./studentschedules/pdf/?recipient_type=Student&base_list=enrolled&auto_submit=true" title="Generate Student Schedules">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Generate Student Schedules</div>
                 </button>
@@ -63,7 +63,7 @@ Please select from options below.
             </a>
         </div>
         <div class="module_button">
-            <a href="./flatstudentschedules?recipient_type=Student&base_list=enrolled" title="Flat Student Schedules">
+            <a href="./flatstudentschedules?recipient_type=Student&base_list=enrolled&auto_submit=true" title="Flat Student Schedules">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Flat Student Schedules</div>
                 </button>
@@ -82,24 +82,24 @@ Please select from options below.
         <div>
             <div>Users:</div>
             <select id="schedule_user_type">
-                <option value="teacherschedules" selected data-get="recipient_type=Teacher&base_list=class_approved">
+                <option value="teacherschedules" selected data-get="recipient_type=Teacher&base_list=class_approved&auto_submit=true">
                     Teachers
                 </option>
                 {% if program|hasModule:"TeacherModeratorModule" %}
-                <option value="moderatorschedules" data-get="recipient_type=Teacher&base_list=assigned_moderator">
+                <option value="moderatorschedules" data-get="recipient_type=Teacher&base_list=assigned_moderator&auto_submit=true">
                     {{ program.getModeratorTitle }}s
                 </option>
-                <option value="teachermoderatorschedules" data-get="combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo">
+                <option value="teachermoderatorschedules" data-get="combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator&auto_submit=true#tab_combo">
                     Teachers and {{ program.getModeratorTitle }}s
                 </option>
                 {% endif %}
-                <option value="volunteerschedules" data-get="recipient_type=Volunteer&base_list=volunteer_all">
+                <option value="volunteerschedules" data-get="recipient_type=Volunteer&base_list=volunteer_all&auto_submit=true">
                     Volunteers
                 </option>
             </select>
         </div>
         <div class="module_button" id="other_schedules">
-            <a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Generate Schedules">
+            <a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved&auto_submit=true" title="Generate Schedules">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Generate Schedules</div>
                 </button>
@@ -140,7 +140,7 @@ Please select from options below.
     </div>
     <div class="button_wrapper">
         <div class="module_button">
-            <a href="./classrosters?recipient_type=Teacher&base_list=class_approved" title="Class Rosters by Teachers">
+            <a href="./classrosters?recipient_type=Teacher&base_list=class_approved&auto_submit=true" title="Class Rosters by Teachers">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Class Rosters by Teachers</div>
                 </button>
@@ -148,7 +148,7 @@ Please select from options below.
         </div>
         {% if program|hasModule:"TeacherModeratorModule" %}
         <div class="module_button">
-            <a href="./classrostersbymoderator?recipient_type=Teacher&base_list=assigned_moderator" title="Class Rosters by {{ program.getModeratorTitle }}s">
+            <a href="./classrostersbymoderator?recipient_type=Teacher&base_list=assigned_moderator&auto_submit=true" title="Class Rosters by {{ program.getModeratorTitle }}s">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Class Rosters by {{ program.getModeratorTitle }}s</div>
                 </button>
@@ -156,7 +156,7 @@ Please select from options below.
         </div>
         {% endif %}
         <div class="module_button">
-            <a href="./classrosters/attendance?recipient_type=Teacher&base_list=class_approved" title="Attendance Sheets by Teachers">
+            <a href="./classrosters/attendance?recipient_type=Teacher&base_list=class_approved&auto_submit=true" title="Attendance Sheets by Teachers">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Attendance Sheets by Teachers</div>
                 </button>
@@ -164,7 +164,7 @@ Please select from options below.
         </div>
         {% if program|hasModule:"TeacherModeratorModule" %}
         <div class="module_button">
-            <a href="./classrostersbymoderator/attendance?recipient_type=Teacher&base_list=assigned_moderator" title="Attendance Sheets by {{ program.getModeratorTitle }}s">
+            <a href="./classrostersbymoderator/attendance?recipient_type=Teacher&base_list=assigned_moderator&auto_submit=true" title="Attendance Sheets by {{ program.getModeratorTitle }}s">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Attendance Sheets by {{ program.getModeratorTitle }}s</div>
                 </button>
@@ -180,14 +180,14 @@ Please select from options below.
             </a>
         </div>
         <div class="module_button">
-            <a href="./studentchecklist?recipient_type=Student&base_list=enrolled" title="Student Checklist">
+            <a href="./studentchecklist?recipient_type=Student&base_list=enrolled&auto_submit=true" title="Student Checklist">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-check"></i> Student Checklist</div>
                 </button>
             </a>
         </div>
         <div class="module_button">
-            <a href="./student_financial_spreadsheet?recipient_type=Student&base_list=enrolled" title="Student Financial Spreadsheet">
+            <a href="./student_financial_spreadsheet?recipient_type=Student&base_list=enrolled&auto_submit=true" title="Student Financial Spreadsheet">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Student Financial Spreadsheet</div>
                     <div class="module_link_caption">(used by the check-scanning app)</div>
@@ -195,14 +195,14 @@ Please select from options below.
             </a>
         </div>
         <div class="module_button">
-            <a href="./studentsbyname?recipient_type=Student&base_list=enrolled" title="Students by Name">
+            <a href="./studentsbyname?recipient_type=Student&base_list=enrolled&auto_submit=true" title="Students by Name">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-th-list"></i> Students by Name</div>
                 </button>
             </a>
         </div>
         <div class="module_button">
-            <a href="./emergencycontacts?recipient_type=Student&base_list=enrolled" title="Students' Emergency Contact Info">
+            <a href="./emergencycontacts?recipient_type=Student&base_list=enrolled&auto_submit=true" title="Students' Emergency Contact Info">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-phone"></i> Students' Emergency Contact Info</div>
                 </button>
@@ -259,14 +259,14 @@ Please select from options below.
                 <div>
                     <div>Users:</div>
                     <select id="user_type"{% if not program|hasModule:"TeacherModeratorModule" %} disabled{% endif %}>
-                        <option value="teachersbyname" selected data-get="recipient_type=Teacher&base_list=class_approved">
+                        <option value="teachersbyname" selected data-get="recipient_type=Teacher&base_list=class_approved&auto_submit=true">
                             Teachers
                         </option>
                         {% if program|hasModule:"TeacherModeratorModule" %}
-                        <option value="moderatorsbyname" data-get="recipient_type=Teacher&base_list=assigned_moderator">
+                        <option value="moderatorsbyname" data-get="recipient_type=Teacher&base_list=assigned_moderator&auto_submit=true">
                             {{ program.getModeratorTitle }}s
                         </option>
-                        <option value="teachermoderatorsbyname" data-get="combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo">
+                        <option value="teachermoderatorsbyname" data-get="combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator&auto_submit=true#tab_combo">
                             Teachers and {{ program.getModeratorTitle }}s
                         </option>
                         {% endif %}
@@ -292,7 +292,7 @@ Please select from options below.
                 </div>
             </div>
             <div class="module_button" id="teacher_list">
-                <a href="./teachersbyname?recipient_type=Teacher&base_list=class_approved" title="Generate List">
+                <a href="./teachersbyname?recipient_type=Teacher&base_list=class_approved&auto_submit=true" title="Generate List">
                     <button type="button" class="module_link_large">
                         <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Generate List</div>
                     </button>
@@ -421,7 +421,7 @@ Please select from options below.
             </a>
         </div>
         <div class="module_button">
-            <a href="./certificate?recipient_type=Student&base_list=enrolled" title="Completion Certificate">
+            <a href="./certificate?recipient_type=Student&base_list=enrolled&auto_submit=true" title="Completion Certificate">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-certificate"></i> Completion Certificate</div>
                 </button>
@@ -471,6 +471,56 @@ Please select from options below.
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-cutlery"></i> Meal Tickets</div>
                     <div class="module_link_caption">(7 lines)</div>
+                </button>
+            </a>
+        </div>
+    </div>
+</div>
+
+<br /><br />
+
+<div class="module_group" id="module_group_custom">
+    <div class="module_group_header">
+        Custom Printables (Filter by Specific Users)
+    </div>
+    <h4 style="line-height:normal;">(Select a printable and choose specific users to include)</h4>
+    <div style="padding-left: 10px; padding-right: 10px;">
+        <div>
+            <div>Printable type:</div>
+            <select id="custom_printable_type">
+                <optgroup label="Student Printables">
+                    <option value="studentschedules/pdf/" data-get="recipient_type=Student&base_list=enrolled">Student Schedules (PDF)</option>
+                    <option value="flatstudentschedules" data-get="recipient_type=Student&base_list=enrolled">Flat Student Schedules</option>
+                    <option value="studentchecklist" data-get="recipient_type=Student&base_list=enrolled">Student Checklist</option>
+                    <option value="studentsbyname" data-get="recipient_type=Student&base_list=enrolled">Students by Name</option>
+                    <option value="emergencycontacts" data-get="recipient_type=Student&base_list=enrolled">Emergency Contact Info</option>
+                    <option value="student_financial_spreadsheet" data-get="recipient_type=Student&base_list=enrolled">Student Financial Spreadsheet</option>
+                    <option value="certificate" data-get="recipient_type=Student&base_list=enrolled">Completion Certificate</option>
+                </optgroup>
+                <optgroup label="Teacher Printables">
+                    <option value="teacherschedules" data-get="recipient_type=Teacher&base_list=class_approved">Teacher Schedules</option>
+                    <option value="classrosters" data-get="recipient_type=Teacher&base_list=class_approved">Class Rosters by Teachers</option>
+                    <option value="classrosters/attendance" data-get="recipient_type=Teacher&base_list=class_approved">Attendance Sheets by Teachers</option>
+                    <option value="teachersbyname" data-get="recipient_type=Teacher&base_list=class_approved">Teachers by Name</option>
+                    <option value="teachersbytime" data-get="recipient_type=Teacher&base_list=class_approved">Teachers by Time</option>
+                </optgroup>
+                {% if program|hasModule:"TeacherModeratorModule" %}
+                <optgroup label="{{ program.getModeratorTitle }} Printables">
+                    <option value="moderatorschedules" data-get="recipient_type=Teacher&base_list=assigned_moderator">{{ program.getModeratorTitle }} Schedules</option>
+                    <option value="classrostersbymoderator" data-get="recipient_type=Teacher&base_list=assigned_moderator">Class Rosters by {{ program.getModeratorTitle }}s</option>
+                    <option value="classrostersbymoderator/attendance" data-get="recipient_type=Teacher&base_list=assigned_moderator">Attendance Sheets by {{ program.getModeratorTitle }}s</option>
+                </optgroup>
+                {% endif %}
+                <optgroup label="Volunteer Printables">
+                    <option value="volunteerschedules" data-get="recipient_type=Volunteer&base_list=volunteer_all">Volunteer Schedules</option>
+                </optgroup>
+            </select>
+        </div>
+        <div class="module_button" id="custom_printable_btn">
+            <a href="./studentschedules/pdf/?recipient_type=Student&base_list=enrolled" title="Select Users to Print">
+                <button type="button" class="module_link_large">
+                    <div class="module_link_main"><i class="glyphicon glyphicon-filter"></i> Select Users &amp; Generate</div>
+                    <div class="module_link_caption">(opens user search to filter specific users)</div>
                 </button>
             </a>
         </div>
