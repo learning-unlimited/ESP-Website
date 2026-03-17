@@ -170,3 +170,25 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertIn(expected_first_day, rendered, 'program.date should render as first program day')
         self.assertIn(expected_date_range, rendered, 'program.date_range should render as program date range')
         self.assertIn(expected_teacher_reg_deadline, rendered, 'program.teacher_reg_deadline should render as Teacher/Classes/Create end_date')
+
+    def test_get_mailer_warnings_handles_invalid_filterid(self):
+        warnings = self.moduleobj.get_mailer_warnings(
+            listcount=25,
+            filterid='not-a-valid-filter-id',
+            sendto_fn_name=MessageRequest.SEND_TO_SELF_REAL,
+        )
+        self.assertTrue(any('invalid or expired' in warning.lower() for warning in warnings))
+
+    def test_commfinal_handles_missing_filter_gracefully(self):
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'))
+
+        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commfinal'), {
+            'subject': 'Test Subject',
+            'body': 'Test Body',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+            'filterid': '999999999',
+        })
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('recipient filter is invalid or expired', response.content.decode('UTF-8').lower())

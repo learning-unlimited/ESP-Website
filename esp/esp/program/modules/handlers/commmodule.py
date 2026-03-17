@@ -120,11 +120,16 @@ class CommModule(ProgramModuleObj):
             mailer_warnings.append(f"Caution: You are about to send a massive mailer to {listcount_int} recipients.")
 
         # b. Warn if no grade range filter is used
-        filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
-        filter_name = getattr(filter_obj, 'useful_name', '') or ''
+        filter_obj = None
+        try:
+            filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        except (AssertionError, PersistentQueryFilter.DoesNotExist, TypeError, ValueError):
+            mailer_warnings.append("Warning: Recipient filter is invalid or expired. Please go back and rebuild your recipient list.")
 
-        if filter_name and 'grade' not in filter_name.lower():
-            mailer_warnings.append("Warning: You haven't selected a grade range filter.")
+        if filter_obj is not None:
+            filter_name = getattr(filter_obj, 'useful_name', '') or ''
+            if filter_name and 'grade' not in filter_name.lower():
+                mailer_warnings.append("Warning: You haven't selected a grade range filter.")
 
         # c. Warn if parent/emergency contact emails are included
         guardian_or_emergency_sentto_values = set()
@@ -188,7 +193,12 @@ class CommModule(ProgramModuleObj):
             "websupport@learningu.org and tell us how you got this error," +
             "and we'll look into it.")
 
-        userlist = PersistentQueryFilter.getFilterFromID(filterid, ESPUser).getList(ESPUser)
+        try:
+            filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        except (AssertionError, PersistentQueryFilter.DoesNotExist, TypeError, ValueError):
+            raise ESPError("Your recipient filter is invalid or expired. Please go back and rebuild your recipient list.", log=False)
+
+        userlist = filterobj.getList(ESPUser)
 
         try:
             firstuser = userlist[0]
@@ -312,7 +322,10 @@ class CommModule(ProgramModuleObj):
             "websupport@learningu and tell us how you got this error, " +
             "and we'll look into it.")
 
-        filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        try:
+            filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        except (AssertionError, PersistentQueryFilter.DoesNotExist, TypeError, ValueError):
+            raise ESPError("Your recipient filter is invalid or expired. Please go back and rebuild your recipient list.", log=False)
 
         sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
