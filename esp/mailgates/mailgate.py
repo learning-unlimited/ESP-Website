@@ -5,7 +5,8 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, email, hashlib, re, smtplib, socket, random
+import sys, os, email, re, smtplib, socket
+from email.utils import make_msgid
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
@@ -105,7 +106,7 @@ try:
         del message['Message-ID']
 
         # get a new message id
-        message['Message-ID'] = '<%s@%s>' % (hashlib.sha1(str(random.random()).encode()).hexdigest(), host)
+        message['Message-ID'] = make_msgid(domain=host)
 
         if handler.cc_all:
             # send one mass-email

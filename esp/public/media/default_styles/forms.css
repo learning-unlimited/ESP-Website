@@ -39,7 +39,7 @@
     font-style: normal;
 }
 
-#content form table ul.errorlist, #divmaintext form table ul.errorlist li {
+#divmaintext form table ul.errorlist, #divmaintext form table ul.errorlist li {
     list-style-type: none;
     padding: 0; margin: 0;
     font-style: italic !important;
@@ -263,7 +263,7 @@ th .program_form_small{
 }
 
 #program_form input:focus {
-  outline: none;
+  outline: auto;
 }
 
 #program_form textarea {
