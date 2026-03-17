@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.tests import ProgramFrameworkTest
 from esp.dbmail.models import ActionHandler, MessageRequest
 from esp.dbmail.cronmail import process_messages, send_email_requests
-from esp.users.models import ESPUser, Permission, PersistentQueryFilter
+from esp.users.models import ESPUser, Permission
 from django.contrib.auth.models import Group
 
 from django.conf import settings
@@ -244,15 +244,19 @@ class ApproxNumRecipientsTest(ProgramFrameworkTest):
         s = re_mod.search(
             r'<input type="hidden" name="filterid" value="([0-9]+)" />',
             response.content.decode('UTF-8'))
-        if s:
-            filterid = int(s.groups()[0])
-            from esp.users.models import PersistentQueryFilter
-            filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
-            sendto_fn = MessageRequest.SEND_TO_SELF_REAL
-            fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn)
-            count = CommModule.approx_num_of_recipients(filterObj, fn)
-            self.assertGreaterEqual(count, 0,
-                               "Should return a non-negative count")
+        self.assertIsNotNone(
+            s,
+            'Expected hidden "filterid" input in commpanel response for enrolled students.',
+        )
+        filterid = int(s.group(1))
+        from esp.users.models import PersistentQueryFilter
+        filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        sendto_fn = MessageRequest.SEND_TO_SELF_REAL
+        fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn)
+        count = CommModule.approx_num_of_recipients(filterObj, fn)
+        self.assertGreater(
+            count, 0,
+            "Should return a positive count for enrolled students")
 
 
 class CommPanelViewsTest(ProgramFrameworkTest):
@@ -278,32 +282,35 @@ class CommPanelViewsTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
 
     def test_commpanel_requires_admin(self):
-        """Non-admin users should not see the full comm panel content."""
+        """Non-admin users should get the not-an-admin page."""
         self.assertTrue(self.client.login(
             username=self.students[0].username, password='password'))
         response = self.client.get(
             '/manage/%s/commpanel' % self.program.getUrlBase())
-        # Non-admin either gets redirected, 403, or an error page
-        # If 200, the content should NOT contain the comm panel form
-        if response.status_code == 200:
-            content = response.content.decode('UTF-8')
-            self.assertNotIn('base_list', content,
-                             "Non-admin should not see the user list selection form")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
+        content = response.content.decode('UTF-8')
+        self.assertNotIn('base_list', content,
+                         "Non-admin should not see the user list selection form")
 
     def test_commfinal_requires_admin(self):
         """Non-admin users should not be able to send emails."""
         self.assertTrue(self.client.login(
             username=self.students[0].username, password='password'))
+        from esp.dbmail.models import MessageRequest as MR
+        initial_count = MR.objects.count()
         response = self.client.post(
             '/manage/%s/commfinal' % self.program.getUrlBase(),
             {'filterid': '1', 'from': 'test@test.com',
              'replyto': 'test@test.com', 'subject': 'Test', 'body': 'Test'})
-        # Non-admin should not successfully send; either redirect, 403, or error page
-        if response.status_code == 200:
-            from esp.dbmail.models import MessageRequest as MR
-            self.assertFalse(
-                MR.objects.filter(subject='Test').exists(),
-                "Non-admin should not be able to create a MessageRequest")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
+        self.assertEqual(
+            MR.objects.count(), initial_count,
+            "Non-admin should not be able to create a MessageRequest")
+        self.assertFalse(
+            MR.objects.filter(subject='Test').exists(),
+            "Non-admin should not be able to create a MessageRequest")
 
     def test_maincomm2_renders_step2(self):
         """POST to maincomm2 with required data should render step2 template."""
@@ -326,19 +333,22 @@ class CommPanelViewsTest(ProgramFrameworkTest):
         s = re_mod.search(
             r'<input type="hidden" name="filterid" value="([0-9]+)" />',
             response.content.decode('UTF-8'))
-        if s:
-            filterid = s.groups()[0]
-            post_data = {
-                'filterid': filterid,
-                'listcount': '3',
-                'from': 'info@testserver.learningu.org',
-                'replyto': 'replyto@testserver.learningu.org',
-                'subject': 'Test Subject',
-                'body': 'Test Body',
-            }
-            response = self.client.post(
-                '/manage/%s/maincomm2' % self.program.getUrlBase(), post_data)
-            self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(
+            s,
+            "Expected commpanel_old to render a hidden 'filterid' input.",
+        )
+        filterid = s.group(1)
+        post_data = {
+            'filterid': filterid,
+            'listcount': '3',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+            'subject': 'Test Subject',
+            'body': 'Test Body',
+        }
+        response = self.client.post(
+            '/manage/%s/maincomm2' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
 
     def test_commprev_renders_preview(self):
         """POST to commprev should render the email preview page."""
@@ -361,20 +371,27 @@ class CommPanelViewsTest(ProgramFrameworkTest):
         s = re_mod.search(
             r'<input type="hidden" name="filterid" value="([0-9]+)" />',
             response.content.decode('UTF-8'))
-        if s:
-            filterid = s.groups()[0]
-            s2 = re_mod.search(
-                r'<input type="hidden" name="listcount" value="([0-9]+)" />',
-                response.content.decode('UTF-8'))
-            listcount = s2.groups()[0] if s2 else '3'
-            post_data = {
-                'filterid': filterid,
-                'listcount': listcount,
-                'subject': 'Preview Subject',
-                'body': '<p>Preview Body</p>',
-                'from': 'info@testserver.learningu.org',
-                'replyto': 'replyto@testserver.learningu.org',
-            }
-            response = self.client.post(
-                '/manage/%s/commprev' % self.program.getUrlBase(), post_data)
-            self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(
+            s,
+            "Expected commpanel_old to render a hidden 'filterid' input.",
+        )
+        filterid = s.group(1)
+        s2 = re_mod.search(
+            r'<input type="hidden" name="listcount" value="([0-9]+)" />',
+            response.content.decode('UTF-8'))
+        self.assertIsNotNone(
+            s2,
+            "Expected commpanel_old to render a hidden 'listcount' input.",
+        )
+        listcount = s2.group(1)
+        post_data = {
+            'filterid': filterid,
+            'listcount': listcount,
+            'subject': 'Preview Subject',
+            'body': '<p>Preview Body</p>',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+        }
+        response = self.client.post(
+            '/manage/%s/commprev' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
