@@ -2129,7 +2129,7 @@ class K12School(models.Model):
         db_table = 'users_k12school'
 
     @classmethod
-    def ajax_autocomplete(cls, data, allow_non_staff=True):
+    def ajax_autocomplete(cls, data, allow_non_staff=True, **kwargs):
         name = data.strip()
         query_set = cls.objects.filter(name__icontains = name)
         values = query_set.order_by('name', 'id').values('name', 'id')
