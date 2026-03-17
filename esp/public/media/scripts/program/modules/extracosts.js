@@ -97,9 +97,44 @@ function updateTotalCost() {
         $j("#amount_due").html("$" + Number(amount_due).toFixed(2)).css("color", "black");
         $j("#donation_warning").hide();
     } else {
-        $j("#amount_due").html("$" + Number(amount_due).toFixed(2)).css("color", "black");
-        $j("#donation_warning").html("(Don't forget to pay for your remaining balance!)").show();
+      cost = parseFloat($j(this).data("cost"));
+      total_extras += cost;
+      if ($j(this).data("for_finaid")) finaid_covered += cost;
     }
+  });
+  // update the extras total on the page
+  $j("#total_extras").html("$" + Number(total_extras).toFixed(2));
+  // program admission is always covered by financial aid
+  finaid_covered += prog_cost;
+  // calculate how much is covered by financial aid
+  amount_finaid = Math.min(finaid_covered, finaid_max_dec);
+  if (amount_finaid < finaid_covered)
+    amount_finaid += (finaid_covered - amount_finaid) * finaid_percent;
+  // update the financial aid total on the page (should always be negative)
+  if (amount_finaid > 0)
+    $j("#amount_finaid").html("-$" + Number(amount_finaid).toFixed(2));
+  // calculate the amount due after accounting for what has already been paid and what financial aid covers
+  amount_due =
+    total_extras + prog_cost + amount_donation - amount_paid - amount_finaid;
+  // update the amount due on the page
+  if (amount_due < 0) {
+    $j("#amount_due")
+      .html("-$" + Number(-amount_due).toFixed(2))
+      .css("color", "red");
+    $j("#donation_warning").html("(Thank you for your donation!)").show();
+  } else if (amount_due == 0) {
+    $j("#amount_due")
+      .html("$" + Number(amount_due).toFixed(2))
+      .css("color", "black");
+    $j("#donation_warning").hide();
+  } else {
+    $j("#amount_due")
+      .html("$" + Number(amount_due).toFixed(2))
+      .css("color", "black");
+    $j("#donation_warning")
+      .html("(Don't forget to pay for your remaining balance!)")
+      .show();
+  }
 }
 
 /*

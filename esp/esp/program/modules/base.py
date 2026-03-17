@@ -54,6 +54,7 @@ from urllib.parse import quote
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
+from django.core.exceptions import ImproperlyConfigured
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -200,7 +201,7 @@ class ProgramModuleObj(models.Model):
                     m.request = request
                     if request.user.updateOnsite(request) and not isinstance(m, RegProfileModule):
                         continue
-                    if not isinstance(m, CoreModule) and not m.isCompleted() and m.main_view:
+                    if not isinstance(m, CoreModule) and not m.isCompleted(request.user) and m.main_view:
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
@@ -343,7 +344,19 @@ class ProgramModuleObj(models.Model):
         return self.module.handler in ['OnSiteCheckinModule', 'TeacherCheckinModule', 'OnSiteCheckoutModule',
                                        'OnsiteClassSchedule', 'OnSiteClassList', 'OnSiteRegister',
                                        'OnSiteAttendance', 'OnsitePaidItemsModule']
-    def isCompleted(self):
+    def _resolve_user(self, user):
+        """Return the user to use for per-user module logic.
+
+        Precedence: explicit argument > self.user (set by getModules) >
+        get_current_request().user (fallback for template calls).
+        """
+        if user is not None:
+            return user
+        if hasattr(self, 'user'):
+            return self.user
+        return get_current_request().user
+
+    def isCompleted(self, user=None):
         return False
 
     def isRequired(self):
@@ -416,6 +429,17 @@ class ProgramModuleObj(models.Model):
 
     def inModulesList(self):
         return self.isStep()
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        """
+        Optional: return an AdminSearchEntry for this module's view so it
+        appears in the Admin Dashboard search. Return None to use the default
+        (title from link_title, category "Other", keywords from title).
+        Define this in each module with title, category, and keywords so
+        new modules are discoverable and keywords stay next to the code.
+        """
+        return None
 
     @classmethod
     def module_properties(cls):
@@ -721,7 +745,7 @@ def meets_deadline(extension=''):
     """
     return meets_any_deadline([extension])
 
-def meets_any_deadline(extensions=[]):
+def meets_any_deadline(extensions=None):
     """
     Decorate a function to check if at least one deadline is met.
 
@@ -729,6 +753,28 @@ def meets_any_deadline(extensions=[]):
     if at least one of the deadlines is met, or a function that generates an
     error page if none of the deadlines are met.
     """
+    if extensions is None:
+        extensions = []
+
+    _tl_prefixes = ('Student', 'Teacher', 'Volunteer')
+    valid_perms = Permission.deadline_types
+    invalid_exts = []
+
+    for ext in extensions:
+        if not any((prefix + ext) in valid_perms for prefix in _tl_prefixes):
+            invalid_exts.append(ext)
+
+    if invalid_exts:
+        raise ImproperlyConfigured(
+            "@meets_deadline(...) / @meets_any_deadline(...) use an invalid permission extension. "
+            "Invalid permission extensions: {invalid}. "
+            "Valid deadline choices are: {valid}.".format(
+                invalid=", ".join(invalid_exts),
+                valid=", ".join(sorted(p for p in valid_perms
+                                       if p.startswith(_tl_prefixes))),
+            )
+        )
+
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             for ext in extensions:
