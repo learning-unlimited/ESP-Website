@@ -11,6 +11,7 @@ from django.contrib.auth.models import Group
 
 from esp.cal.models import Event, EventType, install
 from esp.tests.util import CacheFlushTestCase as TestCase
+import pytest
 
 
 def _setup_roles():
@@ -231,3 +232,4 @@ class EventStaticMethodsTest(TestCase):
                    event_type=self.event_type)
         collapsed = Event.collapse([e1, e2])
         self.assertEqual(len(collapsed), 2)
+
