@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
-from esp.program.models import ClassSubject, ClassSection, ClassCategories, ProgramModule
+from esp.program.models import ClassSubject
 from esp.program.class_status import ClassStatus
-from esp.cal.models import Event, EventType
+from esp.cal.models import Event
 from esp.program.tests import ProgramFrameworkTest
 
 
@@ -41,6 +41,9 @@ class CatalogSortTest(ProgramFrameworkTest):
                 event_type=self.event_type,
                 start=start_dt,
                 end=start_dt + timedelta(hours=1),
+                name='%s slot' % title,
+                short_description='%s at %s' % (title, start_dt),
+                description='Meeting time for %s' % title,
             )
             sec.meeting_times.add(event)
         return cls
