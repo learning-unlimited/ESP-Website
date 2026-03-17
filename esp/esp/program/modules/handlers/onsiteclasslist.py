@@ -71,6 +71,11 @@ class OnSiteClassList(ProgramModuleObj):
             "choosable": 1,
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Views are JSON/API (full_status, catalog_status, get_schedule_json, etc.); do not list in admin search.
+        return None
+
     @cache_function
     def section_data(sec):
         sect = {}
@@ -227,7 +232,7 @@ class OnSiteClassList(ProgramModuleObj):
         result = {'user': None, 'user_grade': 0, 'sections': [], 'messages': []}
         try:
             result['user'] = int(request.GET['user'])
-        except:
+        except (ValueError, TypeError, KeyError):
             result['messages'].append('Error: no user specified.')
         if result['user']:
             result['user_grade'] = ESPUser.objects.get(id=result['user']).getGrade(program=prog)
@@ -242,12 +247,12 @@ class OnSiteClassList(ProgramModuleObj):
         result = {'user': None, 'sections': [], 'messages': []}
         try:
             user = ESPUser.objects.get(id=int(request.GET['user']))
-        except:
+        except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
             user = None
             result['messages'].append('Error: could not find user %s' % request.GET.get('user', None))
         try:
             desired_sections = json.loads(request.GET['sections'])
-        except:
+        except (ValueError, KeyError):
             result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
             desired_sections = None
 
@@ -332,6 +337,9 @@ class OnSiteClassList(ProgramModuleObj):
             result['message'] = "Could not find user %s." % user
             json.dump(result, resp)
             return resp
+        except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
+            result['message'] = "Could not find user %s." % request.GET.get('user', None)
+
         printer = request.GET.get('printer', None)
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
