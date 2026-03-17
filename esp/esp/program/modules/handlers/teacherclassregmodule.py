@@ -1013,6 +1013,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         context['manage'] = False
         context['sectionNums'] = prog.countTimeSlots()
+        context['no_durations'] = len(self.crmi.getDurations()) == 0
 
         if ((request.method == "POST" and request.POST.get('manage') == 'manage') or
             (request.method == "GET" and request.GET.get('manage') == 'manage') or
