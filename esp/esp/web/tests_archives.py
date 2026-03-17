@@ -14,8 +14,9 @@ Covers:
 PR 4/6 — esp/web module coverage improvement
 """
 
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory
 from django.contrib.auth.models import AnonymousUser
+from esp.tests.util import CacheFlushTestCase as TestCase
 
 from esp.web.views.archives import (
     ArchiveFilter,
@@ -148,8 +149,8 @@ class ExtractCriteriaTest(TestCase):
 
 class FilterArchiveTest(TestCase):
 
-    def setUp(self):
-        ArchiveClass.objects.all().delete()
+    @classmethod
+    def setUpTestData(cls):
         ArchiveClass.objects.create(
             year='2022', program='Splash', title='Algebra',
             category='M', teacher='Alice', description='Math class',
@@ -242,9 +243,9 @@ class TitleHeadingTest(TestCase):
 
 class ArchiveClassesViewTest(TestCase):
 
-    def setUp(self):
-        self.factory = RequestFactory()
-        ArchiveClass.objects.all().delete()
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = RequestFactory()
         ArchiveClass.objects.create(
             year='2023', program='Splash', title='Robotics',
             category='E', teacher='Dave', description='Build robots',
