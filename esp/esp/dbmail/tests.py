@@ -32,15 +32,16 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from django.contrib.auth.models import Group
 from django.core import mail
 from django.core.exceptions import ValidationError
 
-from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, send_mail
+from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, send_mail 
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser
+from esp.dbmail.cronmail import process_messages, send_email_requests
 
 
 def _setup_roles():
@@ -347,3 +348,92 @@ class PlainRedirectValidationTest(TestCase):
 
         self.assertIn('destination', error.exception.message_dict)
         self.assertIn('<empty>', error.exception.message_dict['destination'][0])
+
+
+class DbmailUnitTests(TestCase):
+    
+    @patch('esp.dbmail.cronmail.MessageRequest.objects.filter')
+    def test_process_messages_empty(self, mock_filter):
+        """Test process_messages with no pending messages."""
+        # Setup: Return an empty list
+        mock_filter.return_value = []
+        
+        result = process_messages()
+        
+        # Assertion: Ensure it returns an empty list and doesn't crash
+        self.assertEqual(result, [])
+
+    @patch('esp.dbmail.cronmail.MessageRequest.objects.filter')
+    def test_process_messages_with_data(self, mock_filter):
+        """Test process_messages triggers .process() on results."""
+        # Setup: Create mock message objects
+        mock_msg = MagicMock()
+        mock_filter.return_value = [mock_msg]
+        
+        result = process_messages()
+        
+        # Assertions
+        self.assertEqual(len(result), 1)
+        mock_msg.process.assert_called_once()
+
+    @patch('esp.dbmail.cronmail.TextOfEmail.objects.filter')
+    @patch('esp.dbmail.cronmail.TextOfEmail.send')
+    def test_send_email_requests_empty(self, mock_send, mock_filter):
+        """Test send_email_requests with no unsent emails."""
+        # Setup: Mock the queryset slicing and iterator
+        # cronmail.py uses mailtxts[:batch_size].iterator()
+        mock_qs = MagicMock()
+        mock_qs.__getitem__.return_value.iterator.return_value = []
+        mock_filter.return_value = mock_qs
+        
+        send_email_requests()
+        
+        # Assertion: .send() should never be called
+        mock_send.assert_not_called()
+
+    @patch('esp.dbmail.cronmail.getattr')
+    @patch('esp.dbmail.cronmail.TextOfEmail.objects.filter')
+    def test_send_email_requests_retries_logic(self, mock_filter, mock_getattr):
+        """
+        Tests that send_email_requests respects the tries__lte filter.
+        If settings.EMAILRETRIES is 2, it selects records where tries <= 2.
+        """
+        # Setup: Mock settings.EMAILRETRIES to be 2
+        mock_getattr.return_value = 2 
+        
+        mock_qs = MagicMock()
+        mock_qs.count.return_value = 0 # Exit loop early
+        mock_filter.return_value = mock_qs
+        
+        send_email_requests()
+        
+        # Assertion: Check the keyword arguments passed to the Django filter
+        args, kwargs = mock_filter.call_args
+        self.assertEqual(kwargs['tries__lte'], 2)
+
+    @patch('esp.dbmail.cronmail.render_to_string')
+    @patch('esp.dbmail.cronmail.send_mail')
+    @patch('esp.dbmail.cronmail.TextOfEmail.objects.filter')
+    def test_send_email_requests_failure_report(self, mock_filter, mock_send_mail, mock_render):
+        """
+        Tests the error reporting logic. 
+        Verifies that when .send() returns an exception, send_mail is called.
+        """
+        # 1. Setup a failing email mock
+        mock_mailtxt = MagicMock()
+        mock_mailtxt.send.return_value = Exception("SMTP Timeout")
+        mock_mailtxt.send_to = "student@example.com"
+        mock_mailtxt.send_from = "teacher@example.com"
+        
+        mock_qs = MagicMock()
+        mock_qs.count.return_value = 1
+        mock_qs.__getitem__.return_value.iterator.return_value = [mock_mailtxt]
+        mock_filter.return_value = mock_qs
+        
+        # 2. Execute
+        send_email_requests()
+        
+        # 3. Assertions
+        # Verify the failure summary email was triggered
+        self.assertTrue(mock_send_mail.called)
+        self.assertEqual(mock_send_mail.call_args[0][0], 'Mail delivery failure')
