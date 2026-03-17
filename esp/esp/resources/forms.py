@@ -41,7 +41,7 @@ from esp.tagdict.models import Tag
 
 class IDBasedModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
-        return "%d" % obj.id
+        return str(obj.id)
 
 class ResourceRequestForm(forms.Form):
     resource_type = IDBasedModelChoiceField(queryset=ResourceType.objects.all(), widget=forms.HiddenInput)

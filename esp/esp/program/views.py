@@ -48,7 +48,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -294,7 +294,13 @@ def lsr_submit(request, program=None):
 
     priority_limit = program.priorityLimit()
 
-    data = json.loads(request.POST['json_data'])
+    json_data = request.POST.get('json_data')
+    if not json_data:
+        return HttpResponse(json.dumps([{"text": "Missing required data"}]), status=400, content_type='application/json')
+    try:
+        data = json.loads(json_data)
+    except (ValueError, TypeError):
+        return HttpResponse(json.dumps([{"text": "Invalid JSON data"}]), status=400, content_type='application/json')
 
     if priority_limit > 1:
         return lsr_submit_HSSP(request, program, priority_limit, data) # temporary function. will merge the two later -jmoldow 05/31
@@ -380,15 +386,26 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
     classes_flagged = [set() for i in range(0, priority_limit+1)] # 1-indexed
     sections_by_block = [defaultdict(set) for i in range(0, priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
 
-    for section_id, (priority, block_id) in data.items():
-        section_id = int(section_id)
-        priority = int(priority)
-        block_id = int(block_id)
+    errors = []
+
+    for section_id, value in data.items():
+        try:
+            priority, block_id = value
+        except (ValueError, TypeError):
+            errors.append({"text": "Invalid data structure for class registration", "cls_sections": []})
+            continue
+
+        try:
+            section_id = int(section_id)
+            priority = int(priority)
+            block_id = int(block_id)
+        except (ValueError, TypeError):
+            errors.append({"text": "Invalid data format", "cls_sections": []})
+            continue
+
         classes_flagged[0].add(section_id)
         classes_flagged[priority].add(section_id)
         sections_by_block[priority][block_id].add(section_id)
-
-    errors = []
 
     for i in range(1, priority_limit+1):
         for block in sections_by_block[i].keys():
@@ -579,6 +596,24 @@ def userview(request):
     change_grade_form.fields['graduation_year'].initial = user.getYOG()
     change_grade_form.fields['graduation_year'].choices = [choice for choice in change_grade_form.fields['graduation_year'].choices if bool(choice[0])]
 
+    # Split enrolled sections: those from the selected program vs. all others
+    all_enrolled = user.getEnrolledSections().order_by('parent_class__parent_program', 'id')
+    if program:
+        program_enrolled = all_enrolled.filter(parent_class__parent_program=program)
+        other_enrolled = all_enrolled.exclude(parent_class__parent_program=program)
+    else:
+        program_enrolled = all_enrolled
+        other_enrolled = all_enrolled.none()
+
+    # Split taken/applied sections the same way
+    all_taken = user.getSections().order_by('parent_class__parent_program', 'id')
+    if program:
+        program_taken = all_taken.filter(parent_class__parent_program=program)
+        other_taken = all_taken.exclude(parent_class__parent_program=program)
+    else:
+        program_taken = all_taken
+        other_taken = all_taken.none()
+
     # Get StudentSubjectInterests (starred classes) for this user
     starred_classes = []
     if program:
@@ -591,8 +626,10 @@ def userview(request):
     context = {
         'user': user,
         'taught_classes': user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
-        'enrolled_classes': user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
-        'taken_classes': user.getSections().order_by('parent_class__parent_program', 'id'),
+        'program_enrolled': program_enrolled,
+        'other_enrolled': other_enrolled,
+        'program_taken': program_taken,
+        'other_taken': other_taken,
         'starred_classes': starred_classes,
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
@@ -784,7 +821,7 @@ def submit_transaction(request):
     transaction.commit()
     try:
         return _submit_transaction(request, log_record)
-    except:
+    except Exception:
         subject = '[ESP CC] Failed to process Cybersource postback'
         log_uri = request.build_absolute_uri(
             reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
