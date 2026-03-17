@@ -37,11 +37,19 @@
   {% load class_render_row %}
   {% for cls in all_class_list %}
     {% render_class_copy_row cls %}
+    {% if not forloop.last %}
+      <tr>
+        <td colspan="7" style="padding: 0;">
+          {# 7 columns: status, title, grade, size, type, length, action #}
+          <tr class="row-separator"><td colspan="7"></td></tr>
+        </td>
+      </tr>
+    {% endif %}
   {% endfor %}
-
 </table>
 </div> <!-- div#battlescreen -->
 <br /><br/ >
 
 <a href="{{ program.get_teach_url}}teacherreg">Go back to the main teacher registration page</a>
 {% endblock %}
+
