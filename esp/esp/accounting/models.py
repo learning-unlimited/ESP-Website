@@ -53,6 +53,12 @@ class LineItemType(models.Model):
     max_quantity = models.PositiveIntegerField(default=1)
     for_payments = models.BooleanField(default=False)
     for_finaid = models.BooleanField(default=False, help_text='Should financial aid cover this line item?')
+    selection_type = models.CharField(
+        max_length=16,
+        default='single',
+        choices=(('single', 'Single'), ('multiple', 'Multiple')),
+        help_text='For line items with options, whether students may select one option (single) or multiple options (multiple).',
+    )
 
     @property
     def amount(self):
