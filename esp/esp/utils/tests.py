@@ -125,7 +125,7 @@ class MemcachedTestCase(unittest.TestCase):
     def setUp(self):
         """ Launch memcached instances for all the caches listed in CACHES """
         caches = [ x.split(':') for x in self.CACHES ]
-        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', f'{cache[1]}'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                          for cache in caches ]
         self.clients = [ memcache.Client([cache]) for cache in self.CACHES ]
 
@@ -361,7 +361,7 @@ class QueryBuilderTest(DjangoTestCase):
 
     def test_search_filter(self):
         select_input = query_builder.SelectInput(
-            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+            "a_db_field", {str(i): f"option {i}" for i in range(10)})
         trivial_input = query_builder.ConstantInput(Q(a="b"))
 
         search_filter_1 = query_builder.SearchFilter(
@@ -377,13 +377,13 @@ class QueryBuilderTest(DjangoTestCase):
 
 
     def test_select_input(self):
-        options = {str(i): "option %s" % i for i in range(10)}
+        options = {str(i): f"option {i}" for i in range(10)}
         select_input = query_builder.SelectInput(
             "a_db_field", options)
         self.assertEqual(select_input.spec(),
                          {'reactClass': 'SelectInput',
                           'options': [{'name': i,
-                                       'title': 'option %s' % i}
+                                       'title': f'option {i}'}
                                       # use options.keys() to get the
                                       # sort order the same as the dict sort
                                       # order.  It doesn't matter in reality,
@@ -404,7 +404,7 @@ class QueryBuilderTest(DjangoTestCase):
 
     def test_optional_input(self):
         select_input = query_builder.SelectInput(
-            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+            "a_db_field", {str(i): f"option {i}" for i in range(10)})
         optional_input = query_builder.OptionalInput(select_input)
         self.assertEqual(optional_input.spec(),
                          {'reactClass': 'OptionalInput', 'name': '+',
