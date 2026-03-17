@@ -89,6 +89,7 @@ class MultiOptionCostItem(forms.Form):
 
     def __init__(self, *args, **kwargs):
         lineitem_type = kwargs.pop('lineitem_type')
+        self._lineitem_type = lineitem_type
         required = kwargs.pop('required')
         choices = kwargs.pop('choices')
         option_data = kwargs.pop('option_data', {})
@@ -133,6 +134,13 @@ class MultiOptionCostItem(forms.Form):
             amount = cleaned.get(f'custom_amount_{opt_id}')
             if amount in (None, ''):
                 self.add_error(f'custom_amount_{opt_id}', 'Please enter an amount for this selection.')
+
+        # Validate that all selected options belong to the line item type
+        valid_option_ids = {str(opt.id) for opt in self._lineitem_type.lineitemoptions_set.all()}
+        for opt_id in selected:
+            if opt_id not in valid_option_ids:
+                self.add_error('options', f'Option {opt_id} is not valid for {self._lineitem_type.text}.')
+
         return cleaned
 
 
@@ -280,6 +288,7 @@ class StudentExtraCosts(ProgramModuleObj):
                                    choices=x.option_choices,
                                    required=(x.required),
                                    is_custom=(x.has_custom_options),
+                                   option_data=option_data_for_lineitem(x),
                                ) }
                              for x in multiselect_single_list ] + \
                            [ { 'LineItemType': x,
@@ -438,6 +447,7 @@ class StudentExtraCosts(ProgramModuleObj):
             multiselect_costitems.append(new_entry)
 
         multiselect_multi_costitems = []
+        prefs = list(iac.get_preferences(self.lineitemtypes()))
         for x in multiselect_multi_list:
             new_entry = {'type': 'multiselect', 'LineItem': x}
             option_data = {}
@@ -457,7 +467,7 @@ class StudentExtraCosts(ProgramModuleObj):
             # Determine initial selections + custom amounts from saved preferences.
             selected_ids = []
             custom_amount_initials = {}
-            for item in iac.get_preferences(self.lineitemtypes()):
+            for item in prefs:
                 if item[0] != x.text:
                     continue
                 opt_id = item[3]
