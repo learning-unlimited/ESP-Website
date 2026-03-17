@@ -18,8 +18,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Cache the class rows and precompute their searchable data once
-    var classRows = Array.prototype.slice.call(document.querySelectorAll('.class_row'));
-    classRows.forEach(function(row) {
+    var classRowsNodeList = document.querySelectorAll('.class_row');
+    var classRows = [];
+    for (var i = 0; i < classRowsNodeList.length; i++) {
+        classRows.push(classRowsNodeList[i]);
+    }
+
+    for (var i = 0; i < classRows.length; i++) {
+        var row = classRows[i];
         // Precompute searchable data from data attributes (lowercased once)
         var classId = (row.getAttribute('data-class-id') || '').toLowerCase();
         var classTitle = (row.getAttribute('data-class-title') || '').toLowerCase();
@@ -29,13 +35,14 @@ document.addEventListener('DOMContentLoaded', function() {
             title: classTitle,
             teacher: classTeacher
         };
-    });
+    }
 
     // Helper to filter visible classes based on the current search term
     function filterClasses(searchTerm) {
         var normalizedTerm = (searchTerm || '').toLowerCase();
 
-        classRows.forEach(function(row) {
+        for (var i = 0; i < classRows.length; i++) {
+            var row = classRows[i];
             // Use precomputed searchable data
             var data = row._searchData;
 
@@ -49,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 row.style.display = 'none';
             }
-        });
+        }
     }
 
     var isComposing = false;
