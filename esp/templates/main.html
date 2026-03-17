@@ -1,7 +1,5 @@
-﻿{% extends "elements/html" %}
-
+{% extends "elements/html" %}
 {% block fulltitle %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }} - {% block title %}Home{% endblock title %}{% endblock fulltitle %}
-
 {% block stylesheets %}
 {{ block.super }}
 {# Default stylesheets, no customization #}
@@ -25,13 +23,9 @@
   }
 </style>
 {% endblock stylesheets %}
-
 {% block body %}
-
 <a href="#main" class="skip-nav">Skip to main content</a>
-
 {% block main %}
-
 <div class="container">
   {% if request.COOKIES.esp_testing_role %}
   <div
@@ -53,7 +47,6 @@
       {% include "users/loginbox_content.html" %}
       {% endblock sidebar %}
     </aside>
-
     <main id="main" class="span12 resizable" tabindex="-1">
       {% if messages %}
       {% for message in messages %}
@@ -62,11 +55,21 @@
       </div>
       {% endfor %}
       {% endif %}
+      {% if active_program_tags %}
+      <div class="alert alert-info alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <strong>Admin notice:</strong>
+        This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
+        {% for tag in active_program_tags %}
+          <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        {% endfor %}
+        &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
+      </div>
+      {% endif %}
       {% block content %}
       {% endblock content %}
     </main>
   </div>
 </div>
 {% endblock main %}
-
 {% endblock body %}
