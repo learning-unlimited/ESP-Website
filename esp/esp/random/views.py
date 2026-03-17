@@ -9,7 +9,8 @@ import json
 # { "bad_program_names": ["Delve", "SATPrep", "9001", "Test"],
 #   "bad_titles": ["Lunch Period"] }
 def good_random_class():
-    constraints = json.loads(Tag.getTag('random_constraints'))
+    tag_val = Tag.getTag('random_constraints')
+    constraints = json.loads(tag_val) if tag_val else {}
     q = Q()
     for bad_program_name in constraints.get('bad_program_names', []):
         q = q & ~Q(parent_program__name__icontains=bad_program_name)

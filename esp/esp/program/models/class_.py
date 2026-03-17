@@ -288,6 +288,8 @@ class ClassManager(Manager):
         classes = self.filter(self.approved(return_q_obj=True))
         if q is not None: classes = classes.filter(q)
         count = classes.count()
+        if count == 0:
+            return None
         return classes[random.randint(0, count - 1)]
 
 class ClassSection(models.Model):
