@@ -187,15 +187,13 @@ def histogram(answer_list, args='format=html'):
         context['results'] = [{'value': str(x), 'freq': 0} for x in args_dict.get('opts').split("|")]
     else:
         context['results'] = []
-    max_answer_length = 0
+
     for ans in answer_list:
         try:
             i = [r['value'] for r in context['results']].index(str(ans))
             context['results'][i]['freq'] += 1
         except ValueError:
             context['results'].append({'value': ans, 'freq': 1})
-        if len(ans) > max_answer_length:
-            max_answer_length = len(ans)
 
     context['results'].sort(key=lambda x: x['value'])
 
@@ -207,11 +205,23 @@ def histogram(answer_list, args='format=html'):
             max_freq = item['freq']
             context['max_freq'] = max_freq
 
-    #   Might we have trouble making text not overlap? 36 is an arbitrary limit.
-    if context['num_keys'] * max_answer_length > 36:
-        context['crowded'] = True
+    max_label_length = max([len(r['value']) for r in context['results']], default=1)
+    bar_width_pts = 180 / max(context['num_keys'], 1)
+    if bar_width_pts < 9:
+        context['label_rotate'] = 90
+    elif bar_width_pts < 12 or (context['num_keys'] * max_label_length > 36):
+        context['label_rotate'] = 45
     else:
-        context['crowded'] = False
+        context['label_rotate'] = 0
+    context['crowded'] = context['label_rotate'] > 0
+
+    # Compute font size based on bars number
+    if context['num_keys'] > 15:
+        context['font_size'] = 7
+    elif context['num_keys'] > 10:
+        context['font_size'] = 8
+    else:
+        context['font_size'] = 10
 
     import hashlib
     file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
