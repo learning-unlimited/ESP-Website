@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Prevent Python from creating .pyc files (avoids stale bytecode issues)
-export PYTHONDONTWRITEBYTECODE=1
+# Prevent Python from creating .pyc files (avoids stale bytecode issues);
+# PYTHONDONTWRITEBYTECODE=1 is set in the Dockerfile.
 
 # Copy Docker-specific settings if local_settings.py doesn't exist
 if [ ! -f /app/esp/esp/local_settings.py ]; then
