@@ -1,4 +1,4 @@
-
+from functools import lru_cache
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,5 +32,22 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-# Create your views here.
+
+from esp.dbmail.models import MessageRequest
+from esp.middleware import ESPError
+from esp.utils.web import render_to_response
+
+
+def public_email(request, email_id):
+    """Render a publicly viewable email message by its MessageRequest ID.
+
+    Only MessageRequests with public=True are accessible. All others
+    raise an ESPError with a generic message to avoid leaking information
+    about non-public message IDs.
+    """
+    email_req = MessageRequest.objects.filter(id=email_id, public=True)
+    if email_req.count() == 1:
+        return render_to_response('public_email.html', request, {'email_req': email_req[0]})
+    else:
+        raise ESPError('Invalid email id.', log=False)
 

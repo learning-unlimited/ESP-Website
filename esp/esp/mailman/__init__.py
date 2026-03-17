@@ -1,4 +1,3 @@
-
 import os
 from subprocess import call, Popen, PIPE
 from django.conf import settings
@@ -7,7 +6,7 @@ from esp.users.models import ESPUser
 from tempfile import NamedTemporaryFile
 from django.contrib.auth.models import User
 from django.db.models import Q
-
+import hashlib
 
 if settings.USE_MAILMAN:
     MM_PATH = settings.MAILMAN_PATH
@@ -19,7 +18,7 @@ else:
 ## Functions for Mailman interop
 
 @enable_with_setting(settings.USE_MAILMAN)
-def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
+def create_list(list_name, owner, admin_password=MAILMAN_PASSWORD):
     """
     Create the specified mailing list in the local Mailman installation,
     with the address specified in 'owner' as the list's owners.
@@ -29,10 +28,10 @@ def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
     if isinstance(owner, User):
         owner = owner.email
 
-    return call([MM_PATH + "newlist", "-q", list, owner, admin_password])
+    return call([MM_PATH + "newlist", "-q", list_name, owner, admin_password])
 
 @enable_with_setting(settings.USE_MAILMAN)
-def load_list_settings(list, listfile):
+def load_list_settings(list_name, listfile):
     """
     Load a Mailman list-settings file and configure a list with the specified settings.
 
@@ -43,23 +42,23 @@ def load_list_settings(list, listfile):
     else:
         listpath = os.path.join(settings.PROJECT_ROOT, listfile)
 
-    return call([MM_PATH + "config_list", "-i", listpath, list])
+    return call([MM_PATH + "config_list", "-i", listpath, list_name])
 
 
 @enable_with_setting(settings.USE_MAILMAN)
-def apply_raw_list_settings(list, data):
+def apply_raw_list_settings(list_name, data):
     """
     Apply the settings in 'data' to the specified list.
     This is functionally equivalent to writing 'data' to a file and calling "load_list_settings()" on that file.
     """
     with NamedTemporaryFile() as f:
         f.write(data)
-        f.file.flush()
-        return call([MM_PATH + "config_list", "-i", f.name, list])
+        f.flush()
+        return call([MM_PATH + "config_list", "-i", f.name, list_name])
 
 
 @enable_with_setting(settings.USE_MAILMAN)
-def apply_list_settings(list, data):
+def apply_list_settings(list_name, data):
     """
     Apply the settings in 'data' to the specified list.
     'data' is a key-value dictionary for Mailman variables to be set.
@@ -69,47 +68,37 @@ def apply_list_settings(list, data):
 
     with NamedTemporaryFile() as f:
         f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in data.items() ) )
-        f.file.flush()
-        return call([MM_PATH + "config_list", "-i", f.name, list])
+        f.flush()
+        return call([MM_PATH + "config_list", "-i", f.name, list_name])
 
 
 @enable_with_setting(settings.USE_MAILMAN)
-def set_list_owner_password(list, password=None):
+def set_list_owner_password(list_name, password=None):
     """
     Set the list-owner password for the specified list.
     If 'password' isn't specified, a random password will be generated.
     Return the password that is ultimately used.
     """
-    data_str_template = """import sha
-mlist.password = sha.new('%s').hexdigest()
-del sha
-"""
     if not password:
         password = ESPUser.objects.make_random_password()
-
-    data_str = data_str_template % (password)
-
-    apply_raw_list_settings(list, data_str)
+    hashed = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    data_str = "mlist.password = '%s'\n" % hashed
+    apply_raw_list_settings(list_name, data_str)
     return password
 
 
 @enable_with_setting(settings.USE_MAILMAN)
-def set_list_moderator_password(list, password=None):
+def set_list_moderator_password(list_name, password=None):
     """
     Set the list-owner password for the specified list.
     If 'password' isn't specified, a random password will be generated.
     Return the password that is ultimately used.
     """
-    data_str_template = """import sha
-mlist.mod_password = sha.new('%s').hexdigest()
-del sha
-"""
     if not password:
         password = ESPUser.objects.make_random_password()
-
-    data_str = data_str_template % (password)
-
-    apply_raw_list_settings(list, data_str)
+    hashed = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    data_str = "mlist.mod_password = '%s'\n" % hashed
+    apply_raw_list_settings(list_name, data_str)
     return password
 
 
@@ -142,7 +131,7 @@ def add_list_members(list_name, members):
     return Popen([MM_PATH + "add_members", "--regular-members-file=-", list_name], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(members)
 
 @enable_with_setting(settings.USE_MAILMAN)
-def remove_list_member(list, member):
+def remove_list_member(list_name, member):
     """
     Remove the email address 'member' from the local Mailman mailing list 'list'
 
@@ -161,12 +150,15 @@ def remove_list_member(list, member):
     if isinstance(member, str):
         member = member.encode('iso-8859-1', 'replace')
 
-    return Popen([MM_PATH + "remove_members", "--nouserack", "--noadminack", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
+    return Popen([MM_PATH + "remove_members", "--nouserack", "--noadminack", "--file=-", list_name], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
 @enable_with_setting(settings.USE_MAILMAN)
 def list_contents(lst):
     """ Return the list of email addresses on the specified mailing list """
-    contents = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    raw = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0]
+    if isinstance(raw, bytes):
+        raw = raw.decode('utf-8', errors='replace')
+    contents = raw.split('\n')
 
     try:
         # It seems the empty string gets dragged into this list.
@@ -190,10 +182,10 @@ def all_lists(show_nonpublic=False):
     Mailing list names are returned as strings.
     Only lists flagged as 'advertised' in Mailman are returned unless show_nonpublic is True.
     """
-    args = [MM_PATH + "list_lists", "-b"]
-    if not show_nonpublic:
-        args.append("-a")
-    return Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    raw = Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0]
+    if isinstance(raw, bytes):
+        raw = raw.decode('utf-8', errors='replace')
+    return [lst for lst in raw.split('\n') if lst.strip()]
 
 @enable_with_setting(settings.USE_MAILMAN)
 def lists_containing(user):
@@ -203,10 +195,10 @@ def lists_containing(user):
     else:
         search_regex = "^(%s|%s@%s)$" % (user.email, user.username, "esp.mit.edu")
 
-    args = [MM_PATH + "find_member", search_regex]
-    data = Popen(args, stdout=PIPE, stderr=PIPE).communicate()
-    data = data[0].split('\n')
-
+    raw = Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0]
+    if isinstance(raw, bytes):
+        raw = raw.decode('utf-8', errors='replace')
+    data = raw.split('\n')
     # find_member's output is of the form
     #
     # [addr] found in:
@@ -218,6 +210,8 @@ def lists_containing(user):
     #
     # We only want the lists; grab those:
 
-    lists = [x.strip() for x in data]
-    lists = [x for x in lists if x]
-    return lists
+    lists =[
+        line.strip() for line in data
+        if line.startswith(' ') or line.startswith('\t')
+        ]
+    return [lst for lst in lists if lst]

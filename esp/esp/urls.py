@@ -56,6 +56,7 @@ import esp.tests.urls
 import esp.themes.urls
 import esp.users.urls
 import esp.varnish.urls
+import esp.dbmail.urls
 
 #TODO: move these out of the main urls.py
 from esp.web.views import main
@@ -151,7 +152,7 @@ urlpatterns += [
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
 
-    url(r'^email/([0-9]+)/?$', main.public_email),
+    url(r'^', include(esp.dbmail.urls)),
 ]
 
 urlpatterns += [
