@@ -4,6 +4,8 @@ import re
 
 from django.test import TestCase, SimpleTestCase
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from esp.tagdict import all_global_tags, all_program_tags
 from esp.tagdict.models import Tag
 from esp.program.tests import ProgramFrameworkTest
@@ -198,6 +200,53 @@ class TagTest(TestCase):
         with self.assertNumQueries(0):
             self.assertFalse(Tag.getTag("test", target=user2))
             self.assertFalse(Tag.getTag("test", target=user2))
+
+    def testGlobalTagUniqueConstraint(self):
+        '''Test that global tags (content_type and object_id both NULL) must have unique keys.'''
+        # Delete any existing tags that might interfere
+        Tag.objects.filter(key="test_unique").delete()
+        
+        # Create a global tag
+        Tag.setTag("test_unique", target=None, value="first value")
+        
+        # Attempting to create another global tag with the same key should fail
+        # This should be caught either by the database constraint or model validation
+        with self.assertRaises((IntegrityError, ValidationError)):
+            tag = Tag(key="test_unique", content_type=None, object_id=None, value="second value")
+            tag.save()
+        
+        # Verify only one global tag exists
+        global_tags = Tag.objects.filter(key="test_unique", content_type__isnull=True, object_id__isnull=True)
+        self.assertEqual(global_tags.count(), 1)
+        self.assertEqual(global_tags.first().value, "first value")
+        
+        # Clean up
+        Tag.unSetTag("test_unique")
+
+    def testPerObjectTagsNotAffectedByGlobalConstraint(self):
+        '''Test that per-object tags can have duplicate keys (not affected by global tag constraint).'''
+        # Delete any existing tags that might interfere
+        Tag.objects.filter(key="test_per_object").delete()
+        
+        user1, created = User.objects.get_or_create(username="TestUser1", email="test1@example.com", password="")
+        user2, created = User.objects.get_or_create(username="TestUser2", email="test2@example.com", password="")
+        
+        # Create tags with the same key for different objects - this should work fine
+        Tag.setTag("test_per_object", target=user1, value="value for user1")
+        Tag.setTag("test_per_object", target=user2, value="value for user2")
+        
+        # Also create a global tag with the same key - this should also work
+        Tag.setTag("test_per_object", target=None, value="global value")
+        
+        # Verify all three tags exist
+        self.assertEqual(Tag.getTag("test_per_object", target=user1), "value for user1")
+        self.assertEqual(Tag.getTag("test_per_object", target=user2), "value for user2")
+        self.assertEqual(Tag.getTag("test_per_object", target=None), "global value")
+        
+        # Clean up
+        Tag.unSetTag("test_per_object", target=user1)
+        Tag.unSetTag("test_per_object", target=user2)
+        Tag.unSetTag("test_per_object", target=None)
 
 class ProgramTagTest(ProgramFrameworkTest):
     def testProgramTag(self):

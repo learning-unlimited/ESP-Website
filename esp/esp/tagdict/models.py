@@ -5,6 +5,7 @@ from django.db import models
 from django.db.utils import ProgrammingError, OperationalError
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.core.exceptions import ValidationError
 from argcache import cache_function
 
 from esp.tagdict import all_global_tags, all_program_tags
@@ -29,10 +30,40 @@ class Tag(models.Model):
         ordering = ["key"]
 
         unique_together = (("key", "content_type", "object_id"),)
-        # We really want to enforce that keys be unique if content_type
-        # and object_id are both null.  However null's are special in SQL.
-        # Django can't currently do this, so it's enforced by custom SQL.
-        # TODO:  Write this custom SQL for backends other than PostgreSQL.
+        # We enforce that keys be unique if content_type and object_id are both null
+        # (i.e., for global tags). This is implemented via a database constraint in
+        # migration 0002_add_global_tag_unique_constraint.py, with model-level validation
+        # as a fallback for databases that don't support partial indexes.
+
+    def clean(self):
+        """
+        Validate that global tags (content_type and object_id both NULL) have unique keys.
+        This provides a fallback for databases that don't support partial unique indexes.
+        """
+        super().clean()
+        
+        # Only validate for global tags
+        if self.content_type is None and self.object_id is None:
+            # Check if another global tag with the same key exists
+            existing = Tag.objects.filter(
+                key=self.key,
+                content_type__isnull=True,
+                object_id__isnull=True
+            ).exclude(pk=self.pk)
+            
+            if existing.exists():
+                raise ValidationError({
+                    'key': f'A global tag with key "{self.key}" already exists.'
+                })
+
+    def save(self, *args, **kwargs):
+        """
+        Override save to call full_clean() for validation.
+        """
+        # Only run validation if not explicitly skipped
+        if not kwargs.pop('skip_validation', False):
+            self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return "%s: %s (%s)" % (self.key, self.value, self.target)
