@@ -252,7 +252,7 @@ class OnSiteClassList(ProgramModuleObj):
             desired_sections = None
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
-        if not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
+        if user and not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
             rt = RecordType.objects.get(name='attended')
             rec = Record(user=user, program=prog, event=rt)
             rec.save()
