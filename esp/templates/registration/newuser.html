@@ -113,6 +113,13 @@ Creating account...
 </div>
 
  <script>
+document.addEventListener("DOMContentLoaded", function () {
+    var firstNameInput = document.getElementById("id_first_name");
+    if (firstNameInput) {
+        firstNameInput.focus();
+    }
+});
+
 document.querySelector("form").addEventListener("submit", function () {
 
     const button = document.getElementById("submitBtn");

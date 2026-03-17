@@ -62,7 +62,7 @@ set forth by Learning Unlimited, the umbrella organization of which we are a mem
 {% endif %}
 
 <div id="program_form">
-<form action="{{ request.path }}" method="post" name="newuser_form"id="newuserForm"></form>>
+<form action="{{ request.path }}" method="post" name="newuser_form" id="newuserForm">
 {% if accounts or awaitings %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 <table align="center">
 <thead>
@@ -89,8 +89,15 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 
 <tr>
   <th colspan="2" class="submit">
-    <input type="submit" value="Proceed to Account Creation" name="submit_btn" class="btn btn-default" />
-    <span id="loadingText" style="display:none; margin-left:10px;">Submitting...</span>
+   <input type="submit"
+       value="Proceed to Account Creation"
+       name="submit_btn"
+       id="submitBtn"
+       class="btn btn-default" />
+  <span id="loadingText" style="display:none; margin-left:10px;">
+   <span class="loading-spinner" aria-hidden="true"></span>
+   Submitting...
+</span>
   </th>
 </tr>
 </tbody>
