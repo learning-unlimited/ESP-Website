@@ -267,12 +267,20 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         self.studentrep_error = False
 
     def clean_graduation_year(self):
-        gy = self.cleaned_data['graduation_year'].strip()
+        gy = self.cleaned_data.get('graduation_year', '').strip()
+        if not gy:
+            # Only enforce "required" when the field is actually required.
+            # When grade changes are disabled, __init__ sets required=False and
+            # the widget is HTML-disabled; clean() will backfill the old value
+            # from orig_prof.student_info, so we must not raise here.
+            if self.fields['graduation_year'].required:
+                raise forms.ValidationError("Grade / Graduation Year is required.")
+            return gy
         try:
             gy = str(abs(int(gy)))
-        except (ValueError, TypeError):
+        except ValueError:
             if gy != 'G':
-                gy = 'N/A'
+                raise forms.ValidationError("Invalid grade value.")
         return gy
 
     def clean_heard_about(self):

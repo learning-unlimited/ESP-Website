@@ -869,6 +869,7 @@ class AjaxAutocompleteViewTest(TestCase):
         self.assertEqual(len(payload['result']), 1)
         self.assertEqual(payload['result'][0]['id'], self.target_user.id)
 
+
 class StudentInfoFormGradeTest(TestCase):
     """Registration Profile grade validation.
 
@@ -949,6 +950,7 @@ class StudentInfoFormGradeTest(TestCase):
     def test_profile_not_saved_when_grade_missing(self):
         """No StudentInfo row is written when graduation_year is omitted.
 
+        The view only calls StudentInfo.addOrUpdate() after form.is_valid()
         The view only calls StudentInfo.addOrUpdate() after form.is_valid()
         returns True.  This test mirrors that guard by checking that an
         invalid form leaves StudentInfo untouched in the database.
