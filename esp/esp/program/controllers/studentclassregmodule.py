@@ -34,8 +34,12 @@ Learning Unlimited, Inc.
 """
 
 import json
+import logging
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, Program
+
+
+logger = logging.getLogger(__name__)
 
 class RegistrationTypeController(object):
 
@@ -56,7 +60,13 @@ class RegistrationTypeController(object):
         if display_names:
             try:
                 display_names = json.loads(display_names) + cls.default_names
-            except (TypeError, ValueError):
+            except (TypeError, ValueError) as exc:
+                logger.warning(
+                    'Failed to parse JSON for registration type display names for program %r with raw tag value %r; falling back to defaults. Error: %s',
+                    prog,
+                    display_names,
+                    exc,
+                )
                 display_names = cls.default_names
         else:
             display_names = cls.default_names
