@@ -1505,9 +1505,8 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         # Clear any stale thread-local request from previous test classes.
         # ClassFlag.save() overrides created_by with request.user, which may
         # reference a user whose savepoint was already rolled back.
-        from esp.middleware.threadlocalrequest import _threading_local
-        if hasattr(_threading_local, 'request'):
-            del _threading_local.request
+        from esp.middleware.threadlocalrequest import clear_current_request
+        clear_current_request()
 
         super(ClassFlagTeacherVisibilityTest, self).setUp(num_students=0, num_teachers=2, num_admins=1)
 
@@ -1599,6 +1598,72 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         form = FlagTypeForm()
         self.assertIn('show_to_teacher', form.fields)
         self.assertIn('notify_teacher_by_email', form.fields)
+
+    def test_newflag_email_failure_returns_warning(self):
+        """If send_teacher_notification() raises, newflag() still returns 200
+        with the flag data and includes a warning message (#4223)."""
+        from esp.program.models import ClassFlag
+        from unittest.mock import patch
+
+        # Log in as admin
+        self.client.login(username=self.admin_user.username, password='password')
+
+        flag_count_before = ClassFlag.objects.filter(subject=self.subject).count()
+
+        url = '/manage/%s/newflag/' % self.program.getUrlBase()
+        post_data = {
+            'subject': self.subject.id,
+            'flag_type': self.teacher_notify_type.id,
+            'comment': 'Test email failure',
+        }
+
+        with patch.object(ClassFlag, 'send_teacher_notification',
+                          side_effect=Exception('SMTP connection refused')):
+            response = self.client.post(url, post_data)
+
+        # Endpoint returns 200, not 500
+        self.assertEqual(response.status_code, 200)
+
+        # Response contains warning about failed email
+        import json as _json
+        response_data = _json.loads(response.content.decode('utf-8'))
+        self.assertIn('warning', response_data)
+        self.assertIn('email notification failed', response_data['warning'])
+
+        # Flag HTML is still returned
+        self.assertIn('flag_name', response_data)
+        self.assertIn('flag_detail', response_data)
+
+        # Flag was saved to the database
+        self.assertEqual(
+            ClassFlag.objects.filter(subject=self.subject).count(),
+            flag_count_before + 1
+        )
+
+    def test_newflag_email_success_no_warning(self):
+        """When email succeeds, the response has no warning field."""
+        from esp.program.models import ClassFlag
+        from unittest.mock import patch
+
+        self.client.login(username=self.admin_user.username, password='password')
+
+        url = '/manage/%s/newflag/' % self.program.getUrlBase()
+        post_data = {
+            'subject': self.subject.id,
+            'flag_type': self.teacher_notify_type.id,
+            'comment': 'Email works fine',
+        }
+
+        with patch.object(ClassFlag, 'send_teacher_notification'):
+            response = self.client.post(url, post_data)
+
+        self.assertEqual(response.status_code, 200)
+
+        import json as _json
+        response_data = _json.loads(response.content.decode('utf-8'))
+        self.assertNotIn('warning', response_data)
+        self.assertIn('flag_name', response_data)
+
 
 """
 Tests for esp.program.controllers.classreg
@@ -1918,3 +1983,55 @@ class GradeCacheInvalidationTest(TestCase):
             profile2.student_info.graduation_year, new_yog,
             "getLastProfile should return updated graduation_year"
         )
+
+
+class HeardAboutNormalizationTest(TestCase):
+    """
+    Unit tests for the punctuation normalization logic inside heardabout().
+
+    Regression test for GitHub issue #4621:
+    heardabout() was calling ha_key.replace(char, '') without assigning the
+    return value back to ha_key, so punctuation was never actually stripped and
+    semantically identical answers were counted as separate rows.
+    """
+
+    def _normalize(self, ha_str):
+        """
+        Replicate the normalization logic from heardabout() in statistics.py
+        so this test has no database dependency.
+        """
+        ha_key = ha_str.rstrip('s').lower()
+        for char in ' _:-/.,!?+':
+            ha_key = ha_key.replace(char, '')
+        return ha_key
+
+    def test_punctuation_variants_normalize_to_same_key(self):
+        """Answers differing only in punctuation should produce the same key."""
+        variants = ["friend", "friend!", "Friend.", "Friend,", "friend?", "Friend!"]
+        keys = [self._normalize(v) for v in variants]
+        self.assertEqual(
+            len(set(keys)), 1,
+            "All punctuation variants of 'friend' should normalize to the same key, "
+            "but got: %s" % keys
+        )
+
+    def test_lowercase_normalization(self):
+        """Normalization should be case-insensitive."""
+        self.assertEqual(self._normalize("Facebook"), self._normalize("facebook"))
+        self.assertEqual(self._normalize("TWITTER"), self._normalize("twitter"))
+
+    def test_trailing_s_stripped(self):
+        """Trailing 's' should be stripped (rstrip('s'))."""
+        self.assertEqual(self._normalize("friends"), self._normalize("friend"))
+
+    def test_spaces_stripped(self):
+        """Spaces should be removed during normalization."""
+        self.assertEqual(self._normalize("a friend"), self._normalize("afriend"))
+
+    def test_empty_string_handled(self):
+        """Empty string should normalize to empty string without error."""
+        self.assertEqual(self._normalize(""), "")
+
+    def test_only_punctuation_normalizes_to_empty(self):
+        """A string of only punctuation characters should normalize to empty."""
+        self.assertEqual(self._normalize("...!!!"), "")

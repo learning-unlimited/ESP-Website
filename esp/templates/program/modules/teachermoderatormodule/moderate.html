@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{program.niceName}} {{ program.getModeratorTitle }} Signup{% endblock %}
 
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="/media/scripts/program/modules/moderate.js"></script>
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <h1>{{ program.getModeratorTitle }} Signup for {{program.niceName}} </h1>
 <br />
 {% load render_qsd %}
