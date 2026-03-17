@@ -1398,6 +1398,7 @@ def update_email(**kwargs):
             # circular.  If we or django ever patch it to do so, we will need
             # to be more careful here.
             users_to_deactivate.update(is_active=False)
+            expire_user_records_for_upcoming_programs_for_queryset(users_to_deactivate)
         # Only remove them from group-based lists; keep them on program and
         # class lists.
         for l in set(group_map.values()):
@@ -1473,7 +1474,7 @@ def expire_user_records_for_upcoming_programs(user):
     # Determine upcoming programs using DB-side aggregation over Events:
     # - Programs with at least one "Class Time Block" Event whose latest end >= now
     # - Programs with no "Class Time Block" Events at all (matches previous datetime_range() None behavior)
-    class_time_events = Event.objects.filter(event_type__name="Class Time Block")
+    class_time_events = Event.objects.filter(event_type__description="Class Time Block")
 
     # Programs that have any "Class Time Block" events
     program_ids_with_class_times = class_time_events.values_list("program_id", flat=True).distinct()
@@ -1529,6 +1530,17 @@ def expire_user_records_for_upcoming_programs(user):
             "%d Permissions, %d VolunteerOffers",
             user.username, user.id, sr_count, ssi_count, perm_count, vol_count
         )
+
+
+def expire_user_records_for_upcoming_programs_for_queryset(user_qs):
+    """Expire registrations and permissions for all users in the given queryset
+    for programs that haven't ended yet.
+
+    This is intended for use after bulk deactivation operations performed via
+    QuerySet.update(...), which do not trigger model save signals.
+    """
+    for user in user_qs:
+        expire_user_records_for_upcoming_programs(user)
 
 
 class StudentInfo(models.Model):

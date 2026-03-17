@@ -908,9 +908,7 @@ class DeactivationExpirationTest(ProgramFrameworkTest):
     """Test that deactivating a user expires their records for upcoming programs."""
 
     def setUp(self):
-        from datetime import timedelta
         from esp.cal.models import Event, EventType
-        from esp.program.models import ClassCategories
 
         super().setUp(
             program_type='UpcomingProgram',
@@ -1102,34 +1100,40 @@ class DeactivationExpirationTest(ProgramFrameworkTest):
         upcoming_timeslot = self.upcoming_program.getTimeSlots().first()
         past_timeslot = self.past_program.getTimeSlots().first()
 
-        if upcoming_timeslot and past_timeslot:
-            vr_upcoming = VolunteerRequest.objects.create(
-                program=self.upcoming_program,
-                timeslot=upcoming_timeslot,
-                num_volunteers=5,
-            )
-            vr_past = VolunteerRequest.objects.create(
-                program=self.past_program,
-                timeslot=past_timeslot,
-                num_volunteers=5,
-            )
+        self.assertIsNotNone(upcoming_timeslot, "upcoming_program must have at least one timeslot")
+        self.assertIsNotNone(past_timeslot, "past_program must have at least one timeslot")
 
-            vo_upcoming = VolunteerOffer.objects.create(
-                request=vr_upcoming,
-                user=self.student,
-                name='Test Student',
-            )
-            vo_past = VolunteerOffer.objects.create(
-                request=vr_past,
-                user=self.student,
-                name='Test Student',
-            )
+        vr_upcoming = VolunteerRequest.objects.create(
+            program=self.upcoming_program,
+            timeslot=upcoming_timeslot,
+            num_volunteers=5,
+        )
+        vr_past = VolunteerRequest.objects.create(
+            program=self.past_program,
+            timeslot=past_timeslot,
+            num_volunteers=5,
+        )
 
-            self.student.is_active = False
-            self.student.save()
+        vo_upcoming = VolunteerOffer.objects.create(
+            request=vr_upcoming,
+            user=self.student,
+            name='Test Student',
+        )
+        vo_past = VolunteerOffer.objects.create(
+            request=vr_past,
+            user=self.student,
+            name='Test Student',
+        )
 
-            self.assertFalse(VolunteerOffer.objects.filter(id=vo_upcoming.id).exists())
-            self.assertTrue(VolunteerOffer.objects.filter(id=vo_past.id).exists())
+        # Verify offers exist before deactivation
+        self.assertTrue(VolunteerOffer.objects.filter(id=vo_upcoming.id).exists())
+        self.assertTrue(VolunteerOffer.objects.filter(id=vo_past.id).exists())
+
+        self.student.is_active = False
+        self.student.save()
+
+        self.assertFalse(VolunteerOffer.objects.filter(id=vo_upcoming.id).exists())
+        self.assertTrue(VolunteerOffer.objects.filter(id=vo_past.id).exists())
 
 
 class StudentProfileForm__emailvalidationtest(TestCase):
