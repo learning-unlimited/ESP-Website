@@ -368,11 +368,11 @@ class PhaseZeroRecordAdminForm(forms.ModelForm):
         model = PhaseZeroRecord
         fields = '__all__'
 
-    def clean_program(self):
-        program = self.cleaned_data.get('program')
-        if not program:
-            raise forms.ValidationError("Program is required. Please select a program.")
-        return program
+    error_messages = {
+        'program': {
+            'required': "Program is required. Please select a program.",
+        },
+    }
 
 class PhaseZeroRecordAdmin(admin.ModelAdmin):
     form = PhaseZeroRecordAdminForm
@@ -386,3 +386,4 @@ class ModeratorRecordAdmin(admin.ModelAdmin):
     search_fields = ['user__username']
     list_filter = ['program', 'will_moderate']
 admin_site.register(ModeratorRecord, ModeratorRecordAdmin)
+

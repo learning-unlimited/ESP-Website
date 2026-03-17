@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -142,14 +143,8 @@ class ViewUserInfoTest(TestCase):
 
         # Try searching by ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        if response.status_code == 302:
-            self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
-        else:
-            self.assertEqual(response.status_code, 200)
-            self.assertStringContains(
-                str(response.content, encoding='UTF-8'),
-                'href="/manage/userview?username=adminuser124353"'
-            )
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
 
     def testUserIDSearchMultipleResults(self):
         c = Client()
@@ -2016,8 +2011,9 @@ class PhaseZeroRecordTest(ProgramFrameworkTest):
     def test_phasezerorecord_without_program_fails_validation(self):
         """A PhaseZeroRecord without a program should fail full_clean validation."""
         record = PhaseZeroRecord()
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError) as cm:
             record.full_clean()
+        self.assertIn('program', cm.exception.message_dict)
 
     def test_phasezerorecord_admin_form_requires_program(self):
         """The admin form for PhaseZeroRecord should require the program field."""
@@ -2135,3 +2131,6 @@ class HeardAboutNormalizationTest(TestCase):
     def test_only_punctuation_normalizes_to_empty(self):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
+
+
+
