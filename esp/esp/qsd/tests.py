@@ -634,3 +634,48 @@ class QSDAdminAuthorTest(TestCase):
 
         self.qsd.refresh_from_db()
         self.assertEqual(self.qsd.author, self.user2)
+
+
+class HTMLCommentSanitizationTest(TestCase):
+
+    def test_simple_comment_unchanged(self):
+        from esp.qsd.views import _sanitize_html_comments
+        content = "Hello <!-- comment --> World"
+        result = _sanitize_html_comments(content)
+        self.assertEqual(result, "Hello <!-- comment --> World")
+
+    def test_nested_comment_markers_removed(self):
+        from esp.qsd.views import _sanitize_html_comments
+        content = "<!-- outer <!-- inner --> -->"
+        result = _sanitize_html_comments(content)
+        self.assertIn("<!--", result)
+        self.assertEqual(result.count("<!--"), 1)
+
+    def test_comment_with_blank_lines(self):
+        from esp.qsd.views import _sanitize_html_comments
+        content = "<!-- ABC\n\nDEF -->"
+        result = _sanitize_html_comments(content)
+        self.assertTrue(result.startswith("<!--"))
+        self.assertTrue(result.endswith("-->"))
+        self.assertIn("ABC", result)
+        self.assertIn("DEF", result)
+
+    def test_multiple_comments_unchanged(self):
+        from esp.qsd.views import _sanitize_html_comments
+        content = "<!-- first --> text <!-- second -->"
+        result = _sanitize_html_comments(content)
+        self.assertEqual(result, "<!-- first --> text <!-- second -->")
+
+    def test_html_tags_inside_comment(self):
+        from esp.qsd.views import _sanitize_html_comments
+        content = "<!-- <h2>hidden header</h2> -->"
+        result = _sanitize_html_comments(content)
+        self.assertIn("<h2>", result)
+        self.assertIn("</h2>", result)
+
+    def test_markdown_safe_filter(self):
+        from esp.utils.templatetags.markup import markdown_safe
+        content = "Text <!-- outer <!-- inner --> outer --> more"
+        result = markdown_safe(content)
+        self.assertIsNotNone(result)
+        self.assertEqual(str(result).count("<!--"), 1)
