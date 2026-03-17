@@ -299,6 +299,7 @@ class ClassSection(models.Model):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     max_class_capacity = models.IntegerField(blank=True, null=True)
+    cancellation_reason = models.TextField(blank=True, null=True)
 
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections', on_delete=models.CASCADE)
 
@@ -1122,6 +1123,7 @@ class ClassSection(models.Model):
                 # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
                 prog = self.parent_program
                 prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
+            self.cancellation_reason = explanation
             self.status = ClassStatus.CANCELLED
             self.save()
 
