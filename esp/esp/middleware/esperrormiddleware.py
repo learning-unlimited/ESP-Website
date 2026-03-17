@@ -145,11 +145,11 @@ class AjaxErrorMiddleware(MiddlewareMixin):
         if settings.DEBUG:
             import sys, traceback
             (exc_type, exc_info, tb) = sys.exc_info()
-            message = "%s\n" % exc_type.__name__
-            message += "%s\n\n" % exc_info
+            message = f"{exc_type.__name__}\n"
+            message += f"{exc_info}\n\n"
             message += "TRACEBACK:\n"
             for tb in traceback.format_tb(tb):
-                message += "%s\n" % tb
+                message += f"{tb}\n"
             return self.serialize_error(500, message)
         else:
             return self.serialize_error(500, _('Internal error'))
@@ -242,11 +242,10 @@ class ESPErrorMiddleware(MiddlewareMixin):
             # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
             #   TEMPLATE in main?
             context = RequestContext(request, context).flatten()
-        except:
+        except BaseException:
             # well, we couldn't, but at least display something
             # (actually it will immediately fail on main because someone
-            # removed the safe version of the template and
-            # miniblog_for_user doesn't silently fail but best not to put
+            # removed the safe version of the template but best not to put
             # in ugly hacks and make random variables just happen to work.)
             pass
         # All error templates now extend error_base.html, which provides

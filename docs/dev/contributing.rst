@@ -11,6 +11,11 @@ Remove ``--global`` if you don't want it to apply to other git repos on your com
   git config --global user.name "Your Name"
   git config --global user.email you@something.edu
 
+Set up pre-commit hooks to automatically lint staged files before each commit: ::
+
+  pip install pre-commit
+  pre-commit install
+
 Other git config you might find useful: ::
 
   git config --global push.default simple # makes git only push the current branch, which is useful for not accidentally messing things up
@@ -130,7 +135,6 @@ Many tests are located in application-specific files. Some legacy tests may stil
 * ``esp/cal/tests.py``
 * ``esp/dbmail/tests.py``
 * ``esp/formstack/tests.py``
-* ``esp/miniblog/tests.py``
 * ``esp/program/tests.py``
 * ``esp/survey/tests.py``
 * ``esp/varnish/tests.py``
