@@ -93,7 +93,7 @@ def default_navbarcategory():
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
 
-    sort_rank = models.IntegerField()
+    sort_rank = models.IntegerField(help_text='Controls the display order of this navigation entry. Lower numbers appear first.')
     link = models.CharField(max_length=256, blank=True, null=True)
     text = models.CharField(max_length=64)
     indent = models.BooleanField(default=False)
