@@ -2223,7 +2223,7 @@ class PhaseZeroRecord(models.Model):
     time = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        app_label = 'program'
+        pass
 
     def display_user(self):
         # Creates a string for the Users. This is required to display user in Admin.
