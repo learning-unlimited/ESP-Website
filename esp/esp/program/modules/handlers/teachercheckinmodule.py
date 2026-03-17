@@ -291,12 +291,16 @@ class TeacherCheckinModule(ProgramModuleObj):
         and is used to filter the set of checked-in Records, so that the view
         shows who is not checked in yet for the day.
 
-        Returns the 2-tuple (sections, arrived):
+        Returns the 3-tuple (sections, arrived, previously_checked_in):
             sections: A list of all sections starting at the given time or on
                       the given date which do not have all teachers checked in,
                       with those with no teachers checked in first.
             arrived:  A dict of id -> teacher for all teachers who have already
                       checked in.
+            previously_checked_in: A set of user ids for teachers who checked
+                      in on the previous program day (but have not yet checked
+                      in today).  Useful for prioritising which missing
+                      teachers to call first.
         """
         if when is None:
             when = datetime.now()
@@ -414,7 +418,36 @@ class TeacherCheckinModule(ProgramModuleObj):
             if section.all_arrived
         ]
 
-        return sections, arrived
+        # Find teachers who checked in on the previous program day but have
+        # not yet checked in today.  This helps admins prioritise which
+        # missing teachers to contact first — a teacher who was present
+        # yesterday likely just needs a quick reminder.
+        previously_checked_in = set()
+        check_date = when.date() if date is None else date
+        prog_dates = sorted(prog.dates())
+        if check_date in prog_dates:
+            idx = prog_dates.index(check_date)
+            if idx > 0:
+                prev_date = prog_dates[idx - 1]
+                prev_ids = set(Record.objects.filter(
+                    program=prog,
+                    event__name='teacher_checked_in',
+                    time__year=prev_date.year,
+                    time__month=prev_date.month,
+                    time__day=prev_date.day,
+                ).values_list('user_id', flat=True))
+                # Exclude teachers who have already checked in today.
+                today_ids = set(Record.objects.filter(
+                    program=prog,
+                    event__name='teacher_checked_in',
+                    time__year=check_date.year,
+                    time__month=check_date.month,
+                    time__day=check_date.day,
+                    time__lte=when,
+                ).values_list('user_id', flat=True))
+                previously_checked_in = prev_ids - today_ids
+
+        return sections, arrived, previously_checked_in
 
     def getMissingResources(self, prog, date=None, starttime=None, default_phone = '(missing contact info)'):
         """Return a list of class sections that have ended but have not returned their floating resources.
@@ -515,7 +548,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             when = None
         show_flags = self.program.program_modules.filter(handler='ClassFlagModule').exists()
         context['date'] = date
-        context['sections'], context['arrived'] = self.getMissingTeachers(
+        context['sections'], context['arrived'], context['previously_checked_in'] = self.getMissingTeachers(
             prog, date, starttime, when, show_flags, default_phone)
         context['missing_resources'] = self.getMissingResources(prog, date, getattr(starttime, "start", None))
         if show_flags:
