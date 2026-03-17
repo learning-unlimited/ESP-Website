@@ -17,11 +17,13 @@ Covers:
 PR 6/6 — esp/web module coverage improvement
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import AnonymousUser, Group
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory
+from esp.tests.util import CacheFlushTestCase as TestCase
 
+from esp.middleware import ESPError_NoLog
 from esp.users.models import ESPUser
 from esp.web.views.main import (
     set_csrf_token,
@@ -111,8 +113,8 @@ class HomeViewTest(TestCase):
 # ---------------------------------------------------------------------------
 # archives() dispatch
 # Note: archive_teachers() and archive_programs() accept 3 args but
-# archives() passes 4 (source bug) — those two are tested directly in
-# tests_archives.py. Here we test 'classes' and the unknown fallback.
+# archives() passes 4 (source bug). Those two are tested directly in their
+# own dedicated tests; here we test 'classes' and the unknown fallback.
 # ---------------------------------------------------------------------------
 
 class ArchivesDispatchTest(TestCase):
@@ -135,8 +137,9 @@ class ArchivesDispatchTest(TestCase):
 
 # ---------------------------------------------------------------------------
 # public_email()
-# Note: ESPError does not inherit from BaseException in this codebase
-# so we catch the generic Exception raised by the view.
+# Note: public_email raises ESPError, whose concrete instances
+# (ESPError_Log/ESPError_NoLog) inherit from Exception; these tests simply
+# assert that an Exception is propagated for invalid/nonexistent IDs.
 # ---------------------------------------------------------------------------
 
 class PublicEmailTest(TestCase):
@@ -147,14 +150,14 @@ class PublicEmailTest(TestCase):
     def test_invalid_id_raises_exception(self):
         request = self.factory.get('/email/99999/')
         request.user = AnonymousUser()
-        with self.assertRaises(Exception):
+        with self.assertRaises(ESPError_NoLog):
             public_email(request, 99999)
 
     def test_nonexistent_id_raises_exception(self):
-        # A second non-existent id to confirm behaviour is consistent
+        # A second non-existent ID to confirm behaviour is consistent
         request = self.factory.get('/email/88888/')
         request.user = AnonymousUser()
-        with self.assertRaises(Exception):
+        with self.assertRaises(ESPError_NoLog):
             public_email(request, 88888)
 
 
@@ -174,10 +177,8 @@ class ContactViewTest(TestCase):
         request = self.factory.get('/contact/')
         request.user = AnonymousUser()
         # Mock getBooleanTag to return False (tag disabled)
-        with self.settings():
-            from unittest.mock import patch
-            with patch('esp.web.views.main.Tag.getBooleanTag', return_value=False):
-                response = contact(request)
+        with patch('esp.web.views.main.Tag.getBooleanTag', return_value=False):
+            response = contact(request)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['Location'], '/contact.html')
 
@@ -307,7 +308,7 @@ class MyESPStopTestingTest(TestCase):
 
     def test_non_admin_in_session_redirects_home(self):
         regular_user = _make_user('nonadmin_test')
-        # Use MagicMock so session.flush() and other dict ops work
+        # Use MagicMock so we can control request.session.get(...)'s return value
         mock_session = MagicMock()
         mock_session.get.return_value = {
             'admin_user_id': regular_user.id,
