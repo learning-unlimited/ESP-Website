@@ -36,17 +36,16 @@
   {% endif %}
   {% load class_render_row %}
   {% for cls in all_class_list %}
-    {% render_class_copy_row cls %}   
-
+    {% render_class_copy_row cls %}
     {% if not forloop.last %}
       <tr>
         <td colspan="7" style="padding: 0;">
-          <hr style="border: 0; border-top: 1px solid #ccc; margin: 15px 10px;">
+          {# 7 columns: status, title, grade, size, type, length, action #}
+          <tr class="row-separator"><td colspan="7"></td></tr>
         </td>
       </tr>
     {% endif %}
   {% endfor %}
-
 </table>
 </div> <!-- div#battlescreen -->
 <br /><br/ >

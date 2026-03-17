@@ -214,3 +214,11 @@ td.button_td {
   font-weight:bold;
   color: #3333FF;
 }
+
+
+
+.row-separator {
+    border-bottom: 1px solid #ccc;
+}
+
+
