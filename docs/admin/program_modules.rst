@@ -31,8 +31,12 @@ You will also see references to other data structures that store configuration s
 
 * [Teacher] module control (ClassRegModuleInfo): http://[hostname]/admin/modules/classregmoduleinfo/
 * Student module control (StudentClassRegModuleInfo): http://[hostname]/admin/modules/studentclassregmoduleinfo/
+<<<<<<< HEAD
 * Teacher Email Rules: Configured per program under **Manage → [program] → Settings → Teacher Email Rules**. See :ref:`teacher-email-rules` below.
 * Tags: http://[hostname]/admin/tagdict/tag/ - Very powerful, but more advanced; see [[Customize behavior with Tags]] for more information.
+=======
+* Tags: http://[hostname]/admin/tagdict/tag/ - Very powerful, but more advanced; see `Customizing with Tags <tags.rst>`_ for more information.
+>>>>>>> origin/main
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 
@@ -508,11 +512,6 @@ Course Materials (AdminMaterials)
 This module provides one view, get_materials.  From this view you can see all of the documents that have been uploaded by teachers for their classes.  You can upload your own files and choose whether they should be associated with an individual class, or if they are for the program as a while.
 
 Uploaded files can also be managed at a lower level using the file browser (/admin/filebrowser/browse).
-
-User morphing capability (AdminMorph)
--------------------------------------
-
-This module provides one view, admin_morph.  You can use the user search to find someone in the system (typically a teacher or student) and then morph into them so you can see the site from that user's perspective.  You will need to click the "Unmorph" link when you are done in order to avoid seeing permissions errors (using the "back" button in your browser will not work).  Morphing into administrators is not permitted as this constitutes a security risk.
 
 Application Review for Admin (AdminReviewApps)
 ----------------------------------------------
