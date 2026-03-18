@@ -163,21 +163,22 @@ class OnSiteAttendance(ProgramModuleObj):
             # For classes that are multiple hours, we want to count a student for
             # each hour starting from when they are marked and ending at the end of the class
             # Also, for multi-week programs (e.g. Sprout), we want to adjust the start and end times based on the attendance sr
-            start_time = sr.start_date.replace(minute = 0, second = 0, microsecond = 0)
+            section_start_dt = sr.section.start_time().start
             section_end_dt = sr.section.end_time().end
-            end_time = section_end_dt.replace(
-                year = sr.start_date.year, month = sr.start_date.month, day = sr.start_date.day,
+            actual_end_time = section_end_dt.replace(
+                year = sr.start_date.year, month = sr.start_date.month, day = sr.start_date.day
+            )
+            if section_end_dt.time() < section_start_dt.time():
+                actual_end_time = actual_end_time + datetime.timedelta(days=1)
+
+            if actual_end_time < sr.start_date:
+                continue
+
+            start_time = sr.start_date.replace(minute = 0, second = 0, microsecond = 0)
+            end_time = actual_end_time.replace(
                 minute = 0, second = 0, microsecond = 0)
             user = sr.user
             time = start_time
-            # If the section ends earlier than the attendance timestamp, it may
-            # be a cross-midnight class. Otherwise this is an impossible window.
-            if end_time < start_time:
-                if section_end_dt.time() < start_time.time():
-                    end_time = end_time + datetime.timedelta(days=1)
-
-                if end_time < start_time:
-                    continue
 
             while time <= end_time:
                 if time in att_dict:
