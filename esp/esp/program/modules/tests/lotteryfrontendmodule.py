@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
@@ -61,6 +61,14 @@ class LotteryFrontendModuleTest(ProgramFrameworkTest):
         result = data['response'][0]
         self.assertIn('stats', result)
         self.assertIn('lottery_data', result)
+        # Ensure numeric options are coerced to floats before passing to the controller.
+        _, kwargs = MockLAC.call_args
+        self.assertIn('num_iterations', kwargs)
+        self.assertIn('fillrate', kwargs)
+        self.assertIsInstance(kwargs['num_iterations'], float)
+        self.assertIsInstance(kwargs['fillrate'], float)
+        self.assertEqual(kwargs['num_iterations'], 100.0)
+        self.assertEqual(kwargs['fillrate'], 0.9)
 
     @patch('esp.program.modules.handlers.lotteryfrontendmodule.LotteryAssignmentController')
     def test_lottery_execute_lottery_exception(self, MockLAC):
@@ -120,13 +128,14 @@ class LotteryFrontendModuleTest(ProgramFrameworkTest):
         mock_instance = MockLAC.return_value
 
         self.client.login(username='lottery_admin_test', password='password')
+        lottery_data = json.dumps({'assignments': []})
         response = self.client.post(
             self._manage_url('lottery_save'),
-            {'lottery_data': json.dumps({'assignments': []})},
+            {'lottery_data': lottery_data},
         )
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertIn('response', data)
         self.assertEqual(data['response'][0].get('success'), 'yes')
-        mock_instance.import_assignments.assert_called_once()
+        mock_instance.import_assignments.assert_called_once_with(lottery_data)
         mock_instance.save_assignments.assert_called_once()
