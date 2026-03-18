@@ -46,6 +46,7 @@ from argcache import cache_function
 from esp.middleware import ESPError
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
+from esp.utils.pickle_signing import sign_data, verify_and_deserialize
 
 from esp.users.models import PersistentQueryFilter, ESPUser
 from django.template import Template #, VariableNode, TextNode
@@ -506,24 +507,35 @@ class MessageVars(models.Model):
     messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
     pickled_provider = models.BinaryField() # Object which must have obj.get_message_var(key)
     provider_name    = models.CharField(max_length=128)
+    signature        = models.BinaryField(null=True, blank=True)  # HMAC-SHA256 signature for integrity verification
 
     @staticmethod
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
         newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
-        newMessageVar.pickled_provider = pickle.dumps(obj)
+        pickled_data = pickle.dumps(obj)
+        newMessageVar.pickled_provider = pickled_data
+        newMessageVar.signature = sign_data(pickled_data)
         newMessageVar.save()
         return newMessageVar
 
     def getDict(self, user):
-        provider = pickle.loads(self.pickled_provider)
+        if self.signature:
+            provider = verify_and_deserialize(self.pickled_provider, self.signature, pickle.loads)
+        else:
+            logger.warning("MessageVars %d has no signature", self.id)
+            provider = pickle.loads(self.pickled_provider)
         actionhandler = ActionHandler(provider, user)
         return {self.provider_name: actionhandler}
 
     def getVar(self, key, user):
         """ Get a variable from this object. """
         try:
-            provider = pickle.loads(self.pickled_provider)
+            if self.signature:
+                provider = verify_and_deserialize(self.pickled_provider, self.signature, pickle.loads)
+            else:
+                logger.warning("MessageVars %d has no signature", self.id)
+                provider = pickle.loads(self.pickled_provider)
         except:
             raise ESPError('Could not load variable provider object!')
 
