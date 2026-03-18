@@ -253,6 +253,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         schedule = []
         timeslot_dict = {}
+        # Use program-specific tolerance for determining contiguous timeblocks,
+        # falling back to Event.contiguous default (20 minutes) if unavailable.
+        contiguous_tolerance = Tag.getProgramTag('timeblock_contiguous_tolerance', program=program, default=20)
+        try:
+            contiguous_tolerance = int(contiguous_tolerance)
+        except (ValueError, TypeError):
+            contiguous_tolerance = 20
+
         for sec in classList:
             #   Get the verbs all the time in order for the schedule to show
             #   the student's detailed enrollment status.  (Performance hit, I know.)
@@ -271,7 +279,7 @@ class StudentClassRegModule(ProgramModuleObj):
             for mt in sec.get_meeting_times().order_by('start'):
                 first_meeting_time = (
                     previous_meeting_time is None or
-                    not Event.contiguous(previous_meeting_time, mt)
+                    not Event.contiguous(previous_meeting_time, mt, tol=contiguous_tolerance)
                 )
                 if first_meeting_time:
                     section_dict = {'section': sec, 'first_meeting_time': True, 'meeting_span': 1}
