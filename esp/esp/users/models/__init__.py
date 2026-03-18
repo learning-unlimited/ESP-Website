@@ -99,6 +99,31 @@ DEFAULT_USER_TYPES = [
     ['Volunteer', {'label': 'Onsite Volunteer', 'profile_form': 'VolunteerProfileForm'}]
 ]
 
+DBLISTCOUNT_CACHE_KEY_REGISTRY = 'DBListCount:registered_cache_keys'
+
+
+def _register_dblistcount_cache_key(cache_id):
+    """Track DBList count cache IDs so they can be invalidated on user writes."""
+    cache_ids = cache.get(DBLISTCOUNT_CACHE_KEY_REGISTRY)
+    if not cache_ids:
+        cache_ids = []
+
+    if cache_id not in cache_ids:
+        cache_ids.append(cache_id)
+        cache.set(DBLISTCOUNT_CACHE_KEY_REGISTRY, cache_ids)
+
+
+def invalidate_dblistcount_cache():
+    """Invalidate all cached DBList counts.
+
+    DBList count keys are dynamically generated from query keys, so we keep a
+    registry of observed keys and clear them when user rows change.
+    """
+    cache_ids = cache.get(DBLISTCOUNT_CACHE_KEY_REGISTRY) or []
+    if cache_ids:
+        cache.delete_many(cache_ids)
+    cache.delete(DBLISTCOUNT_CACHE_KEY_REGISTRY)
+
 def admin_required(func):
     @functools.wraps(func)
     def wrapped(request, *args, **kwargs):
@@ -1309,6 +1334,18 @@ def make_admin_save(sender, instance, **kwargs):
         espuser = ESPUser.objects.get(id=instance.id)
         espuser.makeAdmin()
 
+
+@dispatch.receiver(signals.post_save, sender=User,
+                   dispatch_uid='invalidate_dblistcount_user_save')
+def invalidate_dblistcount_user_save(**kwargs):
+    invalidate_dblistcount_cache()
+
+
+@dispatch.receiver(signals.pre_delete, sender=User,
+                   dispatch_uid='invalidate_dblistcount_user_delete')
+def invalidate_dblistcount_user_delete(**kwargs):
+    invalidate_dblistcount_cache()
+
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
 def update_email_save(**kwargs):
@@ -2292,11 +2329,13 @@ class DBList(object):
                 if override:
                     self.totalnum = ESPUser.objects.filter(self.QObject).distinct().count()
                     cache.set(cache_id, self.totalnum, 60)
+                    _register_dblistcount_cache_key(cache_id)
                 else:
                     cachedval = cache.get(cache_id)
                     if cachedval is None:
                         self.totalnum = ESPUser.objects.filter(self.QObject).distinct().count()
                         cache.set(cache_id, self.totalnum, 60)
+                        _register_dblistcount_cache_key(cache_id)
                     else:
                         self.totalnum = cachedval
 
