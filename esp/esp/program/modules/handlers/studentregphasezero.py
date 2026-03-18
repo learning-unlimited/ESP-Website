@@ -62,11 +62,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
     def studentDesc(self):
         return {'phasezero': """Students who have entered the Student Lottery"""}
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return user.can_skip_phase_zero(self.program)
 
     @classmethod
@@ -205,7 +202,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
     def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string
-        if not 'username' in request.GET or 'username' in request.POST:
+        if 'username' not in request.GET and 'username' not in request.POST:
             return self.goToCore(tl)
 
         limit = 10
