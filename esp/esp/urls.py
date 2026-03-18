@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.conf.urls import include, handler500, handler404, url
+from django.urls import include, path, re_path
 from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
@@ -75,66 +75,66 @@ urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + st
 
 # Robots.txt
 urlpatterns += [
-    url('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain"))
+    path('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain"))
 ]
 
 # Admin stuff
 urlpatterns += [
-    url(r'^admin_tools/', include('admin_tools.urls')),
-    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-    url(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
-    url(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),
-    url(r'^admin/ajax_qsd_history/?$', esp.qsd.views.ajax_qsd_history),
-    url(r'^admin/ajax_qsd_version_preview/?$', esp.qsd.views.ajax_qsd_version_preview),
-    url(r'^admin/ajax_qsd_restore/?$', esp.qsd.views.ajax_qsd_restore),
-    url(r'^admin/ajax_qsd_image_upload/?$', esp.qsd.views.ajax_qsd_image_upload),
-    url(r'^admin/ajax_autocomplete/?', esp.db.views.ajax_autocomplete),
-    url(r'^admin/filebrowser/', filebrowser_site.urls),
-    url(r'^admin/', admin_site.urls),
-    url(r'^accounts/login/$', esp.users.views.CustomLoginView.as_view()),
-    url(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
+    re_path(r'^admin_tools/', include('admin_tools.urls')),
+    re_path(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    re_path(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
+    re_path(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),
+    re_path(r'^admin/ajax_qsd_history/?$', esp.qsd.views.ajax_qsd_history),
+    re_path(r'^admin/ajax_qsd_version_preview/?$', esp.qsd.views.ajax_qsd_version_preview),
+    re_path(r'^admin/ajax_qsd_restore/?$', esp.qsd.views.ajax_qsd_restore),
+    re_path(r'^admin/ajax_qsd_image_upload/?$', esp.qsd.views.ajax_qsd_image_upload),
+    re_path(r'^admin/ajax_autocomplete/?', esp.db.views.ajax_autocomplete),
+    re_path(r'^admin/filebrowser/', filebrowser_site.urls),
+    re_path(r'^admin/', admin_site.urls),
+    re_path(r'^accounts/login/$', esp.users.views.CustomLoginView.as_view()),
+    re_path(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
 ]
 
 # Adds missing trailing slash to any admin urls that haven't been matched yet.
 urlpatterns += [
-    url(r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/', permanent=True))]
+    re_path(r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/', permanent=True))]
 
 # generic stuff
 urlpatterns += [
-    url(r'^$', main.home), # index
-    url(r'^set_csrf_token', main.set_csrf_token), # tiny view used to set csrf token
+    re_path(r'^$', main.home), # index
+    re_path(r'^set_csrf_token', main.set_csrf_token), # tiny view used to set csrf token
 ]
 
 # main list of apps (please consolidate more things into this!)
 urlpatterns += [
-    url(r'^cache/', include(argcache.urls)),
-    url(r'^__debug__/', include(debug_toolbar.urls)),
-    url(r'^accounting/', include(esp.accounting.urls)),
-    url(r'^customforms', include(esp.customforms.urls)),
-    url(r'^random', include(esp.random.urls)),
-    url(r'^', include(esp.formstack.urls)),
-    url(r'^',  include(esp.program.urls)),
-    url(r'^download', include(esp.qsdmedia.urls)),
-    url(r'^',  include(esp.survey.urls)),
-    url('^javascript_tests', include(esp.tests.urls)),
-    url(r'^themes', include(esp.themes.urls)),
-    url(r'^myesp/', include(esp.users.urls)),
-    url(r'^varnish/', include(esp.varnish.urls)),
+    re_path(r'^cache/', include(argcache.urls)),
+    re_path(r'^__debug__/', include(debug_toolbar.urls)),
+    re_path(r'^accounting/', include(esp.accounting.urls)),
+    re_path(r'^customforms', include(esp.customforms.urls)),
+    re_path(r'^random', include(esp.random.urls)),
+    re_path(r'^', include(esp.formstack.urls)),
+    re_path(r'^',  include(esp.program.urls)),
+    re_path(r'^download', include(esp.qsdmedia.urls)),
+    re_path(r'^',  include(esp.survey.urls)),
+    re_path('^javascript_tests', include(esp.tests.urls)),
+    re_path(r'^themes', include(esp.themes.urls)),
+    re_path(r'^myesp/', include(esp.users.urls)),
+    re_path(r'^varnish/', include(esp.varnish.urls)),
 ]
 
 urlpatterns += [
     # bios
-    url(r'^(?P<tl>teach|learn)/teachers/', include('esp.web.urls')),
+    re_path(r'^(?P<tl>teach|learn)/teachers/', include('esp.web.urls')),
 ]
 
 # Specific .html pages that have defaults
 urlpatterns += [
-    url(r'^(faq|faq\.html)$', main.FAQView.as_view(), name='FAQ'),
-    url(r'^(contact|contact\.html)$', main.ContactUsView.as_view(), name='Contact Us'),
+    re_path(r'^(faq|faq\.html)$', main.FAQView.as_view(), name='FAQ'),
+    re_path(r'^(contact|contact\.html)$', main.ContactUsView.as_view(), name='Contact Us'),
 ]
 
 urlpatterns += [
-    url(r'^(?P<url>.*)\.html$', esp.qsd.views.qsd),
+    re_path(r'^(?P<url>.*)\.html$', esp.qsd.views.qsd),
 ]
 
 # QSD Media
@@ -142,26 +142,26 @@ urlpatterns += [
 urlpatterns += [
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
-    url(r'^contact/contact/?$', main.contact),
-    url(r'^contact/contact/(?P<section>[^/]+)/?$', main.contact),
+    re_path(r'^contact/contact/?$', main.contact),
+    re_path(r'^contact/contact/(?P<section>[^/]+)/?$', main.contact),
 
     # Program stuff
-    url(r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.program),
-    url(r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.program),
+    re_path(r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.program),
+    re_path(r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.program),
 
     # all the archives
-    url(r'^archives/([-A-Za-z0-9_ ]+)/?$', main.archives),
-    url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
-    url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
+    re_path(r'^archives/([-A-Za-z0-9_ ]+)/?$', main.archives),
+    re_path(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
+    re_path(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
 
-    url(r'^email/([0-9]+)/?$', main.public_email),
+    re_path(r'^email/([0-9]+)/?$', main.public_email),
 ]
 
 urlpatterns += [
-url(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html', permanent=True))]
+re_path(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html', permanent=True))]
 
 
 urlpatterns += [
-    url(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
+    re_path(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
         esp.utils.views.diff_templateoverride),
 ]

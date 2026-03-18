@@ -43,7 +43,7 @@
     <strong>Navigation Category: </strong>
     <select name="nav_category" value="{{ nav_category }}">
     {% for category in nav_categories %}
-        <option value="{{ category.id }}" {% ifequal category.id nav_category.id %}selected{% endifequal %}>{{ category.name }} - {{ category.long_explanation|truncatewords:8 }}</option>
+        <option value="{{ category.id }}" {% if category.id == nav_category.id %}selected{% endif %}>{{ category.name }} - {{ category.long_explanation|truncatewords:8 }}</option>
     {% endfor %}
     </select> <br />
   </p>
@@ -76,7 +76,7 @@ var tinyMDE = new TinyMDE.Editor({ textarea: "qsd_content" });
 var commandBar = new TinyMDE.CommandBar({element: 'tinymde_commandbar', editor: tinyMDE});
 {% else %}
 var editor = new Jodit("#qsd_content", {
-  "enter": "BR",
+  "enter": "P",
   "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
   "toolbarAdaptive": false,
   "saveModeInStorage": true,
