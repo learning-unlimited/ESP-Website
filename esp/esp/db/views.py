@@ -1,7 +1,5 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core import serializers
 from django.http import JsonResponse
-import json
 
 """ Removed the staff-only restriction and instead pass a flag to ajax_autocomplete if the user
     is not a staff member.  The staff bit is checked at the per-function level, so that students
