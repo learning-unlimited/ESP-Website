@@ -7,7 +7,7 @@ Tests good_random_class(), main view, and ajax view.
 import json
 from unittest.mock import patch, MagicMock
 
-from django.db.models import Q 
+from django.db.models import Q
 from django.test import RequestFactory
 
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -20,7 +20,7 @@ class GoodRandomClassTest(TestCase):
     @patch('esp.random.views.Tag')
     @patch('esp.random.views.ClassSubject')
     def test_no_constraints(self, mock_classsubject, mock_tag):
-        
+
         mock_tag.getTag.return_value = '{}'
         mock_cls = MagicMock()
         mock_classsubject.objects.random_class.return_value = mock_cls
@@ -34,7 +34,7 @@ class GoodRandomClassTest(TestCase):
     @patch('esp.random.views.Tag')
     @patch('esp.random.views.ClassSubject')
     def test_bad_program_name_excluded(self, mock_classsubject, mock_tag):
-        
+
         mock_tag.getTag.return_value = json.dumps({
             'bad_program_names': ['TestProgram']
         })
@@ -66,7 +66,7 @@ class GoodRandomClassTest(TestCase):
     @patch('esp.random.views.Tag')
     @patch('esp.random.views.ClassSubject')
     def test_multiple_constraints_combined(self, mock_classsubject, mock_tag):
-        
+
         mock_tag.getTag.return_value = json.dumps({
             'bad_program_names': ['TestProgram'],
             'bad_titles': ['Lunch Period']
@@ -90,7 +90,7 @@ class MainViewTest(TestCase):
 
     @patch('esp.random.views.good_random_class')
     def test_main_returns_200(self, mock_good_random_class):
-    
+
         mock_cls = MagicMock()
         mock_good_random_class.return_value = mock_cls
 
@@ -109,7 +109,7 @@ class AjaxViewTest(TestCase):
 
     @patch('esp.random.views.good_random_class')
     def test_ajax_returns_json(self, mock_good_random_class):
-       
+
         mock_cls = MagicMock()
         mock_cls.title = 'Test Class'
         mock_cls.parent_program.niceName.return_value = 'Test Program'
