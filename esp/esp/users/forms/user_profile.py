@@ -7,7 +7,11 @@ from esp.utils.widgets import SplitDateWidget
 from esp.users.models import ESPUser, K12School, StudentInfo, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
 from datetime import datetime
 from esp.program.models import RegistrationProfile
+from esp.program.modules.module_ext import TeacherEmailRules
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 import json
 from pytz import country_names
 from phonenumber_field.formfields import PhoneNumberField
@@ -59,6 +63,8 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
     def __init__(self, *args, **kwargs):
+        self.program = kwargs.pop('program', None)
+        self.profile_role = kwargs.pop('role', '')
         super().__init__(*args, **kwargs)
         if not Tag.getBooleanTag('request_student_phonenum'):
             del self.fields['phone_day']
@@ -78,6 +84,27 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
                     raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell', '') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
+        # Per-program teacher email validation (Issue #3639)
+        if (self.profile_role == 'teacher' and self.program and 'e_mail' in self.cleaned_data):
+            email = self.cleaned_data.get('e_mail', '')
+            try:
+                rules = TeacherEmailRules.objects.get(program=self.program)
+            except TeacherEmailRules.DoesNotExist:
+                rules = None
+            if rules:
+                is_valid, message, is_warning = rules.validate_teacher_email(email)
+                if not is_valid:
+                    logger.info(
+                        'Teacher email blocked by program rules: program=%s user=%s email=%s',
+                        self.program.url, getattr(self.user, 'username', None), email
+                    )
+                    raise forms.ValidationError(message)
+                if is_warning and message:
+                    self._teacher_email_warning = message
+                    logger.info(
+                        'Teacher email warning (warn mode): program=%s user=%s email=%s',
+                        self.program.url, getattr(self.user, 'username', None), email
+                    )
         return self.cleaned_data
 
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25

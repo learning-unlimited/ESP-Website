@@ -10,7 +10,10 @@ from esp.cal.models import Event
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
+from esp.program.modules.module_ext import (
+    ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt,
+    TeacherEmailRules, TEACHER_EMAIL_MODE_CHOICES,
+)
 from esp.tagdict import all_program_tags, tag_categories
 from esp.tagdict.models import Tag
 from esp.utils.models import TemplateOverride
@@ -123,6 +126,23 @@ class StudentRegSettingsForm(BetterModelForm):
                      ('Visual Options', {'fields': ['progress_mode', 'force_show_required_modules']}),
                     ]# Here you can also add description for each fieldset.
         model = StudentClassRegModuleInfo
+
+
+class TeacherEmailRulesForm(BetterModelForm):
+    """ Form for per-program teacher email validation rules (Issue #3639). """
+    class Meta:
+        fieldsets = [
+            ('Teacher Email Rules', {
+                'fields': ['enabled', 'allowed_domains', 'regex_pattern', 'mode'],
+                'description': mark_safe(
+                    'Optional: restrict which email addresses teachers can use when registering or updating '
+                    'their profile for this program. Only applies to teacher accounts. '
+                    'Examples: allowed_domains = <code>school.edu, university.edu</code>; '
+                    'regex = <code>.*@school\\.edu$</code>. Default is disabled.'
+                ),
+            }),
+        ]
+        model = TeacherEmailRules
 
 def get_template_source(template_list):
     template = select_template(template_list)
