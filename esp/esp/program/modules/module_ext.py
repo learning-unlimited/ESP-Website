@@ -264,7 +264,6 @@ TEACHER_EMAIL_MODE_CHOICES = [
 ]
 
 
-@python_2_unicode_compatible
 class TeacherEmailRules(models.Model):
     """
     Per-program optional rules for teacher contact email addresses.
