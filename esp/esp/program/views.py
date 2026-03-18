@@ -567,8 +567,7 @@ def userview(request):
         profile = user.getLastProfile()
 
     teacherbio = TeacherBio.getLastBio(user)
-    if not teacherbio.picture:
-        teacherbio.picture = 'images/not-available.jpg'
+    # If there is no picture, the template will handle the missing image display.
 
     from esp.users.forms.user_profile import StudentInfoForm
 
