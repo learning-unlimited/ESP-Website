@@ -103,7 +103,11 @@ When there are already accounts with this email address (depending on some tags)
         if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts'):
             accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(form.cleaned_data['initial_role'], True))
             existing_accounts = accounts_role.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
-            awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email'], is_active=False).exclude(password='emailuser')
+            awaiting_activation_accounts = accounts_role.filter(
+                email=form.cleaned_data['email'],
+                is_active=False,
+                last_login__isnull=True,
+            ).exclude(password='emailuser')
             if len(existing_accounts)+len(awaiting_activation_accounts) != 0:
                 #they have accounts. go back to the same page, but ask them
                 #if they want to try to log in
@@ -226,16 +230,28 @@ def resend_activation_view(request):
         if not form.is_valid():
             return render_to_response('registration/resend.html', request,
                                       {'form':form, 'site': Site.objects.get_current()})
-        user = ESPUser.objects.get(username=form.cleaned_data['username'])
+        username = form.cleaned_data['username']
+        try:
+            user = ESPUser.objects.get(username=username)
+        except ESPUser.DoesNotExist:
+            form.add_error('username', 'No account with this username is awaiting activation.')
+            return render_to_response('registration/resend.html', request,
+                                      {'form': form, 'site': Site.objects.get_current()})
+        
+        if user.is_active:
+            form.add_error('username', 'This account is already activated.')
+            return render_to_response('registration/resend.html', request,
+                                      {'form': form, 'site': Site.objects.get_current()})
+        
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = account_activation_token.make_token(user)
         send_activation_email(user, uid, token)
         return render_to_response('registration/resend_done.html', request,
-                                  {'form':form, 'site': Site.objects.get_current()})
+                                  {'form': form, 'site': Site.objects.get_current()})
     else:
         form=AwaitingActivationEmailForm()
         return render_to_response('registration/resend.html', request,
-                                  {'form':form, 'site': Site.objects.get_current()})
+                                  {'form': form, 'site': Site.objects.get_current()})
 
 
 class GradeChangeRequestView(CreateView):

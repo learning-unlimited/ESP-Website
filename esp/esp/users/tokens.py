@@ -7,9 +7,11 @@ class AccountActivationTokenGenerator(PasswordResetTokenGenerator):
     Automatically invalidated when is_active changes (i.e. after first use).
     Token is never stored in the database.
 
-    Tokens inherit Django's PASSWORD_RESET_TIMEOUT setting (default: 3 days),
-    ensuring activation links automatically expire.
-    Override PASSWORD_RESET_TIMEOUT in local_settings.py to adjust.
+    In Django 2.2, tokens inherit Django's PASSWORD_RESET_TIMEOUT_DAYS setting
+    (default: 3 days), ensuring activation links automatically expire.
+    Override PASSWORD_RESET_TIMEOUT_DAYS in local_settings.py to adjust.
+    For newer Django versions, the equivalent setting is PASSWORD_RESET_TIMEOUT
+    (in seconds).
     """
     def _make_hash_value(self, user, timestamp):
         return f"{user.pk}{timestamp}{user.is_active}"

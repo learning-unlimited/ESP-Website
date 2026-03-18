@@ -133,13 +133,22 @@ class SinglePhaseUserRegForm(UserRegForm):
         self.fields['confirm_email'].widget = TextInput(attrs=self.fields['confirm_email'].widget.attrs)
 
 class AwaitingActivationEmailForm(forms.Form):
-    """Form used to verify a user is yet to be activated"""
+    """Form used to verify a user is yet to be activated (legacy and new schema)"""
     username = forms.CharField(min_length=5, max_length=30)
 
     def clean_username(self):
         data = self.cleaned_data['username']
-        awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
-        if not ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).exists():
+        # Check for both legacy and new-style pending activation accounts
+        # Legacy: password ends with _<token>
+        # New: is_active=False and never logged in
+        awaiting_activation = Q(
+            is_active=False,
+            password__regex='\$(.*)_'
+        ) | Q(
+            is_active=False,
+            last_login__isnull=True
+        )
+        if not ESPUser.objects.filter(username__iexact=data).exclude(password='emailuser').filter(awaiting_activation).exists():
             raise forms.ValidationError('That username isn\'t waiting to be activated.')
 
         data = data.strip()

@@ -495,6 +495,49 @@ class AccountCreationTest(TestCase):
         self.assertEqual(str(u.pk), uid)
         self.assertTrue(account_activation_token.check_token(u, match.group("token")))
 
+    def test_activate_account_with_token(self):
+        """Test that new-style HMAC token activation actually activates the user."""
+        if not Tag.getBooleanTag('require_email_validation'):
+            return
+
+        import re
+        from esp.users.tokens import account_activation_token
+        from django.utils.encoding import force_bytes
+        from django.utils.http import urlsafe_base64_encode
+        from django.test import Client
+
+        # Create inactive user
+        u = ESPUser.objects.create_user(username='testuser',
+                                       first_name='Test',
+                                       last_name='User',
+                                       email='testuser@example.com',
+                                       password='testpass123')
+        u.is_active = False
+        u.save()
+        
+        # Generate activation token
+        uid = urlsafe_base64_encode(force_bytes(u.pk))
+        token = account_activation_token.make_token(u)
+        
+        # Verify token is valid before activation
+        self.assertTrue(account_activation_token.check_token(u, token))
+        self.assertFalse(u.is_active)
+        
+        # Hit the activation endpoint
+        client = Client()
+        response = client.get(f'/myesp/activate/{uid}/{token}/')
+        
+        # User should be redirected to profile
+        self.assertEqual(response.status_code, 302)
+        
+        # Refresh user and verify activation
+        u.refresh_from_db()
+        self.assertTrue(u.is_active, "User should be activated after valid token")
+        
+        # Token should now be invalid (is_active changed)
+        self.assertFalse(account_activation_token.check_token(u, token),
+                        "Token should be invalid after activation (is_active changed)")
+
 from esp.users.models import GradeChangeRequest
 
 
