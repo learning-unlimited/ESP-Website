@@ -47,7 +47,7 @@ Optional per-program rules for teacher contact email addresses (e.g. requiring *
 
 * **Enabled:** Turn on validation for this program. Default is off.
 * **Allowed domains:** Comma-separated list of allowed email domains (e.g. ``school.edu, university.edu``). Case-insensitive.
-* **Regex pattern:** Optional regex the full email must match (e.g. ``.*@school\\.edu$``). If both domains and regex are set, the email must match either.
+* **Regex pattern:** Optional regex the full email must match (e.g. ``.*@school\.edu$``). If both domains and regex are set, the email must match either.
 * **Mode:**
   * **Block:** Reject the signup or profile save if the email does not match.
   * **Warn only:** Show a notice but allow the email (so teachers can still use personal addresses if your policy allows).

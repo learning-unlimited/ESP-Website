@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 """
 
 from datetime import timedelta
+import logging
 import time
 
 from django.core.validators import RegexValidator, validate_comma_separated_integer_list
@@ -334,19 +335,28 @@ class TeacherEmailRules(models.Model):
         if self.regex_pattern:
             try:
                 import re
-                regex_ok = bool(re.search(self.regex_pattern, email))
+                regex_ok = bool(re.fullmatch(self.regex_pattern, email))
             except re.error:
-                return True, '', False  # Invalid regex: don't block
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    "Invalid teacher email regex_pattern %r; treating as non-match.",
+                    self.regex_pattern,
+                )
+                regex_ok = False
 
         # Must have at least one rule that matches
         if self.allowed_domains or self.regex_pattern:
             if not (domains_ok or regex_ok):
+                if self.mode == MODE_BLOCK:
+                    msg = (
+                        'This program requires teacher emails from allowed domains or matching the configured '
+                        'pattern. Your email does not meet these requirements and cannot be used for this program.'
+                    )
+                    return False, msg, False
                 msg = (
                     'This program prefers teacher emails from allowed domains or matching the configured pattern. '
-                    'Your email may still be accepted depending on program settings.'
+                    'Your email will still be accepted, but it may not meet the program’s preferred requirements.'
                 )
-                if self.mode == MODE_BLOCK:
-                    return False, msg, False
                 return True, msg, True
         return True, '', False
 
