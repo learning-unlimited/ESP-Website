@@ -155,5 +155,3 @@ class VolunteerManageTest(ProgramFrameworkTest):
             response['Content-Type'],
             'text/csv'
         )
-        
-        
