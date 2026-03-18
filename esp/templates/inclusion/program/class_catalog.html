@@ -1,10 +1,30 @@
 {% if show_class %}
   {% load class_render %}
-  <div id="class_{{ class.id }}" class="{% for grade in class.grades %}grade_{{ grade }} {% endfor %}show_class{% if errormsg %} class_error{% endif %}" data-difficulty="{{ class.hardness_rating }}" data-duration="{{ class.duration }}" data-is-closed="{{ class.isFullOrClosed }}">
+  <div id="class_{{ class.id }}" class="{% for grade in class.grades %}grade_{{ grade }} {% endfor %}show_class{% if errormsg and errormsg != 'WAITLIST_AVAILABLE' and errormsg != 'WAITLISTED' %} class_error{% endif %}" data-difficulty="{{ class.hardness_rating }}" data-duration="{{ class.duration }}" data-is-closed="{{ class.isFullOrClosed }}">
   {% render_class_core class %}
   {% if prereg_url %}
       <div id="class_{{ class.id }}_regbuttons" class="class_buttons">
-      {% if errormsg %}
+      {% if errormsg == 'WAITLIST_AVAILABLE' %}
+          <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
+          <script type="text/javascript">add_csrf_token();</script>
+          <input type="hidden" name="class_id" value="{{ class.id }}" />
+          <input type="hidden" name="section_id" value="{{ section.id }}" />
+          <div id="addbutton_fillslot_sec{{ section.id }}">
+              <input type="submit" class="addbutton" name="action" value="Class is full - Join Waitlist" onclick="return submit_prereg({{ class.id }});" id="submitbutton{{ class.id }}" />
+          </div>
+          </form>
+      {% elif errormsg == 'WAITLISTED' %}
+          <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
+          <script type="text/javascript">add_csrf_token();</script>
+          <input type="hidden" name="class_id" value="{{ class.id }}" />
+          <input type="hidden" name="section_id" value="{{ section.id }}" />
+          <input type="hidden" name="waitlist_action" value="leave" />
+          <div id="addbutton_fillslot_sec{{ section.id }}">
+              <input type="submit" class="addbutton_added" name="action" value="On Waitlist" id="submitbutton_info{{ class.id }}" disabled />
+              <input type="submit" class="addbutton" name="leave_waitlist" value="Leave Waitlist" onclick="return submit_prereg({{ class.id }});" id="submitbutton{{ class.id }}" />
+          </div>
+          </form>
+      {% elif errormsg %}
           <div class="addbutton_error">{% autoescape off %}{{ errormsg }}{% endautoescape %}</div>
           {% if user.onsite_local %}
               <br />
@@ -45,6 +65,8 @@
                       {% if not sec.isFull %}
                           <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }} (Please choose just one section)" />
                           <!--                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}" /> -->
+                      {% elif class.parent_program.studentclassregmoduleinfo.enable_class_waitlist %}
+                          <input type="submit" class="addbutton" name="action" value="Section {{ sec.index }} is full - Join Waitlist" id="submitbutton{{ sec.id }}" />
                       {% elif not class.isFullOrClosed %}
                           <input type="submit" class="addbutton_disabled" name="action" value="Section {{ sec.index }} is full; check other sections of this class" id="submitbutton{{ sec.id }}" disabled />
                       {% else %}
