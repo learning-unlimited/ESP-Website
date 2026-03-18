@@ -46,7 +46,7 @@ function togglePopup() {
                 <td class="time">{{ timeslot.0.short_time }}</td>
                 {% if cls %}
                     {% if cls.first_meeting_time %}
-                    <td class="cls {% cycle 'cls1' 'cls2' %}" rowspan="{{ timeslot.1.0.section.get_meeting_times|length }}">
+                    <td class="cls {% cycle 'cls1' 'cls2' %}" rowspan="{{ timeslot.1.0.meeting_span }}">
                         <!--link to course details-->
                         <a class="no-dec" title="More Details" href="/learn/{{one}}/{{two}}/onsitedetails/{{ cls.section.id }}"><b>{{ cls.section.title }}&nbsp;<i class="material-icons md-3">list</i></a></b>
                         {% if checked_in and not cls.section.initial_rooms.count == 0 %}
@@ -64,7 +64,7 @@ function togglePopup() {
                         <!--link to filtered course catalog like the fillslot page-->
                         <a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog/{{timeslot.0.id}}" title="{% if cls %}View other classes{% else %}Add a class{% endif %}"><i class="material-icons md-4">{% if cls %}create{% else %}add{% endif %}</i></a>
                         {% if cls and cls.first_meeting_time %}
-                            <a class="no-dec" href="/learn/{{one}}/{{two}}/onsiteclearslot/{{timeslot.0.id}}" title="Remove {{ cls.section.emailcode }}"><i class="material-icons md-4">clear</i></a>
+                            <a class="no-dec" href="/learn/{{one}}/{{two}}/onsiteclearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}" title="Remove {{ cls.section.emailcode }}"><i class="material-icons md-4">clear</i></a>
                         {% endif %}
                     {% else %}
                         <!--otherwise, grey out icon-->
