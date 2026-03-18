@@ -258,7 +258,7 @@
     }
 
     enhanceFormSubmission() {
-      const forms = document.querySelectorAll('form');
+      const forms = document.querySelectorAll('form.auth-form');
       
       forms.forEach(form => {
         form.addEventListener('submit', (e) => {
