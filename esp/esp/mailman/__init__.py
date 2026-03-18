@@ -171,7 +171,7 @@ def list_contents(lst):
     try:
         # It seems the empty string gets dragged into this list.
         contents.remove('')
-    except:
+    except ValueError:
         pass
 
     return contents

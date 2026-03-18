@@ -165,6 +165,6 @@ class StudentRegSanityController(object):
             logger.debug("Now running " + ck)
             if ck == 'antiwalk-in':
                 self.reports['walkin'] = self.sanitize_walkin(fake = fake, csvwriter = csvwriter, csvlog=csvlog)
-            if ck == 'antilunch':
+            elif ck == 'antilunch':
                 self.reports['antilunch'] = self.sanitize_lunch(fake = fake, csvwriter = csvwriter, csvlog=csvlog)
         return self.reports
