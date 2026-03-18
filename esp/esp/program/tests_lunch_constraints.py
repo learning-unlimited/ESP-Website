@@ -38,6 +38,7 @@ from esp.program.models import (
     BooleanExpression, ClassCategories, ScheduleConstraint,
     ScheduleTestCategory,
 )
+from esp.program.models.class_ import ClassSection, ClassSubject
 from esp.program.tests import ProgramFrameworkTest
 
 
