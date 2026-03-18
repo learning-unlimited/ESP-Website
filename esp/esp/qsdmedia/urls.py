@@ -1,7 +1,7 @@
-from django.conf.urls import url
+from django.urls import re_path
 
 from esp.qsdmedia import views
 
 urlpatterns = [
-    url(r'^\/([^/]+)/?$', views.qsdmedia2),
-    url(r'^\/([^/]+)\/([^/]+)/?$', views.qsdmedia2)]
+    re_path(r'^\/([^/]+)/?$', views.qsdmedia2),
+    re_path(r'^\/([^/]+)\/([^/]+)/?$', views.qsdmedia2)]
