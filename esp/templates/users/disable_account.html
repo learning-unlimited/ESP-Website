@@ -37,13 +37,13 @@ There are multiple users associated with your email address. <b>If you disable y
     <li>
       <b>Options: </b>
       {% if user.is_active %}
-        <form method="post" style="display:inline">
+        <form method="post" action="{% url 'disable_account' %}" style="display:inline">
           {% csrf_token %}
           <input type="hidden" name="action" value="disable">
           <button type="submit">Disable Account</button>
         </form>
       {% else %}
-        <form method="post" style="display:inline">
+        <form method="post" action="{% url 'disable_account' %}" style="display:inline">
           {% csrf_token %}
           <input type="hidden" name="action" value="enable">
           <button type="submit">Enable Account</button>
