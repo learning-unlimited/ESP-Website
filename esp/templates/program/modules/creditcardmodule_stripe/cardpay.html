@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 {% load render_qsd %}
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
@@ -64,7 +64,7 @@ $j(document).ready(function () {
 </script>
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <h1>Credit Card Payment for {{ program.niceName }}</h1>
 
 <h3>Instructions for paying by credit card:</h3>
