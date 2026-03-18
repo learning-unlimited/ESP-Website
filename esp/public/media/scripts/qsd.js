@@ -173,6 +173,8 @@ function qsd_toggle_history(qsd_url, edit_id)
 function qsd_preview_version(edit_id, version_id)
 {
     var $viewDiv = $j("#inline_qsd_" + edit_id);
+    var $editDiv = $j("#inline_edit_" + edit_id);
+
     // Store original content for "back to current"
     if (!$viewDiv.data('original-content')) {
         $viewDiv.data('original-content', $viewDiv.html());
@@ -188,6 +190,11 @@ function qsd_preview_version(edit_id, version_id)
             + '</div>'
             + data.content_html
         );
+        // Show the view div (hidden during inline editing) and hide the editor
+        $viewDiv.removeClass('hidden').addClass('qsd_view_visible');
+        if ($editDiv.length) {
+            $editDiv.addClass('hidden').removeClass('qsd_edit_visible');
+        }
     }).fail(function(req) {
         alert("Error loading version preview: " + req.responseText);
     });
@@ -196,10 +203,16 @@ function qsd_preview_version(edit_id, version_id)
 function qsd_cancel_preview(edit_id)
 {
     var $viewDiv = $j("#inline_qsd_" + edit_id);
+    var $editDiv = $j("#inline_edit_" + edit_id);
     var original = $viewDiv.data('original-content');
     if (original) {
         $viewDiv.html(original);
         $viewDiv.removeData('original-content');
+    }
+    // Restore inline edit mode: hide view div, show editor
+    if ($editDiv.length) {
+        $viewDiv.removeClass('qsd_view_visible').addClass('hidden');
+        $editDiv.removeClass('hidden').addClass('qsd_edit_visible');
     }
 }
 
