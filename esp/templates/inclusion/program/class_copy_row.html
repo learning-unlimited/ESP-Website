@@ -7,7 +7,7 @@
         <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
     </td>
     <td>
-        <form action="copyaclass" method="GET">
+        <form action="{{ program.get_teach_url }}copyaclass" method="GET">
             <input type="hidden" name="cls" value="{{ cls.id }}">
             <input type="submit" class="btn btn-primary" value="Import">
         </form>
