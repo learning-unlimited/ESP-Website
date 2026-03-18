@@ -60,12 +60,11 @@ class Field(models.Model):
 
     def set_attribute(self, atype, value):
         from esp.customforms.models import Attribute
-        if Attribute.objects.filter(field=self, attr_type=atype).exists():
-            attr = Attribute.objects.get(field=self, attr_type=atype)
-            attr.value = value
-            attr.save()
-        else:
-            attr = Attribute.objects.create(field=self, attr_type=atype, value=value)
+        attr, _ = Attribute.objects.update_or_create(
+            field=self,
+            attr_type=atype,
+            defaults={"value": value},
+        )
         return attr
 
     def clean_attributes(self, keep):
