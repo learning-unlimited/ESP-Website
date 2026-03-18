@@ -213,3 +213,27 @@ class AnswerTest(TestCase):
         self.answer.save()
         self.answer.refresh_from_db()
         self.assertEqual(self.answer.answer, 'New answer')
+
+    def testAnswerCleanValidation(self):
+        '''Test that Answer.clean() raises ValidationError if GenericForeignKey is partial.'''
+        from django.core.exceptions import ValidationError
+
+        # Both null -> OK
+        ans_null = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=None)
+        ans_null.clean()  # Should not raise
+
+        # Both set -> OK
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(self.program)
+        ans_set = Answer(survey_response=self.response, question=self.question, value='test', content_type=ct, object_id=self.program.id)
+        ans_set.clean()  # Should not raise
+
+        # content_type set, object_id null -> ValidationError
+        ans_ct_only = Answer(survey_response=self.response, question=self.question, value='test', content_type=ct, object_id=None)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            ans_ct_only.clean()
+
+        # content_type null, object_id set -> ValidationError
+        ans_id_only = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=self.program.id)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            ans_id_only.clean()

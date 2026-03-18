@@ -287,6 +287,12 @@ class Answer(models.Model):
     value_type = models.TextField()
     value = models.TextField()
 
+    def clean(self):
+        super().clean()
+        if (self.content_type_id is None) != (self.object_id is None):
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Both parts of the GenericForeignKey (content_type and object_id) must be either both null or both set.")
+
     def _answer_getter(self):
         """ The actual, unpickled answer. """
         if not self.value:
