@@ -310,15 +310,24 @@ def ajax_qsd_preview(request):
 
     # Get the URL
     url = request.POST.get('url', '')
-    # Validate URL corresponds to a real QSD in the database
-    try:
-        qsd = QuasiStaticData.objects.get_by_url(url)
-        if qsd is None or qsd.disabled:
+    # Try to look up an existing QSD by URL, if any
+    qsd = None
+    if url:
+        try:
+            qsd = QuasiStaticData.objects.get_by_url(url)
+        except QuasiStaticData.DoesNotExist:
+            qsd = None
+
+    if qsd is not None:
+        # Existing QSD: ensure it is enabled and use its canonical URL
+        if qsd.disabled:
             return HttpResponse('Invalid QSD', status=404)
         # Use the authoritative server-side URL for sanitization check
         url = qsd.url
-    except QuasiStaticData.DoesNotExist:
-        return HttpResponse('QSD not found', status=404)
+    else:
+        # No existing QSD row: allow preview only if user can edit this URL
+        if not Permission.user_can_edit_qsd(request.user, url):
+            return HttpResponse('Sorry, you do not have permission to preview this page.', status=403)
     url_parts = url.split('/')
 
     # Sanitize if this is for a class QSD
