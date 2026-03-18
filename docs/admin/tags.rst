@@ -20,51 +20,25 @@ configuration switch you can flip from the admin panel.  For example:
 * Setting ``group_phone_number`` to ``617-555-0100`` prints that number on
   nametags and room rosters.
 
-Tags come in two flavours:
+Tags come in two flavors:
 
 * **Global tags** — apply site-wide, across all programs.
+  Navigate to ``https://[yoursite].learningu.org/manage/tags/`` for global
+  tag settings.
 * **Program tags** — apply to one specific program only.
+  Navigate to ``https://[yoursite].learningu.org/manage/<program>/tags/``
+  for a specific program. The program-level value takes precedence over the
+  global default for that program only.
 
-Where to Find Tags
-==================
-
-There are two ways to access tags:
-
-1. **Tag Settings page** (recommended for common settings):
-
-   Navigate to ``https://[yoursite].learningu.org/manage/tags/`` for global
-   tag settings, or to ``https://[yoursite].learningu.org/manage/<program>/tags/``
-   for a specific program.
-   This page shows all tags that are marked as user-facing settings, grouped
-   by category, with help text for each one.  You only see the tags that are
-   safe to adjust through the settings UI.
-
-2. **Django admin** (for advanced / raw access):
-
-   Navigate to ``https://[yoursite].learningu.org/admin/tagdict/tag/``.
-   This shows every tag in the database and lets you create, edit, or delete
-   them directly.  Use this for tags that are not shown on the Tag Settings
-   page, or when you need to associate a tag with a specific program.
+Both pages show all tags that are marked as user-facing settings, grouped
+by category, with help text for each one.
 
 How to Set a Tag
 ================
 
-**Global tag (applies to all programs):**
-
-1. Go to the Tag Settings page (or Django admin ``/admin/tagdict/tag/``).
+1. Go to the Tag Settings page.
 2. Find the tag you want — each entry shows a description.
 3. Enter the desired value and save.
-4. Leave *Content Type* and *Object ID* blank for a global tag.
-
-**Program-specific tag (overrides globally for one program):**
-
-1. Go to ``/admin/tagdict/tag/add/``.
-2. Enter the tag key (e.g. ``open_class_category``).
-3. Enter the value.
-4. Under *Content Type*, choose **Program**; under *Object ID*, enter the
-   numeric ID of your program (visible in the program's admin URL).
-5. Save.  The program-level value takes precedence over the global default for
-   that program only.
 
 Tag Categories
 ==============
@@ -82,119 +56,7 @@ Tags are grouped into the following categories on the Tag Settings page:
   activity.
 * **theme** — settings related to the visual theme.
 
-Common Tags Reference
-=====================
 
-The table below lists frequently used tags.  The full list of available tags
-(with help text) is on your site's Tag Settings page.
-
-.. note::
-   Boolean tags should be set to ``True`` to enable the feature and left
-   unset (or deleted) to use the default (usually disabled) behaviour.
-
-Site-wide (manage)
-------------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 30 10 60
-
-   * - Tag key
-     - Type
-     - What it does
-   * - ``full_group_name``
-     - string
-     - Official name of the group, used where a formal name is required beyond
-       ``INSTITUTION_NAME`` / ``ORGANIZATION_SHORT_NAME`` settings.
-   * - ``group_phone_number``
-     - string
-     - Phone number printed on nametags and room rosters.
-
-Teaching (teach)
-----------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 30 10 60
-
-   * - Tag key
-     - Type
-     - What it does
-   * - ``use_class_size_optimal``
-     - boolean
-     - Ask teachers for an *optimal* class size instead of maximum size.
-   * - ``nearly_full_threshold``
-     - decimal
-     - Fraction (0.0–1.0) of section capacity at which a class is shown as
-       "nearly full" (default: 0.75).
-   * - ``allow_global_restypes``
-     - boolean
-     - Show global resource types in manage-resources and teacher registration
-       options.
-   * - ``min_available_timeslots``
-     - integer
-     - Minimum number of timeslots teachers must mark available before they can
-       register a class.
-   * - ``teacherreg_custom_forms``
-     - JSON
-     - JSON list of custom form names to add to the teacher class-registration
-       form.
-
-Student / Learning (learn)
---------------------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 35 10 55
-
-   * - Tag key
-     - Type
-     - What it does
-   * - ``increment_default_grade_levels``
-     - boolean
-     - Treat all students as one grade higher (useful for summer programs where
-       students have just finished a grade).
-   * - ``open_class_category``
-     - integer
-     - Category ID used for open classes (no advance registration).
-   * - ``catalog_sort_fields``
-     - string
-     - Comma-separated list of fields to sort the course catalog by.
-
-Volunteer (volunteer)
----------------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 30 10 60
-
-   * - Tag key
-     - Type
-     - What it does
-   * - ``volunteer_tshirt_options``
-     - boolean
-     - Add T-shirt size and type fields to the volunteer form.
-   * - ``volunteer_shirt_sizes``
-     - string
-     - Comma-separated list of shirt-size options for volunteers
-       (default: XS, S, M, L, XL, XXL).
-   * - ``volunteer_allow_comments``
-     - boolean
-     - Add a free-text comments field to the volunteer form.
-
-Theme (theme)
--------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 30 10 60
-
-   * - Tag key
-     - Type
-     - What it does
-   * - ``fruitsalad_sounds``
-     - boolean
-     - Enable Easter-egg sounds in the Fruitsalad theme.
 
 ClassRegModuleInfo (CRMI) and StudentClassRegModuleInfo (SCRMI)
 ===============================================================
