@@ -317,6 +317,18 @@ def loaddb(filename=None):
     # Reset the database
     emptydb(pg_owner, interactive=False)
 
+    # PostgreSQL 12 auto-creates the public schema on CREATE DATABASE, but
+    # pg_dump (from any PostgreSQL version) also emits CREATE SCHEMA public,
+    # causing pg_restore to fail with "schema already exists". Drop it here so
+    # the dump can recreate it cleanly. (emptydb standalone doesn't need this
+    # since Django migrations don't issue CREATE SCHEMA public themselves.)
+    #
+    # NOTE: PostgreSQL 15 changed this behavior - it no longer auto-creates
+    # public on CREATE DATABASE. If the dev VM is ever upgraded to PostgreSQL
+    # 15+, this DROP will fail with "schema does not exist" and should be
+    # removed (or made conditional).
+    sudo("psql -AXqt --dbname=" + pipes.quote(env.dbname) + " -c 'DROP SCHEMA public'", user="postgres")
+
     # Load the database dump using the appropriate command for the format
     if "PostgreSQL custom database dump" in run("file " + env.encfab + "dbdump"):
         sudo("pg_restore --verbose --dbname=" + pipes.quote(env.dbname) +

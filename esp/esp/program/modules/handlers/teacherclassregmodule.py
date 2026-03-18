@@ -527,13 +527,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                 self.baseDir() + "cannoteditclass.html", request, {}
             )
         section = sections[0]
-        if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
-            # if user is an observer, they should still be able to see the section list
-            obs_sections = request.user.get_observing_sections_from_program(prog)
-            if section not in obs_sections:
-                return render_to_response(
-                    self.baseDir() + "cannoteditclass.html", request, {}
-                )
 
         return render_to_response(
             self.baseDir() + "class_students.html",

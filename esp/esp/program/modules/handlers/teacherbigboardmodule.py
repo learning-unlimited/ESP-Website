@@ -94,6 +94,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
             class_hourss_data = []
             student_hourss_data = []
             start = mindate
+            start_t = start_c = start_s = mindate
         else:
             timess = [
                 (

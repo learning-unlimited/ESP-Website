@@ -7,6 +7,12 @@ from django.db import migrations
 def set_my_defaults(apps, schema_editor):
     ProgramModule = apps.get_model('program', 'ProgramModule')
     for pm in ProgramModule.objects.all():
+        if pm.handler == "CustomFormModule":
+            # CustomFormModule was split into Student/TeacherCustomFormModule;
+            # its .py file is gone and its DB records are migrated in 0029.
+            # choosable doesn't need to be set here since those records will
+            # be replaced by 0029 anyway.
+            continue
         mod = __import__("esp.program.modules.handlers.%s" % (pm.handler.lower()), (), (), [pm.handler])
         props = getattr(mod, pm.handler).module_properties()
         if type(props) is list:

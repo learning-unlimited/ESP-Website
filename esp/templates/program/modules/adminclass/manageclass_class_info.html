@@ -21,12 +21,12 @@
     </td>
 </tr>
 <tr>
-    <th class="smaller">Observers:</th>
+    <th class="smaller">{{ program.getModeratorTitle }}s:</th>
     <td>{% for sec in sections %}
             Section {{ sec.index }}:
-            {% with sec.get_observers as observers %}
-            {% if observers %}
-            {% for observer in observers %}<a href="/manage/userview?username={{ observer.username|urlencode }}">{{ observer.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+            {% with sec.get_moderators as moderators %}
+            {% if moderators %}
+            {% for moderator in moderators %}<a href="/manage/userview?username={{ moderator.username|urlencode }}">{{ moderator.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
             {% else %}(none){% endif %}
             {% endwith %}
         {% endfor %}

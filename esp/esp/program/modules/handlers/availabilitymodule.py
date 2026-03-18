@@ -387,8 +387,8 @@ class AvailabilityModule(ProgramModuleObj):
         teaching_times, unscheduled_teaching = self.make_schedule_dictionary_and_list(
             teacher.getTaughtSections(self.program)
         )
-        observing_times, unscheduled_observing = self.make_schedule_dictionary_and_list(
-            teacher.get_observing_sections_from_program(self.program)
+        moderating_times, unscheduled_moderating = self.make_schedule_dictionary_and_list(
+            teacher.getModeratingSectionsFromProgram(self.program)
         )
 
         # Check the availability and teaching status of each timeslot, and mark in tuple accordingly as (start time, end time, available, teaching)
@@ -396,7 +396,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         for t in timeslots:
             teaching = teaching_times[t]
-            observing = observing_times[t]
+            moderating = moderating_times[t]
             diff_day = t.start.date() != t.end.date()
             timeslot_data.append(
                 {
@@ -404,15 +404,15 @@ class AvailabilityModule(ProgramModuleObj):
                     "end": self.prettyTime(t.end, inc_date=diff_day),
                     "available": t in marked_available,
                     "teaching": teaching,
-                    "observing": observing,
-                    "conflict": len(teaching) + len(observing) > 1,
+                    "observing": moderating,
+                    "conflict": len(teaching) + len(moderating) > 1,
                 }
             )
 
         context = {
             "timeslots": timeslot_data,
             "unscheduled_teaching": unscheduled_teaching,
-            "unscheduled_observing": unscheduled_observing,
+            "unscheduled_observing": unscheduled_moderating,
             "teacher_name": teacher.first_name + " " + teacher.last_name,
             "teaching_times": teaching_times,
             "edit_path": "/manage/%s/%s/edit_availability?user=%s"

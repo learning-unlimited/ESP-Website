@@ -6,28 +6,59 @@ from django.db import migrations
 
 def set_my_defaults(apps, schema_editor):
     ContactInfo = apps.get_model('users', 'ContactInfo')
-    for ci in ContactInfo.objects.all():
-        if ci.user is None:
-            # Look for associated registration profiles with user info
-            if ci.as_user.exists():
-                ci.user = ci.as_user.latest('last_ts').user
-                ci.save()
-            elif ci.as_guardian.exists():
-                ci.user = ci.as_guardian.latest('last_ts').user
-                ci.save()
-            elif ci.as_emergency.exists():
-                if not (ci.first_name and ci.last_name):
-                    # We want to delete emergency contact info for non-students
-                    # First remove the emergency contact from the RegistrationProfile,
-                    # so we don't accidentally delete the RegistrationProfile when we delete the ContactInfo
-                    ci.as_emergency.update(contact_emergency = None)
-                    ci.delete()
-                else:
-                    ci.user = ci.as_emergency.latest('last_ts').user
-                    ci.save()
+    RegistrationProfile = apps.get_model('program', 'RegistrationProfile')
+
+    # Pre-fetch the latest RP user for each CI for each relationship type.
+    # This replaces per-row ci.as_user.exists() / ci.as_user.latest() queries
+    # with three bulk queries upfront. The conditional logic in the loop below
+    # is otherwise identical to the original.
+    def latest_user_by_ci(field):
+        # Returns {ci_id: user_id} mapping the latest (by last_ts) RP per CI.
+        result = {}
+        for rp in RegistrationProfile.objects.filter(
+            **{field + '__isnull': False}
+        ).order_by('last_ts').values(field, 'user'):
+            result[rp[field]] = rp['user']  # later (newer) entries overwrite earlier
+        return result
+
+    as_user_map     = latest_user_by_ci('contact_user')
+    as_guardian_map = latest_user_by_ci('contact_guardian')
+    as_emergency_map = latest_user_by_ci('contact_emergency')
+
+    delete_emergency_ids = []
+    delete_orphan_ids = []
+
+    for ci in ContactInfo.objects.filter(user=None).iterator():
+        # Look for associated registration profiles with user info
+        if ci.id in as_user_map:
+            ci.user_id = as_user_map[ci.id]
+            ci.save()
+        elif ci.id in as_guardian_map:
+            ci.user_id = as_guardian_map[ci.id]
+            ci.save()
+        elif ci.id in as_emergency_map:
+            if not (ci.first_name and ci.last_name):
+                # We want to delete emergency contact info for non-students
+                # Collect IDs for bulk delete below
+                delete_emergency_ids.append(ci.id)
             else:
-                # ContactInfo isn't associated with any registration profiles or user
-                ci.delete()
+                ci.user_id = as_emergency_map[ci.id]
+                ci.save()
+        else:
+            # ContactInfo isn't associated with any registration profiles or user
+            delete_orphan_ids.append(ci.id)
+
+    # Bulk delete emergency contacts without names: clear FK first so we don't
+    # accidentally delete the RegistrationProfile when we delete the ContactInfo
+    if delete_emergency_ids:
+        RegistrationProfile.objects.filter(
+            contact_emergency_id__in=delete_emergency_ids
+        ).update(contact_emergency=None)
+        ContactInfo.objects.filter(id__in=delete_emergency_ids).delete()
+
+    # Bulk delete orphaned CIs
+    if delete_orphan_ids:
+        ContactInfo.objects.filter(id__in=delete_orphan_ids).delete()
 
 def reverse_func(apps, schema_editor):
     return

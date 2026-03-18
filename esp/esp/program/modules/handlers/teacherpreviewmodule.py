@@ -86,19 +86,6 @@ class TeacherPreviewModule(ProgramModuleObj):
                 teacher = ESPUser.objects.get(id=request.GET["user"])
             else:
                 teacher = request.user
-            sections = []
-            for cls in teacher.getTaughtClasses().filter(parent_program=self.program):
-                if cls.isAccepted():
-                    for section in cls.sections.all():
-                        sections.append((section, False))
-            sections += [
-                (sec, True)
-                for sec in teacher.get_observing_sections_from_program(self.program)
-                if sec.meeting_times.all().exists()
-                and sec.resourceassignment_set.all().exists()
-                and sec.isAccepted()
-            ]
-            sections.sort()
             scheditems = []
             classes = [
                 cls
