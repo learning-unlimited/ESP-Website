@@ -49,7 +49,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
         <small>Here are some documents you've uploaded for classes in the past:</small>
         <ul style="margin-top: 5px; margin-bottom: 5px;">
         {% for p_doc in previous_docs %}
-            <li><a href="{{ p_doc.download_path }}">{{ p_doc.friendly_name }}</a> (from {{ p_doc.owner.title }})</li>
+            <li><a href="{{ p_doc.download_path }}">{{ p_doc.friendly_name }}</a> (from {{ p_doc.owner_title }})</li>
         {% endfor %}
         </ul>
     </td>
