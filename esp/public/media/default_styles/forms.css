@@ -356,6 +356,5 @@ div.calendar {
 
 /* Improve spacing in authentication forms without changing horizontal alignment */
 .form-horizontal .control-group {
-  margin-top: 18px;
-  margin-bottom: 18px;
+    margin-top: 10px;
 }
