@@ -72,12 +72,12 @@ class CustomFormsTest(TestCase):
         self.client.logout()
         for url in urls:
             response = self.client.get(url)
-            self.assertRedirects(response, '/accounts/login/?next=%s' % url)
+            self.assertRedirects(response, f'/accounts/login/?next={url}')
 
         self.client.login(username=self.student.username, password='password')
         for url in urls:
             response = self.client.get(url)
-            self.assertRedirects(response, '/accounts/login/?next=%s' % url)
+            self.assertRedirects(response, f'/accounts/login/?next={url}')
 
         self.client.login(username=self.admin.username, password='password')
         for url in urls:
@@ -155,32 +155,32 @@ class CustomFormsTest(TestCase):
 
         #   - Make sure you can view the form as a student
         self.client.login(username=self.student.username, password='password')
-        response = self.client.get("/customforms/view/%d/" % form.id)
+        response = self.client.get(f"/customforms/view/{form.id}/")
         self.assertEqual(response.status_code, 200)
 
         #   - Build an initial set of responses
         responses_initial = {}
-        responses_initial['question_%d' % field_id_map['ShortText']] = 'Dumb'
-        responses_initial['question_%d' % field_id_map['Your phone no.']] = '(201) 426-5797'
-        responses_initial['question_%d' % field_id_map['Your gender']] = 'F'
-        responses_initial['question_%d' % field_id_map['Choose an option']] = 'A'
-        responses_initial['question_%d' % field_id_map['True/false']] = 'on'
-        responses_initial['question_%d' % field_id_map['NonRequired']] = 'test'
+        responses_initial[f'question_{field_id_map["ShortText"]}'] = 'Dumb'
+        responses_initial[f'question_{field_id_map["Your phone no."]}'] = '(201) 426-5797'
+        responses_initial[f'question_{field_id_map["Your gender"]}'] = 'F'
+        responses_initial[f'question_{field_id_map["Choose an option"]}'] = 'A'
+        responses_initial[f'question_{field_id_map["True/false"]}'] = 'on'
+        responses_initial[f'question_{field_id_map["NonRequired"]}'] = 'test'
 
         #   - Make sure validation catches incorrect response
         #     (for the question with a correct answer)
         post_dict = {'combo_form-current_step': '0'}
         post_dict.update(responses_initial)
-        response = self.client.post("/customforms/view/%d/" % form.id, post_dict)
+        response = self.client.post(f"/customforms/view/{form.id}/", post_dict)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Incorrect answer')
         responses_corrected = responses_initial
-        responses_corrected['question_%d' % field_id_map['ShortText']] = 'Smart'
-        responses_initial['question_%d' % field_id_map['Choose an option']] = 'B'
+        responses_corrected[f'question_{field_id_map["ShortText"]}'] = 'Smart'
+        responses_initial[f'question_{field_id_map["Choose an option"]}'] = 'B'
         post_dict.update(responses_corrected)
-        response = self.client.post("/customforms/view/%d/" % form.id, post_dict)
-        self.assertRedirects(response, "/customforms/success/%s/" % form.id)
-        response = self.client.get("/customforms/success/%d/" % form.id)
+        response = self.client.post(f"/customforms/view/{form.id}/", post_dict)
+        self.assertRedirects(response, f"/customforms/success/{form.id}/")
+        response = self.client.get(f"/customforms/success/{form.id}/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, form_data['success_message'])
 
@@ -565,6 +565,45 @@ class EmptyFormTitleValidationTest(TestCase):
         self.assertIn('message', response_data)
         self.assertIn('required', response_data['message'].lower())
 
+    def test_create_form_with_missing_or_null_title(self):
+        """Test that missing/null title values are rejected with a clear validation error."""
+        self.client.login(username=self.admin.username, password='password')
+
+        base_form_data = {
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Test', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Test'
+        }
+
+        form_data_missing = dict(base_form_data)
+        response_missing = self.client.post("/customforms/submit/", json.dumps(form_data_missing), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response_missing.status_code, 400)
+        response_missing_data = json.loads(response_missing.content.decode('UTF-8'))
+        self.assertIn('message', response_missing_data)
+        self.assertIn('required', response_missing_data['message'].lower())
+
+        form_data_null = dict(base_form_data)
+        form_data_null['title'] = None
+        response_null = self.client.post("/customforms/submit/", json.dumps(form_data_null), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response_null.status_code, 400)
+        response_null_data = json.loads(response_null.content.decode('UTF-8'))
+        self.assertIn('message', response_null_data)
+        self.assertIn('required', response_null_data['message'].lower())
+
     def test_modify_form_with_empty_title(self):
         """Test that modifying a form to have an empty title is rejected."""
         self.client.login(username=self.admin.username, password='password')
@@ -633,3 +672,35 @@ class EmptyFormTitleValidationTest(TestCase):
         forms = Form.objects.filter(title='Valid Form Title')
         self.assertTrue(forms.exists())
         self.assertEqual(forms.count(), 1)
+
+    def test_modify_form_truncates_and_strips_title(self):
+        """Test that modifying a form normalizes title by trimming and truncating to max length."""
+        self.client.login(username=self.admin.username, password='password')
+
+        existing_form = Form.objects.create(
+            title='Valid Form', description='Test', created_by=self.admin,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+
+        max_len = Form._meta.get_field('title').max_length
+        long_title = '  ' + ('A' * (max_len + 10)) + '  '
+
+        modify_data = {
+            'form_id': existing_form.id,
+            'title': long_title,
+            'desc': 'Modified description',
+            'perms': '',
+            'success_message': 'OK',
+            'success_url': '/',
+            'link_type': '-1',
+            'link_id': -1,
+            'pages': []
+        }
+
+        response = self.client.post("/customforms/modify/", json.dumps(modify_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(str(response.content, encoding='UTF-8'), 'OK')
+
+        existing_form.refresh_from_db()
+        self.assertEqual(existing_form.title, 'A' * max_len)

@@ -4,6 +4,7 @@ logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, connection
 from django.db.utils import DatabaseError, ProgrammingError
+from django.core.exceptions import ValidationError
 from esp.users.models import ESPUser
 from esp.program.models import Program
 
@@ -20,14 +21,24 @@ class Form(models.Model):
     success_url = models.CharField(max_length=200, blank=True)
 
     def __str__(self):
-        return '%s (created by %s)' % (self.title, self.created_by.username)
+        return f'{self.title} (created by {self.created_by.username})'
+
+    def clean(self):
+        """Validate that title is not empty or whitespace-only."""
+        if not self.title or not self.title.strip():
+            raise ValidationError('Form Name/Title is required and cannot be empty.')
+
+    def save(self, *args, **kwargs):
+        """Run clean() before saving to enforce validation at all code paths."""
+        self.clean()
+        super().save(*args, **kwargs)
 
 class Page(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE)
     seq = models.IntegerField(default=-1)
 
     def __str__(self):
-        return 'Page %d of %s' % (self.seq, self.form.title)
+        return f'Page {self.seq} of {self.form.title}'
 
 class Section(models.Model):
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
@@ -36,7 +47,7 @@ class Section(models.Model):
     seq = models.IntegerField()
 
     def __str__(self):
-        return 'Sec. %d: %s' % (self.seq, str(self.title))
+        return f'Sec. {self.seq}: {self.title}'
 
 class Field(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE)
@@ -48,7 +59,7 @@ class Field(models.Model):
     required = models.BooleanField(default=False)
 
     def __str__(self):
-        return '%s' % (self.label)
+        return f'{self.label}'
 
     def set_attribute(self, atype, value):
         from esp.customforms.models import Attribute
