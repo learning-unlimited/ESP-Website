@@ -335,6 +335,8 @@ class BaseESPUser(object):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def __cmp__(self, other):
+        if other is None:
+            return 1
         # two anonymous users are equal
         if isinstance(self, AnonymousESPUser) and isinstance(other, AnonymousESPUser):
             return 0
@@ -1642,8 +1644,8 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     pronoun = models.CharField(max_length=50, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     affiliation = models.CharField(max_length=100, blank=True)
-    from_here = models.NullBooleanField(null=True)
-    is_graduate_student = models.NullBooleanField(blank=True, null=True)
+    from_here = models.BooleanField(blank=True, null=True)
+    is_graduate_student = models.BooleanField(blank=True, null=True)
     college = models.CharField(max_length=128, blank=True, null=True)
     major = models.CharField(max_length=32, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -2129,7 +2131,7 @@ class K12School(models.Model):
         db_table = 'users_k12school'
 
     @classmethod
-    def ajax_autocomplete(cls, data, allow_non_staff=True):
+    def ajax_autocomplete(cls, data, allow_non_staff=True, **kwargs):
         name = data.strip()
         query_set = cls.objects.filter(name__icontains = name)
         values = query_set.order_by('name', 'id').values('name', 'id')
@@ -2841,7 +2843,7 @@ class GradeChangeRequest(TimeStampedModel):
     claimed_grade = models.PositiveIntegerField()
     grade_before_request = models.PositiveIntegerField()
     reason = models.TextField()
-    approved = models.NullBooleanField()
+    approved = models.BooleanField(null=True)
     acknowledged_time = models.DateTimeField(blank=True, null=True)
 
     requesting_student = models.ForeignKey(ESPUser, related_name='requesting_student_set', on_delete=models.CASCADE)
