@@ -335,6 +335,8 @@ class BaseESPUser(object):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def __cmp__(self, other):
+        if other is None:
+            return 1
         # two anonymous users are equal
         if isinstance(self, AnonymousESPUser) and isinstance(other, AnonymousESPUser):
             return 0
