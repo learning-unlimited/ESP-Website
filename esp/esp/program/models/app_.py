@@ -162,6 +162,13 @@ class StudentAppReview(BaseAppElement, models.Model):
     teacher of a class for which the student applied. """
 
     reviewer = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
+    class_subject = models.ForeignKey(
+    "program.ClassSubject",
+    null=True,
+    blank=True,
+    on_delete=models.CASCADE
+   )
+
     date = models.DateTimeField(default=datetime.datetime.now, editable=False)
     score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student', choices=((10, "Yes"), (5, "Maybe"), (1, "No")))
     comments = models.TextField()
