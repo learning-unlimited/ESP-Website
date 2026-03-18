@@ -10,32 +10,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% block head %}{% endblock %}
 </head>
-
 <body>
-<div class="navbar">
-  <nav>
-    <a class="no-dec{% if webapp_page == "schedule" %} selected{% endif %}" href="/teach/{{one}}/{{two}}/teacheronsite">
-      <i class="material-icons md-5">event_note</i>
-      <span>Schedule</span>
-    </a>
-    <a class="no-dec{% if webapp_page == "details" %} selected{% endif %}" href="/teach/{{one}}/{{two}}/onsitedetails">
-      <i class="material-icons md-5">list</i>
-      <span>Class Details</span>
-    </a>
-    {% if map_tab %}
-    <a class="no-dec{% if webapp_page == "map" %} selected{% endif %}" href="/teach/{{one}}/{{two}}/onsitemap">
-      <i class="material-icons md-5">map</i>
-      <span>Map</span>
-    </a>
-    {% endif %}
-    {% if survey_status != "none" %}
-    <a class="no-dec{% if webapp_page == "survey" %} selected{% endif %}" href="/teach/{{one}}/{{two}}/onsitesurvey">
-      <i class="material-icons md-5">question_answer</i>
-      <span>Surveys</span>
-    </a>
-    {% endif %}
-  </nav>
-</div>
+<nav class="navbar">
+  <a class="navbar-item{% if webapp_page == "schedule" %} selected{% endif %}" href="/teach/{{one}}/{{two}}/teacheronsite">
+    <i class="material-icons md-5">event_note</i>
+    <span>Schedule</span>
+  </a>
+  <a class="navbar-item{% if webapp_page == "details" %} selected{% endif %}" href="/teach/{{one}}/{{two}}/onsitedetails">
+    <i class="material-icons md-5">list</i>
+    <span>Class Details</span>
+  </a>
+  {% if map_tab %}
+  <a class="navbar-item{% if webapp_page == "map" %} selected{% endif %}" href="/teach/{{one}}/{{two}}/onsitemap">
+    <i class="material-icons md-5">map</i>
+    <span>Map</span>
+  </a>
+  {% endif %}
+  {% if survey_status != "none" %}
+  <a class="navbar-item{% if webapp_page == "survey" %} selected{% endif %}" href="/teach/{{one}}/{{two}}/onsitesurvey">
+    <i class="material-icons md-5">question_answer</i>
+    <span>Surveys</span>
+  </a>
+  {% endif %}
+</nav>
 {% block body %}{% endblock %}
 </body>
 </html>
