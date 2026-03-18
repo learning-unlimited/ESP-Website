@@ -46,6 +46,8 @@ registration modules (e.g. grade limits, lottery behaviour, teacher deadlines).
 * Admin guide (how to set tags from the admin panel): `admin/tags.rst <admin/tags.rst>`_
 * How to declare and use Tags (developer guide): `dev/tags.rst <dev/tags.rst>`_
 * SCRMI / CRMI fields reference: `admin/program_modules.rst <admin/program_modules.rst>`_
+* Background on documenting tags: `GitHub issue #2038
+  <https://github.com/learning-unlimited/ESP-Website/issues/2038>`_
 
 Themes and Visual Customizations
 =================================
@@ -95,3 +97,5 @@ repository, work on a feature branch, write tests, open a pull request, and
 go through code review.
 
 * Git workflow and PR process: `dev/contributing.rst <dev/contributing.rst>`_
+* Background on code-review guidelines: `GitHub issue #1660
+  <https://github.com/learning-unlimited/ESP-Website/issues/1660>`_
