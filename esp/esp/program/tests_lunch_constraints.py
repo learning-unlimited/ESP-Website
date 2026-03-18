@@ -32,15 +32,11 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import datetime
-from unittest.mock import MagicMock
-
-from esp.cal.models import Event, EventType
 from esp.program.class_status import ClassStatus
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.models import (
-    BooleanExpression, ClassCategories, ClassSection, ClassSubject,
-    ScheduleConstraint, ScheduleTestCategory,
+    BooleanExpression, ClassCategories, ScheduleConstraint,
+    ScheduleTestCategory,
 )
 from esp.program.tests import ProgramFrameworkTest
 
@@ -170,8 +166,6 @@ class ApplyBinaryOpTest(ProgramFrameworkTest):
     def test_apply_binary_op_single_token(self):
         """Single token list should produce: token, identity, operator."""
         exp = self._make_expression()
-        token = MagicMock()
-        token.exp_id = exp.id
         # We can use a ScheduleTestCategory as a real token
         ts = list(self.program.getTimeSlots().order_by('start'))
         cat, _ = ClassCategories.objects.get_or_create(category='Lunch', symbol='L')
