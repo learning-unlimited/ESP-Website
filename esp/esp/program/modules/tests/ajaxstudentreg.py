@@ -39,6 +39,7 @@ from esp.program.tests import ProgramFrameworkTest
 import random
 import json
 import logging
+from unittest.mock import patch
 
 logger = logging.getLogger(__name__)
 
@@ -190,3 +191,46 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec2.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
 
+    def test_ajax_clearslot_allows_removal_without_cannotremove_block(self):
+        program = self.program
+
+        # Pick a student and log in
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+            "Couldn't log in as student %s" % student.username
+        )
+
+        # Register one section
+        sec1 = random.choice(program.sections())
+        sec1.preregister_student(student)
+
+        # Pick a non-conflicting section using DB-side timeslot filtering.
+        sec1_timeslot_ids = list(sec1.meeting_times.values_list('id', flat=True))
+        available_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times__id__in=sec1_timeslot_ids).distinct())
+
+        if not available_sections:
+            self.skipTest('No non-conflicting sections available for this random configuration')
+
+        sec2 = random.choice(available_sections)
+        sec2.preregister_student(student)
+
+        # Confirm both show first
+        response = self.client.get(
+            '/learn/%s/ajax_schedule' % program.getUrlBase(),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.expect_sections_in_schedule(response, [sec1, sec2])
+
+        with patch.object(ClassSection, 'cannotRemove', return_value=False) as cannot_remove_mock:
+            # Clear sec1 timeslot
+            response = self.client.get(
+                '/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec1.meeting_times.all()[0].id),
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+            )
+
+            # Verify cannotRemove participation directly instead of brittle string matching.
+            cannot_remove_mock.assert_called_once_with(student)
+
+        # Ensure only sec2 remains
+        self.expect_sections_in_schedule(response, [sec2])
