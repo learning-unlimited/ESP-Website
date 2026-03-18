@@ -140,6 +140,18 @@ class LunchCategoryAndSubjectTest(ProgramFrameworkTest):
         for sec in sections:
             self.assertEqual(sec.status, ClassStatus.ACCEPTED)
 
+    def test_get_lunch_sections_reuses_existing_sections(self):
+        """Existing lunch sections should be reused and reset to accepted."""
+        day = list(self.gen.days.keys())[0]
+        sections = list(self.gen.get_lunch_sections(day))
+        sections[0].status = 0
+        sections[0].save()
+
+        refreshed_sections = list(self.gen.get_lunch_sections(day))
+
+        self.assertEqual(len(refreshed_sections), len(self.gen.days[day]['lunch']))
+        self.assertTrue(all(sec.status == ClassStatus.ACCEPTED for sec in refreshed_sections))
+
 
 class ApplyBinaryOpTest(ProgramFrameworkTest):
     """Tests for the boolean expression tree builder."""
@@ -191,6 +203,21 @@ class ApplyBinaryOpTest(ProgramFrameworkTest):
             tokens.append(tok)
         self.gen.apply_binary_op_to_list(exp, 'OR', '0', tokens)
         self.assertEqual(exp.booleantoken_set.count(), 3)
+
+    def test_apply_binary_op_many_tokens_recurses(self):
+        """Four tokens should recurse into two halves and add a final operator."""
+        exp = self._make_expression()
+        ts = list(self.program.getTimeSlots().order_by('start'))
+        cat, _ = ClassCategories.objects.get_or_create(category='Lunch', symbol='L')
+        tokens = []
+        for t in ts:
+            tok = ScheduleTestCategory()
+            tok.timeblock_id = t.id
+            tok.exp_id = exp.id
+            tok.category = cat
+            tokens.append(tok)
+        self.gen.apply_binary_op_to_list(exp, 'OR', '0', tokens)
+        self.assertEqual(exp.booleantoken_set.count(), 7)
 
 
 class ClearExistingConstraintsTest(ProgramFrameworkTest):
@@ -272,6 +299,25 @@ class GenerateConstraintTest(ProgramFrameworkTest):
         self.assertEqual(
             ScheduleConstraint.objects.filter(program=self.program).count(), 0,
             "No constraints should be generated when there are no lunch timeslots"
+        )
+
+    def test_generate_all_constraints_without_generation_still_creates_sections(self):
+        """Lunch sections should still be created when constraints are disabled."""
+        gen = LunchConstraintGenerator(
+            self.program, lunch_timeslots=self.lunch_ts,
+            generate_constraints=False, autocorrect=False
+        )
+        gen.generate_all_constraints()
+
+        self.assertEqual(
+            ScheduleConstraint.objects.filter(program=self.program).count(), 0,
+            "No constraints should be generated when generation is disabled",
+        )
+        day = list(gen.days.keys())[0]
+        self.assertEqual(
+            gen.get_lunch_sections(day).count(),
+            len(gen.days[day]['lunch']),
+            "Lunch sections should still be created for each lunch timeslot",
         )
 
     def test_generate_constraint_with_autocorrect(self):
