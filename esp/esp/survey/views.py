@@ -43,7 +43,7 @@ from django.db import models
 from django.db.models import Count, Min, Q
 from django.contrib.contenttypes.models import ContentType
 from esp.users.models import ESPUser, Record, RecordType, admin_required
-from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
+from esp.program.models import Program, ClassCategories, ClassSubject, StudentRegistration, RegistrationType, ClassSection
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.utils.web import render_to_response
 from esp.utils.latex import render_to_latex
@@ -480,8 +480,15 @@ def teacher_survey_all(request):
                     sections_by_program.setdefault(pid, []).append(sec)
 
                 section_ct = ContentType.objects.get_for_model(ClassSection)
+                subject_ct = ContentType.objects.get_for_model(ClassSubject)
                 all_section_ids = [s.id for s in all_sections]
+                all_subject_ids = list(set(s.parent_class_id for s in all_sections))
                 all_survey_ids = [s.id for s in all_surveys]
+
+                # Map subject_id -> list of section objects (for merging subject-level data)
+                sections_by_subject = {}
+                for sec in all_sections:
+                    sections_by_subject.setdefault(sec.parent_class_id, []).append(sec)
 
                 # 1 query: response counts for ALL sections across ALL surveys
                 response_count_map = {}
@@ -495,6 +502,19 @@ def teacher_survey_all(request):
                 ):
                     response_count_map[(row['question__survey_id'], row['object_id'])] = row['count']
 
+                # 1 query: response counts for answers stored against ClassSubject
+                subject_response_count = {}
+                if all_subject_ids:
+                    for row in Answer.objects.filter(
+                        question__survey_id__in=all_survey_ids,
+                        question__per_class=True,
+                        content_type=subject_ct,
+                        object_id__in=all_subject_ids,
+                    ).values('question__survey_id', 'object_id').annotate(
+                        count=Count('survey_response', distinct=True)
+                    ):
+                        subject_response_count[(row['question__survey_id'], row['object_id'])] = row['count']
+
                 # 1 query: find the first numeric per-class question per survey
                 first_numeric_qs = {}
                 for q in Question.objects.filter(
@@ -505,7 +525,7 @@ def teacher_survey_all(request):
                     if q.survey_id not in first_numeric_qs:
                         first_numeric_qs[q.survey_id] = q
 
-                # 1 query: all numeric rating values across all surveys
+                # 1 query: section-level numeric rating values
                 rating_map = {}
                 numeric_q_ids = [q.id for q in first_numeric_qs.values()]
                 if numeric_q_ids:
@@ -516,6 +536,19 @@ def teacher_survey_all(request):
                     ).values_list('question__survey_id', 'object_id', 'value'):
                         try:
                             rating_map.setdefault((survey_id, obj_id), []).append(float(val))
+                        except (ValueError, TypeError):
+                            pass
+
+                # 1 query: subject-level numeric rating values
+                subject_rating_map = {}
+                if numeric_q_ids and all_subject_ids:
+                    for survey_id, obj_id, val in Answer.objects.filter(
+                        question_id__in=numeric_q_ids,
+                        content_type=subject_ct,
+                        object_id__in=all_subject_ids,
+                    ).values_list('question__survey_id', 'object_id', 'value'):
+                        try:
+                            subject_rating_map.setdefault((survey_id, obj_id), []).append(float(val))
                         except (ValueError, TypeError):
                             pass
 
@@ -537,10 +570,22 @@ def teacher_survey_all(request):
                                     'title': sec.title,
                                     'total_responses': 0,
                                     'rating_vals': [],
+                                    '_has_section_data': False,
                                 }
                             key = (survey.id, sec.id)
-                            class_data[cid]['total_responses'] += response_count_map.get(key, 0)
-                            class_data[cid]['rating_vals'].extend(rating_map.get(key, []))
+                            sec_count = response_count_map.get(key, 0)
+                            sec_ratings = rating_map.get(key, [])
+                            if sec_count or sec_ratings:
+                                class_data[cid]['_has_section_data'] = True
+                            class_data[cid]['total_responses'] += sec_count
+                            class_data[cid]['rating_vals'].extend(sec_ratings)
+
+                        # Merge subject-level data for classes without section-level data
+                        for cid, cd in class_data.items():
+                            if not cd['_has_section_data']:
+                                subj_key = (survey.id, cid)
+                                cd['total_responses'] += subject_response_count.get(subj_key, 0)
+                                cd['rating_vals'].extend(subject_rating_map.get(subj_key, []))
 
                         classes_summary = []
                         for cid, cd in class_data.items():

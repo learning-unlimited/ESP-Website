@@ -195,7 +195,7 @@ td, th { padding: 5px !important; }
 <tbody>
 {% for entry in programs_data %}
     {% for cs in entry.classes_summary %}
-        <tr onclick="toggleAccordion('prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}'); toggleClassAccordion('prog-{{ entry.program.id }}-class-{{ cs.class.id }}');" title="Click to view responses">
+        <tr onclick="toggleAccordion('prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}'); toggleClassAccordion('prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}-class-{{ cs.class.id }}');" title="Click to view responses">
             <td>
                 <strong>{{ entry.program.niceName }}</strong>
             </td>
@@ -239,7 +239,7 @@ td, th { padding: 5px !important; }
                         </div>{# close previous class-accordion-body #}
                     {% endif %}
 
-                    <div class="class-accordion-header" onclick="event.stopPropagation(); toggleClassAccordion('prog-{{ entry.program.id }}-class-{{ sec.parent_class.id }}');">
+                    <div class="class-accordion-header" onclick="event.stopPropagation(); toggleClassAccordion('prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}-class-{{ sec.parent_class.id }}');">
                         <h3>{{ sec.parent_class.emailcode }}: <span class="tex2jax_ignore">{{ sec.title }}</span>
                         {% for cs in entry.classes_summary %}
                             {% if cs.class.id == sec.parent_class.id %}
@@ -249,11 +249,11 @@ td, th { padding: 5px !important; }
                             {% endif %}
                         {% endfor %}
                         </h3>
-                        <div class="accordion-toggle" id="toggle-prog-{{ entry.program.id }}-class-{{ sec.parent_class.id }}">+</div>
+                        <div class="accordion-toggle" id="toggle-prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}-class-{{ sec.parent_class.id }}">+</div>
                     </div>
-                    <div class="class-accordion-body" id="prog-{{ entry.program.id }}-class-{{ sec.parent_class.id }}">
+                    <div class="class-accordion-body" id="prog-{{ entry.program.id }}-survey-{{ entry.survey.id }}-class-{{ sec.parent_class.id }}">
                         <table class="fullwidth bordered">
-                        <tr><th><h2><a name="prog{{ entry.program.id }}-class{{ sec.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: <div class="tex2jax_ignore">{{ sec.title }}</div></h2></th></tr>
+                        <tr><th><h2><a name="prog{{ entry.program.id }}-class{{ sec.parent_class.id }}"></a>Responses for {{ sec.parent_class.emailcode }}: <span class="tex2jax_ignore">{{ sec.title }}</span></h2></th></tr>
                 {% endifchanged %}
 
                 <tr style="border-top: 1px dashed black;">

@@ -363,8 +363,8 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         content = str(response.content, encoding='UTF-8')
         # Our test setup created 1 response with rating 4
         self.assertIn('4.0', content)
-        # Response count should be visible
-        self.assertIn('1', content)
+        # Response count should be visible in the summary table cell
+        self.assertIn('>1<', content)
 
     def test_admin_post_search_for_teacher(self):
         """Admin can search for a teacher via POST form."""
@@ -453,10 +453,10 @@ class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
         content = str(response.content, encoding='UTF-8')
         # Should show aggregated avg: (3+5)/2 = 4.0
         self.assertIn('4.0', content)
-        # Should show total 2 responses
-        self.assertIn('2', content)
         # The class emailcode should appear only once in summary table
         emailcode = self.sections[0].parent_class.emailcode()
         summary_section = content.split('Detailed Responses')[0]
         self.assertEqual(summary_section.count(emailcode), 1,
                          "Class should appear exactly once in summary table")
+        # Should show total 2 responses in the summary table
+        self.assertIn('>2<', summary_section)
