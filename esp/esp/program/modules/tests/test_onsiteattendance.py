@@ -41,11 +41,12 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
 
         attendance = self.module.times_attending_class(self.program)
         expected_hour = section_start.replace(minute=0, second=0, microsecond=0)
+
+        self.assertEqual(attendance[expected_hour], [valid_student])
         invalid_hour = invalid_start.replace(
             minute=0,
             second=0,
             microsecond=0,
         )
-
-        self.assertEqual(attendance[expected_hour], [valid_student])
-        self.assertNotIn(invalid_hour, attendance)
+        if invalid_hour != expected_hour:
+            self.assertNotIn(invalid_hour, attendance)
