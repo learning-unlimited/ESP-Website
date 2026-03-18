@@ -86,3 +86,43 @@ th { cursor: pointer; }
 .legend-swatch.green  { background: #5cb85c; }
 .legend-swatch.yellow { background: #f0ad4e; }
 .legend-swatch.grey   { background: #aaa; }
+
+/* Controls and auto-refresh alignment */
+.reset-button,
+.refresh-button,
+button[name="refresh"] {
+  display: inline-block;
+  margin-left: 0.5em;
+  vertical-align: middle;
+}
+#refresh_interval {
+  display: inline-block;
+  width: 5em;
+  margin-left: 0.5em;
+  margin-right: 0.25em;
+  vertical-align: middle;
+}
+.move_left {
+  margin-right: 0.5em;
+}
+
+/* Table styling for scheduling check results */
+.scheduling-check table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5em;
+}
+.scheduling-check th,
+.scheduling-check td {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  text-align: left;
+  vertical-align: top;
+}
+.scheduling-check thead th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+.sortReversed {
+  color: red;
+}
