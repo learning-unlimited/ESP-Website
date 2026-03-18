@@ -69,8 +69,7 @@ uses this mechanism internally; it is also useful for customising printables
 and other one-off pages.
 
 .. note::
-   Templates are loaded via the Django template loader, and template overrides
-   actually take precedence over themes.
+   This is no longer true. Theme templates are now loaded through a template loader which is then overridden by any template overrides.
 
 * Model description and usage: `dev/utils.rst <dev/utils.rst>`_
 * Manual theming workflow (without the app): `admin/themes.rst <admin/themes.rst>`_
