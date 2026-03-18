@@ -36,6 +36,13 @@ from django.contrib.auth.models import Group
 from faker import Faker
 from phonenumber_field.phonenumber import PhoneNumber
 import random
+from django.conf import settings
+
+if not getattr(settings, "DEBUG", False):
+    raise RuntimeError(
+        "esp/useful_scripts/generate_bulk_fake_data.py may only be used when DEBUG is True "
+        "(development environments). It must not be run against production data."
+    )
 
 fake = Faker()
 
