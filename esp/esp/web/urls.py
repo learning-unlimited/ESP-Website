@@ -1,8 +1,7 @@
-from django.conf.urls import url
-
+from django.urls import re_path
 from esp.web.views import bio
 
 urlpatterns = [
-    url(r'^(?P<username>[^/]+)/bio\.html$', bio.bio),
-    url(r'^(?P<username>[^/]+)/bio\.edit\.html/?(.*)$', bio.bio_edit),
+    re_path(r'^(?P<username>[^/]+)/bio\.html$', bio.bio),
+    re_path(r'^(?P<username>[^/]+)/bio\.edit\.html/?(.*)$', bio.bio_edit),
 ]
