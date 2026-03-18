@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
@@ -80,6 +81,37 @@ class ProgramPrintables(ProgramModuleObj):
             "seq": 5,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        base = program.getUrlBase()
+        entries = {
+            "catalog": ("PDF Catalog", "Printables", ["printable", "pdf catalog", "classes"]),
+            "studentschedules": ("Student Schedules", "Printables", ["printable", "student schedules", "schedules"]),
+            "studentscheduleform": ("Student Schedule Formatter", "Printables", ["formatter", "student schedules", "printable"]),
+            "printoptions": ("All Printables", "Printables", ["printables", "all printables", "pdf", "documents"]),
+            "teachersbytime": ("Teacher List by Time", "Other", ["teachers", "time", "printables"]),
+            "teachermoderatorsbytime": ("Teacher and Moderator List by Time", "Other", ["teachers", "moderators", "time", "printables"]),
+            "classesbyteacher": ("Classes by Teacher", "Other", ["classes", "teacher", "printables"]),
+            "teacherlabels": ("Teacher Labels", "Other", ["teacher", "labels", "printables"]),
+            "teachermoderatorsbyname": ("Teacher and Moderator List by Name", "Other", ["teachers", "moderators", "name", "printables"]),
+            "teachermoderatorschedules": ("Teacher and Moderator Schedules", "Other", ["teachers", "moderators", "schedules", "printables"]),
+            "teachermoderatorlist": ("Teacher and Moderator List", "Other", ["teachers", "moderators", "list", "printables"]),
+            "teachersbyname": ("Teacher List by Name", "Other", ["teachers", "name", "printables"]),
+            "teacherschedules": ("Teacher Schedules", "Other", ["teachers", "schedules", "printables"]),
+            "teacherlist": ("Teacher List", "Other", ["teachers", "list", "printables"]),
+        }
+        if view_name not in entries:
+            return None
+        title, category, keywords = entries[view_name]
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/manage/%s/%s" % (base, view_name),
+            title=title,
+            category=category,
+            keywords=keywords,
+            disambiguation_label=title.split(" (")[1].strip(")") if "(" in title else None,
+        )
 
     @aux_call
     @needs_admin
@@ -192,7 +224,7 @@ class ProgramPrintables(ProgramModuleObj):
                 clsid = int(request.GET['clsid'])
                 cls   = ClassSubject.objects.get(parent_program = self.program,
                                           id             = clsid)
-            except:
+            except (ValueError, ClassSubject.DoesNotExist):
                 raise ESPError('Could not get the class object.')
 
             cls_dict = {}
@@ -571,7 +603,9 @@ class ProgramPrintables(ProgramModuleObj):
                       teaching = True, moderating = False, display_name = 'Teacher List'):
         from esp.users.models import ContactInfo
 
-        if sort_exp is None:
+        if extra and 'compact' in extra:
+            sort_exp = lambda x, y: self.cmpsorttime(x, y)
+        elif sort_exp is None:
             sort_exp = lambda x, y: self.cmpsortname(x, y)
 
         if extra and 'secondday' in extra:
@@ -669,6 +703,8 @@ class ProgramPrintables(ProgramModuleObj):
             t = loader.get_template(self.baseDir()+'teacherlist.csv')
             response.write(t.render(context))
             return response
+        elif extra and 'compact' in extra:
+            return render_to_response(self.baseDir()+'teachercheckinlist.html', request, context)
         else:
             return render_to_response(self.baseDir()+template_file, request, context)
 
@@ -1466,7 +1502,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         try:
             context['colors'] = request.GET['colors'].split(',')
-        except:
+        except KeyError:
             context['colors'] = ['Yellow', 'Blue', 'Pink', 'Green', 'Turquoise', 'Purple', 'Brown', 'Black']
 
         if extra:

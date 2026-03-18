@@ -21,11 +21,8 @@ class TeacherModeratorModule(ProgramModuleObj):
             'choosable': 0,
         }
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return ModeratorRecord.objects.filter(user=user, program=self.program).exists()
 
     @main_call
@@ -77,7 +74,7 @@ class TeacherModeratorModule(ProgramModuleObj):
     def moderatorlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for teachers with names that start with search string
-        if not 'name' in request.GET or 'name' in request.POST:
+        if 'name' not in request.GET and 'name' not in request.POST:
             return self.goToCore(tl)
 
         return self.moderatorlookup_logic(request, tl, one, two, module, extra, prog)
@@ -85,7 +82,7 @@ class TeacherModeratorModule(ProgramModuleObj):
     @staticmethod
     def moderatorlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.views.json_utils import JsonResponse
+        from django.http import JsonResponse
 
         queryset = prog.teachers()['will_moderate']
 
@@ -130,7 +127,7 @@ class TeacherModeratorModule(ProgramModuleObj):
         else:
             obj_list = []
 
-        return JsonResponse(obj_list)
+        return JsonResponse(obj_list, safe=False)
 
     class Meta:
         proxy = True
