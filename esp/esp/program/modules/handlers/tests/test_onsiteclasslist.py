@@ -102,16 +102,16 @@ class UpdateScheduleJsonValidationTests(SimpleTestCase):
         module = SimpleNamespace()
         rf = RequestFactory()
         request = rf.get('/dummy', {'user': '123', 'sections': '{}'})
-        
+
         with patch.object(ESPUser.objects, "get") as mock_get:
             mock_user = MagicMock(spec=ESPUser)
             mock_user.id = 123
             mock_user.name.return_value = "Test User"
             mock_get.return_value = mock_user
-            
+
             fn = getattr(OnSiteClassList.update_schedule_json, "method", OnSiteClassList.update_schedule_json)
             response = fn(module, request, None, None, None, None, None, None)
-            
+
             self.assertEqual(response.status_code, 400)
             payload = json.loads(response.content.decode('utf-8'))
             self.assertTrue(
