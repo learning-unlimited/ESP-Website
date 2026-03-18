@@ -47,7 +47,7 @@ class QuestionForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         question_type = cleaned_data.get('question_type')
-        param_values_raw = self.data.get('_param_values', '')
+        param_values_raw = cleaned_data.get('_param_values', '') or ''
         params = [p.strip() for p in param_values_raw.split('|') if p.strip() or param_values_raw]
 
         if question_type:
