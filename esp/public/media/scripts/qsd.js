@@ -164,7 +164,9 @@ function qsd_toggle_history(qsd_url, edit_id)
                                 $btn.data('version-id'), $btn.data('version-date'));
         });
     }).fail(function(req) {
-        $panel.html('<p style="padding:8px; color:red;">Error loading history: ' + req.responseText + '</p>');
+        $panel.empty().append(
+            $j('<p style="padding:8px; color:red;"></p>').text('Error loading history: ' + req.responseText)
+        );
     });
 }
 
@@ -207,24 +209,20 @@ function qsd_restore_version(qsd_url, edit_id, version_id, version_date)
     $j("#qsd-restore-modal").remove();
 
     var modalHtml =
-        '<div class="modal fade" id="qsd-restore-modal" tabindex="-1" role="dialog">'
-      + '  <div class="modal-dialog" role="document">'
-      + '    <div class="modal-content">'
-      + '      <div class="modal-header">'
-      + '        <button type="button" class="close" data-dismiss="modal">&times;</button>'
-      + '        <h4 class="modal-title"><span class="glyphicon glyphicon-repeat"></span> Restore Version</h4>'
-      + '      </div>'
-      + '      <div class="modal-body">'
-      + '        <p>Restore this page to the version from <strong>' + $j('<span>').text(version_date).html() + '</strong>?</p>'
-      + '        <p class="text-muted">This will create a new revision with the old content.</p>'
-      + '      </div>'
-      + '      <div class="modal-footer">'
-      + '        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>'
-      + '        <button type="button" class="btn btn-warning" id="qsd-restore-confirm-btn">'
-      + '          <span class="glyphicon glyphicon-repeat"></span> Restore'
-      + '        </button>'
-      + '      </div>'
-      + '    </div>'
+        '<div class="modal hide fade" id="qsd-restore-modal" tabindex="-1" role="dialog">'
+      + '  <div class="modal-header">'
+      + '    <button type="button" class="close" data-dismiss="modal">&times;</button>'
+      + '    <h4><span class="glyphicon glyphicon-repeat"></span> Restore Version</h4>'
+      + '  </div>'
+      + '  <div class="modal-body">'
+      + '    <p>Restore this page to the version from <strong>' + $j('<span>').text(version_date).html() + '</strong>?</p>'
+      + '    <p class="muted">This will create a new revision with the old content.</p>'
+      + '  </div>'
+      + '  <div class="modal-footer">'
+      + '    <button type="button" class="btn" data-dismiss="modal">Cancel</button>'
+      + '    <button type="button" class="btn btn-warning" id="qsd-restore-confirm-btn">'
+      + '      <span class="glyphicon glyphicon-repeat"></span> Restore'
+      + '    </button>'
       + '  </div>'
       + '</div>';
 
@@ -258,8 +256,8 @@ function qsd_restore_version(qsd_url, edit_id, version_id, version_date)
         });
     });
 
-    // Cleanup on close
-    $modal.on("hidden.bs.modal", function() { $j(this).remove(); });
+    // Cleanup on close (Bootstrap 2 uses "hidden" event without namespace)
+    $modal.on("hidden", function() { $j(this).remove(); });
 }
 
 

@@ -331,7 +331,6 @@ def ajax_qsd_preview(request):
 
 def ajax_qsd_history(request):
     """ Return JSON list of versions for a QSD URL. """
-    import json
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
     from esp.users.models import ESPUser
@@ -402,7 +401,6 @@ def ajax_qsd_history(request):
 
 def ajax_qsd_version_preview(request):
     """ Return rendered content for a specific version. """
-    import json
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
     from markdown import markdown
@@ -445,7 +443,6 @@ def ajax_qsd_version_preview(request):
 @reversion.create_revision()
 def ajax_qsd_restore(request):
     """ Restore a QSD to a specific historical version. """
-    import json
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
     from markdown import markdown

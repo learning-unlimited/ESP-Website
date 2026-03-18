@@ -21,7 +21,6 @@
 {% endif %}
 <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
 <script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
-<script type="text/javascript" src="/media/scripts/qsd.js"></script>
 {% endblock %}
 
 
@@ -61,7 +60,7 @@
 {% if qsdrec.id %}
 <div style="margin-top: 10px;">
   <button type="button" class="btn btn-default" onclick="qsd_toggle_history('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}')">
-    <span class="glyphicon glyphicon-time"></span> Version History
+    <span class="glyphicon glyphicon-time" aria-hidden="true"></span> Version History
   </button>
 </div>
 <div id="qsd_history_panel_{{ qsdrec.edit_id }}" class="qsd_history_panel" style="display:none;"></div>
