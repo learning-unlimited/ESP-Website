@@ -123,7 +123,11 @@ class CachedModuleViewDecorator(object):
         containing_class = get_containing_class()
 
         def prepare_dec(func):
-            self.params = list(signature(func).parameters.keys())
+            self.params = [
+                p.name
+                for p in signature(func).parameters.values()
+                if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
+            ]
             self.cached_function = cache_function(func, containing_class=containing_class)
 
             def actual_func(self, request, tl, one, two, module, extra, prog):
