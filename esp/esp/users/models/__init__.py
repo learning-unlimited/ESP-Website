@@ -1201,13 +1201,15 @@ class BaseESPUser(object):
 
     def unsubscribe_link_full(self):
         unsub_link = self.unsubscribe_link()
-        return 'https://%s%s' % (Site.objects.get_current().domain, unsub_link)
+        protocol = 'http' if settings.DEBUG else 'https'
+        return '%s://%s%s' % (protocol, Site.objects.get_current().domain, unsub_link)
 
     # this is an insecure version that accepts a POST from external sources
     def unsubscribe_oneclick(self):
         unsub_link = self.unsubscribe_link()
         unsub_link = unsub_link.replace("unsubscribe", "unsubscribe_oneclick")
-        return 'https://%s%s' % (Site.objects.get_current().domain, unsub_link)
+        protocol = 'http' if settings.DEBUG else 'https'
+        return '%s://%s%s' % (protocol, Site.objects.get_current().domain, unsub_link)
 
     def make_token(self):
         return TimestampSigner().sign(self.username)
