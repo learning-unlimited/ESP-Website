@@ -92,7 +92,7 @@ def generate_user(role, group, program=None):
     street = fake.address().split('\n')[0]
     city = fake.city()
     state = fake.state_abbr()
-    zip = fake.zipcode_in_state(state)
+    zip_code = fake.zipcode_in_state(state)
     contact_info = ContactInfo.objects.create(
         user=user,
         first_name=user.first_name,
@@ -102,7 +102,7 @@ def generate_user(role, group, program=None):
         address_street=street,
         address_city=city,
         address_state=state,
-        address_zip=zip,
+        address_zip=zip_code,
         address_country='US'
     )
 
@@ -120,7 +120,7 @@ def generate_user(role, group, program=None):
             address_street=street,
             address_city=city,
             address_state=state,
-            address_zip=zip,
+            address_zip=zip_code,
             address_country='US'
         )
 
