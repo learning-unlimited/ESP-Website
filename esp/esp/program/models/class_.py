@@ -1302,7 +1302,7 @@ class ClassSection(models.Model):
         else:
             return [v.relationship for v in qs.filter(relationship__name__in=allowed_verbs).distinct()]
 
-    def unpreregister_student(self, user, prereg_verbs = []):
+    def unpreregister_student(self, user, prereg_verbs = [], promote_waitlist=False):
         #   New behavior: prereg_verbs should be a list of strings matching the names of
         #   RegistrationTypes to match (if you want to use it)
 
@@ -1343,9 +1343,10 @@ class ClassSection(models.Model):
         for list_name in list_names:
             remove_list_member(list_name, user.email)
         
-        # After an enrolled student drops, promote the next waitlisted student
-        # if space is available.
-        if enrolled_was_active:
+        # After an enrolled student drops (via a user-driven action where
+        # promote_waitlist is explicitly enabled), promote the next waitlisted
+        # student if space is available.
+        if enrolled_was_active and promote_waitlist:
             try:
                 scrmi = self.parent_program.studentclassregmoduleinfo
                 if scrmi.enable_class_waitlist and Tag.getBooleanTag('class_waitlist_enabled', self.parent_program, default=True):
