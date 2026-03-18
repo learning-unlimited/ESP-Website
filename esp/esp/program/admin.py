@@ -237,8 +237,18 @@ class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
     search_fields = ['=id', '=section__id', '^user__username', '^user__last_name', '^user__email', '=user__id']
-    list_select_related = (('user', 'section', 'section__parent_class'))
+    list_select_related = ('user', 'section', 'section__parent_class')
     list_filter = ['section__parent_class__parent_program', 'relationship', ExpiredListFilter]
+
+    def get_search_results(self, request, queryset, search_term):
+        if search_term and not search_term.isdigit():
+            original = self.search_fields
+            self.search_fields = tuple(f for f in original if not f.startswith('='))
+            try:
+                return super().get_search_results(request, queryset, search_term)
+            finally:
+                self.search_fields = original
+        return super().get_search_results(request, queryset, search_term)
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
@@ -248,6 +258,16 @@ class StudentSubjectInterestAdmin(admin.ModelAdmin):
     search_fields = ['^user__username', '^user__last_name', '^user__email', '=user__id', '=id', '=subject__id']
     list_select_related = ('user', 'subject')
     list_filter = ['subject__parent_program',]
+
+    def get_search_results(self, request, queryset, search_term):
+        if search_term and not search_term.isdigit():
+            original = self.search_fields
+            self.search_fields = tuple(f for f in original if not f.startswith('='))
+            try:
+                return super().get_search_results(request, queryset, search_term)
+            finally:
+                self.search_fields = original
+        return super().get_search_results(request, queryset, search_term)
     date_hierarchy = 'start_date'
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
