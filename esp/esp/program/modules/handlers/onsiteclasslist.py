@@ -112,6 +112,11 @@ class OnSiteClassList(ProgramModuleObj):
             "choosable": 1,
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Views are JSON/API (full_status, catalog_status, get_schedule_json, etc.); do not list in admin search.
+        return None
+
     @cache_function
     def section_data(sec):
         sect = {}
@@ -281,6 +286,15 @@ class OnSiteClassList(ProgramModuleObj):
     def update_schedule_json(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
         result = {'user': None, 'sections': [], 'messages': []}
+        try:
+            user = ESPUser.objects.get(id=int(request.GET['user']))
+        except (KeyError, ValueError, TypeError, ESPUser.DoesNotExist):
+            user = None
+
+        if user is None:
+            resp.status_code = 400
+            json.dump({"messages": ["User not found"], "sections": []}, resp)
+            return resp
 
         try:
             desired_sections = parse_update_schedule_sections(request.GET.get('sections'))
@@ -290,19 +304,8 @@ class OnSiteClassList(ProgramModuleObj):
             json.dump(result, resp, cls=DjangoJSONEncoder)
             return resp
 
-        try:
-            user_id = int(request.GET['user'])
-            user = ESPUser.objects.get(id=user_id)
-        except (KeyError, ValueError, ESPUser.DoesNotExist):
-            user = None
-
-        if user is None:
-            result['messages'] = ['User not found']
-            resp.status_code = 400
-            json.dump(result, resp, cls=DjangoJSONEncoder)
-            return resp
-
-        if not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
+        #   Check in student if not currently checked in, since if they're using this view they must be onsite
+        if request.GET.get('check_in') == 'true' and not prog.isCheckedIn(user):
             rec = Record(user=user, program=prog, event='attended')
             rec.save()
 
@@ -331,6 +334,7 @@ class OnSiteClassList(ProgramModuleObj):
                 sm = ScheduleMap(user, prog)
                 existing_sections = []
                 sections_to_add_ids = set(sections_to_add.values_list('id', flat=True))
+
                 for (sec, ts) in sec_times:
                     if ts and ts in sm.map and len(sm.map[ts]) > 0:
                         for sm_sec in sm.map[ts]:
@@ -367,19 +371,21 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def printschedule_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
-
         result = {}
 
         try:
             user = int(request.GET.get('user', None))
             user_obj = ESPUser.objects.get(id=user)
         except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
+            resp.status_code = 400
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
+            json.dump(result, resp)
+            return resp
 
         printer = request.GET.get('printer', None)
         if printer is not None:
-            # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
+
         req = PrintRequest.objects.create(user=user_obj, printer=printer)
         result['message'] = "Submitted %s's schedule for printing (print request #%s)." % (user_obj.name(), req.id)
 
