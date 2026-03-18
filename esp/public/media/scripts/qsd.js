@@ -5,8 +5,8 @@ function post_encode(data) {
     //  Convert a Javascript object to x-www-form-urlencoded format.
     var result = '';
     var i = 0;
-    for (key in data) {
-        if (key != 'toJSON') {
+    for (var key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key) && key != 'toJSON') {
             if (i != 0) result += '&';
             result += key + '=' + encodeURIComponent(data[key]);
             i++;
