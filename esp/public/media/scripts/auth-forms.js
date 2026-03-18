@@ -162,7 +162,7 @@
         });
       }
 
-      const passwordInput = document.querySelector('input[name="password"]');
+      const passwordInput = document.querySelector('input[name="newpasswd"], input[name="password"]');
       const confirmInput = document.querySelector('input[name="password2"], input[name="newpasswdconfirm"]');
       
       if (passwordInput && confirmInput) {
