@@ -22,9 +22,17 @@ WORKDIR /app
 
 # Install system dependencies from packages_base.txt to avoid duplication.
 COPY esp/packages_base.txt /tmp/packages_base.txt
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    $(cat /tmp/packages_base.txt | grep -v '^python' | grep -v '^#' | tr '\n' ' ') \
-    && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    pkgs="$(cat /tmp/packages_base.txt | grep -v '^python' | grep -v '^#' | tr '\n' ' ')"; \
+    for i in 1 2 3 4 5; do \
+      apt-get update && \
+      apt-get install -y --no-install-recommends -o Acquire::Retries=5 $pkgs && \
+      break; \
+      echo "apt attempt ${i} failed; retrying in 10s..."; \
+      sleep 10; \
+      rm -rf /var/lib/apt/lists/*; \
+    done; \
+    rm -rf /var/lib/apt/lists/*
 
 # Install LESS via npm (from packages_base_manual_install.sh)
 RUN npm install --prefix /usr less@3.13.1 -g
