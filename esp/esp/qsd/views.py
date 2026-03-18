@@ -278,7 +278,8 @@ def ajax_qsd(request):
 
         data = post_dict['data']
 
-        # Get the URL from the request information
+        # Use the authoritative URL from the QSD object (database), not
+        # directly from the request
         url_parts = qsd.url.split('/')
 
         # Sanitize if this is for a class QSD
