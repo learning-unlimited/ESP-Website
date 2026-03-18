@@ -175,7 +175,7 @@ class GradeChangeRequestAdmin(AuditedModelAdmin, admin.ModelAdmin):
             obj.acknowledged_by = request.user
         if getattr(obj, 'acknowledged_time', None) is None and getattr(request.POST, 'approved', None) is True:
             obj.acknowledged_time = datetime.datetime.now()
-        obj.save()
+        super().save_model(request, obj, form, change)
 admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group
