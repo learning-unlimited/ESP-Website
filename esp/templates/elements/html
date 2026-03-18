@@ -26,6 +26,22 @@
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
+    <style type="text/css">
+      .skip-link {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        z-index: 10000;
+        padding: 8px 12px;
+        background: #112E51;
+        color: #fff;
+        text-decoration: none;
+      }
+      .skip-link:focus {
+        left: 10px;
+        top: 10px;
+      }
+    </style>
     {% block jquery_ui_stylesheet_version %}
     <link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
     {% endblock jquery_ui_stylesheet_version %}
@@ -148,7 +164,10 @@
   </head>
   
   <body>
-    {% block body %}{% endblock %}
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div id="main-content" role="main" tabindex="-1">
+      {% block body %}{% endblock %}
+    </div>
 
     {% block counter %}{% endblock %}
 

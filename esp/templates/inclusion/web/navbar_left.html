@@ -1,5 +1,6 @@
 {% if navbar_list.entries %}
   <!-- secondary nav -->
+  <div role="navigation" aria-label="Secondary navigation">
   <ul id="submenu">
   {% for nav_entry in navbar_list.entries %}
     <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}">
@@ -24,4 +25,5 @@
   {% endwith %}
   {% endif %}
   </ul>
+  </div>
 {% endif %}
