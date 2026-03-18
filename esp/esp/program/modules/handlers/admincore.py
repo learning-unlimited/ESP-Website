@@ -48,6 +48,7 @@ from esp.cal.models import Event
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.program.controllers.testingutils import TestDataCleanupController
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry, serialize_admin_search_entries
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
 from esp.users.models import Permission, ESPUser
@@ -102,6 +103,33 @@ class AdminCore(ProgramModuleObj, CoreModule):
             "choosable": 1,
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        base = program.getUrlBase()
+        # Map view names to (title, category, keywords) for admin dashboard search.
+        entries = {
+            "main": ("Admin Portal", "Configure", ["dashboard", "admin", "home"]),
+            "settings": ("Program Settings", "Configure", ["settings", "program", "registration", "options"]),
+            "tags": ("Tag Settings", "Configure", ["tags", "advanced", "experts", "settings"]),
+            "dashboard": ("Dashboard", "Logistics", ["classes", "stats", "overview", "enrollment", "logistics"]),
+            "registrationtype_management": ("Student Registration Types", "Configure", ["registration", "types", "student", "sections", "schedule"]),
+            "lunch_constraints": ("Lunch Constraints", "Configure", ["lunch", "constraints", "schedule", "availability"]),
+            "deadline_management": ("Deadlines", "Configure", ["registration", "open", "close", "dates", "deadlines"]),
+            "deadlines": ("Deadlines", "Configure", ["registration", "open", "close", "dates", "deadlines"]),
+            "surveys": ("Surveys", "Configure", ["survey", "feedback", "student survey", "teacher survey"]),
+            "modules": ("Manage Modules", "Configure", ["modules", "required", "sequence", "student registration", "teacher registration"]),
+        }
+        if view_name not in entries:
+            return None
+        title, category, keywords = entries[view_name]
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/manage/%s/%s" % (base, view_name),
+            title=title,
+            category=category,
+            keywords=keywords,
+        )
+
     @aux_call
     @needs_admin
     def main(self, request, tl, one, two, module, extra, prog):
@@ -132,6 +160,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
         #   Populate context with variables to show which program module views are available
         for (tl, view_name) in prog.getModuleViews():
             context['%s_%s' % (tl, view_name)] = True
+
+        # Metadata for admin search across dashboard sections and other views.
+        # Pass list of dicts; template uses json_script for safe embedding (no XSS).
+        context['admin_search_entries'] = serialize_admin_search_entries(prog)
+        context['manage_refund'] = prog.hasModule('CreditCardModule_Stripe')
 
         return render_to_response(self.baseDir()+'directory.html', request, context)
 
@@ -619,6 +652,44 @@ class AdminCore(ProgramModuleObj, CoreModule):
         teach_modules = [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]
         context['teach_modules'] = {'required': [mod for mod in teach_modules if mod.required],
                                     'not_required': [mod for mod in teach_modules if not mod.required]}
+
+        # Build per-module constraint metadata for the UI.  The JS uses this to
+        # prevent illegal drags instead of silently undoing them on save.
+        # This mirrors the hard-override block at the end of the POST branch above.
+        module_constraints = {}
+        for mod in learn_modules + teach_modules:
+            handler = mod.module.handler
+            required_locked = (
+                handler == 'RegProfileModule' or
+                handler == 'AvailabilityModule' or
+                'AcknowledgementModule' in handler or
+                handler == 'StudentRegTwoPhase'
+            )
+            not_required_locked = (
+                'CreditCardModule_' in handler or
+                handler == 'StudentRegConfirm'
+            )
+            position_locked = (
+                handler == 'RegProfileModule' or
+                'CreditCardModule_' in handler or
+                handler == 'StudentRegConfirm'
+            )
+            if required_locked or not_required_locked or position_locked:
+                module_constraints[str(mod.id)] = {
+                    'required_locked': required_locked,
+                    'not_required_locked': not_required_locked,
+                    'position_locked': position_locked,
+                }
+        context['module_constraints'] = module_constraints
+        # position_locked_ids: modules that cannot be dragged at all (fully frozen).
+        # Modules that are only required/not_required locked can still be reordered
+        # within their list; cross-list drops are blocked in the JS receive handler.
+        context['position_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['position_locked']}
+        # required_locked_ids / not_required_locked_ids: used by the template to
+        # render per-module constraint icons and the icon legend.
+        context['required_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['required_locked']}
+        context['not_required_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['not_required_locked']}
+
         context['one'] = one
         context['two'] = two
         context['program'] = prog

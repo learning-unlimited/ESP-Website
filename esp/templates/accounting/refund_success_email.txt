@@ -1,0 +1,17 @@
+Stripe Refunds Issued Successfully
+====================================
+
+Program: {{ program.niceName }}
+Site: {{ domain_name }}
+
+The following refunds were issued:
+
+{% for result in refund_results %}
+- User ID: {{ result.user_id }}
+  Username: {{ result.username }}
+  Full Name: {{ result.full_name }}
+  Stripe Transaction ID: {{ result.transaction_id }}
+  Stripe Refund ID: {{ result.stripe_refund_id }}
+  Amount Refunded: ${{ result.amount_requested }}
+
+{% endfor %}

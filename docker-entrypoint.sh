@@ -43,7 +43,10 @@ if [ ! -f "$COLLECTSTATIC_MARKER_FILE" ] || [ "${FORCE_SETUP:-0}" = "1" ]; then
     touch "$COLLECTSTATIC_MARKER_FILE"
 else
     echo ">>> Skipping collectstatic (already done)."
-    echo ">>> To force re-run, use: FORCE_SETUP=1 docker compose up"
+    echo ">>> To force it to run again:"
+    echo ">>> a) Delete the $COLLECTSTATIC_MARKER_FILE file."
+    echo ">>> b) Run the following command:"
+    echo ">>>    docker compose up"
 fi
 
 # Change to the esp directory before starting the server
