@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules         import module_ext
 from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
@@ -60,6 +61,20 @@ class AJAXSchedulingModule(ProgramModuleObj):
             "seq": 7,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "ajax_scheduling":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_ajax_scheduling",
+            url="/manage/%s/ajax_scheduling" % base,
+            title="Scheduling",
+            category="Logistics",
+            keywords=["schedule", "rooms", "times", "ajax", "scheduling"],
+        )
+
     def prepare(self, context={}):
         if context is None: context = {}
 
@@ -374,7 +389,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         """
         try:
             lock_level = int(request.POST.get('lock_level', '0'))
-        except:
+        except (ValueError, TypeError):
             lock_level = 0
 
         if request.method == 'POST':
