@@ -48,7 +48,7 @@ registration modules (e.g. grade limits, lottery behaviour, teacher deadlines).
 * SCRMI / CRMI fields reference: `admin/program_modules.rst <admin/program_modules.rst>`_
 
 Themes and Visual Customizations
-=================================
+================================
 
 The ``/themes/`` app lets admins pick a pre-built layout, fill in
 site-specific information (title, contact details, navigation links), and
