@@ -2,14 +2,40 @@
 Data migration: backfill q_filter_json from existing pickle blobs in PersistentQueryFilter.
 
 Rows already populated (q_filter_json is not null) are skipped.
-Rows whose pickle cannot be deserialised are skipped silently; they will
-continue to use the pickle fallback path in get_Q().
+Rows whose pickle cannot be deserialised are skipped silently.
 """
 
+import io
 import pickle
 
 from django.db import migrations
 from django.db.models import Q
+
+
+class RestrictedUnpickler(pickle.Unpickler):
+    """Allow only safe classes required to rebuild Django Q objects."""
+
+    _BUILTINS_WHITELIST = {
+        'list': list,
+        'tuple': tuple,
+        'dict': dict,
+        'set': set,
+        'frozenset': frozenset,
+        'slice': slice,
+    }
+
+    def find_class(self, module, name):
+        if module == 'django.db.models.query_utils' and name == 'Q':
+            return Q
+        if module == 'builtins' and name in self._BUILTINS_WHITELIST:
+            return self._BUILTINS_WHITELIST[name]
+        raise pickle.UnpicklingError(
+            f"Global '{module}.{name}' is not allowed in restricted unpickler"
+        )
+
+
+def restricted_loads(data):
+    return RestrictedUnpickler(io.BytesIO(data)).load()
 
 
 # ── helpers (duplicated here so the migration is self-contained) ──────────────
@@ -18,7 +44,9 @@ def _q_to_json(q_obj):
     """Recursively convert a Q object to a JSON-serialisable dict."""
     if not isinstance(q_obj, Q):
         # Leaf node: a tuple like ('field__lookup', value)
-        return list(q_obj)
+        if isinstance(q_obj, tuple):
+            return list(q_obj)
+        return q_obj
     return {
         'connector': q_obj.connector,
         'negated': q_obj.negated,
@@ -36,19 +64,20 @@ def migrate_pqf_data(apps, schema_editor):
             skipped += 1
             continue
         try:
-            q_obj = pickle.loads(bytes(pqf.q_filter))
+            q_obj = restricted_loads(bytes(pqf.q_filter))
             pqf.q_filter_json = _q_to_json(q_obj)
-            pqf.save(update_fields=['q_filter_json'])
+            pqf.q_filter = b''
+            pqf.save(update_fields=['q_filter_json', 'q_filter'])
             updated += 1
         except Exception:
-            # Unpicklable row — leave it for the pickle fallback path.
+            # Unparseable row — leave it for manual remediation.
             skipped += 1
 
     print(f"\n  PersistentQueryFilter backfill: {updated} migrated, {skipped} skipped")
 
 
 def reverse_migration(apps, schema_editor):
-    # Simply clear the JSON field; the pickle column is still intact.
+    # Simply clear the JSON field.
     PQF = apps.get_model('users', 'PersistentQueryFilter')
     PQF.objects.update(q_filter_json=None)
 

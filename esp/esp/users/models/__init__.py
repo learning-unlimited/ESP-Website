@@ -87,11 +87,6 @@ from esp.utils import cmp
 
 from urllib.parse import quote
 
-try:
-    import pickle
-except ImportError:
-    import pickle
-
 DEFAULT_USER_TYPES = [
     ['Student', {'label': 'Student (up through 12th grade)', 'profile_form': 'StudentProfileForm'}],
     ['Teacher', {'label': 'Volunteer Teacher', 'profile_form': 'TeacherProfileForm'}],
@@ -2180,9 +2175,6 @@ class PersistentQueryFilter(models.Model):
         json_filter_str = json.dumps(json_filter_data, sort_keys=True)
         sha1_hash_val = hashlib.sha1(json_filter_str.encode('utf-8')).hexdigest()
 
-        # Legacy pickle serialization for migration period
-        dumped_filter = pickle.dumps(q_filter)
-
         # Deal with multiple instances
         query_q = Q(item_model = str(item_model), sha1_hash = sha1_hash_val)
         pqfs = PersistentQueryFilter.objects.filter(query_q)
@@ -2193,7 +2185,8 @@ class PersistentQueryFilter(models.Model):
                 item_model = str(item_model),
                 sha1_hash = sha1_hash_val,
                 defaults={
-                    'q_filter': dumped_filter,
+                    # Keep deprecated binary column empty for new rows.
+                    'q_filter': b'',
                     'q_filter_json': json_filter_data
                 }
             )
@@ -2209,15 +2202,13 @@ class PersistentQueryFilter(models.Model):
                 QObj = json_to_q(self.q_filter_json)
             except Exception as e:
                 raise ESPError(f'Invalid JSON Q object stored in database: {e}')
-        # Fallback to legacy pickle field if JSON is not present
+        # Legacy pickled filters are intentionally not deserialized at runtime.
         elif self.q_filter:
-            try:
-                QObj = pickle.loads(self.q_filter)
-                # To aid migration, let's save the converted version
-                self.q_filter_json = q_to_json(QObj)
-                self.save(update_fields=['q_filter_json'])
-            except Exception:
-                raise ESPError('Invalid pickled Q object stored in database.')
+            raise ESPError(
+                'Legacy pickled query filter data is present, but q_filter_json is missing. '
+                'Runtime deserialization of pickled filters is disabled for security; '
+                'migrate this record to q_filter_json.'
+            )
 
         if QObj is None:
             raise ESPError('No query filter found in database record.')
@@ -2234,7 +2225,8 @@ class PersistentQueryFilter(models.Model):
         item_model - The new item model, or None if it should stay the same.
         description - The new filter description.
         should_save - If True (default), this PQF will be saved after setting the new filter.
-        restrict_to_active - If True (default) and the filter is on users, automatically add an is_active=True filter.
+        restrict_to_active - Deprecated; preserved for backward compatibility and ignored.
+                             Restriction to active users is applied only when calling get_Q().
         """
         import hashlib
         if item_model is not None:
@@ -2245,8 +2237,8 @@ class PersistentQueryFilter(models.Model):
         json_filter_str = json.dumps(self.q_filter_json, sort_keys=True)
         self.sha1_hash = hashlib.sha1(json_filter_str.encode('utf-8')).hexdigest()
 
-        # Legacy pickle serialization for migration period
-        self.q_filter = pickle.dumps(q_filter)
+        # Keep deprecated binary column empty for updated rows.
+        self.q_filter = b''
 
         self.useful_name = description
         if should_save:
@@ -2469,6 +2461,8 @@ def q_to_json(q_obj):
     """Recursively convert a Q object to a JSON-serializable dictionary."""
     if not isinstance(q_obj, Q):
         # Leaf node: a tuple like ('field__lookup', value).
+        if isinstance(q_obj, tuple):
+            return list(q_obj)
         return q_obj
     return {
         'connector': q_obj.connector,
@@ -2483,8 +2477,8 @@ def json_to_q(data):
     Only AND / OR / XOR connectors are accepted; anything else raises
     ValueError to prevent injection of unexpected query operators.
     """
-    if isinstance(data, list):
-        # Leaf node: a tuple like ['field__lookup', value].
+    if isinstance(data, (list, tuple)):
+        # Leaf node: a tuple/list like ['field__lookup', value].
         return Q(tuple(data))
     connector = data.get('connector', 'AND')
     if connector not in _ALLOWED_Q_CONNECTORS:
@@ -2553,6 +2547,7 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/All", "All classes deadlines"),
             ("Teacher/Classes/View", "View registered classes"),
             ("Teacher/Classes/Edit", "Edit registered classes"),
+            ("Teacher/Classes/CancelReq", "Request class cancellation"),
             ("Teacher/Classes/Coteachers", "Add or remove coteachers"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),

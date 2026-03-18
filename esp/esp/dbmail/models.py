@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 import json
 import logging
 logger = logging.getLogger(__name__)
-import pickle
 import re
 import sys
 
@@ -514,23 +513,26 @@ class MessageVars(models.Model):
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
         newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
-        
-        # New JSON-based serialization
-        try:
-            provider_class_name = obj.__class__.__name__
-            pk = obj.pk
-            newMessageVar.provider_info = {
-                'class_name': provider_class_name,
-                'pk': pk
-            }
-        except AttributeError:
-            # This object might not be a standard model instance.
-            # Fallback to pickle for now, but this should be investigated.
-            newMessageVar.pickled_provider = pickle.dumps(obj)
 
-        # Legacy pickle serialization for migration
-        if not newMessageVar.pickled_provider:
-            newMessageVar.pickled_provider = pickle.dumps(obj)
+        # JSON-based serialization is required; legacy pickle storage is disabled.
+        provider_class_name = obj.__class__.__name__
+        if provider_class_name not in PROVIDER_REGISTRY:
+            raise ESPError(
+                f"Cannot serialize provider class {provider_class_name!r}: "
+                "class is not in the safe provider registry."
+            )
+
+        pk = getattr(obj, 'pk', None)
+        if pk is None:
+            raise ESPError(
+                "Cannot serialize provider object for MessageVars: missing 'pk'. "
+                "Legacy pickled_provider storage is no longer supported."
+            )
+
+        newMessageVar.provider_info = {
+            'class_name': provider_class_name,
+            'pk': pk
+        }
 
         newMessageVar.save()
         return newMessageVar
@@ -554,24 +556,13 @@ class MessageVars(models.Model):
                 raise ESPError(f"Could not find provider instance for {class_name} with pk={pk}")
             return provider
 
-        # Fallback to legacy pickle field (historical data only).
+        # Legacy pickled_provider data is intentionally never deserialized at runtime.
         if self.pickled_provider:
-            try:
-                provider = pickle.loads(self.pickled_provider)
-            except Exception:
-                raise ESPError('Could not deserialise pickled variable provider object.')
-            # Guard: only trust pickled objects whose class is in the safe registry.
-            class_name = provider.__class__.__name__
-            if class_name not in PROVIDER_REGISTRY:
-                raise ESPError(
-                    f"Pickled provider class '{class_name}' is not in the safe registry. "
-                    "Refusing to use it."
-                )
-            # Migrate on-the-fly to JSON so future reads skip pickle entirely.
-            if hasattr(provider, 'pk'):
-                self.provider_info = {'class_name': class_name, 'pk': provider.pk}
-                self.save(update_fields=['provider_info'])
-            return provider
+            raise ESPError(
+                "Legacy pickled provider data is present but provider_info is missing. "
+                "Runtime deserialization of pickled_provider is disabled; "
+                "please migrate this record to use provider_info."
+            )
 
         raise ESPError('No provider information found for this message variable.')
 
