@@ -86,7 +86,9 @@ tbody > tr:hover {
         {% endif %}
         {% endwith %}
       </td>
-      <td data-st-key="{{ user.get_last_program_with_profile.dates.0|date:'Ymd' }}">{{ user.get_last_program_with_profile }}</td>
+      {% with user.get_last_program_with_profile as last_program %}
+      <td data-st-key="{% if last_program and last_program.dates %}{{ last_program.dates.0|date:'Ymd' }}{% endif %}">{{ last_program }}</td>
+      {% endwith %}
       <td>{% if user.is_active %}<span>&#10003;</span>{% endif %}</td>
     </tr>
     {% endfor %}

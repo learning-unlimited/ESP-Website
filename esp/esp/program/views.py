@@ -476,26 +476,28 @@ def find_user(userstr):
     # worth noting that a username may be an integer or an email so we will just check them all
     found_users = None
     if len(userstr_parts) == 1:
-        # Try username?
-        user_q = Q(username__iexact=userstr)
-        # Try user id
+        exact_q = Q(username__iexact=userstr)
         if userstr.isnumeric():
-            user_q = user_q | Q(id=userstr)
-        # Try email
+            exact_q = exact_q | Q(id=userstr)
         if '@' in userstr:  # Don't even bother hitting the DB if it doesn't even have an '@'
-            user_q = user_q | Q(email__iexact=userstr)
-            user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # Search parent contact info, too
-        # Try phone
+            exact_q = exact_q | Q(email__iexact=userstr)
+            exact_q = exact_q | Q(contactinfo__e_mail__iexact=userstr)  # Search parent contact info, too
+
         cleaned = userstr
         for char in "-.() ":
             cleaned = cleaned.replace(char, "")
         if cleaned.isnumeric() and len(cleaned) == 10:
             formatted = "%s%s%s-%s%s%s-%s%s%s%s" % tuple(cleaned)
-            user_q = user_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
+            exact_q = exact_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
+
+        exact_users = ESPUser.objects.filter(exact_q).distinct()
+        if userstr.isnumeric() and exact_users.exists():
+            return exact_users
+
         # Try name (including parent/emergency contact)
-        user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
-        user_q = user_q | (Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr))
-        found_users = ESPUser.objects.filter(user_q).distinct()
+        fuzzy_q = Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr)
+        fuzzy_q = fuzzy_q | Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr)
+        found_users = ESPUser.objects.filter(exact_q | fuzzy_q).distinct()
     else:
         q_list = []
         for i in range(len(userstr_parts)):
