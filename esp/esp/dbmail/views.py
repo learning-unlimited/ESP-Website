@@ -32,16 +32,18 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-# Create your views here.
 
-from django.shortcuts import render, get_object_or_404, redirect
+import logging
+logger = logging.getLogger(__name__)
+
+from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from esp.dbmail.models import MessageRequest, send_mail
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, admin_required
+from esp.utils.web import render_to_response
 
 
-@login_required
+@admin_required
 def preview_email(request, message_request_id):
     """
     Preview how an email will look before sending to all recipients.
@@ -54,8 +56,9 @@ def preview_email(request, message_request_id):
     sample_user = recipients.first() if recipients.exists() else request.user
 
     # Render the email template with sample user data
-    subject = msg_req.parseSmartText(msg_req.subject, sample_user)
-    msgtext = msg_req.parseSmartText(msg_req.msgtext, sample_user)
+    # Normalize None to empty string so parseSmartText doesn't render "None"
+    subject = msg_req.parseSmartText(msg_req.subject or '', sample_user)
+    msgtext = msg_req.parseSmartText(msg_req.msgtext or '', sample_user)
 
     # Determine sender
     if msg_req.sender and len(msg_req.sender.strip()) > 0:
@@ -74,10 +77,10 @@ def preview_email(request, message_request_id):
         'recipient_count': recipients.count(),
     }
 
-    return render(request, 'dbmail/preview_email.html', context)
+    return render_to_response('dbmail/preview_email.html', request, context)
 
 
-@login_required
+@admin_required
 def send_test_email(request, message_request_id):
     """
     Send a test email to the logged-in admin's email address.
@@ -89,21 +92,9 @@ def send_test_email(request, message_request_id):
     msg_req = get_object_or_404(MessageRequest, id=message_request_id)
     admin_user = request.user
 
-    # Choose a sample recipient for rendering, defaulting to the admin.
-    sample_recipient = admin_user
-    get_sample_recipient = getattr(msg_req, 'get_sample_recipient', None)
-    if callable(get_sample_recipient):
-        try:
-            candidate = get_sample_recipient()
-            if candidate is not None:
-                sample_recipient = candidate
-        except Exception:
-            # Fall back to admin_user if sample recipient resolution fails
-            pass
-
-    # Render email with sample recipient's data (but send to admin's address)
-    subject = msg_req.parseSmartText(msg_req.subject, sample_recipient)
-    msgtext = msg_req.parseSmartText(msg_req.msgtext, sample_recipient)
+    # Render email with admin's own data (send to admin's address)
+    subject = msg_req.parseSmartText(msg_req.subject or '', admin_user)
+    msgtext = msg_req.parseSmartText(msg_req.msgtext or '', admin_user)
 
     # Determine sender
     if msg_req.sender and len(msg_req.sender.strip()) > 0:
@@ -114,7 +105,6 @@ def send_test_email(request, message_request_id):
         send_from = 'ESP Web Site <esp@mit.edu>'
 
     try:
-        # Send test email
         send_mail(
             subject=subject,
             message=msgtext,
@@ -124,8 +114,9 @@ def send_test_email(request, message_request_id):
             extra_headers=msg_req.special_headers_dict,
             user=admin_user
         )
-        messages.success(request, f'Test email sent successfully to {admin_user.email}')
-    except Exception as e:
-        messages.error(request, f'Failed to send test email: {str(e)}')
+        messages.success(request, 'Test email sent successfully to {}'.format(admin_user.email))
+    except Exception:
+        logger.exception('Failed to send test email for MessageRequest %d', msg_req.id)
+        messages.error(request, 'Failed to send test email. Please check the server logs or contact support.')
 
     return redirect('preview_email', message_request_id=message_request_id)
