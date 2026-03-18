@@ -8,7 +8,11 @@
 {% if module.isStep %}
 <tr>
 <td>{% if module.useTemplate %}
+{% if is_module_page %}
+<a href="{{ mainpage_url }}" title="{{ module.module.link_title }}">{{ module.module.link_title }}</a>
+{% else %}
 <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">{{ module.module.link_title }}</a> <i>(below)</i>
+{% endif %}
 {% else %}
     {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
 {% endif %}
@@ -18,6 +22,8 @@
 </td>
 <td>{% if not module.useTemplate %}
 <a href="{{ module.get_full_path }}">
+{% elif is_module_page %}
+<a href="{{ mainpage_url }}">
 {% else %}
 <a href="#module-{{ module.id }}">
 {% endif %}
