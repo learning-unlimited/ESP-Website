@@ -82,7 +82,7 @@ def generate_user(role, group, program=None):
     user.last_name = fake.last_name()
     user.first_name = fake.first_name()
     user.set_password(password)
-    role_group = Group.objects.get(name=role)
+    role_group = Group.objects.get_or_create(name=role)[0]
     other_group = Group.objects.get_or_create(name=group)[0]
     user.groups.add(role_group, other_group)
     user.save()
