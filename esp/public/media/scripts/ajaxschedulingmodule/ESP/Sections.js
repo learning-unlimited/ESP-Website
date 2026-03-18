@@ -959,10 +959,22 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.getBaseUrlString = function() {
         var path = window.location.pathname || "";
         var parts = path.split("/");
+
+        // Remove any trailing empty segment caused by a trailing slash.
+        if (parts.length > 0 && parts[parts.length - 1] === "") {
+            parts.pop();
+        }
+
         // Remove the current view segment (e.g. ajax_scheduling).
         if (parts.length > 0) {
             parts.pop();
         }
+
+        // If nothing is left, we are at the site root.
+        if (parts.length === 0) {
+            return "/";
+        }
+
         return parts.join("/") + "/";
     };
 
