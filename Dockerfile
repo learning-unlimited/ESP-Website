@@ -26,13 +26,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     $(grep -v '^python' /tmp/packages_base.txt | grep -v '^#' | grep -v '^$' | grep -v 'build-essential' | grep -v 'libpq-dev' | grep -v 'libcurl' | grep -v 'libssl' | grep -v 'libmemcached' | grep -v 'libevent' | grep -v 'zlib' | grep -v 'libjpeg' | grep -v 'libfreetype' | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js for LESS (secure method with GPG verification)
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x bullseye main" > /etc/apt/sources.list.d/nodesource.list \
-    && apt-get update \
+
+# Install Node.js for LESS
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
-
 # Install LESS globally
 RUN npm install -g less@1.7.5
 
