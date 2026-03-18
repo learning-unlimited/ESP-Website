@@ -247,6 +247,35 @@ class ClearExistingConstraintsTest(ProgramFrameworkTest):
             "Constraints should be gone after clearing"
         )
 
+    def test_clear_existing_constraints_removes_stale_lunch_sections_and_subjects(self):
+        """Lunch sections outside configured lunch slots and empty subjects should be deleted."""
+        day = list(self.gen.days.keys())[0]
+        lunch_subject = self.gen.get_lunch_subject(day)
+        stale_section = lunch_subject.add_section(status=ClassStatus.ACCEPTED)
+        stale_section.meeting_times.add(self.all_ts[0])
+
+        orphan_subject = ClassSubject.objects.create(
+            parent_program=self.program,
+            category=self.gen.get_lunch_category(),
+            title='Unused Lunch',
+            class_size_max=10,
+            grade_min=7,
+            grade_max=12,
+            status=ClassStatus.ACCEPTED,
+            message_for_directors=day.isoformat(),
+        )
+
+        self.gen.clear_existing_constraints()
+
+        self.assertFalse(
+            ClassSection.objects.filter(id=stale_section.id).exists(),
+            "Stale lunch sections outside configured lunch slots should be deleted",
+        )
+        self.assertFalse(
+            ClassSubject.objects.filter(id=orphan_subject.id).exists(),
+            "Empty lunch subjects should be deleted",
+        )
+
 
 class GenerateConstraintTest(ProgramFrameworkTest):
     """Integration tests for end-to-end constraint generation."""
@@ -273,6 +302,36 @@ class GenerateConstraintTest(ProgramFrameworkTest):
         constraint = constraints[0]
         self.assertIsNotNone(constraint.condition)
         self.assertIsNotNone(constraint.requirement)
+
+    def test_generate_constraint_with_conditions_adds_and_operator(self):
+        """When conditions are enabled, the check expression should combine halves with AND."""
+        gen = LunchConstraintGenerator(
+            self.program, lunch_timeslots=self.lunch_ts,
+            generate_constraints=False, include_conditions=True,
+            autocorrect=False
+        )
+        day = list(gen.days.keys())[0]
+        subj = gen.get_lunch_subject(day)
+        subj.refresh_from_db()
+        gen.get_lunch_sections(day)
+        gen.generate_constraint(day)
+
+        constraint = ScheduleConstraint.objects.filter(program=self.program).first()
+        tokens = list(constraint.condition.booleantoken_set.values_list('text', flat=True))
+        self.assertIn('AND', tokens)
+
+    def test_get_failure_function_lists_lunch_timeslot_ids(self):
+        """Failure-function code should embed the configured lunch timeslot ids."""
+        gen = LunchConstraintGenerator(
+            self.program, lunch_timeslots=self.lunch_ts,
+            generate_constraints=True, autocorrect=True
+        )
+        day = list(gen.days.keys())[0]
+        failure_code = gen.get_failure_function(day)
+
+        for timeslot in self.lunch_ts:
+            self.assertIn(str(timeslot.id), failure_code)
+        self.assertIn('lunch_choices', failure_code)
 
     def test_generate_all_constraints_creates_per_day(self):
         """generate_all_constraints creates constraints for each day with lunch."""
