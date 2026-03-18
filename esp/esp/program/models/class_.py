@@ -2159,11 +2159,6 @@ class ClassCategories(models.Model):
     def used_by_classes(self):
         return ClassSubject.objects.filter(category=self).exists()
 
-    @property
-    def is_lunch(self):
-        """Return True if this category represents Lunch (case-insensitive)."""
-        return self.category is not None and self.category.lower() == 'lunch'
-
     class Meta:
         verbose_name_plural = 'Class categories'
         app_label = 'program'

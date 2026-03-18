@@ -52,7 +52,6 @@ from localflavor.us.forms import USStateSelect
 
 from django.contrib.sites.models import Site
 from django.core.cache import cache
-from django.db.models.signals import post_save, post_delete
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import signals, Min
@@ -1335,10 +1334,10 @@ def update_email_delete(**kwargs):
     return update_email(**kwargs)
 
 
-# Invalidate DBListCount cache on ESPUser changes
-@dispatch.receiver(post_save, sender=ESPUser,
+# Invalidate DBListCount cache on user changes
+@dispatch.receiver(signals.post_save, sender=User,
                    dispatch_uid='invalidate_dblistcount_cache_post_save')
-@dispatch.receiver(post_delete, sender=ESPUser,
+@dispatch.receiver(signals.post_delete, sender=User,
                    dispatch_uid='invalidate_dblistcount_cache_post_delete')
 def invalidate_dblistcount_cache(sender, **kwargs):
     """Bump the version so all existing DBListCount cache entries become stale."""
