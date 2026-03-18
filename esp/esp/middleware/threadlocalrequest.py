@@ -21,6 +21,14 @@ except ImportError:
 def get_current_request():
     return getattr(_threading_local, 'request', None)
 
+def clear_current_request():
+    """Remove the thread-local request, if any.
+
+    Useful in tests where a stale request may reference a rolled-back user.
+    """
+    if hasattr(_threading_local, 'request'):
+        del _threading_local.request
+
 def AutoRequestContext(*args, **kwargs):
     """
     Create a context with access to the current request.
@@ -54,31 +62,25 @@ def AutoRequestContext(*args, **kwargs):
             retVal = retVal.flatten()
         else:
             # Django 3.0+: RequestContext is not available
-            # Create a basic context and manually apply context processors
-            from django.template.context_processors import csrf, request as request_context_processor
+            # Build context using the engine's configured context_processors
+            from django.template.context import make_context
+            from django.conf import settings
 
             # Start with provided context data
             ctx_data = {}
             if args and isinstance(args[0], dict):
                 ctx_data.update(args[0])
 
-            # Add the request to context
-            ctx_data['request'] = request
-
-            # Manually apply common context processors
+            # Use the template engine's make_context to apply all configured processors
             try:
-                csrf_token = csrf(request)
-                ctx_data.update(csrf_token)
+                engine = settings.TEMPLATES[0]['ENGINE']
+                context_processors = settings.TEMPLATES[0].get('OPTIONS', {}).get('context_processors', [])
+                retVal = make_context(ctx_data, request=request)
+                # make_context applies context processors, so we're done
             except Exception:
-                pass
-
-            try:
-                request_ctx = request_context_processor(request)
-                ctx_data.update(request_ctx)
-            except Exception:
-                pass
-
-            retVal = ctx_data
+                # Fallback if engine config is not available
+                ctx_data['request'] = request
+                retVal = ctx_data
 
     # We need to return a dictionary-like object
     if isinstance(retVal, dict):

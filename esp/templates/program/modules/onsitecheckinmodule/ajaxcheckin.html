@@ -1,83 +1,167 @@
 {% extends "main.html" %}
-
-{% block title %}{{program.niceName}} Management{% endblock %}
-
-{% block stylesheets %}
-{{ block.super }}
-<link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+{% block title %}{{ program.niceName }} Management{% endblock title %} {% block stylesheets %} {{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 
 <style type="text/css">
-.nocheckmark { border: 1px solid black; }
-table {
+  .nocheckmark {
+    border: 1px solid black;
+  }
+  table {
     table-layout: fixed;
     width: 100%;
-}
-#id_target_user {
+  }
+  #id_target_user {
     width: calc(100% - 10px);
-}
+  }
 </style>
-{% endblock %}
-
+{% endblock stylesheets %}
 {% block content %}
 <br />
-<br />
+<div id="program_form">
+  <br /><br />
+  <h1>Barcode Checkin &mdash; For {{ program.niceName }}</h1>
+  <p style="margin: 10px 10px 20px 10px">
+    <a
+      href="/onsite/{{ program.url }}/barcodecheckin"
+      class="button"
+      style="font-size: 1.5em; padding: 15px 40px; background-color: #c6def7; border: 2px solid #369; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; color: black;"
+    >
+      Barcode Checkin
+    </a>
+  </p>
 
-<br /><br />
-<h1>Rapid Checkin &mdash; For {{ program.niceName }}</h1>
+  <h1>Rapid Checkin &mdash; For {{ program.niceName }}</h1>
+  <p style="margin: 10px">
+    Welcome to student check-in for {{program.niceName}}. Make sure that the
+    students have handed in all necessary forms and payments.
+  </p>
 
-<div id='program_form'>
-
-<p style="margin: 10px">
-Welcome to student check-in for {{program.niceName}}.  Make sure that the students have handed in all necessary forms and payments.
-
-{% if message %}
-<div align="center" class="alert alert-info">
-  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-  {{ message }}
-</div>
-{% endif %}
-
-<form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
-<table>
-    <col width="85%">
-    <col width="15%">
+  <table style="margin-bottom: 20px">
     <tr>
-        <th colspan="2">
-            Choose Students to Check In
-        </th>
+      <th>Filters</th>
     </tr>
     <tr>
+      <td style="padding: 10px">
+        <label for="grade_filter" style="font-weight: bold; margin-right: 5px"
+          >Grade:</label
+        >
+        <select id="grade_filter" style="margin-right: 20px; padding: 3px">
+          <option value="">All Grades</option>
+          <option value="7">7th Grade</option>
+          <option value="8">8th Grade</option>
+          <option value="9">9th Grade</option>
+          <option value="10">10th Grade</option>
+          <option value="11">11th Grade</option>
+          <option value="12">12th Grade</option>
+        </select>
+
+        <label
+          for="last_name_filter"
+          style="font-weight: bold; margin-right: 5px"
+          >Last Name:</label
+        >
+        <select id="last_name_filter" style="padding: 3px">
+          <option value="">All</option>
+          <option value="A-G">A - G</option>
+          <option value="H-N">H - N</option>
+          <option value="O-Z">O - Z</option>
+        </select>
+      </td>
+    </tr>
+  </table>
+
+  {% if message %}
+  <div align="center" class="alert alert-info">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <form
+    id="checkinform"
+    name="checkinform"
+    method="POST"
+    action="{{ request.path }}"
+  >
+    <table>
+      <col width="85%" />
+      <col width="15%" />
+      <tr>
+        <th colspan="2">Choose Students to Check In</th>
+      </tr>
+      <tr>
         <td>
-            <table>
-                <col width="20%">
-                <col width="80%">
-                {{ form }}
-            </table>
+          <table>
+            <col width="20%" />
+            <col width="80%" />
+            {{ form }}
+          </table>
         </td>
         <td align="center">
-            <input class="button" type="submit" value="Check-In" />
+          <input class="button" type="submit" value="Check-In" />
         </td>
-    </tr>
-</table>
+      </tr>
+    </table>
+  </form>
 
-</form>
+  <br />
+  {% load render_qsd %} {% render_inline_program_qsd program "onsite:status" %}
 
-<br />
-{% load render_qsd %}
-{% render_inline_program_qsd program "onsite:status" %}
-
-<h1>Advanced Checkin &mdash; For {{ program.niceName }}</h1>
-<p style="margin: 10px;">
-  <a href="/onsite/{{ program.url }}/checkin">Click here to view and edit the check-in of a user</a>
-</p>
-
-<h1>Barcode Checkin &mdash; For {{ program.niceName }}</h1>
-<p style="margin: 10px;">
-  <a href="/onsite/{{ program.url }}/barcodecheckin">Click here to check in many users at once by ID</a>
-</p>
-
+  <h1>Advanced Checkin &mdash; For {{ program.niceName }}</h1>
+  <p style="margin: 10px">
+    <a href="/onsite/{{ program.url }}/checkin"
+      >Click here to view and edit the check-in of a user</a
+    >
+  </p>
 </div>
 
 {% include "program/modules/onsitecore/returnlink.html" %}
 
-{% endblock %}
+<script type="text/javascript">
+  (function () {
+    var $ = window.$j || window.jQuery;
+    if (!$) return;
+    var programId = "{{ program.id }}";
+
+    $(function () {
+      var $field = $("#id_target_user");
+      var $data = $("#id_target_user_data");
+      if ($field.length === 0 || $data.length === 0) return;
+      if ($field.data("esp-rapid-checkin-filters")) return;
+      $field.data("esp-rapid-checkin-filters", true);
+
+      $field.autocomplete({
+        source: function (request, response) {
+          $.ajax({
+            url: "/admin/ajax_autocomplete/",
+            dataType: "json",
+            data: {
+              model_module: "esp.users.models",
+              model_name: "ESPUser",
+              ajax_func: "ajax_autocomplete_student",
+              ajax_data: request.term,
+              prog: programId,
+              grade: $("#grade_filter").val(),
+              last_name_range: $("#last_name_filter").val(),
+              limit: 25,
+            },
+            success: function (data) {
+              var items = (data && data.result) ? data.result : [];
+              response($.map(items, function (item) {
+                return { label: item.ajax_str, value: item.ajax_str, id: item.id };
+              }));
+            },
+          });
+        },
+        select: function (event, ui) {
+          $data.val(ui.item.id);
+        },
+        change: function (event, ui) {
+          $data.val(ui.item ? ui.item.id : "");
+        },
+      });
+    });
+  })();
+</script>
+{% endblock content %}
+{% block javascript %}{{ block.super }}{% endblock javascript %}
