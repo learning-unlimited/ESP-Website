@@ -251,7 +251,13 @@ def _get_type_url(type):
 
     return _really_get_type_url
 
+class ProgramManager(models.Manager):
+    def get_queryset(self):
+        # this explicitly adds the ordering to every query
+        return super().get_queryset().order_by('-id')
+
 class Program(models.Model, CustomFormsLinkModel):
+    objects = ProgramManager()
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
     form_link_name='Program'
