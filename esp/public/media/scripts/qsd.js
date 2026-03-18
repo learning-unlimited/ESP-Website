@@ -140,7 +140,8 @@ function qsd_toggle_history(qsd_url, edit_id)
             html += '<td><small class="qsd_history_snippet">' + escapedSnippet + '</small></td>';
             html += '<td style="white-space:nowrap;">';
             html += '<button type="button" class="btn btn-xs btn-default qsd-view-btn" '
-                  + 'data-edit-id="' + edit_id + '" data-version-id="' + v.version_id + '">'
+                  + 'data-qsd-url="' + qsd_url + '" data-edit-id="' + edit_id + '" '
+                  + 'data-version-id="' + v.version_id + '" data-version-date="' + escapedDate + '">'
                   + '<span class="glyphicon glyphicon-eye-open"></span> View</button> ';
             html += '<button type="button" class="btn btn-xs btn-warning qsd-restore-btn" '
                   + 'data-qsd-url="' + qsd_url + '" data-edit-id="' + edit_id + '" '
@@ -156,7 +157,8 @@ function qsd_toggle_history(qsd_url, edit_id)
         // Use .off() first to prevent duplicate bindings on repeated toggle
         $panel.off('click', '.qsd-view-btn').on('click', '.qsd-view-btn', function() {
             var $btn = $j(this);
-            qsd_preview_version($btn.data('edit-id'), $btn.data('version-id'));
+            qsd_preview_version($btn.data('qsd-url'), $btn.data('edit-id'),
+                                $btn.data('version-id'), $btn.data('version-date'));
         });
         $panel.off('click', '.qsd-restore-btn').on('click', '.qsd-restore-btn', function() {
             var $btn = $j(this);
@@ -170,7 +172,7 @@ function qsd_toggle_history(qsd_url, edit_id)
     });
 }
 
-function qsd_preview_version(edit_id, version_id)
+function qsd_preview_version(qsd_url, edit_id, version_id, version_date)
 {
     var $viewDiv = $j("#inline_qsd_" + edit_id);
     var $editDiv = $j("#inline_edit_" + edit_id);
@@ -180,16 +182,29 @@ function qsd_preview_version(edit_id, version_id)
         $viewDiv.data('original-content', $viewDiv.html());
     }
 
+    // Track which version was last viewed (for highlighting after cancel)
+    var $panel = $j("#qsd_history_panel_" + edit_id);
+    $panel.data('last-viewed-version', version_id);
+
     $j.get("/admin/ajax_qsd_version_preview", { version_id: version_id }, function(data) {
         $viewDiv.html(
             '<div class="alert alert-warning" style="margin-bottom:8px;">'
             + '<span class="glyphicon glyphicon-time"></span> '
             + 'Viewing historical version. '
-            + '<button type="button" class="btn btn-xs btn-default" onclick="qsd_cancel_preview(\'' + edit_id + '\')">'
-            + 'Back to current</button>'
+            + '<button type="button" class="btn btn-xs btn-default qsd-back-to-current-btn">'
+            + '<span class="glyphicon glyphicon-arrow-left"></span> Back to current</button> '
+            + '<button type="button" class="btn btn-xs btn-warning qsd-preview-restore-btn">'
+            + '<span class="glyphicon glyphicon-repeat"></span> Restore this version</button>'
             + '</div>'
             + data.content_html
         );
+        // Bind buttons via jQuery (avoids inline onclick escaping issues)
+        $viewDiv.find('.qsd-back-to-current-btn').on('click', function() {
+            qsd_cancel_preview(edit_id);
+        });
+        $viewDiv.find('.qsd-preview-restore-btn').on('click', function() {
+            qsd_restore_version(qsd_url, edit_id, version_id, version_date);
+        });
         // Show the view div (hidden during inline editing) and hide the editor
         $viewDiv.removeClass('hidden').addClass('qsd_view_visible');
         if ($editDiv.length) {
@@ -213,6 +228,16 @@ function qsd_cancel_preview(edit_id)
     if ($editDiv.length) {
         $viewDiv.removeClass('qsd_view_visible').addClass('hidden');
         $editDiv.removeClass('hidden').addClass('qsd_edit_visible');
+    }
+    // Highlight the last-viewed version's View button in the history panel
+    var $panel = $j("#qsd_history_panel_" + edit_id);
+    var lastViewed = $panel.data('last-viewed-version');
+    if (lastViewed) {
+        $panel.find('.qsd-view-btn').removeClass('qsd-last-viewed');
+        $panel.find('.qsd-last-viewed-label').remove();
+        var $btn = $panel.find('.qsd-view-btn[data-version-id="' + lastViewed + '"]');
+        $btn.addClass('qsd-last-viewed');
+        $btn.after('<span class="qsd-last-viewed-label"> ← last viewed</span>');
     }
 }
 

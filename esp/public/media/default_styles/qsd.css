@@ -90,3 +90,15 @@ textarea.qsd_fullsize
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+.qsd-last-viewed {
+    background-color: #d9edf7;
+    border-color: #31708f;
+    color: #31708f;
+}
+
+.qsd-last-viewed-label {
+    font-size: 11px;
+    color: #31708f;
+    font-style: italic;
+}
