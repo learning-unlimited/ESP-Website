@@ -311,12 +311,7 @@ def ajax_qsd_preview(request):
     # Get the URL
     url = request.POST.get('url', '')
     # Try to look up an existing QSD by URL, if any
-    qsd = None
-    if url:
-        try:
-            qsd = QuasiStaticData.objects.get_by_url(url)
-        except QuasiStaticData.DoesNotExist:
-            qsd = None
+    qsd = QuasiStaticData.objects.get_by_url(url) if url else None
 
     if qsd is not None:
         # Existing QSD: ensure it is enabled and use its canonical URL
