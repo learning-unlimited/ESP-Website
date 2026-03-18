@@ -1,7 +1,7 @@
-from django.conf.urls import url
+from django.urls import re_path
 from esp.random import views
 
 urlpatterns = [
-    url(r'^/?$', views.main),
-    url(r'^/ajax$', views.ajax),
+    re_path(r'^/?$', views.main),
+    re_path(r'^/ajax$', views.ajax),
 ]
