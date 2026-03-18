@@ -71,8 +71,8 @@ def render_to_latex(filepath, context_dict=None, file_type='pdf'):
     which must be one of those from FILE_MIME_TYPES.
     """
     if file_type not in FILE_MIME_TYPES:
-        raise ESPError('Invalid type received for latex generation: %s should '
-                       'be one of %s' % (file_type, ', '.join(FILE_MIME_TYPES)))
+        raise ESPError(f'Invalid type received for latex generation: {file_type} should '
+                       f'be one of {", ".join(FILE_MIME_TYPES)}')
 
     context_dict = context_dict or {}
 
@@ -150,10 +150,10 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
     # makes it easier to call subprocess.call() with these values.
     call = partial(subprocess.call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
 
-    retcode = call(['pdflatex'] + LATEX_OPTIONS + ['%s.tex' % file_base])
+    retcode = call(['pdflatex'] + LATEX_OPTIONS + [f'{file_base}.tex'])
 
     try:
-        with open('%s.log' % file_base) as f:
+        with open(f'{file_base}.log') as f:
             tex_log = f.read()
     except Exception as e:
         # In this case, there's not much to do except error -- pdflatex will
@@ -163,7 +163,7 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
         # although it's a little tricky since we have to make sure to buffer
         # the pipe correctly -- see c42bd1b9.
         raise ESPError('Could not read log file; something has gone horribly '
-                       'wrong.  Error details: %s' % e)
+                       f'wrong.  Error details: {e}')
 
     if file_type == 'log':
         # If we're getting the log, an error is fine -- we're probably trying
@@ -174,10 +174,9 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
         # didn't work.
         # TODO(benkraft): Try to extract the actual error out of pdflatex's
         # various output.  Or use stdout, which is a bit less noisy.
-        raise ESPError('LaTeX failed with code %s; try looking at the log '
+        raise ESPError(f'LaTeX failed with code {retcode}; try looking at the log '
                        'file.  Here are '
-                       'the last 1000 characters of the log: %s'
-                       % (retcode, tex_log[-1000:]))
+                       f'the last 1000 characters of the log: {tex_log[-1000:]}')
     elif 'No pages of output' in tex_log:
         # One common problem (which LaTeX doesn't treat as an error) is
         # selecting no students, which results in no output (thus a nonexistent
@@ -187,11 +186,11 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
                        'any users?')
 
     if file_type == 'svg':
-        retcode = call(['inkscape', '%s.pdf' % file_base, '-l',
-                        '%s.svg' % file_base])
+        retcode = call(['inkscape', f'{file_base}.pdf', '-l',
+                        f'{file_base}.svg'])
     elif file_type == 'png':
-        retcode = call(['convert', '-density', '192', '%s.pdf' % file_base,
-                        '%s.png' % file_base])
+        retcode = call(['convert', '-density', '192', f'{file_base}.pdf',
+                        f'{file_base}.png'])
 
     if retcode:
         raise ESPError("Postprocessing failed; try downloading as PDF.")
@@ -209,8 +208,8 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
         # We probably shouldn't get here -- this means either LaTeX failed,
         # LaTeX generated no output, or a postprocessor failed, all of which we
         # handle above.  But we'll at least return a specific error.
-        raise ESPError('No output file %s found; try looking at the log '
-                       'file.' % out_file)
+        raise ESPError(f'No output file {out_file} found; try looking at the log '
+                       'file.')
     with open(out_file, 'rb') as f:
         return f.read()
 
