@@ -190,3 +190,51 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec2.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
 
+    def test_ajax_clearslot_allows_removal_without_cannotremove_block(self):
+        program = self.program
+
+        # Pick a student and log in
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+            "Couldn't log in as student %s" % student.username
+        )
+
+        # Register one section
+        sec1 = random.choice(program.sections())
+        sec1.preregister_student(student)
+
+        # Pick a non-conflicting section without using problematic queryset exact lookup
+        sec1_timeslot_ids = set(sec1.meeting_times.values_list('id', flat=True))
+        available_sections = []
+        for sec in program.sections().exclude(parent_class__id=sec1.parent_class.id):
+            sec_timeslot_ids = set(sec.meeting_times.values_list('id', flat=True))
+            if sec1_timeslot_ids.isdisjoint(sec_timeslot_ids):
+                available_sections.append(sec)
+
+        if not available_sections:
+            self.skipTest('No non-conflicting sections available for this random configuration')
+
+        sec2 = random.choice(available_sections)
+        sec2.preregister_student(student)
+
+        # Confirm both show first
+        response = self.client.get(
+            '/learn/%s/ajax_schedule' % program.getUrlBase(),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.expect_sections_in_schedule(response, [sec1, sec2])
+
+        # Clear sec1 timeslot
+        response = self.client.get(
+            '/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec1.meeting_times.all()[0].id),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # Ensure no cannot-remove style error is present
+        body = str(response.content, encoding='UTF-8')
+        self.assertFalse('Cannot remove class' in body)
+        self.assertFalse("can't remove this class" in body)
+
+        # Ensure only sec2 remains
+        self.expect_sections_in_schedule(response, [sec2])

@@ -695,13 +695,9 @@ class StudentClassRegModule(ProgramModuleObj):
         #   Narrow this down to one class if we're using the priority system.
         if 'sec_id' in request.GET:
             oldclasses = oldclasses.filter(id=request.GET['sec_id'])
-        #   Take the student out if constraints allow
+        #   Remove the student from the sections
         for sec in oldclasses:
-            result = sec.cannotRemove(request.user)
-            if result and not hasattr(request.user, "onsite_local"):
-                return result
-            else:
-                sec.unpreregister_student(request.user, verbs)
+            sec.unpreregister_student(request.user, verbs)
         #   Return the ID of classes that were removed.
         return oldclasses.values_list('id', flat=True)
 
