@@ -128,12 +128,10 @@ def _send_refund_notification_email(program, refund_results, is_error=False):
     domain_name = Site.objects.get_current().domain
 
     if is_error:
-        subject = '[ ESP Refund ERROR ] Stripe refund error on %s for %s' % (
-            domain_name, program.niceName())
+        subject = f'[ ESP Refund ERROR ] Stripe refund error on {domain_name} for {program.niceName()}'
         template = 'accounting/refund_error_email.txt'
     else:
-        subject = '[ ESP Refund ] Stripe refunds issued on %s for %s' % (
-            domain_name, program.niceName())
+        subject = f'[ ESP Refund ] Stripe refunds issued on {domain_name} for {program.niceName()}'
         template = 'accounting/refund_success_email.txt'
 
     context = {
@@ -304,13 +302,13 @@ def process_refund(request):
         except stripe.error.InvalidRequestError as e:
             result['error_message'] = str(e)
             has_errors = True
-            logger.error("Stripe refund InvalidRequestError for charge %s: %s",
-                         transfer.transaction_id, str(e))
+            logger.warning("Stripe refund InvalidRequestError for charge %s: %s",
+                           transfer.transaction_id, str(e))
         except stripe.error.StripeError as e:
             result['error_message'] = str(e)
             has_errors = True
-            logger.error("Stripe refund error for charge %s: %s",
-                         transfer.transaction_id, str(e))
+            logger.warning("Stripe refund error for charge %s: %s",
+                           transfer.transaction_id, str(e))
 
         refund_results.append(result)
 

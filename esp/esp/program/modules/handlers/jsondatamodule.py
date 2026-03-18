@@ -73,6 +73,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             "choosable": 1,
             } ]
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # All views are JSON endpoints (e.g. for autoscheduler); do not list in admin search.
+        return None
+
     """ Warning: for performance reasons, these views are not abstracted away from
         the models.  If the schema is changed this code will need to be updated.
     """
