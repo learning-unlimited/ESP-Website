@@ -23,7 +23,7 @@ def mux_tl(str, type):
     if len(splitstr) < 2 or splitstr[0] != "":
         return str
     elif splitstr[1] in ("teach", "learn", "manage", "onsite", "volunteer"):
-        return ("/%s/" % type) + "/".join(splitstr[2:])
+        return f"/{type}/" + "/".join(splitstr[2:])
     else:
         return str
 
@@ -86,7 +86,7 @@ def extract_theme(url):
                 max_chars_matched = num_chars_matched
                 tab_index = i
             i += 1
-    return 'tabcolor%d' % tab_index
+    return f'tabcolor{tab_index}'
 
 @register.filter
 def get_nav_category(path):
