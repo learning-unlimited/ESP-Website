@@ -205,8 +205,7 @@ def lists_containing(user):
 
     args = [MM_PATH + "find_member", search_regex]
     data = Popen(args, stdout=PIPE, stderr=PIPE).communicate()
-    data = data[0].split('\n')
-
+    data = data[0].decode('utf-8').split('\n') # we were trying to split binary data (data[0]) with split.
     # find_member's output is of the form
     #
     # [addr] found in:
