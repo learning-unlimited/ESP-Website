@@ -1,7 +1,20 @@
 Directory Structure
 ===================
 
-This is not intended to be an exhaustive list, just a summary with some comments, to help new devs find things.  Starting in the root of the repository:
+This is not intended to be an exhaustive list, just a summary with some comments, to help new devs find things. 
+
+Quick Reference: Where to Start
+-------------------------------
+If you are a new contributor looking to make common changes, here are the highest-impact locations:
+
+* **Routing / URLs**: ``esp/esp/urls.py`` is the master entrypoint for routing.
+* **HTML Templates**: ``esp/templates/`` contains the frontend UI templates.
+* **Static Files (CSS/JS)**: ``esp/public/media/`` contains stylesheets, JavaScript, and images.
+* **Core Logic**: ``esp/esp/program/`` contains the bulk of the business logic.
+
+Full Directory Tree
+-------------------
+Starting in the root of the repository:
 
 * ``docs``: Fairly new and therefore very incomplete; add to it!
 
