@@ -233,7 +233,6 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.staticfiles',
     'esp.users.apps.UsersConfig',
-    'esp.miniblog',
     'esp.web.apps.WebConfig',
     'esp.program.apps.ProgramConfig',
     'esp.program.modules.apps.ModulesConfig',

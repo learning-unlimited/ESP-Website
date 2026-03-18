@@ -7,6 +7,16 @@ ENV PYTHONUNBUFFERED=1
 # Skip manage.py's virtualenv activation hack
 ENV VIRTUAL_ENV=/usr
 
+# Prevent interactive popups during apt-get install (e.g., tzdata)
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Configure apt-get retries and timeouts for heavy LaTeX downloads
+RUN printf '%s\n' \
+    'Acquire::http::Timeout "120";' \
+    'Acquire::https::Timeout "120";' \
+    'Acquire::ftp::Timeout "120";' \
+    'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99custom
+
 # Set the working directory
 WORKDIR /app
 
