@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
@@ -258,7 +260,7 @@ def morph_into_user(request):
         onsite = None
     request.user.switch_to_user(request,
                                 morph_user,
-                                reverse('manage_userview') + '?username=' + morph_user.username,
+                                '%s?%s' % (reverse('manage_userview'), urlencode({'username': morph_user.username})),
                                 'User Search for '+morph_user.name(),
                                 onsite is not None)
 
