@@ -46,8 +46,9 @@ from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 
 from django.contrib.auth.models import Group
-from django.test import LiveServerTestCase
+from django.test import LiveServerTestCase, TransactionTestCase
 from django.test.client import Client
+import threading
 from django import forms
 
 from esp.program.controllers.classreg import get_custom_fields
@@ -2039,8 +2040,7 @@ class HeardAboutNormalizationTest(TestCase):
         self.assertEqual(self._normalize("...!!!"), "")
 
 
-import threading
-from django.test import TransactionTestCase
+
 
 
 class ClassConcurrencyTest(TransactionTestCase):
@@ -2053,7 +2053,7 @@ class ClassConcurrencyTest(TransactionTestCase):
     """
 
     def setUp(self):
-        from esp.program.models import ClassSubject, ClassSection, Program, RegistrationType
+        from esp.program.models import ClassSubject, Program
         from esp.program.models.category import ClassCategories
         from esp.users.models import ESPUser
 
