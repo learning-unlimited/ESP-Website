@@ -42,7 +42,7 @@ RUN pip install --upgrade pip setuptools wheel && \
 
 
 # Runtime stage - smaller final image
-FROM python:3.7-slim-bullseye as runtime
+FROM python:3.7-slim-bullseye AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
