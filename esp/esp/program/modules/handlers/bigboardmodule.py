@@ -296,7 +296,7 @@ class BigBoardModule(ProgramModuleObj):
 
         `times` should be a list of tuples, sorted by time, containing some metric (duration, capacity, etc.) and datetime.datetime objects
         `start` and `end` should be datetimes; the chunks will be for hours between them, inclusive.
-        `cumulative` should be a boolean determining whether counts should be summed cumulatively for conseculative hours or if they should only be summed within individual hours
+        `cumulative` should be a boolean determining whether counts should be summed cumulatively for consecutive hours or if they should only be summed within individual hours
         Returns a list of integers, each of which is the number of times that
         precede the given hour.
         """
