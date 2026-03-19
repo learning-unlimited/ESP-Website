@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='k12school',
             name='city',
-            field=models.CharField(blank=True, help_text='City. Used for display and filtering.', max_length=128, null=True),
+            field=models.CharField(blank=True, db_index=True, help_text='City. Used for display and filtering.', max_length=128, null=True),
         ),
         migrations.AlterField(
             model_name='k12school',

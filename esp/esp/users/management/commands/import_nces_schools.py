@@ -33,7 +33,7 @@ Usage:
 import csv
 import os
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from esp.users.models import K12School
 
@@ -120,8 +120,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         csv_path = options['csv']
         if not os.path.isfile(csv_path):
-            self.stderr.write(self.style.ERROR('File not found: %s' % csv_path))
-            return
+            raise CommandError('File not found: %s' % csv_path)
 
         name_col = options['name_col']
         city_col = options['city_col']
@@ -141,7 +140,7 @@ class Command(BaseCommand):
         errors = 0
 
         try:
-            with open(csv_path, 'r', encoding=encoding, errors='replace') as f:
+            with open(csv_path, 'r', encoding=encoding, errors='replace', newline='') as f:
                 # Try to detect dialect
                 try:
                     dialect = csv.Sniffer().sniff(f.read(4096))
@@ -152,8 +151,7 @@ class Command(BaseCommand):
 
                 reader = csv.DictReader(f, dialect=dialect)
                 if not reader.fieldnames:
-                    self.stderr.write(self.style.ERROR('CSV has no header row or is empty.'))
-                    return
+                    raise CommandError('CSV has no header row or is empty.')
 
                 # Normalize column names: some NCES files have extra spaces
                 fieldnames = [fn.strip() for fn in reader.fieldnames]
@@ -161,14 +159,13 @@ class Command(BaseCommand):
 
                 for col in (name_col, city_col, state_col, id_col):
                     if col not in fieldnames:
-                        self.stderr.write(
-                            self.style.ERROR(
-                                'Column "%s" not found. Available: %s'
-                                % (col, ', '.join(fieldnames[:20]))
-                                + (' ...' if len(fieldnames) > 20 else '')
-                            )
+                        available = ', '.join(fieldnames[:20])
+                        if len(fieldnames) > 20:
+                            available += ' ...'
+                        raise CommandError(
+                            'Column "%s" not found. Available: %s'
+                            % (col, available)
                         )
-                        return
 
                 for row in reader:
                     if limit is not None and (created + updated + skipped) >= limit:
@@ -181,52 +178,54 @@ class Command(BaseCommand):
 
                     city = safe_str(row.get(city_col))
                     state = safe_str(row.get(state_col))
-                    if state and len(state) > 2:
+                    if state:
                         state = state[:2].upper()
                     ext_id = safe_str(row.get(id_col))
                     school_type = safe_str(row.get(type_col)) if type_col else None
 
-                    if dry_run:
-                        created += 1
-                        continue
-
+                    # Look up existing school (same logic for both dry-run and real import)
                     school = None
                     if ext_id:
                         school = K12School.objects.filter(school_id=ext_id).first()
                     if not school and name and state:
                         # Re-import: match by name+state when no NCES ID
                         school = K12School.objects.filter(
-                            name=name, state=state
+                            name__iexact=name, state__iexact=state
                         ).first()
 
                     if school:
                         updated += 1
-                        school.name = name
-                        school.city = city
-                        school.state = state
-                        if school_type:
-                            school.school_type = school_type
-                        school.save()
+                        if not dry_run:
+                            school.name = name
+                            school.city = city
+                            school.state = state
+                            if school_type:
+                                school.school_type = school_type
+                            if ext_id:
+                                school.school_id = ext_id
+                            school.save()
                     else:
                         created += 1
-                        try:
-                            K12School.objects.create(
-                                name=name,
-                                city=city,
-                                state=state,
-                                school_id=ext_id or None,
-                                school_type=school_type,
-                            )
-                        except Exception as e:
-                            errors += 1
-                            if errors <= 5:
-                                self.stderr.write(
-                                    self.style.ERROR('Error creating "%s": %s' % (name, e))
+                        if not dry_run:
+                            try:
+                                K12School.objects.create(
+                                    name=name,
+                                    city=city,
+                                    state=state,
+                                    school_id=ext_id or None,
+                                    school_type=school_type,
                                 )
+                            except Exception as e:
+                                errors += 1
+                                if errors <= 5:
+                                    self.stderr.write(
+                                        self.style.ERROR('Error creating "%s": %s' % (name, e))
+                                    )
 
+        except CommandError:
+            raise
         except Exception as e:
-            self.stderr.write(self.style.ERROR('Failed to read CSV: %s' % e))
-            return
+            raise CommandError('Failed to read CSV: %s' % e)
 
         self.stdout.write(
             self.style.SUCCESS(

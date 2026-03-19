@@ -28,7 +28,7 @@
             <tr>
                 <td>Teacher(s):</td>
                 <td>
-                    {% for t in section.parent_class.get_teachers %}{% ifnotequal t user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}<br />
+                    {% for t in section.parent_class.get_teachers %}{% if t != user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}<br />
                     (<a href="mailto:{{ section.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}">email</a>)
                 </td>
             </tr>

@@ -12,25 +12,22 @@ user_is_staff = user_passes_test(lambda u: u.is_authenticated and u.is_staff and
 @user_is_staff
 """
 
-def autocomplete_wrapper(function, data, is_staff, prog, request=None):
+def autocomplete_wrapper(function, data, is_staff, **kwargs):
     """Call the model's ajax_autocomplete; pass request if the function accepts it."""
-    args = [data]
-    if prog:
-        args.append(prog)
-    kwargs = {}
+    # Only pass 'request' if the function actually accepts it
     try:
         sig = inspect.signature(function)
-        if 'request' in sig.parameters:
-            kwargs['request'] = request
+        if 'request' not in sig.parameters:
+            kwargs.pop('request', None)
     except (TypeError, ValueError):
-        pass
+        kwargs.pop('request', None)
     if is_staff:
-        return function(*args, **kwargs)
+        return function(data, **kwargs)
     # Unwrap classmethod/bound method to get the underlying function
     fn = getattr(function, '__func__', function)
     code = getattr(fn, '__code__', None)
     if code and 'allow_non_staff' in code.co_varnames:
-        return function(*args, **kwargs)
+        return function(data, **kwargs)
     return []
 
 @login_required
@@ -45,7 +42,9 @@ def ajax_autocomplete(request):
         model_name   = request.GET['model_name']
         ajax_func    = request.GET.get('ajax_func', 'ajax_autocomplete')
         data         = request.GET['ajax_data']
-        prog         = request.GET.get('prog', '')
+        prog         = request.GET['prog']
+        grade        = request.GET.get('grade')
+        last_name_range = request.GET.get('last_name_range')
     except (KeyError, ValueError):
         # bad request
         response = HttpResponse('Malformed Input')
@@ -55,15 +54,23 @@ def ajax_autocomplete(request):
     # import the model
     Model = getattr(__import__(model_module, (), (), [str(model_name)]), model_name)
 
+    from esp.program.models import Program
+    try:
+        prog_obj = Program.objects.get(id=prog)
+    except (Program.DoesNotExist, ValueError):
+        prog_obj = None
+
+    kwargs = {'grade': grade, 'last_name_range': last_name_range, 'prog': prog_obj, 'request': request}
+
     func = getattr(Model.objects, ajax_func) if hasattr(Model.objects, ajax_func) else getattr(Model, ajax_func)
-    query_set = autocomplete_wrapper(func, data, request.user.is_staff, prog, request=request)
+    query_set = autocomplete_wrapper(func, data, request.user.is_staff, **kwargs)
 
     output = list(query_set[:limit])
     output2 = []
     for item in output:
-        output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
+        output2.append({'id': item['id'], 'ajax_str': f'{item["ajax_str"]} ({item["id"]})'})
 
-    content = json.dumps({'result':output2})
+    content = json.dumps({'result': output2})
 
     return HttpResponse(content,
-                        content_type = 'javascript/javascript')
+                        content_type='javascript/javascript')

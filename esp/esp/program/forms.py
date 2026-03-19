@@ -78,6 +78,7 @@ class SchoolMultiSelectField(forms.MultipleChoiceField):
                 code='invalid_choice',
                 params={'value': v},
             )
+        self.run_validators(value)
         return value
 
 
@@ -383,6 +384,34 @@ class StatisticsQueryForm(forms.Form):
         self.fields['school_multisel'].choices = school_choices
         self.fields['school_multisel'].widget = SchoolMultiSelectWithSearchWidget(attrs=None, choices=school_choices)
 
+        # Preserve dynamically-added K12:<id> options on bound forms (e.g., after validation errors)
+        if self.is_bound:
+            field_name = self.add_prefix('school_multisel')
+            data = None
+            if hasattr(self.data, 'getlist'):
+                data = self.data.getlist(field_name)
+            else:
+                data = self.data.get(field_name)
+            if data:
+                if not isinstance(data, (list, tuple)):
+                    data = [data]
+                k12_ids = []
+                for value in data:
+                    if isinstance(value, str) and value.startswith('K12:'):
+                        try:
+                            k12_id = int(value.split(':', 1)[1])
+                        except (ValueError, IndexError):
+                            continue
+                        k12_ids.append(k12_id)
+                if k12_ids:
+                    existing_values = {choice[0] for choice in self.fields['school_multisel'].choices}
+                    for school in K12School.objects.filter(id__in=k12_ids):
+                        choice_value = 'K12:%s' % school.id
+                        if choice_value not in existing_values:
+                            choice_label = str(school)
+                            self.fields['school_multisel'].choices += ((choice_value, choice_label),)
+                    self.fields['school_multisel'].widget.choices = self.fields['school_multisel'].choices
+
     def clean(self):
         """ Check that either 'All Programs' is selected or a program is selected   """
         if not self.cleaned_data['program_type_all']:
@@ -526,7 +555,8 @@ class ClassFlagForm(forms.ModelForm):
 class FlagTypeForm(forms.ModelForm):
     class Meta:
         model = ClassFlagType
-        fields = ['name', 'color', 'seq', 'show_in_scheduler', 'show_in_dashboard']
+        fields = ['name', 'color', 'seq', 'show_in_scheduler', 'show_in_dashboard',
+                  'show_to_teacher', 'notify_teacher_by_email']
 
 class RecordTypeForm(forms.ModelForm):
     def clean_name(self):
