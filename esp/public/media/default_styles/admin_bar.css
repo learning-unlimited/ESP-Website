@@ -1,10 +1,15 @@
+:root {
+	/* Offset to prevent the admin bar from overlapping with themes' headers */
+	--adminbar-offset-top: 55px;
+}
+
 #adminbar {
 	background: none repeat scroll 0 0 #EEEEEE;
 	border: 1px solid #AAAAAA;
 	right: 20px;
 	left: auto;
 	position: absolute;
-	top: 55px;
+	top: var(--adminbar-offset-top, 55px);
 	width: 200px;
 	z-index: 1000000;
 	text-align: center;
