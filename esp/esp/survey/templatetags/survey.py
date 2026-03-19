@@ -165,6 +165,10 @@ def histogram(answer_list, args='format=html'):
     import tempfile
 
     image_width = 2.75
+    HISTOGRAM_DEVICE_WIDTH_PT = 216
+    HISTOGRAM_DEVICE_HEIGHT_PT = 162
+    HISTOGRAM_DPI = 192
+    HISTOGRAM_HTML_WIDTH_PX = 288 # to achieve Nx downscale ratio -> (DEVICE_WIDTH_PT * DPI / 72) / N
 
     args_dict = QueryDict(args)
 
@@ -251,14 +255,20 @@ def histogram(answer_list, args='format=html'):
     elif args_dict.get('format') == 'html':
         image_path = os.path.join(HISTOGRAM_DIR, png_filename)
     if not os.path.exists(image_path):
-        subprocess.call(['gs', '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
-                         '-dDEVICEWIDTHPOINTS=220', '-dDEVICEHEIGHTPOINTS=165',
-                         '-sDEVICE=png16m', '-r288',
-                         '-sOutputFile=' + image_path, file_name])
+        subprocess.call([
+            'gs',
+            '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
+            f'-dDEVICEWIDTHPOINTS={HISTOGRAM_DEVICE_WIDTH_PT}',
+            f'-dDEVICEHEIGHTPOINTS={HISTOGRAM_DEVICE_HEIGHT_PT}',
+            '-sDEVICE=png16m',
+            f'-r{HISTOGRAM_DPI}',
+            '-sOutputFile=' + image_path,
+            file_name
+        ])
     if args_dict.get('format') == 'tex':
         return f'\\includegraphics[width={image_width}in]{{{image_path}}}'
     if args_dict.get('format') == 'html':
-        return f'<img src="/media/{HISTOGRAM_PATH}{png_filename}" style="width: 288px; max-width: 100%; height: auto;"/>'
+        return f'<img src="/media/{HISTOGRAM_PATH}{png_filename}" style="width: {HISTOGRAM_HTML_WIDTH_PX}px; max-width: 100%; height: auto;"/>'
 
 @register.filter
 def answer_to_list(ans):
