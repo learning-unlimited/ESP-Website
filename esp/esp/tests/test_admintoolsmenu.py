@@ -1,0 +1,91 @@
+"""
+Tests for esp/admintoolsmenu.py
+Source: admintoolsmenu.py
+
+Tests the CustomMenu class used for the Django admin interface.
+Covers:
+  - Initialization: correct number of children added
+  - Dashboard MenuItem is present and links to the admin index
+  - Bookmarks item is present
+  - Applications AppList (excludes django.contrib.*)
+  - Administration AppList (only django.contrib.*)
+  - init_with_context delegates to super without error
+"""
+
+from django.test import TestCase, RequestFactory
+from django.contrib.admin import site as admin_site
+
+from admin_tools.menu import items
+
+from admintoolsmenu import CustomMenu
+
+
+class CustomMenuInitTest(TestCase):
+    """Tests for CustomMenu.__init__()"""
+
+    def setUp(self):
+        self.menu = CustomMenu()
+
+    def test_init_creates_four_children(self):
+        """CustomMenu should add exactly 4 items to self.children."""
+        self.assertEqual(len(self.menu.children), 4)
+
+    def test_dashboard_item_is_first(self):
+        """First child should be a MenuItem (the Dashboard link)."""
+        first = self.menu.children[0]
+        self.assertIsInstance(first, items.MenuItem)
+
+    def test_dashboard_item_title(self):
+        """Dashboard MenuItem title should contain 'Dashboard'."""
+        first = self.menu.children[0]
+        # title may be a lazy translation object; str() it for comparison
+        self.assertIn('Dashboard', str(first.title))
+
+    def test_bookmarks_item_is_second(self):
+        """Second child should be a Bookmarks instance."""
+        second = self.menu.children[1]
+        self.assertIsInstance(second, items.Bookmarks)
+
+    def test_applications_applist_is_third(self):
+        """Third child should be an AppList named 'Applications'."""
+        third = self.menu.children[2]
+        self.assertIsInstance(third, items.AppList)
+        self.assertIn('Applications', str(third.title))
+
+    def test_applications_applist_excludes_contrib(self):
+        """Applications AppList should exclude django.contrib.*"""
+        third = self.menu.children[2]
+        self.assertIn('django.contrib.*', third.exclude)
+
+    def test_administration_applist_is_fourth(self):
+        """Fourth child should be an AppList named 'Administration'."""
+        fourth = self.menu.children[3]
+        self.assertIsInstance(fourth, items.AppList)
+        self.assertIn('Administration', str(fourth.title))
+
+    def test_administration_applist_includes_only_contrib(self):
+        """Administration AppList should only include django.contrib.*"""
+        fourth = self.menu.children[3]
+        self.assertIn('django.contrib.*', fourth.models)
+
+
+class CustomMenuInitWithContextTest(TestCase):
+    """Tests for CustomMenu.init_with_context()"""
+
+    def test_init_with_context_does_not_raise(self):
+        """
+        init_with_context should delegate to super() and not raise any errors.
+        We pass a minimal mock context (a plain dict) since the base
+        Menu.init_with_context accepts any context-like object.
+        """
+        menu = CustomMenu()
+        factory = RequestFactory()
+        request = factory.get('/')
+        # admin_tools Menu.init_with_context accepts any object;
+        # using a dict simulates a minimal context.
+        try:
+            menu.init_with_context({'request': request})
+        except Exception as e:
+            self.fail(
+                f"init_with_context raised an unexpected exception: {e}"
+            )
