@@ -1184,6 +1184,19 @@ class BaseESPUser(object):
         return schoolyear + 12 - yog
 
     @staticmethod
+    def grade_in_range(grade, grade_min, grade_max):
+        """Return True if grade satisfies [grade_min, grade_max].
+
+        Grade 0 is the sentinel value returned by getGrade() when a student
+        has no graduation year on their profile.  It means "unknown / unset"
+        and should be treated as "any grade" rather than literal grade 0, so
+        we allow such students through every grade-range check.
+        """
+        if grade == 0:
+            return True
+        return grade_min <= grade <= grade_max
+
+    @staticmethod
     def YOGFromGrade(grade, schoolyear=None):
         if schoolyear is None:
             schoolyear = ESPUser.current_schoolyear()
