@@ -50,12 +50,12 @@
 <big><b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.</big>
 </div>
 
-{% ifequal scrmi.progress_mode 1 %}
+{% if scrmi.progress_mode == 1 %}
     {% include "program/modules/checkboxes.html" %}
-{% endifequal %}
-{% ifequal scrmi.progress_mode 2 %}
+{% endif %}
+{% if scrmi.progress_mode == 2 %}
     {% include "program/modules/progressbar.html" %}
-{% endifequal %}
+{% endif %}
 
 {% if records %}
 {% render_inline_program_qsd program record_steps %}
