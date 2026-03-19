@@ -78,11 +78,10 @@ class FormstackForm(object):
         # get submissions from the API
         api_response = self.formstack.data(self.id, {'per_page': 100})
         submission_docs = api_response['submissions']
-        for i in range(1, api_response['pages']):
-            api_response = self.formstack.data(self.id,
-                                               {'per_page': 100, 'page': i+1})
+        total_pages = api_response['pages']
+        for page in range(2, total_pages + 1):
+            api_response = self.formstack.data(self.id, {'per_page': 100, 'page': page})
             submission_docs += api_response['submissions']
-
         # make FormstackSubmission objects
         submissions = []
         for submission_doc in submission_docs:
