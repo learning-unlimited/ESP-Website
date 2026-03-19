@@ -102,7 +102,7 @@ class PermissionAdmin(admin.ModelAdmin):
             message_bit = "1 permission was"
         else:
             message_bit = f"{rows_updated} permissions were"
-        self.message_user(request, f"{message_bit} successfully expired.")
+        self.message_user(request, f"{message_bit} successfully renewed.")
     renew.short_description = "Renew permissions"
 
 admin_site.register(Permission, PermissionAdmin)

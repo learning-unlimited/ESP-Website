@@ -2046,8 +2046,8 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             value['ajax_str'] = f"{value['last_name']}, {value['first_name']} ({value['e_mail']})"
         return values
 
-        def ajax_str(self):
-            return f"{self.last_name}, {self.first_name} ({self.e_mail})"
+    def ajax_str(self):
+        return f"{self.last_name}, {self.first_name} ({self.e_mail})"
 
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data, contactInfo, prefix=''):
