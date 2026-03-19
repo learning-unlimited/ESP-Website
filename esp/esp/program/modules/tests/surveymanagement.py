@@ -44,7 +44,9 @@ class SurveyManagementTest(ProgramFrameworkTest):
         pm = ProgramModule.objects.get(handler='SurveyManagement')
         self.module = ProgramModuleObj.getFromProgModule(self.program, pm)
         self.admin = self.admins[0]
-        self.base_url = '%ssurveys/manage' % self.program.get_manage_url()
+        self.base_url = '/manage/%s/surveys/manage' % (
+            self.program.getUrlBase()
+        )
 
     def test_survey_manage_page_loads(self):
         """Test that survey management page loads for admin."""
