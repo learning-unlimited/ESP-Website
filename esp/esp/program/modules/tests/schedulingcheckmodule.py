@@ -148,10 +148,10 @@ class SchedulingCheckModuleTest(ProgramFrameworkTest):
         self._schedule_section(sections[2], slot_0, 'Room 2', [moderator_c])
         self._schedule_section(sections[3], slot_0, 'Room 3', [moderator_d])
 
-        self._schedule_section(sections[4], slot_1, 'Room 2', [moderator_a])
+        self._schedule_section(sections[4], slot_1, 'Room 4', [moderator_a])
         self._schedule_section(sections[5], slot_1, 'Room 0', [moderator_b])
         self._schedule_section(sections[6], slot_1, 'Room 1', [moderator_c])
-        self._schedule_section(sections[7], slot_1, 'Room 3', [moderator_d])
+        self._schedule_section(sections[7], slot_1, 'Room 2', [moderator_d])
 
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         results = runner.moderator_movement_dependency_loops()
