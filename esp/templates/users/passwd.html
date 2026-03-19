@@ -2,6 +2,11 @@
 
 {% block title %}Change Account Password{% endblock %}
 
+{% block stylesheets %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="/media/default_styles/auth-forms.css" />
+{% endblock %}
+
 {% block content %}
 <h1>Account Management &ndash; Change Password </h1>
 {% if Success %}
@@ -56,5 +61,7 @@ Your password has been successfully changed.
 
 <p style="text-align: center"><input type='submit' value='-  Change My Password  -' class='btn btn-primary'></p>
 </form>
+<script src="/media/scripts/auth-forms.js"></script>
 {% endif %}
+
 {% endblock %}

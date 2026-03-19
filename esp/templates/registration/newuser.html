@@ -2,6 +2,11 @@
 
 {% block title %}Create a new user account{% endblock %}
 
+{% block stylesheets %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="/media/default_styles/auth-forms.css" />
+{% endblock %}
+
 {% block content %}
 {% if accounts %}
 <div class="note">
@@ -86,5 +91,7 @@
   document.getElementById('id_first_name').focus();
 //-->
 </script>
+
+<script src="/media/scripts/auth-forms.js"></script>
 
 {% endblock %}
