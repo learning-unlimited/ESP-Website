@@ -140,7 +140,7 @@ class ESPUserTest(TestCase):
             finally:
                 user.delete()
 
-    def test_unsubscribe_oneclick_vulnerability(self):
+    def testUnsubscribeOneclickVulnerability(self):
         """Test that one-click unsubscribe requires a valid token."""
         user = ESPUser.objects.create(username='vuln_test_user', is_active=True)
         try:
@@ -150,6 +150,12 @@ class ESPUserTest(TestCase):
             response = self.client.post(
                 reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': invalid_token}),
                 data={'List-Unsubscribe': 'One-Click'}
+            )
+            
+            # The request with an invalid token should not succeed with a 2xx status.
+            self.assertFalse(
+                200 <= response.status_code < 300,
+                f"Expected invalid token request to be rejected, got status {response.status_code}",
             )
             
             # Refresh user from database
