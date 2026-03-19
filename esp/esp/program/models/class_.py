@@ -290,7 +290,12 @@ class ClassManager(Manager):
         count = classes.count()
         return classes[random.randint(0, count - 1)]
 
+class ClassSectionManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().order_by('id')
+
 class ClassSection(models.Model):
+    objects = ClassSectionManager()
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
 
