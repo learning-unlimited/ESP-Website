@@ -179,7 +179,7 @@ class QuasiStaticData(models.Model):
                 if url_parts[0] == 'programs':
                     return (progs[0], '/'.join(url_parts[3:]))
                 else:
-                    return (progs[0], '%s:' % url_parts[0] + '/'.join(url_parts[3:]))
+                    return (progs[0], f'{url_parts[0]}:' + '/'.join(url_parts[3:]))
 
         return None
 
