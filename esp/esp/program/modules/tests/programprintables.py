@@ -62,7 +62,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         """
         Login admin user
         """
-        self.failUnless(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
     def get_response(self, view_name, user_type, list_name):
         #   Log in an administrator
@@ -175,8 +175,9 @@ class TestAllClassesSelectionForm(ProgramFrameworkTest):
         self.assertFalse(form.is_valid())
 
     def test_class_subject_fields_accepted(self):
-        """Ensure that field names of ClassSubject are accepted"""
-        params = {'subject_fields':[field.name for field in ClassSubject._meta.fields]}
+        """Ensure that field names of ClassSubject are accepted (excluding intentionally excluded fields)"""
+        params = {'subject_fields': [field.name for field in ClassSubject._meta.fields
+                                     if field.name not in AllClassesFieldConverter.exclude_fields]}
         form = AllClassesSelectionForm(self.program, params)
         self.assertTrue(form.is_valid())
 

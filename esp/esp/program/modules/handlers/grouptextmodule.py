@@ -127,7 +127,7 @@ class GroupTextModule(ProgramModuleObj):
         users = filterobj.getList(ESPUser)
         try:
             users = users.distinct()
-        except:
+        except (TypeError, AttributeError):
             pass
 
         if not users:

@@ -7,6 +7,16 @@ ENV PYTHONUNBUFFERED=1
 # Skip manage.py's virtualenv activation hack
 ENV VIRTUAL_ENV=/usr
 
+# Prevent interactive popups during apt-get install (e.g., tzdata)
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Configure apt-get retries and timeouts for heavy LaTeX downloads
+RUN printf '%s\n' \
+    'Acquire::http::Timeout "120";' \
+    'Acquire::https::Timeout "120";' \
+    'Acquire::ftp::Timeout "120";' \
+    'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99custom
+
 # Set the working directory
 WORKDIR /app
 
@@ -17,7 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install LESS via npm (from packages_base_manual_install.sh)
-RUN npm install --prefix /usr less@1.7.5 -g
+RUN npm install --prefix /usr less@3.13.1 -g
 
 # Copy requirements first for better Docker layer caching
 COPY esp/requirements.txt /app/esp/requirements.txt
