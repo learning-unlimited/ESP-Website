@@ -39,7 +39,11 @@ def initial_passwd_request(request, success=None):
             for user in users:
                 user.recoverPassword()
 
-            return HttpResponseRedirect('/%s/success/' % request.path.strip('/'))
+            url = f"/{request.path.strip('/')}/success/"
+            from django.utils.http import is_safe_url
+            if not is_safe_url(url=url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+                url = '/'
+            return HttpResponseRedirect(url)
 
 
     else:

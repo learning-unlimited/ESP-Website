@@ -209,7 +209,7 @@ def unsubscribe(request, username, token, oneclick = False):
         if users_active.exists():
             user = users_active[0]
         else:
-            raise ESPError("User " + users[0].username + " is already unsubscribed.")
+            raise ESPError(f"User {users[0].username} is already unsubscribed.")
     else:
         raise ESPError("No user matching that unsubscribe request.")
 
@@ -233,7 +233,7 @@ def unsubscribe(request, username, token, oneclick = False):
     # so show the login page (with a custom alert message)
     else:
         next_url = reverse('unsubscribe', kwargs={'username': username, 'token': token,})
-        return HttpResponseRedirect('%s?next=%s' % (reverse('login'), next_url))
+        return HttpResponseRedirect(f"{reverse('login')}?next={next_url}")
 
 # have an email client (etc) POST to this view to process a
 # "oneclick" unsubscribe
@@ -258,12 +258,12 @@ def morph_into_user(request):
         onsite = None
     request.user.switch_to_user(request,
                                 morph_user,
-                                '/manage/userview?username=' + morph_user.username,
-                                'User Search for '+morph_user.name(),
+                                f"/manage/userview?username={morph_user.username}",
+                                f"User Search for {morph_user.name()}",
                                 onsite is not None)
 
     if onsite is not None:
-        return HttpResponseRedirect('/learn/%s/studentreg' % onsite.getUrlBase())
+        return HttpResponseRedirect(f'/learn/{onsite.getUrlBase()}/studentreg')
     else:
         return HttpResponseRedirect('/')
 
