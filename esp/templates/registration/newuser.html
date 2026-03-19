@@ -2,6 +2,20 @@
 
 {% block title %}Create a new user account{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<style>
+.auth-form .control-group {
+  margin-top: 10px;
+}
+.auth-form .form-actions {
+  padding-left: 180px;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+</style>
+{% endblock stylesheets %}
+
 {% block content %}
 {% if accounts %}
 <div class="note">
@@ -56,7 +70,7 @@
 {% end_inline_qsd_block %}
 </div>
 <div>
-<form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well">
+<form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal auth-form well">
   <fieldset>
     <h3>User Account Creation Form</h3>
 
