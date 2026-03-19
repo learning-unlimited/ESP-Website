@@ -1,0 +1,29 @@
+{
+  "name": "devsite",
+  "version": "1.0.0",
+  "description": "[![Lint and Unit Tests](https://github.com/learning-unlimited/ESP-Website/actions/workflows/tests.yml/badge.svg)](https://github.com/learning-unlimited/ESP-Website/actions/workflows/tests.yml)\r [![codecov](https://codecov.io/gh/learning-unlimited/ESP-Website/branch/main/graph/badge.svg?token=eY0C5a1Lju)](https://codecov.io/gh/learning-unlimited/ESP-Website)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/learning-unlimited/ESP-Website.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/learning-unlimited/ESP-Website/issues"
+  },
+  "homepage": "https://github.com/learning-unlimited/ESP-Website#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "globals": "^17.4.0"
+  }
+}
