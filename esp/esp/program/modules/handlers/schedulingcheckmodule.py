@@ -306,7 +306,7 @@ class SchedulingCheckRunner:
             name_heading = "Teacher's Name"
         d = self._timeslot_dict(slot=lambda: {})
         l = []
-        for s in self._all_class_sections():
+        for s in self._all_class_sections(include_walkins=False):
             mt =  s.get_meeting_times()
             for t in mt:
                 for teach in s.teachers:
