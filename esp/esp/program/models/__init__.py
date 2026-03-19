@@ -2258,6 +2258,13 @@ class StudentRegistration(ExpirableModel):
 
     class Meta:
         app_label = 'program'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'section', 'relationship'],
+                condition=Q(end_date__isnull=True),
+                name='unique_active_enrollment'
+            )
+        ]
 
     def __str__(self):
         return f'{self.user} {self.relationship} in {self.section}'
