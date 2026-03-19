@@ -1336,11 +1336,17 @@ def update_email_delete(**kwargs):
     return update_email(**kwargs)
 
 
-# Invalidate DBListCount cache on user changes
+# Invalidate DBListCount cache on user changes.
+# Register both ESPUser (proxy model) and User senders so cache invalidation
+# works regardless of which model class was used to persist the change.
+@dispatch.receiver(signals.post_save, sender=ESPUser,
+                   dispatch_uid='invalidate_dblistcount_cache_espuser_post_save')
+@dispatch.receiver(signals.post_delete, sender=ESPUser,
+                   dispatch_uid='invalidate_dblistcount_cache_espuser_post_delete')
 @dispatch.receiver(signals.post_save, sender=User,
-                   dispatch_uid='invalidate_dblistcount_cache_post_save')
+                   dispatch_uid='invalidate_dblistcount_cache_user_post_save')
 @dispatch.receiver(signals.post_delete, sender=User,
-                   dispatch_uid='invalidate_dblistcount_cache_post_delete')
+                   dispatch_uid='invalidate_dblistcount_cache_user_post_delete')
 def invalidate_dblistcount_cache(sender, **kwargs):
     """Bump the version so all existing DBListCount cache entries become stale."""
     try:
