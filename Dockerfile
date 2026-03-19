@@ -28,6 +28,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     git \
     curl \
+    ghostscript \
+    texlive \
+    texlive-latex-extra \
+    dvipng \
     ca-certificates \
     gnupg \
     libcurl4-openssl-dev \
