@@ -145,8 +145,8 @@ LOGGING = {
             '()': 'esp.utils.log.RequireNotInScript',
         },
         'require_csrf_failure': {
-    '()': 'esp.utils.log.RequireCSRFFailure',
-},
+            '()': 'esp.utils.log.RequireCSRFFailure',
+        },
     },
     'handlers': {
         'file': {
