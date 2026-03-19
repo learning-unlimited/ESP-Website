@@ -45,9 +45,8 @@ class VolunteerManageTest(ProgramFrameworkTest):
         pm = ProgramModule.objects.get(handler='VolunteerManage')
         self.module = ProgramModuleObj.getFromProgModule(self.program, pm)
         self.admin = self.admins[0]
-        self.base_url = '/manage/%s/%s/volunteering' % (
-            self.program.anchor.name,
-            self.program.url
+        self.base_url = '/manage/%s/volunteering' % (
+            self.program.getUrlBase()
         )
 
     def test_volunteering_page_loads(self):
