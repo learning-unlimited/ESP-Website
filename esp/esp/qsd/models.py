@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -94,7 +93,6 @@ def qsd_edit_id(val):
     """ A short hex string summarizing the QSD's URL. """
     return hashlib.sha1(val.encode("UTF-8")).hexdigest()[:8]
 
-@python_2_unicode_compatible
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
 
@@ -181,7 +179,7 @@ class QuasiStaticData(models.Model):
                 if url_parts[0] == 'programs':
                     return (progs[0], '/'.join(url_parts[3:]))
                 else:
-                    return (progs[0], '%s:' % url_parts[0] + '/'.join(url_parts[3:]))
+                    return (progs[0], f'{url_parts[0]}:' + '/'.join(url_parts[3:]))
 
         return None
 
