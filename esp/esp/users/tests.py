@@ -8,6 +8,7 @@ from django.contrib.auth.models import Group
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
+from django.urls import reverse
 from django.utils.functional import SimpleLazyObject
 
 from esp.middleware import ESPError
@@ -138,6 +139,27 @@ class ESPUserTest(TestCase):
                                 f"Token check failed for username: {username}")
             finally:
                 user.delete()
+
+    def test_unsubscribe_oneclick_vulnerability(self):
+        """Test that one-click unsubscribe requires a valid token."""
+        user = ESPUser.objects.create(username='vuln_test_user', is_active=True)
+        try:
+            invalid_token = 'invalid-token-123'
+            
+            # Send a POST request triggering the one-click logic
+            response = self.client.post(
+                reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': invalid_token}),
+                data={'List-Unsubscribe': 'One-Click'}
+            )
+            
+            # Refresh user from database
+            user.refresh_from_db()
+            
+            # Before the fix: user is deactivated (is_active=False) despite an invalid token.
+            # After the fix: user remains active (is_active=True).
+            self.assertTrue(user.is_active, "VULNERABILITY: User was deactivated despite an invalid token.")
+        finally:
+            user.delete()
 
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
