@@ -150,5 +150,3 @@ class SurveyManagementTest(ProgramFrameworkTest):
         self.assertFalse(
             Survey.objects.filter(id=survey.id).exists()
         )
-        
-        
