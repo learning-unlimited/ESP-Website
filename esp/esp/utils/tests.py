@@ -317,6 +317,9 @@ class TemplateOverrideTest(DjangoTestCase):
             email='diffadmin@example.com',
             password='testpass',
         )
+        from django.contrib.auth.models import Group
+        admin_group, _ = Group.objects.get_or_create(name='Administrator')
+        admin.groups.add(admin_group)
 
         rf = RequestFactory()
         request = rf.get('/manage/templateoverride/%d' % to.id)
