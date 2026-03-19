@@ -188,14 +188,14 @@ class QuestionFormValidationTest(ProgramFrameworkTest):
         data = self._base_data(self.mc_qtype, '')
         form = QuestionForm(data, cur_prog=self.program)
         self.assertFalse(form.is_valid())
-        self.assertIn('Please provide at least one choice', str(form.errors))
+        self.assertIn('Please provide at least one choice', str(form.non_field_errors()[0]))
 
     def test_checkboxes_empty_choices_invalid(self):
         """Submitting Checkboxes with no choices should fail validation."""
         data = self._base_data(self.cb_qtype, '')
         form = QuestionForm(data, cur_prog=self.program)
         self.assertFalse(form.is_valid())
-        self.assertIn('Please provide at least one choice', str(form.errors))
+        self.assertIn('Please provide at least one choice', str(form.non_field_errors()[0]))
 
     def test_multiple_choice_with_valid_choices(self):
         """Submitting Multiple Choice with valid choices should pass."""
@@ -210,7 +210,7 @@ class QuestionFormValidationTest(ProgramFrameworkTest):
         data = self._base_data(self.rating_qtype, 'f|Low|High')
         form = QuestionForm(data, cur_prog=self.program)
         self.assertFalse(form.is_valid())
-        self.assertIn('must be a whole number', str(form.errors))
+        self.assertIn('must be a whole number', str(form.non_field_errors()[0]))
 
     def test_rating_negative_value_invalid(self):
         """Entering a negative number for num_ratings should fail validation."""
