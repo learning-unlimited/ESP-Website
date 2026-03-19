@@ -1,4 +1,4 @@
-FROM python:3.7-slim-bullseye as builder
+FROM python:3.7-slim-bullseye AS builder
 
 # Build-time environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
