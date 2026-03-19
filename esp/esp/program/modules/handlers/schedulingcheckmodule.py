@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
-from esp.resources.models import ResourceRequest
+from esp.resources.models import ResourceRequest, ResourceType
 from copy import deepcopy
 from esp.cal.models import *
 from datetime import date
@@ -711,17 +711,22 @@ class SchedulingCheckRunner:
     def _consecutive_timeslot_pairs(self):
         pairs = []
         timeslots = sorted(self.p.getTimeSlotList(), key=lambda ts: ts.start)
-        for i in range(len(timeslots) - 1):
-            current_slot = timeslots[i]
-            next_slot = timeslots[i + 1]
-            if current_slot.start.date() == next_slot.start.date():
-                pairs.append((current_slot, next_slot))
+
+        contiguous_tolerance = int(Tag.getProgramTag('timeblock_contiguous_tolerance', program=self.p) or 0)
+        for contiguous_group in Event.group_contiguous(timeslots, contiguous_tolerance):
+            contiguous_group = sorted(contiguous_group, key=lambda ts: ts.start)
+            for i in range(len(contiguous_group) - 1):
+                current_slot = contiguous_group[i]
+                next_slot = contiguous_group[i + 1]
+                if current_slot.start.date() == next_slot.start.date():
+                    pairs.append((current_slot, next_slot))
         return pairs
 
     def _moderator_room_assignments(self):
         """Build moderator->room and room->moderators maps for each timeslot."""
         by_moderator = defaultdict(dict)
         by_room = defaultdict(lambda: defaultdict(set))
+        classroom_type = ResourceType.get_or_create('Classroom')
 
         for section in self._all_class_sections():
             meeting_times = set(section.get_meeting_times())
@@ -731,7 +736,7 @@ class SchedulingCheckRunner:
             room_by_timeslot = {}
             for assignment in section.resourceassignment_set.all():
                 resource = assignment.resource
-                if resource.event in meeting_times and resource.res_type.name == 'Classroom':
+                if resource.event in meeting_times and resource.res_type_id == classroom_type.id:
                     room_by_timeslot[resource.event] = resource.name
 
             for timeslot, room_name in room_by_timeslot.items():
@@ -767,21 +772,14 @@ class SchedulingCheckRunner:
                 chains.append((chain, False))
                 continue
 
-            extended = False
             for candidate in next_candidates:
                 if candidate == start_moderator:
                     chains.append((chain + [start_moderator], True))
-                    extended = True
                 elif candidate not in chain:
                     stack.append((start_moderator, chain + [candidate]))
-                    extended = True
                 else:
                     # Internal cycle not returning to the start moderator.
                     chains.append((chain + [candidate], False))
-                    extended = True
-
-            if not extended:
-                chains.append((chain, False))
 
         # Deduplicate equivalent chain signatures.
         deduped = []
@@ -821,11 +819,7 @@ class SchedulingCheckRunner:
                         continue
                     dependency_graph[moderator].add(replacement)
 
-            reported_starts = set()
             for moderator in sorted(dependency_graph.keys(), key=lambda user: user.username):
-                if moderator in reported_starts:
-                    continue
-
                 for first_dependency in sorted(dependency_graph[moderator], key=lambda user: user.username):
                     chains = self._trace_dependency_chains(moderator, first_dependency, dependency_graph)
                     for chain, has_loop in chains:
@@ -840,8 +834,6 @@ class SchedulingCheckRunner:
                             "Severity": self._dependency_severity(dependency_count, has_loop),
                             "Loop": "Yes" if has_loop else "No",
                         })
-
-                reported_starts.add(moderator)
 
         return self.formatter.format_table(
             output_rows,
