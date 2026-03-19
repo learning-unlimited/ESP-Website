@@ -346,7 +346,7 @@ class TeacherInfoForm(FormWithRequiredCss):
 
     pronoun = forms.CharField(max_length=50, required=False)
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
-    affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label =f'What is your affiliation with {settings.INSTITUTION_NAME}?')
+    affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label=f'What is your affiliation with {settings.INSTITUTION_NAME}?')
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=[], required=False)
     shirt_type = forms.ChoiceField(choices=[], required=False)
