@@ -42,6 +42,8 @@ from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
 from django.template.defaultfilters import urlencode
+from django.contrib import messages
+from django.shortcuts import redirect
 from esp.middleware import Http403
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
@@ -154,10 +156,7 @@ def qsd(request, url):
                 response.status_code = 404 # Make sure we actually 404, so that if there is a redirect the middleware can catch it.
                 return response
         else:
-            if action == 'read':
-                raise Http404('This page does not exist.')
-            else:
-                raise Http403('Sorry, you can not modify <tt>%s</tt>.' % request.path)
+            raise Http404('This page does not exist.')
 
     if action == 'create':
         action = 'edit'
@@ -191,7 +190,8 @@ def qsd(request, url):
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
-            raise Http403("Sorry, you do not have permission to edit this page.")
+            messages.error(request, "Sorry, you do not have permission to edit this page.")
+            return redirect('/' + base_url + '.html')
 
         nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
 
@@ -201,8 +201,8 @@ def qsd(request, url):
         data, n_stripped = strip_base64_images(data)
         if n_stripped > 0:
             messages.warning(request,
-                '%d embedded image(s) were removed. '
-                'Please use the image upload button in the toolbar to add images.' % n_stripped)
+                f'{n_stripped} embedded image(s) were removed. '
+                'Please use the image upload button in the toolbar to add images.')
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
@@ -234,7 +234,8 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise Http403("You don't have permission to edit this page.")
+            messages.error(request, "You don't have permission to edit this page.")
+            return redirect('/' + base_url + '.html')
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
@@ -395,8 +396,7 @@ def ajax_qsd_image_upload(request):
             safe_name = html_escape(uploaded_file.name or 'unknown')
             return JsonResponse(
                 {'success': False, 'data': {'messages': [
-                    'File "%s" exceeds the %d MB per-file size limit.'
-                    % (safe_name, QSD_IMAGE_MAX_SIZE // (1024 * 1024))
+                    f'File "{safe_name}" exceeds the {QSD_IMAGE_MAX_SIZE // (1024 * 1024)} MB per-file size limit.'
                 ]}},
                 status=400,
             )
@@ -407,7 +407,7 @@ def ajax_qsd_image_upload(request):
         raw_ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
         safe_ext = _sanitize_image_extension(raw_ext)
         if safe_ext is None:
-            msg = 'Invalid file type. Allowed types: %s' % ', '.join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS))
+            msg = f'Invalid file type. Allowed types: {", ".join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS))}'
             return JsonResponse(
                 {'success': False, 'data': {'messages': [msg]}},
                 status=400,
@@ -430,7 +430,7 @@ def ajax_qsd_image_upload(request):
     saved_urls = []
     saved_paths = []
     for uploaded_file, ext in validated_files:
-        safe_filename = '%s.%s' % (uuid.uuid4().hex, ext)
+        safe_filename = f'{uuid.uuid4().hex}.{ext}'
         # Normalize the path and verify it stays inside the upload
         # directory (CodeQL barrier-guard for py/path-injection CWE-022).
         file_path = os.path.normpath(os.path.join(upload_dir, safe_filename))
@@ -462,7 +462,7 @@ def ajax_qsd_image_upload(request):
         saved_paths.append(file_path)
 
         # Build the public URL for the saved image
-        image_url = '%s%s/%s' % (settings.MEDIA_URL, QSD_IMAGE_UPLOAD_DIR, safe_filename)
+        image_url = f'{settings.MEDIA_URL}{QSD_IMAGE_UPLOAD_DIR}/{safe_filename}'
         saved_urls.append(image_url)
 
     logger.info("QSD image upload by user %s: %d file(s) saved", request.user.username, len(saved_urls))
