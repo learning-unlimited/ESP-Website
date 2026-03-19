@@ -31,8 +31,25 @@ class BaseCustomForm(BetterForm):
     """
     def clean(self):
         """
-        Takes cleaned_data and expands the values for combo fields
+        Takes cleaned_data and expands the values for combo fields.
+        Also enforces server-side validation of required fields.
         """
+        # Collect all validation errors to report them together
+        errors = {}
+
+        # Enforce required field validation server-side
+        for field_name, field in self.fields.items():
+            if field.required:
+                value = self.cleaned_data.get(field_name)
+                # Check for empty values (empty strings, None, empty lists)
+                if value is None or (isinstance(value, str) and not value.strip()):
+                    errors[field_name] = 'This field is required.'
+                elif isinstance(value, (list, tuple)) and not value:
+                    errors[field_name] = 'This field must have at least one value.'
+
+        if errors:
+            raise ValidationError(errors)
+
         cleaned_data = self.cleaned_data.copy()
         for k, v in self.cleaned_data.items():
             if isinstance(v, list):
@@ -200,11 +217,13 @@ class CustomFormHandler():
                         else:
                             raise Exception(f'Could not find linked field: {model_field}')
 
-                    # TODO -> enforce "Required" constraint server-side as well, or trust the client-side code?
+                    # Enforce required constraint on the field object
                     form_field.__dict__.update(field_attrs)
+                    # Explicitly set required attribute to ensure it's enforced server-side
+                    form_field.required = field_attrs.get('required', False)
                     form_field.widget.attrs.update({'class': ''})
                     if form_field.required:
-                        # Add a class 'required' to the widget
+                        # Add a class 'required' to the widget for client-side validation
                         form_field.widget.attrs['class'] += 'required '
                         form_field.widget.is_required = True
 
