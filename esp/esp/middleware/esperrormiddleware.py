@@ -221,16 +221,18 @@ class ESPErrorMiddleware(MiddlewareMixin):
         )
 
         # Safely retrieve the Sentry event ID if available
-        error_id = None
-        if hasattr(request, 'sentry') and isinstance(request.sentry, dict):
-            error_id = request.sentry.get('id')
+        try:
+            import sentry_sdk
+            error_id = sentry_sdk.last_event_id()
+        except Exception:
+            error_id = None
 
         context = {
             'error': exc_info[1],
             'error_type': error_type,
             'error_title': error_title,
             'error_description': error_description,
-            'error_id': error_id,
+            'sentry_event_id': error_id,
             'error_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'error_url': request.build_absolute_uri(),
         }
