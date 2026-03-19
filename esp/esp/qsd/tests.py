@@ -49,7 +49,7 @@ class QSDCorrectnessTest(TestCase):
         #   Determine URL for QSD page to be tested
         section = 'learn'
         pagename = 'foo'
-        self.url = '/%s/%s.html' % (section, pagename)
+        self.url = f'/{section}/{pagename}.html'
 
         #   Create user to function as QSD author
         new_admin, created = ESPUser.objects.get_or_create(username='qsd_admin')
@@ -498,7 +498,7 @@ class QSDImageUploadTest(TestCase):
         # Verify no NEW files were created on disk
         after = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
         new_files = after - before
-        self.assertEqual(new_files, set(), "Orphaned files found after failed batch upload: %s" % new_files)
+        self.assertEqual(new_files, set(), f"Orphaned files found after failed batch upload: {new_files}")
 
 
 class QSDBase64StrippingTest(TestCase):

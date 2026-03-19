@@ -35,7 +35,7 @@ class Tag(models.Model):
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
 
     def __str__(self):
-        return "%s: %s (%s)" % (self.key, self.value, self.target)
+        return f"{self.key}: {self.value} ({self.target})"
 
     EMPTY_TAG = " "
 
