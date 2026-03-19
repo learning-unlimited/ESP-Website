@@ -8,6 +8,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /tmp
 
 # Copy and install system dependencies from packages_base.txt
+# Prevent interactive popups during apt-get install (e.g., tzdata)
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Configure apt-get retries and timeouts for heavy LaTeX downloads
+RUN printf '%s\n' \
+    'Acquire::http::Timeout "120";' \
+    'Acquire::https::Timeout "120";' \
+    'Acquire::ftp::Timeout "120";' \
+    'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99custom
+
+# Set the working directory
+WORKDIR /app
+
+# Install system dependencies from packages_base.txt to avoid duplication.
 COPY esp/packages_base.txt /tmp/packages_base.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -26,6 +40,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     $(grep -v '^python' /tmp/packages_base.txt | grep -v '^#' | grep -v '^$' | grep -v 'build-essential' | grep -v 'libpq-dev' | grep -v 'libcurl' | grep -v 'libssl' | grep -v 'libmemcached' | grep -v 'libevent' | grep -v 'zlib' | grep -v 'libjpeg' | grep -v 'libfreetype' | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 
+# Install LESS via npm (from packages_base_manual_install.sh)
+RUN npm install --prefix /usr less@3.13.1 -g
 
 # Install Node.js for LESS
 RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
