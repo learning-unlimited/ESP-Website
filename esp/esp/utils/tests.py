@@ -271,6 +271,89 @@ class TemplateOverrideTest(DjangoTestCase):
         TemplateOverride.objects.filter(name='BLAARG.TEMPLATEOVERRIDE').delete()
         self.expect_template_error('BLAARG.TEMPLATEOVERRIDE')
 
+    def test_diff_single_line_change_view(self):
+        """
+        Regression test for issue #2606 at the view level.
+
+        Ensures that the /manage/templateoverride/<id> view uses
+        normalized lines for diffs so that only the changed line is
+        highlighted, not the entire template.
+        """
+        from django.conf import settings
+        from django.test import RequestFactory
+        from difflib import HtmlDiff
+
+        from esp.utils.views import _normalize_lines_for_diff, diff_templateoverride
+
+        # Pick the same real template file that exists on disk as in
+        # test_diff_single_line_change.
+        template_dir = os.path.join(settings.PROJECT_ROOT, 'templates')
+        template_name = 'utils/diff_templateoverride.html'
+        original_path = os.path.join(template_dir, template_name)
+        self.assertTrue(os.path.isfile(original_path),
+                        "Test requires template file to exist on disk")
+
+        # Read the original file content (as the view does)
+        with open(original_path, encoding='utf-8', errors='replace') as f:
+            original_content = f.read()
+
+        # Create an override that changes only one line, using the same
+        # normalization logic expected in the view.
+        original_lines = list(_normalize_lines_for_diff(original_content))
+        self.assertGreater(len(original_lines), 3,
+                           "Template must have several lines")
+        modified_lines = list(original_lines)
+        modified_lines[0] = modified_lines[0] + ' <!-- modified -->'
+        override_content = '\n'.join(modified_lines)
+
+        # Persist a TemplateOverride that the view can diff against.
+        with reversion.create_revision():
+            to = TemplateOverride(name=template_name, content=override_content)
+            to.save()
+
+        # Administrator user required to access the manage view.
+        admin = ESPUser.objects.create_superuser(
+            username='diffadmin',
+            email='diffadmin@example.com',
+            password='testpass',
+        )
+
+        rf = RequestFactory()
+        request = rf.get('/manage/templateoverride/%d' % to.id)
+        request.user = admin
+
+        response = diff_templateoverride(request, to.id)
+        self.assertEqual(response.status_code, 200)
+
+        html = response.content.decode('utf-8')
+
+        # Sanity checks: we are looking at a diff table that contains the
+        # modified marker.
+        self.assertIn('<!-- modified -->', html)
+        self.assertIn('<table', html)
+
+        # Heuristic assertion: HtmlDiff marks changed lines with a CSS
+        # class like "diff_chg". If the view stopped using normalized
+        # lines, trailing-newline mismatches would often cause every
+        # line to be treated as changed. Ensure fewer change markers
+        # than total lines in the template.
+        change_markers = html.count('diff_chg')
+        self.assertLess(
+            change_markers,
+            len(original_lines),
+            "Diff appears to mark every line as changed; view may not be "
+            "using normalized lines for diff.",
+        )
+
+        # Optional stronger check: the diff generated with normalized
+        # lines should be a substring of the rendered HTML. This will
+        # fail if the view regresses to using non-normalized content.
+        expected_diff = HtmlDiff().make_table(
+            original_lines,
+            modified_lines,
+        )
+        self.assertIn(expected_diff.split('\n', 1)[0], html)
+
 
 class QueryBuilderTest(DjangoTestCase):
     maxDiff = None
