@@ -82,10 +82,19 @@ class NavbarTest(TestCase):
 
     def get_navbar_titles(self, path='/'):
         response = self.client.get(path)
+        content = str(response.content, encoding='UTF-8')
 
-        navbaritem_re = re.compile(r'<li class="divsecondarynavlink (?:indent)?">\s+(.*)\s+</li>')
-        re_results = re.findall(navbaritem_re, str(response.content, encoding='UTF-8'))
-        return re_results
+        # Collect titles in order of appearance from both link and non-link entries
+        results = []
+        for m in re.finditer(r'<li[^>]*class="divsecondarynavlink[^"]*"[^>]*>(.*?)</li>', content, re.DOTALL):
+            block = m.group(1)
+            link_match = re.search(r'<a [^>]*>\s*(.*?)\s*</a>', block, re.DOTALL)
+            header_match = re.search(r'<span class="sidebar-header-text">\s*(.*?)\s*</span>', block, re.DOTALL)
+            if link_match:
+                results.append(link_match.group(1).strip())
+            elif header_match:
+                results.append(header_match.group(1).strip())
+        return results
 
     def navbars_enabled(self):
         #   Check that the main template uses navbars

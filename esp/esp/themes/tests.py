@@ -96,6 +96,12 @@ class ThemesTest(TestCase):
         if os.path.exists(images_dir):
             os.rename(images_dir, images_backup_dir)
 
+        scripts_dir = os.path.join(settings.MEDIA_ROOT, 'scripts', 'theme')
+        scripts_backup_dir = os.path.join(settings.MEDIA_ROOT, 'scripts',
+                                          'theme_backup_for_tests')
+        if os.path.exists(scripts_dir):
+            os.rename(scripts_dir, scripts_backup_dir)
+
         try:
             #   Test each theme that is available.
             for theme_name in tc.get_theme_names():
@@ -103,11 +109,13 @@ class ThemesTest(TestCase):
                 css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
                 if os.path.exists(css_filename):
                     os.remove(css_filename)
-                # Clobber any stray theme images dir, to avoid conflicts.
+                # Clobber any stray theme images/scripts dirs, to avoid conflicts.
                 # Note that we've already backed up any one the user had
                 # created, above.
                 if os.path.exists(images_dir):
                     shutil.rmtree(images_dir)
+                if os.path.exists(scripts_dir):
+                    shutil.rmtree(scripts_dir)
 
                 # Make sure there won't be any conflicts between this theme and
                 # existing files -- since they would cause harder-to-understand
@@ -163,11 +171,15 @@ class ThemesTest(TestCase):
             self.client.logout()
 
         finally:
-            # Restore the backed up images dir.
+            # Restore the backed up images and scripts dirs.
             if os.path.exists(images_dir):
                 shutil.rmtree(images_dir)
             if os.path.exists(images_backup_dir):
                 os.rename(images_backup_dir, images_dir)
+            if os.path.exists(scripts_dir):
+                shutil.rmtree(scripts_dir)
+            if os.path.exists(scripts_backup_dir):
+                os.rename(scripts_backup_dir, scripts_dir)
 
     def testEditor(self):
         """ Check that the theme editor backend functionality is working. """
