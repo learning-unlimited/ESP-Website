@@ -24,6 +24,9 @@ from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
 
 from datetime import datetime
+import os
+import shutil
+from django.conf import settings
 
 class BaseCustomForm(BetterForm):
     """
@@ -316,11 +319,6 @@ class ComboForm(SessionWizardView):
     The WizardView subclass used to implement the FormWizard
     """
 
-    # TODO ->   The WizardView doesn't delete old files if the
-    #           form doesn't submit successfully. Need to figure
-    #           out how to perform this cleanup.
-    #           vdugar, 4/10/12
-
     template_name = 'customforms/form.html'
     curr_request = None
     form_handler = None
@@ -343,6 +341,86 @@ class ComboForm(SessionWizardView):
             context.update(self.extra_context)
 
         return context
+
+    def _get_session_key(self):
+        """
+        Returns the session key used to store uploaded file paths for cleanup.
+        """
+        return f'customform_upload_files_{self.form.id}'
+
+    def _track_uploaded_files(self, form):
+        """
+        Tracks uploaded files from a form step for later cleanup if needed.
+        """
+        session_key = self._get_session_key()
+        if session_key not in self.request.session:
+            self.request.session[session_key] = []
+
+        for field_name, field_value in form.cleaned_data.items():
+            # Check if this field is a FileField
+            if hasattr(form.fields.get(field_name), 'to_python') and \
+               isinstance(form.fields.get(field_name), forms.FileField) and \
+               field_value:
+                # Get the file path from the uploaded file
+                file_path = field_value.name if hasattr(field_value, 'name') else str(field_value)
+                if file_path not in self.request.session[session_key]:
+                    self.request.session[session_key].append(file_path)
+        
+        self.request.session.modified = True
+
+    def _cleanup_uploaded_files(self):
+        """
+        Deletes all temporarily uploaded files from disk.
+        This is called when form submission fails or is abandoned.
+        """
+        session_key = self._get_session_key()
+        file_paths = self.request.session.pop(session_key, [])
+        
+        for file_path in file_paths:
+            try:
+                full_path = os.path.join(settings.MEDIA_ROOT, file_path)
+                if os.path.exists(full_path):
+                    os.remove(full_path)
+            except Exception as e:
+                # Log the error but don't fail the request
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f'Failed to cleanup file {file_path}: {str(e)}')
+        
+        self.request.session.modified = True
+
+    def process_step_post(self, form):
+        """
+        Override to track uploaded files. Called after form validation passes.
+        """
+        # Track files before calling parent implementation
+        self._track_uploaded_files(form)
+        return super().process_step_post(form)
+
+    def form_invalid(self, form):
+        """
+        Handles invalid form submission - returns form with errors.
+        This is where we catch validation failures.
+        """
+        # Note: We don't cleanup files here because the user might go back
+        # and fix the errors. Files will be cleaned up when they abandon the form
+        # or when we detect the session is expired.
+        return super().form_invalid(form)
+
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Override dispatch to add cleanup on session timeout or form abandonment.
+        """
+        # Check if this is a fresh start (no wizard data) for this form
+        # If so, cleanup old orphaned files
+        if not request.session.get(self.get_prefix(), None):
+            # This is a fresh form start - cleanup any orphaned files from previous attempts
+            session_key = self._get_session_key()
+            if session_key in request.session:
+                self.request = request
+                self._cleanup_uploaded_files()
+        
+        return super().dispatch(request, *args, **kwargs)
 
     def done(self, form_list, **kwargs):
         data = {}
@@ -421,6 +499,12 @@ class ComboForm(SessionWizardView):
         if not self.form.anonymous:
             dynModel.objects.filter(user=self.curr_request.user).delete()
         dynModel.objects.create(**data)
+        
+        # Clean up tracked uploaded files from session since form submission was successful
+        session_key = self._get_session_key()
+        self.request.session.pop(session_key, None)
+        self.request.session.modified = True
+        
         return HttpResponseRedirect(kwargs.get('redirect_url', f'/customforms/success/{self.form.id}/'))
 
     def render_to_response(self, context):
