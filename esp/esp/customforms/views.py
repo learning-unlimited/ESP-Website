@@ -2,9 +2,10 @@ from copy import deepcopy
 import json
 
 from django.db import transaction
-from django.shortcuts import redirect, HttpResponse
-from django.http import Http404, HttpResponseRedirect, JsonResponse
+from django.shortcuts import redirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db import connection
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 
 from esp.customforms.models import *
@@ -33,7 +34,10 @@ def landing(request):
             if form.link_id == -1:
                 form.link_obj = "User's choice"
             else:
-                form.link_obj = cf_cache.only_fkey_models[form.link_type].objects.get(id=form.link_id)
+                try:
+                    form.link_obj = cf_cache.only_fkey_models[form.link_type].objects.get(id=form.link_id)
+                except ObjectDoesNotExist:
+                    form.link_obj = "(deleted)"
     return render_to_response("customforms/landing.html", request, {'form_list': forms})
 
 @user_passes_test(test_func)
