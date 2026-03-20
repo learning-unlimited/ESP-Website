@@ -782,33 +782,48 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return status == 1
 
-    """ Returns a queryset of students that are checked out of the program at the specified time """
-    def checkedOutStudents(self, time_max = datetime.now()):
+
+    """ 
+    Returns a queryset of students checked out of the program.
+    Refactored to use None-default pattern to prevent Python's static evaluation 
+    of datetime.now() at module load time.
+    """
+    def checkedOutStudents(self, time_max=None):
+        if time_max is None:
+            from django.utils import timezone
+            time_max = timezone.now()
+            
         recs = Record.objects.filter(program = self, event__name__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
         return ESPUser.objects.filter(record__id__in=recs, record__event__name="checked_out")
 
-    """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
+    """ Returns a queryset of students CURRENTLY checked out using runtime evaluation. """
     @cache_function
     def currentlyCheckedOutStudents(self):
-        return self.checkedOutStudents(time_max=datetime.now())
+        # Yahan timezone.now() runtime par call ho raha hai, toh ye safe hai.
+        from django.utils import timezone
+        return self.checkedOutStudents(time_max=timezone.now())
+    
+    # In dependencies ko chhedna mat, ye caching ke liye zaroori hain.
     currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name in ['attended', "checked_out"])
 
-    """ Returns a queryset of students that are checked in to the program at the specified time """
-    def checkedInStudents(self, time_max = datetime.now()):
+    """
+    Returns a queryset of students checked in. 
+    Standardized to the None-default pattern for consistency and accuracy.
+    """
+    def checkedInStudents(self, time_max=None):
+        if time_max is None:
+            from django.utils import timezone
+            time_max = timezone.now()
+            
         return ESPUser.objects.filter(Q(record__event__name="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
 
-    """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
+    """ Returns a queryset of students CURRENTLY checked in. """
     @cache_function
     def currentlyCheckedInStudents(self):
-        return self.checkedInStudents(time_max=datetime.now())
+        from django.utils import timezone
+        return self.checkedInStudents(time_max=timezone.now())
+    
     currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name == 'attended')
-
-    """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
-    "Classrooms."  So, if you try to call the old functions (which have no point anymore), then
-    you'll get an error and you'll notice that you need to change the call and its associated
-    code.               -Michael P
-
-    """
     def getClassrooms(self, timeslot=None):
         #   Returns the resources themselves.  See the function below for grouped-by-room.
         from esp.resources.models import ResourceType
