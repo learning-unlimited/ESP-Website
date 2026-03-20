@@ -13,12 +13,12 @@ Please complete the following steps to teach for {{ program.niceName }}.  When e
 </p>
 {% end_inline_program_qsd_block %}
 
-{% ifequal options.progress_mode 1 %}
+{% if options.progress_mode == 1 %}
     {% include "program/modules/checkboxes.html" %}
-{% endifequal %}
-{% ifequal options.progress_mode 2 %}
+{% endif %}
+{% if options.progress_mode == 2 %}
     {% include "program/modules/progressbar.html" %}
-{% endifequal %}
+{% endif %}
 <br />
 
 {% if records %}

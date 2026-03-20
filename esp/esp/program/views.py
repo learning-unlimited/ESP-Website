@@ -48,7 +48,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -872,7 +872,7 @@ def manage_pages(request):
                 #   Handle submission of bulk move form
                 if form.is_valid():
                     form.save_data()
-                    return HttpResponseRedirect('/manage/pages')
+                    return HttpResponseRedirect(reverse('manage_pages'))
 
             #   Create and display the form
             qsd_id_list = []
@@ -901,7 +901,7 @@ def manage_pages(request):
                 for q in all_qsds:
                     q.disabled = True
                     q.save()
-        return HttpResponseRedirect('/manage/pages')
+        return HttpResponseRedirect(reverse('manage_pages'))
 
     elif 'cmd' in request.GET:
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])
