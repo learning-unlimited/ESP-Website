@@ -36,8 +36,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from esp.users.models import admin_required
 from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
-from esp.miniblog.models import AnnouncementLink, Entry
-from esp.miniblog.views import preview_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSubject
 from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect
@@ -333,6 +331,6 @@ def myesp_onsite(request):
     progs = list(progs.order_by("-id"))
 
     if len(progs) == 1:
-        return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
+        return HttpResponseRedirect(f'/onsite/{progs[0].getUrlBase()}/main')
     else:
         return render_to_response('program/pickonsite.html', request, {'progs': progs})
