@@ -52,7 +52,6 @@ from django.views.decorators.cache import cache_control
 from esp.varnish.varnish import purge_page
 from urllib.parse import urlparse
 from bleach import clean
-from django.contrib import messages
 
 from django.conf import settings
 from django.utils.html import escape as html_escape
@@ -222,6 +221,7 @@ def qsd(request, url):
 
         if diff_found:
             qsd_rec.load_cur_user_time(request)
+            reversion.set_user(request.user)
             qsd_rec.save()
 
             # We should also purge the cache
@@ -294,6 +294,7 @@ def ajax_qsd(request):
         if qsd.content != data:
             qsd.content = data
             qsd.load_cur_user_time(request, )
+            reversion.set_user(request.user)
             qsd.save()
 
             # We should also purge the cache
@@ -327,6 +328,182 @@ def ajax_qsd_preview(request):
 
     return HttpResponse(json.dumps(result))
 
+
+def ajax_qsd_history(request):
+    """ Return JSON list of versions for a QSD URL. """
+    from reversion.models import Version
+    from django.contrib.contenttypes.models import ContentType
+    from esp.users.models import ESPUser
+
+    qsd_url = request.GET.get('url', '')
+    if not qsd_url:
+        return JsonResponse({'error': 'Missing url parameter'}, status=400)
+
+    if not Permission.user_can_edit_qsd(request.user, qsd_url):
+        return HttpResponse('Permission denied', status=403)
+
+    qsd_objects = QuasiStaticData.objects.filter(url=qsd_url)
+    if not qsd_objects.exists():
+        return JsonResponse({'versions': []})
+
+    ct = ContentType.objects.get_for_model(QuasiStaticData)
+    object_ids = [str(pk) for pk in qsd_objects.values_list('pk', flat=True)]
+    versions = Version.objects.filter(
+        content_type=ct,
+        object_id__in=object_ids,
+    ).select_related('revision').order_by('-revision__date_created')[:50]
+
+    # Bulk-fetch all user IDs we'll need to resolve usernames (avoids N+1)
+    user_ids = set()
+    version_data = []
+    for v in versions:
+        field_dict = v.field_dict
+        rev = v.revision
+        if rev.user_id:
+            user_ids.add(rev.user_id)
+        if 'author' in field_dict:
+            try:
+                user_ids.add(int(field_dict['author']))
+            except (ValueError, TypeError):
+                pass
+        version_data.append((v, field_dict, rev))
+
+    user_map = {}
+    if user_ids:
+        user_map = dict(ESPUser.objects.filter(pk__in=user_ids).values_list('pk', 'username'))
+
+    result = []
+    for v, field_dict, rev in version_data:
+        user_name = ''
+        if rev.user_id:
+            user_name = user_map.get(rev.user_id, 'Unknown')
+        if not user_name and 'author' in field_dict:
+            try:
+                user_name = user_map.get(int(field_dict['author']), 'Unknown')
+            except (ValueError, TypeError):
+                user_name = 'Unknown'
+
+        content = field_dict.get('content', '')
+        snippet = content[:150].replace('\n', ' ').strip()
+        if len(content) > 150:
+            snippet += '...'
+
+        result.append({
+            'version_id': v.pk,
+            'date': rev.date_created.strftime('%b %d, %Y %I:%M %p'),
+            'author': user_name,
+            'title': field_dict.get('title', ''),
+            'snippet': snippet,
+        })
+
+    return JsonResponse({'versions': result})
+
+
+def ajax_qsd_version_preview(request):
+    """ Return rendered content for a specific version. """
+    from reversion.models import Version
+    from django.contrib.contenttypes.models import ContentType
+    from markdown import markdown
+
+    version_id = request.GET.get('version_id', '')
+    if not version_id:
+        return JsonResponse({'error': 'Missing version_id'}, status=400)
+
+    try:
+        version_pk = int(version_id)
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Invalid version_id'}, status=400)
+
+    ct = ContentType.objects.get_for_model(QuasiStaticData)
+    try:
+        version = Version.objects.select_related('revision').get(pk=version_pk, content_type=ct)
+    except Version.DoesNotExist:
+        return HttpResponse('Version not found', status=404)
+
+    field_dict = version.field_dict
+    qsd_url = field_dict.get('url', '')
+
+    if not Permission.user_can_edit_qsd(request.user, qsd_url):
+        return HttpResponse('Permission denied', status=403)
+
+    content = field_dict.get('content', '')
+    # Sanitize class QSD content to prevent XSS (same as ajax_qsd_preview)
+    url_parts = qsd_url.split('/')
+    if len(url_parts) > 3 and url_parts[3] == 'Classes':
+        content = clean(content, strip=True)
+    result = {
+        'content_raw': content,
+        'content_html': markdown(content),
+        'title': field_dict.get('title', ''),
+    }
+    return JsonResponse(result)
+
+
+@require_POST
+@reversion.create_revision()
+def ajax_qsd_restore(request):
+    """ Restore a QSD to a specific historical version. """
+    from reversion.models import Version
+    from django.contrib.contenttypes.models import ContentType
+    from markdown import markdown
+
+    if request.user.id is None:
+        return HttpResponse('Session expired', status=401)
+
+    version_id = request.POST.get('version_id', '')
+    if not version_id:
+        return JsonResponse({'error': 'Missing version_id'}, status=400)
+
+    try:
+        version_pk = int(version_id)
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Invalid version_id'}, status=400)
+
+    ct = ContentType.objects.get_for_model(QuasiStaticData)
+    try:
+        version = Version.objects.select_related('revision').get(pk=version_pk, content_type=ct)
+    except Version.DoesNotExist:
+        return HttpResponse('Version not found', status=404)
+
+    field_dict = version.field_dict
+    qsd_url = field_dict.get('url', '')
+
+    if not Permission.user_can_edit_qsd(request.user, qsd_url):
+        return HttpResponse('Permission denied', status=403)
+
+    qsd_obj = QuasiStaticData.objects.get_by_url(qsd_url)
+    if qsd_obj is None:
+        return HttpResponse('QSD not found', status=404)
+
+    # Sanitize class QSD content on restore (same as normal save path)
+    restored_content = field_dict.get('content', '')
+    url_parts = qsd_url.split('/')
+    if len(url_parts) > 3 and url_parts[3] == 'Classes':
+        restored_content = clean(restored_content, strip=True)
+    qsd_obj.content = restored_content
+    qsd_obj.title = field_dict.get('title', qsd_obj.title)
+    if 'nav_category' in field_dict:
+        nav_cat_id = field_dict['nav_category']
+        if nav_cat_id is not None and NavBarCategory.objects.filter(pk=nav_cat_id).exists():
+            qsd_obj.nav_category_id = nav_cat_id
+    if 'keywords' in field_dict:
+        qsd_obj.keywords = field_dict['keywords']
+    if 'description' in field_dict:
+        qsd_obj.description = field_dict['description']
+
+    qsd_obj.load_cur_user_time(request)
+    reversion.set_user(request.user)
+    reversion.set_comment('Restored from version %s' % version_id)
+    qsd_obj.save()
+
+    purge_page(qsd_obj.url + ".html")
+
+    result = {
+        'status': 1,
+        'content': markdown(qsd_obj.content),
+        'url': qsd_obj.url,
+    }
+    return JsonResponse(result)
 
 @require_POST
 def ajax_qsd_image_upload(request):
