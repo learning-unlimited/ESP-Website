@@ -57,6 +57,7 @@ from django.template import TemplateDoesNotExist
 from django.core.exceptions import ImproperlyConfigured
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.utils.expirable_model import ExpirableModel
 
 def _login_redirect(request):
     return HttpResponseRedirect(
@@ -69,7 +70,16 @@ class CoreModule(object):
     """
     pass
 
-class ProgramModuleObj(models.Model):
+class ProgramModuleObj(ExpirableModel):
+    """
+    Per-program configuration for a ProgramModule (sequence, required status,
+    link title override, and optionally an open/close schedule).
+
+    Inherits ``start_date`` and ``end_date`` from ExpirableModel.
+    When both fields are NULL the module is perpetually active (default,
+    fully backward-compatible).  Use ``ProgramModuleObj.valid_objects()``
+    to retrieve only currently-active instances.
+    """
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()

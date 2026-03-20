@@ -1176,12 +1176,31 @@ class Program(models.Model, CustomFormsLinkModel):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base
 
+        # Only load module objects that are currently active (respects
+        # start_date / end_date added for issue #2895 / #3854).
+        from esp.program.modules.base import ProgramModuleObj as _PMO
         if tl:
-            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
-                 for module in self.program_modules.filter(module_type = tl)]
+            valid_module_ids = set(
+                _PMO.valid_objects()
+                    .filter(program=self, module__module_type=tl)
+                    .values_list('module_id', flat=True)
+            )
+            modules = [
+                base.ProgramModuleObj.getFromProgModule(self, module)
+                for module in self.program_modules.filter(module_type=tl)
+                if module.id in valid_module_ids
+            ]
         else:
-            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
-                 for module in self.program_modules.all()]
+            valid_module_ids = set(
+                _PMO.valid_objects()
+                    .filter(program=self)
+                    .values_list('module_id', flat=True)
+            )
+            modules = [
+                base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
+                for module in self.program_modules.all()
+                if module.id in valid_module_ids
+            ]
 
         modules.sort(key=lambda m: m.seq)
         return modules

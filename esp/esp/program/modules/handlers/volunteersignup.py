@@ -150,7 +150,8 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
         context = {'module': self}
-        pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
+        # Only show printable modules that are currently scheduled/active (#2895)
+        pmos = ProgramModuleObj.valid_objects().filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:

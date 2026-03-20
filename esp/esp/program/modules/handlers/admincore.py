@@ -39,7 +39,7 @@ from django.contrib.auth.models import Group
 from django.db.models.query import Q
 from django.forms.formsets import formset_factory
 from django.forms.models import model_to_dict
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.template.defaultfilters import slugify
 from django.utils import timezone  # add timezone from local_settings.py in labels
 
@@ -118,6 +118,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             "deadlines": ("Deadlines", "Configure", ["registration", "open", "close", "dates", "deadlines"]),
             "surveys": ("Surveys", "Configure", ["survey", "feedback", "student survey", "teacher survey"]),
             "modules": ("Manage Modules", "Configure", ["modules", "required", "sequence", "student registration", "teacher registration"]),
+            "module_schedule": ("Module Scheduling", "Configure", ["modules", "schedule", "open", "close", "dates", "start", "expire", "student registration", "teacher registration"]),
         }
         if view_name not in entries:
             return None
@@ -695,7 +696,102 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['program'] = prog
 
         return render_to_response(self.baseDir()+'modules.html', request, context)
+    @aux_call
+    @needs_admin
+    def module_schedule(self, request, tl, one, two, module, extra, prog):
+        """
+        Module scheduling UI (GitHub issues #3854 / #2895).
 
+        GET  - renders the scheduling page with all student and teacher modules.
+        POST - JSON API to set start_date / end_date on one ProgramModuleObj.
+
+        POST body (application/json):
+            { "pmo_id": <int>,
+              "start_date": "<ISO 8601 datetime or empty string>",
+              "end_date":   "<ISO 8601 datetime or empty string>" }
+        Response: { "ok": true }  or  { "ok": false, "error": "<message>" }
+        """
+        import json as _json
+
+        if request.method == 'POST':
+            try:
+                data = _json.loads(request.body)
+            except (_json.JSONDecodeError, UnicodeDecodeError) as exc:
+                return JsonResponse({'ok': False, 'error': 'Invalid JSON: %s' % exc}, status=400)
+
+            try:
+                pmo_id = int(data['pmo_id'])
+            except (KeyError, ValueError, TypeError):
+                return JsonResponse({'ok': False, 'error': 'pmo_id must be an integer.'}, status=400)
+
+            try:
+                pmo = ProgramModuleObj.objects.get(id=pmo_id, program=prog)
+            except ProgramModuleObj.DoesNotExist:
+                return JsonResponse({'ok': False, 'error': 'Module not found for this program.'}, status=404)
+
+            def _parse_dt(raw):
+                raw = (raw or '').strip()
+                if not raw:
+                    return None
+                try:
+                    return datetime.fromisoformat(raw)
+                except ValueError as exc:
+                    raise ValueError('Invalid datetime %r: %s' % (raw, exc))
+
+            try:
+                pmo.start_date = _parse_dt(data.get('start_date', ''))
+                pmo.end_date   = _parse_dt(data.get('end_date',   ''))
+            except ValueError as exc:
+                return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+
+            if pmo.start_date and pmo.end_date and pmo.start_date >= pmo.end_date:
+                return JsonResponse(
+                    {'ok': False, 'error': 'Open time must be before close time.'}, status=400
+                )
+
+            pmo.save()
+            return JsonResponse({'ok': True})
+
+        # GET - admins see ALL modules (even inactive) so they can reschedule them
+        _now = datetime.now()
+
+        def _status(pmo):
+            sd, ed = pmo.start_date, pmo.end_date
+            if sd is None and ed is None:
+                return 'always'
+            if ed and ed < _now:
+                return 'expired'
+            if sd and sd > _now:
+                return 'scheduled'
+            return 'active'
+
+        def _annotate(pmos):
+            for pmo in pmos:
+                pmo._status    = _status(pmo)
+                pmo._start_iso = pmo.start_date.strftime('%Y-%m-%dT%H:%M') if pmo.start_date else ''
+                pmo._end_iso   = pmo.end_date.strftime('%Y-%m-%dT%H:%M')   if pmo.end_date   else ''
+            return pmos
+
+        learn_pmos = _annotate(list(
+            ProgramModuleObj.objects
+                .filter(program=prog, module__module_type='learn')
+                .select_related('module').order_by('seq')
+        ))
+        teach_pmos = _annotate(list(
+            ProgramModuleObj.objects
+                .filter(program=prog, module__module_type='teach')
+                .select_related('module').order_by('seq')
+        ))
+
+        context = {
+            'learn_pmos': learn_pmos,
+            'teach_pmos': teach_pmos,
+            'one': one,
+            'two': two,
+            'program': prog,
+        }
+        return render_to_response(self.baseDir() + 'module_schedule.html', request, context)
+    
     @aux_call
     @needs_admin
     def wipe_test_data(self, request, tl, one, two, module, extra, prog):
