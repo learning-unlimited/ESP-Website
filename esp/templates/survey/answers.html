@@ -88,7 +88,7 @@ Expects:
 {% else %}
     <tr>
         <td width="100%" colspan="2">
-        {% ifequal q.question.question_type.name "Favorite Class" %}
+        {% if q.question.question_type.name == "Favorite Class" %}
             <ul class="favorite-classes-list">
             {% for fav in q.answers|unpack_answers|favorite_classes:20 %}
                 <li>
@@ -108,7 +108,7 @@ Expects:
                 <li>There are no responses to this question.</li>
             {% endfor %}
             </ul>
-        {% endifequal %}
+        {% endif %}
         </td>
     </tr>
 {% endif %}
