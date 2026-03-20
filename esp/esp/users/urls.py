@@ -12,7 +12,7 @@ urlpatterns = [
     re_path(r'^register/information/?$', views.user_registration_phase2,
         name='esp.users.views.user_registration_phase2'),
     re_path(r'^activate/?$', views.registration.activate_account, name='activate_account'),
-    re_path(r'^passwdrecover/(?P<success>success)/?$', views.initial_passwd_request, name='passwd_recover_success'),
+    re_path(r'^passwdrecover/(success)?/?$', views.initial_passwd_request, name='passwd_recover_success'),
     re_path(r'^passwdrecover/?$', views.initial_passwd_request, name='passwd_recover'),
     re_path(r'^resetpassword/(?P<uidb64>[-\w]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
         views.password_reset_confirm, name='password_reset_confirm'),
