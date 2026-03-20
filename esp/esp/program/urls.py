@@ -10,6 +10,7 @@ urlpatterns = [
     re_path(r'^manage/submit_transaction/?$', views.submit_transaction),
     re_path(r'^manage/pages/?$', views.manage_pages),
     re_path(r'^manage/userview/?$', views.userview),
+    re_path(r'^manage/userview_edit/?$', views.userview_edit),
     re_path(r'^manage/deactivate_user/?$', views.deactivate_user),
     re_path(r'^manage/activate_user/?$', views.activate_user),
     re_path(r'^manage/unenroll_student/?$', views.unenroll_student),
