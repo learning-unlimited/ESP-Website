@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}Availability for {{ prog.niceName }}{% endblock %}
 
@@ -18,7 +18,7 @@ $j(document).ready(function() {
 </script>
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 
 {% load render_qsd %}
 {% load modules %}
