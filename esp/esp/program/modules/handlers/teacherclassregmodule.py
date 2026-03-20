@@ -853,35 +853,56 @@ class TeacherClassRegModule(ProgramModuleObj):
             ccc = ClassCreationController(self.program)
 
             try:
-                if action == 'create':
-                    newclass = ccc.makeaclass(request.user, request.POST)
-                elif action == 'createopenclass':
-                    newclass = ccc.makeaclass(request.user, request.POST, form_class=TeacherOpenClassRegForm)
-                elif action == 'edit':
-                    newclass = ccc.editclass(request.user, request.POST, extra)
-                elif action == 'editopenclass':
-                    newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
+                save_action = request.POST.get('save_action', 'submit')
 
-                do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
+                if save_action == 'draft':
+                    newclass = ccc.save_class_draft(request.user, request.POST, extra, action)
+                    # For drafts, return to the form with a success message
+                    return HttpResponseRedirect(request.get_full_path() + '?draft_saved=true')
+                else:
+                    if action == 'create':
+                        newclass = ccc.makeaclass(request.user, request.POST)
+                    elif action == 'createopenclass':
+                        newclass = ccc.makeaclass(request.user, request.POST, form_class=TeacherOpenClassRegForm)
+                    elif action == 'edit':
+                        newclass = ccc.editclass(request.user, request.POST, extra)
+                    elif action == 'editopenclass':
+                        newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
+                    
+                    do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
 
-                if do_question:
-                    return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
-                if request.POST.get('manage') == 'manage':
-                    if request.POST['manage_submit'] == 'reload':
-                        return HttpResponseRedirect(request.get_full_path()+'?manage=manage')
-                    elif request.POST['manage_submit'] == 'manageclass':
-                        return HttpResponseRedirect('/manage/%s/manageclass/%s' % (self.program.getUrlBase(), extra))
-                    elif request.POST['manage_submit'] == 'dashboard':
-                        return HttpResponseRedirect('/manage/%s/dashboard' % self.program.getUrlBase())
-                    elif request.POST['manage_submit'] == 'main':
-                        return HttpResponseRedirect('/manage/%s/main' % self.program.getUrlBase())
-                return self.goToCore(tl)
+                    if do_question:
+                        return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
+                    if request.POST.get('manage') == 'manage':
+                        if request.POST['manage_submit'] == 'reload':
+                            return HttpResponseRedirect(request.get_full_path()+'?manage=manage')
+                        elif request.POST['manage_submit'] == 'manageclass':
+                            return HttpResponseRedirect('/manage/%s/manageclass/%s' % (self.program.getUrlBase(), extra))
+                        elif request.POST['manage_submit'] == 'dashboard':
+                            return HttpResponseRedirect('/manage/%s/dashboard' % self.program.getUrlBase())
+                        elif request.POST['manage_submit'] == 'main':
+                            return HttpResponseRedirect('/manage/%s/main' % self.program.getUrlBase())
+                    return self.goToCore(tl)
 
             except ClassCreationValidationError as e:
                 reg_form = e.reg_form
                 resource_formset = e.resource_formset
 
         else:
+            # Check for existing drafts for create actions
+            if action in ['create', 'createopenclass'] and newclass is None:
+                # Look for existing draft classes for this user and program
+                try:
+                    existing_draft = ClassSubject.objects.filter(
+                        parent_program=self.program,
+                        teachers=request.user,
+                        status=ClassStatus.DRAFT
+                    ).first()
+                    if existing_draft:
+                        newclass = existing_draft
+                except:
+                    pass
+            
             # With static resource requests, we need to display a form
             # each available type --- there's no way to add the types
             # that we didn't start out with
@@ -945,6 +966,14 @@ class TeacherClassRegModule(ProgramModuleObj):
                     # TODO: remove private API use
                     if populateonly: reg_form._errors = ErrorDict()
                 elif action=='editopenclass':
+                    reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
+                    # TODO: remove private API use
+                    if populateonly: reg_form._errors = ErrorDict()
+                elif action=='create':
+                    reg_form = TeacherClassRegForm(self.crmi, current_data)
+                    # TODO: remove private API use
+                    if populateonly: reg_form._errors = ErrorDict()
+                elif action=='createopenclass':
                     reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
                     # TODO: remove private API use
                     if populateonly: reg_form._errors = ErrorDict()
