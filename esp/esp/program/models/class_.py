@@ -286,10 +286,11 @@ class ClassManager(Manager):
 
     def random_class(self, q=None):
         classes = self.filter(self.approved(return_q_obj=True))
-        if q is not None: classes = classes.filter(q)
+        if q is not None:
+            classes = classes.filter(q)
         count = classes.count()
         if count == 0:
-            return None
+            raise ValueError("No classes available")
         return classes[random.randint(0, count - 1)]
 
 class ClassSection(models.Model):
