@@ -41,12 +41,22 @@ urlpatterns += [
 ]
 
 urlpatterns += [
+<<<<<<< issue2876
+    url(r'^switchback/?$', myesp.myesp_switchback),
+    url(r'^stop_testing/?$', myesp.myesp_stop_testing),
+    url(r'^onsite/?$', myesp.myesp_onsite),
+    url(r'^passwd/?$', myesp.myesp_passwd),
+    url(r'^accountmanage/?$', myesp.myesp_accountmanage),
+    url(r'^profile/?$', myesp.edit_profile),
+    url(r'^profile/(?P<username>[^/]+)/?$', myesp.admin_edit_profile, name='admin_edit_profile'),
+=======
     re_path(r'^switchback/?$', myesp.myesp_switchback),
     re_path(r'^stop_testing/?$', myesp.myesp_stop_testing),
     re_path(r'^onsite/?$', myesp.myesp_onsite),
     re_path(r'^passwd/?$', myesp.myesp_passwd),
     re_path(r'^accountmanage/?$', myesp.myesp_accountmanage),
     re_path(r'^profile/?$', myesp.edit_profile),
+>>>>>>> main
 ]
 
 urlpatterns += [
