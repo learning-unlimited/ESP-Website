@@ -23,9 +23,9 @@ Before you can print off the catalog, please verify the order of the classes, th
 <a href="{{request.path}}">Reset Order</a> (default is by category, timeblock, title)
 <br /><br />
 Get Catalog: 
-(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
+(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}{{ catalog_query_suffix }}">pdf</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}{{ catalog_query_suffix }}">tex</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}{{ catalog_query_suffix }}">log</a>)
 
 <div id="program_form">
 <form action="" method="get">
@@ -55,6 +55,10 @@ Get Catalog:
         <option value="{{ op }}"{% if op in categories_orig %} selected="selected"{% endif %}>{{ op }}</option>
         {% endfor %}
         </select>
+        <br />
+        <label><input type="checkbox" name="open" value="1"{% if open_only %} checked="checked"{% endif %} /> Only open classes</label>
+        <label style="margin-left: 10px;"><input type="checkbox" name="future" value="1"{% if future_only %} checked="checked"{% endif %} /> Only future classes</label>
+        <label style="margin-left: 10px;"><input type="checkbox" name="show_rooms" value="1"{% if show_rooms %} checked="checked"{% endif %} /> Include room numbers</label>
         
         <input type="submit" value="Go!"/>
     </td>
@@ -105,10 +109,10 @@ Get Catalog:
   <td>{{cls.title|truncatewords:3}}</td>
   <td>
     {% if not forloop.first %}
-    <a href="{{request.path}}?sort_name_list={{ sort_name_list }}&clsid={{cls.id}}&op=up&ids={{clsids|urlencode}}"
+    <a href="{{request.path}}?sort_name_list={{ sort_name_list }}&clsid={{cls.id}}&op=up&ids={{clsids|urlencode}}{{ catalog_query_suffix }}"
       title="Move Class up one!">[up]</a>
     {% endif %} {% if not forloop.last %}
-    <a href="{{request.path}}?sort_name_list={{ sort_name_list }}&op=down&ids={{clsids|urlencode}}&clsid={{cls.id}}"
+    <a href="{{request.path}}?sort_name_list={{ sort_name_list }}&op=down&ids={{clsids|urlencode}}&clsid={{cls.id}}{{ catalog_query_suffix }}"
      title="Move Class down one!">[down]</a>
     {% endif %}
   </td>
@@ -121,9 +125,9 @@ Get Catalog:
 
 <p>
 Get Catalog: 
-(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
+(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}{{ catalog_query_suffix }}">pdf</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}{{ catalog_query_suffix }}">tex</a>, 
+<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}{{ catalog_query_suffix }}">log</a>)
 </p>
 
 {% include "program/modules/admincore/returnlink.html" %}
