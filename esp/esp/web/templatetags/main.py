@@ -21,14 +21,21 @@ def count_matching_chars(url, link):
         else:
             break
             
-    # If the match didn't end exactly at the end of the link or URL 
-    # nor exactly on a '/' boundary, it's a partial word match (like '/teach/i').
-    if match_len > 0 and match_len < len(link) and match_len < len(url):
-        if link[match_len-1] != '/' and url[match_len-1] != '/':
-            # Backtrack to the last slash to ensure we only match full directories
-            last_slash = url[:match_len].rfind('/')
-            if last_slash != -1:
-                match_len = last_slash + 1
+    boundaries = ('/', '?', '#')
+    
+    # Check if the match stops in the middle of a word component.
+    # This happens if either string has more characters and the next character is NOT a boundary.
+    url_bad = (match_len < len(url) and url[match_len] not in boundaries)
+    link_bad = (match_len < len(link) and link[match_len] not in boundaries)
+    
+    if match_len > 0 and (url_bad or link_bad):
+        # The match ended inside a word (e.g., 'ideas' vs 'ideas.html', or 'index' vs 'ideas').
+        # Backtrack to the last slash to ensure we only match full directories.
+        last_slash = url[:match_len].rfind('/')
+        if last_slash != -1:
+            match_len = last_slash + 1
+        else:
+            match_len = 0
                 
     return match_len
 

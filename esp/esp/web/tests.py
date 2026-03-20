@@ -348,7 +348,9 @@ class TabMatchingTest(TestCase):
             
             # Test 2: Substring mismatch test. /teach/index.html shares '/teach/i' with 
             # /teach/ideas.html. Ensure we don't partial match and mistakenly pick tab_3 (ideas).
-            # It should fall back to matching '/teach/' which matches the header_link best (tab_0)
+            # The fallback behavior uses the longest valid common prefix ('/teach/').
+            # Since multiple tabs tie at length 7 and none match exactly, the first checked
+            # string (header_link, tab_0) retains precedence.
             self.assertEqual(extract_theme('/teach/index.html'), 'tabcolor0')
             
             # Test 3: Normal sublink should match
@@ -356,4 +358,10 @@ class TabMatchingTest(TestCase):
             
             # Test 4: Another category base
             self.assertEqual(extract_theme('/learn/index.html'), 'tabcolor0')
+            
+            # Test 5: Prefix collision regression test from PR feedback.
+            # /teach/ideas is a string prefix of /teach/ideas.html, but the next char '.'
+            # is not a boundary. The algorithm should backtrack to the last boundary ('/teach/'),
+            # preventing a false heavy match. Like Test 2, it falls back to tab_0.
+            self.assertEqual(extract_theme('/teach/ideas'), 'tabcolor0')
 
