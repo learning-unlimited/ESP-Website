@@ -126,3 +126,22 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
         my_item = next(item for item in data if item['id'] == my_event.id)
         self.assertEqual(my_item['extendedProps']['status'], 'mine')
         self.assertEqual(my_item['color'], '#28a745') # Success Green
+
+    def test_calendar_data_unauthorized(self):
+        """Test that unauthorized users receive a 302 redirect (due to @needs_teacher)."""
+        url = f'/teach/{self.program.getUrlBase()}/calendar_data'
+        self.client.logout()
+        response = self.client.get(url)
+        # @needs_teacher redirects to login
+        self.assertEqual(response.status_code, 302)
+
+    def test_calendar_data_empty(self):
+        """Test the response when no events are scheduled."""
+        # Clear existing events
+        Event.objects.all().delete()
+        self.client.login(username=self.teacher.username, password='password')
+        url = f'/teach/{self.program.getUrlBase()}/calendar_data'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data, []) # Should be an empty list, not a dict with 'events' key
