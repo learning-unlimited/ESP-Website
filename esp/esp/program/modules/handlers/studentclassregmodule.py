@@ -47,6 +47,7 @@ from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
+from esp.program.modules.admin_search import AdminSearchEntry
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
@@ -137,6 +138,19 @@ class StudentClassRegModule(ProgramModuleObj):
             "required": True,
             "choosable": 1
             }]
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if tl != "learn" or view_name != "catalog":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="learn_catalog",
+            url="/learn/%s/catalog" % base,
+            title="Student Catalog",
+            category="Quick Links",
+            keywords=["catalog", "classes", "student view"],
+        )
 
     @property
     def scrmi(self):
@@ -414,7 +428,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_cap
     def ajax_addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class and return an updated inline schedule """
-        if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.addclass(request, tl, one, two, module, extra, prog)
         try:
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
@@ -707,7 +721,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_any_deadline(['/Classes', '/Removal'])
     def ajax_clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
-        if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.clearslot(request, tl, one, two, module, extra, prog)
 
         cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
