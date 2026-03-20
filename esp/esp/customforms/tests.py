@@ -624,6 +624,6 @@ class RequiredFieldValidationTest(TestCase):
         }
         response = self.client.post(f"/customforms/view/{self.form.id}/", post_dict)
         self.assertEqual(response.status_code, 200)
-        # Should see error message
-        self.assertContains(response, 'required', case_insensitive=True)
+        # Should see the specific required-field validation error message
+        self.assertContains(response, 'This field is required.')
         self.client.logout()
