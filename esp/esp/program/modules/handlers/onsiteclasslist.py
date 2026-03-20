@@ -377,13 +377,13 @@ class OnSiteClassList(ProgramModuleObj):
             user = int(request.GET.get('user', None))
             user_obj = ESPUser.objects.get(id=user)
         except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
-            resp.status_code = 400
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
             json.dump(result, resp)
             return resp
 
         printer = request.GET.get('printer', None)
         if printer is not None:
+            # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
 
         req = PrintRequest.objects.create(user=user_obj, printer=printer)
