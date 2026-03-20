@@ -91,9 +91,10 @@ __all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'C
 STATUS_CHOICES = (
         (ClassStatus.CANCELLED, "cancelled"),
         (ClassStatus.REJECTED, "rejected"),
-        (ClassStatus.UNREVIEWED, "unreviewed"),
+        (ClassStatus.DRAFT, "draft"), # Add the new 'draft' status choice
+        (ClassStatus.UNREVIEWED, "unreviewed"), 
         (ClassStatus.HIDDEN, "accepted but hidden"),
-        (ClassStatus.ACCEPTED, "accepted"),
+        (ClassStatus.ACCEPTED, "accepted"), 
         )
 
 STATUS_CHOICES_DICT = dict(STATUS_CHOICES)
