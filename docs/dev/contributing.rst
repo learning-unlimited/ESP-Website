@@ -11,6 +11,11 @@ Remove ``--global`` if you don't want it to apply to other git repos on your com
   git config --global user.name "Your Name"
   git config --global user.email you@something.edu
 
+Set up pre-commit hooks to automatically lint staged files before each commit: ::
+
+  pip install pre-commit
+  pre-commit install
+
 Other git config you might find useful: ::
 
   git config --global push.default simple # makes git only push the current branch, which is useful for not accidentally messing things up
@@ -38,29 +43,29 @@ From the directory ``/esp``: ::
 Write some code!
 Test your code!
 
-Look at what you’ve changed (``git status`` and/or ``git diff``), and then run ``git commit -a -m``, and type a commit message (see `<http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>` for good commit message style), like so: ::
+Look at what you've changed (``git status`` and/or ``git diff``), and then run ``git commit -a -m``, and type a commit message (see `<https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>` for good commit message style), like so: ::
 
   git commit -a -m "Hello world"
 
-Repeat a few times from “Write some code!” if you want to make multiple commits.
+Repeat a few times from "Write some code!" if you want to make multiple commits.
 
-When you’re ready to make a pull request, or want other people to be able to pull your code: ::
+When you're ready to make a pull request, or want other people to be able to pull your code: ::
 
   git push --set-upstream origin new-branch-name
 
-Now go to `<https://github.com/learning-unlimited/ESP-Website>`_. If you’re logged in, you should see a banner near the top suggesting that you make a pull request. Click the button, write up a summary of your pull request, and submit it.
+Now go to `<https://github.com/learning-unlimited/ESP-Website>`_. If you're logged in, you should see a banner near the top suggesting that you make a pull request. Click the button, write up a summary of your pull request, and submit it.
 
 Now wait for someone to review your pull request. If it takes a long time, poke a friend to review it.
 
-When someone reviews your pull request, they will probably have some comments. If they have a lot to say, or suggest some major changes, don’t feel bad! This is a normal part of the code review process. Now you need to address their comments. If you disagree with what they’ve said, or want to discuss more, feel free to do that on the pull request. To change your code: ::
+When someone reviews your pull request, they will probably have some comments. If they have a lot to say, or suggest some major changes, don't feel bad! This is a normal part of the code review process. Now you need to address their comments. If you disagree with what they've said, or want to discuss more, feel free to do that on the pull request. To change your code: ::
 
-  git checkout new-branch-name # only if you’d switched to another branch while waiting
+  git checkout new-branch-name # only if you'd switched to another branch while waiting
   Make some changes
   Test your changes
   git commit -a -m "Fixed foo, bar, and baz"
   git push
 
-The reviewer will look at your changes. In some cases, you might go through a few more cycles of this. Once everything is resolved, they’ll merge your pull request. Congratulations!
+The reviewer will look at your changes. In some cases, you might go through a few more cycles of this. Once everything is resolved, they'll merge your pull request. Congratulations!
 
 For urgent features and fixes
 -----------------------------
@@ -72,7 +77,7 @@ The following is MIT-specific, although by using a different prod branch a simil
   git checkout -b urgent-branch-name
 
 Write some code!
-Test your code! Be careful, since you’re putting this on our live server without full review. ::
+Test your code! Be careful, since you're putting this on our live server without full review. ::
 
   git commit -a -m "Did something important"
   git push --set-upstream origin urgent-branch-name
@@ -130,7 +135,6 @@ Many tests are located in application-specific files. Some legacy tests may stil
 * ``esp/cal/tests.py``
 * ``esp/dbmail/tests.py``
 * ``esp/formstack/tests.py``
-* ``esp/miniblog/tests.py``
 * ``esp/program/tests.py``
 * ``esp/survey/tests.py``
 * ``esp/varnish/tests.py``
