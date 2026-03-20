@@ -39,14 +39,35 @@ class BaseCustomForm(BetterForm):
 
         # Enforce required field validation server-side
         for field_name, field in self.fields.items():
-            if field.required:
-                value = self.cleaned_data.get(field_name)
-                # Check for empty values (empty strings, None, empty lists)
-                if value is None or (isinstance(value, str) and not value.strip()):
-                    errors[field_name] = 'This field is required.'
-                elif isinstance(value, (list, tuple)) and not value:
-                    errors[field_name] = 'This field must have at least one value.'
+            if not field.required:
+                continue
 
+            # Skip fields that already have validation errors; they may have
+            # been omitted from cleaned_data due to field-level validation.
+            if field_name in self.errors:
+                continue
+
+            # If the field is missing from cleaned_data at this point, the user
+            # did not provide a value at all.
+            if field_name not in self.cleaned_data:
+                errors[field_name] = field.error_messages.get(
+                    "required",
+                    "This field is required.",
+                )
+                continue
+
+            value = self.cleaned_data[field_name]
+
+            # Use the field's own empty_values semantics to determine emptiness.
+            if value in getattr(field, "empty_values", [None, ""]):
+                errors[field_name] = field.error_messages.get(
+                    "required",
+                    "This field is required.",
+                )
+            elif isinstance(value, (list, tuple)) and not value:
+                # Preserve existing behavior for list-like fields that must
+                # contain at least one value.
+                errors[field_name] = "This field must have at least one value."
         if errors:
             raise ValidationError(errors)
 
