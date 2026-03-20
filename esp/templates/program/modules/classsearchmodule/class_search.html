@@ -36,8 +36,72 @@
 <p><strong>No class with ID {{ id_query }} found. Attempting as title search:</strong></p>
 {% endif %}
 
+{# ---- Simple Search Form ---- #}
+<div class="well">
+    <h3>Simple Search</h3>
+    <p class="muted">Fill in any combination of fields below and click Search. All filled fields are ANDed together.</p>
+    <form method="get" action="" class="form-inline">
+        <div class="row-fluid">
+            <div class="span4">
+                <label for="s_title">Title contains</label>
+                <input type="text" class="input-block-level" id="s_title" name="s_title" value="{{ s_title }}" placeholder="e.g. Python" />
+            </div>
+            <div class="span4">
+                <label for="s_teacher">Teacher username contains</label>
+                <input type="text" class="input-block-level" id="s_teacher" name="s_teacher" value="{{ s_teacher }}" placeholder="e.g. jsmith" />
+            </div>
+            <div class="span4">
+                <label for="s_category">Category</label>
+                <select class="input-block-level" id="s_category" name="s_category">
+                    <option value="">-- Any --</option>
+                    {% for cat in simple_categories %}
+                    <option value="{{ cat.id }}" {% if s_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="row-fluid" style="margin-top:8px;">
+            <div class="span4">
+                <label for="s_status">Status</label>
+                <select class="input-block-level" id="s_status" name="s_status">
+                    <option value="">-- Any --</option>
+                    {% for val, label in simple_status_choices %}
+                    <option value="{{ val }}" {% if s_status == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="span4">
+                <label for="s_grade_min">Open to grade (min)</label>
+                <select class="input-block-level" id="s_grade_min" name="s_grade_min">
+                    <option value="">-- Any --</option>
+                    {% for g in simple_grades %}
+                    <option value="{{ g }}" {% if s_grade_min == g|stringformat:"s" %}selected{% endif %}>{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="span4">
+                <label for="s_grade_max">Open to grade (max)</label>
+                <select class="input-block-level" id="s_grade_max" name="s_grade_max">
+                    <option value="">-- Any --</option>
+                    {% for g in simple_grades %}
+                    <option value="{{ g }}" {% if s_grade_max == g|stringformat:"s" %}selected{% endif %}>{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div style="margin-top:8px;">
+            <button type="submit" class="btn btn-primary">Search</button>
+            <a href="?" class="btn">Clear</a>
+        </div>
+    </form>
+</div>
+
+{% if not simple_search_active %}
+{# ---- Advanced Query Builder ---- #}
+<h3>Advanced Search</h3>
 {% load query_builder %}
 {% render_query_builder query_builder query %}
+{% endif %}
 
 {% if queryset %}
 <p>
