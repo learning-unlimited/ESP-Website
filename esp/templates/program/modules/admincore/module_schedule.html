@@ -1,0 +1,207 @@
+{% extends "main.html" %}
+
+{% block title %}{{ program.niceName }} — Module Scheduling{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<style>
+.sched-desc        { color: #555; margin-bottom: 18px; max-width: 820px; }
+.sched-tabs        { display: flex; gap: 4px; border-bottom: 2px solid #ddd; margin-bottom: 0; }
+.sched-tab         { padding: 9px 22px; cursor: pointer; border: 1px solid transparent;
+                     border-bottom: none; border-radius: 4px 4px 0 0;
+                     background: #f5f5f5; font-size: 14px; transition: background .15s; }
+.sched-tab:hover   { background: #ebebeb; }
+.sched-tab.active  { background: #fff; border-color: #ddd; border-bottom-color: #fff;
+                     margin-bottom: -2px; font-weight: 600; color: #333; }
+.sched-panel       { display: none; padding: 18px 0 4px; }
+.sched-panel.active{ display: block; }
+.mod-card          { display: flex; align-items: flex-start; gap: 14px;
+                     border: 1px solid #ddd; border-radius: 6px;
+                     padding: 14px 16px; margin-bottom: 10px; background: #fff;
+                     transition: box-shadow .15s; }
+.mod-card:hover    { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.mod-info          { flex: 1; min-width: 0; }
+.mod-title         { font-weight: 600; font-size: 14px; }
+.mod-subtitle      { font-size: 12px; color: #777; margin-top: 2px; }
+.mod-status        { display: inline-block; font-size: 11px; font-weight: 600;
+                     padding: 3px 9px; border-radius: 10px; white-space: nowrap; }
+.s-always          { background: #d1ecf1; color: #0c5460; }
+.s-active          { background: #d4edda; color: #155724; }
+.s-scheduled       { background: #fff3cd; color: #856404; }
+.s-expired         { background: #f8d7da; color: #721c24; }
+.mod-dates         { display: flex; align-items: center; gap: 20px; flex-shrink: 0; flex-wrap: wrap; }
+.date-group        { display: flex; flex-direction: column; gap: 3px; }
+.date-group label  { font-size: 11px; font-weight: 600; color: #555;
+                     text-transform: uppercase; letter-spacing: .04em; }
+.date-row          { display: flex; align-items: center; gap: 5px; }
+.date-row input    { font-size: 13px; padding: 5px 8px; border: 1px solid #ccc;
+                     border-radius: 4px; width: 192px; }
+.clear-btn         { font-size: 11px; color: #999; cursor: pointer; padding: 0;
+                     border: none; background: none; text-decoration: underline; }
+.clear-btn:hover   { color: #c00; }
+.mod-actions       { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.save-btn          { white-space: nowrap; }
+.save-msg          { font-size: 12px; min-width: 60px; }
+.save-msg.ok       { color: #1a7a2e; font-weight: 600; }
+.save-msg.err      { color: #a00; }
+.empty-state       { padding: 24px 0; color: #888; font-style: italic; }
+.legend            { display: flex; gap: 14px; font-size: 12px; color: #555;
+                     margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% load render_qsd %}
+
+<h1>Module Scheduling — {{ program.niceName }}</h1>
+
+<p class="sched-desc">
+  Set <strong>open</strong> and <strong>close</strong> times for individual
+  registration modules. A module with <em>no dates</em> is always active. Changes
+  are saved per-module via the <strong>Save</strong> button — no page reload required.
+</p>
+<p class="sched-desc" style="margin-top:-10px;">
+  To add or remove modules visit
+  <a href="/manage/{{ program.getUrlBase }}/settings/program">program settings</a>.
+  To reorder modules or set required status visit
+  <a href="/manage/{{ program.getUrlBase }}/modules/">Module Management</a>.
+</p>
+
+{% inline_program_qsd_block program "manage:module_schedule" %}
+{% end_inline_program_qsd_block %}
+
+<div class="legend">
+  <strong>Status:</strong>
+  <span class="mod-status s-always">Always active</span> no dates set &nbsp;
+  <span class="mod-status s-active">Active</span> currently open &nbsp;
+  <span class="mod-status s-scheduled">Scheduled</span> opens in future &nbsp;
+  <span class="mod-status s-expired">Expired</span> close time passed
+</div>
+
+<div class="sched-tabs" role="tablist">
+  <div class="sched-tab active" role="tab" data-panel="learn" tabindex="0">Student Registration</div>
+  <div class="sched-tab" role="tab" data-panel="teach" tabindex="0">Teacher Registration</div>
+</div>
+
+<div class="sched-panel active" id="panel-learn" role="tabpanel">
+  {% if not learn_pmos %}
+    <p class="empty-state">No student registration modules are enabled for this program.</p>
+  {% else %}
+    {% for pmo in learn_pmos %}
+      {% include "program/modules/admincore/_module_schedule_card.html" with pmo=pmo %}
+    {% endfor %}
+  {% endif %}
+</div>
+
+<div class="sched-panel" id="panel-teach" role="tabpanel">
+  {% if not teach_pmos %}
+    <p class="empty-state">No teacher registration modules are enabled for this program.</p>
+  {% else %}
+    {% for pmo in teach_pmos %}
+      {% include "program/modules/admincore/_module_schedule_card.html" with pmo=pmo %}
+    {% endfor %}
+  {% endif %}
+</div>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+<script>
+(function () {
+  'use strict';
+
+  document.querySelectorAll('.sched-tab').forEach(function (tab) {
+    function activate() {
+      document.querySelectorAll('.sched-tab').forEach(function (t) {
+        t.classList.remove('active');
+      });
+      document.querySelectorAll('.sched-panel').forEach(function (p) {
+        p.classList.remove('active');
+      });
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+    }
+    tab.addEventListener('click', activate);
+    tab.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+    });
+  });
+
+  function getCsrf() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+  }
+
+  function computeStatus(startVal, endVal) {
+    if (!startVal && !endVal) return 'always';
+    var now   = new Date();
+    var start = startVal ? new Date(startVal) : null;
+    var end   = endVal   ? new Date(endVal)   : null;
+    if (end && end < now)     return 'expired';
+    if (start && start > now) return 'scheduled';
+    return 'active';
+  }
+
+  var STATUS = {
+    always:    { text: 'Always active', cls: 's-always'   },
+    active:    { text: 'Active',        cls: 's-active'    },
+    scheduled: { text: 'Scheduled',     cls: 's-scheduled' },
+    expired:   { text: 'Expired',       cls: 's-expired'   },
+  };
+
+  function refreshBadge(pmoId, startVal, endVal) {
+    var badge = document.getElementById('badge-' + pmoId);
+    if (!badge) return;
+    var s = STATUS[computeStatus(startVal, endVal)];
+    badge.textContent = s.text;
+    badge.className   = 'mod-status ' + s.cls;
+  }
+
+  window.saveModule = function (pmoId) {
+    var startInput = document.getElementById('start-' + pmoId);
+    var endInput   = document.getElementById('end-'   + pmoId);
+    var msgEl      = document.getElementById('msg-'   + pmoId);
+    var btn        = document.getElementById('savebtn-' + pmoId);
+    var startVal   = startInput.value;
+    var endVal     = endInput.value;
+
+    if (startVal && endVal && new Date(startVal) >= new Date(endVal)) {
+      msgEl.textContent = 'Open time must be before close time.';
+      msgEl.className   = 'save-msg err';
+      return;
+    }
+
+    btn.disabled      = true;
+    msgEl.textContent = 'Saving...';
+    msgEl.className   = 'save-msg';
+
+    fetch('/manage/{{ program.getUrlBase }}/module_schedule/', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+      body:    JSON.stringify({ pmo_id: pmoId, start_date: startVal, end_date: endVal }),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.ok) {
+        msgEl.textContent = 'Saved!';
+        msgEl.className   = 'save-msg ok';
+        refreshBadge(pmoId, startVal, endVal);
+        setTimeout(function () { msgEl.textContent = ''; }, 3000);
+      } else {
+        msgEl.textContent = 'Error: ' + data.error;
+        msgEl.className   = 'save-msg err';
+      }
+    })
+    .catch(function () {
+      msgEl.textContent = 'Network error.';
+      msgEl.className   = 'save-msg err';
+    })
+    .finally(function () { btn.disabled = false; });
+  };
+
+  window.clearDate = function (inputId) {
+    document.getElementById(inputId).value = '';
+  };
+}());
+</script>
+{% endblock %}

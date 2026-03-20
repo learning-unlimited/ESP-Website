@@ -767,9 +767,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         def _annotate(pmos):
             for pmo in pmos:
-                pmo._status    = _status(pmo)
-                pmo._start_iso = pmo.start_date.strftime('%Y-%m-%dT%H:%M') if pmo.start_date else ''
-                pmo._end_iso   = pmo.end_date.strftime('%Y-%m-%dT%H:%M')   if pmo.end_date   else ''
+                pmo.status    = _status(pmo)
+                pmo.start_iso = pmo.start_date.strftime('%Y-%m-%dT%H:%M') if pmo.start_date else ''
+                pmo.end_iso   = pmo.end_date.strftime('%Y-%m-%dT%H:%M')   if pmo.end_date   else ''
             return pmos
 
         learn_pmos = _annotate(list(

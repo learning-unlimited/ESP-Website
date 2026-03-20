@@ -1,0 +1,47 @@
+{% with status_class="s-"|add:pmo.status %}
+<div class="mod-card">
+
+  <div class="mod-info">
+    <div class="mod-title">{{ pmo.module.admin_title }}</div>
+    <div class="mod-subtitle">{{ pmo.module.link_title }}</div>
+  </div>
+
+  <div class="mod-dates">
+    <div class="date-group">
+      <label for="start-{{ pmo.id }}">Opens</label>
+      <div class="date-row">
+        <input type="datetime-local"
+               id="start-{{ pmo.id }}"
+               value="{{ pmo.start_iso }}">
+        <button type="button" class="clear-btn"
+                onclick="clearDate('start-{{ pmo.id }}')">clear</button>
+      </div>
+    </div>
+    <div class="date-group">
+      <label for="end-{{ pmo.id }}">Closes</label>
+      <div class="date-row">
+        <input type="datetime-local"
+               id="end-{{ pmo.id }}"
+               value="{{ pmo.end_iso }}">
+        <button type="button" class="clear-btn"
+                onclick="clearDate('end-{{ pmo.id }}')">clear</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mod-actions">
+    <span class="mod-status {{ status_class }}" id="badge-{{ pmo.id }}">
+      {% if pmo.status == 'always' %}Always active
+      {% elif pmo.status == 'active' %}Active
+      {% elif pmo.status == 'scheduled' %}Scheduled
+      {% elif pmo.status == 'expired' %}Expired
+      {% endif %}
+    </span>
+    <button class="btn btn-sm btn-primary save-btn"
+            id="savebtn-{{ pmo.id }}"
+            onclick="saveModule({{ pmo.id }})">Save</button>
+    <span class="save-msg" id="msg-{{ pmo.id }}"></span>
+  </div>
+
+</div>
+{% endwith %}
