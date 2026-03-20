@@ -803,7 +803,7 @@ class Program(models.Model, CustomFormsLinkModel):
         from django.utils import timezone
         return self.checkedOutStudents(time_max=timezone.now())
     
-   # Do not modify these dependencies; they are essential for the caching layer.
+   # Do not modify these dependencies; they are essential for the caching  layer.
     currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name in ['attended', "checked_out"])
 
     """
