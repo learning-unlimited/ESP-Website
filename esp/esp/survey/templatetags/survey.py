@@ -216,13 +216,25 @@ def histogram(answer_list, args='format=html'):
             context['max_freq'] = max_freq
 
     max_label_length = max([len(r['value']) for r in context['results']], default=1)
-    bar_width_pts = 180 / max(context['num_keys'], 1)
-    if bar_width_pts < 9:
-        context['label_rotate'] = 90
-    elif bar_width_pts < 12 or (context['num_keys'] * max_label_length > 36):
-        context['label_rotate'] = 45
-    else:
-        context['label_rotate'] = 0
+
+    def decide_label_rotate(bar_width_pts, num_keys, max_label_length):
+        if bar_width_pts < 9:
+            return 90
+        elif bar_width_pts < 12 or (num_keys * max_label_length > 36):
+            return 45
+        else:
+            return 0
+
+    num_keys_safe = max(context['num_keys'], 1)
+
+    bar_width_pts = 180 / num_keys_safe
+    context['label_rotate'] = decide_label_rotate(bar_width_pts, context['num_keys'], max_label_length)
+
+    # second pass for crowded (rotated) layouts: use 168pt, which matches the EPS width when crowded
+    if context['label_rotate'] > 0:
+        bar_width_pts = 168 / num_keys_safe
+        context['label_rotate'] = decide_label_rotate(bar_width_pts, context['num_keys'], max_label_length)
+
     context['crowded'] = context['label_rotate'] > 0
 
     # Compute font size based on bars number
