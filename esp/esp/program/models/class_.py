@@ -1359,12 +1359,14 @@ class ClassSection(models.Model):
             else:
                 prereg_verb = 'Enrolled'
 
-        if overridefull or fast_force_create or not self.isFull(webapp=webapp):
+        locked_section = ClassSection.objects.select_for_update().get(pk=self.pk)
+
+        if overridefull or fast_force_create or not locked_section.isFull(webapp=webapp):
             #    Then, create the registration for this class.
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
-            qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
+            qs = locked_section.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
             if fast_force_create or not qs.exists():
-                sr = StudentRegistration(user=user, section=self, relationship=rt)
+                sr = StudentRegistration(user=user, section=locked_section, relationship=rt)
                 sr.save()
                 if fast_force_create:
                     ## That's the bare minimum to reg someone; we're done!
