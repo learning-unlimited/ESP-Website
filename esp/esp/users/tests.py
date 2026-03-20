@@ -804,8 +804,13 @@ class PermissionTestCase(TestCase):
         # Setup the program and class categories required by the regex matcher
         cat = ClassCategories.objects.create(category='TestCategory', symbol='T')
         test_prog = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program3')
-        test_class = ClassSubject.objects.create(parent_program=test_prog, category=cat,
-                                          grade_min=7, grade_max=12)
+        test_class = ClassSubject.objects.create(
+            parent_program=test_prog,
+            category=cat,
+            grade_min=7,
+            grade_max=12,
+            title='Test Class',
+        )
         
         # Assign the teacher to the class
         test_class.teachers.add(teacher)
