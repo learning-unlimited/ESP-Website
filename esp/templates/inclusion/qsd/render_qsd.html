@@ -32,7 +32,13 @@
             <button type="button" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', false);"
                 class="btn btn-danger"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
                 Cancel</button>
+            {% if qsdrec.id %}
+            <button type="button" onclick="qsd_toggle_history('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');"
+                class="btn btn-default"><span class="glyphicon glyphicon-time" aria-hidden="true"></span>
+                History</button>
+            {% endif %}
         </div>
+        <div id="qsd_history_panel_{{ qsdrec.edit_id }}" class="qsd_history_panel" style="display:none;"></div>
         <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.edit_id }}"
                   class="qsd_editor {% if not inline %}qsd_fullsize{% endif %} qsd_bits hidden {% if inline and not qsdrec.id %}qsd_halfsize{% endif %}"
                   name="qsd_content">{% autoescape on %}{{ qsdrec.content }}{% endautoescape %}</textarea>
