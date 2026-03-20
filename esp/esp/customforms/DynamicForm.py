@@ -365,7 +365,7 @@ class ComboForm(SessionWizardView):
                 file_path = field_value.name if hasattr(field_value, 'name') else str(field_value)
                 if file_path not in self.request.session[session_key]:
                     self.request.session[session_key].append(file_path)
-        
+
         self.request.session.modified = True
 
     def _cleanup_uploaded_files(self):
@@ -375,7 +375,7 @@ class ComboForm(SessionWizardView):
         """
         session_key = self._get_session_key()
         file_paths = self.request.session.pop(session_key, [])
-        
+
         for file_path in file_paths:
             try:
                 full_path = os.path.join(settings.MEDIA_ROOT, file_path)
@@ -386,7 +386,7 @@ class ComboForm(SessionWizardView):
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.warning(f'Failed to cleanup file {file_path}: {str(e)}')
-        
+
         self.request.session.modified = True
 
     def process_step_post(self, form):
@@ -419,7 +419,7 @@ class ComboForm(SessionWizardView):
             if session_key in request.session:
                 self.request = request
                 self._cleanup_uploaded_files()
-        
+
         return super().dispatch(request, *args, **kwargs)
 
     def done(self, form_list, **kwargs):
@@ -499,12 +499,12 @@ class ComboForm(SessionWizardView):
         if not self.form.anonymous:
             dynModel.objects.filter(user=self.curr_request.user).delete()
         dynModel.objects.create(**data)
-        
+
         # Clean up tracked uploaded files from session since form submission was successful
         session_key = self._get_session_key()
         self.request.session.pop(session_key, None)
         self.request.session.modified = True
-        
+
         return HttpResponseRedirect(kwargs.get('redirect_url', f'/customforms/success/{self.form.id}/'))
 
     def render_to_response(self, context):
@@ -892,5 +892,3 @@ class FormHandler:
                 module = ''
             metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
-
-

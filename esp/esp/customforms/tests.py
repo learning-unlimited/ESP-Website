@@ -494,7 +494,7 @@ class FormBuilderViewTest(TestCase):
         # Create a form with a file upload field
         test_user = ESPUser.objects.create_user(username='file_test_user', password='password')
         test_user.makeRole('Student')
-        
+
         form_data = {
             'title': 'File Upload Test Form',
             'perms': '',
@@ -530,7 +530,7 @@ class FormBuilderViewTest(TestCase):
 
         # Login as student and attempt to submit with file
         self.client.login(username=test_user.username, password='password')
-        
+
         # Create a test file
         test_file = SimpleUploadedFile(
             "test_file.txt",
@@ -550,7 +550,7 @@ class FormBuilderViewTest(TestCase):
         }
 
         response = self.client.post(f"/customforms/view/{form.id}/", post_data)
-        
+
         # The form should accept the file upload but we're testing the cleanup mechanism
         # When the user abandons or a new form starts, cleanup should occur
         # This is tested indirectly through the session tracking
@@ -558,4 +558,3 @@ class FormBuilderViewTest(TestCase):
         # Verify the cleanup tracking is in place by starting a new form submission
         response = self.client.get(f"/customforms/view/{form.id}/")
         self.assertEqual(response.status_code, 200)
-
