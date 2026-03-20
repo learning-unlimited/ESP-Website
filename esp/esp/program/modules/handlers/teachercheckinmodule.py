@@ -244,7 +244,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         #   return default
 
         # Only Postgres supports the following fancy database operation! See
-        # http://stackoverflow.com/a/20129229/3243497 .
+        # https://stackoverflow.com/a/20129229/3243497 .
 
         profiles = (RegistrationProfile.objects
                 .filter(user__in=users)
