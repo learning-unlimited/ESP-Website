@@ -603,7 +603,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             # ignores classes because that's what the conflicts logic does!
             availability = teacher.getAvailableTimes(prog, ignore_classes=True, ignore_moderation=True)
-            #checks that the teacher has listed any availablilty
+            #checks that the teacher has listed any availability
             if not availability:
                 noavailuser = teacher
             else:
