@@ -36,13 +36,13 @@
 {% if noavailuser %}
 	<div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {{ noavailuser.name }}</font> has not yet indicated any availability!
+            {{ noavailuser.name }} has not yet indicated any availability!
     </div>
 {% endif %}
 {% if unavailableuser %}
     <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {{ unavailableuser.name }}</font> is not listed as available for the following blocks ({{ unavailabletimes|join:", " }}).
+            {{ unavailableuser.name }} is not listed as available for the following blocks ({{ unavailabletimes|join:", " }}).
     </div>
 {% endif %}
 {% if conflict %}
