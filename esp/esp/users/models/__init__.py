@@ -187,6 +187,23 @@ class BaseESPUser(object):
             return json.loads(tag_val)
 
     @staticmethod
+    def graduation_year_choices(include_blank=True, schoolyear=None):
+        choices = [
+            (str(ESPUser.YOGFromGrade(grade, schoolyear=schoolyear)), str(grade))
+            for grade in ESPUser.grade_options()
+        ]
+        if include_blank:
+            return [('', '')] + choices
+        return choices
+
+    @staticmethod
+    def valid_graduation_years(schoolyear=None):
+        return set(
+            ESPUser.YOGFromGrade(grade, schoolyear=schoolyear)
+            for grade in ESPUser.grade_options()
+        )
+
+    @staticmethod
     def onsite_user():
         if ESPUser.objects.filter(username='onsite').exists():
             return ESPUser.objects.get(username='onsite')
@@ -1136,15 +1153,6 @@ class BaseESPUser(object):
         if not self.isStudent():
             return
 
-        #   Retrieve the user's most recent registration profile and create a StudentInfo if needed.
-        profile = self.getLastProfile()
-        if profile.student_info is None:
-            student_info = StudentInfo(user=self)
-            student_info.save()
-            profile.student_info = student_info
-            profile.save()
-
-        #   Update the graduation year.
         #   Guard against non-numeric input (e.g. a typo in the GET parameter)
         #   so the view degrades gracefully instead of returning a 500.
         try:
@@ -1154,14 +1162,27 @@ class BaseESPUser(object):
 
         if validate:
             #   Only allow years corresponding to configured grade options.
-            #   This prevents unreasonable values (e.g. very large or negative).
-            valid_grad_years = set(ESPUser.YOGFromGrade(grade) for grade in ESPUser.grade_options())
+            valid_grad_years = ESPUser.valid_graduation_years()
             if parsed_year not in valid_grad_years:
                 return
 
+            #   Perform a simple sanity check on the graduation year to
+            #   prevent unreasonable values (e.g. very large or negative).
+            current_year = date.today().year
+            if parsed_year < current_year - 20 or parsed_year > current_year + 20:
+                return
+
+        #   Retrieve the user's most recent registration profile and create a StudentInfo if needed.
+        profile = self.getLastProfile()
         student_info = profile.student_info
+        if student_info is None:
+            student_info = StudentInfo(user=self)
+
         student_info.graduation_year = parsed_year
         student_info.save()
+        if profile.student_info_id is None:
+            profile.student_info = student_info
+            profile.save()
 
     def set_grade(self, grade):
         """ Convenience function for setting a student's grade based on the

@@ -473,7 +473,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         )
 
     # ------------------------------------------------------------------
-    # Test 6: change_grade_form is present in template context
+    # Test 6: StudentInfo is recreated only for valid grade updates
     # ------------------------------------------------------------------
 
     def test_creates_student_info_when_missing(self):
@@ -512,6 +512,28 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
                 "Graduation year changed unexpectedly for invalid input %s"
                 % invalid_year,
             )
+
+    def test_invalid_graduation_year_does_not_create_missing_student_info(self):
+        """If StudentInfo is missing, invalid input must not recreate it."""
+        profile = self.student.getLastProfile()
+        profile.student_info = None
+        profile.save()
+
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(
+            self.userview_base + '&graduation_year=not_a_number'
+        )
+        self.assertEqual(response.status_code, 200)
+
+        profile.refresh_from_db()
+        self.assertIsNone(
+            profile.student_info,
+            "StudentInfo should not be created for invalid graduation year input.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 7: change_grade_form is present in template context
+    # ------------------------------------------------------------------
 
     def test_change_grade_form_in_context(self):
         """A GET to userview without a graduation_year param should still

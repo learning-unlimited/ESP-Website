@@ -164,7 +164,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
     pronoun = forms.CharField(max_length=50, required=False)
-    graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7, 13)])
+    graduation_year = forms.ChoiceField(choices=[('', '')])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
     school = forms.CharField(max_length=128, required=False)
@@ -210,7 +210,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             del self.fields['food_preference']
 
         #   Allow grade range of students to be customized by a Tag (default is 7-12)
-        self.fields['graduation_year'].choices = [('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in ESPUser.grade_options()]
+        self.fields['graduation_year'].choices = ESPUser.graduation_year_choices()
 
         #   Add user's current grade if it is out of range and they have already filled out the profile.
         if user and user.registrationprofile_set.count() > 0:
