@@ -28,10 +28,19 @@ jobs:
   # ── Handle "/assign" comments ──────────────────────────────────────────────
   handle-assignment:
     if: >-
-      (github.event_name == 'issue_comment'
-      && !github.event.issue.pull_request
-      && contains(github.event.comment.body, '/assign'))
-      || (github.event_name == 'issues' && github.event.action == 'opened')
+      handle-assignment:
+  if: >-
+    (github.event_name == 'issue_comment'
+    && !github.event.issue.pull_request
+    && contains(github.event.comment.body, '/assign'))
+    || (
+      github.event_name == 'issues'
+      && github.event.action == 'opened'
+      && (
+        contains(github.event.issue.body, 'I want to self-assign this issue')
+        || contains(github.event.issue.body, '### Self Assignment')
+      )
+    )
     runs-on: ubuntu-latest
     steps:
       - name: Process /assign request

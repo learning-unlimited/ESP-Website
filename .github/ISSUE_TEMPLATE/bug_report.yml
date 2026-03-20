@@ -86,7 +86,7 @@ body:
     id: self_assign
     attributes:
       label: Self Assignment
-      description: Select this if you want to work on this issue
+      description: Select this if you want to work on this issue.
       options:
         - label: I want to self-assign this issue
           required: false
