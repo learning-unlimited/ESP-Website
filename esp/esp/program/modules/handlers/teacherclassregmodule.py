@@ -623,6 +623,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # check that the teacher doesn't have a conflicting schedule, provided the class is scheduled
                 if unavailabletimesWithClass:
                     conflictinguser = teacher
+                # uses conflicts logic to check if the teacher is overbooked
+                if not conflictinguser and not unavailableuser and not noavailuser and not fullybookeduser and cls.conflicts(teacher):
+                    fullybookeduser = teacher
             # make them a coteacher
             if not conflictinguser and not unavailableuser and not noavailuser and not fullybookeduser:
                 lastProf = RegistrationProfile.getLastForProgram(teacher, prog)

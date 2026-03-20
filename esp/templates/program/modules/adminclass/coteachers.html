@@ -29,13 +29,13 @@
 {% if noavailuser %}
 	<div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ noavailuser.username }}">{{ noavailuser.name }}</a>{% else %}{{  noavailuser.name }}{% endif %}</font> has not yet indicated any availability!
+            {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ noavailuser.username }}">{{ noavailuser.name }}</a>{% else %}{{  noavailuser.name }}{% endif %} has not yet indicated any availability!
     </div>
 {% endif %}
 {% if unavailableuser %}
     <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-             {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ unavailableuser.username }}">{{ unavailableuser.name }}</a>{% else %}{{  unavailableuser.name }}{% endif %}</font> is not listed as available for the following blocks ({{ unavailabletimes|join:", " }}).
+             {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ unavailableuser.username }}">{{ unavailableuser.name }}</a>{% else %}{{  unavailableuser.name }}{% endif %} is not listed as available for the following blocks ({{ unavailabletimes|join:", " }}).
     </div>
 {% endif %}
 {% if conflict %}
@@ -47,15 +47,8 @@
 {% if fullybookeduser %}
     <div class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ fullybookeduser.username }}">{{ fullybookeduser.name }}</a>{% else %}{{ fullybookeduser.name }}{% endif %} is already busy for all available blocks.
+            {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ fullybookeduser.username }}">{{ fullybookeduser.name }}</a>{% else %}{{ fullybookeduser.name }}{% endif %} does not have enough free blocks available to register as a coteacher.
     </div>
-{% endif %}
-
-{% if error %}
-<div class="alert alert-danger">
-    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-        {{ error }}
-</div>
 {% endif %}
 
 {% if error %}
