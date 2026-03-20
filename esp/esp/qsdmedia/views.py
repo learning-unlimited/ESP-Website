@@ -53,7 +53,7 @@ def site_media(request):
         if request.POST.get('command') == 'delete':
             docid = request.POST.get('docid')
             try:
-                media = Media.objects.get(id=docid, owner_type__isnull=True)
+                media = Media.objects.get(id=docid, owner_type__isnull=True, owner_id__isnull=True)
                 media.delete()
             except Media.DoesNotExist:
                 pass
@@ -77,7 +77,7 @@ def site_media(request):
             if form.is_valid():
                 docid = request.POST.get('docid')
                 try:
-                    media = Media.objects.get(id=docid, owner_type__isnull=True)
+                    media = Media.objects.get(id=docid, owner_type__isnull=True, owner_id__isnull=True)
                     media.rename(form.cleaned_data['title'])
                     media.save()
                     return HttpResponseRedirect('/manage/site_media/')
@@ -85,7 +85,7 @@ def site_media(request):
                     pass
             renameform = form
 
-    site_media_list = Media.objects.filter(owner_type__isnull=True).order_by('friendly_name')
+    site_media_list = Media.objects.filter(owner_type__isnull=True, owner_id__isnull=True).order_by('friendly_name')
     context = {
         'site_media_list': site_media_list,
         'uploadform': uploadform,

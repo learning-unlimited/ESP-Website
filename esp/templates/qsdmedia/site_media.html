@@ -50,7 +50,7 @@ Use this page to manage site-wide files such as team photos, campus maps, and po
                 {% csrf_token %}
                 <input type="hidden" name="docid" value="{{ doc.id }}">
                 <input type="hidden" name="command" value="rename">
-                {{ renameform.title }}
+                <input type="text" name="title" value="{{ doc.friendly_name }}">
                 <input class="button" type="submit" value="Rename">
             </form>
         </td>
