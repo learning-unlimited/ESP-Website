@@ -799,11 +799,11 @@ class Program(models.Model, CustomFormsLinkModel):
     """ Returns a queryset of students CURRENTLY checked out using runtime evaluation. """
     @cache_function
     def currentlyCheckedOutStudents(self):
-        # Yahan timezone.now() runtime par call ho raha hai, toh ye safe hai.
+       # timezone.now() is called at runtime, ensuring dynamic evaluation.
         from django.utils import timezone
         return self.checkedOutStudents(time_max=timezone.now())
     
-    # In dependencies ko chhedna mat, ye caching ke liye zaroori hain.
+   # Do not modify these dependencies; they are essential for the caching layer.
     currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name in ['attended', "checked_out"])
 
     """
