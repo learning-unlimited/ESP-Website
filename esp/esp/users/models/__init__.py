@@ -455,8 +455,9 @@ class BaseESPUser(object):
             from django.utils.encoding import force_bytes
             uid = urlsafe_base64_encode(force_bytes(otheruser.pk))
             token = default_token_generator.make_token(otheruser)
-            return 'http://%s/myesp/resetpassword/%s/%s/' % \
-                         (settings.DEFAULT_HOST, uid, token)
+            scheme = 'http' if getattr(settings, 'DEBUG', False) else 'https'
+            return '%s://%s/myesp/resetpassword/%s/%s/' % \
+                         (scheme, settings.DEFAULT_HOST, uid, token)
         elif key == 'recover_query':
             from django.contrib.auth.tokens import default_token_generator
             from django.utils.http import urlsafe_base64_encode
@@ -1250,13 +1251,15 @@ class BaseESPUser(object):
 
     def unsubscribe_link_full(self):
         unsub_link = self.unsubscribe_link()
-        return 'https://%s%s' % (Site.objects.get_current().domain, unsub_link)
+        protocol = 'http' if settings.DEBUG else 'https'
+        return '%s://%s%s' % (protocol, Site.objects.get_current().domain, unsub_link)
 
     # this is an insecure version that accepts a POST from external sources
     def unsubscribe_oneclick(self):
         unsub_link = self.unsubscribe_link()
         unsub_link = unsub_link.replace("unsubscribe", "unsubscribe_oneclick")
-        return 'http://%s%s' % (Site.objects.get_current().domain, unsub_link)
+        protocol = 'http' if settings.DEBUG else 'https'
+        return '%s://%s%s' % (protocol, Site.objects.get_current().domain, unsub_link)
 
     def make_token(self):
         return TimestampSigner().sign(self.username)
