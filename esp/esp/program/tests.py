@@ -155,6 +155,16 @@ class ViewUserInfoTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertStringContains(str(response.content, encoding='UTF-8'), 'Multiple users matched the criteria that you specified')
 
+    def testUserIDSearchIgnoresFuzzyNameMatches(self):
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+        self.fake_admin.first_name = str(self.admin.id)
+        self.fake_admin.save()
+
+        response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+
     def testUserSearchFn(self):
         """
         Tests whether the user-search page works properly.
