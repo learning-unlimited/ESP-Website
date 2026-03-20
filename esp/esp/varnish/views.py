@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.users.models import ESPUser
 from esp.varnish.varnish import purge_page
 from django.http import HttpResponse

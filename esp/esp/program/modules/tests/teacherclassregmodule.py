@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -35,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import json
 import random
 
 from django.db import transaction
@@ -52,7 +50,7 @@ from esp.users.models import ESPUser, Permission
 
 class TeacherClassRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        super(TeacherClassRegTest, self).setUp(num_students=5, room_capacity=5, *args, **kwargs)
+        super().setUp(num_students=5, room_capacity=5, *args, **kwargs)
 
         # Select a primary teacher, two other teachers, and the class
         self.teacher = random.choice(self.teachers)
@@ -198,7 +196,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.delete_resource_request(sec, new_res_type1)
         self.assertTrue(not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
 
-
     def check_all_teachers(self, all_teachers):
         teaching_teachers = [teacher for teacher in self.teachers
                                      if len(teacher.getTaughtClasses()) > 0]
@@ -289,3 +286,18 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertTrue(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
         self.assertTrue(not self.moduleobj.deadline_met())
+
+    # Regression: fix for GET/POST boolean guard in teacherlookup
+    def test_teacherlookup_post_with_name_returns_json(self):
+        """POST with 'name' absent from GET must return JSON, not redirect."""
+        self.client.login(username=self.teacher.username, password='password')
+        url = '%steacherlookup' % self.program.get_teach_url()
+        response = self.client.post(url, {'name': 'teacher'})
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(json.loads(response.content), list)
+
+    def test_teacherlookup_no_name_redirects(self):
+        """Request without 'name' in GET or POST must redirect via goToCore."""
+        self.client.login(username=self.teacher.username, password='password')
+        url = '%steacherlookup' % self.program.get_teach_url()
+        self.assertEqual(self.client.get(url).status_code, 302)

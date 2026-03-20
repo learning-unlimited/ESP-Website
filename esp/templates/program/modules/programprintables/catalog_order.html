@@ -20,7 +20,7 @@
 Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. (Sometimes it will look unbalanced, etc.)
 </p>
 <p>
-<a href="{{request.path}}">Reset Order</a> (default is by catagory, timeblock, title)
+<a href="{{request.path}}">Reset Order</a> (default is by category, timeblock, title)
 <br /><br />
 Get Catalog: 
 (<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
@@ -39,13 +39,13 @@ Get Catalog:
         grades
         <select name="grade_min">
         {% for op in grade_options %}
-        <option value="{{ op }}"{% ifequal op grade_min_orig %} selected="selected"{% endifequal %}>{{ op }}</option>
+        <option value="{{ op }}"{% if op == grade_min_orig %} selected="selected"{% endif %}>{{ op }}</option>
         {% endfor %}
         </select>
         to
         <select name="grade_max">
         {% for op in grade_options %}
-        <option value="{{ op }}"{% ifequal op grade_max_orig %} selected="selected"{% endifequal %}>{{ op }}</option>
+        <option value="{{ op }}"{% if op == grade_max_orig %} selected="selected"{% endif %}>{{ op }}</option>
         {% endfor %}
         </select>
         
@@ -65,7 +65,7 @@ Get Catalog:
         Sort by
         <select name="first_sort">
         {% for op in sorting_options %}
-        <option value="{{ op }}"{% ifequal op sort_name_list_orig.0 %} selected="selected"{% endifequal %}>{{ op }}</option>
+        <option value="{{ op }}"{% if op == sort_name_list_orig.0 %} selected="selected"{% endif %}>{{ op }}</option>
         {% endfor %}
         </select>
         
@@ -73,7 +73,7 @@ Get Catalog:
         
         <select name="second_sort">
         {% for op in sorting_options %}
-        <option value="{{ op }}"{% ifequal op sort_name_list_orig.1 %} selected="selected"{% endifequal %}>{{ op }}</option>
+        <option value="{{ op }}"{% if op == sort_name_list_orig.1 %} selected="selected"{% endif %}>{{ op }}</option>
         {% endfor %}
         </select>
         
@@ -81,7 +81,7 @@ Get Catalog:
         
         <select name="third_sort">
         {% for op in sorting_options %}
-        <option value="{{ op }}"{% ifequal op sort_name_list_orig.2 %} selected="selected"{% endifequal %}>{{ op }}</option>
+        <option value="{{ op }}"{% if op == sort_name_list_orig.2 %} selected="selected"{% endif %}>{{ op }}</option>
         {% endfor %}
         </select>
         <input type="submit" value="Go!"/>

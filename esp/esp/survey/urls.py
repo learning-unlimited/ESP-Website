@@ -1,9 +1,8 @@
-from __future__ import absolute_import
-from django.conf.urls import url
+from django.urls import re_path
 from esp.survey.views import survey_view
 
 
 urlpatterns = [
     # Program stuff
-    url(r'^(onsite|manage|teach|learn)/(.*?)/(.*?)/program.survey$', survey_view),
+    re_path(r'^(onsite|manage|teach|learn)/(.*?)/(.*?)/program.survey$', survey_view),
 ]

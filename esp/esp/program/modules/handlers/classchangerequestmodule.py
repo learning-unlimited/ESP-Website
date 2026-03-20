@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -47,7 +46,6 @@ from django import forms
 from django.http import HttpResponseRedirect
 
 
-
 class ClassChangeRequestModule(ProgramModuleObj):
     doc = """Let students enter a lottery to switch classes after the program has started."""
 
@@ -65,11 +63,8 @@ class ClassChangeRequestModule(ProgramModuleObj):
         proxy = True
         app_label = 'modules'
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return StudentRegistration.valid_objects().filter(user=user, relationship__name="Request").exists()
 
     @main_call

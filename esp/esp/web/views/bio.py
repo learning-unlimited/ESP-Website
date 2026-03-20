@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -38,10 +37,12 @@ from django.core.files.base import ContentFile
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response
+from esp.middleware import ESPError
 from django.http          import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.contrib.auth.decorators import login_required
 from datetime             import datetime
 from django.conf import settings
+import os
 
 @login_required
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, username=''):
@@ -58,7 +59,7 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, userna
             else:
                 founduser = ESPUser.getUserFromNum(first, last, usernum)
                 old_url = True
-    except:
+    except (ESPUser.DoesNotExist, ESPError):
         return bio_not_found(request)
 
     foundprogram = get_from_id(progid, Program, 'program', False)
@@ -86,9 +87,36 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
         # remove them.
         return HttpResponsePermanentRedirect(lastbio.edit_url())
 
+
     # if we submitted a newly edited bio...
     from esp.web.forms.bioedit_form import BioEditForm
+    if request.method == 'POST' and 'remove_picture_btn' in request.POST:
+        if foundprogram is not None:
+            progbio = TeacherBio.getLastForProgram(founduser, foundprogram)
+        else:
+            progbio = lastbio
+
+        if progbio.picture:
+            progbio.picture.delete()
+            progbio.picture = None
+            progbio.save()
+
+        return HttpResponseRedirect(request.path)
+
     if request.method == 'POST' and 'bio_submitted' in request.POST:
+        # Check for removal button first
+        if 'remove_picture_btn' in request.POST:
+            if lastbio.picture:
+                old_path = os.path.join(settings.MEDIA_ROOT, lastbio.picture.name)
+                if os.path.isfile(old_path):
+                    try:
+                        os.remove(old_path)
+                    except OSError:
+                        pass
+                lastbio.picture = None
+                lastbio.save()
+            return HttpResponseRedirect(request.path)
+
         form = BioEditForm(request.POST, request.FILES)
 
         if form.is_valid():
@@ -104,11 +132,24 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
             progbio.bio      = form.cleaned_data['bio']
 
             progbio.save()
-            # save the image
-            if form.cleaned_data['picture'] is not None:
-                progbio.picture = form.cleaned_data['picture']
+
+            # Handle picture updates
+            new_picture = form.cleaned_data.get('picture')
+
+            if new_picture is not None:
+                # Delete old file if it exists
+                if lastbio.picture:
+                    old_path = os.path.join(settings.MEDIA_ROOT, lastbio.picture.name)
+                    if os.path.isfile(old_path):
+                        try:
+                            os.remove(old_path)
+                        except OSError:
+                            pass # File might be already gone or permission error
+
+                progbio.picture = new_picture
             else:
                 progbio.picture = lastbio.picture
+
             progbio.save()
             if external:
                 return True
@@ -123,7 +164,6 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
                                                    'institution': settings.INSTITUTION_NAME,
                                                    'user':    founduser,
                                                    'picture_file': lastbio.picture})
-
 
 
 def bio_not_found(request, user=None, edit_url=None):
@@ -143,7 +183,7 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
         else:
             founduser = ESPUser.getUserFromNum(first, last, usernum)
             old_url = True
-    except:
+    except (ESPUser.DoesNotExist, ESPError):
         return bio_not_found(request)
 
     return bio_user(request, founduser, old_url)
@@ -180,7 +220,7 @@ def bio_user(request, founduser, old_url=False):
     # Also, sort by the order of the corresponding program's id.
     # This should roughly order by program date; at the least, it will
     # cluster listed classes by program.
-    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10).exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=now).filter(sections__resourceassignment__resource__res_type__name="Classroom").distinct().order_by('-parent_program__id')
+    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10, sections__resourceassignment__resource__res_type__name="Classroom").exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=now).distinct().order_by('-parent_program__id')
 
     # Ignore archived classes where we still have a log of the original class
     # Archives lose information; so, display the original form if we still have it

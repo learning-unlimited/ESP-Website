@@ -1,7 +1,4 @@
 
-from __future__ import absolute_import
-import six
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -50,6 +47,7 @@ from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
+from esp.program.modules.admin_search import AdminSearchEntry
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
@@ -62,7 +60,6 @@ from esp.cal.models import Event, EventType
 from esp.program.templatetags.class_render import render_class_direct
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
-
 
 def json_encode(obj):
     if isinstance(obj, ClassSubject):
@@ -126,7 +123,6 @@ def json_encode(obj):
     else:
         raise TypeError(repr(obj) + " is not JSON serializable")
 
-
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
     doc = """Allows students to directly enroll in classes."""
@@ -142,6 +138,19 @@ class StudentClassRegModule(ProgramModuleObj):
             "required": True,
             "choosable": 1
             }]
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if tl != "learn" or view_name != "catalog":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="learn_catalog",
+            url="/learn/%s/catalog" % base,
+            title="Student Catalog",
+            category="Quick Links",
+            keywords=["catalog", "classes", "student view"],
+        )
 
     @property
     def scrmi(self):
@@ -188,7 +197,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         else:
             return {k: ESPUser.objects.filter(v).distinct()
-                    for k, v in six.iteritems(qobjects)}
+                    for k, v in qobjects.items()}
 
     def studentDesc(self):
         #   Label these heading nicely like the user registration form
@@ -202,11 +211,8 @@ class StudentClassRegModule(ProgramModuleObj):
                 'enrolled_past': """Students who have enrolled in a past program""",
                 'attended_past': """Students who have attended a past program"""}
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return (len(user.getSectionsFromProgram(self.program)[:1]) > 0)
 
     def makeSelfCheckinLink(self):
@@ -214,16 +220,16 @@ class StudentClassRegModule(ProgramModuleObj):
             text = self.module.link_title
         else:
             text = "Class changes is currently closed, please contact the admin team to register for classes"
-        link = six.u('<a href="%sstudentonsite" title="%s" class="vModuleLink" >%s</a>') % \
+        link = '<a href="%sstudentonsite" title="%s" class="vModuleLink" >%s</a>' % \
             (self.program.get_learn_url(), text, text)
         return mark_safe(link)
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
         if extension is not None:
-            return super(StudentClassRegModule, self).deadline_met(extension)
+            return super().deadline_met(extension)
         else:
-            return super(StudentClassRegModule, self).deadline_met('/Classes')
+            return super().deadline_met('/Classes')
 
     def deadline_met_or_lottery_open(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -231,7 +237,7 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.deadline_met(extension)
         else:
             return self.deadline_met(extension) or \
-                   super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
+                   super().deadline_met('/Classes/Lottery')
 
     def prepare(self, context={}):
         user = get_current_request().user
@@ -313,7 +319,6 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return context
 
-
     @aux_call
     @needs_student_in_grade
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
@@ -347,7 +352,7 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             try:
                 sec_ids = [int(x) for x in extra.split(',')]
-            except:
+            except (ValueError, TypeError, AttributeError):
                 pass
 
         for sec_id in sec_ids:
@@ -362,9 +367,11 @@ class StudentClassRegModule(ProgramModuleObj):
                 addbutton_str2 = render_to_string(self.baseDir()+'addbutton_catalog.html', button_context)
                 json_data['addbutton_fillslot_sec%d_html' % sec_id] = addbutton_str1
                 json_data['addbutton_catalog_sec%d_html' % sec_id] = addbutton_str2
+            except ClassSection.DoesNotExist:
+                # Section doesn't exist, skip it
+                continue
             except Exception as inst:
                 raise AjaxError('Encountered an error retrieving updated buttons: %s' % inst)
-
 
         return HttpResponse(json.dumps(json_data))
 
@@ -421,7 +428,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_cap
     def ajax_addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class and return an updated inline schedule """
-        if not request.is_ajax():
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.addclass(request, tl, one, two, module, extra, prog)
         try:
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
@@ -434,7 +441,7 @@ class StudentClassRegModule(ProgramModuleObj):
                     #   Rewrite the registration button if possible.  This requires telling
                     #   the ajax_schedule view what section was added/changed.
                     extra = request.POST['section_id']
-                except:
+                except KeyError:
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
@@ -442,7 +449,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise AjaxError(inst)
 
     @staticmethod
-    def sort_categories(classes, prog):
+    def sort_categories(classes, prog, force_sort=False):
         categories = {}
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'symbol':cls.category.symbol}
@@ -456,10 +463,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         catalog_sort_split = catalog_sort.split('__')
         if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
-            categories_sort = sorted(list(categories.values()), key = lambda cat: cat[catalog_sort_split[1]])
+            sort_field = catalog_sort_split[1]
+        elif force_sort:
+            # Separate catalog pages always need a category list, even when class sorting
+            # is not category-based.
+            sort_field = 'symbol'
         else:
-            categories_sort = None
-        return categories_sort
+            return None
+        return sorted(list(categories.values()), key = lambda cat: cat[sort_field])
 
     @aux_call
     @needs_student_in_grade
@@ -471,7 +482,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         try:
             extra = int(extra)
-        except:
+        except (ValueError, TypeError):
             raise ESPError('Please use the link at the main registration page.', log=False)
         user = request.user
         ts = Event.objects.filter(id=extra, program=prog)
@@ -507,13 +518,40 @@ class StudentClassRegModule(ProgramModuleObj):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
-
-        categories_sort = self.sort_categories(classes, self.program)
+        separate_catalog = Tag.getBooleanTag('separate_catalog_pages', prog)
+        is_category_page = separate_catalog and bool(extra)
+        categories_sort = self.sort_categories(classes, self.program, force_sort=separate_catalog)
 
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
-        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories_sort, 'collapse_full': collapse_full}
+
+        selected_category = None
+        if separate_catalog:
+            if is_category_page:
+                try:
+                    category_id = int(extra)
+                    category_qs = ClassSubject.objects.filter(category_id=category_id)
+                    classes = ClassSubject.objects.catalog(self.program, initial_queryset=category_qs)
+                    for cat in categories_sort:
+                        if cat['id'] == category_id:
+                            selected_category = cat
+                            break
+                except ValueError:
+                    classes = []
+            else:
+                classes = []
+
+        context = {
+            'classes': classes,
+            'one': one,
+            'two': two,
+            'categories': categories_sort,
+            'collapse_full': collapse_full,
+            'separate_catalog': separate_catalog,
+            'selected_category': selected_category,
+            'category_page': is_category_page,
+        }
 
         scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
@@ -521,6 +559,10 @@ class StudentClassRegModule(ProgramModuleObj):
         prog_color = prog.getColor()
         collapse_full_classes = Tag.getBooleanTag('collapse_full_classes', prog)
         class_blobs = []
+
+        category_list_href = "#top"
+        if separate_catalog:
+            category_list_href = "/learn/%s/catalog" % prog.getUrlBase()
 
         category_header_str = """
     <div class="cat_wrapper" data-category="%d">
@@ -530,7 +572,7 @@ class StudentClassRegModule(ProgramModuleObj):
            %s
         </p>
         <p class="linktop">
-           <a href="#top">[ Return to Category List ]</a>
+           <a href="%s">[ Return to Category List ]</a>
         </p>
 """
 
@@ -540,7 +582,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 class_category_id = cls.category.id
                 if (class_category_id != None):
                     class_blobs.append('</div>')
-                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category))
+                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category, category_list_href))
             class_blobs.append(render_class_direct(cls))
             class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)
@@ -555,10 +597,9 @@ class StudentClassRegModule(ProgramModuleObj):
                 'two':        two,
                 })
 
-
     """@cache_control(public=True, max_age=3600)
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ """Return the program timeslot names for the tabs in the lottery inteface""" """
+        """ """Return the program timeslot names for the tabs in the lottery interface""" """
         # using .extra() to select all the category text simultaneously
         timeslots = self.program.getTimeSlots()
 
@@ -567,7 +608,6 @@ class StudentClassRegModule(ProgramModuleObj):
         json.dump(list(timeslots), resp, default=json_encode)
 
         return resp"""
-
 
     @cache_control(public=True, max_age=3600)
     @no_auth
@@ -637,6 +677,9 @@ class StudentClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
 
+        if not classes.exists():
+            raise Http404("Class not found")
+
         target_class = classes[0]
 
         context = {'cls': target_class, 'module': self}
@@ -668,7 +711,7 @@ class StudentClassRegModule(ProgramModuleObj):
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
         result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if isinstance(result, six.string_types):
+        if isinstance(result, str):
             raise ESPError(result, log=False)
         else:
             return self.goToCore(tl)
@@ -678,7 +721,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_any_deadline(['/Classes', '/Removal'])
     def ajax_clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
-        if not request.is_ajax():
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.clearslot(request, tl, one, two, module, extra, prog)
 
         cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
@@ -691,6 +734,42 @@ class StudentClassRegModule(ProgramModuleObj):
         if len(cleared_ids) > 0:
             #   The 'extra' value should be the ID list
             return self.ajax_schedule(request, tl, one, two, module, cleared_ids, prog)
+
+    @aux_call
+    @needs_student_in_grade
+    @meets_any_deadline(['/Classes', '/Removal'])
+    def cancel_day(self, request, tl, one, two, module, extra, prog):
+        """Cancel all registrations for a specific day.
+
+        Expects `extra` to be a date string in YYYY-MM-DD format.
+        If the date is missing or invalid, redirect back to the core page.
+        """
+        import datetime
+
+        # extra may be None or a non-date value when probed generically (e.g. by tests).
+        # Treat a missing/invalid date as a no-op and redirect rather than crashing.
+        if not extra or not isinstance(extra, str):
+            return self.goToCore(tl)
+
+        try:
+            target_date = datetime.datetime.strptime(extra, '%Y-%m-%d').date()
+        except ValueError:
+            raise ESPError("Invalid date format. Expected YYYY-MM-DD.", log=False)
+
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
+        sections = request.user.getSections(prog).filter(meeting_times__start__date=target_date).distinct()
+
+        if not sections.exists():
+            raise ESPError("No registrations found for this day.", log=False)
+
+        for sec in sections:
+            result = sec.cannotRemove(request.user)
+            if result and not hasattr(request.user, "onsite_local"):
+                raise ESPError("Cannot remove class %s: %s" % (sec.emailcode(), result), log=False)
+            else:
+                sec.unpreregister_student(request.user, verbs)
+
+        return self.goToCore(tl)
 
     @aux_call
     @no_auth

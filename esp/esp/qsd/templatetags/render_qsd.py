@@ -1,9 +1,7 @@
-from __future__ import absolute_import
 from django import template
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 from esp.qsd.models import QuasiStaticData
 from esp.tagdict.models import Tag
-import six
 
 register = template.Library()
 
@@ -83,7 +81,7 @@ class InlineQSDNode(template.Node):
 
         title = self.url
         if program is not None:
-            title += ' - ' + six.text_type(program)
+            title += ' - ' + str(program)
 
         qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
         context.update({'qsdrec': qsd_obj, 'inline': True})
@@ -95,7 +93,7 @@ def inline_qsd_block(parser, token):
     if len(tokens) == 2:
         iqb, url = tokens
     else:
-        raise Exception("Wrong number of inputs for %s, 1 expected" % (tokens))
+        raise Exception(f"Wrong number of inputs for {tokens}, 1 expected")
 
     nodelist = parser.parse(("end_inline_qsd_block",))
     parser.delete_first_token()
@@ -109,7 +107,7 @@ def inline_program_qsd_block(parser, token):
     if len(tokens) == 3:
         iqb, program, url = tokens
     else:
-        raise Exception("Wrong number of inputs for %s, 2 expected" % (tokens))
+        raise Exception(f"Wrong number of inputs for {tokens}, 2 expected")
 
     nodelist = parser.parse(("end_inline_program_qsd_block",))
     parser.delete_first_token()

@@ -6,16 +6,14 @@
   <table class="bottom">
   <tr>
      <td class="left">
-        <!-- INSERT LOGO IMAGE HERE.  Example:
-            <img src="/media/images/my-logo-small.png" class="logo" />
-        -->
+        <img src="/media/images/my-logo-small.png" class="logo" alt="{{ group_name }} logo" />
      </td>
      <td class="right url">
     {% if user.id %}
       <span class="studentid">{{ user.username }} (ID: {{ user.id }})</span>
     {% endif  %}
       <br /> 
-      http://{{ request.META.HTTP_HOST }}
+      https://{{ request.META.HTTP_HOST }}
      </td>
   </tr>
   </table>

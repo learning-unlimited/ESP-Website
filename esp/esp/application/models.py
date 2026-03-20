@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from django.utils.encoding import python_2_unicode_compatible
 import logging
 logger = logging.getLogger(__name__)
 
@@ -91,7 +88,6 @@ field id.""")
     class Meta:
         verbose_name_plural = 'Formstack app settings'
 
-@python_2_unicode_compatible
 class StudentProgramApp(models.Model):
     """ A student's application to the program. """
 
@@ -118,10 +114,10 @@ class StudentProgramApp(models.Model):
     submission_id = models.IntegerField(null=True, unique=True)
 
     def __str__(self):
-        return "{}'s app for {}".format(self.user, self.program)
+        return f"{self.user}'s app for {self.program}"
 
     def __init__(self, *args, **kwargs):
-        super(StudentProgramApp, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if self.__class__ == StudentProgramApp:
             model = apps.get_model('application', self.app_type + self.__class__.__name__)
@@ -159,7 +155,6 @@ class StudentProgramApp(models.Model):
             result.append(classapp.subject)
         return result
 
-@python_2_unicode_compatible
 class StudentClassApp(models.Model):
     """ A student's application to a particular class. """
 
@@ -188,16 +183,17 @@ class StudentClassApp(models.Model):
             ])
 
     def __str__(self):
-        return "{}'s app for {}".format(self.app.user, self.subject)
+        return f"{self.app.user}'s app for {self.subject}"
 
     def __init__(self, *args, **kwargs):
-        super(StudentClassApp, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if self.__class__ == StudentClassApp:
             model = apps.get_model('application', self.app.app_type + self.__class__.__name__)
             if model is not None:
                 self.__class__ = model
 
+    @transaction.atomic
     def admit(self):
         # note: this will un-admit the student from all other classes
         for classapp in self.app.studentclassapp_set.all():
@@ -229,7 +225,7 @@ class FormstackStudentProgramAppManager(models.Manager):
         try:
             user = ESPUser.objects.get(username=username)
         except ESPUser.DoesNotExist:
-            raise LookupError("no matching user {0}".format(username))
+            raise LookupError(f"no matching user {username}")
 
         # define mapping from string to class subject
         def get_subject(s):
@@ -312,7 +308,7 @@ class FormstackStudentProgramApp(StudentProgramApp):
     objects = FormstackStudentProgramAppManager()
 
     def __init__(self, *args, **kwargs):
-        super(FormstackStudentProgramApp, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.app_type = 'Formstack'
 
     def program_settings(self):

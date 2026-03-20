@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -54,7 +52,7 @@ class StudentLunchSelectionForm(forms.Form):
         self.user = user
         self.day = day
 
-        super(StudentLunchSelectionForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         #   Set choices for timeslot field
         #   [(None, '')] +
@@ -101,7 +99,6 @@ class StudentLunchSelectionForm(forms.Form):
 
         return (result, msg)
 
-
 class StudentLunchSelection(ProgramModuleObj):
     doc = """Allows students to enroll in lunch blocks."""
 
@@ -116,11 +113,8 @@ class StudentLunchSelection(ProgramModuleObj):
             "choosable": 0,
             }
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user, event__name="lunch_selected", program=self.program).exists()
 
     @main_call

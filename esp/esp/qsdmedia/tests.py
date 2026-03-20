@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -55,7 +54,7 @@ class QSDMediaTest(TestCase):
         media.save()
 
         #   Check that the file can be downloaded from the proper link
-        url = '/download/%s' % media.hashed_name
+        url = f'/download/{media.hashed_name}'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
