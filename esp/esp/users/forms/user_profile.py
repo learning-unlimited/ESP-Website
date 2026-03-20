@@ -419,11 +419,15 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
     """ Form for student profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('student_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_students:
-                del self.fields[field_name]
-            if field_name == 'phone_cell' and 'receive_txt_message' in self.fields:
-                del self.fields['receive_txt_message']
+        active_tag = Tag.getTag('student_profile_active_fields')
+        if active_tag != '_ALL_':
+            active_fields = [x.strip().lower() for x in active_tag.split(',')] if active_tag else []
+            for field_name in list(self.fields.keys()):
+                if field_name not in _undeletable_fields_all + _undeletable_fields_students and field_name not in active_fields:
+                    if not self.fields[field_name].required:
+                        del self.fields[field_name]
+        if 'phone_cell' not in self.fields and 'receive_txt_message' in self.fields:
+            del self.fields['receive_txt_message']
     def clean(self):
         cleaned_data = super(StudentProfileForm, self).clean()
 
@@ -449,9 +453,13 @@ class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('teacher_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_teachers:
-                del self.fields[field_name]
+        active_tag = Tag.getTag('teacher_profile_active_fields')
+        if active_tag != '_ALL_':
+            active_fields = [x.strip().lower() for x in active_tag.split(',')] if active_tag else []
+            for field_name in list(self.fields.keys()):
+                if field_name not in _undeletable_fields_all + _undeletable_fields_teachers and field_name not in active_fields:
+                    if not self.fields[field_name].required:
+                        del self.fields[field_name]
 
 # A list of guardian fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_guardians = []
@@ -459,9 +467,13 @@ class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('guardian_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_guardians:
-                del self.fields[field_name]
+        active_tag = Tag.getTag('guardian_profile_active_fields')
+        if active_tag != '_ALL_':
+            active_fields = [x.strip().lower() for x in active_tag.split(',')] if active_tag else []
+            for field_name in list(self.fields.keys()):
+                if field_name not in _undeletable_fields_all + _undeletable_fields_guardians and field_name not in active_fields:
+                    if not self.fields[field_name].required:
+                        del self.fields[field_name]
 
 # A list of educator fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_educators = []
@@ -469,18 +481,26 @@ class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('educator_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_educators:
-                del self.fields[field_name]
+        active_tag = Tag.getTag('educator_profile_active_fields')
+        if active_tag != '_ALL_':
+            active_fields = [x.strip().lower() for x in active_tag.split(',')] if active_tag else []
+            for field_name in list(self.fields.keys()):
+                if field_name not in _undeletable_fields_all + _undeletable_fields_educators and field_name not in active_fields:
+                    if not self.fields[field_name].required:
+                        del self.fields[field_name]
 
 # A list of volunteer fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_volunteers = []
 class VolunteerProfileForm(UserContactForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('volunteer_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_volunteers:
-                del self.fields[field_name]
+        active_tag = Tag.getTag('volunteer_profile_active_fields')
+        if active_tag != '_ALL_':
+            active_fields = [x.strip().lower() for x in active_tag.split(',')] if active_tag else []
+            for field_name in list(self.fields.keys()):
+                if field_name not in _undeletable_fields_all + _undeletable_fields_volunteers and field_name not in active_fields:
+                    if not self.fields[field_name].required:
+                        del self.fields[field_name]
 
 class VisitingUserInfo(FormUnrestrictedOtherUser):
     profession = SizedCharField(length=12, max_length=64, required=False)

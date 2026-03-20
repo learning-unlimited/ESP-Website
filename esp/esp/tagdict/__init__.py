@@ -331,38 +331,38 @@ all_global_tags = {
         'is_setting': True,
     },
     # For the next five, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
-    'teacher_profile_hide_fields': {
+    'teacher_profile_active_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) to hide in the teacher profile form (only fields that are not required may be hidden)',
-        'default': '',
+        'help_text': 'Select the field(s) to include in the teacher profile form (required fields are always included)',
+        'default': '_ALL_',
         'category': 'teach',
         'is_setting': True,
     },
-    'student_profile_hide_fields': {
+    'student_profile_active_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) to hide in the student profile form (only fields that are not required may be hidden)',
-        'default': '',
+        'help_text': 'Select the field(s) to include in the student profile form (required fields are always included)',
+        'default': '_ALL_',
         'category': 'learn',
         'is_setting': True,
     },
-    'volunteer_profile_hide_fields': {
+    'volunteer_profile_active_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) to hide in the volunteer profile form (only fields that are not required may be hidden)',
-        'default': '',
+        'help_text': 'Select the field(s) to include in the volunteer profile form (required fields are always included)',
+        'default': '_ALL_',
         'category': 'volunteer',
         'is_setting': True,
     },
-    'educator_profile_hide_fields': {
+    'educator_profile_active_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) to hide in the educator profile form (only fields that are not required may be hidden)',
-        'default': '',
+        'help_text': 'Select the field(s) to include in the educator profile form (required fields are always included)',
+        'default': '_ALL_',
         'category': 'teach',
         'is_setting': True,
     },
-    'guardian_profile_hide_fields': {
+    'guardian_profile_active_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) to hide in the guardian profile form (only fields that are not required may be hidden)',
-        'default': '',
+        'help_text': 'Select the field(s) to include in the guardian profile form (required fields are always included)',
+        'default': '_ALL_',
         'category': 'learn',
         'is_setting': True,
     },

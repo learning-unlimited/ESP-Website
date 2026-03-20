@@ -479,21 +479,26 @@ class TagSettingsForm(BetterForm):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
                 # Some field widgets need to be setup manually because we can't do it during compilation
-                if key == 'teacher_profile_hide_fields':
+                if key == 'teacher_profile_active_fields':
                     from esp.users.forms.user_profile import TeacherProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in TeacherProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'student_profile_hide_fields':
+                    from django.contrib.admin.widgets import FilteredSelectMultiple
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in TeacherProfileForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
+                elif key == 'student_profile_active_fields':
                     from esp.users.forms.user_profile import StudentProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in StudentProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'volunteer_profile_hide_fields':
+                    from django.contrib.admin.widgets import FilteredSelectMultiple
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in StudentProfileForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
+                elif key == 'volunteer_profile_active_fields':
                     from esp.users.forms.user_profile import VolunteerProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in VolunteerProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'educator_profile_hide_fields':
+                    from django.contrib.admin.widgets import FilteredSelectMultiple
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in VolunteerProfileForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
+                elif key == 'educator_profile_active_fields':
                     from esp.users.forms.user_profile import EducatorProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in EducatorProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'guardian_profile_hide_fields':
+                    from django.contrib.admin.widgets import FilteredSelectMultiple
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in EducatorProfileForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
+                elif key == 'guardian_profile_active_fields':
                     from esp.users.forms.user_profile import GuardianProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in GuardianProfileForm.declared_fields.items() if not field[1].required])
+                    from django.contrib.admin.widgets import FilteredSelectMultiple
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in GuardianProfileForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
                 elif field is not None:
                     self.fields[key] = field
                 elif tag_info.get('is_boolean', False):

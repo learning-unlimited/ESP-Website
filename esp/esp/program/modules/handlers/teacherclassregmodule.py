@@ -928,13 +928,14 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # Makes importing a class from a previous program work
                 # These are the only three fields that can currently be hidden
                 # If another one is added later, this will need to be changed
-                hidden_fields = Tag.getProgramTag('teacherreg_hide_fields', prog)
-                if hidden_fields:
-                    if 'grade_min' in hidden_fields:
+                active_fields_tag = Tag.getProgramTag('teacherreg_active_fields', prog)
+                if active_fields_tag != '_ALL_':
+                    active_fields = [x.strip().lower() for x in active_fields_tag.split(',')] if active_fields_tag else []
+                    if 'grade_min' not in active_fields:
                         current_data['grade_min'] = Tag.getProgramTag('teacherreg_default_min_grade', prog)
-                    if 'grade_max' in hidden_fields:
+                    if 'grade_max' not in active_fields:
                         current_data['grade_max'] = Tag.getProgramTag('teacherreg_default_max_grade', prog)
-                    if 'class_size_max' in hidden_fields:
+                    if 'class_size_max' not in active_fields:
                         current_data['class_size_max'] = Tag.getProgramTag('teacherreg_default_class_size_max', prog)
 
                 if not populateonly:

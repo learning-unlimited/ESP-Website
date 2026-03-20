@@ -200,8 +200,9 @@ class ProgramTagSettingsForm(BetterForm):
             if tag_info.get('is_setting', False):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
-                if key == 'teacherreg_hide_fields':
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[1].label if field[1].label else field[0]) for field in TeacherClassRegForm.declared_fields.items() if not field[1].required])
+                if key == 'teacherreg_active_fields':
+                    from django.contrib.admin.widgets import FilteredSelectMultiple
+                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[1].label if field[1].label else field[0]) for field in TeacherClassRegForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
                 elif key in ['student_reg_records', 'teacher_reg_records']:
                     from esp.users.models import RecordType
                     self.fields[key] = forms.MultipleChoiceField(choices=list(RecordType.desc()))

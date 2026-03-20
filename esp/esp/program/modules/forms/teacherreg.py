@@ -223,11 +223,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
             if tag_data:
                 self.fields[field].help_text = tag_data
 
-        #   Hide fields as desired.
-        tag_data = Tag.getProgramTag('teacherreg_hide_fields', prog)
-        if tag_data:
-            for field_name in [x.strip().lower() for x in tag_data.split(',')]:
-                hide_field(self.fields[field_name])
+        #   Hide fields that are not defined in active_fields
+        tag_data = Tag.getProgramTag('teacherreg_active_fields', prog)
+        if tag_data != '_ALL_':
+            active_fields = [x.strip().lower() for x in tag_data.split(',')] if tag_data else []
+            for field_name, opt_field in list(self.fields.items()):
+                if not opt_field.required and field_name not in active_fields:
+                    hide_field(opt_field)
 
         tag_data = Tag.getProgramTag('teacherreg_default_min_grade', prog)
         if tag_data:
