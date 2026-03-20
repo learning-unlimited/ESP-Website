@@ -23,7 +23,7 @@
         {% endif %}
         <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.prev }}" aria-label="Go to previous step">Prev Step</button>
     {% endif %}
-    <input type="submit" class="btn primary"{% if wizard.steps.next %} value="Next Step"{% endif %} aria-label="{% if wizard.steps.next %}Go to next step{% else %}Submit form{% endif %}">
+    <input type="submit" class="btn primary" value="{% if wizard.steps.next %}Next Step{% else %}Submit form{% endif %}" aria-label="{% if wizard.steps.next %}Go to next step{% else %}Submit form{% endif %}">
     </form>
 {% endblock %}
 

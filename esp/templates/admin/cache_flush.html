@@ -34,13 +34,11 @@ later, possibly in a more annoying way.)</p>
         {{ success }}
     </div>
 {% endif %}
-<p>
 <form action="/manage/flushcache/" method="POST" aria-labelledby="cache-flush-heading">
 <label for="reason">Reason for flushing cache</label>
-<textarea name="reason" id="reason" placeholder="Reason for flushing cache" aria-required="true" aria-describedby="reason-hint"></textarea>
+<textarea name="reason" id="reason" placeholder="Reason for flushing cache" required aria-describedby="reason-hint"></textarea>
 <span id="reason-hint">Please explain why you are flushing the cache so issues can be tracked and fixed.</span>
-<input type="submit" value="Flush Cache" class="btn btn-danger" required aria-label="Flush the Memcached cache" />
+<input type="submit" value="Flush Cache" class="btn btn-danger" aria-label="Flush the Memcached cache" />
 </form>
-</p>
 
 {% endblock %}

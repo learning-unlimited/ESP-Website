@@ -67,8 +67,10 @@ tr.email-details {
         <th># Emails Sent</th>
     </tr>
     {% for req in requests %}
-        <tr class="email-header" tabindex="0" role="button" aria-expanded="false" aria-label="Click to expand email details">
-            <td>+</td>
+        <tr class="email-header">
+            <td>
+                <button type="button" aria-expanded="false" aria-label="Expand details for {{ req.subject }}">+</button>
+            </td>
             <td><b>{{ req.subject }}</b></td>
             <td style="text-align:center;">{% if req.processed %}&#10003;{% else %}&#10005;{% endif %}</td>
             <td style="text-align:center;">{{ req.num_rec }}</td>
@@ -100,10 +102,13 @@ $j(function() {
         $row.toggle();
         var iframe = $row.find("iframe")[0];
         iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 16 + 'px';
-        if ($target.find("td:first").html() == "+") {
-            $target.find("td:first").html("-");
+        var $btn = $target.find("td:first button");
+        if ($btn.html() == "+") {
+            $btn.html("-");
+            $btn.attr("aria-expanded", "true");
         } else {
-            $target.find("td:first").html("+");
+            $btn.html("+");
+            $btn.attr("aria-expanded", "false");
         }
     });
 });
