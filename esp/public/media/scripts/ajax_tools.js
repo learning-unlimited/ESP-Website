@@ -84,8 +84,9 @@ const apply_fragment_changes = function(data)
         {
             //  console.log("Evaluating: " + data[key]);
             //  SECURITY RISK: Executing arbitrary scripts from the server via JSON inherently poses XSS risks.
-            //  Refactored to use new Function() which is marginally safer than eval() as it isolates execution
-            //  to the global scope avoiding local variable leaks, but it still executes arbitrary code.
+            //  Note: new Function() still executes arbitrary code and is not meaningfully safer than eval() for XSS.
+            //  It runs in the global scope (not the local one) and is non-strict unless the payload opts in, so use
+            //  this only if you explicitly need those semantics and fully trust the server-provided script content.
             new Function(data[key])();
         }
     }
@@ -110,7 +111,13 @@ const handle_submit = function(mode, attrs, eventObject)
     //  Check the csrf cookie and reject the submission if it fails
     //  Providing fallback 'this' for jQuery strict mode compliance which yields undefined over window
     const dynamicThis = this === undefined ? window : this;
-    if($j(dynamicThis).length > 0 && typeof check_csrf_cookie !== 'undefined' && !check_csrf_cookie($j(dynamicThis)))
+    
+    // Ensure we pass a DOM form element (not a jQuery object) to check_csrf_cookie
+    const $formWrapper = $j(dynamicThis);
+    const formElement = $formWrapper.length > 0 ? $formWrapper[0] : null;
+
+    // Fail closed if the CSRF checker is unavailable or if the check fails
+    if (typeof check_csrf_cookie === 'undefined' || !formElement || !check_csrf_cookie(formElement))
     {
         return false;
     }
@@ -191,6 +198,7 @@ const register_fragment = function(fragment_attrs)
 window.register_form = register_form;
 window.register_link = register_link;
 window.register_fragment = register_fragment;
+window.apply_fragment_changes = apply_fragment_changes;
 
 $j(document).ready(function()
 {
