@@ -6,7 +6,7 @@
 
 /* Profile editor */
 #id_receive_txt_message {
-    list-style:none
+    list-style: none;
 }
 
 /*  Default formatting */
@@ -69,11 +69,70 @@
     color:red;background:#ffd url(/media/images/icon_error.gif) 5px .3em no-repeat; 
 }
 
-/* prettier forms */
-#divmaintext form select, #divmaintext form input[type=text], #divmaintext form input[type=url], #divmaintext form input[type=email], #divmaintext form input[type=number], #divmaintext form input[type=file], #divmaintext form input[type=password], #divmaintext form textarea { border: 1px solid #b7b7b7; }
-#divmaintext form select:required, #divmaintext form input[type=text]:required, #divmaintext form input[type=url]:required, #divmaintext form input[type=email]:required, #divmaintext form input[type=number]:required, #divmaintext form input[type=password]:required, #divmaintext form input[type=file]:required, #divmaintext form textarea:required { border: 1px solid #FFb7b7; }
-#divmaintext form select:focus, #divmaintext form input[type=text]:focus, #divmaintext form input[type=url]:focus, #divmaintext form input[type=email]:focus, #divmaintext form input[type=number]:focus, #divmaintext form input[type=password]:focus, #divmaintext form textarea:focus { border: 1px solid black; }
-#divmaintext form select:focus:required, #divmaintext form input[type=text]:focus:required, #divmaintext form input[type=url]:focus:required, #divmaintext form input[type=email]:focus:required, #divmaintext form input[type=number]:focus:required, #divmaintext form input[type=password]:focus:required, #divmaintext form textarea:focus:required { border: 1px solid #F00; }
+/* prettier forms - improved field visibility (issue #1110) */
+#divmaintext form select,
+#divmaintext form input[type=text],
+#divmaintext form input[type=url],
+#divmaintext form input[type=email],
+#divmaintext form input[type=number],
+#divmaintext form input[type=file],
+#divmaintext form input[type=password],
+#divmaintext form textarea {
+    border: 1px solid #767676;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#divmaintext form select:required,
+#divmaintext form input[type=text]:required,
+#divmaintext form input[type=url]:required,
+#divmaintext form input[type=email]:required,
+#divmaintext form input[type=number]:required,
+#divmaintext form input[type=password]:required,
+#divmaintext form input[type=file]:required,
+#divmaintext form textarea:required {
+    border: 1px solid #d4576a;
+}
+
+#divmaintext form select:focus,
+#divmaintext form input[type=text]:focus,
+#divmaintext form input[type=url]:focus,
+#divmaintext form input[type=email]:focus,
+#divmaintext form input[type=number]:focus,
+#divmaintext form input[type=file]:focus,
+#divmaintext form input[type=password]:focus,
+#divmaintext form textarea:focus {
+    border: 1px solid #333;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+    outline: 2px solid transparent;
+    outline-offset: 1px;
+}
+
+#divmaintext form select:focus:required,
+#divmaintext form input[type=text]:focus:required,
+#divmaintext form input[type=url]:focus:required,
+#divmaintext form input[type=email]:focus:required,
+#divmaintext form input[type=number]:focus:required,
+#divmaintext form input[type=file]:focus:required,
+#divmaintext form input[type=password]:focus:required,
+#divmaintext form textarea:focus:required {
+    border: 1px solid #c00;
+    box-shadow: 0 0 4px rgba(204, 0, 0, 0.2);
+}
+
+@media (forced-colors: active) {
+    #divmaintext form select:focus,
+    #divmaintext form input[type=text]:focus,
+    #divmaintext form input[type=url]:focus,
+    #divmaintext form input[type=email]:focus,
+    #divmaintext form input[type=number]:focus,
+    #divmaintext form input[type=file]:focus,
+    #divmaintext form input[type=password]:focus,
+    #divmaintext form textarea:focus {
+        box-shadow: none;
+        outline: 2px solid CanvasText;
+        outline-offset: 1px;
+    }
+}
 
 #divmaintext form table.plain
 {
@@ -138,7 +197,7 @@ input.fancybutton:active
    border: 0 !important;
 }
 
-#login_form tbody th, #login_form tbody th {
+#login_form tbody th {
   padding: 2px !important;
 }
 
