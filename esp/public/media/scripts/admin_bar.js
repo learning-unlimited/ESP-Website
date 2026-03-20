@@ -84,7 +84,7 @@ ESP.registerAdminModule({
   content_html: '<a href="/manage/programs/">Manage all programs</a><br/>' +
     '<a href="/manage/pages">Manage static pages</a><br />' +
     (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
-    '<a href="/admin/filebrowser/browse/">Manage media files</a><br />' +
+    '<a href="/manage/site_media/">Manage media files</a><br />' +
     '<a href="/themes/">Manage theme settings</a><br />' +
     '<a href="/manage/docs/">Website Documentation</a>',
   name: 'Other',

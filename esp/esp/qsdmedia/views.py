@@ -34,10 +34,64 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.qsdmedia.models import Media
-from django.http import HttpResponse, Http404
+from esp.utils.web import render_to_response
+from esp.users.models import admin_required
+from esp.web.forms.fileupload_form import FileUploadForm, FileRenameForm
+from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.core.exceptions import MultipleObjectsReturned
 from django.conf import settings
 import fnmatch
+
+
+@admin_required
+def site_media(request):
+    """ Manage site-wide media (team photos, maps, policy docs) — not tied to a program. """
+    uploadform = FileUploadForm()
+    renameform = FileRenameForm()
+
+    if request.method == 'POST':
+        if request.POST.get('command') == 'delete':
+            docid = request.POST.get('docid')
+            try:
+                media = Media.objects.get(id=docid, owner_type__isnull=True, owner_id__isnull=True)
+                media.delete()
+            except Media.DoesNotExist:
+                pass
+            return HttpResponseRedirect('/manage/site_media/')
+        if request.POST.get('command') == 'add':
+            form = FileUploadForm(request.POST, request.FILES)
+            if form.is_valid():
+                media = Media(
+                    friendly_name=form.cleaned_data['title'],
+                    owner_type=None,
+                    owner_id=None,
+                )
+                ufile = form.cleaned_data['uploadedfile']
+                media.handle_file(ufile, ufile.name)
+                media.format = ''
+                media.save()
+                return HttpResponseRedirect('/manage/site_media/')
+            uploadform = form
+        elif request.POST.get('command') == 'rename':
+            form = FileRenameForm(request.POST, request.FILES)
+            if form.is_valid():
+                docid = request.POST.get('docid')
+                try:
+                    media = Media.objects.get(id=docid, owner_type__isnull=True, owner_id__isnull=True)
+                    media.rename(form.cleaned_data['title'])
+                    media.save()
+                    return HttpResponseRedirect('/manage/site_media/')
+                except Media.DoesNotExist:
+                    pass
+            renameform = form
+
+    site_media_list = Media.objects.filter(owner_type__isnull=True, owner_id__isnull=True).order_by('friendly_name')
+    context = {
+        'site_media_list': site_media_list,
+        'uploadform': uploadform,
+        'renameform': renameform,
+    }
+    return render_to_response('qsdmedia/site_media.html', request, context)
 
 
 def qsdmedia2(request, url, ignored_part=None):
