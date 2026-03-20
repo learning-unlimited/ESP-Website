@@ -490,9 +490,10 @@ def find_user(userstr):
             formatted = "%s%s%s-%s%s%s-%s%s%s%s" % tuple(cleaned)
             exact_q = exact_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
 
-        exact_users = ESPUser.objects.filter(exact_q).distinct()
-        if userstr.isnumeric() and exact_users.exists():
-            return exact_users
+        if userstr.isnumeric():
+            exact_users = ESPUser.objects.filter(exact_q).distinct()
+            if exact_users.exists():
+                return exact_users
 
         # Try name (including parent/emergency contact)
         fuzzy_q = Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr)
