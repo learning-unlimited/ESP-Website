@@ -11,6 +11,7 @@ from esp.utils.try_multi import try_multi
 from esp.utils import ascii
 import hashlib
 import pickle
+import uuid
 
 CACHE_WARNING_SIZE = 1 * 1024**2
 DEFAULT_VALUE_CHUNK_SIZE = 900 * 1024
@@ -50,11 +51,15 @@ class CacheClass(BaseCache):
             except TypeError as e:
                 logger.warning("Got a TypeError (likely because value `{}` is not picklable):\n\n{}".format(value, e))
 
-    def _chunk_prefix(self, cache_key):
-        return "MK_" + hashlib.md5(cache_key.encode("UTF-8")).hexdigest()
+    def _new_chunk_prefix(self, cache_key):
+        unique = "%s:%s" % (cache_key, uuid.uuid4().hex)
+        return "MK_" + hashlib.md5(unique.encode("UTF-8")).hexdigest()
 
     def _chunk_key(self, chunk_prefix, index):
         return "%s_%d" % (chunk_prefix, index)
+
+    def _chunk_keys(self, chunk_prefix, chunk_count):
+        return [self._chunk_key(chunk_prefix, i) for i in range(chunk_count)]
 
     def _split_value(self, value):
         serialized = pickle.dumps(value)
@@ -91,8 +96,11 @@ class CacheClass(BaseCache):
         return parts[1], chunk_count
 
     def _get_multikey_value(self, chunk_prefix, chunk_count, default=None, version=None):
-        chunk_keys = [self._chunk_key(chunk_prefix, i) for i in range(chunk_count)]
+        chunk_keys = self._chunk_keys(chunk_prefix, chunk_count)
         chunk_map = self._wrapped_cache.get_many(chunk_keys, version=version)
+        return self._deserialize_chunk_map(chunk_keys, chunk_map, default=default)
+
+    def _deserialize_chunk_map(self, chunk_keys, chunk_map, default=None):
         missing_keys = [chunk_key for chunk_key in chunk_keys if chunk_key not in chunk_map]
         if missing_keys:
             return default
@@ -105,22 +113,41 @@ class CacheClass(BaseCache):
 
     def _set_large_value(self, cache_key, value, timeout=None, version=None):
         serialized, chunks = self._split_value(value)
+        old_metadata = self._wrapped_cache.get(cache_key, default=None, version=version)
+        old_parsed = self._decode_multikey_metadata(old_metadata)
+
         if chunks is None:
-            return self._wrapped_cache.set(cache_key, value, timeout=timeout, version=version)
+            set_success = self._wrapped_cache.set(cache_key, value, timeout=timeout, version=version)
+            if set_success and old_parsed is not None:
+                old_prefix, old_count = old_parsed
+                for chunk_key in self._chunk_keys(old_prefix, old_count):
+                    self._wrapped_cache.delete(chunk_key, version=version)
+            return set_success
 
-        chunk_prefix = self._chunk_prefix(cache_key)
-        chunk_keys = [self._chunk_key(chunk_prefix, i) for i in range(len(chunks))]
-        existing_map = self._wrapped_cache.get_many(chunk_keys, version=version)
+        chunk_prefix = self._new_chunk_prefix(cache_key)
+        chunk_keys = self._chunk_keys(chunk_prefix, len(chunks))
 
-        for chunk_key in existing_map.keys():
-            self._wrapped_cache.delete(chunk_key, version=version)
-
+        written_chunk_keys = []
         for idx, chunk in enumerate(chunks):
             if not self._wrapped_cache.set(chunk_keys[idx], chunk, timeout=timeout, version=version):
+                for chunk_key in written_chunk_keys:
+                    self._wrapped_cache.delete(chunk_key, version=version)
                 return False
+            written_chunk_keys.append(chunk_keys[idx])
 
         metadata = self._encode_multikey_metadata(chunk_prefix, len(chunks))
-        return self._wrapped_cache.set(cache_key, metadata, timeout=timeout, version=version)
+        metadata_success = self._wrapped_cache.set(cache_key, metadata, timeout=timeout, version=version)
+        if not metadata_success:
+            for chunk_key in written_chunk_keys:
+                self._wrapped_cache.delete(chunk_key, version=version)
+            return False
+
+        if old_parsed is not None:
+            old_prefix, old_count = old_parsed
+            for chunk_key in self._chunk_keys(old_prefix, old_count):
+                self._wrapped_cache.delete(chunk_key, version=version)
+
+        return True
 
     def _delete_large_value_chunks(self, cache_key, version=None):
         metadata = self._wrapped_cache.get(cache_key, default=None, version=version)
@@ -170,11 +197,35 @@ class CacheClass(BaseCache):
 
     @try_multi(8)
     def get_many(self, keys, version=None):
+        key_map = dict((key, self.make_key(key, version)) for key in keys)
+        wrapped_ans = self._wrapped_cache.get_many(list(key_map.values()), version=version)
+
+        chunk_requests = {}
+        all_chunk_keys = []
         ans = {}
-        for key in keys:
-            value = self.get(key, default=None, version=version)
-            if value is not None:
+
+        for key, cache_key in key_map.items():
+            if cache_key not in wrapped_ans:
+                continue
+
+            value = wrapped_ans[cache_key]
+            parsed = self._decode_multikey_metadata(value)
+            if parsed is None:
                 ans[key] = value
+                continue
+
+            chunk_prefix, chunk_count = parsed
+            chunk_keys = self._chunk_keys(chunk_prefix, chunk_count)
+            chunk_requests[key] = chunk_keys
+            all_chunk_keys.extend(chunk_keys)
+
+        if chunk_requests:
+            chunk_map = self._wrapped_cache.get_many(all_chunk_keys, version=version)
+            for key, chunk_keys in chunk_requests.items():
+                value = self._deserialize_chunk_map(chunk_keys, chunk_map, default=None)
+                if value is not None:
+                    ans[key] = value
+
         return ans
 
     # Django 1.1 feature

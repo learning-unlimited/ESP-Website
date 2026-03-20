@@ -32,7 +32,7 @@ from esp.utils import query_builder
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
 
-# Code from <http://snippets.dzone.com/posts/show/6313>
+# Code from <https://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
 # though I've had trouble finding documentation to clarify this.
 def find_executable(executable, path=None):
@@ -98,7 +98,7 @@ class DependenciesTestCase(unittest.TestCase):
 
         # Make sure that we're actually using pylibmc.
         # Note that this requires a patch to Django (or Django version 1.3 or later).
-        # Patch can be found at:  <http://code.djangoproject.com/ticket/11675>
+        # Patch can be found at:  <https://code.djangoproject.com/ticket/11675>
         from pylibmc import Client
         from django.core.cache import cache
         if hasattr(cache, "_cache"):
@@ -128,7 +128,7 @@ class MemcachedTestCase(unittest.TestCase):
     def setUp(self):
         """ Launch memcached instances for all the caches listed in CACHES """
         caches = [ x.split(':') for x in self.CACHES ]
-        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', f'{cache[1]}'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                          for cache in caches ]
         self.clients = [ memcache.Client([cache]) for cache in self.CACHES ]
 
@@ -154,8 +154,11 @@ class MemcachedKeyLengthTestCase(DjangoTestCase):
 class _InMemoryWrappedCache:
     def __init__(self):
         self.store = {}
+        self.fail_set_keys = set()
 
     def set(self, key, value, timeout=None, version=None):
+        if key in self.fail_set_keys:
+            return False
         self.store[key] = value
         return True
 
@@ -216,6 +219,36 @@ class MemcachedMultiKeyValueTestCase(unittest.TestCase):
         self.assertEqual(result['small'], small_value)
         self.assertEqual(result['large'], large_value)
         self.assertNotIn('missing', result)
+
+    def test_overwrite_chunked_value_cleans_old_chunks(self):
+        self.cache._new_chunk_prefix = lambda cache_key: 'MK_old'
+        self.assertTrue(self.cache.set('huge', {'payload': 'x' * 4096}))
+
+        old_chunk_keys = [key for key in self.cache._wrapped_cache.store.keys() if key.startswith('MK_old_')]
+        self.assertGreater(len(old_chunk_keys), 1)
+
+        self.cache._new_chunk_prefix = lambda cache_key: 'MK_new'
+        new_value = {'payload': 'y' * 512}
+        self.assertTrue(self.cache.set('huge', new_value))
+        self.assertEqual(self.cache.get('huge'), new_value)
+
+        for key in old_chunk_keys:
+            self.assertNotIn(key, self.cache._wrapped_cache.store)
+
+    def test_partial_chunk_write_failure_keeps_previous_value(self):
+        self.cache._new_chunk_prefix = lambda cache_key: 'MK_prev'
+        previous_value = {'payload': 'z' * 4096}
+        self.assertTrue(self.cache.set('huge', previous_value))
+
+        self.cache._new_chunk_prefix = lambda cache_key: 'MK_fail'
+        self.cache._wrapped_cache.fail_set_keys.add('MK_fail_1')
+
+        failed_value = {'payload': 'w' * 4096}
+        self.assertFalse(self.cache.set('huge', failed_value))
+        self.assertEqual(self.cache.get('huge'), previous_value)
+
+        leaked_new_chunks = [key for key in self.cache._wrapped_cache.store.keys() if key.startswith('MK_fail_')]
+        self.assertEqual(leaked_new_chunks, [])
 
 
 class TemplateOverrideTest(DjangoTestCase):
@@ -431,7 +464,7 @@ class QueryBuilderTest(DjangoTestCase):
 
     def test_search_filter(self):
         select_input = query_builder.SelectInput(
-            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+            "a_db_field", {str(i): f"option {i}" for i in range(10)})
         trivial_input = query_builder.ConstantInput(Q(a="b"))
 
         search_filter_1 = query_builder.SearchFilter(
@@ -447,13 +480,13 @@ class QueryBuilderTest(DjangoTestCase):
 
 
     def test_select_input(self):
-        options = {str(i): "option %s" % i for i in range(10)}
+        options = {str(i): f"option {i}" for i in range(10)}
         select_input = query_builder.SelectInput(
             "a_db_field", options)
         self.assertEqual(select_input.spec(),
                          {'reactClass': 'SelectInput',
                           'options': [{'name': i,
-                                       'title': 'option %s' % i}
+                                       'title': f'option {i}'}
                                       # use options.keys() to get the
                                       # sort order the same as the dict sort
                                       # order.  It doesn't matter in reality,
@@ -474,7 +507,7 @@ class QueryBuilderTest(DjangoTestCase):
 
     def test_optional_input(self):
         select_input = query_builder.SelectInput(
-            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+            "a_db_field", {str(i): f"option {i}" for i in range(10)})
         optional_input = query_builder.OptionalInput(select_input)
         self.assertEqual(optional_input.spec(),
                          {'reactClass': 'OptionalInput', 'name': '+',
