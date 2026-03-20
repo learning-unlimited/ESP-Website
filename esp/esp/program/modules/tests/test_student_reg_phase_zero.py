@@ -145,6 +145,45 @@ class StudentRegPhaseZeroTestCase(ProgramFrameworkTest):
         self.assertContains(response, "This is confirmation that you are entered into our student lottery.")
         self.assertContains(response, "maximum lottery group size is 2")
 
+    def test_get_after_lottery_run_for_entered_student_shows_not_selected_message(self):
+        """If the lottery has been run, an entered-but-unselected student sees the not-selected message."""
+        # Student has entered the lottery
+        record = PhaseZeroRecord.objects.create(program=self.program)
+        record.user.add(self.student)
+        record.save()
+        # Lottery has been run
+        Tag.setTag('student_lottery_run', target=self.program, value='True')
+        self._login_student()
+        response = self.client.get(self.url)
+        # The confirmation template branch for "lottery run, not selected" should be rendered.
+        self.assertContains(response, "lottery has been run")
+        self.assertContains(response, "not selected")
+
+    def test_get_after_lottery_closed_before_run_for_entered_student_shows_closed_message(self):
+        """If the lottery is closed (permission false) before it is run, entered students see the closed message."""
+        # Student has entered the lottery
+        record = PhaseZeroRecord.objects.create(program=self.program)
+        record.user.add(self.student)
+        record.save()
+        # Lottery has not yet been run
+        Tag.setTag('student_lottery_run', target=self.program, value='False')
+        # Simulate lottery permission being closed/disabled for the student
+        Permission.objects.filter(
+            permission_type='Student/PhaseZero',
+            program=self.program,
+        ).delete()
+        # Ensure student doesn't skip phase zero
+        Permission.objects.filter(
+            role__name='Student',
+            permission_type='Student/All',
+            program=self.program,
+        ).delete()
+        self._login_student()
+        response = self.client.get(self.url)
+        # The confirmation template branch for "entered but lottery closed/not started" should be rendered.
+        self.assertContains(response, "The student lottery is now closed")
+        self.assertContains(response, "This page will be updated once the lottery has been run")
+
     @patch('esp.program.modules.handlers.studentregphasezero.send_mail')
     def test_post_creates_phasezero_record_and_sends_confirmation_email(self, mock_send_mail):
         """Posting should create a PhaseZeroRecord and send a confirmation email."""
