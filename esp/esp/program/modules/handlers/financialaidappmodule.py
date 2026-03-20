@@ -112,7 +112,8 @@ class FinancialAidAppModule(ProgramModuleObj):
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)
             if form.is_valid():
-                app.__dict__.update(form.cleaned_data)
+                for key, value in form.cleaned_data.items():
+                    setattr(app, key, value)
 
                 if not 'submitform' in request.POST or request.POST['submitform'].lower() == 'complete':
                     app.done = True
@@ -145,7 +146,7 @@ Extra Explanation:
 ========================================
 
 This request can be (re)viewed at:
-<http://%s/admin/program/financialaidrequest/%s/>
+<%s://%s/admin/program/financialaidrequest/%s/>
 
 
 """) % (request.user.first_name,
@@ -161,6 +162,7 @@ This request can be (re)viewed at:
     str(app.household_income),
     str(app.student_prepare),
     app.extra_explaination,
+    'http' if settings.DEBUG else 'https',
     settings.DEFAULT_HOST, # server hostname
     str(app.id)),
                             settings.SERVER_EMAIL,

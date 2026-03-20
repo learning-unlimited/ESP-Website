@@ -39,6 +39,7 @@
             $.ajax({
                 url: '/manage/templateoverride/default_content/',
                 data: {name: templateName},
+                dataType: 'json',
                 success: function (data) {
                     contentField.val(data.content);
                 },

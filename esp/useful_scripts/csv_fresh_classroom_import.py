@@ -59,7 +59,7 @@ def subsequence_match(item, options, exclude):
     item = item.lower()
     if item == "":
         return None
-    # http://stackoverflow.com/questions/3673434/find-subsequences-of-strings-within-strings
+    # https://stackoverflow.com/questions/3673434/find-subsequences-of-strings-within-strings
     pattern = ".*".join(item)
     matches = []
     for i, option in enumerate(options):
