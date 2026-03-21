@@ -55,7 +55,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_street = StrippedCharField(required=True, length=40, max_length=100)
     address_city = StrippedCharField(required=True, length=20, max_length=50)
     address_state = forms.ChoiceField(required=True, choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
-    address_zip = StrippedCharField(required=True, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    address_zip = StrippedCharField(required=True, length=10, max_length=10, widget=forms.TextInput(attrs={'class': 'input-small'}))
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
     def __init__(self, *args, **kwargs):
@@ -93,7 +93,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_street = StrippedCharField(length=40, max_length=100)
     emerg_address_city = StrippedCharField(length=20, max_length=50)
     emerg_address_state = forms.ChoiceField(choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
-    emerg_address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    emerg_address_zip = StrippedCharField(length=10, max_length=10, widget=forms.TextInput(attrs={'class': 'input-small'}))
     emerg_address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
     def clean(self):
@@ -492,7 +492,7 @@ class MinimalUserInfo(FormUnrestrictedOtherUser):
     address_street = StrippedCharField(length=40, max_length=100)
     address_city = StrippedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=list(zip(_states, _states)))
-    address_zip = StrippedCharField(length=5, max_length=5)
+    address_zip = StrippedCharField(length=5, max_length=10)
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
 _grad_years = list(range(datetime.now().year, datetime.now().year + 6))

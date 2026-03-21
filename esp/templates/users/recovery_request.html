@@ -18,6 +18,7 @@ you entered when you signed up.
 
 <style type="text/css">th { vertical-align: top; }</style>
 <form action="{{ request.path }}" method="post" name="passreset_form">
+  {% csrf_token %}
 <table>
 <thead>
 <tr>
