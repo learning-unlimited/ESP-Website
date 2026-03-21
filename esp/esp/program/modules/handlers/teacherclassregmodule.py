@@ -278,8 +278,9 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @staticmethod
     def process_attendance(section, request, prog):
-        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
-        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+        today = timezone.localtime(timezone.now()).date()
+        today_min = timezone.make_aware(datetime.datetime.combine(today, datetime.time.min))
+        today_max = timezone.make_aware(datetime.datetime.combine(today, datetime.time.max))
         attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
         enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
@@ -355,8 +356,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                                   Otherwise, unenrolls the student from conflicting sections.
         """
         json_data = {}
-        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
-        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+        today = timezone.localtime(timezone.now()).date()
+        today_min = timezone.make_aware(datetime.datetime.combine(today, datetime.time.min))
+        today_max = timezone.make_aware(datetime.datetime.combine(today, datetime.time.max))
         attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
         enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
