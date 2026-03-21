@@ -2779,7 +2779,7 @@ class Permission(ExpirableModel):
         #  -teachers of a class with emailcode x (eg x=T1993) can edit
         #      /section/<Program.url>/Classes/<x>/<any url>.html
         if url.endswith(".html"):
-            url = url[-5]
+            url = url[:-5]
         if user is None or isinstance(user, AnonymousESPUser):
             return False
         if user.isAdmin():
