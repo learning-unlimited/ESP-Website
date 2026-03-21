@@ -1252,8 +1252,14 @@ def statistics(request, program=None):
                 programs = programs.filter(url__in=form.cleaned_data['program_instances'])
             result_dict['programs'] = programs
 
-            #   Get list of users the query applies to
-            users_q = None
+            #   Get list of users the query applies to.
+            #   Accumulate per-program registration Q objects, then apply each role
+            #   filter once (Student / Teacher). Doing (prog_q & role) for every
+            #   program duplicates the groups join on each OR branch and is very
+            #   slow; (prog_q1 | prog_q2 | ...) & role is equivalent for students
+            #   and avoids that.
+            student_users_q = None
+            teacher_users_q = None
 
             for program in programs:
                 student_q = None
@@ -1267,13 +1273,10 @@ def statistics(request, program=None):
                             student_q |= students_objects[reg_type]
 
                 if student_q:
-                    # Explicitly restrict to students to avoid including teachers/volunteers
-                    # who might have attended/confirmed records.
-                    student_q &= ESPUser.getAllOfType('Student')
-                    if users_q is None:
-                        users_q = student_q
+                    if student_users_q is None:
+                        student_users_q = student_q
                     else:
-                        users_q |= student_q
+                        student_users_q |= student_q
 
                 teacher_q = None
                 if form.cleaned_data.get('teacher_reg_type_all'):
@@ -1286,12 +1289,19 @@ def statistics(request, program=None):
                             teacher_q |= teachers_objects[reg_type]
 
                 if teacher_q:
-                    # Explicitly restrict to teachers
-                    teacher_q &= ESPUser.getAllOfType('Teacher')
-                    if users_q is None:
-                        users_q = teacher_q
+                    if teacher_users_q is None:
+                        teacher_users_q = teacher_q
                     else:
-                        users_q |= teacher_q
+                        teacher_users_q |= teacher_q
+
+            users_q = None
+            if student_users_q is not None:
+                # Restrict to students so teachers/volunteers with registration-like
+                # records are not counted as students.
+                users_q = student_users_q & ESPUser.getAllOfType('Student')
+            if teacher_users_q is not None:
+                tq = teacher_users_q & ESPUser.getAllOfType('Teacher')
+                users_q = tq if users_q is None else (users_q | tq)
 
             if users_q is None:
                 users_q = Q(pk__in=[])
