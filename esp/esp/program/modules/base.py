@@ -617,8 +617,10 @@ def needs_student_in_grade(method):
     page (notastudent.html or wronggrade.html respectively).
     """
     decorated = needs_student(meets_grade(method))
-    # Override .method to point to the original unwrapped function, consistent
-    # with the convention used by the other auth decorators.
+    # Override .method to point to the original unwrapped function.
+    # Without this, .method would point to the meets_grade wrapper (which is
+    # the "view_method" from needs_student's perspective).  Other code (e.g.
+    # testViewsHaveAuths, findModule) expects .method to be the real view.
     decorated.method = method
     return decorated
 

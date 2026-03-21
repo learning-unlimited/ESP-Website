@@ -33,10 +33,10 @@ Learning Unlimited, Inc.
 """
 
 from unittest.mock import MagicMock, patch
-from django.test import TestCase, RequestFactory
+from django.test import TestCase
 
 from esp.program.modules.base import (
-    user_passes_test, render_deadline_for_tl, not_logged_in,
+    user_passes_test, render_deadline_for_tl,
 )
 from esp.program.tests import ProgramFrameworkTest
 
@@ -181,6 +181,99 @@ class UserPassesTestDecoratorTest(TestCase):
         context = mock_render.call_args[0][2]
         self.assertEqual(context['yog'], 2025)
         self.assertEqual(context['program'], 'Splash')
+
+
+class NeedsStudentInGradeCompositionTest(TestCase):
+    """Test needs_student_in_grade composes needs_student + meets_grade correctly."""
+
+    def _make_request(self, authenticated=True, is_student=True, is_admin=False):
+        request = MagicMock()
+        request.user.is_authenticated = authenticated
+        request.user.id = 1 if authenticated else None
+        request.user.isStudent.return_value = is_student
+        request.user.isAdmin.return_value = is_admin
+        return request
+
+    def test_unauthenticated_redirects(self):
+        """Anonymous user should be redirected to login."""
+        from esp.program.modules.base import needs_student_in_grade
+
+        @needs_student_in_grade
+        def view(moduleObj, request, tl, *args, **kwargs):
+            return 'ok'
+
+        moduleObj = MagicMock()
+        request = self._make_request(authenticated=False)
+        request.user.is_authenticated = False
+        request.user.id = None
+        with patch('esp.program.modules.base._login_redirect') as mock_redirect:
+            mock_redirect.return_value = 'redirect'
+            result = view(moduleObj, request, 'learn')
+        mock_redirect.assert_called_once_with(request)
+        self.assertEqual(result, 'redirect')
+
+    def test_non_student_gets_notastudent(self):
+        """Non-student user should see notastudent.html, not wronggrade.html."""
+        from esp.program.modules.base import needs_student_in_grade
+
+        @needs_student_in_grade
+        def view(moduleObj, request, tl, *args, **kwargs):
+            return 'ok'
+
+        moduleObj = MagicMock()
+        request = self._make_request(is_student=False, is_admin=False)
+        with patch('esp.program.modules.base.render_to_response') as mock_render:
+            mock_render.return_value = 'error_page'
+            result = view(moduleObj, request, 'learn')
+        self.assertEqual(mock_render.call_args[0][0], 'errors/program/notastudent.html')
+
+    def test_student_wrong_grade_gets_wronggrade(self):
+        """Student outside grade range should see wronggrade.html."""
+        from esp.program.modules.base import needs_student_in_grade
+
+        @needs_student_in_grade
+        def view(moduleObj, request, tl, *args, **kwargs):
+            return 'ok'
+
+        moduleObj = MagicMock()
+        moduleObj.program.grade_min = 9
+        moduleObj.program.grade_max = 12
+        request = self._make_request(is_student=True)
+        request.user.getGrade.return_value = 7
+        with patch('esp.program.modules.base.Permission') as MockPerm:
+            MockPerm.user_has_perm.return_value = False
+            with patch('esp.program.modules.base.render_to_response') as mock_render:
+                mock_render.return_value = 'error_page'
+                result = view(moduleObj, request, 'learn')
+        self.assertEqual(mock_render.call_args[0][0], 'errors/program/wronggrade.html')
+
+    def test_student_valid_grade_passes(self):
+        """Student within grade range should reach the view."""
+        from esp.program.modules.base import needs_student_in_grade
+
+        @needs_student_in_grade
+        def view(moduleObj, request, tl, *args, **kwargs):
+            return 'ok'
+
+        moduleObj = MagicMock()
+        moduleObj.program.grade_min = 9
+        moduleObj.program.grade_max = 12
+        request = self._make_request(is_student=True)
+        request.user.getGrade.return_value = 10
+        with patch('esp.program.modules.base.Permission') as MockPerm:
+            MockPerm.user_has_perm.return_value = False
+            result = view(moduleObj, request, 'learn')
+        self.assertEqual(result, 'ok')
+
+    def test_method_attribute_points_to_original(self):
+        """needs_student_in_grade must set .method to the original view."""
+        from esp.program.modules.base import needs_student_in_grade
+
+        def my_view(moduleObj, request, tl):
+            return 'ok'
+
+        wrapped = needs_student_in_grade(my_view)
+        self.assertIs(wrapped.method, my_view)
 
 
 class ProgramModuleAuthTest(ProgramFrameworkTest):
