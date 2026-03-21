@@ -251,7 +251,7 @@ INSTALLED_APPS = (
     'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
-    # 'captcha',  # Temporarily disabled due to django-recaptcha installation issues
+    'captcha',
     'form_utils',
     'phonenumber_field',
     'django.contrib.redirects',
