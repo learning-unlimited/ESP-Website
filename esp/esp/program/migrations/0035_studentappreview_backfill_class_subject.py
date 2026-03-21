@@ -45,11 +45,6 @@ def backfill_class_subject(apps, schema_editor):
         else:
             unfilled_count += 1
     
-    print(f"\nBackfill Complete:")
-    print(f"  - Reviews backfilled with class_subject: {backfilled_count}")
-    print(f"  - Reviews left NULL (no associated class): {unfilled_count}")
-    print(f"  - Total reviews processed: {backfilled_count + unfilled_count}\n")
-
 
 def reverse_backfill(apps, schema_editor):
     """
@@ -58,8 +53,7 @@ def reverse_backfill(apps, schema_editor):
     """
     StudentAppReview = apps.get_model('program', 'StudentAppReview')
     StudentAppReview.objects.all().update(class_subject=None)
-    print("\nReverse: All class_subject fields cleared.\n")
-
+   
 
 class Migration(migrations.Migration):
 
