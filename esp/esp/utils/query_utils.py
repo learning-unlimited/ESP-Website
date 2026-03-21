@@ -15,12 +15,12 @@ def nest_Q(q_object, root=''):
     Takes a Q object and a root, and prepends the root recursively to all conditions.
 
     For example, if
-    q = Q(relationship__name="Enrolled", end_date__gte=datetime.now())
+    q = Q(relationship__name="Enrolled", end_date__gte=timezone.now())
     then
     nest_Q(q, 'studentregistration')
     returns
     Q(studentregistration__relationship__name="Enrolled",
-      studentregistration__end_date__gte=datetime.now())
+      studentregistration__end_date__gte=timezone.now())
     """
     obj = shallow_copy_Q(q_object)
     obj.children = [_append_to_child(child, root) for child in q_object.children]
