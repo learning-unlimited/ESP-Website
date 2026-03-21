@@ -531,8 +531,12 @@ class MessageVars(models.Model):
     def getVar(self, key, user):
         """ Get a variable from this object. """
         try:
-            provider = pickle.loads(self.pickled_provider)
-        except Exception:
+            if self.signature:
+                provider = verify_and_deserialize(self.pickled_provider, self.signature, pickle.loads)
+            else:
+                logger.warning("MessageVars %d has no signature", self.id)
+                provider = pickle.loads(self.pickled_provider)
+        except (ValueError, pickle.UnpicklingError, TypeError):
             raise ESPError('Could not load variable provider object!')
 
         if hasattr(provider, 'get_msg_vars'):
