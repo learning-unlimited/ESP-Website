@@ -126,15 +126,16 @@ class AjaxErrorMiddleware(MiddlewareMixin):
         return None
 
 
-    def serialize_error(self, status, message):
+    def serialize_error(self, status, message, http_status=200):
         return HttpResponse(json.dumps({
                     'status': status,
                     'error': message}),
-                            status=status)
+                            status=http_status,
+                            content_type='application/json')
 
 
     def not_found(self, request, exception):
-        return self.serialize_error(404, str(exception))
+        return self.serialize_error(404, str(exception), http_status=200)
 
 
     def bad_request(self, request, exception):
@@ -150,9 +151,9 @@ class AjaxErrorMiddleware(MiddlewareMixin):
             message += "TRACEBACK:\n"
             for tb in traceback.format_tb(tb):
                 message += f"{tb}\n"
-            return self.serialize_error(500, message)
+            return self.serialize_error(500, message, http_status=200)
         else:
-            return self.serialize_error(500, _('Internal error'))
+            return self.serialize_error(500, _('Internal error'), http_status=200)
 
 AjaxError = AjaxErrorMiddleware.AjaxError
 
