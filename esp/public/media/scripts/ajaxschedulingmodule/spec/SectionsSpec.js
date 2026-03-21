@@ -2,8 +2,8 @@ describe("SectionsSpec", function() {
     var sections, matrix;
 
     beforeEach(function() {
-        sections = new Sections(section_fixture(), {}, teacher_fixture(),
-            schedule_assignment_fixture(), new FakeApiClient());
+        sections = new Sections(section_fixture(), {}, {}, teacher_fixture(),
+            {}, schedule_assignment_fixture(), new FakeApiClient());
         matrix = generateFakeMatrix();
         sections.bindMatrix(matrix);
     });
@@ -106,7 +106,6 @@ describe("SectionsSpec", function() {
         });
 
     });
-
 
     describe("scheduleSection", function(){
         describe("when validations return true", function(){
@@ -232,5 +231,38 @@ describe("SectionsSpec", function() {
             sections.scheduleAsGhost("room-3", 11);
             sections.unscheduleAsGhost();
         });
+    });
+});
+
+describe("getSameRoomSections", function() {
+    var sections;
+
+    beforeEach(function() {
+        sections = new Sections(section_fixture(), {}, {}, teacher_fixture(),
+            {}, schedule_assignment_fixture(), new FakeApiClient());
+    });
+
+    it("returns empty array for an unscheduled section", function() {
+        // section 2 has room_id: null in the fixture
+        expect(sections.getSameRoomSections(sections.getById(2))).toEqual([]);
+    });
+
+    it("returns empty array when no other section shares the room", function() {
+        // section 1 is in room-1; no other section is in room-1
+        expect(sections.getSameRoomSections(sections.getById(1))).toEqual([]);
+    });
+
+    it("returns other sections scheduled in the same room", function() {
+        // Put section 2 in room-2 alongside section 3
+        sections.scheduleAssignments[2] = { room_id: "room-2", id: 2, timeslots: [3] };
+        var result = sections.getSameRoomSections(sections.getById(3));
+        expect(result.length).toEqual(1);
+        expect(result[0].id).toEqual(2);
+    });
+
+    it("does not include the section itself", function() {
+        var result = sections.getSameRoomSections(sections.getById(3));
+        var ids = result.map(function(s) { return s.id; });
+        expect(ids).not.toContain(3);
     });
 });

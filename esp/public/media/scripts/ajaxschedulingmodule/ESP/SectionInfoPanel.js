@@ -171,6 +171,38 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         }
         contentDiv.append($j('<br><div><b>Click on another section while holding down "Ctrl"/"Cmd" to swap it with this section</b>'));
 
+        // Show sections in the same classroom that can be swapped
+        if (this.sections.isScheduled(section)) {
+            var sameRoomSections = this.sections.getSameRoomSections(section);
+            var swapDiv = $j('<div>');
+            swapDiv.append('<br><b>Other sections in the same classroom:</b>');
+            if (sameRoomSections.length === 0) {
+                swapDiv.append('<div><i>None</i></div>');
+            } else {
+                var swapList = $j('<ul>');
+                $j.each(sameRoomSections, function(index, other) {
+                    var assignment = this.sections.scheduleAssignments[other.id];
+                    var timeslot_ids = assignment ? assignment.timeslots : [];
+                    var timeslot_labels = timeslot_ids.map(function(ts_id) {
+                        var ts = this.sections.matrix &&
+                                 this.sections.matrix.timeslots.get_by_id(ts_id);
+                        return ts ? ts.label : ts_id;
+                    }.bind(this)).join(', ');
+                    var item = $j('<li>');
+                    var link = $j('<a href="#">')
+                        .text(other.emailcode + ': ' + other.title + (timeslot_labels ? ' (' + timeslot_labels + ')' : ''))
+                        .on('click', function(evt) {
+                            evt.preventDefault();
+                            this.sections.selectSection(other);
+                        }.bind(this));
+                    item.append(link);
+                    swapList.append(item);
+                }.bind(this));
+                swapDiv.append(swapList);
+            }
+            contentDiv.append(swapDiv);
+        }
+
         return contentDiv;
     }.bind(this);
 
