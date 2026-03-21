@@ -12,21 +12,28 @@ def get_signing_key():
 
 def sign_data(data):
     """Generate an HMAC-SHA256 signature for serialized data."""
-    if not isinstance(data, bytes):
-        raise TypeError("Data must be bytes")
+    try:
+        data_bytes = bytes(data)
+    except TypeError:
+        raise TypeError("Data must be bytes-like")
     key = get_signing_key()
-    return hmac.new(key, data, hashlib.sha256).digest()
+    return hmac.new(key, data_bytes, hashlib.sha256).digest()
 
 
 def verify_and_deserialize(data, signature, pickle_func):
     """Verify HMAC signature before deserializing pickled data."""
-    if not isinstance(data, bytes):
-        raise TypeError("Data must be bytes")
-    if not isinstance(signature, bytes):
-        raise TypeError("Signature must be bytes")
+    try:
+        data_bytes = bytes(data)
+    except TypeError:
+        raise TypeError("Data must be bytes-like")
 
-    expected_signature = sign_data(data)
-    if not hmac.compare_digest(signature, expected_signature):
+    try:
+        signature_bytes = bytes(signature)
+    except TypeError:
+        raise TypeError("Signature must be bytes-like")
+
+    expected_signature = sign_data(data_bytes)
+    if not hmac.compare_digest(signature_bytes, expected_signature):
         raise ValueError("Signature verification failed. Data may have been tampered with.")
 
-    return pickle_func(data)
+    return pickle_func(data_bytes)
