@@ -38,6 +38,7 @@ from esp.admin import admin_site
 from esp.resources.models import ResourceType, ResourceRequest, Resource, ResourceAssignment
 
 class ResourceTypeAdmin(admin.ModelAdmin):
+    save_as = True
     def rt_choices(self, obj):
         return str(obj.choices)
     rt_choices.short_description = 'Choices'
@@ -47,6 +48,7 @@ class ResourceTypeAdmin(admin.ModelAdmin):
             'attributes_dumped', 'program__name']
 
 class ResourceRequestAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('target', 'res_type', 'desired_value')
     list_filter = ('res_type__program',)
     search_fields = ['target__parent_class__title', '=target__parent_class__id', 'res_type__name',
@@ -54,6 +56,7 @@ class ResourceRequestAdmin(admin.ModelAdmin):
             'desired_value']
 
 class ResourceAdmin(admin.ModelAdmin):
+    save_as = True
     def program(obj):
         return obj.event.program.name
     list_display = ('name', 'res_type', 'num_students', 'event', 'res_group', program)
@@ -64,6 +67,7 @@ class ResourceAdmin(admin.ModelAdmin):
             '=res_group__id')
 
 class ResourceAssignmentAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('id', 'resource', 'target', 'assignment_group', 'returned')
     search_fields = ('=id', 'resource__name', 'target__parent_class__title')
 
