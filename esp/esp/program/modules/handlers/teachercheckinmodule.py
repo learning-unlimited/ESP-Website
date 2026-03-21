@@ -444,7 +444,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                                   .filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED, end_time__isnull=False) \
                                   .order_by('end_time')
         if starttime is None and date is not None:
-            starttime = datetime.combine(date, time())
+            starttime = timezone.make_aware(datetime.combine(date, time()))
         if starttime is not None:
             sections = sections.filter(end_time__lt=starttime)
 
