@@ -1,28 +1,29 @@
 from django.test import TestCase, RequestFactory
-from django.contrib.auth.models import User
-from esp.accounting.views import user_accounting
+from esp.accounting.views import user_summary
+from esp.users.models import ESPUser
 
 
 class AccountingModuleTest(TestCase):
 
     def setUp(self):
         self.factory = RequestFactory()
-        self.user = User.objects.create_user(
+        self.user = ESPUser.objects.create_user(
             username="test_admin",
             password="password123"
         )
+        self.user.makeAdmin()
 
-    def test_user_lookup_via_url_extra(self):
-        """
-        Verify lookup via URL query parameter
-        """
-        request = self.factory.get(f"/accounting/?extra={self.user.id}")
+    def test_user_lookup_via_url_target_user(self):
+        
+        
+        request = self.factory.get(
+            f"/accounting/?target_user={self.user.id}"
+        )
         request.user = self.user
 
-        response = user_accounting(request)
+        response = user_summary(request)
 
-        # just verify response exists
-        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 200)
 
     def test_user_lookup_via_post_data(self):
         """
@@ -34,17 +35,17 @@ class AccountingModuleTest(TestCase):
         )
         request.user = self.user
 
-        response = user_accounting(request)
+        response = user_summary(request)
 
-        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 200)
 
     def test_invalid_user_lookup(self):
         """
         Invalid user should not crash the view
         """
-        request = self.factory.get("/accounting/?extra=99999")
+        request = self.factory.get("/accounting/?target_user=99999")
         request.user = self.user
 
-        response = user_accounting(request)
+        response = user_summary(request)
 
-        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 200)

@@ -48,63 +48,70 @@ def summary(request):
 
 @admin_required
 def user_summary(request):
-    '''Lists accounting for a user.
-
-    Defaults to the current user, but can take the user ID in the extra
-    argument instead.'''
     user = None
     context = {}
+
+
+
+    # ALWAYS define form first (IMPORTANT)
+    form = StudentSearchForm()
+
     if 'target_user' in request.GET:
         users = ESPUser.objects.filter(id=request.GET['target_user'])
         if users.count() == 1:
             user = users[0]
+
     elif 'target_user' in request.POST:
         form = StudentSearchForm(request.POST)
         if form.is_valid():
             user = form.cleaned_data['target_user']
-    else:
-        form = StudentSearchForm()
 
     if user:
         form = StudentSearchForm(initial={'target_user': user.id})
-        programs = Program.objects.filter(id__in=list(Transfer.objects.filter(user=user).values_list('line_item__program', flat = True).distinct()))
+        programs = Program.objects.filter(
+            id__in=list(
+                Transfer.objects.filter(user=user)
+                .values_list('line_item__program', flat=True)
+                .distinct()
+            )
+        )
         context['prog_results'] = user_accounting(user, programs)
 
     context['target_user'] = user
     context['form'] = form
-    return render_to_response('program/modules/accountingmodule/accounting.html', request, context)
 
-def user_accounting(user, progs = []):
+    return render_to_response(
+        'program/modules/accountingmodule/accounting.html',
+        request,
+        context
+    )
+
+def user_accounting(user, progs=[]):
     results = []
     for prog in progs:
         iac = IndividualAccountingController(prog, user)
         classified_transfers = [
-            { 'transfer': t, 'type': iac.classify_transfer(t) }
+            {'transfer': t, 'type': iac.classify_transfer(t)}
             for t in iac.get_transfers().select_related('line_item')
         ]
-        # Include refund transfers (excluded from get_transfers by default)
+
         refund_lit = iac.default_refund_lineitemtype()
         if refund_lit:
-            for t in Transfer.objects.filter(user=user, line_item=refund_lit, destination__isnull=True).select_related('line_item'):
-                classified_transfers.append({'transfer': t, 'type': iac.classify_transfer(t)})
+            for t in Transfer.objects.filter(
+                user=user,
+                line_item=refund_lit,
+                destination__isnull=True
+            ).select_related('line_item'):
+                classified_transfers.append({
+                    'transfer': t,
+                    'type': iac.classify_transfer(t)
+                })
 
-        sort_order = {"Cost (required)": 0, "Cost (optional)": 1, "Sibling discount": 2, "Financial aid": 3, "Payment": 4, "Refund": 5}
-        classified_transfers.sort(key=lambda t: 'Program admission' not in t['transfer'].line_item.text) # put Program admission at the top
-        classified_transfers.sort(key=lambda t: sort_order.get(t['type'], 100))
         result = {
             'program': prog,
             'transfers': classified_transfers,
-            'identifier': iac.get_identifier(),
-            'grant': iac.latest_finaid_grant(),
         }
-        if iac.transfers_to_program_exist():
-            result['transfers_exist'] = True
-            result['requested'] = iac.amount_requested(ensure_required=False)
-            result['finaid'] = iac.amount_finaid()
-            result['siblingdiscount'] = iac.amount_siblingdiscount()
-            result['paid'] = iac.amount_paid()
-            result['refunded'] = iac.amount_refunded()
-            result['due'] = iac.amount_due()
-        results.append(result)
-    return results
 
+        results.append(result)
+
+    return results
