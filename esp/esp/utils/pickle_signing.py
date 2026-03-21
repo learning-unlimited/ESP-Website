@@ -6,10 +6,20 @@ from django.conf import settings
 
 
 def get_signing_key():
-    """Get the secret key used for signing pickled data."""
-    return settings.SECRET_KEY.encode('utf-8')
+    """
+    Get the secret key used for signing pickled data.
 
-
+    Prefer a dedicated PICKLE_SIGNING_KEY setting; if it is not defined,
+    derive a namespaced sub-key from Django's SECRET_KEY so that this
+    protocol does not reuse the raw SECRET_KEY directly.
+    """
+    base_key = getattr(settings, "PICKLE_SIGNING_KEY", None)
+    if base_key is None:
+        base_key = settings.SECRET_KEY
+    if isinstance(base_key, str):
+        base_key = base_key.encode("utf-8")
+    # Derive a protocol-specific key to avoid cross-protocol key reuse.
+    return hmac.new(base_key, b"esp.utils.pickle_signing", hashlib.sha256).digest()
 def sign_data(data):
     """Generate an HMAC-SHA256 signature for serialized data."""
     try:
