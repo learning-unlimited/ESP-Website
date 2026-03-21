@@ -48,6 +48,7 @@ from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 import datetime
+from django.utils import timezone
 
 class OnSiteAttendance(ProgramModuleObj):
     doc = """Provides statistics on program attendance and allows admins to take attendance for classes."""
@@ -77,14 +78,14 @@ class OnSiteAttendance(ProgramModuleObj):
                 if when_get != "":
                     # if a date is specified, use that date and the end time of the timeblock
                     date = datetime.datetime.strptime(when_get, "%Y-%m-%d").date()
-                    when = datetime.datetime.combine(date, timeslot.end.time())
+                    when = timezone.make_aware(datetime.datetime.combine(date, timeslot.end.time()))
                 else:
                     # otherwise, just use the end time (and date) of the timeblock
                     when = timeslot.end
                     date = when.date()
                 context['when'] = when
-                time_min = datetime.datetime.combine(date, timeslot.start_w_buffer().time())
-                time_max = datetime.datetime.combine(date, timeslot.end.time())
+                time_min = timezone.make_aware(datetime.datetime.combine(date, timeslot.start_w_buffer().time()))
+                time_max = timezone.make_aware(datetime.datetime.combine(date, timeslot.end.time()))
                 #Students that are marked as attending a class during this timeslot on the specified day
                 attended = ESPUser.objects.filter(Q(studentregistration__section__meeting_times=timeslot, studentregistration__relationship__name="Attended") & nest_Q(StudentRegistration.is_valid_qobject(when), 'studentregistration')).distinct()
                 #Students that are enrolled in a class during this timeslot on the specified day
