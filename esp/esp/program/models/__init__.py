@@ -1206,6 +1206,10 @@ class Program(models.Model, CustomFormsLinkModel):
             for module in modules:
                 module.user = user
             modules.sort(key=lambda mod: not mod.isCompleted(user))
+
+        # ✅ FIX: Real-time validity filter (Issue #4935)
+        modules = [m for m in modules if m.deadline_met()]
+
         return modules
 
     @cache_function
