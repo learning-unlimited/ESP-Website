@@ -252,11 +252,77 @@ if 'CACHES' not in locals():
 MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 
 # set tempdir so that we don't have to worry about collision
+# Use a per-UID subdirectory so that different OS users (e.g. www-data vs the
+# developer running tests) each get their own directory.  This prevents the
+# [Errno 13] Permission denied failures described in issue #234 that occurred
+# when runserver (owned by www-data) created the shared tempdir first.
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
-    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX)
-    if not os.path.exists(tempdir):
-        os.makedirs(tempdir)
-    tempfile.tempdir = tempdir
+    base_tempdir = tempfile.gettempdir()
+
+    getuid_func = getattr(os, 'getuid', None)
+    uid_component = None
+    if callable(getuid_func):
+        try:
+            uid_component = str(getuid_func())
+        except Exception:
+            uid_component = None
+
+    if not uid_component:
+        uid_component = os.environ.get('USER') or os.environ.get('USERNAME')
+    if not uid_component:
+        uid_component = 'pid%s' % os.getpid()
+
+    tempdir_name = 'esptmp__' + CACHE_PREFIX + '_' + uid_component
+    tempdir = os.path.join(base_tempdir, tempdir_name)
+
+    stat_result = None
+    try:
+        stat_result = os.stat(tempdir, follow_symlinks=False)
+    except FileNotFoundError:
+        try:
+            os.makedirs(tempdir, mode=0o700, exist_ok=False)
+            stat_result = os.stat(tempdir, follow_symlinks=False)
+        except OSError:
+            stat_result = None
+    except OSError:
+        stat_result = None
+
+    safe_tempdir = None
+    if stat_result is not None and os.path.isdir(tempdir) and not os.path.islink(tempdir):
+        current_uid = None
+        geteuid_func = getattr(os, 'geteuid', None)
+        if callable(geteuid_func):
+            try:
+                current_uid = geteuid_func()
+            except Exception:
+                current_uid = None
+        elif callable(getuid_func):
+            try:
+                current_uid = getuid_func()
+            except Exception:
+                current_uid = None
+
+        owner_ok = True
+        if current_uid is not None and hasattr(stat_result, 'st_uid'):
+            owner_ok = stat_result.st_uid == current_uid
+
+        if owner_ok:
+            try:
+                os.chmod(tempdir, 0o700)
+                mode_result = os.stat(tempdir, follow_symlinks=False)
+                if (mode_result.st_mode & 0o777) == 0o700:
+                    safe_tempdir = tempdir
+            except OSError:
+                safe_tempdir = None
+
+    if safe_tempdir is None:
+        safe_tempdir = tempfile.mkdtemp(prefix=tempdir_name + '__', dir=base_tempdir)
+        try:
+            os.chmod(safe_tempdir, 0o700)
+        except OSError:
+            pass
+
+    tempfile.tempdir = safe_tempdir
     tempfile.alreadytwiddled = True
 
 # change csrf cookie name from default to prevent collisions with misbehaving sites
