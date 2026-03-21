@@ -11,7 +11,8 @@ from script_setup import *
 from esp.program.class_status import ClassStatus
 from esp.program.models import Program, StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
-from datetime import datetime, timedelta
+from datetime import timedelta
+from django.utils import timezone
 from django.db.models.aggregates import Min
 
 parser = argparse.ArgumentParser(description='Unenroll missing students from classes.')
@@ -25,13 +26,13 @@ enrolled = RegistrationType.objects.get(name='Enrolled')
 prog = Program.objects.get(id=args.program_id)
 relevant_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED).exclude(parent_class__category__category='Lunch')
 # classes that started more than 60 minutes ago
-passed_sections = relevant_sections.filter(begin_time__lt=datetime.now() - timedelta(minutes=60))
+passed_sections = relevant_sections.filter(begin_time__lt=timezone.now() - timedelta(minutes=60))
 # students who are enrolled in a class that started more than 60 minutes ago, who have not checked in
 students = ESPUser.objects.filter(studentregistration__in=StudentRegistration.valid_objects(), studentregistration__relationship=enrolled, studentregistration__section__in=passed_sections).distinct().exclude(record__program=prog, record__event__name='attended')
 # classes that start in the next 60 minutes
-upcoming_sections = relevant_sections.filter(begin_time__gt=datetime.now())
+upcoming_sections = relevant_sections.filter(begin_time__gt=timezone.now())
 if args.per_hour:
-    upcoming_sections = upcoming_sections.filter(begin_time__lt=datetime.now() + timedelta(minutes=60))
+    upcoming_sections = upcoming_sections.filter(begin_time__lt=timezone.now() + timedelta(minutes=60))
 
 # registrations of missing students for upcoming classes
 registrations = StudentRegistration.valid_objects().filter(user__in=students, section__in=upcoming_sections, relationship=enrolled)
@@ -39,7 +40,7 @@ print("Candidate Registrations to Delete:", len(registrations))
 print(registrations)
 cmd_str = input("Would you like to delete these registrations [y/N]? --> ")
 if cmd_str.strip().lower() == 'y':
-    registrations.update(end_date=datetime.now())
+    registrations.update(end_date=timezone.now())
     print('Expired:', registrations)
 else:
     print('Action cancelled.')
