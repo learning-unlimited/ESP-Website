@@ -48,6 +48,7 @@ from django.template import Template, Context
 from esp.middleware.threadlocalrequest import AutoRequestContext
 from django.http import HttpResponse
 from django.template.loader import select_template
+from django.utils import timezone
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
     doc = """Serves the main page for student registration."""
@@ -86,8 +87,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})
 
     def students(self, QObject = False):
-        now = datetime.now()
-
+        now = timezone.now()
         q_confirmed = Q(record__event__name = "reg_confirmed", record__program=self.program)
         q_attended = Q(record__event__name= "attended", record__program=self.program)
         # if we don't do list(values_list()), it breaks downstream queries for some weird reason I don't understand -WG
