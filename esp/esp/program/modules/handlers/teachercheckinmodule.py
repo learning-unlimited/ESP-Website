@@ -180,7 +180,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             when = None
             if 'when' in request.POST:
                 try:
-                    when = datetime.strptime(request.POST['when'], "%m/%d/%Y %H:%M")
+                    when = timezone.make_aware(datetime.strptime(request.POST['when'], "%m/%d/%Y %H:%M"))
                 except ValueError:
                     pass
             if 'undo' in request.POST and request.POST['undo'].lower() == 'true':
