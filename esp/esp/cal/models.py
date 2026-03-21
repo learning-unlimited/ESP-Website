@@ -100,7 +100,7 @@ class Event(models.Model):
         dur = self.end - self.start
         hours = int(dur.seconds // 3600)
         minutes = int(dur.seconds // 60) - hours * 60
-        return '%d hr %d min' % (hours, minutes)
+        return f'{hours} hr {minutes} min'
 
     def __str__(self):
         return self.short_time()

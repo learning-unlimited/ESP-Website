@@ -30,7 +30,7 @@ from esp.utils import query_builder
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
 
-# Code from <http://snippets.dzone.com/posts/show/6313>
+# Code from <https://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
 # though I've had trouble finding documentation to clarify this.
 def find_executable(executable, path=None):
@@ -96,7 +96,7 @@ class DependenciesTestCase(unittest.TestCase):
 
         # Make sure that we're actually using pylibmc.
         # Note that this requires a patch to Django (or Django version 1.3 or later).
-        # Patch can be found at:  <http://code.djangoproject.com/ticket/11675>
+        # Patch can be found at:  <https://code.djangoproject.com/ticket/11675>
         from pylibmc import Client
         from django.core.cache import cache
         if hasattr(cache, "_cache"):

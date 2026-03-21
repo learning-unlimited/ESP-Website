@@ -117,7 +117,7 @@ recommend you have at least {{num_star}} classes starred for every priority slot
     {% ifchanged blockCount %}
         <tr><th class="small" colspan="3" height="3">Block {{ blockCount }}</th></tr>
     {% endifchanged %}
-    {% ifequal timeslot.event_type.description "Compulsory" %}
+    {% if timeslot.event_type.description == "Compulsory" %}
         <td width="25%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.short_time }}</td>
         <td colspan="2" class="compulsory_event_desc">{{ timeslot.description }}</td>
     </tr>
@@ -151,7 +151,7 @@ recommend you have at least {{num_star}} classes starred for every priority slot
         </td>
         {%comment%}{% endif %}{%endcomment%}
     </tr>
-    {% endifequal %}
+    {% endif %}
 {% endfor %}
 </table>
 </div>

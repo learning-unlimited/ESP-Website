@@ -17,7 +17,7 @@
 <table cellpadding='3' style='width: 500px; margin: auto' border=1>
 <tr>
     <td colspan='3'>
-    <b>Your schedule for {{ prog.niceName }} {% ifequal num_classes 0 %}is empty.  Please add classes below!{% endifequal %}</b>
+    <b>Your schedule for {{ prog.niceName }} {% if num_classes == 0 %}is empty.  Please add classes below!{% endif %}</b>
     </td>
 </tr>
 {% for timeslot in timeslots %}
@@ -29,7 +29,7 @@
     <!-- {% ifchanged timeslot.2 %}
         <tr><th class='small' colspan='3' height='3'>Block {{ timeslot.2 }}</th></tr> 
     {% endifchanged %} -->
-    {% ifequal timeslot.0.event_type.description 'Compulsory' %}
+    {% if timeslot.0.event_type.description == 'Compulsory' %}
     <tr>
         <td width='35%' valign='top' align='center' class='compulsory_event_time'>{{ timeslot.0.short_time }}</td>
         <td colspan='2' class='compulsory_event_desc'>{{ timeslot.0.description }}</td>
@@ -101,7 +101,7 @@
         {% endif %}
     </tr>
     {% endifchanged %}
-    {% endifequal %}
+    {% endif %}
     {% endif %}
 {% endfor %}
 </table> 

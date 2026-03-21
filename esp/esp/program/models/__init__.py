@@ -251,7 +251,13 @@ def _get_type_url(type):
 
     return _really_get_type_url
 
+class ProgramManager(models.Manager):
+    def get_queryset(self):
+        # this explicitly adds the ordering to every query
+        return super().get_queryset().order_by('-id')
+
 class Program(models.Model, CustomFormsLinkModel):
+    objects = ProgramManager()
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
     form_link_name='Program'
@@ -1438,9 +1444,9 @@ class SplashInfo(models.Model):
     program = AjaxForeignKey(Program, null=True, on_delete=models.CASCADE)
     lunchsat = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
     lunchsun = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
-    siblingdiscount = models.NullBooleanField(default=False, blank=True)
+    siblingdiscount = models.BooleanField(default=False, blank=True, null=True)
     siblingname = models.CharField(max_length=64, blank=True, null=True)
-    submitted = models.NullBooleanField(default=False, blank=True)
+    submitted = models.BooleanField(default=False, blank=True, null=True)
 
     class Meta:
         app_label = 'program'
@@ -1501,7 +1507,7 @@ class RegistrationProfile(models.Model):
     last_ts = models.DateTimeField(default=timezone.now)
     most_recent_profile = models.BooleanField(default=False)
 
-    old_text_reminder = models.NullBooleanField(db_column='text_reminder')  ## Kept around for database-migration purposes
+    old_text_reminder = models.BooleanField(null=True, db_column='text_reminder')  ## Kept around for database-migration purposes
 
     ## Oops, I didn't see this field, and I reimplemented its functionality...
     ## Wrap it for backwards compatibility. -- aseering 8/18/2010
