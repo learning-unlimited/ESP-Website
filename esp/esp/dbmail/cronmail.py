@@ -66,13 +66,15 @@ def process_messages():
     )
     messages = list(messages)
 
-    #   Process message requests
+    # Process message requests
     for message in messages:
-        # If we raise an error here, transaction management will make sure that
-        # things with the MessageRequest get backed out properly.  We let the
-        # whole script just exit in this case -- this way we get an error
-        # message via cron, and the next run of the script can just try again.
-        message.process()
+        try:
+            # message.process() is atomic. We catch exceptions per-message 
+            # so one bad email doesn't block the whole queue.
+            message.process()
+        except Exception as e:
+            logger.error("Failed to process message %s: %s", getattr(message, 'id', 'Unknown'), e)
+            
     return messages
 
 # Deliberately uses transaction autocommitting -- we don't need this to be
