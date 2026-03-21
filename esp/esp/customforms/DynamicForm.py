@@ -20,10 +20,13 @@ from esp.program.models import Program
 
 from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, FieldDoesNotExist
 from esp.middleware import ESPError
 
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class BaseCustomForm(BetterForm):
     """
@@ -394,17 +397,46 @@ class ComboForm(SessionWizardView):
         # Create/update instances corresponding to link fields
         # Also, populate 'data' with foreign-keys that need to be inserted into the response table
         for k, v in link_models_cache.items():
+            m2m_data = {}
+            clean_data = {}
+            model_meta = v['model']._meta
+
+            # Separate M2M fields from standard/FK fields
+            for field_name, value in v['data'].items():
+                try:
+                    field_obj = model_meta.get_field(field_name)
+                    if field_obj.many_to_many:
+                        m2m_data[field_name] = value
+                    else:
+                        clean_data[field_name] = value
+                except FieldDoesNotExist:
+                    # Skip invalid/unknown fields safely
+                    continue
+
             if v['instance'] is not None:
-                # TODO-> the following update won't work for fk fields.
-                v['instance'].__dict__.update(v['data'])
+                # Update attributes using setattr to correctly trigger Django field
+                # descriptors (like FK caching), which __dict__ silently breaks.
+                for field_name, value in clean_data.items():
+                    setattr(v['instance'], field_name, value)
                 v['instance'].save()
-                curr_instance = v['instance']
             else:
                 try:
-                    new_instance = v['model'].objects.create(**v['data'])
-                except Exception:
-                    # show some error message
-                    pass
+                    v['instance'] = v['model'].objects.create(**clean_data)
+                except Exception as e:
+                    logger.error(
+                        "Failed to create linked model %s: %s",
+                        v['model'].__name__,
+                        str(e)
+                    )
+                    continue
+
+            for field_name, value in m2m_data.items():
+                if value is None:
+                    value = []
+                elif not isinstance(value, list):
+                    value = [value]
+                getattr(v['instance'], field_name).set(value)
+
             if v['instance'] is not None:
                 data['link_%s' % v['model'].__name__] = v['instance']
 
