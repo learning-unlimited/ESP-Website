@@ -271,32 +271,32 @@ function section_fixture() {
 function schedule_assignment_fixture() {
     return {
         1: {
-            room_name: "room-1",
+            room_id: "room-1",
             id: 1,
             timeslots: [3]
         },
         2: {
-            room_name: null,
+            room_id: null,
             id: 2,
             timeslots: []
         },
         3: {
-            room_name: "room-2",
+            room_id: "room-2",
             id: 3,
             timeslots: [11, 13]
         },
         4: {
-            room_name: null,
+            room_id: null,
             id: 4,
             timeslots: []
         },
         5: {
-            room_name: null,
+            room_id: null,
             id: 5,
             timeslots: []
         },
         6: {
-            room_name: null,
+            room_id: null,
             id: 6,
             timeslots: []
         }
