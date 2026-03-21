@@ -6,6 +6,35 @@ from django.db.models.query import Q
 from esp.middleware import ESPError
 from functools import reduce
 
+class AjaxUserInput(object):
+    """An input backed by an AJAX user lookup.
+
+    Arguments:
+        `field_name`: model field to match against; typically a ForeignKey id.
+        `endpoint`: URL that returns JSON list of {id, username, ...} for jQuery UI.
+    """
+    def __init__(self, field_name, endpoint, display_field='username'):
+        self.field_name = field_name
+        self.endpoint = endpoint
+        self.display_field = display_field
+
+    def spec(self):
+        return {
+            'reactClass': 'AjaxUserInput',
+            'endpoint': self.endpoint,
+            'displayField': self.display_field,
+        }
+
+    def as_q(self, value):
+        # value is expected to be a dict with 'id' and 'username'
+        if not isinstance(value, dict) or 'id' not in value:
+            raise ESPError('Invalid user selection')
+        try:
+            user_id = int(value['id'])
+        except (ValueError, TypeError):
+            raise ESPError('Invalid user id')
+        return Q(**{self.field_name: user_id})
+
 
 class QueryBuilder(object):
     """A class to build complex queries.
