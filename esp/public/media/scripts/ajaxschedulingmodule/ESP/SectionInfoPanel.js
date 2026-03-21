@@ -184,7 +184,8 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
                     var assignment = this.sections.scheduleAssignments[other.id];
                     var timeslot_ids = assignment ? assignment.timeslots : [];
                     var timeslot_labels = timeslot_ids.map(function(ts_id) {
-                        var ts = this.sections.matrix.timeslots.get_by_id(ts_id);
+                        var ts = this.sections.matrix &&
+                                 this.sections.matrix.timeslots.get_by_id(ts_id);
                         return ts ? ts.label : ts_id;
                     }.bind(this)).join(', ');
                     var item = $j('<li>');
