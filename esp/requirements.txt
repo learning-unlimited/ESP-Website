@@ -27,11 +27,11 @@ pytest-cov==4.1.0 # Coverage measurement compatible with pytest-xdist parallel r
 pytest-django==4.5.2 # Django integration for pytest
 pytest-xdist==3.3.1 # Parallel test execution via -n auto
 ipython==7.34.0 # Used for shell_plus
-Markdown==3.4.1 # Used in QSD (upgraded for Python 3.12 compatibility)
-numpy==1.24.3 # Used mainly in the lottery and class change controller (upgraded for Python 3.13)
-pillow==10.0.0 # Required for ImageField, which we use in teacher bios (upgraded for Python 3.13)
-psycopg2-binary==2.9.9 # Talks to postgres (upgraded)
-pycurl==7.45.2 # Used only in a formstack script which I think is outdated (upgraded)
+Markdown==2.3.1 # Used in QSD
+numpy==1.16.6 # Used mainly in the lottery and class change controller
+pillow==8.3.2 # Required for ImageField, which we use in teacher bios
+psycopg2==2.8.6 # Talks to postgres
+pycurl==7.19.5.1 # Used only in a formstack script which I think is outdated
 py3dns==3.2.1 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
 Pygments==2.10.0 # django-extensions dependency
 pylibmc==1.5.0 # Talks to memcached
