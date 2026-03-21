@@ -672,43 +672,59 @@ class FormHandler:
 
         users = ESPUser.objects.in_bulk([response['user_id'] for response in responses])
 
+        # Pre-fetch for only_fkey_model
+        fkey_instances = {}
+        if only_fkey_model is not None:
+            fkey_ids = [response["link_%s_id" % only_fkey_model.__name__] for response in responses if response.get("link_%s_id" % only_fkey_model.__name__)]
+            fkey_instances = only_fkey_model.objects.in_bulk(fkey_ids)
+
+        # Pre-fetch for add_fields
+        add_field_instances = {}
+        for qname, data in add_fields.items():
+            model = data[0]
+            model_name = model.__name__
+            if model_name not in add_field_instances:
+                link_ids = [response.get("link_%s_id" % model_name) for response in responses if response.get("link_%s_id" % model_name)]
+                add_field_instances[model_name] = model.objects.in_bulk(link_ids)
+
         # Now let's set up the responses
         for response in responses:
             link_instances_cache={}
 
             # Add in user if form is not anonymous
             if not form.anonymous and response['user_id']:
-                user = users[response['user_id']]
-                response['user_id'] = str(response['user_id'])
-                response['user_display'] = user.name()
-                response['user_email'] = user.email
-                response['username'] = user.username
+                user = users.get(response['user_id'])
+                if user:
+                    response['user_id'] = str(response['user_id'])
+                    response['user_display'] = user.name()
+                    response['user_email'] = user.email
+                    response['username'] = user.username
 
             # Add in links
             if only_fkey_model is not None:
-                if only_fkey_model.objects.filter(pk=response[f"link_{only_fkey_model.__name__}_id"]).exists():
-                    inst = only_fkey_model.objects.get(pk=response[f"link_{only_fkey_model.__name__}_id"])
-                else: inst = None
-                response[f"link_{only_fkey_model.__name__}_id"] = str(inst)
+                fkey_id = response.get("link_%s_id" % only_fkey_model.__name__)
+                inst = fkey_instances.get(fkey_id)
+                response["link_%s_id" % only_fkey_model.__name__] = str(inst) if inst else "None"
 
             # Now, put in the additional fields in response
             for qname, data in add_fields.items():
-                if data[0].__name__ not in link_instances_cache:
-                    if data[0].objects.filter(pk=response[f"link_{data[0].__name__}_id"]).exists():
-                        link_instances_cache[data[0].__name__] = data[0].objects.get(pk=response[f"link_{data[0].__name__}_id"])
-                    else:
-                        link_instances_cache[data[0].__name__] = None
+                model = data[0]
+                model_name = model.__name__
 
-                if cf_cache.isCompoundLinkField(data[0], data[1]):
-                    if link_instances_cache[data[0].__name__] is None:
+                if model_name not in link_instances_cache:
+                    link_id = response.get("link_%s_id" % model_name)
+                    link_instances_cache[model_name] = add_field_instances.get(model_name, {}).get(link_id)
+
+                if cf_cache.isCompoundLinkField(model, data[1]):
+                    if link_instances_cache[model_name] is None:
                         response[qname] = []
                     else:
-                        response[qname] = [link_instances_cache[data[0].__name__].__dict__[x] for x in cf_cache.getCompoundLinkFields(data[0], data[1])]
+                        response[qname] = [link_instances_cache[model_name].__dict__[x] for x in cf_cache.getCompoundLinkFields(model, data[1])]
                 else:
-                    if link_instances_cache[data[0].__name__] is None:
+                    if link_instances_cache[model_name] is None:
                         response[qname]=''
                     else:
-                        response[qname] = link_instances_cache[data[0].__name__].__dict__[data[1]]
+                        response[qname] = link_instances_cache[model_name].__dict__[data[1]]
 
         # Add responses to response_data
         response_data['answers'].extend(responses)
@@ -808,5 +824,3 @@ class FormHandler:
                 module = ''
             metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
-
-
