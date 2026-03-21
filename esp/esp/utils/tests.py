@@ -421,15 +421,15 @@ class QueryBuilderTest(DjangoTestCase):
         self.assertEqual(
             str(datetime_input.as_q(
                 {'comparison': 'before', 'datetime': '11/30/2015 23:59'})),
-            str(Q(a_db_field__lt=datetime.datetime(2015, 11, 30, 23, 59))))
+            str(Q(a_db_field__lt=timezone.make_aware(datetime.datetime(2015, 11, 30, 23, 59)))))
         self.assertEqual(
             str(datetime_input.as_q(
                 {'comparison': 'after', 'datetime': '11/30/1995 00:59'})),
-            str(Q(a_db_field__gt=datetime.datetime(1995, 11, 30, 0, 59))))
+            str(Q(a_db_field__gt=timezone.make_aware(datetime.datetime(1995, 11, 30, 0, 59)))))
         self.assertEqual(
             str(datetime_input.as_q(
                 {'comparison': '', 'datetime': '11/01/2015 23:59'})),
-            str(Q(a_db_field=datetime.datetime(2015, 11, 1, 23, 59))))
+            str(Q(a_db_field=timezone.make_aware(datetime.datetime(2015, 11, 1, 23, 59)))))
         with self.assertRaises(ValueError):
             datetime_input.as_q(
                 {'comparison': '', 'datetime': '11/41/2015 23:59'})
