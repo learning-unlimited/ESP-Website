@@ -84,7 +84,7 @@ from esp.utils.query_utils import nest_Q
 from esp.program.class_status import ClassStatus
 from esp.utils import cmp
 
-from urllib.parse import quote
+from urllib.parse import quote, urlencode as urllib_urlencode
 
 try:
     import pickle
@@ -1291,7 +1291,7 @@ class ESPUser(User, BaseESPUser):
         self.save()
 
     def get_absolute_url(self):
-        return "/manage/userview?username="+self.username
+        return reverse('manage_userview') + '?' + urllib_urlencode({'username': self.username})
 
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
