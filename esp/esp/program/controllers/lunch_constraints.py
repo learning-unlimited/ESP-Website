@@ -167,40 +167,7 @@ class LunchConstraintGenerator(object):
         return self.get_lunch_subject(day).get_sections()
 
     def get_failure_function(self, day):
-        on_failure_code = """
-# This code is part of a function: on_failure(schedule_map)
-# The function should return a tuple containing the new schedule
-# map as its first element.  (Messages provided in the second
-# element are ignored since the default error handling was deemed
-# sufficient, but this can be changed by uncommenting some code.)
-
-# Application specific: IDs of lunch periods for this constraint
-lunch_choices = %s
-
-# Compute list of feasible options for student's lunch period
-availability = [(len(schedule_map.map[x]) == 0) for x in lunch_choices]
-time_options = []
-for i in range(len(lunch_choices)):
-    if availability[i]: time_options.append(lunch_choices[i])
-
-# Choose a lunch period, find classes in available times
-if len(time_options) == 0:
-    return (schedule_map, 'Unable to autoschedule lunch.')
-else:
-    dest_sec = None
-    dest_qs = ClassSection.objects.filter(meeting_times__id__in=time_options, parent_class__category__category='Lunch')
-    if dest_qs.count() == 0:
-        return (schedule_map, 'Unable to autoschedule lunch.')
-    elif dest_qs.count() == 1:
-        dest_sec = dest_qs[0]
-    else:
-        dest_sec = random.choice(list(dest_qs))
-    rets = dest_sec.preregister_student(schedule_map.user, overridefull=True)
-    schedule_map.add_section(dest_sec)
-    data = str(schedule_map.map)
-    return (schedule_map, data)
-""" % [x.id for x in self.days[day]['lunch']]
-        return on_failure_code
+        return ",".join(str(x.id) for x in self.days[day]['lunch'])
 
     def generate_constraint(self, day):
         #   Prepare empty expression objects

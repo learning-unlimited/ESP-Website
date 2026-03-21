@@ -2035,17 +2035,46 @@ class ScheduleConstraint(models.Model):
             return True
 
     def handle_failure(self):
-        #   Try the on_failure callback but be very lenient about it (fail silently)
         try:
-            func_str = """def _f(schedule_map):
-{chr(10).join(f'    {l.rstrip()}' for l in self.on_failure.strip().split(chr(10)))}"""
-            exec(func_str)
-            result = _f(self.schedule_map)
-            return result
+            # Parse the comma separated list of lunch timeslot IDs from on_failure
+            if not self.on_failure or not self.on_failure.strip():
+                return (None, None)
+            
+            try:
+                lunch_choices = [int(x.strip()) for x in self.on_failure.split(',')]
+            except ValueError:
+                return (None, None)
+
+            # Compute list of feasible options for student's lunch period
+            availability = [(len(self.schedule_map.map[x]) == 0) for x in lunch_choices]
+            time_options = []
+            for i in range(len(lunch_choices)):
+                if availability[i]: time_options.append(lunch_choices[i])
+
+            # Choose a lunch period, find classes in available times
+            if len(time_options) == 0:
+                return (self.schedule_map, 'Unable to autoschedule lunch.')
+            else:
+                from esp.program.models import ClassSection
+                import random
+                dest_sec = None
+                dest_qs = ClassSection.objects.filter(meeting_times__id__in=time_options, parent_class__category__category='Lunch')
+                if dest_qs.count() == 0:
+                    return (self.schedule_map, 'Unable to autoschedule lunch.')
+                elif dest_qs.count() == 1:
+                    dest_sec = dest_qs[0]
+                else:
+                    dest_sec = random.choice(list(dest_qs))
+                rets = dest_sec.preregister_student(self.schedule_map.user, overridefull=True)
+                self.schedule_map.add_section(dest_sec)
+                data = str(self.schedule_map.map)
+                return (self.schedule_map, data)
+                
         except Exception as inst:
-            #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
+            import logging
+            logging.error('Schedule constraint handler error: %s' % inst)
             pass
-        #   If we got nothing from the on_failure function, just provide Nones.
+            
         return (None, None)
 
 class ScheduleTestTimeblock(BooleanToken):
