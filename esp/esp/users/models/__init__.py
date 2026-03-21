@@ -2187,7 +2187,7 @@ class PersistentQueryFilter(models.Model):
                                                                        signature = sign_data(dumped_filter))
         foo.useful_name = description
         if not foo.signature:
-            foo.signature = sign_data(foo.q_filter)
+            foo.signature = sign_data(bytes(foo.q_filter))
         foo.save()
         return foo
 
