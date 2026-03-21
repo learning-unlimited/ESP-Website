@@ -85,7 +85,7 @@ class TeacherReviewApps(ProgramModuleObj):
                 student.app = None
 
             if student.app:
-                reviews = student.app.reviews.all().filter(reviewer=request.user, score__isnull=False)
+                reviews = student.app.reviews.all().filter(reviewer=request.user,class_subject=cls, score__isnull=False)
                 questions = student.app.questions.all().filter(subject=cls)
             else:
                 reviews = []
@@ -215,7 +215,7 @@ class TeacherReviewApps(ProgramModuleObj):
 
         student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
 
-        teacher_reviews = student.app.reviews.all().filter(reviewer=request.user)
+        teacher_reviews = student.app.reviews.all().filter(reviewer=request.user,class_subject=cls)
         if teacher_reviews.count() > 0:
             this_review = teacher_reviews.order_by('id')[0]
         else:
@@ -241,7 +241,7 @@ class TeacherReviewApps(ProgramModuleObj):
                                   request,
                                   {'class': cls,
                                    'reviews': teacher_reviews,
-                                  'program': prog,
+                                   'program': prog,
                                    'student':student,
                                    'form': form})
 
