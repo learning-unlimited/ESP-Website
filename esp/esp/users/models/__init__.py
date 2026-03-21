@@ -83,6 +83,7 @@ from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
 from esp.program.class_status import ClassStatus
 from esp.utils import cmp
+from esp.utils.pickle_signing import sign_data, verify_and_deserialize
 
 from urllib.parse import quote, urlencode as urllib_urlencode
 
@@ -2166,6 +2167,7 @@ class PersistentQueryFilter(models.Model):
     sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
     create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
     useful_name  = models.CharField(max_length=1024, blank=True, null=True) # A nice name to apply to this filter.
+    signature    = models.BinaryField(null=True, blank=True)  # HMAC-SHA256 signature for integrity verification
 
     class Meta:
         app_label = 'users'
@@ -2177,7 +2179,6 @@ class PersistentQueryFilter(models.Model):
         import hashlib
         dumped_filter = pickle.dumps(q_filter)
 
-        # Deal with multiple instances
         query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
         pqfs = PersistentQueryFilter.objects.filter(query_q)
         if pqfs.exists():
@@ -2185,16 +2186,23 @@ class PersistentQueryFilter(models.Model):
         else:
             foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                        q_filter = dumped_filter,
-                                                                       sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+                                                                       sha1_hash = hashlib.sha1(dumped_filter).hexdigest(),
+                                                                       signature = sign_data(dumped_filter))
         foo.useful_name = description
+        if not foo.signature:
+            foo.signature = sign_data(bytes(foo.q_filter))
         foo.save()
         return foo
 
     def get_Q(self, restrict_to_active = True):
         """ This will return the Q object that was passed into it. """
         try:
-            QObj = pickle.loads(self.q_filter)
-        except Exception:
+            if self.signature:
+                QObj = verify_and_deserialize(self.q_filter, self.signature, pickle.loads)
+            else:
+                logger.warning("PersistentQueryFilter %d has no signature", self.id)
+                QObj = pickle.loads(self.q_filter)
+        except:
             raise ESPError('Invalid Q object stored in database.')
 
         #   Do not include users if they have disabled their account.
@@ -2204,13 +2212,6 @@ class PersistentQueryFilter(models.Model):
         return QObj
 
     def set_Q(self, q_filter, item_model=None, description='', should_save=True, restrict_to_active=True):
-        """
-        q_filter - The new filter to set.
-        item_model - The new item model, or None if it should stay the same.
-        description - The new filter description.
-        should_save - If True (default), this PQF will be saved after setting the new filter.
-        restrict_to_active - If True (default) and the filter is on users, automatically add an is_active=True filter.
-        """
         if item_model is None:
             item_model = self.item_model
         self.item_model = str(item_model)
@@ -2224,6 +2225,7 @@ class PersistentQueryFilter(models.Model):
 
         self.q_filter = dumped_filter
         self.sha1_hash = sha1_hash
+        self.signature = sign_data(dumped_filter)
         self.useful_name = description
 
         if should_save:
