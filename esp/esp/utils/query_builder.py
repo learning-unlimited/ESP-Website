@@ -2,6 +2,7 @@ import datetime
 import operator
 
 from django.db.models.query import Q
+from django.utils import timezone
 
 from esp.middleware import ESPError
 from functools import reduce
@@ -252,7 +253,7 @@ class DatetimeInput(object):
             lookup = self.field_name + '__gt'
         else:
             lookup = self.field_name
-        dt = datetime.datetime.strptime(value['datetime'], self.TIME_FMT)
+        dt = timezone.make_aware(datetime.datetime.strptime(value['datetime'], self.TIME_FMT))
         return Q(**{lookup: dt})
 
 
