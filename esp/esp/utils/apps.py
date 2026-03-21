@@ -9,6 +9,7 @@ class InstallConfig(AppConfig):
     Base class for app configs of modules that use install() for initial
     data. Don't use this on its own, subclass it to provide a name.
     """
+    name = 'esp.utils'
 
     def ready(self):
         signals.post_migrate.connect(run_install, sender=self)
