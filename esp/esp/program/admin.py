@@ -73,6 +73,28 @@ class ProgramAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'url', 'director_email', 'grade_min', 'grade_max',)
     filter_horizontal = ('program_modules', 'class_categories', 'flag_types',)
     search_fields = ('name', )
+    actions = ['clone_program']
+
+    def clone_program(self, request, queryset):
+        for program in queryset:
+            # Save M2M relations before clearing PK
+            modules = program.program_modules.all()
+            categories = program.class_categories.all()
+            flags = program.flag_types.all()
+            
+            # Clone the object
+            program.pk = None
+            program.name = f"{program.name} (Copy)"
+            program.url = f"{program.url}-copy"
+            program.save()
+            
+            # Reassign M2M relations
+            program.program_modules.set(modules)
+            program.class_categories.set(categories)
+            program.flag_types.set(flags)
+            
+        self.message_user(request, f"Successfully cloned {queryset.count()} program(s).")
+    clone_program.short_description = "Clone selected programs"
 admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
