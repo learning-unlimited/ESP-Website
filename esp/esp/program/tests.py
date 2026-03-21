@@ -2117,8 +2117,8 @@ class GradeCacheInvalidationTest(TestCase):
         Event.objects.create(
             program=self.program,
             event_type=prog_type,
-            start=datetime.now() + timedelta(days=30),
-            end=datetime.now() + timedelta(days=31),
+            start=timezone.now() + timedelta(days=30),
+            end=timezone.now() + timedelta(days=31),
             short_description='Test event'
         )
 
@@ -2126,7 +2126,7 @@ class GradeCacheInvalidationTest(TestCase):
         self.student_info = StudentInfo.objects.create(
             user=self.student,
             graduation_year=initial_yog,
-            dob=datetime.now() - timedelta(days=365*15)
+            dob=timezone.now() - timedelta(days=365*15)
         )
 
         self.reg_profile = RegistrationProfile.objects.create(
