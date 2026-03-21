@@ -32,3 +32,7 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 SECRET_KEY = '%(secret_key)s'
 
 ALLOWED_HOSTS = ['localhost']
+
+# Google Maps Embed API key (free — managed by Learning Unlimited).
+# Contact the LU web team to obtain the key value.
+GOOGLE_MAPS_EMBED_KEY = ''
