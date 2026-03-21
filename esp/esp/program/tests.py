@@ -240,6 +240,30 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 403)
 
+    def testVolunteerUserviewFallback(self):
+        """ Test that a volunteer with no RegistrationProfile gets a program context from current_programs() """
+        from esp.program.models import Program
+        c = Client()
+        self.assertTrue(c.login(username=self.admin.username, password=self.password), "Couldn't log in as admin")
+
+        # Create a volunteer user with no RegistrationProfile
+        volunteer, created = ESPUser.objects.get_or_create(
+            username='testvolunteer999', 
+            defaults={'first_name': 'Test', 'last_name': 'Volunteer', 'email': 'vol@esp.mit.edu'}
+        )
+        if created:
+            volunteer.set_password(self.password)
+            volunteer.save()
+
+        # Confirm volunteer has no profile
+        self.assertIsNone(volunteer.get_last_program_with_profile())
+
+        # userview should still return 200 even with no profile
+        response = c.get("/manage/userview", { 'username': volunteer.username })
+        self.assertEqual(response.status_code, 200)
+
+        volunteer.delete()
+
     def tearDown(self):
         self.user.delete()
         self.admin.delete()
