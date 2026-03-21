@@ -5,14 +5,14 @@ Source: esp/esp/program/modules/handlers/lineitemsmodule.py
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import Group
-from django.test import RequestFactory
 
 from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.program.tests import ProgramFrameworkTest
+from esp.program.models import ProgramModule
 from esp.program.modules.handlers.lineitemsmodule import LineItemsModule
 from esp.program.modules.admin_search import AdminSearchEntry
-from esp.users.models import ESPUser
 from esp.accounting.models import LineItemType
-from esp.program.tests import ProgramFrameworkTest
+from esp.users.models import ESPUser
 
 
 def _setup_roles():
@@ -173,3 +173,112 @@ class LineItemsModulePropertiesTest(TestCase):
         """LineItemsModule should have a setup_title defined."""
         self.assertTrue(hasattr(LineItemsModule, 'setup_title'))
         self.assertIsInstance(LineItemsModule.setup_title, str)
+
+
+class LineItemsModuleViewTest(ProgramFrameworkTest):
+    """View-level tests for LineItemsModule using real HTTP requests."""
+
+    def setUp(self):
+        modules = [
+            ProgramModule.objects.get(handler='LineItemsModule'),
+            ProgramModule.objects.get(handler='AdminCore'),
+        ]
+        super().setUp(modules=modules)
+
+        self.adminUser, created = ESPUser.objects.get_or_create(
+            username='lineitemsadmin'
+        )
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+
+        self.student = self.students[0]
+        self.student.set_password('password')
+        self.student.save()
+
+        self.url = '/manage/' + self.program.url + '/lineitems'
+
+    def test_admin_can_access_lineitems_view(self):
+        """Admin users should get 200 response from lineitems view."""
+        self.client.login(username='lineitemsadmin', password='password')
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_non_admin_cannot_access_lineitems_view(self):
+        """Non-admin users should not see line items management content."""
+        self.client.login(username=self.student.username,password='password')
+        response = self.client.get(self.url)
+        self.assertNotContains(response, 'Line Items Management', status_code=response.status_code)
+
+    def test_unauthenticated_user_redirected(self):
+        """Unauthenticated users should be redirected from lineitems view."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_lineitems_view_contains_program_in_context(self):
+        """Lineitems view should include program in context."""
+        self.client.login(username='lineitemsadmin', password='password')
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('prog', response.context)
+
+    def test_get_delete_shows_confirmation(self):
+        """GET with op=delete should show delete confirmation page."""
+        self.client.login(username='lineitemsadmin', password='password')
+        lineitem = LineItemType.objects.create(
+            text='Test Item',
+            amount_dec=10.00,
+            program=self.program,
+            required=False,
+        )
+        response = self.client.get(
+            self.url + '?op=delete&id=' + str(lineitem.id)
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_post_delete_removes_lineitem(self):
+        """POST with command=reallyremove should delete the line item."""
+        self.client.login(username='lineitemsadmin', password='password')
+        lineitem = LineItemType.objects.create(
+            text='Delete Me',
+            amount_dec=5.00,
+            program=self.program,
+            required=False,
+        )
+        lineitem_id = lineitem.id
+        self.client.post(self.url, {
+            'command': 'reallyremove',
+            'id': lineitem_id,
+        })
+        self.assertFalse(
+            LineItemType.objects.filter(id=lineitem_id).exists()
+        )
+
+    def test_lineitems_view_shows_existing_lineitems(self):
+        """Lineitems view should list existing line items in context."""
+        self.client.login(username='lineitemsadmin', password='password')
+        LineItemType.objects.create(
+            text='Visible Item',
+            amount_dec=20.00,
+            program=self.program,
+            required=False,
+        )
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('lineitems', response.context)
+
+    def test_get_edit_loads_lineitem_form(self):
+        """GET with op=edit should load the line item form with correct instance."""
+        self.client.login(username='lineitemsadmin', password='password')
+        lineitem = LineItemType.objects.create(
+            text='Edit Me',
+            amount_dec=15.00,
+            program=self.program,
+            required=False,
+        )
+        response = self.client.get(
+            self.url + '?op=edit&id=' + str(lineitem.id)
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('lineitem_form', response.context)
+        self.assertIn('lineitem', response.context)
+        self.assertEqual(response.context['lineitem'].id, lineitem.id)
