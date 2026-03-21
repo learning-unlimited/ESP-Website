@@ -11,7 +11,7 @@ from django.test import TestCase
 # CORRECT import - ProgramFrameworkTest is in tests.py (the file, not folder)
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.controllers.classreg import ClassCreationController
-from esp.program.models.class_ import ClassSubject, ClassCategories
+from esp.program.models.class_ import ClassSubject
 
 # ---------------------------------------------------------------------------
 # URL helper
@@ -625,13 +625,10 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
 
     def test_set_class_data_updates_title_in_db(self):
         """
-        set_class_data() must persist the title from cleaned_data to the DB.
+        set_class_data() must persist cleaned_data fields (e.g., ``title``)
+        to the ClassSubject row in the database.
 
-        This directly tests the controller method, not the view.  It also
-        serves as a regression guard for the ``is not`` string-comparison
-        bug on line 121 of classreg.py (``k[:8] is not 'section_'``): if
-        that bug caused the loop to skip field assignment, the title would
-        never be set and this assertion would fail.
+        This directly tests the controller method, not the view.
         """
         # self.categories is populated by ProgramFrameworkTest.setUp() and
         # its members are associated with the program as class categories.
@@ -680,7 +677,7 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
         guard in set_class_data().
 
         We check that a deliberately-bogus 'section_grade_min' key in
-        cleaned_data does not clobber cls.grade_min.
+        cleaned_data is not added as an attribute on the ClassSubject.
         """
         category = self.categories[0]
 
@@ -708,12 +705,9 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
 
         self.controller.set_class_data(self.subject, mock_form)
 
+        assert not hasattr(self.subject, 'section_grade_min')
+
         self.subject.refresh_from_db()
-        self.assertNotEqual(
-            self.subject.grade_min,
-            999,
-            "set_class_data must not copy 'section_*' keys onto the ClassSubject",
-        )
 
     # ------------------------------------------------------------------
     # update_class_sections
