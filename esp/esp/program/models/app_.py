@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
+from esp.program.models import Program, ClassSubject
 
 from django.db import models
 from django import forms
@@ -120,8 +121,6 @@ class StudentAppQuestion(BaseAppElement, models.Model):
     """ A question for a student application form, a la Junction or Delve.
     Questions pertaining to the program or to classes the student has
     applied to will appear on their application. """
-    from esp.program.models import Program, ClassSubject
-
     _element_name = 'question'
     _field_names = ['question', 'directions']
 
@@ -163,12 +162,11 @@ class StudentAppReview(BaseAppElement, models.Model):
 
     reviewer = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
     class_subject = models.ForeignKey(
-    "program.ClassSubject",
-    null=True,
-    blank=True,
-    on_delete=models.CASCADE
-   )
-
+        "program.ClassSubject",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE
+    )
     date = models.DateTimeField(default=datetime.datetime.now, editable=False)
     score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student', choices=((10, "Yes"), (5, "Maybe"), (1, "No")))
     comments = models.TextField()
@@ -186,7 +184,6 @@ class StudentAppReview(BaseAppElement, models.Model):
 
 class StudentApplication(models.Model):
     """ Student applications for Junction and any other programs that need them. """
-    from esp.program.models import Program
 
     program = models.ForeignKey(Program, editable=False, on_delete=models.CASCADE)
     user    = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
@@ -205,10 +202,10 @@ class StudentApplication(models.Model):
     def __str__(self):
         return str(self.user)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.save()
-        self.set_questions()
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.pk:  # Only set questions after the instance has been saved
+            self.set_questions()
 
     def set_questions(self):
         new_user = self.user
@@ -232,13 +229,15 @@ class StudentApplication(models.Model):
         forms = []
         new_user = self.user
         applied_classes = new_user.getAppliedClasses(self.program)
-        for r in self.responses.filter(question__subject__in=applied_classes):
+        for r in self.responses.all():
             f = r.get_form(data)
             f.target = r
             forms.append(f)
 
         #   Create responses if necessary for the other questions, and get their forms.
-        for q in self.questions.all():
+        #   Only create forms for questions that apply to the student's applied classes or program-wide questions
+        applicable_questions = self.questions.filter(subject__in=applied_classes) | self.questions.filter(subject__isnull=True)
+        for q in applicable_questions:
             if self.responses.filter(question=q).count() == 0:
                 r = StudentAppResponse(question=q)
                 r.save()

@@ -215,11 +215,11 @@ class TeacherReviewApps(ProgramModuleObj):
 
         student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
 
-        teacher_reviews = student.app.reviews.all().filter(reviewer=request.user,class_subject=cls)
+        teacher_reviews = student.app.reviews.all().filter(reviewer=request.user, class_subject=cls)
         if teacher_reviews.count() > 0:
             this_review = teacher_reviews.order_by('id')[0]
         else:
-            this_review = StudentAppReview(reviewer=request.user)
+            this_review = StudentAppReview(reviewer=request.user, class_subject=cls)
             this_review.save()
             student.app.reviews.add(this_review)
 

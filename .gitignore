@@ -49,3 +49,4 @@ node_modules/
 .docker-setup-done
 esp/db.sqlite3
 esp/esp/db.sqlite3
+esp/logs/
