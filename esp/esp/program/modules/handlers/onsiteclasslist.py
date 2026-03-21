@@ -396,7 +396,10 @@ class OnSiteClassList(ProgramModuleObj):
 
         time_now = datetime.now()
 
-        start_id = int(options.get('start', -1))
+        try:
+            start_id = int(options.get('start', -1) or -1)
+        except (ValueError, TypeError):
+            start_id = -1
         if start_id != -1:
             curtime = Event.objects.filter(id=start_id)
         else:
@@ -406,7 +409,10 @@ class OnSiteClassList(ProgramModuleObj):
             if curtime.count() == 0:
                 curtime = Event.objects.filter(program=self.program, event_type__description='Class Time Block').order_by('start')
 
-        end_id = int(options.get('end', -1))
+        try:
+            end_id = int(options.get('end', -1) or -1)
+        except (ValueError, TypeError):
+            end_id = -1
         if end_id != -1:
             endtime = Event.objects.filter(id=end_id)
         else:
@@ -442,7 +448,8 @@ class OnSiteClassList(ProgramModuleObj):
             else:
                 classes = classes.order_by('parent_class__category', 'begin_time', 'id').distinct()
 
-        context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
+        context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two,
+                        'timeslots': prog.getTimeSlots(), 'selected_start': start_id})
 
         if sort_spec == 'unsorted':
             context['use_categories'] = False
