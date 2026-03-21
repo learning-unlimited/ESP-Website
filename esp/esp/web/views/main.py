@@ -97,9 +97,9 @@ def program(request, tl, one, two, module, extra = None):
 
 @cache_control(max_age=180)
 def public_email(request, email_id):
-    email_req = MessageRequest.objects.filter(id=email_id, public=True)
-    if email_req.count() == 1:
-        return render_to_response('public_email.html', request, {'email_req': email_req[0]})
+    email_req = MessageRequest.objects.filter(id=email_id, public=True).first()
+    if email_req:
+        return render_to_response('public_email.html', request, {'email_req': email_req})
     else:
         raise ESPError('Invalid email id.', log=False)
 
