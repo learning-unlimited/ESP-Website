@@ -255,6 +255,17 @@ class ProgramManager(models.Manager):
     def get_queryset(self):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by('-id')
+    # Program name validation: Letters, numbers, spaces aur hyphens allow karne ke liye
+program_name_validator = validators.RegexValidator(
+    r'^[a-zA-Z0-9 \-]+$', 
+    'Program name can only contain letters, numbers, spaces, and hyphens.'
+)
+
+# Program URL validation: Lowercase letters, numbers aur hyphens (No Spaces!)
+program_url_validator = validators.RegexValidator(
+    r'^[a-z0-9\-]+$', 
+    'Program URL can only contain lowercase letters, numbers, and hyphens (no spaces).'
+)
 
 class Program(models.Model, CustomFormsLinkModel):
     objects = ProgramManager()
@@ -262,8 +273,8 @@ class Program(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name='Program'
 
-    url = models.CharField(max_length=80, unique=True)
-    name = models.CharField(max_length=80)
+    url = models.CharField(max_length=80, unique=True, validators=[program_url_validator])
+    name = models.CharField(max_length=80, validators=[program_name_validator])
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
@@ -328,6 +339,8 @@ class Program(models.Model, CustomFormsLinkModel):
     get_onsite_url = _get_type_url("onsite")
 
     def save(self, *args, **kwargs):
+        # Force validation before saving to DB
+        self.full_clean()
 
         retVal = super().save(*args, **kwargs)
 
