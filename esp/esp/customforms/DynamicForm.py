@@ -338,6 +338,8 @@ class ComboForm(SessionWizardView):
         context.update({
                         'form_title': self.form.title,
                         'form_description': self.form.description,
+                        'form_id': self.form.id,
+                        'can_edit_form': self.curr_request.user.isAdministrator() if self.curr_request.user.is_authenticated else False,
             })
         if self.extra_context is not None:
             context.update(self.extra_context)

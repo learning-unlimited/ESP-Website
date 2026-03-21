@@ -8,6 +8,11 @@
 {% block title %}{{ form_title }}{% endblock title %}
 
 {% block content %}
+    {% if can_edit_form %}
+    <div class="alert alert-info">
+        Want to edit this form? <a href="/customforms/?edit={{ form_id }}">Click HERE</a>
+    </div>
+    {% endif %}
     <h1 class="form_title">{{ form_title }}</h1>
     <h2 class="form_desc">{{ form_description }}</h2>
     <em class="step_count">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</em>
