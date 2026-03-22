@@ -1312,6 +1312,109 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             #   Compare against the value in the stats dict (allow for floating-point error)
             self.assertAlmostEqual(student_screwed_val, stats_entry[0])
 
+    def testSectionLengthsComputed(self):
+        sections = list(self.program.sections())
+        self.assertTrue(len(sections) >= 2, "Need at least 2 sections for duration regression test")
+
+        ts = list(self.program.getTimeSlots())
+        self.assertTrue(len(ts) >= 2, "Need at least 2 timeslots for duration regression test")
+
+        # Force one section to be longer than another.
+        sections[0].assign_meeting_times([ts[0], ts[1]])
+        sections[1].assign_meeting_times([ts[0]])
+
+        lotteryController = LotteryAssignmentController(self.program)
+        lengths = lotteryController.section_lengths
+        long_len = lengths[lotteryController.section_indices[sections[0].id]]
+        short_len = lengths[lotteryController.section_indices[sections[1].id]]
+
+        if len(set(lengths)) < 2:
+            self.skipTest("Could not create distinct section durations for this lottery run")
+        self.assertGreater(long_len, short_len)
+
+    def testUtilityIncreasesWithDuration(self):
+        sections = list(self.program.sections())
+        self.assertTrue(len(sections) >= 2, "Need at least 2 sections for duration regression test")
+
+        ts = list(self.program.getTimeSlots())
+        self.assertTrue(len(ts) >= 2, "Need at least 2 timeslots for duration regression test")
+
+        long_sec = sections[0]
+        short_sec = sections[1]
+        long_sec.assign_meeting_times([ts[0], ts[1]])
+        short_sec.assign_meeting_times([ts[0]])
+
+        # Reduce noise from random setup: keep only controlled lottery preferences.
+        StudentRegistration.objects.filter(
+            user__in=self.students,
+            section__parent_class__parent_program=self.program,
+            relationship__name__in=['Priority/1', 'Interested'],
+        ).delete()
+        for student in self.students:
+            StudentRegistration.objects.create(user=student, section=long_sec, relationship=self.priority_rt)
+
+        lotteryController = LotteryAssignmentController(self.program)
+        lengths = lotteryController.section_lengths
+        long_len = lengths[lotteryController.section_indices[long_sec.id]]
+        short_len = lengths[lotteryController.section_indices[short_sec.id]]
+        if long_len <= short_len:
+            self.skipTest("Could not create long/short section duration split for this lottery run")
+
+        lotteryController.compute_assignments()
+
+        long_si = lotteryController.section_indices[long_sec.id]
+        assigned_to_long = numpy.nonzero(lotteryController.student_sections[:, long_si])[0]
+        self.assertGreater(
+            len(assigned_to_long), 0,
+            "Test is vacuous: no student assigned to a multi-timeslot section",
+        )
+
+        for student_index in assigned_to_long:
+            self.assertGreaterEqual(
+                lotteryController.student_utilities[student_index],
+                1.5 * long_len,
+                "Priority utility should scale with section duration",
+            )
+
+    def testUtilityUsesDuration(self):
+        sections = list(self.program.sections())
+        self.assertTrue(len(sections) >= 2, "Need at least 2 sections for duration regression test")
+
+        ts = list(self.program.getTimeSlots())
+        self.assertTrue(len(ts) >= 2, "Need at least 2 timeslots for duration regression test")
+
+        # Ensure at least one multi-timeslot section exists.
+        sections[0].assign_meeting_times([ts[0], ts[1]])
+
+        lotteryController = LotteryAssignmentController(self.program)
+        lengths = lotteryController.section_lengths
+        if len(set(lengths)) < 2:
+            self.skipTest("Could not create distinct section durations for utility test")
+
+        lotteryController.compute_assignments()
+
+        multi_assigned_count = 0
+        for i in range(lotteryController.num_students):
+            assigned = numpy.nonzero(lotteryController.student_sections[i])[0]
+            if len(assigned) == 0:
+                continue
+
+            total_duration = sum(lotteryController.section_lengths[si] for si in assigned)
+            utility = lotteryController.student_utilities[i]
+            self.assertGreaterEqual(
+                utility,
+                total_duration,
+                msg="Utility should reflect total assigned section duration",
+            )
+
+            if any(lotteryController.section_lengths[si] > 1 for si in assigned):
+                multi_assigned_count += 1
+
+        self.assertGreater(
+            multi_assigned_count, 0,
+            "Test is vacuous: no student assigned to a multi-timeslot section",
+        )
+
     def testSingleLunchConstraint(self):
         # First generate 1 lunch timeslot
         lunch_timeslot = random.choice(self.timeslots)
