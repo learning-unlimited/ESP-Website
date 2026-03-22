@@ -12,6 +12,7 @@ class ConfigForm(ThemeConfigurationForm):
     show_logo_header = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the logo be shown in the <b>header banner</b>?'))
     show_header_home = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the header banner be shown on the <b>homepage</b>?'))
     show_header_other = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the header banner be shown on <b>non-homepage pages</b>?'))
+    jumbotronFallbackColor = forms.CharField(label='Hero Fallback Color (shows when no image is uploaded)', required=False)
     contact_info = forms.CharField(required = False, widget=forms.Textarea,
                                    help_text='Generic text to include in the "About Us" dropdown in the navigation bar. Leave blank to omit this field.')
     show_email = forms.BooleanField(required = False, help_text='Should the group email address be shown in the "About Us" dropdown in the navigation bar?')
