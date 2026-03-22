@@ -20,13 +20,13 @@
 <label for="start">Starting timeslot</label>
 <select name="start">
     <option value="-1">Automatically update (default)</option>{% for timeslot in prog.getTimeSlots %}
-    <option value="{{ timeslot.id }}">{{ timeslot.short_description }}</option>{% endfor %}
+    <option value="{{ timeslot.id }}">{{ timeslot.short_time }}</option>{% endfor %}
 </select>
 
 <label for="end">Ending timeslot</label>
 <select name="end">
     <option value="-1">Last timeslot in program (default)</option>{% for timeslot in prog.getTimeSlots %}
-    <option value="{{ timeslot.id }}">{{ timeslot.short_description }}</option>{% endfor %}
+    <option value="{{ timeslot.id }}">{{ timeslot.short_time }}</option>{% endfor %}
 </select>
 
 <label for="refresh">Refresh time (seconds):</label>

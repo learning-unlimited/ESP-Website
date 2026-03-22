@@ -2,7 +2,6 @@
 
 from django.db.models import F, Q, Count, Avg, Min, Max, Sum
 
-import datetime
 import numpy
 
 from esp.utils.query_utils import nest_Q

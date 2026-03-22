@@ -8,7 +8,8 @@ from esp.users.models import UserAvailability, ContactInfo, StudentInfo, Teacher
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
-import datetime
+from django.utils import timezone
+
 
 class UserForwarderAdmin(admin.ModelAdmin):
     list_display = ('source', 'target')
@@ -76,9 +77,9 @@ class ExpiredListFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == 'unexpired':
-            return queryset.filter(end_date=None) | queryset.filter(end_date__gt=datetime.datetime.now())
+            return queryset.filter(end_date=None) | queryset.filter(end_date__gt=timezone.now())
         elif self.value() == 'expired':
-            return queryset.filter(end_date__lte=datetime.datetime.now())
+            return queryset.filter(end_date__lte=timezone.now())
 
 class PermissionAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'role', 'permission_type', 'program', 'start_date', 'end_date']
@@ -88,7 +89,7 @@ class PermissionAdmin(admin.ModelAdmin):
     actions = [ 'expire', 'renew' ]
 
     def expire(self, request, queryset):
-        rows_updated = queryset.update(end_date=datetime.datetime.now())
+        rows_updated = queryset.update(end_date=timezone.now())
         if rows_updated == 1:
             message_bit = "1 permission was"
         else:
@@ -161,8 +162,8 @@ class GradeChangeRequestAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if getattr(obj, 'acknowledged_by', None) is None:
             obj.acknowledged_by = request.user
-        if getattr(obj, 'acknowledged_time', None) is None and getattr(request.POST, 'approved', None) is True:
-            obj.acknowledged_time = datetime.datetime.now()
+        if getattr(obj, 'acknowledged_time', None) is None and getattr(obj, 'approved', None) is True:
+            obj.acknowledged_time = timezone.now()
         obj.save()
 admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 

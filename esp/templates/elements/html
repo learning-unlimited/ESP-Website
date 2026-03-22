@@ -144,6 +144,15 @@
       gtag('config', '{{ "google_analytics_id"|getTag }}');
     </script>
     {% endif %}
+
+    <script type="text/javascript">
+      (function() {
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz) {
+          document.cookie = "user_timezone=" + encodeURIComponent(tz) + "; path=/; max-age=31536000; SameSite=Lax";
+        }
+      })();
+    </script>
     {% endblock javascript %}
   </head>
   
@@ -161,5 +170,9 @@
 
     {% autoescape off %}{{ settings.ADDITIONAL_TEMPLATE_SCRIPTS }}{% endautoescape %}
     {% endblock %}
+    <div id="timezone-display" style="position: fixed; bottom: 20px; left: 20px; background: rgba(0, 0, 0, 0.75); color: #fff; padding: 6px 14px; border-radius: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 500; z-index: 100000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(4px); pointer-events: none;">
+      {% load get_current_timezone %}
+      Timezone: {% get_current_timezone %}
+    </div>
   </body>
 </html>
