@@ -12,10 +12,10 @@ Covers:
   - init_with_context delegates to super without error
 """
 
-from django.test import RequestFactory
+from django.test import RequestFactory, SimpleTestCase as TestCase
 from django.urls import reverse
+from django.utils.translation import ugettext_lazy as _
 from admin_tools.menu import items
-from esp.tests.util import CacheFlushTestCase as TestCase
 
 from admintoolsmenu import CustomMenu
 
@@ -38,10 +38,9 @@ class CustomMenuInitTest(TestCase):
         self.assertEqual(first.url, reverse('admin:index'))
 
     def test_dashboard_item_title(self):
-        """Dashboard MenuItem title should contain 'Dashboard'."""
+        """Dashboard MenuItem title should match the translated string."""
         first = self.menu.children[0]
-        # title may be a lazy translation object; str() it for comparison
-        self.assertIn('Dashboard', str(first.title))
+        self.assertEqual(str(first.title), str(_('Dashboard')))
 
     def test_bookmarks_item_is_second(self):
         """Second child should be a Bookmarks instance."""
@@ -52,7 +51,7 @@ class CustomMenuInitTest(TestCase):
         """Third child should be an AppList named 'Applications'."""
         third = self.menu.children[2]
         self.assertIsInstance(third, items.AppList)
-        self.assertIn('Applications', str(third.title))
+        self.assertEqual(str(third.title), str(_('Applications')))
 
     def test_applications_applist_excludes_contrib(self):
         """Applications AppList should exclude django.contrib.*"""
@@ -63,7 +62,7 @@ class CustomMenuInitTest(TestCase):
         """Fourth child should be an AppList named 'Administration'."""
         fourth = self.menu.children[3]
         self.assertIsInstance(fourth, items.AppList)
-        self.assertIn('Administration', str(fourth.title))
+        self.assertEqual(str(fourth.title), str(_('Administration')))
 
     def test_administration_applist_includes_only_contrib(self):
         """Administration AppList should only include django.contrib.*"""
