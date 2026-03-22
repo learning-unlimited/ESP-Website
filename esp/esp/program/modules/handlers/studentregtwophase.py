@@ -417,6 +417,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             if (not sec.status > 0 or not sec.parent_class.status > 0):
                 logger.warning("Class '%s' was not approved.  Not letting "
                                "user '%s' register.", sec, request.user)
+                continue
             if (not sec.parent_class.grade_min <= request.user.getGrade(prog)
                 or not sec.parent_class.grade_max >= request.user.getGrade(prog)):
                 logger.warning("User '%s' not in class grade range; not "

@@ -3,15 +3,25 @@ Tests for the StudentRegTwoPhase module, specifically the confirmation
 button (#1166) and minimum class requirement (#2535) features.
 """
 
+import json
 import random
+from datetime import datetime
 
 from django.core import mail
 
-from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
+from esp.program.class_status import ClassStatus
+from esp.program.models import (
+    ClassSection,
+    ClassSubject,
+    RegistrationProfile,
+    RegistrationType,
+    StudentRegistration,
+    StudentSubjectInterest,
+)
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
-from esp.users.models import Record, RecordType
+from esp.users.models import ContactInfo, ESPUser, Record, RecordType, StudentInfo
 
 
 class StudentRegTwoPhaseTest(ProgramFrameworkTest):
@@ -186,3 +196,127 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             '/learn/%s/studentreg2phase' % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Send Me a Confirmation Email')
+
+    # ---------------------------------------------------------------
+    # save_priorities: unapproved classes must be skipped (#bugfix)
+    # ---------------------------------------------------------------
+    LOGGER_NAME = 'esp.program.modules.handlers.studentregtwophase'
+
+    def _ensure_student_profile(self, student):
+        """Give student grade/YOG so getGrade() is within program class range."""
+        thisyear = ESPUser.program_schoolyear(self.program)
+        prof = RegistrationProfile.getLastForProgram(student, self.program)
+        prof.program = self.program
+        if not prof.contact_user:
+            prof.contact_user = ContactInfo.objects.create(
+                user=student,
+                first_name=student.first_name,
+                last_name=student.last_name,
+                e_mail=student.email,
+            )
+        if not prof.student_info:
+            prof.student_info = StudentInfo.objects.create(
+                user=student,
+                graduation_year=ESPUser.YOGFromGrade(10, thisyear),
+                dob=datetime(thisyear - 15, 1, 1),
+            )
+        prof.save()
+
+    def _find_class_and_section_for_timeslot(self, timeslot):
+        """Return (ClassSubject, ClassSection) with a meeting in ``timeslot``."""
+        for cls in self.program.classes():
+            for sec in cls.get_sections():
+                times = list(sec.meeting_times.all())
+                if not times:
+                    continue
+                if times[0].start == timeslot.start:
+                    return cls, sec
+        return None, None
+
+    def _save_priorities_post(self, student, timeslot, class_id):
+        self._ensure_student_profile(student)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+        )
+        payload = {str(timeslot.id): {'1': str(class_id)}}
+        return self.client.post(
+            '/learn/%s/save_priorities' % self.program.getUrlBase(),
+            {'json_data': json.dumps(payload)},
+        )
+
+    def test_save_priorities_approved_class_creates_priority_registration(self):
+        """When section and class are approved, save_priorities records Priority/1."""
+        self.schedule_randomly()
+        timeslot = self.timeslots[0]
+        cls, sec = self._find_class_and_section_for_timeslot(timeslot)
+        self.assertIsNotNone(cls, 'Need a class scheduled in the first timeslot')
+        student = self.students[0]
+
+        RegistrationType.objects.get_or_create(name='Priority/1', category='student')
+        StudentRegistration.objects.filter(
+            user=student,
+            relationship__name='Priority/1',
+            section__parent_class__parent_program=self.program,
+        ).delete()
+
+        self.assertGreater(sec.status, 0)
+        self.assertGreater(sec.parent_class.status, 0)
+
+        response = self._save_priorities_post(student, timeslot, cls.id)
+        self.assertEqual(response.status_code, 302)
+
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(
+                user=student,
+                relationship__name='Priority/1',
+                section__parent_class=cls,
+            ).exists(),
+            'Expected Priority/1 registration for approved class',
+        )
+
+    def test_save_priorities_unapproved_class_skipped_and_warns(self):
+        """Unapproved section/class must not get a priority registration; log warning."""
+        self.schedule_randomly()
+        timeslot = self.timeslots[0]
+        cls, sec = self._find_class_and_section_for_timeslot(timeslot)
+        self.assertIsNotNone(cls)
+        student = self.students[1]
+
+        RegistrationType.objects.get_or_create(name='Priority/1', category='student')
+        StudentRegistration.objects.filter(
+            user=student,
+            relationship__name='Priority/1',
+            section__parent_class__parent_program=self.program,
+        ).delete()
+
+        # Force unapproved (same condition as handler: status must be > 0)
+        ClassSubject.objects.filter(id=cls.id).update(status=ClassStatus.UNREVIEWED)
+        ClassSection.objects.filter(id=sec.id).update(status=ClassStatus.UNREVIEWED)
+        cls.refresh_from_db()
+        sec.refresh_from_db()
+
+        self._ensure_student_profile(student)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+        )
+        payload = {str(timeslot.id): {'1': str(cls.id)}}
+
+        with self.assertLogs(self.LOGGER_NAME, level='WARNING') as log_ctx:
+            response = self.client.post(
+                '/learn/%s/save_priorities' % self.program.getUrlBase(),
+                {'json_data': json.dumps(payload)},
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            any('was not approved' in entry for entry in log_ctx.output),
+            'Expected warning log for unapproved class',
+        )
+        self.assertFalse(
+            StudentRegistration.valid_objects().filter(
+                user=student,
+                relationship__name='Priority/1',
+                section__parent_class=cls,
+            ).exists(),
+            'Must not create Priority/1 registration for unapproved class',
+        )
