@@ -7,7 +7,7 @@
   <tr>
      <td class="left">
       {% if has_logo %}
-        <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" class="logo" alt="{{ group_name }} logo" />
+        <img src="{{ MEDIA_URL }}images/theme/logo.png?v={{ current_logo_version }}" class="logo" alt="{{ group_name }} logo" />
       {% endif %}
       </td>
      <td class="right url">
