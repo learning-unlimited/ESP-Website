@@ -98,6 +98,7 @@ if (typeof question_types != 'undefined') {
                     var val = parseInt($j(this).val(), 10);
                     if (isNaN(val) || val < 2) { val = 2; }
                     $j(this).val(val);
+                    updateTextArea();
                 });
             } else {
                 //If there aren't any parameters, hide the whole row
