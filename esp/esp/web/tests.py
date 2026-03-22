@@ -343,7 +343,8 @@ class ProfileEditorCapitalizationTest(TestCase):
         able to visit their profile page without a ValueError crash.
         """
         c = Client()
-        c.login(username='teststudentrep', password='password')
+        logged_in = c.login(username='teststudentrep', password='password')
+        self.assertTrue(logged_in, "Could not log in test user 'teststudentrep'")
         response = c.get('/myesp/profile/')
 
         # Should load fine — not crash with ValueError
