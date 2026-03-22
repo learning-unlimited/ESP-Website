@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 {% block doctype %}<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">{% endblock doctype %}
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" data-bs-theme="light">
 {% if theme %}<!-- Theme: {{ theme.theme_name }} -->{% endif %}
   <head>
     <title>{% block fulltitle %}{% endblock %}</title>
@@ -23,6 +23,8 @@
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
+    <link rel="stylesheet" type="text/css" href="/media/styles/dark_mode_tweaks.css" />
+    <script type="text/javascript" src="/media/scripts/dark_mode_engine.js"></script>
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
