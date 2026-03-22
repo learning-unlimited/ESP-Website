@@ -17,7 +17,7 @@ class FixIEMiddlewareTests(TestCase):
         # Default HttpResponse has Content-Type 'text/html; charset=utf-8' by default
         request = self.factory.get('/', HTTP_USER_AGENT='Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)')
         response = HttpResponse("ok")
-        
+
         # Check that process_response does not crash and returns the original response unmodified
         new_response = self.middleware.process_response(request, response)
         
@@ -29,7 +29,7 @@ class FixIEMiddlewareTests(TestCase):
         request = self.factory.get('/', HTTP_USER_AGENT='Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)')
         response = HttpResponse("ok, json", content_type='application/json; charset=utf-8')
         response['Vary'] = 'User-Agent'
-        
+
         # Check that it strips Vary and adds Pragma & Cache-Control
         new_response = self.middleware.process_response(request, response)
         
