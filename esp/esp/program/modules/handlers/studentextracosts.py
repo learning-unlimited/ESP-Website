@@ -236,7 +236,7 @@ class StudentExtraCosts(ProgramModuleObj):
                                 option = LineItemOptions.objects.get(id=option_id)
                                 #   Give error if no amount was typed in
                                 if option.is_custom and not option_amount:
-                                    preserve_items.append(lineitem_type.text)
+                                    preserve_items[lineitem_type.text] = form
                                     forms_all_valid = False
                                     error_custom = True
                                 else:
