@@ -46,6 +46,7 @@ from esp.utils.web import render_to_response
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
+import os
 
 class NameTagModule(ProgramModuleObj):
     doc = """This module allows you to generate a bunch of IDs for users that match specific criteria."""
@@ -241,6 +242,8 @@ class NameTagModule(ProgramModuleObj):
         context['users_and_backs'] = users_and_backs
         context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['phone_number'] = Tag.getTag('group_phone_number')
+        context['current_logo_version'] = Tag.getTag('current_logo_version')
+        context['has_logo'] = os.path.exists(os.path.join(settings.MEDIA_ROOT, 'images', 'theme', 'logo.png'))
 
         return render_to_response(self.baseDir()+'ids.html', request, context)
 
