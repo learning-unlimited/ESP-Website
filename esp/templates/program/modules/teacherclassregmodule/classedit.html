@@ -23,7 +23,6 @@
 <h1>{{ addoredit }}ing a {{ classtype }} for {{ program.niceName }}</h1>
 
 
-
 {% if manage %}
     <p>
     <a href="/manage/{{ program.getUrlBase }}/dashboard">Return to the {{ program.niceName }} dashboard</a><br />
@@ -76,7 +75,6 @@
         {% render_inline_program_qsd program "classroom_form_advisories" %}
         </td>
     </tr>
-    {{ form }}
     {% if no_durations %}
     <tr>
         <td colspan="2">
@@ -92,6 +90,7 @@
         </td>
     </tr>
     {% endif %}
+    {{ form }}
     <tr>
         <td colspan="2">&nbsp;</td>
     </tr>
