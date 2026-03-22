@@ -86,9 +86,19 @@ if (typeof question_types != 'undefined') {
             if (params && params.length > 0) {
                 for (let i = 0; i < params.length; i++) {
                     var par_value = (i in par_values)? par_values[i] : "";
-                    $td.append("<span class='param_field'>" + params[i] + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
+                    if (params[i] === "Number of ratings") {
+                        if (!par_value || isNaN(parseInt(par_value, 10))) { par_value = 5; }
+                        $td.append("<span class='param_field'>" + params[i] + ": <input type='number' min='2' class='num_ratings_input' name='param_val' value='" + par_value + "'><br/></span>");
+                    } else {
+                        $td.append("<span class='param_field'>" + params[i] + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
+                    }
                 }
                 $td.parents("tr").show();
+                $j(".num_ratings_input").change(function() {
+                    var val = parseInt($j(this).val(), 10);
+                    if (isNaN(val) || val < 2) { val = 2; }
+                    $j(this).val(val);
+                });
             } else {
                 //If there aren't any parameters, hide the whole row
                 $td.parents("tr").hide();

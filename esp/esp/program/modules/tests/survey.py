@@ -146,7 +146,8 @@ class SurveyTest(ProgramFrameworkTest):
 class QuestionFormValidationTest(ProgramFrameworkTest):
     """Tests for QuestionForm validation added to fix issue #3858.
 
-    Verifies that non-numeric and negative values for num_choices /
+    Verifies that Multiple Choice and Checkboxes questions require at least
+    one non-empty choice and that non-numeric and negative values for
     num_ratings are rejected server-side.
     """
 
