@@ -129,6 +129,19 @@ class ProgramCreationForm(BetterModelForm):
         fields, and constructs the url and name fields on the Program instance.
         '''
         super().clean()
+
+        # this is the part wehre i have solved the issue 
+        teacher_reg_start = self.cleaned_data.get('teacher_reg_start')
+        teacher_reg_end = self.cleaned_data.get('teacher_reg_end')
+        student_reg_start = self.cleaned_data.get('student_reg_start')
+        student_reg_end = self.cleaned_data.get('student_reg_end')
+
+        if teacher_reg_start and teacher_reg_end and teacher_reg_start >= teacher_reg_end:
+            self.add_error('teacher_reg_end', 'Teacher registration end must be after teacher registration start.')
+
+        if student_reg_start and student_reg_end and student_reg_start >= student_reg_end:
+            self.add_error('student_reg_end', 'Student registration end must be after student registration start.')
+
         if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
             #   Filter out unwanted characters from program type to form URL
             ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
@@ -147,6 +160,8 @@ class ProgramCreationForm(BetterModelForm):
                 self.add_error('term', "A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'])
             if Program.objects.filter(name=new_name).exclude(id=self.instance.id).exists():
                 self.add_error('term_friendly', "A %s program already exists with this name. Please choose a new name or change the name of the old program." % self.cleaned_data['program_type'])
+
+        return self.cleaned_data
 
     class Meta:
         fieldsets = [
