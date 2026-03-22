@@ -84,12 +84,34 @@ class ClassCreationController(object):
         return cls
 
     @transaction.atomic
+    def submit_draft(self, user, reg_data, clsid, form_class=TeacherClassRegForm):
+        """Validate and promote an existing draft to a proper class submission."""
+        reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
+
+        try:
+            cls = ClassSubject.objects.get(id=int(clsid))
+        except (TypeError, ClassSubject.DoesNotExist):
+            raise ESPError(f"The class you're trying to submit (ID {repr(clsid)}) does not exist!", log=False)
+
+        if form_class == TeacherOpenClassRegForm:
+            reg_form.cleaned_data['grade_min'] = self.program.grade_min
+            reg_form.cleaned_data['grade_max'] = self.program.grade_max
+
+        self.require_teacher_has_time(user, user, reg_form._get_total_time_requested())
+
+        self.make_class_happen(cls, user, reg_form, resource_formset)
+        self.force_availability(user)
+        self.send_class_mail_to_directors(cls)
+
+        return cls
+
+    @transaction.atomic
     def save_class_draft(self, user, reg_data, clsid=None, action='create'):
         """
         Save a class as a draft without validation.
         Handles ALL fields from ClassSubject model systematically.
         """
-        
+
         # Create or get class
         if action in ['create', 'createopenclass']:
             # Check if user already has a draft for this program
@@ -98,42 +120,50 @@ class ClassCreationController(object):
                 teachers=user,
                 status=ClassStatus.DRAFT
             ).first()
-            
+
             if existing_draft:
                 cls = existing_draft
             else:
                 cls = ClassSubject()
                 cls.parent_program = self.program
                 cls.status = ClassStatus.DRAFT
+                # Set required NOT-NULL field defaults so cls.save()
+                # succeeds even if the POST data omits them.
+                cls.category = ClassCategories.objects.first()
+                cls.grade_min = self.program.grade_min
+                cls.grade_max = self.program.grade_max
         else:  # edit actions
             try:
                 cls = ClassSubject.objects.get(id=int(clsid))
             except (TypeError, ClassSubject.DoesNotExist):
                 raise ESPError(f"The class you're trying to edit (ID {repr(clsid)}) does not exist!", log=False)
-        
+
         # Get custom fields to handle them separately
         custom_fields = get_custom_fields()
         custom_data = {}
-        
+
+        # Pre-compute real model field names to avoid setting form-only keys
+        model_field_names = {f.name for f in ClassSubject._meta.get_fields()}
+
         # Handle ALL fields systematically, following the same pattern as set_class_data
         for field_name, field_value in reg_data.items():
             # Skip special Django form fields and section-specific fields
             if field_name in ['csrfmiddlewaretoken', 'class_reg_page', 'save_action', 'manage', 'manage_submit', 'class_id']:
                 continue
-                
+
             # Handle section-specific fields (skip for now, handled separately)
             if field_name.startswith('section_'):
                 continue
-                
-            # Handle resource request fields (skip for now, handled separately)
-            if field_name.startswith('request-'):
+
+            # Handle resource request and resource type formset fields
+            if field_name.startswith('request-') or field_name.startswith('restype-'):
                 continue
-                
+
             # Handle custom fields separately
             if field_name in custom_fields:
                 custom_data[field_name] = field_value
                 continue
-                
+
             # Handle special fields that need specific processing
             if field_name == 'category':
                 if field_value:
@@ -142,7 +172,7 @@ class ClassCreationController(object):
                     except (ClassCategories.DoesNotExist, ValueError):
                         pass  # Skip invalid category for drafts
                 continue
-                
+
             if field_name == 'duration':
                 if field_value:
                     try:
@@ -150,11 +180,12 @@ class ClassCreationController(object):
                     except (ValueError, TypeError):
                         cls.duration = None
                 continue
-                
+
             if field_name == 'allow_lateness':
-                cls.allow_lateness = field_value == 'on'
+                # Handle RadioSelect values ('True'/'False') and checkbox ('on')
+                cls.allow_lateness = str(field_value) in ('True', 'true', 'on', '1')
                 continue
-                
+
             if field_name == 'optimal_class_size_range':
                 if field_value:
                     try:
@@ -162,21 +193,38 @@ class ClassCreationController(object):
                     except (ClassSizeRange.DoesNotExist, ValueError):
                         cls.optimal_class_size_range = None
                 continue
-                
+
             if field_name == 'allowable_class_size_ranges':
                 if field_value:
+                    # Handle both single value and lists
+                    if isinstance(field_value, list):
+                        raw_range_ids = field_value
+                    else:
+                        raw_range_ids = reg_data.getlist('allowable_class_size_ranges')
+                    # Normalize to valid integer IDs, ignoring blanks/invalids
+                    range_ids = []
+                    for raw_id in raw_range_ids:
+                        try:
+                            if raw_id not in (None, ''):
+                                range_ids.append(int(raw_id))
+                        except (TypeError, ValueError):
+                            continue
+                    if range_ids:
+                        # Defer M2M update until after cls.save()
+                        cls._pending_allowable_class_size_range_ids = range_ids
+                continue
+
+            # Handle grade_range (used when Tag grade_ranges is set instead of grade_min/grade_max)
+            if field_name == 'grade_range':
+                if field_value:
                     try:
-                        # Handle both single value and lists
-                        if isinstance(field_value, list):
-                            range_ids = field_value
-                        else:
-                            range_ids = reg_data.getlist('allowable_class_size_ranges')
-                        if range_ids:
-                            cls.allowable_class_size_ranges.set(ClassSizeRange.objects.filter(id__in=range_ids))
-                    except (ClassSizeRange.DoesNotExist, ValueError):
+                        grade_min, grade_max = json.loads(field_value)
+                        cls.grade_min = int(grade_min)
+                        cls.grade_max = int(grade_max)
+                    except (ValueError, TypeError, json.JSONDecodeError):
                         pass
                 continue
-            
+
             # Handle numeric fields with type conversion
             numeric_fields = ['grade_min', 'grade_max', 'class_size_min', 'class_size_max', 'class_size_optimal', 'session_count']
             if field_name in numeric_fields:
@@ -187,48 +235,58 @@ class ClassCreationController(object):
                         # Set reasonable defaults for drafts
                         if field_name == 'session_count':
                             cls.session_count = 1
-                        elif field_name in ['grade_min']:
+                        elif field_name == 'grade_min':
                             setattr(cls, field_name, 0)
-                        elif field_name in ['grade_max']:
+                        elif field_name == 'grade_max':
                             setattr(cls, field_name, 12)
                         else:
                             setattr(cls, field_name, None)
                 else:
                     # For drafts, allow empty numeric fields (set to None instead of default)
-                    if field_name not in ['grade_min', 'grade_max']:  # Keep grade defaults
+                    if field_name not in ('grade_min', 'grade_max'):  # Keep grade defaults
                         setattr(cls, field_name, None)
                 continue
-            
+
             # Handle all other text/char fields directly - ALLOW EMPTY VALUES FOR DRAFTS
-            text_fields = ['title', 'class_info', 'message_for_directors', 'prereqs', 'schedule', 
-                          'requested_room', 'requested_special_resources', 'directors_notes', 
+            text_fields = ['title', 'class_info', 'message_for_directors', 'prereqs', 'schedule',
+                          'requested_room', 'requested_special_resources', 'directors_notes',
                           'purchase_requests', 'class_style', 'hardness_rating']
-            
+
             if field_name in text_fields:
                 # For drafts, allow empty values - this is the key change
                 setattr(cls, field_name, field_value or '')
                 continue
-            
-            # Handle any other fields that might be in the model but not explicitly listed
-            if hasattr(cls, field_name) and field_name not in ['id', 'parent_program', 'status', 'timestamp']:
-                # Try to set the field directly if it exists
-                try:
-                    setattr(cls, field_name, field_value)
-                except (ValueError, TypeError):
-                    # If type conversion fails, skip it for drafts
-                    pass
-        
+
+            # Skip form-only keys that don't correspond to real model fields
+            # (e.g. num_sections is a method on ClassSubject, not a DB column)
+            if field_name not in model_field_names:
+                continue
+            if field_name in ('id', 'parent_program', 'status', 'timestamp'):
+                continue
+            # Set real model fields only
+            try:
+                setattr(cls, field_name, field_value)
+            except (ValueError, TypeError):
+                pass
+
         # Save custom form data
         cls.custom_form_data = custom_data
-        
+
         # Save the class first
         cls.save()
-        
+
+        # Apply deferred M2M relationships now that cls has a PK
+        pending_range_ids = getattr(cls, '_pending_allowable_class_size_range_ids', None)
+        if pending_range_ids:
+            cls.allowable_class_size_ranges.set(
+                ClassSizeRange.objects.filter(id__in=pending_range_ids)
+            )
+
         # Associate teacher for new drafts
         if action in ['create', 'createopenclass']:
             if not cls.teachers.filter(id=user.id).exists():
                 cls.teachers.add(user)
-        
+
         # Handle sections - get num_sections safely
         num_sections = 1
         if 'num_sections' in reg_data:
@@ -236,10 +294,20 @@ class ClassCreationController(object):
                 num_sections = int(reg_data['num_sections'])
             except (ValueError, TypeError):
                 num_sections = 1
-        
+
+        # Ensure duration is set before creating sections — add_section
+        # does '%.4f' % duration which crashes on None.
+        if cls.duration is None:
+            durations = self.program.getDurations()
+            if durations:
+                cls.duration = Decimal(str(durations[0][0]))
+            else:
+                cls.duration = Decimal('1.0')
+            cls.save()
+
         # Update sections
         self.update_class_sections(cls, num_sections)
-        
+
         # Handle meeting times if provided
         if 'meeting_times' in reg_data and reg_data['meeting_times']:
             try:
@@ -252,30 +320,29 @@ class ClassCreationController(object):
                     cls.meeting_times.set(Event.objects.filter(id__in=meeting_time_ids))
             except (Event.DoesNotExist, ValueError):
                 pass
-        
+
         # Handle resource requests (basic version for drafts)
         if 'request-TOTAL_FORMS' in reg_data:
             try:
                 self._save_draft_resource_requests(cls, reg_data)
-            except Exception:
-                # If resource requests fail, don't break the draft save
+            except (ResourceType.DoesNotExist, ValueError, TypeError):
                 pass
-        
+
         return cls
-    
+
     def _save_draft_resource_requests(self, cls, reg_data):
         """Helper method to save resource requests for drafts without validation"""
         # Clear existing requests
         for section in cls.sections.all():
             section.clearResourceRequests()
-        
+
         # Get total forms and create requests for each
         total_forms = int(reg_data.get('request-TOTAL_FORMS', '0'))
-        
+
         for i in range(total_forms):
             resource_type_id = reg_data.get(f'request-{i}-resource_type')
             desired_value = reg_data.get(f'request-{i}-desired_value')
-            
+
             if resource_type_id and desired_value:
                 try:
                     resource_type = ResourceType.objects.get(id=int(resource_type_id))

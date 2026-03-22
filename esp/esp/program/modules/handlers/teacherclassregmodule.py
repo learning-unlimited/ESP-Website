@@ -149,7 +149,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         classes_qs = self.program.classes().defer(*fields_to_defer)
 
         Q_isteacher = Q(classsubject__in=classes_qs)
-        Q_rejected_teacher = Q(classsubject__in=classes_qs.filter(status__lt=0)) & Q_isteacher
+        Q_rejected_teacher = Q(classsubject__in=classes_qs.filter(status__in=[ClassStatus.REJECTED, ClassStatus.CANCELLED])) & Q_isteacher
         Q_approved_teacher = Q(classsubject__in=classes_qs.filter(status__gt=0, sections__status__gt=0)) & Q_isteacher
         Q_proposed_teacher = Q(classsubject__in=classes_qs.filter(status=0)) & Q_isteacher
 
@@ -857,10 +857,25 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 if save_action == 'draft':
                     newclass = ccc.save_class_draft(request.user, request.POST, extra, action)
-                    # For drafts, return to the form with a success message
-                    return HttpResponseRedirect(request.get_full_path() + '?draft_saved=true')
+                    # For drafts, return to the form with a success message.
+                    # Use request.path (no query string) to avoid accumulating
+                    # duplicate draft_saved params on repeated saves.
+                    return HttpResponseRedirect(request.path + '?draft_saved=true')
                 else:
-                    if action == 'create':
+                    # If an existing draft is being submitted, validate and
+                    # promote it via submit_draft to avoid orphaned drafts.
+                    if newclass is None and action in ('create', 'createopenclass'):
+                        newclass = ClassSubject.objects.filter(
+                            parent_program=self.program,
+                            teachers=request.user,
+                            status=ClassStatus.DRAFT
+                        ).first()
+                    if newclass is not None and newclass.status == ClassStatus.DRAFT:
+                        if action in ('create', 'edit'):
+                            newclass = ccc.submit_draft(request.user, request.POST, newclass.id)
+                        elif action in ('createopenclass', 'editopenclass'):
+                            newclass = ccc.submit_draft(request.user, request.POST, newclass.id, form_class=TeacherOpenClassRegForm)
+                    elif action == 'create':
                         newclass = ccc.makeaclass(request.user, request.POST)
                     elif action == 'createopenclass':
                         newclass = ccc.makeaclass(request.user, request.POST, form_class=TeacherOpenClassRegForm)
@@ -868,7 +883,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                         newclass = ccc.editclass(request.user, request.POST, extra)
                     elif action == 'editopenclass':
                         newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
-                    
+
                     do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
 
                     if do_question:
@@ -891,18 +906,14 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             # Check for existing drafts for create actions
             if action in ['create', 'createopenclass'] and newclass is None:
-                # Look for existing draft classes for this user and program
-                try:
-                    existing_draft = ClassSubject.objects.filter(
-                        parent_program=self.program,
-                        teachers=request.user,
-                        status=ClassStatus.DRAFT
-                    ).first()
-                    if existing_draft:
-                        newclass = existing_draft
-                except:
-                    pass
-            
+                existing_draft = ClassSubject.objects.filter(
+                    parent_program=self.program,
+                    teachers=request.user,
+                    status=ClassStatus.DRAFT
+                ).first()
+                if existing_draft:
+                    newclass = existing_draft
+
             # With static resource requests, we need to display a form
             # each available type --- there's no way to add the types
             # that we didn't start out with

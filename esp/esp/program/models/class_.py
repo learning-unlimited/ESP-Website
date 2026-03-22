@@ -91,10 +91,10 @@ __all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'C
 STATUS_CHOICES = (
         (ClassStatus.CANCELLED, "cancelled"),
         (ClassStatus.REJECTED, "rejected"),
-        (ClassStatus.DRAFT, "draft"), # Add the new 'draft' status choice
-        (ClassStatus.UNREVIEWED, "unreviewed"), 
+        (ClassStatus.DRAFT, "draft"),
+        (ClassStatus.UNREVIEWED, "unreviewed"),
         (ClassStatus.HIDDEN, "accepted but hidden"),
-        (ClassStatus.ACCEPTED, "accepted"), 
+        (ClassStatus.ACCEPTED, "accepted"),
         )
 
 STATUS_CHOICES_DICT = dict(STATUS_CHOICES)
@@ -2139,7 +2139,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.status < ClassStatus.UNREVIEWED: #ie, all rejected or cancelled classes.
+        if self.status in (ClassStatus.REJECTED, ClassStatus.CANCELLED):
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:
