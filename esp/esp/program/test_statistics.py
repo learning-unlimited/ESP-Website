@@ -17,6 +17,9 @@ students.  We convert the list attributes to QuerySets where functions require
 them.
 """
 
+import datetime
+from datetime import date
+
 from types import SimpleNamespace
 
 from esp.program.models import Program, RegistrationProfile
@@ -202,6 +205,31 @@ class DemographicsTest(StatisticsTestBase):
     def test_birthyear_data_is_list(self):
         _, rd = self._call(rd={})
         self.assertIsInstance(rd["birthyear_data"], list)
+
+    def test_birthyear_counting_logic(self):
+        dob_dummy = SimpleNamespace(
+            student_info=SimpleNamespace(
+                graduation_year=2027,
+                dob=date(2005, 5, 20)
+            )
+        )
+        profiles = [dob_dummy]
+        _, rd = self._call(profiles=profiles)
+
+        self.assertEqual(rd['birthyear_data'], [(2005, 1)])
+        self.assertEqual(rd['gradyear_data'], [(2027, 1)])
+
+    def test_birthyear_aggregation_multiple_students(self):
+        student_a = SimpleNamespace(
+            student_info=SimpleNamespace(graduation_year=2027, dob=date(2005, 1, 1))
+        )
+        student_b = SimpleNamespace(
+            student_info=SimpleNamespace(graduation_year=2028, dob=date(2005, 12, 31))
+        )
+        profiles = [student_a, student_b]
+        _, rd = self._call(profiles=profiles)
+
+        self.assertEqual(rd['birthyear_data'], [(2005, 2)])
 
 
 # ===========================================================================
