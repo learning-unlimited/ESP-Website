@@ -427,29 +427,39 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 # Fetch all registered students for this program
                 all_students = prog.students_union()
 
+                # Keep track of which excluded IDs were actually found in the program
+                unmatched_ids = excluded_ids.copy()
+
                 for student in all_students:
                     if student.id in excluded_ids:
                         results['excluded'].append(student.id)
+                        unmatched_ids.discard(student.id)
                         continue
                     if not student.isStudent():
                         results['not_student'].append(student.id)
                         continue
 
                     self.student = student
-                    for key in ['attended', 'paid', 'liab', 'med']:
-                        if form.cleaned_data.get(key):
-                            if key == 'attended':
-                                if prog.isCheckedIn(student):
-                                    results['existing'].append(student.id)
+                    with transaction.atomic():
+                        for key in ['attended', 'paid', 'liab', 'med']:
+                            if form.cleaned_data.get(key):
+                                if key == 'attended':
+                                    if prog.isCheckedIn(student):
+                                        results['existing'].append(student.id)
+                                    else:
+                                        self.create_record(key)
+                                        results['checked_in'].append(student.id)
                                 else:
-                                    self.create_record(key)
-                                    results['checked_in'].append(student.id)
-                            else:
-                                created = self.create_record(key)
-                                if created:
-                                    results[key]['new'].append(student.id)
-                                else:
-                                    results[key]['existing'].append(student.id)
+                                    created = self.create_record(key)
+                                    if created:
+                                        results[key]['new'].append(student.id)
+                                    else:
+                                        results[key]['existing'].append(student.id)
+
+                # Any excluded numeric IDs that weren't found in all_students are reported as not found
+                for uid in sorted(unmatched_ids):
+                    results['not_found'].append(str(uid))
+
         else:
             results = {}
             form = OnsiteBulkCheckinForm()
