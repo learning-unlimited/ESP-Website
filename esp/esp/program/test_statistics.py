@@ -276,6 +276,33 @@ class SchoolsTest(StatisticsTestBase):
         self.assertEqual(rd["num_school"], 0)
         self.assertEqual(rd["school_data"], [])
 
+    def test_school_and_k12_counting_logic(self):
+        k12_dummy = SimpleNamespace(
+            student_info=SimpleNamespace(
+                k12school=SimpleNamespace(name="Chaitanya Techno School"),
+                school=None
+            )
+        )
+
+        uni_dummy = SimpleNamespace(
+            student_info=SimpleNamespace(
+                k12school=None,
+                school="Amrita Vishwa Vidyapeetham"
+            )
+        )
+
+        profiles = [k12_dummy, uni_dummy]
+        _, rd = self._call(profiles=profiles, rd={})
+
+        self.assertEqual(rd['num_k12school'], 1)
+        self.assertEqual(rd['num_school'], 1)
+
+        expected_names = ["Amrita Vishwa Vidyapeetham", "Chaitanya Techno School"]
+        actual_names = [item[0] for item in rd['school_data']]
+
+        self.assertIn("Chaitanya Techno School", actual_names)
+        self.assertIn("Amrita Vishwa Vidyapeetham", actual_names)
+
 
 # ===========================================================================
 # startreg()
