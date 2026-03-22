@@ -149,7 +149,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         classes_qs = self.program.classes().defer(*fields_to_defer)
 
         Q_isteacher = Q(classsubject__in=classes_qs)
-        Q_rejected_teacher = Q(classsubject__in=classes_qs.filter(status__lt=0)) & Q_isteacher
+        Q_rejected_teacher = Q(classsubject__in=classes_qs.filter(status__in=[ClassStatus.REJECTED, ClassStatus.CANCELLED])) & Q_isteacher
         Q_approved_teacher = Q(classsubject__in=classes_qs.filter(status__gt=0, sections__status__gt=0)) & Q_isteacher
         Q_proposed_teacher = Q(classsubject__in=classes_qs.filter(status=0)) & Q_isteacher
 
@@ -853,35 +853,67 @@ class TeacherClassRegModule(ProgramModuleObj):
             ccc = ClassCreationController(self.program)
 
             try:
-                if action == 'create':
-                    newclass = ccc.makeaclass(request.user, request.POST)
-                elif action == 'createopenclass':
-                    newclass = ccc.makeaclass(request.user, request.POST, form_class=TeacherOpenClassRegForm)
-                elif action == 'edit':
-                    newclass = ccc.editclass(request.user, request.POST, extra)
-                elif action == 'editopenclass':
-                    newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
+                save_action = request.POST.get('save_action', 'submit')
 
-                do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
+                if save_action == 'draft':
+                    newclass = ccc.save_class_draft(request.user, request.POST, extra, action)
+                    # For drafts, return to the form with a success message.
+                    # Use request.path (no query string) to avoid accumulating
+                    # duplicate draft_saved params on repeated saves.
+                    return HttpResponseRedirect(request.path + '?draft_saved=true')
+                else:
+                    # If an existing draft is being submitted, validate and
+                    # promote it via submit_draft to avoid orphaned drafts.
+                    if newclass is None and action in ('create', 'createopenclass'):
+                        newclass = ClassSubject.objects.filter(
+                            parent_program=self.program,
+                            teachers=request.user,
+                            status=ClassStatus.DRAFT
+                        ).first()
+                    if newclass is not None and newclass.status == ClassStatus.DRAFT:
+                        if action in ('create', 'edit'):
+                            newclass = ccc.submit_draft(request.user, request.POST, newclass.id)
+                        elif action in ('createopenclass', 'editopenclass'):
+                            newclass = ccc.submit_draft(request.user, request.POST, newclass.id, form_class=TeacherOpenClassRegForm)
+                    elif action == 'create':
+                        newclass = ccc.makeaclass(request.user, request.POST)
+                    elif action == 'createopenclass':
+                        newclass = ccc.makeaclass(request.user, request.POST, form_class=TeacherOpenClassRegForm)
+                    elif action == 'edit':
+                        newclass = ccc.editclass(request.user, request.POST, extra)
+                    elif action == 'editopenclass':
+                        newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
 
-                if do_question:
-                    return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
-                if request.POST.get('manage') == 'manage':
-                    if request.POST['manage_submit'] == 'reload':
-                        return HttpResponseRedirect(request.get_full_path()+'?manage=manage')
-                    elif request.POST['manage_submit'] == 'manageclass':
-                        return HttpResponseRedirect('/manage/%s/manageclass/%s' % (self.program.getUrlBase(), extra))
-                    elif request.POST['manage_submit'] == 'dashboard':
-                        return HttpResponseRedirect('/manage/%s/dashboard' % self.program.getUrlBase())
-                    elif request.POST['manage_submit'] == 'main':
-                        return HttpResponseRedirect('/manage/%s/main' % self.program.getUrlBase())
-                return self.goToCore(tl)
+                    do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
+
+                    if do_question:
+                        return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
+                    if request.POST.get('manage') == 'manage':
+                        if request.POST['manage_submit'] == 'reload':
+                            return HttpResponseRedirect(request.get_full_path()+'?manage=manage')
+                        elif request.POST['manage_submit'] == 'manageclass':
+                            return HttpResponseRedirect('/manage/%s/manageclass/%s' % (self.program.getUrlBase(), extra))
+                        elif request.POST['manage_submit'] == 'dashboard':
+                            return HttpResponseRedirect('/manage/%s/dashboard' % self.program.getUrlBase())
+                        elif request.POST['manage_submit'] == 'main':
+                            return HttpResponseRedirect('/manage/%s/main' % self.program.getUrlBase())
+                    return self.goToCore(tl)
 
             except ClassCreationValidationError as e:
                 reg_form = e.reg_form
                 resource_formset = e.resource_formset
 
         else:
+            # Check for existing drafts for create actions
+            if action in ['create', 'createopenclass'] and newclass is None:
+                existing_draft = ClassSubject.objects.filter(
+                    parent_program=self.program,
+                    teachers=request.user,
+                    status=ClassStatus.DRAFT
+                ).first()
+                if existing_draft:
+                    newclass = existing_draft
+
             # With static resource requests, we need to display a form
             # each available type --- there's no way to add the types
             # that we didn't start out with
@@ -945,6 +977,14 @@ class TeacherClassRegModule(ProgramModuleObj):
                     # TODO: remove private API use
                     if populateonly: reg_form._errors = ErrorDict()
                 elif action=='editopenclass':
+                    reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
+                    # TODO: remove private API use
+                    if populateonly: reg_form._errors = ErrorDict()
+                elif action=='create':
+                    reg_form = TeacherClassRegForm(self.crmi, current_data)
+                    # TODO: remove private API use
+                    if populateonly: reg_form._errors = ErrorDict()
+                elif action=='createopenclass':
                     reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
                     # TODO: remove private API use
                     if populateonly: reg_form._errors = ErrorDict()
