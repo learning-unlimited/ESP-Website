@@ -2411,15 +2411,21 @@ class Record(models.Model):
     @classmethod
     def createBit(cls, extension, program, user):
         from esp.accounting.controllers import IndividualAccountingController
-        if extension == 'Paid':
+        extension_name = extension.lower()
+
+        if extension_name == 'paid':
             IndividualAccountingController.updatePaid(program, user, True)
 
-        if cls.user_completed(user, extension.lower(), program):
+        if cls.user_completed(user, extension_name, program):
             return False
         else:
+            record_type, _ = RecordType.objects.get_or_create(
+                name=extension_name,
+                defaults={'description': extension_name},
+            )
             cls.objects.create(
                 user = user,
-                event = extension.lower(),
+                event = record_type,
                 program = program
             )
             return True

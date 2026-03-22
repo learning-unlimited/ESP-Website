@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 import json
 from datetime import datetime, timedelta
 
+from django.db import transaction
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Min
 from django.db.models.query import Q
@@ -180,12 +181,13 @@ class OnSiteClassList(ProgramModuleObj):
         success = registration_profile.student_info is not None
 
         if success:
-            registration_profile.save()
+            with transaction.atomic():
+                registration_profile.save()
 
-            for extension in ['attended', 'med', 'liab', 'onsite']:
-                Record.createBit(extension, program, student)
+                for extension in ['attended', 'med', 'liab', 'onsite']:
+                    Record.createBit(extension, program, student)
 
-            IndividualAccountingController.updatePaid(self.program, student, paid=True)
+                IndividualAccountingController.updatePaid(self.program, student, paid=True)
 
         json.dump({'status':success}, resp)
         return resp
@@ -262,8 +264,7 @@ class OnSiteClassList(ProgramModuleObj):
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
         if request.GET.get('check_in') == 'true' and not prog.isCheckedIn(user):
-            rec = Record(user=user, program=prog, event='attended')
-            rec.save()
+            Record.createBit('attended', prog, user)
 
         if user and desired_sections is not None:
             override_full = (request.GET.get("override", "") == "true")
