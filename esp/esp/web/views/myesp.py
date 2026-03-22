@@ -170,11 +170,13 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     user_type_labels = [x[0] for x in user_types]
     user_type_labels_lower = [x.lower() for x in user_type_labels]
 
-    if role.lower() in user_type_labels_lower:
-        target_type = user_types[user_type_labels_lower.index(role.lower())][1]
-    elif role.lower() in additional_type_labels_lower:
+    role_lower = (role or '').lower()
+
+    if role_lower in user_type_labels_lower:
+        target_type = user_types[user_type_labels_lower.index(role_lower)][1]
+    elif role_lower in additional_type_labels_lower:
         target_type = additional_types[additional_type_labels_lower.index(
-            role.lower())][1]
+            role_lower)][1]
     else:
         # Any unknown role → fallback to basic contact form
         target_type = additional_types[0][1]
