@@ -6,6 +6,7 @@
 from script_setup import *
 
 import random
+from collections import defaultdict
 
 from esp.cal.models import Event
 from esp.program.models import Program, StudentRegistration, RegistrationType
@@ -40,8 +41,12 @@ lunches = ClassSection.objects.filter(parent_class__parent_program=program,
                                       parent_class__category__category='Lunch',
                                       meeting_times__isnull=False
                                       ).values_list('meeting_times', 'id')
-lunches_by_timeblock = dict(lunches)
-lunch_ids = set(lunches_by_timeblock.values())
+lunches_by_timeblock = defaultdict(list)
+lunch_ids = set()
+
+for timeblock_id, section_id in lunches:
+    lunches_by_timeblock[timeblock_id].append(section_id)
+    lunch_ids.add(section_id)
 
 lunchtimes_by_day = {}
 for timeblock_id, section_id in lunches:
@@ -66,11 +71,29 @@ for user in users:
             if (user.id, lunchtime_id) not in sections_by_user_timeblock:
                 # The user has nothing here; assign a lunch and skip to the
                 # next day/user
+                # First, find all lunch sections in this timeblock that still
+                # have remaining capacity.
+                candidate_lunch_ids = []
+                for lunch_section_id in lunches_by_timeblock[lunchtime_id]:
+                    section = sections_by_id[lunch_section_id]
+                    # Current number of enrolled students in this section.
+                    current_enrollment = StudentRegistration.valid_objects().filter(
+                        section_id=lunch_section_id,
+                        relationship=relationship,
+                    ).count()
+                    # Only consider this section if it has remaining capacity.
+                    if section.capacity is None or current_enrollment < section.capacity:
+                        candidate_lunch_ids.append(lunch_section_id)
+                if not candidate_lunch_ids:
+                    # All parallel lunch sections for this timeblock are full;
+                    # try the next lunchtime, if any.
+                    continue
                 print("assigning", user.username, "to lunch", end=' ')
                 print(timeblocks_by_id[lunchtime_id])
+                chosen_lunch_id = random.choice(candidate_lunch_ids)
                 StudentRegistration.objects.create(
                     user=users_by_id[user.id],
-                    section=sections_by_id[lunches_by_timeblock[lunchtime_id]],
+                    section=sections_by_id[chosen_lunch_id],
                     relationship=relationship)
                 hungry = False
                 break
