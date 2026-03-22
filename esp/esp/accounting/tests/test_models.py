@@ -498,3 +498,22 @@ class IndividualAccountingControllerTest(TestCase):
         self.assertIn('Refund', types)
         self.assertEqual(results[0]['refunded'], Decimal('15.00'))
 
+    def test_apply_preferences(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+        prefs = self.iac.get_preferences()
+        self.assertEqual(len(prefs), 1)
+        self.assertEqual(prefs[0][:3], ['T-shirt', 1, Decimal('15.00')])
+
+    def test_set_preference(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.set_preference('T-shirt', 1)
+        transfers = self.iac.get_transfers()
+        self.assertTrue(transfers.filter(line_item__text='T-shirt').exists())
+
+    def test_get_preferences(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.set_preference('T-shirt', 2)
+        prefs = self.iac.get_preferences()
+        self.assertEqual(len(prefs), 1)
+        self.assertEqual(prefs[0][:3], ['T-shirt', 2, Decimal('15.00')])

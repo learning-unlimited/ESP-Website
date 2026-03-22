@@ -346,17 +346,34 @@ class IndividualAccountingController(ProgramAccountingController):
             be set to None if unused.   """
 
         result = []
+        program_account = self.default_program_account()
+        source_account = self.default_source_account()
         line_items = self.get_lineitemtypes(include_donations=False).exclude(text__in=self.admission_items)
 
         #   Clear all existing optional transfers for this student at once
         Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
 
-        #   Delegate each item to set_preference(), which handles transfer creation.
-        #   set_preference()'s own per-item delete is a no-op here since we
-        #   already cleared all transfers above.
-        for item_tup in optional_items:
-            (item_name, quantity, cost, option_id) = item_tup
-            result.extend(self.set_preference(item_name, quantity or 0, amount=cost, option_id=option_id))
+        line_items_dict = {lit.text: lit for lit in line_items}
+
+        #   Create transfers for optional line item types
+        for item_name, quantity, cost, option_id in optional_items:
+            lit = line_items_dict.get(item_name)
+            if not lit:
+                raise Exception('Could not find a line item type matching "%s"' % item_name)
+
+            option = None
+            if option_id is not None:
+                option = LineItemOptions.objects.get(id=option_id)
+
+            if cost is not None:
+                transfer_amount = cost
+            elif option is not None:
+                transfer_amount = option.amount_dec_inherited
+            else:
+                transfer_amount = lit.amount_dec
+
+            for i in range(quantity or 0):
+                result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
 
         return result
 
@@ -364,22 +381,23 @@ class IndividualAccountingController(ProgramAccountingController):
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
+
+        kwargs = {'line_item': line_item}
+        if amount is not None:
+            kwargs['amount_dec'] = amount
+        if option_id is not None:
+            kwargs['option_id'] = option_id
+        self.get_transfers().filter(**kwargs).delete()
+
         option = None
-        if amount is not None and option_id:
-            self.get_transfers().filter(line_item=line_item, amount_dec=amount, option__id=option_id).delete()
-        elif option_id:
-            self.get_transfers().filter(line_item=line_item, option__id=option_id).delete()
-            #   Pull the amount from the line item options, if it has one
+        if option_id is not None:
             option = LineItemOptions.objects.get(id=option_id)
-            if option.amount_dec is not None:
-                amount = option.amount_dec
+
+        if amount is None:
+            if option is not None:
+                amount = option.amount_dec_inherited
             else:
                 amount = line_item.amount_dec
-        elif amount is not None:
-            self.get_transfers().filter(line_item=line_item, amount_dec=amount).delete()
-        else:
-            self.get_transfers().filter(line_item=line_item).delete()
-            amount = line_item.amount_dec
 
         result = []
         program_account = self.default_program_account()
@@ -398,16 +416,15 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def get_preferences(self, line_items=None):
         #   Return a list of 4-tuples: (item name, quantity, cost, options)
-        result = []
         transfers = self.get_transfers(line_items)
-        seen = {}
+        counts = {}
         for transfer in transfers:
-            li_name = transfer.line_item.text
-            key = (li_name, transfer.amount_dec, transfer.option_id)
-            if key not in seen:
-                seen[key] = len(result)
-                result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
-            result[seen[key]][1] += 1
+            key = (transfer.line_item.text, transfer.amount_dec, transfer.option_id)
+            counts[key] = counts.get(key, 0) + 1
+
+        result = []
+        for (li_name, amount_dec, option_id), quantity in counts.items():
+            result.append([li_name, quantity, amount_dec, option_id])
         return result
 
     ##  Functions to turn a user's account status for a program into a string
