@@ -107,6 +107,15 @@
   <br />
   {% load render_qsd %} {% render_inline_program_qsd program "onsite:status" %}
 
+  <h1>Bulk Check-In &mdash; For {{ program.niceName }}</h1>
+  <p style="margin: 10px">
+    <a href="/onsite/{{ program.url }}/bulkcheckin"
+      >Click here to check in <strong>all</strong> students, specifying only those
+      who are <strong>absent</strong></a
+    >
+  </p>
+
+
   <h1>Advanced Checkin &mdash; For {{ program.niceName }}</h1>
   <p style="margin: 10px">
     <a href="/onsite/{{ program.url }}/checkin"
