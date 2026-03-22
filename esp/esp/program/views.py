@@ -1252,19 +1252,68 @@ def statistics(request, program=None):
                 programs = programs.filter(url__in=form.cleaned_data['program_instances'])
             result_dict['programs'] = programs
 
-            #   Get list of users the query applies to
-            users_q = Q()
+            #   Which registration dimension applies matches StatisticsQueryForm.hide_unwanted_fields:
+            #   teacher_reg / class_reg hide student fields; all other stats hide teacher fields.
+            #   Hidden fields still leave initial=True on the other role (e.g. teacher_reg_type_all),
+            #   which used to OR in teachers_union() for zipcodes etc. and produced enormous SQL.
+            stats_query = form.cleaned_data['query']
+            teacher_only = stats_query in ('teacher_reg', 'class_reg')
+
+            #   Get list of users the query applies to.
+            #   Accumulate per-program registration Q objects, then apply each role
+            #   filter once (Student / Teacher). Doing (prog_q & role) for every
+            #   program duplicates the groups join on each OR branch and is very
+            #   slow; (prog_q1 | prog_q2 | ...) & role is equivalent for students
+            #   and avoids that.
+            student_users_q = None
+            teacher_users_q = None
+
             for program in programs:
-                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types']:
-                    students_objects = program.students(QObjects=True)
-                    for reg_type in form.cleaned_data['student_reg_types']:
-                        if reg_type in list(students_objects.keys()):
-                            users_q = users_q | students_objects[reg_type]
-                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types']:
-                    teachers_objects = program.teachers(QObjects=True)
-                    for reg_type in form.cleaned_data['teacher_reg_types']:
-                        if reg_type in list(teachers_objects.keys()):
-                            users_q = users_q | teachers_objects[reg_type]
+                student_q = None
+                if not teacher_only:
+                    if form.cleaned_data.get('student_reg_type_all'):
+                        student_q = program.students_union(QObject=True)
+                    elif form.cleaned_data.get('student_reg_types'):
+                        students_objects = program.students(QObjects=True)
+                        student_q = Q(pk__in=[])
+                        for reg_type in form.cleaned_data['student_reg_types']:
+                            if reg_type in students_objects:
+                                student_q |= students_objects[reg_type]
+
+                    if student_q:
+                        if student_users_q is None:
+                            student_users_q = student_q
+                        else:
+                            student_users_q |= student_q
+
+                teacher_q = None
+                if teacher_only:
+                    if form.cleaned_data.get('teacher_reg_type_all'):
+                        teacher_q = program.teachers_union(QObject=True)
+                    elif form.cleaned_data.get('teacher_reg_types'):
+                        teachers_objects = program.teachers(QObjects=True)
+                        teacher_q = Q(pk__in=[])
+                        for reg_type in form.cleaned_data['teacher_reg_types']:
+                            if reg_type in teachers_objects:
+                                teacher_q |= teachers_objects[reg_type]
+
+                    if teacher_q:
+                        if teacher_users_q is None:
+                            teacher_users_q = teacher_q
+                        else:
+                            teacher_users_q |= teacher_q
+
+            users_q = None
+            if student_users_q is not None:
+                # Restrict to students so teachers/volunteers with registration-like
+                # records are not counted as students.
+                users_q = student_users_q & ESPUser.getAllOfType('Student')
+            if teacher_users_q is not None:
+                tq = teacher_users_q & ESPUser.getAllOfType('Teacher')
+                users_q = tq if users_q is None else (users_q | tq)
+
+            if users_q is None:
+                users_q = Q(pk__in=[])
 
             #   Narrow down by school (perhaps not ideal results, but faster)
             if form.cleaned_data['school_query_type'] == 'name':
@@ -1290,8 +1339,12 @@ def statistics(request, program=None):
                 zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
                 users_q = users_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
 
-            users = ESPUser.objects.filter(users_q).distinct()
-            result_dict['num_users'] = users.count()
+            #   Distinct PKs only (avoids running the heavy filter twice for count() + list()).
+            user_ids = list(
+                ESPUser.objects.filter(users_q).values_list('pk', flat=True).distinct()
+            )
+            result_dict['num_users'] = len(user_ids)
+            users = ESPUser.objects.filter(pk__in=user_ids)
             user_list = list(users)
             # Batch-fetch latest profile per user to avoid N+1
             profile_by_user = {}
