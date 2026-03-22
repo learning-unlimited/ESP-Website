@@ -416,6 +416,25 @@ class RepeatsTest(StatisticsTestBase):
         with self.assertRaises(FieldError):
             self._call(students=self.empty_users, profiles=self.empty_profiles, rd={})
 
+    def test_repeats_logic_flow(self):
+        mock_data = [
+            (1, "Science"),
+            (1, "Science"),
+            (1, "Math"),
+            (2, "Math"),
+        ]
+
+        with patch('esp.users.models.Record.objects.filter') as mock_filter:
+            mock_filter.return_value.values_list.return_value = mock_data
+
+            _, rd = self._call(rd={})
+            repeat_data = dict(rd['repeat_data'])
+
+            self.assertIn("1x Math, 2x Science", repeat_data)
+            self.assertEqual(repeat_data["1x Math, 2x Science"], 1) # One student has this signature
+            self.assertIn("1x Math", repeat_data)
+            self.assertEqual(repeat_data["1x Math"], 1) # One student has this signature
+
 
 # ===========================================================================
 # heardabout()
@@ -451,6 +470,23 @@ class HeardAboutTest(StatisticsTestBase):
     def test_empty_profiles(self):
         _, rd = self._call(profiles=self.empty_profiles, rd={})
         self.assertEqual(rd["heardabout_data"], [])
+
+    def test_heard_about_normalization_logic(self):
+        profiles = [
+            SimpleNamespace(student_info=SimpleNamespace(heard_about="School!")),
+            SimpleNamespace(student_info=SimpleNamespace(heard_about="school")),
+            SimpleNamespace(student_info=SimpleNamespace(heard_about="Friend...")),
+            SimpleNamespace(student_info=SimpleNamespace(heard_about="FRIEND")),
+        ]
+
+        _, rd = self._call(profiles=profiles, rd={})
+
+        data_dict = dict(rd['heardabout_data'])
+
+        self.assertEqual(data_dict["School!"], 2)
+        self.assertEqual(data_dict["Friend..."], 2)
+
+        self.assertEqual(len(rd['heardabout_data']), 2)
 
 
 # ===========================================================================
