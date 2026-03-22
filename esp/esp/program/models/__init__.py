@@ -255,16 +255,16 @@ class ProgramManager(models.Manager):
     def get_queryset(self):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by('-id')
-    # Program name validation: Letters, numbers, spaces aur hyphens allow karne ke liye
+    # Validator for program name: Allows common punctuation but blocks HTML/Script tags
 program_name_validator = validators.RegexValidator(
-    r'^[a-zA-Z0-9 \-]+$', 
-    'Program name can only contain letters, numbers, spaces, and hyphens.'
+    r'^[^\x00-\x1F\x7F<>]+$',
+    'Program name cannot contain control characters or the characters "<" and ">".'
 )
 
-# Program URL validation: Lowercase letters, numbers aur hyphens (No Spaces!)
+# Validator for program URL: Enforces Segment1/Segment2 format (e.g., Splash/2024_Winter)
 program_url_validator = validators.RegexValidator(
-    r'^[a-z0-9\-]+$', 
-    'Program URL can only contain lowercase letters, numbers, and hyphens (no spaces).'
+    r'^[^<>"\'\s/]+/[^<>"\'\s/]+$',
+    'Program URL must be of the form Segment1/Segment2 without spaces or characters like <, >, ", \', or extra slashes.'
 )
 
 class Program(models.Model, CustomFormsLinkModel):
@@ -339,12 +339,11 @@ class Program(models.Model, CustomFormsLinkModel):
     get_onsite_url = _get_type_url("onsite")
 
     def save(self, *args, **kwargs):
-        # Force validation before saving to DB
-        self.full_clean()
-
-        retVal = super().save(*args, **kwargs)
-
-        return retVal
+        # Only force validation if clean=True is passed
+        clean = kwargs.pop('clean', False)
+        if clean:
+            self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.niceName()
@@ -2339,3 +2338,4 @@ def install():
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.resources.models import ResourceType
+
