@@ -55,11 +55,13 @@ from django.db                   import models
 from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
-
+from django.http import JsonResponse    
 from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
+from esp.web.forms.fileupload_form import FileUploadForm, FileRenameForm
+from esp.qsdmedia.models import Media
 
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
@@ -499,9 +501,6 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/MainPage")
     def class_docs(self, request, tl, one, two, module, extra, prog):
-        from esp.web.forms.fileupload_form import FileUploadForm, FileRenameForm
-        from esp.qsdmedia.models import Media
-
         clsid = 0
         if 'clsid' in request.POST:
             clsid = request.POST['clsid']
@@ -1013,6 +1012,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         context['manage'] = False
         context['sectionNums'] = prog.countTimeSlots()
+        context['no_durations'] = len(context['sectionNums']) == 0
 
         if ((request.method == "POST" and request.POST.get('manage') == 'manage') or
             (request.method == "GET" and request.GET.get('manage') == 'manage') or
@@ -1037,8 +1037,6 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from django.http import JsonResponse
-
         Q_teacher = Q(groups__name="Teacher")
 
         queryset = ESPUser.objects.filter(Q_teacher)
