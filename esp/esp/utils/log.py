@@ -11,3 +11,8 @@ class RequireInScript(logging.Filter):
 class RequireNotInScript(logging.Filter):
     def filter(self, record):
         return not settings.IS_IN_SCRIPT
+
+
+class RequireCSRFFailure(logging.Filter):
+    def filter(self, record):
+        return record.name == 'django.security.csrf'
