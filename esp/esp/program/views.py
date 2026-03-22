@@ -466,8 +466,8 @@ def find_user(userstr):
     userstr_parts = [part.strip() for part in userstr.split(' ') if part]
 
     if len(userstr_parts) == 2 and \
-       re.match("\A\(\d\d\d\)\Z", userstr_parts[0]) and \
-       re.match("[^A-Za-z]*", userstr_parts[1]):
+    re.match(r"\A\(\d\d\d\)\Z", userstr_parts[0]) and \
+    re.match(r"[^A-Za-z]*", userstr_parts[1]):
         # HACK: coerce ["(555)", "555-5555"] to ["(555)555-5555"] so that the
         # first branch of the if statement gets taken
         userstr_parts = ["".join(userstr_parts)]
