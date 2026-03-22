@@ -51,7 +51,6 @@ class TeacherEventsModule(ProgramModuleObj):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    @needs_teacher
     @meets_deadline('/Events')
     @main_call
     def calendar_data(self, request, tl, one, two, module, extra, prog):
@@ -59,10 +58,17 @@ class TeacherEventsModule(ProgramModuleObj):
         from django.http import JsonResponse
         
         user = request.user
+        
+        # Explicit API Custom Auth check requested by Copilot
+        if not user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        if hasattr(self, 'isTeacher') and not self.isTeacher(user, prog):
+            return JsonResponse({'error': 'Teacher access required'}, status=403)
+            
         data = []
         
-        event_types = EventType.teacher_event_types()
-        relevant_types = [event_types['interview'], event_types['training']]
+        # Copilot fix: Ensure it accepts all Teacher Types, not just Interview/Training
+        relevant_types = EventType.objects.filter(is_teacher_type=True)
         
         # Collect both interviews and training (including past events)
         all_events = Event.objects.filter(program=self.program, event_type__in=relevant_types).order_by('start')
@@ -71,8 +77,8 @@ class TeacherEventsModule(ProgramModuleObj):
             entries = UserAvailability.entriesBySlot(event)
             is_mine = entries.filter(user=user).exists()
             
-            # Check if others are signed up (for interview slots)
-            category = 'interview' if event.event_type == event_types['interview'] else 'training'
+            # Check if others are signed up (for interview slots and others requiring single-cap)
+            category = 'interview' if 'interview' in event.event_type.description.lower() else 'training'
             other_entries = entries.exclude(user=user)
             
             is_full = False
@@ -101,7 +107,8 @@ class TeacherEventsModule(ProgramModuleObj):
                 'extendedProps': {
                     'category': category,
                     'status': status,
-                    'description': event.description
+                    'description': event.description,
+                    'event_type_id': event.event_type.id
                 }
             })
         

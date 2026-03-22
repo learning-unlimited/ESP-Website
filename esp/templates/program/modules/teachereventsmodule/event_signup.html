@@ -36,8 +36,8 @@
                 center: 'title',
                 right: 'timeGridWeek,timeGridDay'
             },
-            // Use absolute-style path for robustness as requested in review
-            events: '/teach/{{ one }}/{{ two }}/calendar_data',
+            // Use program URL base so we don't depend on undefined template vars
+            events: '{{ prog.getUrlBase }}calendar_data',
             eventClassNames: function(arg) {
                 return ['status-' + arg.event.extendedProps.status];
             },
@@ -50,8 +50,7 @@
                 }
 
                 // Logic to toggle selection in the (hidden) Django form
-                const category = props.category; // 'interview' or 'training'
-                const selectEl = document.getElementById('id_' + category);
+                const selectEl = document.getElementById('id_event_type_' + props.event_type_id);
                 
                 if (selectEl) {
                     selectEl.value = event.id;
@@ -78,6 +77,7 @@
 <h1>Teacher Preparation Events for {{ prog.niceName }}</h1>
 
 <div id="program_form">
+    {% render_inline_program_qsd prog "teach:eventsignupheader" %}
     <p>Please select your preferred timeslots from the calendar below.</p>
 
     <div id='calendar'></div>
@@ -85,11 +85,15 @@
     {% comment %} Only one form is rendered here. {{ form }} only provides fields, not a <form> tag. {% endcomment %}
     <form method="post" id="signup-form" action="{{ request.path }}">
         {% csrf_token %}
-        <div style="display: none;">
+        <table style="display: none;">
             {{ form }}
-        </div>
+        </table>
         <div align="center" style="margin-top: 20px;">
+            {% if form.initial %}
+            <input type="submit" id="submit-btn" class="btn btn-primary" value="Confirm Selection" />
+            {% else %}
             <input type="submit" id="submit-btn" class="btn btn-primary" value="Confirm Selection" disabled />
+            {% endif %}
         </div>
     </form>
 
