@@ -19,6 +19,7 @@ them.
 
 import datetime
 from datetime import date
+from unittest.mock import patch
 
 from types import SimpleNamespace
 
@@ -338,6 +339,39 @@ class StartRegTest(StatisticsTestBase):
         for _prog, reg_list, confirm_list in rd["program_data"]:
             self.assertEqual(reg_list, [])
             self.assertEqual(confirm_list, [])
+
+    def test_registration_and_confirmation_counting(self):
+        mock_regs = [
+            {
+                'user_id': 1,
+                'section__parent_class__parent_program': self.programs[0].id,
+                'first_date': datetime(2026, 3, 20)
+            }
+        ]
+
+        mock_confirms = [
+            {
+                'user_id': 1,
+                'program_id': self.programs[0].id,
+                'last_time': datetime(2026, 3, 21)
+            }
+        ]
+
+        with patch('esp.program.models.StudentRegistration.objects.filter') as mock_reg_query, \
+             patch('esp.users.models.Record.objects.filter') as mock_conf_query:
+
+            mock_reg_query.return_value.values.return_value.annotate.return_value = mock_regs
+            mock_conf_query.return_value.values.return_value.annotate.return_value = mock_confirms
+
+            _, rd = self._call(rd={})
+
+            program, reg_list, confirm_list = rd['program_data'][0]
+
+            self.assertEqual(reg_list[0][0], datetime(2026, 3, 20).date())
+            self.assertEqual(reg_list[0][1], 1)
+
+            self.assertEqual(confirm_list[0][0], datetime(2026, 3, 21).date())
+            self.assertEqual(confirm_list[0][1], 1)
 
 
 # ===========================================================================
