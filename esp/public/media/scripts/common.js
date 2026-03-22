@@ -11,3 +11,9 @@ $j.ajax({
         cache: true
 });
 };
+
+$j(function() {
+        $j(document).on('wheel mousewheel DOMMouseScroll', 'input[type=number]:focus', function() {
+                this.blur();
+        });
+});
