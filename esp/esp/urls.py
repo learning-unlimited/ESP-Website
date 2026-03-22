@@ -47,6 +47,7 @@ import argcache.urls
 import debug_toolbar
 import esp.accounting.urls
 import esp.customforms.urls
+import esp.dbmail.urls
 import esp.formstack.urls
 import esp.program.urls
 import esp.qsdmedia.urls
@@ -111,6 +112,7 @@ urlpatterns += [
     re_path(r'^__debug__/', include(debug_toolbar.urls)),
     re_path(r'^accounting/', include(esp.accounting.urls)),
     re_path(r'^customforms', include(esp.customforms.urls)),
+    re_path(r'^dbmail/', include(esp.dbmail.urls)),
     re_path(r'^random', include(esp.random.urls)),
     re_path(r'^', include(esp.formstack.urls)),
     re_path(r'^',  include(esp.program.urls)),

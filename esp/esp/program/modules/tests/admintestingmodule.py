@@ -112,11 +112,13 @@ class AdminTestingModuleTest(ProgramFrameworkTest):
 
     def test_start_testing_rejects_invalid_role(self):
         """start_testing with an invalid role returns an error."""
+        from esp.middleware.esperrormiddleware import ESPError
         self.client.login(username=self.admin.username, password='password')
-        resp = self.client.get(
-            '/manage/%s/start_testing/invalid' % self.program.url,
-        )
-        self.assertContains(resp, 'Unknown testing role', status_code=500)
+        with self.assertRaises(ESPError) as cm:
+            self.client.get(
+                '/manage/%s/start_testing/invalid' % self.program.url,
+            )
+        self.assertIn('Unknown testing role', str(cm.exception))
 
     def test_reset_requires_post(self):
         """reset_testing redirects on GET (no accidental resets)."""
