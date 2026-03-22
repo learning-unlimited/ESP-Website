@@ -29,7 +29,9 @@ class FixIEMiddleware(MiddlewareMixin):
             return response
 
         # IE will break
-        content_type = getattr(response, "content_type", "")
+        content_type = response.get("Content-Type", "")
+        if not content_type:
+            return response
         base_content_type = content_type.split(";", 1)[0].strip().lower()
         if base_content_type not in safe_mime_types:
             try:
