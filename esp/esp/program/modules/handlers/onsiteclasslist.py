@@ -58,6 +58,47 @@ from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
+MAX_UPDATE_SCHEDULE_SECTIONS = 500
+
+
+def parse_update_schedule_sections(raw_sections, max_len=MAX_UPDATE_SCHEDULE_SECTIONS):
+    if raw_sections is None:
+        raise ValueError('no sections specified')
+
+    try:
+        parsed = json.loads(raw_sections)
+    except (TypeError, ValueError):
+        raise ValueError('could not parse requested sections %s' % raw_sections)
+
+    if not isinstance(parsed, list):
+        raise ValueError('sections must be a JSON list')
+
+    if len(parsed) > max_len:
+        raise ValueError('too many sections requested')
+
+    cleaned = []
+    seen = set()
+
+    for item in parsed:
+        if isinstance(item, bool):
+            continue
+        try:
+            val = int(item)
+        except (TypeError, ValueError):
+            continue
+        if val <= 0:
+            continue
+        if val in seen:
+            continue
+        cleaned.append(val)
+        seen.add(val)
+
+    if parsed and not cleaned:
+        raise ValueError('sections must contain at least one valid section id')
+
+    return cleaned
+
+
 class OnSiteClassList(ProgramModuleObj):
     doc = """Display lists of classes for onsite registration purposes."""
 
@@ -254,72 +295,73 @@ class OnSiteClassList(ProgramModuleObj):
             resp.status_code = 400
             json.dump({"messages": ["User not found"], "sections": []}, resp)
             return resp
+
         try:
-            desired_sections = json.loads(request.GET['sections'])
-        except (KeyError, ValueError, TypeError):
-            result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
-            desired_sections = None
+            desired_sections = parse_update_schedule_sections(request.GET.get('sections'))
+        except ValueError as e:
+            result['messages'].append('Error: %s' % str(e))
+            resp.status_code = 400
+            json.dump(result, resp, cls=DjangoJSONEncoder)
+            return resp
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
         if request.GET.get('check_in') == 'true' and not prog.isCheckedIn(user):
             rec = Record(user=user, program=prog, event='attended')
             rec.save()
 
-        if user and desired_sections is not None:
-            override_full = (request.GET.get("override", "") == "true")
+        override_full = (request.GET.get("override", "") == "true")
 
-            current_sections = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
-            sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
-            sections_to_add = ClassSection.objects.filter(id__in=list(set(desired_sections) - set(current_sections)))
+        current_sections = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
+        sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
+        sections_to_add = ClassSection.objects.filter(id__in=list(set(desired_sections) - set(current_sections)))
 
-            failed_add_sections = []
+        failed_add_sections = []
+        for sec in sections_to_add:
+            if sec.isFull(webapp=True) and not override_full:
+                result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, 'Class is currently full.'))
+                failed_add_sections.append(sec.id)
+
+        if len(failed_add_sections) == 0:
+            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+            #   Remove sections the student wants out of
+            for sec in sections_to_remove:
+                sec.unpreregister_student(user, verbs)
+                result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
+
+            #   Remove sections that conflict with those the student wants into
+            sec_times = sections_to_add.select_related('meeting_times__id').values_list('id', 'meeting_times__id').order_by('meeting_times__id').distinct()
+            sm = ScheduleMap(user, prog)
+            existing_sections = []
+            sections_to_add_ids = set(sections_to_add.values_list('id', flat=True))
+
+            for (sec, ts) in sec_times:
+                if ts and ts in sm.map and len(sm.map[ts]) > 0:
+                    for sm_sec in sm.map[ts]:
+                        if sm_sec.id not in sections_to_add_ids:
+                            sm_sec.unpreregister_student(user, verbs)
+                            result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
+                        else:
+                            existing_sections.append(sm_sec)
+
+            #   Add the sections the student wants
             for sec in sections_to_add:
-                if sec.isFull(webapp=True) and not override_full:
-                    result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, 'Class is currently full.'))
-                    failed_add_sections.append(sec.id)
+                if sec not in existing_sections and sec.id not in failed_add_sections:
+                    error = sec.cannotAdd(user, not override_full, webapp=True)
+                    if not error:
+                        reg_result = sec.preregister_student(user, overridefull=override_full, webapp=True)
+                        if not reg_result:
+                            error = 'Class is currently full.'
+                    else:
+                        reg_result = False
+                    if reg_result:
+                        result['messages'].append('Added %s (%s) to %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
+                    else:
+                        result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, error))
 
-            if len(failed_add_sections) == 0:
-                verbs = RTC.getVisibleRegistrationTypeNames(prog)
-                #   Remove sections the student wants out of
-                for sec in sections_to_remove:
-                    sec.unpreregister_student(user, verbs)
-                    result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
+        result['user'] = user.id
+        result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
 
-                #   Remove sections that conflict with those the student wants into
-                sec_times = sections_to_add.select_related('meeting_times__id').values_list('id', 'meeting_times__id').order_by('meeting_times__id').distinct()
-                sm = ScheduleMap(user, prog)
-                existing_sections = []
-                sections_to_add_ids = set(sections_to_add.values_list('id', flat=True))
-
-                for (sec, ts) in sec_times:
-                    if ts and ts in sm.map and len(sm.map[ts]) > 0:
-                        #   We found something we need to remove
-                        for sm_sec in sm.map[ts]:
-                            if sm_sec.id not in sections_to_add_ids:
-                                sm_sec.unpreregister_student(user, verbs)
-                                result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
-                            else:
-                                existing_sections.append(sm_sec)
-
-                #   Add the sections the student wants
-                for sec in sections_to_add:
-                    if sec not in existing_sections and sec.id not in failed_add_sections:
-                        error = sec.cannotAdd(user, not override_full, webapp=True)
-                        if not error:
-                            reg_result = sec.preregister_student(user, overridefull=override_full, webapp=True)
-                            if not reg_result:
-                                error = 'Class is currently full.'
-                        else:
-                            reg_result = False
-                        if reg_result:
-                            result['messages'].append('Added %s (%s) to %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
-                        else:
-                            result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, error))
-
-            result['user'] = user.id
-            result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
-
-        json.dump(result, resp)
+        json.dump(result, resp, cls=DjangoJSONEncoder)
         return resp
 
     """ End of highly model-dependent JSON views    """
@@ -334,13 +376,13 @@ class OnSiteClassList(ProgramModuleObj):
             user = int(request.GET.get('user', None))
             user_obj = ESPUser.objects.get(id=user)
         except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
-            resp.status_code = 400
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
             json.dump(result, resp)
             return resp
 
         printer = request.GET.get('printer', None)
         if printer is not None:
+            # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
 
         req = PrintRequest.objects.create(user=user_obj, printer=printer)
