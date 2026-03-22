@@ -410,10 +410,10 @@ GuardianInfoForm.base_fields['year_finished'].widget.attrs['maxlength'] = 4
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['size'] = 3
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 
-# A list of fields (across all profile forms) that can not be deleted via profile_hide_fields tags
+# A list of fields (across all profile forms) that can not be deleted via profile_active_fields tags
 _undeletable_fields_all = ['e_mail']
 
-# A list of student fields that can not be deleted via profile_hide_fields tags
+# A list of student fields that can not be deleted via profile_active_fields tags
 _undeletable_fields_students = ['graduation_year']
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
@@ -447,7 +447,7 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
 
         return cleaned_data
 
-# A list of teacher fields that can not be deleted via profile_hide_fields tags
+# A list of teacher fields that can not be deleted via profile_active_fields tags
 _undeletable_fields_teachers = []
 class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
@@ -461,7 +461,7 @@ class TeacherProfileForm(UserContactForm, TeacherInfoForm):
                     if not self.fields[field_name].required:
                         del self.fields[field_name]
 
-# A list of guardian fields that can not be deleted via profile_hide_fields tags
+# A list of guardian fields that can not be deleted via profile_active_fields tags
 _undeletable_fields_guardians = []
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
@@ -475,7 +475,7 @@ class GuardianProfileForm(UserContactForm, GuardianInfoForm):
                     if not self.fields[field_name].required:
                         del self.fields[field_name]
 
-# A list of educator fields that can not be deleted via profile_hide_fields tags
+# A list of educator fields that can not be deleted via profile_active_fields tags
 _undeletable_fields_educators = []
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
@@ -489,7 +489,7 @@ class EducatorProfileForm(UserContactForm, EducatorInfoForm):
                     if not self.fields[field_name].required:
                         del self.fields[field_name]
 
-# A list of volunteer fields that can not be deleted via profile_hide_fields tags
+# A list of volunteer fields that can not be deleted via profile_active_fields tags
 _undeletable_fields_volunteers = []
 class VolunteerProfileForm(UserContactForm):
     def __init__(self, *args, **kwargs):

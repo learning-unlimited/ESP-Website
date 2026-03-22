@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 
 import re
 import unicodedata
-
 from django.conf import settings
 from esp.middleware import ESPError
 from esp.users.models import StudentInfo, K12School, RecordType
@@ -51,7 +50,12 @@ from django.utils.safestring import mark_safe
 from esp.tagdict import all_global_tags, tag_categories
 from esp.tagdict.models import Tag
 from collections import OrderedDict
-
+from esp.users.forms.user_profile import TeacherProfileForm
+from django.contrib.admin.widgets import FilteredSelectMultiple
+from esp.users.forms.user_profile import StudentProfileForm
+from esp.users.forms.user_profile import GuardianProfileForm
+from esp.users.forms.user_profile import EducatorProfileForm
+from esp.users.forms.user_profile import VolunteerProfileForm
 def make_id_tuple(object_list):
     return tuple([(o.id, str(o)) for o in object_list])
 
@@ -480,24 +484,14 @@ class TagSettingsForm(BetterForm):
                 field = tag_info.get('field')
                 # Some field widgets need to be setup manually because we can't do it during compilation
                 if key == 'teacher_profile_active_fields':
-                    from esp.users.forms.user_profile import TeacherProfileForm
-                    from django.contrib.admin.widgets import FilteredSelectMultiple
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in TeacherProfileForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
                 elif key == 'student_profile_active_fields':
-                    from esp.users.forms.user_profile import StudentProfileForm
-                    from django.contrib.admin.widgets import FilteredSelectMultiple
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in StudentProfileForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
                 elif key == 'volunteer_profile_active_fields':
-                    from esp.users.forms.user_profile import VolunteerProfileForm
-                    from django.contrib.admin.widgets import FilteredSelectMultiple
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in VolunteerProfileForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
                 elif key == 'educator_profile_active_fields':
-                    from esp.users.forms.user_profile import EducatorProfileForm
-                    from django.contrib.admin.widgets import FilteredSelectMultiple
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in EducatorProfileForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
                 elif key == 'guardian_profile_active_fields':
-                    from esp.users.forms.user_profile import GuardianProfileForm
-                    from django.contrib.admin.widgets import FilteredSelectMultiple
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in GuardianProfileForm.declared_fields.items() if not field[1].required], widget=FilteredSelectMultiple("Active Fields", False))
                 elif field is not None:
                     self.fields[key] = field
@@ -509,10 +503,16 @@ class TagSettingsForm(BetterForm):
                 self.fields[key].initial = self.fields[key].default = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key) if tag_info.get('is_boolean', False) else Tag.getTag(key)
-                if set_val is not None and set_val != self.fields[key].initial:
-                    if isinstance(self.fields[key], forms.MultipleChoiceField):
-                        set_val = set_val.split(",")
+                if set_val is not None and set_val != self.fields[key].default:
                     self.fields[key].initial = set_val
+                if isinstance(self.fields[key], forms.MultipleChoiceField):
+                    if self.fields[key].initial in ('_ALL_', None, ''):
+                        if self.fields[key].initial == '':
+                            self.fields[key].initial = []
+                        else:
+                            self.fields[key].initial = [str(c[0]) for c in self.fields[key].choices]
+                    elif isinstance(self.fields[key].initial, str):
+                        self.fields[key].initial = [x.strip() for x in self.fields[key].initial.split(",")]
 
     def save(self):
         for key in all_global_tags:

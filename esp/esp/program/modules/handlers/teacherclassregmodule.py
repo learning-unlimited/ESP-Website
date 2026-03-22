@@ -929,8 +929,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # These are the only three fields that can currently be hidden
                 # If another one is added later, this will need to be changed
                 active_fields_tag = Tag.getProgramTag('teacherreg_active_fields', prog)
-                if active_fields_tag != '_ALL_':
-                    active_fields = [x.strip().lower() for x in active_fields_tag.split(',')] if active_fields_tag else []
+                if active_fields_tag and active_fields_tag != '_ALL_':
+                    active_fields = [x.strip().lower() for x in active_fields_tag.split(',')]
                     if 'grade_min' not in active_fields:
                         current_data['grade_min'] = Tag.getProgramTag('teacherreg_default_min_grade', prog)
                     if 'grade_max' not in active_fields:

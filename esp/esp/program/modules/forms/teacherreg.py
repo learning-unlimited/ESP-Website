@@ -225,8 +225,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         #   Hide fields that are not defined in active_fields
         tag_data = Tag.getProgramTag('teacherreg_active_fields', prog)
-        if tag_data != '_ALL_':
-            active_fields = [x.strip().lower() for x in tag_data.split(',')] if tag_data else []
+        #   If the tag is unset or explicitly '_ALL_', leave all optional fields visible.
+        if tag_data and tag_data != '_ALL_':
+            active_fields = [x.strip().lower() for x in tag_data.split(',')]
             for field_name, opt_field in list(self.fields.items()):
                 if not opt_field.required and field_name not in active_fields:
                     hide_field(opt_field)
