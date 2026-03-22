@@ -38,7 +38,7 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
         
         # Logged out
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 302) # Redirect to login
+        self.assertEqual(response.status_code, 401) # 401 Unauthorized for API
         
         # Logged in as student
         self.client.login(username=self.students[0].username, password='password')
@@ -132,8 +132,8 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
         url = f'/teach/{self.program.getUrlBase()}/calendar_data'
         self.client.logout()
         response = self.client.get(url)
-        # @needs_teacher redirects to login
-        self.assertEqual(response.status_code, 302)
+        # Our new API returns 401 explicit JSON error, not 302 redirect
+        self.assertEqual(response.status_code, 401)
 
     def test_calendar_data_empty(self):
         """Test the response when no events are scheduled."""
