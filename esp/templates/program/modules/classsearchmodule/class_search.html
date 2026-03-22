@@ -96,12 +96,20 @@
     </form>
 </div>
 
-{% if not simple_search_active %}
-{# ---- Advanced Query Builder ---- #}
-<h3>Advanced Search</h3>
-{% load query_builder %}
-{% render_query_builder query_builder query %}
-{% endif %}
+{# ---- Advanced Query Builder (Collapsible) ---- #}
+<div id="advancedSearchToggle" style="margin-bottom: 20px;">
+    <a href="#advancedSearch" data-toggle="collapse" class="btn btn-mini btn-info">
+        {% if simple_search_active %}Refine with Advanced Search &raquo;{% else %}Advanced Search Options &raquo;{% endif %}
+    </a>
+</div>
+
+<div id="advancedSearch" class="collapse {% if not simple_search_active %}in{% endif %}">
+    <div class="well">
+        <h3>Advanced Search</h3>
+        {% load query_builder %}
+        {% render_query_builder query_builder query %}
+    </div>
+</div>
 
 {% if queryset %}
 <p>
@@ -222,8 +230,8 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
         </div>
     {% endfor %}
 </div>
-{% elif query %}
-No classes were found.
+{% elif query or simple_search_active %}
+<p><strong>No classes were found matching your criteria.</strong></p>
 {% endif %}
 {% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}

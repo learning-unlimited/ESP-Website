@@ -278,7 +278,10 @@ class ClassSearchModule(ProgramModuleObj):
             qs = qs.filter(title__icontains=s_title)
         s_category = request.GET.get('s_category', '').strip()
         if s_category:
-            qs = qs.filter(category__id=s_category)
+            try:
+                qs = qs.filter(category__id=int(s_category))
+            except ValueError:
+                pass
         s_status = request.GET.get('s_status', '').strip()
         if s_status:
             try:
