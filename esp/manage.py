@@ -14,7 +14,7 @@ from io import open
 if os.environ.get('VIRTUAL_ENV') is None and not os.environ.get('GITHUB_ACTIONS'):
     project = os.path.dirname(os.path.realpath(__file__))
     root = os.path.dirname(project)
-    activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
+    activate_this = os.path.join(root, 'env', 'Scripts', 'activate_this.py')
     exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
 
 if __name__ == "__main__":
