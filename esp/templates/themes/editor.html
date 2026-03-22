@@ -546,7 +546,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
         </form>
     </div>
     <div align="center">
-        <a href="/themes/">
+        <a href="{% url 'themes_landing' %}">
             <button type="button" class="btn btn-large btn-primary">Return to themes page</button>
         </a>
         <a href="/">
