@@ -12,10 +12,10 @@ Covers:
   - init_with_context delegates to super without error
 """
 
-from django.test import TestCase, RequestFactory
-from django.contrib.admin import site as admin_site
-
+from django.test import RequestFactory
+from django.urls import reverse
 from admin_tools.menu import items
+from esp.tests.util import CacheFlushTestCase as TestCase
 
 from admintoolsmenu import CustomMenu
 
@@ -24,6 +24,7 @@ class CustomMenuInitTest(TestCase):
     """Tests for CustomMenu.__init__()"""
 
     def setUp(self):
+        super().setUp()
         self.menu = CustomMenu()
 
     def test_init_creates_four_children(self):
@@ -34,6 +35,7 @@ class CustomMenuInitTest(TestCase):
         """First child should be a MenuItem (the Dashboard link)."""
         first = self.menu.children[0]
         self.assertIsInstance(first, items.MenuItem)
+        self.assertEqual(first.url, reverse('admin:index'))
 
     def test_dashboard_item_title(self):
         """Dashboard MenuItem title should contain 'Dashboard'."""
@@ -83,9 +85,4 @@ class CustomMenuInitWithContextTest(TestCase):
         request = factory.get('/')
         # admin_tools Menu.init_with_context accepts any object;
         # using a dict simulates a minimal context.
-        try:
-            menu.init_with_context({'request': request})
-        except Exception as e:
-            self.fail(
-                f"init_with_context raised an unexpected exception: {e}"
-            )
+        menu.init_with_context({'request': request})
