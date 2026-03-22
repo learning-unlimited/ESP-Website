@@ -255,6 +255,17 @@ class ProgramManager(models.Manager):
     def get_queryset(self):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by('-id')
+    # Validator for program name: Allows common punctuation but blocks HTML/Script tags
+program_name_validator = validators.RegexValidator(
+    r'^[^\x00-\x1F\x7F<>]+$',
+    'Program name cannot contain control characters or the characters "<" and ">".'
+)
+
+# Validator for program URL: Enforces Segment1/Segment2 format (e.g., Splash/2024_Winter)
+program_url_validator = validators.RegexValidator(
+    r'^[^<>"\'\s/]+/[^<>"\'\s/]+$',
+    'Program URL must be of the form Segment1/Segment2 without spaces or characters like <, >, ", \', or extra slashes.'
+)
 
 class Program(models.Model, CustomFormsLinkModel):
     objects = ProgramManager()
@@ -262,8 +273,8 @@ class Program(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name='Program'
 
-    url = models.CharField(max_length=80, unique=True)
-    name = models.CharField(max_length=80)
+    url = models.CharField(max_length=80, unique=True, validators=[program_url_validator])
+    name = models.CharField(max_length=80, validators=[program_name_validator])
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
@@ -328,10 +339,11 @@ class Program(models.Model, CustomFormsLinkModel):
     get_onsite_url = _get_type_url("onsite")
 
     def save(self, *args, **kwargs):
-
-        retVal = super().save(*args, **kwargs)
-
-        return retVal
+        # Only force validation if clean=True is passed
+        clean = kwargs.pop('clean', False)
+        if clean:
+            self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.niceName()
@@ -2326,3 +2338,4 @@ def install():
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.resources.models import ResourceType
+
