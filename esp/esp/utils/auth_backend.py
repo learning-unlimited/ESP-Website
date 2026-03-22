@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.contrib.auth.backends import ModelBackend
 
 from esp.users.models import ESPUser
@@ -6,7 +5,7 @@ from esp.users.models import ESPUser
 class ESPAuthBackend(ModelBackend):
     """ Subclass of Django's ModelBackend that returns an ESPUser
     instead of a User. Adapted from
-    http://stackoverflow.com/questions/10682414/django-user-proxy-model-from-request
+    https://stackoverflow.com/questions/10682414/django-user-proxy-model-from-request
     and from django/contrib/auth/backends.py as of 1.8.5 """
 
     def get_user(self, user_id):

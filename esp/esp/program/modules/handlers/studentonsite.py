@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -132,7 +130,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         if extra:
             try:
                 ts = Event.objects.get(id=int(extra), program=prog)
-            except:
+            except (ValueError, Event.DoesNotExist):
                 raise ESPError('Please use the links on the schedule page.', log=False)
             context['timeslot'] = ts
             classes = list(ClassSubject.objects.catalog(prog, ts))
@@ -171,7 +169,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
         result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if isinstance(result, six.string_types):
+        if isinstance(result, str):
             raise ESPError(result, log=False)
         else:
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
@@ -203,12 +201,12 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             for module in modules:
                 # If completed all required modules so far...
                 if context['completedAll']:
-                    if not module.isCompleted() and module.isRequired():
+                    if not module.isCompleted(user) and module.isRequired():
                         context['completedAll'] = False
 
             records = StudentRegCore.get_reg_records(user, prog, 'learn')
 
-            context['modules'] = [x for x in modules if (x.isRequired() and not x.isCompleted())]
+            context['modules'] = [x for x in modules if (x.isRequired() and not x.isCompleted(user))]
             context['records'] = [x for x in records if not x['isCompleted']]
 
             if Tag.getBooleanTag('student_self_checkin_paid', program = prog):
@@ -263,7 +261,7 @@ class SelfCheckinForm(forms.Form):
             user = kwargs.pop('user')
         else:
             raise KeyError('Need to supply program and user as named arguments to SelfCheckinForm')
-        super(SelfCheckinForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         mode = Tag.getProgramTag('student_self_checkin', program = program)
         self.hash = user.userHash(program)
         if mode != 'code':

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from django.forms.models import fields_for_model
@@ -25,9 +24,6 @@ from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
 
 from datetime import datetime
-from six.moves import map
-import six
-from six.moves import range
 
 class BaseCustomForm(BetterForm):
     """
@@ -127,7 +123,7 @@ class CustomFormHandler():
             # If any, insert the relevant field into the first section of the fist page
             if section[0]['section__seq'] == 0 and self.seq == 0:
                 if self.form.link_type != '-1':
-                    label = 'Please pick the %s you want to fill the form for' % self.form.link_type
+                    label = f'Please pick the {self.form.link_type} you want to fill the form for'
                     link_cls = cf_cache.only_fkey_models[self.form.link_type]
                     if self.form.link_id == -1:
                         # User needs to be shown a list of instances from which to select
@@ -138,11 +134,11 @@ class CustomFormHandler():
                         widget = forms.HiddenInput()
                     fld = forms.ModelChoiceField(queryset = queryset, label = label, initial = queryset[0],
                                                 widget = widget, required = True, empty_label = None)
-                    self.fields.append(['link_%s' % link_cls.__name__, fld ])
-                    curr_fieldset[1]['fields'].append('link_%s' % link_cls.__name__)
+                    self.fields.append([f'link_{link_cls.__name__}', fld ])
+                    curr_fieldset[1]['fields'].append(f'link_{link_cls.__name__}')
 
             for field in section:
-                field_name = 'question_%d' % field['id']
+                field_name = f'question_{field["id"]}'
                 field_attrs = {'label': mark_safe(field['label']), 'help_text': mark_safe(field['help_text']), 'required': field['required']}
 
                 # Setting the 'name' attribute for combo fields
@@ -202,7 +198,7 @@ class CustomFormHandler():
                             form_field = cf_cache.getCustomFieldInstance(model_field, field_name)
                             field_is_custom = True
                         else:
-                            raise Exception('Could not find linked field: %s' % model_field)
+                            raise Exception(f'Could not find linked field: {model_field}')
 
                     # TODO -> enforce "Required" constraint server-side as well, or trust the client-side code?
                     form_field.__dict__.update(field_attrs)
@@ -277,7 +273,7 @@ class CustomFormHandler():
             for field in section:
                 ftype = field['field_type']
                 if cf_cache.isLinkField(ftype):
-                    field_name = 'question_%d' % field['id']
+                    field_name = f'question_{field["id"]}'
                     initial[field_name] = {'model': cf_cache.modelForLinkField(ftype)}
                     """
                     if 'combo' in link_fields[ftype]:
@@ -296,7 +292,7 @@ class CustomFormHandler():
         """
         Returns the BetterForm class for the current page
         """
-        _form_name = "Page_%d_%d" % (self.form.id, self.seq)
+        _form_name = f"Page_{self.form.id}_{self.seq}"
 
         if not self.fields:
             self._getFields()
@@ -311,7 +307,7 @@ class CustomFormHandler():
 
 class FormStorage(FileSystemStorage):
     """
-    The Storage sublass used to temporarily store submitted files.
+    The Storage subclass used to temporarily store submitted files.
     """
     pass
 
@@ -338,7 +334,7 @@ class ComboForm(SessionWizardView):
         context data such as the form's title and description
         """
 
-        context = super(ComboForm, self).get_context_data(form=form, **kwargs)
+        context = super().get_context_data(form=form, **kwargs)
         context.update({
                         'form_title': self.form.title,
                         'form_description': self.form.description,
@@ -406,11 +402,11 @@ class ComboForm(SessionWizardView):
             else:
                 try:
                     new_instance = v['model'].objects.create(**v['data'])
-                except:
+                except Exception:
                     # show some error message
                     pass
             if v['instance'] is not None:
-                data['link_%s' % v['model'].__name__] = v['instance']
+                data[f'link_{v["model"].__name__}'] = v['instance']
 
         # Saving response
         initial_keys = list(data.keys())
@@ -425,7 +421,7 @@ class ComboForm(SessionWizardView):
         if not self.form.anonymous:
             dynModel.objects.filter(user=self.curr_request.user).delete()
         dynModel.objects.create(**data)
-        return HttpResponseRedirect(kwargs.get('redirect_url', '/customforms/success/%d/' % self.form.id))
+        return HttpResponseRedirect(kwargs.get('redirect_url', f'/customforms/success/{self.form.id}/'))
 
     def render_to_response(self, context):
         #   Override rendering function to use our context processors.
@@ -655,13 +651,13 @@ class FormHandler:
         # Add in the column for link fields, if any
         if form.link_type != "-1":
             only_fkey_model = cf_cache.only_fkey_models[form.link_type]
-            response_data['questions'].append(["link_%s_id" % only_fkey_model.__name__, form.link_type, 'fk'])
+            response_data['questions'].append([f"link_{only_fkey_model.__name__}_id", form.link_type, 'fk'])
         else:
             only_fkey_model = None
 
         for field in fields:
             # I'll do a lot of merging here later
-            qname = 'question_%d' % field['id']
+            qname = f'question_{field["id"]}'
             ftype = field['field_type']
             if cf_cache.isLinkField(ftype):
                 # Let's grab the model first
@@ -683,23 +679,23 @@ class FormHandler:
             # Add in user if form is not anonymous
             if not form.anonymous and response['user_id']:
                 user = users[response['user_id']]
-                response['user_id'] = six.text_type(response['user_id'])
+                response['user_id'] = str(response['user_id'])
                 response['user_display'] = user.name()
                 response['user_email'] = user.email
                 response['username'] = user.username
 
             # Add in links
             if only_fkey_model is not None:
-                if only_fkey_model.objects.filter(pk=response["link_%s_id" % only_fkey_model.__name__]).exists():
-                    inst = only_fkey_model.objects.get(pk=response["link_%s_id" % only_fkey_model.__name__])
+                if only_fkey_model.objects.filter(pk=response[f"link_{only_fkey_model.__name__}_id"]).exists():
+                    inst = only_fkey_model.objects.get(pk=response[f"link_{only_fkey_model.__name__}_id"])
                 else: inst = None
-                response["link_%s_id" % only_fkey_model.__name__] = six.text_type(inst)
+                response[f"link_{only_fkey_model.__name__}_id"] = str(inst)
 
             # Now, put in the additional fields in response
             for qname, data in add_fields.items():
                 if data[0].__name__ not in link_instances_cache:
-                    if data[0].objects.filter(pk=response["link_%s_id" % data[0].__name__]).exists():
-                        link_instances_cache[data[0].__name__] = data[0].objects.get(pk=response["link_%s_id" % data[0].__name__])
+                    if data[0].objects.filter(pk=response[f"link_{data[0].__name__}_id"]).exists():
+                        link_instances_cache[data[0].__name__] = data[0].objects.get(pk=response[f"link_{data[0].__name__}_id"])
                     else:
                         link_instances_cache[data[0].__name__] = None
 
@@ -724,34 +720,34 @@ class FormHandler:
         """
         Returns the response data as excel data.
         """
-        import xlwt
-        try:
-            from cStringIO import StringIO
-        except:
-            from io import StringIO
+        import openpyxl
+        from openpyxl.styles import Font
+        from io import BytesIO
 
         response_data = self.getResponseData(self.form)
-        wbk = xlwt.Workbook()
-        sheet = wbk.add_sheet('sheet 1')
+        wbk = openpyxl.Workbook(write_only=True)
+        sheet = wbk.create_sheet('sheet 1')
 
-        # Adding in styles for the column headers
-        style = xlwt.XFStyle()
-        font = xlwt.Font()
-        font.name = "Times New Roman"
-        font.bold = True
-        style.font = font
+        font = Font(name="Times New Roman", bold=True)
+        from openpyxl.cell import WriteOnlyCell
 
-        # write the questions first
+        # write the questions as header row
+        header_row = []
         for i in range(0, len(response_data['questions'])):
-            sheet.write(0, i, response_data['questions'][i][1], style)
+            cell = WriteOnlyCell(sheet, value=response_data['questions'][i][1])
+            cell.font = font
+            header_row.append(cell)
+        sheet.append(header_row)
 
         # Build up a simple dict storing question_name and question_index (=column number)
         ques_cols = {}
+        num_cols = len(response_data['questions'])
         for qid, ques in enumerate(response_data['questions']):
             ques_cols.update({ques[0]: qid})
 
-        # Now writing the answers
-        for idx, response in enumerate(response_data['answers']):
+        # Now writing the answers row by row
+        for response in response_data['answers']:
+            row = [None] * num_cols
             for ques, ans in response.items():
                 try:
                     col = ques_cols[ques]
@@ -760,11 +756,18 @@ class FormHandler:
                 # Join together responses from compound fields
                 if isinstance(ans, list):
                     write_ans = " ".join(ans)
-                else: write_ans = ans
-                sheet.write(idx+1, col, write_ans)
+                else:
+                    write_ans = ans
 
-        output = StringIO()
+                if isinstance(write_ans, datetime):
+                    write_ans = write_ans.replace(tzinfo=None)
+
+                row[col] = write_ans
+            sheet.append(row)
+
+        output = BytesIO()
         wbk.save(output)
+        wbk.close()
         return output
 
     def rebuildData(self):
@@ -785,7 +788,7 @@ class FormHandler:
             try:
                 prog = Program.objects.get(id=self.form.link_id)
             except Program.DoesNotExist:
-                raise ESPError('No program with ID %i' % (self.form.link_id))
+                raise ESPError(f'No program with ID {self.form.link_id}')
             tags = Tag.objects.filter(content_type=ContentType.objects.get_for_model(Program), object_id=prog.id, value=self.form.id, key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id'])
             if tags.count() == 1:
                 tag = tags[0]
@@ -799,18 +802,11 @@ class FormHandler:
                     tl = "teach"
                     module = "TeacherQuizModule"
             elif tags.count() > 1:
-                raise ESPError('Custom form #%i is linked to multiple registration modules for %s' % (self.form.id, prog.name))
+                raise ESPError(f'Custom form #{self.form.id} is linked to multiple registration modules for {prog.name}')
             else:
                 tl = ''
                 module = ''
             metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
-
-
-
-
-
-
-
 
 

@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,6 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.forms.onsite import TeacherCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 from esp.program.models import RegistrationProfile
 from esp.program.models.class_ import ClassSubject, ClassSection
@@ -69,6 +69,21 @@ class TeacherCheckinModule(ProgramModuleObj):
             "seq": 10,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Only list the main teacher check-in page; AJAX/aux views (ajaxteachercheckin,
+        # ajaxteachertext, ajaxclassdetail, etc.) are not meant for direct admin navigation.
+        if view_name != "teachercheckin":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="onsite_teachercheckin",
+            url="/onsite/%s/teachercheckin" % base,
+            title="Teacher Check-In",
+            category="Other",
+            keywords=["teacher", "check-in", "onsite", "attendance"],
+        )
 
     def checkIn(self, teacher, prog, when=None):
         """Check teacher into program for the rest of the day (given by 'when').
@@ -144,11 +159,19 @@ class TeacherCheckinModule(ProgramModuleObj):
                               "%m/%d/%Y %H:%M".
         """
         json_data = {'message': 'User not found'}
+        # print("POST DATA:", request.POST)
         teachers = []
-        if 'teacher' in request.POST:
-            teachers = ESPUser.objects.filter(username=request.POST['teacher'])
-        elif 'teacherid' in request.POST:
-            teachers = ESPUser.objects.filter(id=request.POST['teacherid'])
+        teacher_query = request.POST.get('teacherid') or request.POST.get('teacher')
+        if teacher_query:
+            teacher_query = teacher_query.strip()
+
+            if teacher_query.isdigit():
+                # print("Looking up teacher by ID:", teacher_query)
+                teachers = ESPUser.objects.filter(id=int(teacher_query))
+            else:
+                # print("Looking up teacher by username:", teacher_query)
+                teachers = ESPUser.objects.filter(username__iexact=teacher_query)
+
         if teachers and teachers.exists():
             json_data['name'] = teachers[0].name()
             json_data['username'] = teachers[0].username
@@ -156,7 +179,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             if 'when' in request.POST:
                 try:
                     when = datetime.strptime(request.POST['when'], "%m/%d/%Y %H:%M")
-                except:
+                except ValueError:
                     pass
             if 'undo' in request.POST and request.POST['undo'].lower() == 'true':
                 json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
@@ -221,7 +244,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         #   return default
 
         # Only Postgres supports the following fancy database operation! See
-        # http://stackoverflow.com/a/20129229/3243497 .
+        # https://stackoverflow.com/a/20129229/3243497 .
 
         profiles = (RegistrationProfile.objects
                 .filter(user__in=users)

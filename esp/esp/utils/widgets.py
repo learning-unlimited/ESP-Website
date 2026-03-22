@@ -1,8 +1,7 @@
-#   Downloaded from http://www.djangosnippets.org/snippets/391/
+#   Downloaded from https://www.djangosnippets.org/snippets/391/
 #   Modified to not force unicode
 #   - Michael P
 
-from __future__ import absolute_import
 from django import forms
 from django.conf import settings
 from django.forms import widgets
@@ -16,9 +15,6 @@ import datetime
 import time
 import json
 import logging
-import six
-from six.moves import range
-from six.moves import zip
 logger = logging.getLogger(__name__)
 
 class DateTimeWidget(forms.widgets.DateTimeInput):
@@ -38,13 +34,13 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
               'scripts/jquery-ui.timepicker.js')
 
     def __init__(self, attrs=None):
-        super(DateTimeWidget, self).__init__(attrs)
+        super().__init__(attrs)
         self.format = self.pythondformat
 
     def get_context(self, name, value, attrs):
-        context = super(DateTimeWidget, self).get_context(name, value, attrs)
+        context = super().get_context(name, value, attrs)
         context.update({
-            'id': attrs['id'] if 'id' in attrs else six.u('%s_id') % (name),
+            'id': attrs['id'] if 'id' in attrs else f'{name}_id',
             'jquerywidget': self.jquerywidget,
             'media_url': settings.MEDIA_URL,
             'date_format': self.dformat,
@@ -83,7 +79,7 @@ class ClassAttrMergingSelect(forms.Select):
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
             if 'class' in attrs and 'class' in extra_attrs \
-                    and (isinstance(extra_attrs['class'], str) or isinstance(extra_attrs['class'], six.text_type)):
+                    and isinstance(extra_attrs['class'], str):
                 attrs['class'] += ' ' + extra_attrs['class']
                 del extra_attrs['class']
             attrs.update(extra_attrs)
@@ -116,7 +112,7 @@ class SplitDateWidget(forms.MultiWidget):
         day_widget = ClassAttrMergingSelect(choices=choices['day'], attrs={'class': 'input-mini'})
 
         widgets = (month_widget, day_widget, year_widget)
-        super(SplitDateWidget, self).__init__(widgets, attrs)
+        super().__init__(widgets, attrs)
 
     def decompress(self, value):
         """ Splits datetime.date object into separate fields. """
@@ -131,17 +127,16 @@ class SplitDateWidget(forms.MultiWidget):
         if val is not None:
             return val
         else:
-            vals = super(SplitDateWidget, self).value_from_datadict(data, files, name)
+            vals = super().value_from_datadict(data, files, name)
             try:
                 return date(int(vals[2]), int(vals[0]), int(vals[1]))
-            except:
+            except (ValueError, TypeError, IndexError):
                 return None
 
     #   Format output
     #   (labels are now aggregated at beginning of line, as if this is a single control)
     def format_output(self, rendered_widgets):
         return '\n'.join(rendered_widgets)
-
 
 class BlankSelectWidget(forms.Select):
     """ A <select> widget whose first entry is blank. """
@@ -154,13 +149,12 @@ class BlankSelectWidget(forms.Select):
 
 class NullRadioSelect(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
-        kwargs['choices'] = ((True, six.u('Yes')), (False, six.u('No')))
-        super(NullRadioSelect, self).__init__(*args, **kwargs)
-
+        kwargs['choices'] = ((True, 'Yes'), (False, 'No'))
+        super().__init__(*args, **kwargs)
 
 class NullCheckboxSelect(forms.CheckboxInput):
     def __init__(self, *args, **kwargs):
-        super(NullCheckboxSelect, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def value_from_datadict(self, data, files, name):
         """ Slightly modified from Django's version to accept "on" as True. """
@@ -168,7 +162,7 @@ class NullCheckboxSelect(forms.CheckboxInput):
             return False
         value = data.get(name)
         values =  {'on': True, 'true': True, 'false': False}
-        if isinstance(value, str) or isinstance(value, six.text_type):
+        if isinstance(value, str):
             value = values.get(value.lower(), value)
         logger.info('NullCheckboxSelect converted %s to %s', data.get(name), value)
         return value
@@ -180,7 +174,7 @@ class DummyWidget(widgets.Input):
         return True
 
     def render(self, name, value, attrs=None, choices=(), renderer=None):
-        output = six.u('')
+        output = ''
         if attrs and 'text' in attrs:
             output += attrs['text']
         return mark_safe(output)
@@ -227,7 +221,15 @@ function {{ name }}_save()
 
 function {{ name }}_setup()
 {
-    var {{ name }}_data = JSON.parse($j("#id_{{ name }}").val());
+    var {{ name }}_data = [];
+    try {
+        var raw_data = $j("#id_{{ name }}").val();
+        if (raw_data) {
+            {{ name }}_data = JSON.parse(raw_data);
+        }
+    } catch (e) {
+        console.error("Failed to parse {{ name }} init data:", e);
+    }
     var anchor_ul = $j("#{{ name }}_entries");
     for (var i = 0; i < {{ name }}_data.length; i++)
     {
@@ -379,7 +381,15 @@ function {{ name }}_save()
 
 function {{ name }}_setup()
 {
-    var {{ name }}_data = JSON.parse($j("#id_{{ name }}").val());
+    var {{ name }}_data = [];
+    try {
+        var raw_data = $j("#id_{{ name }}").val();
+        if (raw_data) {
+            {{ name }}_data = JSON.parse(raw_data);
+        }
+    } catch (e) {
+        console.error("Failed to parse {{ name }} init data:", e);
+    }
     var anchor_ul = $j("#{{ name }}_entries");
     for (var i = 0; i < {{ name }}_data.length; i++)
     {
@@ -457,14 +467,14 @@ $j(document).ready(function() {
 class RadioSelectWithData(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
         self.option_data = kwargs.pop('option_data', {})
-        super(RadioSelectWithData, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     # https://stackoverflow.com/a/59274893/4660582
     def get_context(self, name, value, attrs):
-        context = super(RadioSelectWithData, self).get_context(name, value, attrs)
+        context = super().get_context(name, value, attrs)
         for optgroup in context['widget'].get('optgroups', []):
             for option in optgroup[1]:
-                for k, v in six.iteritems(self.option_data.get(option['value'], {})):
+                for k, v in self.option_data.get(option['value'], {}).items():
                     option['attrs']['data-' + k] = v
         return context
 
@@ -477,7 +487,7 @@ class ChoiceWithOtherWidget(forms.MultiWidget):
             RadioSelectWithData(choices=choices, option_data=option_data),
             forms.TextInput
         ]
-        super(ChoiceWithOtherWidget, self).__init__(widgets)
+        super().__init__(widgets)
 
     def decompress(self, value):
         if not value:
@@ -500,14 +510,13 @@ class ChoiceWithOtherField(forms.MultiValueField):
             kwargs.pop('choices')
             self._was_required = kwargs.pop('required', True)
             kwargs['required'] = False
-            super(ChoiceWithOtherField, self).__init__(widget=widget, fields=fields, *args, **kwargs)
+            super().__init__(widget=widget, fields=fields, *args, **kwargs)
         else:
-            super(ChoiceWithOtherField, self).__init__(*args, **kwargs)
-
+            super().__init__(*args, **kwargs)
 
     def compress(self, value):
         if not value:
-            return [None, six.u('')]
+            return [None, '']
 
         option_value, other_value = value
         if self._was_required and not value or option_value in (None, ''):

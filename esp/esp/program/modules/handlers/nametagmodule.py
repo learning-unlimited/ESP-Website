@@ -1,7 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -39,6 +36,7 @@ from django.conf import settings
 
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
@@ -48,8 +46,6 @@ from esp.utils.web import render_to_response
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
-
-
 
 class NameTagModule(ProgramModuleObj):
     doc = """This module allows you to generate a bunch of IDs for users that match specific criteria."""
@@ -63,6 +59,19 @@ class NameTagModule(ProgramModuleObj):
             "seq": 100,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "selectidoptions":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_selectidoptions",
+            url="/manage/%s/selectidoptions" % base,
+            title="Nametags",
+            category="Printables",
+            keywords=["nametags", "name tags", "ids", "badges"],
+        )
 
     @main_call
     @needs_admin
@@ -187,7 +196,6 @@ class NameTagModule(ProgramModuleObj):
                                   'name' : arruser[0].strip(),
                                   'id'   : ''})
 
-
         elif idtype == 'blank':
             users = []
             user_title = request.POST['blanktitle']
@@ -200,9 +208,7 @@ class NameTagModule(ProgramModuleObj):
                    'programname': request.POST['progname']
                    }
 
-
         numperpage = 6
-
 
         expanded = [[] for i in range(numperpage)]
 

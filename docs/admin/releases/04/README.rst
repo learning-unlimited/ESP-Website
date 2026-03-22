@@ -33,8 +33,8 @@ can select from pre-defined themes (/themes/select), configure page contents
 (/themes/setup), or adjust aesthetic parameters (/themes/customize).  Behind
 the scenes, the app is generating template overrides and CSS stylesheets based
 on your configuration.  More details can be found at
-`</docs/admin/themes.rst>`_ or
-`<http://wiki.learningu.org/Generic_Templates>`_.
+`<../../themes.rst>`_ or
+`<https://wiki.learningu.org/Generic_Templates>`_.
 
 Check Availability Page
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -236,7 +236,7 @@ students to land at the normal landing page to complete registration and change
 classes after the lottery has been run.
 
 Full documentation can be found in the program modules docs:
-`</docs/admin/program_modules.rst#two-phase-student-registration-studentregtwophase>`_.
+`<../../program_modules.rst#two-phase-student-registration-studentregtwophase>`_.
 
 Markdown Version Upgrade
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -246,7 +246,7 @@ has been upgraded to the latest version, 2.3.1
 (`<https://pypi.python.org/pypi/Markdown/2.3.1>`_). This may have affected the
 visual appearance of your existing pages. Please double-check your web-content
 throughout the site to ensure that it appears correctly. The documentation for
-Markdown syntax is at `<http://daringfireball.net/projects/markdown/syntax>`_.
+Markdown syntax is at `<https://daringfireball.net/projects/markdown/syntax>`_.
 
 Teacher training creation and sign-up
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -308,8 +308,8 @@ Versioned QSD
 ~~~~~~~~~~~~~
 QSD pages are now versioned, so that changes can be tracked, old versions can
 be accessed, and you can revert if necessary. The versioning can be managed
-from Admin Panel (/admin) -> Quasi static datas. To recover a deleted QSD, use
-"Recover deleted quasi static datas" in the top right. To view the changelog,
+from Admin Panel (/admin) -> Quasi static data. To recover a deleted QSD, use
+"Recover deleted quasi static data" in the top right. To view the changelog,
 select a QSD page (you can search by URL or title) and select "History" in the
 top right. To revert to an old version of the page, select a version from the
 History page and press Save at the bottom.
@@ -335,7 +335,7 @@ Allow full-page letterhead
 You can now use arbitrary letterhead for the "student completion letters"
 (accessible from program printables).  It should be a full-page-sized PDF file,
 uploaded to /esp/public/media/latex_media/letterhead.pdf (this should be
-accessable from the new filebrowser, by clicking on "latex_media" then
+accessible from the new filebrowser, by clicking on "latex_media" then
 uploading it as letterhead.pdf). That said, there are still some issues with our
 LaTeX generation scripts that may get in your way; we'll be working on fixing
 those for the final version of the stable release.
@@ -418,7 +418,7 @@ templates were used, among other things.  You can enable or disable it via the
 debug_toolbar GET variable, for example http://localhost:8000/?debug_toolbar=f,
 or with the DEBUG_TOOLBAR setting in local_settings.py.  There are more
 configuration options defined in django_settings.py.  For more information see
-`<http://django-debug-toolbar.readthedocs.org/en/1.0/>`_.
+`<https://django-debug-toolbar.readthedocs.org/en/1.0/>`_.
 
 virtualenv (developers only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

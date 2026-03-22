@@ -1,8 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
-import six
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -47,7 +43,6 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
-
 from esp.users.models    import ESPUser, Record
 from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
@@ -75,6 +70,11 @@ class OnSiteClassList(ProgramModuleObj):
             "seq": 32,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Views are JSON/API (full_status, catalog_status, get_schedule_json, etc.); do not list in admin search.
+        return None
 
     @cache_function
     def section_data(sec):
@@ -232,7 +232,7 @@ class OnSiteClassList(ProgramModuleObj):
         result = {'user': None, 'user_grade': 0, 'sections': [], 'messages': []}
         try:
             result['user'] = int(request.GET['user'])
-        except:
+        except (ValueError, TypeError, KeyError):
             result['messages'].append('Error: no user specified.')
         if result['user']:
             result['user_grade'] = ESPUser.objects.get(id=result['user']).getGrade(program=prog)
@@ -247,17 +247,21 @@ class OnSiteClassList(ProgramModuleObj):
         result = {'user': None, 'sections': [], 'messages': []}
         try:
             user = ESPUser.objects.get(id=int(request.GET['user']))
-        except:
+        except (KeyError, ValueError, TypeError, ESPUser.DoesNotExist):
             user = None
-            result['messages'].append('Error: could find user %s' % request.GET.get('user', None))
+
+        if user is None:
+            resp.status_code = 400
+            json.dump({"messages": ["User not found"], "sections": []}, resp)
+            return resp
         try:
             desired_sections = json.loads(request.GET['sections'])
-        except:
+        except (KeyError, ValueError, TypeError):
             result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
             desired_sections = None
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
-        if not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
+        if request.GET.get('check_in') == 'true' and not prog.isCheckedIn(user):
             rec = Record(user=user, program=prog, event='attended')
             rec.save()
 
@@ -285,11 +289,13 @@ class OnSiteClassList(ProgramModuleObj):
                 sec_times = sections_to_add.select_related('meeting_times__id').values_list('id', 'meeting_times__id').order_by('meeting_times__id').distinct()
                 sm = ScheduleMap(user, prog)
                 existing_sections = []
+                sections_to_add_ids = set(sections_to_add.values_list('id', flat=True))
+
                 for (sec, ts) in sec_times:
                     if ts and ts in sm.map and len(sm.map[ts]) > 0:
                         #   We found something we need to remove
                         for sm_sec in sm.map[ts]:
-                            if sm_sec.id not in sections_to_add:
+                            if sm_sec.id not in sections_to_add_ids:
                                 sm_sec.unpreregister_student(user, verbs)
                                 result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
                             else:
@@ -316,26 +322,27 @@ class OnSiteClassList(ProgramModuleObj):
         json.dump(result, resp)
         return resp
 
-
     """ End of highly model-dependent JSON views    """
 
     @aux_call
     @needs_onsite
     def printschedule_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
-
         result = {}
 
         try:
             user = int(request.GET.get('user', None))
             user_obj = ESPUser.objects.get(id=user)
-        except:
+        except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
+            resp.status_code = 400
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
+            json.dump(result, resp)
+            return resp
 
         printer = request.GET.get('printer', None)
         if printer is not None:
-            # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
+
         req = PrintRequest.objects.create(user=user_obj, printer=printer)
         result['message'] = "Submitted %s's schedule for printing (print request #%s)." % (user_obj.name(), req.id)
 
@@ -465,20 +472,18 @@ class OnSiteClassList(ProgramModuleObj):
 
     def makeLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
-        strings = [six.u('<a href="%s" title="%s" class="vModuleLink" >%s</a>') % \
+        strings = ['<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1], call[1]) for call in calls]
         return "</li><li>".join(strings)
 
     def makeButtonLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
-        strings = [six.u("""<div class="module_button">\
+        strings = ["""<div class="module_button">\
                                 <a href="%s"><button type="button" class="module_link_large">
                                     <div class="module_link_main">%s</div>
                                 </button></a>
-                            </div>""") % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
+                            </div>""" % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
         return "".join(strings)
-
-
 
     class Meta:
         proxy = True

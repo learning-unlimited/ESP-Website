@@ -1,5 +1,8 @@
-from __future__ import absolute_import
-from django.test import TestCase
+import ast
+import os
+import re
+
+from django.test import TestCase, SimpleTestCase
 from django.contrib.auth.models import User
 from esp.tagdict import all_global_tags, all_program_tags
 from esp.tagdict.models import Tag
@@ -76,7 +79,7 @@ class TagTest(TestCase):
 
         user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
 
-        self.assertFalse(Tag.getTag("test", user), "Retrieved a tag for key 'test' target '%s', but we haven't set one yet!" % (user))
+        self.assertFalse(Tag.getTag("test", user), f"Retrieved a tag for key 'test' target '{user}', but we haven't set one yet!")
         Tag.setTag("test", user, "frobbed again")
         self.assertEqual(Tag.getTag("test", user), "frobbed again")
         Tag.setTag("test", user)
@@ -101,9 +104,6 @@ class TagTest(TestCase):
                 self.assertFalse(Tag.getTag("test", target=target))
 
 
-
-
-
         Tag.setTag("test", value="tag value")
 
         for target in [user1, user2]:
@@ -124,8 +124,6 @@ class TagTest(TestCase):
                 self.assertFalse(Tag.getTag("test", target=target))
 
 
-
-
         Tag.setTag("test", value="tag value 2")
 
         for target in [user1, user2]:
@@ -144,7 +142,6 @@ class TagTest(TestCase):
             with self.assertNumQueries(0):
                 self.assertFalse(Tag.getTag("test", target=target))
                 self.assertFalse(Tag.getTag("test", target=target))
-
 
 
         Tag.setTag("test", target=user1, value="tag value user1")
@@ -173,7 +170,6 @@ class TagTest(TestCase):
         with self.assertNumQueries(0):
             self.assertFalse(Tag.getTag("test", target=user2))
             self.assertFalse(Tag.getTag("test", target=user2))
-
 
 
         Tag.unSetTag("test")
@@ -309,3 +305,193 @@ class ProgramTagTest(ProgramFrameworkTest):
             for b in [True, False]:
                 self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
                 self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
+
+
+class GetNondefaultProgramTagsTest(ProgramFrameworkTest):
+    def setUp(self):
+        super().setUp()
+        # Remove any pre-existing test tags for this program
+        Tag.objects.filter(key__in=["test", "test_bool"]).delete()
+
+    def test_no_tags_set(self):
+        '''When no program-specific tags exist, result should be empty.'''
+        result = Tag.get_nondefault_program_tags(self.program)
+        self.assertEqual(result, [])
+
+    def test_program_tag_returned(self):
+        '''A tag set for the program with is_setting=True appears in the result.'''
+        Tag.setTag("test", target=self.program, value="hello")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertIn("test", keys)
+        entry = next(d for d in result if d['key'] == "test")
+        self.assertEqual(entry['value'], "hello")
+
+    def test_global_tag_not_returned(self):
+        '''A global tag (no target) is not included in program tag results.'''
+        Tag.setTag("test", target=None, value="global")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test", keys)
+
+    def test_non_setting_tag_excluded(self):
+        '''A tag with is_setting=False is excluded from the result.'''
+        # 'student_lottery_run' is in all_program_tags with is_setting=False
+        Tag.setTag("student_lottery_run", target=self.program, value="True")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertNotIn("student_lottery_run", keys)
+
+    def test_result_contains_help_text(self):
+        '''Each entry in the result includes the help_text from the tag definition.'''
+        Tag.setTag("test", target=self.program, value="x")
+        result = Tag.get_nondefault_program_tags(self.program)
+        entry = next((d for d in result if d['key'] == "test"), None)
+        self.assertIsNotNone(entry)
+        self.assertIn('help_text', entry)
+
+    def test_tag_at_default_value_excluded(self):
+        '''A tag stored in the DB but set to its default value is not shown in the banner.'''
+        # 'test_bool' has default=False; setting it to its default should hide it
+        all_program_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=self.program, value="False")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test_bool", keys)
+
+    def test_tag_at_nondefault_value_included(self):
+        '''A tag stored with a value different from the default is shown in the banner.'''
+        all_program_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=self.program, value="True")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertIn("test_bool", keys)
+
+
+class TagRegistrationTest(SimpleTestCase):
+    """
+    Statically scan the codebase for Tag.getTag(), Tag.getProgramTag(), and
+    Tag.getBooleanTag() calls and verify that every string-literal tag key
+    is registered in all_global_tags or all_program_tags.
+    """
+
+    # Paths (relative to the esp/ root) to skip when scanning, because they
+    # use test-only tags that are registered in the test module itself.
+    _skip_paths = [
+        os.path.join('esp', 'tagdict', 'tests.py'),
+    ]
+
+    # The set of all valid tag names from tagdict/__init__.py
+    _all_known_tags = (set(all_global_tags.keys()) | set(all_program_tags.keys())) - {
+        'test',
+        'test_bool',
+    }
+
+    # ---- helpers for scanning Python files ----
+
+    class _TagCallVisitor(ast.NodeVisitor):
+        """AST visitor that collects string-literal first arguments to
+        Tag.getTag(), Tag.getProgramTag(), and Tag.getBooleanTag()."""
+
+        TARGET_METHODS = {'getTag', 'getProgramTag', 'getBooleanTag'}
+
+        def __init__(self):
+            self.found = []  # list of (tag_key, lineno)
+
+        def visit_Call(self, node):
+            if self._is_tag_call(node) and node.args:
+                first_arg = node.args[0]
+                tag_key = None
+                if isinstance(first_arg, ast.Str):  # Python 3.7 compat
+                    tag_key = first_arg.s
+                elif isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):  # Python 3.8+ compat
+                    tag_key = first_arg.value
+                if tag_key is not None:
+                    self.found.append((tag_key, node.lineno))
+            self.generic_visit(node)
+
+        @classmethod
+        def _is_tag_call(cls, node):
+            """Return True if *node* looks like Tag.<method>(...)."""
+            func = node.func
+            if isinstance(func, ast.Attribute) and func.attr in cls.TARGET_METHODS:
+                if isinstance(func.value, ast.Name) and func.value.id == 'Tag':
+                    return True
+            return False
+
+    @classmethod
+    def _scan_python_file(cls, filepath):
+        """Return [(tag_key, lineno), ...] found in *filepath*."""
+        with open(filepath, 'r', encoding='utf-8', errors='replace') as fh:
+            source = fh.read()
+        try:
+            tree = ast.parse(source, filename=filepath)
+        except SyntaxError:
+            return []
+        visitor = cls._TagCallVisitor()
+        visitor.visit(tree)
+        return visitor.found
+
+    # ---- helpers for scanning Django template files ----
+
+    # Matches filter syntax:  "tag_name"|getBooleanTag, "tag_name"|getProgramTag, or "tag_name"|getTag
+    _TEMPLATE_FILTER_RE = re.compile(
+        r"""["']([A-Za-z_][A-Za-z0-9_]*)["']\s*\|\s*(?:getBooleanTag|getProgramTag|getTag)"""
+    )
+
+    # Matches tag syntax:  {% getProgramTag "tag_name" ... %}, {% getBooleanTag "tag_name" ... %}, or {% getTag "tag_name" ... %}
+    _TEMPLATE_TAG_RE = re.compile(
+        r"""\{%\s*(?:getProgramTag|getBooleanTag|getTag)\s+["']([A-Za-z_][A-Za-z0-9_]*)["']"""
+    )
+
+    @classmethod
+    def _scan_template_file(cls, filepath):
+        """Return [(tag_key, lineno), ...] found in *filepath*."""
+        results = []
+        with open(filepath, 'r', encoding='utf-8', errors='replace') as fh:
+            for lineno, line in enumerate(fh, start=1):
+                for m in cls._TEMPLATE_FILTER_RE.finditer(line):
+                    results.append((m.group(1), lineno))
+                for m in cls._TEMPLATE_TAG_RE.finditer(line):
+                    results.append((m.group(1), lineno))
+        return results
+
+    # ---- the actual test ----
+
+    def test_all_tags_are_registered(self):
+        """Every tag key used in the codebase must exist in tagdict."""
+        esp_root = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)
+        )))  # …/esp
+
+        undefined_tags = []  # [(filepath, lineno, tag_key), ...]
+
+        for dirpath, _dirnames, filenames in os.walk(esp_root):
+            for fname in filenames:
+                filepath = os.path.join(dirpath, fname)
+                relpath = os.path.relpath(filepath, esp_root)
+
+                # Skip files in the exclusion list
+                if relpath in self._skip_paths:
+                    continue
+
+                if fname.endswith('.py'):
+                    for tag_key, lineno in self._scan_python_file(filepath):
+                        if tag_key not in self._all_known_tags:
+                            undefined_tags.append((relpath, lineno, tag_key))
+
+                elif fname.endswith('.html'):
+                    for tag_key, lineno in self._scan_template_file(filepath):
+                        if tag_key not in self._all_known_tags:
+                            undefined_tags.append((relpath, lineno, tag_key))
+
+        if undefined_tags:
+            tag_list = "\n".join(
+                "  %s (line %d): %s" % (fp, ln, key)
+                for fp, ln, key in sorted(undefined_tags)
+            )
+            self.fail(
+                "The following tag(s) are used in code but not defined in "
+                "esp.tagdict.__init__ (all_global_tags or all_program_tags):\n"
+                + tag_list
+            )

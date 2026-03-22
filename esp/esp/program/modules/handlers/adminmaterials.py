@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -35,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject
 
@@ -54,6 +53,19 @@ class AdminMaterials(ProgramModuleObj):
             "choosable": 1,
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "get_materials":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_get_materials",
+            url="/manage/%s/get_materials" % base,
+            title="Documents",
+            category="Logistics",
+            keywords=["documents", "files", "upload", "download", "materials"],
+        )
+
     @main_call
     @needs_admin
     def get_materials(self, request, tl, one, two, module, extra, prog):
@@ -61,7 +73,7 @@ class AdminMaterials(ProgramModuleObj):
         from esp.qsdmedia.models import Media
         context_form = FileUploadForm_Admin()
         context_rename_form = FileRenameForm()
-        new_choices = [(a.id, a.emailcode() + ': ' + six.text_type(a)) for a in prog.classes()]
+        new_choices = [(a.id, a.emailcode() + ': ' + str(a)) for a in prog.classes()]
         new_choices.append((0, 'Document pertains to program'))
         new_choices.reverse()
         context_form.set_choices(new_choices)
@@ -105,7 +117,6 @@ class AdminMaterials(ProgramModuleObj):
                     media.save()
                 else:
                     context_rename_form = form
-
 
         context = {'prog': self.program, 'module': self, 'uploadform': context_form, 'renameform': context_rename_form}
 
