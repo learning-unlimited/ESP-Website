@@ -203,7 +203,7 @@ class ClassManager(Manager):
             program_sort_fields = Tag.getProgramTag('catalog_sort_fields', program)
             if program_sort_fields:
                 #   If you found one, use it.
-                order_args = program_sort_fields.split(',')
+                order_args = [f.strip() for f in program_sort_fields.split(',') if f.strip()]
 
         #   Translate legacy ordering fields to use earliest_start so that
         #   older configurations keep working with the new stable behavior.
@@ -322,6 +322,7 @@ class ClassManager(Manager):
         return classes
     catalog_cached.depend_on_model('program.ClassSubject')
     catalog_cached.depend_on_model('program.ClassSection')
+    catalog_cached.depend_on_model('program.StudentAppQuestion')
     catalog_cached.depend_on_model('qsdmedia.Media')
     catalog_cached.depend_on_model('tagdict.Tag')
 
