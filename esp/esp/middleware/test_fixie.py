@@ -78,3 +78,6 @@ class FixIEMiddlewareTests(unittest.TestCase):
         processed = self.middleware.process_response(request, response)
 
         self.assertEqual(processed, response)
+
+        
+        

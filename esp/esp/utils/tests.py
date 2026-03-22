@@ -465,20 +465,35 @@ class DiffTemplateOverrideViewTests(TestCase):
 
     def setUp(self):
         self.client = Client()
+
         self.admin = User.objects.create_superuser(
             username="admin",
             email="admin@test.com",
             password="pass"
         )
+
         self.user = User.objects.create_user(
             username="user",
             password="pass"
         )
+
         self.override = TemplateOverride.objects.create(
             name="test_template.html",
             content="Hello Override",
             version=1
         )
+
+    # ---- ADD THIS PART ----
+        import os
+        from django.conf import settings
+
+        template_dir = os.path.join(settings.PROJECT_ROOT, "templates")
+        os.makedirs(template_dir, exist_ok=True)
+
+        self.original_path = os.path.join(template_dir, "test_template.html")
+
+        with open(self.original_path, "w") as f:
+            f.write("Hello Original\n")
 
     def test_admin_can_access_diff(self):
         self.client.login(username="admin", password="pass")
@@ -486,23 +501,22 @@ class DiffTemplateOverrideViewTests(TestCase):
             f"/manage/templateoverride/{self.override.id}"
         )
         self.assertEqual(response.status_code, 200)
-
+        self.assertContains(response, "<table")
+        
     def test_non_admin_blocked(self):
         self.client.login(username="user", password="pass")
         response = self.client.get(
             f"/manage/templateoverride/{self.override.id}"
         )
-        self.assertNotEqual(response.status_code, 200)
-
+        self.assertEqual(response.status_code, 403)
+        
     def test_invalid_template_id_404(self):
         self.client.login(username="admin", password="pass")
         response = self.client.get(
             "/manage/templateoverride/9999"
         )
         self.assertEqual(response.status_code, 404)
-        
-
-
+           
 class PropertyDictTests(TestCase):
     def test_merge_adds_new_key(self):
         base = PropertyDict({"a": 1})
@@ -510,26 +524,26 @@ class PropertyDictTests(TestCase):
 
         self.assertEqual(base["a"], 1)
         self.assertEqual(base["b"], 2)
-    
+        
     def test_merge_overwrites_scalar_value(self):
         base = PropertyDict({"a": 1})
         base.merge({"a": 4})
 
         self.assertEqual(base["a"], 4)
-    
+           
     def test_merge_appends_list_values(self):
         base = PropertyDict({"a": [1, 2]})
         base.merge({"a": [3]})
 
         self.assertEqual(base["a"], [1, 2, 3])
-        
+                
     def test_merge_dict_values(self):
         base = PropertyDict({"a": {"x": 1}})
         base.merge({"a": {"y": 2}})
 
         self.assertEqual(base["a"]["x"], 1)
         self.assertEqual(base["a"]["y"], 2)
-        
+               
     def test_flatten_returns_flatlistitems(self):
         base = PropertyDict({"a": 1, "b": 2})
         flat = base.flatten()
@@ -543,7 +557,7 @@ class PropertyDictTests(TestCase):
         self.assertIn("b", keys)
         self.assertIn(1, values)
         self.assertIn(2, values)
-    
+            
     def test_merge_propertydict_values(self):
         base = PropertyDict({"a": PropertyDict({"x": 1})})
         other = {"a": PropertyDict({"y": 2})}
@@ -552,15 +566,12 @@ class PropertyDictTests(TestCase):
 
         self.assertEqual(base["a"]["x"], 1)
         self.assertEqual(base["a"]["y"], 2)
-        
-
-
+               
 class FixIEMiddlewareTests(TestCase):
-
     def setUp(self):
         self.factory = RequestFactory()
         self.middleware = FixIEMiddleware()
-        
+                
     def test_non_ie_user_agent_no_change(self):
         request = self.factory.get("/")
         request.META["User-Agent"] = "Mozilla Firefox"
@@ -572,7 +583,7 @@ class FixIEMiddlewareTests(TestCase):
         processed = self.middleware.process_response(request, response)
 
         self.assertEqual(processed["Vary"], "Cookie")
-    
+            
     def test_ie_unsafe_mime_removes_vary_and_sets_cache_headers(self):
         request = self.factory.get("/")
         request.META["User-Agent"] = "MSIE 10.0"
@@ -589,7 +600,7 @@ class FixIEMiddlewareTests(TestCase):
             processed["Cache-Control"],
             "no-cache, must-revalidate"
         )
-    
+            
     def test_ie_safe_mime_no_change(self):
         request = self.factory.get("/")
         request.META["User-Agent"] = "MSIE 10.0"
@@ -603,7 +614,7 @@ class FixIEMiddlewareTests(TestCase):
         self.assertEqual(processed["Vary"], "Cookie")
         self.assertNotIn("Pragma", processed)
         self.assertNotIn("Cache-Control", processed)
-    
+            
     def test_missing_user_agent_no_crash(self):
         request = self.factory.get("/")
         # Do NOT set request.META["User-Agent"]
@@ -615,7 +626,7 @@ class FixIEMiddlewareTests(TestCase):
         processed = self.middleware.process_response(request, response)
 
         self.assertEqual(processed["Vary"], "Cookie")
-        
+                
     def test_ie_unsafe_mime_without_vary_header(self):
         request = self.factory.get("/")
         request.META["User-Agent"] = "MSIE 10.0"
