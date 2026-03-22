@@ -3,12 +3,14 @@ from __future__ import division
 
 import datetime
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.test import Client
 from django.test import TestCase
 
 # CORRECT import - ProgramFrameworkTest is in tests.py (the file, not folder)
 from esp.program.tests import ProgramFrameworkTest
+from esp.program.controllers.classreg import ClassCreationController
 from esp.program.models.class_ import ClassSubject
 
 # ---------------------------------------------------------------------------
@@ -586,3 +588,258 @@ class TeacherAvailabilityConsistencyTest(ClassCreationTestMixin,
         after = self._get_availability(teacher)
         self.assertEqual(before, after,
                          "Availability should be unchanged after adding coteacher")
+
+
+# ---------------------------------------------------------------------------
+# 7. Direct unit tests for ClassCreationController methods
+# ---------------------------------------------------------------------------
+
+class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTest):
+    """
+    Direct unit tests for ClassCreationController methods.
+
+    These tests call controller methods directly on model objects without
+    going through the HTTP view layer, filling gaps left by the integration
+    tests in MakeAClassViewTest and EditClassBaseTest subclasses.
+
+    Each test is self-contained: it creates the minimal objects it needs,
+    calls exactly one controller method, and asserts the resulting database
+    state.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.controller = ClassCreationController(self.program)
+        # Pick a pre-created subject and ensure its duration is populated so
+        # that set_class_data / update_class_sections work without errors.
+        self.subject = ClassSubject.objects.filter(
+            parent_program=self.program
+        ).first()
+        self.assertIsNotNone(self.subject,
+                             "ProgramFrameworkTest must create at least one class")
+        self._ensure_subject_duration(self.subject)
+
+    # ------------------------------------------------------------------
+    # set_class_data
+    # ------------------------------------------------------------------
+
+    def test_set_class_data_updates_title_in_db(self):
+        """
+        set_class_data() must persist cleaned_data fields (e.g., ``title``)
+        to the ClassSubject row in the database.
+
+        This directly tests the controller method, not the view.
+        """
+        # self.categories is populated by ProgramFrameworkTest.setUp() and
+        # its members are associated with the program as class categories.
+        category = self.categories[0]
+
+        # Build a minimal cleaned_data dict — only the keys that
+        # set_class_data actually reads are required.
+        cleaned_data = {
+            'title': 'Direct Controller Test Title',
+            'category': category.id,
+            'class_info': 'Set by unit test.',
+            'prereqs': '',
+            'duration': self.subject.duration,
+            'grade_min': 7,
+            'grade_max': 12,
+            'class_size_max': 20,
+            'allow_lateness': False,
+            'message_for_directors': '',
+            'class_reg_page': '1',
+            'hardness_rating': '**',
+            'session_count': 1,
+            # no 'section_*' keys, no custom fields
+        }
+
+        mock_form = type('MockForm', (), {'cleaned_data': cleaned_data})()
+
+        self.controller.set_class_data(self.subject, mock_form)
+
+        # Re-fetch from DB to confirm the save() call persisted the change.
+        self.subject.refresh_from_db()
+        self.assertEqual(
+            self.subject.title,
+            'Direct Controller Test Title',
+            "set_class_data must write cleaned_data['title'] to ClassSubject.title",
+        )
+        self.assertEqual(
+            self.subject.category,
+            category,
+            "set_class_data must assign the ClassCategories object to cls.category",
+        )
+
+    def test_set_class_data_does_not_overwrite_with_section_prefixed_keys(self):
+        """
+        Keys whose first 8 characters are 'section_' must NOT be written to
+        cls.__dict__.  This is the invariant enforced by the ``k[:8] != 'section_'``
+        guard in set_class_data().
+
+        We check that a deliberately-bogus 'section_grade_min' key in
+        cleaned_data is not added as an attribute on the ClassSubject.
+        """
+        category = self.categories[0]
+
+        original_grade_min = self.subject.grade_min
+
+        cleaned_data = {
+            'title': self.subject.title or 'Unchanged Title',
+            'category': category.id,
+            'class_info': '',
+            'prereqs': '',
+            'duration': self.subject.duration,
+            'grade_min': original_grade_min,
+            'grade_max': self.subject.grade_max,
+            'class_size_max': self.subject.class_size_max or 20,
+            'allow_lateness': False,
+            'message_for_directors': '',
+            'class_reg_page': '1',
+            'hardness_rating': '**',
+            'session_count': 1,
+            # This key starts with 'section_' — must be skipped entirely.
+            'section_grade_min': 999,
+        }
+
+        mock_form = type('MockForm', (), {'cleaned_data': cleaned_data})()
+
+        self.controller.set_class_data(self.subject, mock_form)
+
+        assert not hasattr(self.subject, 'section_grade_min')
+
+        self.subject.refresh_from_db()
+
+    # ------------------------------------------------------------------
+    # update_class_sections
+    # ------------------------------------------------------------------
+
+    def test_update_class_sections_adds_sections(self):
+        """
+        update_class_sections(cls, n) must create new ClassSection rows so
+        that cls.sections.count() == n when n is greater than the current
+        section count.
+        """
+        # Start from a known baseline: exactly 1 section.
+        while self.subject.sections.count() > 1:
+            self.subject.sections.last().delete()
+        self.assertEqual(self.subject.sections.count(), 1)
+
+        self.controller.update_class_sections(self.subject, 3)
+
+        self.assertEqual(
+            self.subject.sections.count(),
+            3,
+            "update_class_sections must add sections until count matches num_sections",
+        )
+
+    def test_update_class_sections_removes_sections(self):
+        """
+        update_class_sections(cls, n) must delete excess ClassSection rows
+        so that cls.sections.count() == n when n is less than the current
+        section count.
+        """
+        # Ensure we start with at least 3 sections.
+        while self.subject.sections.count() < 3:
+            self.subject.add_section(duration=self.subject.duration)
+        self.assertGreaterEqual(self.subject.sections.count(), 3)
+
+        self.controller.update_class_sections(self.subject, 1)
+
+        self.assertEqual(
+            self.subject.sections.count(),
+            1,
+            "update_class_sections must delete surplus sections when num_sections decreases",
+        )
+
+    def test_update_class_sections_sets_duration_on_all_sections(self):
+        """
+        update_class_sections() must call cls.sections.update(duration=...)
+        so every section ends up with the same duration as the parent class.
+        """
+        # Force the parent duration to a known value.
+        self.subject.duration = Decimal('1.50')
+        self.subject.save()
+
+        # Give the existing section a different duration to prove it gets overwritten.
+        first_sec = self.subject.sections.first()
+        first_sec.duration = Decimal('0.25')
+        first_sec.save()
+
+        self.controller.update_class_sections(self.subject, self.subject.sections.count())
+
+        for sec in self.subject.sections.all():
+            self.assertEqual(
+                sec.duration,
+                Decimal('1.50'),
+                "update_class_sections must sync all section durations to cls.duration",
+            )
+
+    # ------------------------------------------------------------------
+    # force_availability
+    # ------------------------------------------------------------------
+
+    def test_force_availability_grants_all_timeslots_when_teacher_has_none(self):
+        """
+        force_availability() must add every program timeslot to the teacher's
+        availability when they currently have no available times.
+
+        send_availability_email is patched out so the test does not depend
+        on email infrastructure.
+        """
+        teacher = self.teachers[0]
+
+        # Wipe any availability this teacher already has for the program.
+        teacher.clearAvailableTimes(self.program)
+        self.assertEqual(
+            len(teacher.getAvailableTimes(self.program)),
+            0,
+            "Pre-condition: teacher must start with no availability",
+        )
+
+        expected_slot_ids = set(
+            self.program.getTimeSlots().values_list('id', flat=True)
+        )
+        self.assertGreater(
+            len(expected_slot_ids), 0,
+            "Pre-condition: program must have at least one timeslot",
+        )
+
+        with patch.object(self.controller, 'send_availability_email'):
+            self.controller.force_availability(teacher)
+
+        granted_slot_ids = {
+            ts.id for ts in teacher.getAvailableTimes(self.program)
+        }
+        self.assertEqual(
+            granted_slot_ids,
+            expected_slot_ids,
+            "force_availability must grant every program timeslot when the "
+            "teacher has none",
+        )
+
+    def test_force_availability_does_nothing_when_teacher_already_has_times(self):
+        """
+        force_availability() must NOT modify availability when the teacher
+        already has at least one available timeslot.
+        """
+        teacher = self.teachers[0]
+
+        # Give the teacher exactly one available timeslot.
+        teacher.clearAvailableTimes(self.program)
+        first_slot = self.program.getTimeSlots().first()
+        teacher.addAvailableTime(self.program, first_slot)
+
+        before = {ts.id for ts in teacher.getAvailableTimes(self.program)}
+        self.assertEqual(len(before), 1, "Pre-condition: teacher has exactly one slot")
+
+        with patch.object(self.controller, 'send_availability_email') as mock_email:
+            self.controller.force_availability(teacher)
+
+        after = {ts.id for ts in teacher.getAvailableTimes(self.program)}
+        self.assertEqual(
+            before,
+            after,
+            "force_availability must leave availability unchanged when the "
+            "teacher already has available times",
+        )
+        mock_email.assert_not_called()
