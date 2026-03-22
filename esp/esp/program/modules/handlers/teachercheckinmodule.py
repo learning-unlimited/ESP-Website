@@ -49,7 +49,7 @@ from django.http import HttpResponse
 from django.template.loader import get_template
 from django.db.models.aggregates import Min, Max
 from django.db.models.query   import Q
-from datetime import datetime, timedelta, time
+from datetime import date as date_type, datetime, timedelta, time
 
 from django.conf import settings
 
@@ -513,6 +513,12 @@ class TeacherCheckinModule(ProgramModuleObj):
                 context['url_when'] = request.GET['when']
         else:
             when = None
+
+        # Default 'when' to start of date if viewing a non-today date
+        if when is None and date is not None and date != date_type.today():
+            when = datetime.combine(date, time.min)
+            context['when'] = when
+
         show_flags = self.program.program_modules.filter(handler='ClassFlagModule').exists()
         context['date'] = date
         context['sections'], context['arrived'] = self.getMissingTeachers(
