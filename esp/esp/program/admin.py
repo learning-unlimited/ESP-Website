@@ -32,7 +32,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django import forms
 from django.contrib import admin
+from django.utils.translation import ugettext_lazy as _
 
 from esp.admin import admin_site
 
@@ -362,7 +364,18 @@ class ClassFlagAdmin(admin.ModelAdmin):
     list_filter = ['subject__parent_program', 'flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
 
+class PhaseZeroRecordAdminForm(forms.ModelForm):
+    class Meta:
+        model = PhaseZeroRecord
+        fields = '__all__'
+        error_messages = {
+            'program': {
+                'required': _("Program is required. Please select a program."),
+            },
+        }
+
 class PhaseZeroRecordAdmin(admin.ModelAdmin):
+    form = PhaseZeroRecordAdminForm
     list_display = ('id', 'display_user', 'program')
     search_fields = ['user__username']
     list_filter = ['program']
@@ -373,3 +386,4 @@ class ModeratorRecordAdmin(admin.ModelAdmin):
     search_fields = ['user__username']
     list_filter = ['program', 'will_moderate']
 admin_site.register(ModeratorRecord, ModeratorRecordAdmin)
+
