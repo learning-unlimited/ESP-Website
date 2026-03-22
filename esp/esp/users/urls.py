@@ -2,6 +2,7 @@ from django.urls import re_path
 
 from esp.users import views
 from esp.users.views.registration import GradeChangeRequestView
+from esp.users.views import k12school_view
 from esp.web.views import bio
 from esp.web.views import main
 from esp.web.views import myesp
@@ -34,6 +35,7 @@ urlpatterns = [
         views.unsubscribe, name="unsubscribe"),
     re_path(r'^unsubscribe_oneclick/(?P<username>[^/]+)/(?P<token>[\w.:\-_=]+)/$',
         views.unsubscribe_oneclick, name="unsubscribe_oneclick"),
+    url(r'^k12school/add/?$', k12school_view.k12school_create, name="k12school_create"),
 ]
 
 urlpatterns += [
