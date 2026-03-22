@@ -16,76 +16,52 @@
 	{{ sectionNums|json_script:"section-numbers-per-duration"}}
     <script type="text/javascript" src="/media/scripts/program/modules/teacherclassregmodule.js"></script>
     <script type="text/javascript" src="/media/scripts/program/modules/flag-edit.js"></script>
-    
+
     <script type="text/javascript">
     // Form change detection for draft button enable/disable
     document.addEventListener('DOMContentLoaded', function() {
         var draftButton = document.querySelector('button[name="save_action"][value="draft"]');
         if (!draftButton) return;
-        
-        // Store initial form values
-        var initialFormValues = {};
+
+        // Snapshot initial form state via serialized FormData
+        // This correctly handles radio groups and multi-select checkboxes
         var form = document.getElementById('clsform');
-        if (form) {
-            var inputs = form.querySelectorAll('input, select, textarea');
-            inputs.forEach(function(input) {
-                if (input.name && input.name !== 'csrfmiddlewaretoken') {
-                    if (input.type === 'checkbox' || input.type === 'radio') {
-                        initialFormValues[input.name] = input.checked;
-                    } else {
-                        initialFormValues[input.name] = input.value;
-                    }
-                }
-            });
-        }
-        
-        // Function to check if form has changed
-        function hasFormChanged() {
-            if (!form) return false;
-            
+        var initialFormSnapshot = '';
+        function serializeForm() {
+            if (!form) return '';
+            var parts = [];
             var inputs = form.querySelectorAll('input, select, textarea');
             for (var i = 0; i < inputs.length; i++) {
-                var input = inputs[i];
-                if (input.name && input.name !== 'csrfmiddlewaretoken') {
-                    var currentValue;
-                    if (input.type === 'checkbox' || input.type === 'radio') {
-                        currentValue = input.checked;
-                    } else {
-                        currentValue = input.value;
-                    }
-                    
-                    if (initialFormValues[input.name] !== currentValue) {
-                        return true;
-                    }
-                }
+                var el = inputs[i];
+                if (!el.name || el.name === 'csrfmiddlewaretoken') continue;
+                if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) continue;
+                parts.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value));
             }
-            return false;
+            return parts.sort().join('&');
         }
-        
+        initialFormSnapshot = serializeForm();
+
+        // Function to check if form has changed
+        function hasFormChanged() {
+            return serializeForm() !== initialFormSnapshot;
+        }
+
         // Function to update draft button state
         function updateDraftButtonState() {
             if (draftButton) {
-                var hasChanged = hasFormChanged();
-                draftButton.disabled = !hasChanged;
-                
-                // Update button appearance
-                if (hasChanged) {
-                    draftButton.disabled = false;
-                } else {
-                    draftButton.disabled = true;
-                }
+                draftButton.disabled = !hasFormChanged();
             }
         }
-        
+
         // Monitor form changes
         if (form) {
             form.addEventListener('input', updateDraftButtonState);
             form.addEventListener('change', updateDraftButtonState);
-            
+
             // Also monitor keyup for real-time updates
             form.addEventListener('keyup', updateDraftButtonState);
         }
-        
+
         // Initial state
         updateDraftButtonState();
     });
@@ -192,7 +168,7 @@
                 <input type="hidden" name="class_id" value="{{ class.id }}" />
             {% endif %}
             <input type="hidden" name="class_reg_page" value="" />
-            
+
             {% if manage %}
                 <input type="hidden" name="manage" value="manage" />
                 <button class="button" type="submit" name="manage_submit" value="reload">Save, then reload this page</button><br />
@@ -226,7 +202,7 @@
             <input class="btn btn-default" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
             <br /><br />
         </td>
-    </tr>    
+    </tr>
 </table>
 </center>
 </form>
