@@ -137,6 +137,9 @@ class ClassCreationController(object):
                 cls = ClassSubject.objects.get(id=int(clsid))
             except (TypeError, ClassSubject.DoesNotExist):
                 raise ESPError(f"The class you're trying to edit (ID {repr(clsid)}) does not exist!", log=False)
+            # Only allow validation-bypassing draft saves on actual drafts.
+            if cls.status != ClassStatus.DRAFT:
+                raise ESPError("Cannot save draft data for a non-draft class.", log=False)
 
         # Get custom fields to handle them separately
         custom_fields = get_custom_fields()
@@ -243,7 +246,8 @@ class ClassCreationController(object):
                             setattr(cls, field_name, None)
                 else:
                     # For drafts, allow empty numeric fields (set to None instead of default)
-                    if field_name not in ('grade_min', 'grade_max'):  # Keep grade defaults
+                    # but keep non-nullable fields at their defaults.
+                    if field_name not in ('grade_min', 'grade_max', 'session_count'):
                         setattr(cls, field_name, None)
                 continue
 

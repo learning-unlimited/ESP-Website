@@ -856,6 +856,13 @@ class TeacherClassRegModule(ProgramModuleObj):
                 save_action = request.POST.get('save_action', 'submit')
 
                 if save_action == 'draft':
+                    # Draft saves are only allowed in create flows or when
+                    # editing an existing draft.  Reject for non-draft edits.
+                    if action not in ('create', 'createopenclass'):
+                        if newclass is None or newclass.status != ClassStatus.DRAFT:
+                            raise ESPError(
+                                "Draft saving is only available when creating a new class.",
+                                log=False)
                     newclass = ccc.save_class_draft(request.user, request.POST, extra, action)
                     # For drafts, return to the form with a success message.
                     # Use request.path (no query string) to avoid accumulating
@@ -1051,6 +1058,9 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['otherclass'] = context['classes'][1 - context['isopenclass']]
         context['qsd_name'] = 'classedit_' + context['classtype']
 
+        # Show the draft button only in create flows (not when editing
+        # an already-submitted class).
+        context['show_draft_button'] = action in ('create', 'createopenclass')
         context['manage'] = False
         context['sectionNums'] = prog.countTimeSlots()
 
