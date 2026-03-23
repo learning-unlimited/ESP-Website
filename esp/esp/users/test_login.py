@@ -111,3 +111,139 @@ class LoginTest(TestCase):
         self.assertTrue(user.is_active)
         self.assertTrue(user.check_password(self.password),
                        "Password should be correctly hashed and verifiable")
+
+    def test_login_with_invalid_username(self):
+        """Test that login fails when username does not exist."""
+        
+        # STEP 1: Attempt to log in with a non-existent username
+        login_data = {
+            'username': 'nonexistent_user',
+            'password': 'somepassword',
+        }
+        response = self.client.post('/myesp/login/', login_data, follow=True)
+        
+        # STEP 2: Verify login failed
+        # User should NOT be authenticated
+        self.assertFalse(response.wsgi_request.user.is_authenticated,
+                        "User should not be authenticated with invalid username")
+        
+        # STEP 3: Verify we're still on the login page (or redirected back to it)
+        self.assertTemplateUsed(response, 'registration/login.html',
+                               "Should show login page after failed login")
+        
+        # STEP 4: Verify error context is set
+        # The CustomLoginView sets 'wrong_user' in context when username doesn't exist
+        self.assertIn('wrong_user', response.context,
+                     "Context should indicate wrong username")
+        self.assertTrue(response.context.get('wrong_user'),
+                       "wrong_user flag should be True for non-existent username")
+        
+        # STEP 5: Verify using client.login() also fails
+        login_successful = self.client.login(
+            username='nonexistent_user',
+            password='somepassword'
+        )
+        self.assertFalse(login_successful,
+                        "client.login() should fail with invalid username")
+
+    def test_login_with_invalid_password(self):
+        """Test that login fails when password is incorrect."""
+        
+        # STEP 1: Attempt to log in with correct username but wrong password
+        login_data = {
+            'username': self.username,  # Valid username
+            'password': 'wrongpassword',  # Invalid password
+        }
+        response = self.client.post('/myesp/login/', login_data, follow=True)
+        
+        # STEP 2: Verify login failed
+        # User should NOT be authenticated
+        self.assertFalse(response.wsgi_request.user.is_authenticated,
+                        "User should not be authenticated with wrong password")
+        
+        # STEP 3: Verify we're still on the login page
+        self.assertTemplateUsed(response, 'registration/login.html',
+                               "Should show login page after failed login")
+        
+        # STEP 4: Verify error context is set
+        # The CustomLoginView sets 'wrong_pw' in context when password is wrong
+        self.assertIn('wrong_pw', response.context,
+                     "Context should indicate wrong password")
+        self.assertTrue(response.context.get('wrong_pw'),
+                       "wrong_pw flag should be True for incorrect password")
+        
+        # STEP 5: Verify the user still exists and password is unchanged
+        user = ESPUser.objects.get(username=self.username)
+        self.assertTrue(user.check_password(self.password),
+                       "Original password should still be valid")
+        self.assertFalse(user.check_password('wrongpassword'),
+                        "Wrong password should not validate")
+        
+        # STEP 6: Verify using client.login() also fails
+        login_successful = self.client.login(
+            username=self.username,
+            password='wrongpassword'
+        )
+        self.assertFalse(login_successful,
+                        "client.login() should fail with wrong password")
+
+    def test_login_with_inactive_user(self):
+        """Test that login fails when user account is inactive."""
+        
+        # STEP 1: Create an inactive user
+        inactive_username = 'inactive_user'
+        inactive_password = 'testpassword456'
+        
+        inactive_user, created = ESPUser.objects.get_or_create(
+            username=inactive_username,
+            defaults={
+                'email': 'inactive@example.com',
+                'first_name': 'Inactive',
+                'last_name': 'User'
+            }
+        )
+        inactive_user.set_password(inactive_password)
+        inactive_user.is_active = False  # Set user as inactive
+        inactive_user.save()
+        
+        # STEP 2: Attempt to log in with the inactive user
+        login_data = {
+            'username': inactive_username,
+            'password': inactive_password,
+        }
+        response = self.client.post('/myesp/login/', login_data, follow=True)
+        
+        # STEP 3: Verify login failed
+        # Inactive users should NOT be able to authenticate
+        self.assertFalse(response.wsgi_request.user.is_authenticated,
+                        "Inactive user should not be authenticated")
+        
+        # STEP 4: Verify we're still on the login page
+        self.assertTemplateUsed(response, 'registration/login.html', "Should show login page when inactive user tries to login")
+        
+    
+        #  the user should still be marked as inactive in the database
+        user = ESPUser.objects.get(username=inactive_username)
+        self.assertFalse(user.is_active, "User should still be inactive in database")
+        
+        # Log out to clean up the session
+        self.client.logout()
+        
+        # STEP 6: Verify the user exists but is inactive
+        user = ESPUser.objects.get(username=inactive_username)
+        self.assertFalse(user.is_active, "User should still be inactive")
+        self.assertTrue(user.check_password(inactive_password), "Password should be correct, but user is inactive")
+        
+        # STEP 7: Verify that activating the user allows login
+        inactive_user.is_active = True
+        inactive_user.save()
+        
+        login_successful = self.client.login(
+            username=inactive_username,
+            password=inactive_password
+        )
+        self.assertTrue(login_successful, "Login should succeed after user is activated")
+        
+        # Clean up
+        self.client.logout()
+        inactive_user.delete()
