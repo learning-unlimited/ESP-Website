@@ -27,7 +27,37 @@ html[data-bs-theme="dark"] a {
     color: #4da3ff !important;
 }
 
-/* Smooth transition class to be applied temporally by JS */
+/* Dark mode: Homepage UI tweaks */
+html[data-bs-theme="dark"] .esp-sidebar-section {
+    background-color: #1e1e1e !important;
+    border-color: #333 !important;
+}
+
+html[data-bs-theme="dark"] .esp-sidebar-section h3 {
+    border-bottom-color: #444 !important;
+}
+
+html[data-bs-theme="dark"] .esp-feature-card {
+    background-color: #1e1e1e !important;
+    border-color: #333 !important;
+}
+
+html[data-bs-theme="dark"] .esp-feature-card:hover {
+    border-color: #555 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-bs-theme="dark"] .esp-feature-card p,
+html[data-bs-theme="dark"] .esp-homepage-hero .well h3 {
+    color: #aaa !important;
+}
+
+html[data-bs-theme="dark"] .esp-sidebar-section #loginbox .inputbox {
+    background-color: #2a2a2a !important;
+    border-color: #444 !important;
+    color: #e0e0e0 !important;
+}
+
 .theme-transition * {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
 }

@@ -24,6 +24,7 @@
 
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/dark_mode_tweaks.css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/homepage_ui_tweaks.css" />
     <script type="text/javascript" src="/media/scripts/dark_mode_engine.js"></script>
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
