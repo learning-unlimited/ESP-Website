@@ -1,4 +1,4 @@
-## Code from <http://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
+## Code from <https://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
 ## Modified to not use (process-)global variables
 
 import logging

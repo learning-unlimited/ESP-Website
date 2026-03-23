@@ -12,7 +12,7 @@ from esp.tagdict import all_global_tags, all_program_tags
 # aseering 3/23/2010
 # This model is based on the sample "TaggedItem" model from the Django
 # documentation, as described at
-# http://www.djangoproject.com/documentation/models/generic_relations/
+# https://www.djangoproject.com/documentation/models/generic_relations/
 
 class Tag(models.Model):
     """A tag on an item."""
@@ -35,7 +35,7 @@ class Tag(models.Model):
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
 
     def __str__(self):
-        return "%s: %s (%s)" % (self.key, self.value, self.target)
+        return f"{self.key}: {self.value} ({self.target})"
 
     EMPTY_TAG = " "
 
