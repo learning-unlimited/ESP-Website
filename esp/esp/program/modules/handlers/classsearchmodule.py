@@ -331,6 +331,8 @@ class ClassSearchModule(ProgramModuleObj):
             context['flag_types'] = self.program.flag_types.all()
             context['regtypes'] = sorted(RegistrationType.objects.all(), key=lambda a: str(a))
             context['simple_search_active'] = True
+            # Ensure the template sees a truthy `query` so the empty-state message can render
+            context['query'] = simple_ctx.get('query') or {'simple_search': True}
             return render_to_response(self.baseDir()+'class_search.html',
                                       request, context)
 
