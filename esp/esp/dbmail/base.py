@@ -1,6 +1,6 @@
 
 
-class BaseHandler(object):
+class BaseHandler:
 
     send = False
     preserve_headers = False
