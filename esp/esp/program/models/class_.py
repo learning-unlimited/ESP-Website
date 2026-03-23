@@ -1647,6 +1647,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         return self.teachers.all().order_by('last_name')
     get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
+    get_teachers.depend_on_row('users.ESPUser', lambda user: {})
 
     def students_dict(self):
         result = PropertyDict({})
