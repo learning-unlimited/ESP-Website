@@ -60,6 +60,12 @@ class AdminCoreSettingsTest(ProgramFrameworkTest):
         line_item = pac.default_admission_lineitemtype()
         line_item.refresh_from_db()
         self.assertEqual(line_item.amount_dec, Decimal('125.00'))
+        
+        # Verify sibling discount line item type was also updated
+        sibling_discount_line_item = pac.default_siblingdiscount_lineitemtype()
+        if sibling_discount_line_item:
+            sibling_discount_line_item.refresh_from_db()
+            self.assertEqual(sibling_discount_line_item.amount_dec, Decimal('25.00'))
 
 
 class AdminCoreDeadlineManagementTest(ProgramFrameworkTest):
@@ -75,7 +81,7 @@ class AdminCoreDeadlineManagementTest(ProgramFrameworkTest):
     def test_deadline_management_open_creates_new(self):
         """When no permission exists, open should create one with no end_date."""
         group = Group.objects.create(name='TestGroup')
-        perm_type = 'StudentReg'
+        perm_type = 'Student/Classes'
 
         url = f"/manage/{self.program.url}/deadline_management/open"
         response = self.client.get(url, {'group': group.id, 'perm': perm_type})
@@ -87,7 +93,7 @@ class AdminCoreDeadlineManagementTest(ProgramFrameworkTest):
     def test_deadline_management_open_unexpires_existing(self):
         """When a permission already exists with an end_date, open should clear it."""
         group = Group.objects.create(name='TestGroupReopen')
-        perm_type = 'StudentReg'
+        perm_type = 'Student/Classes'
         perm = Permission.objects.create(
             role=group,
             permission_type=perm_type,
@@ -106,7 +112,7 @@ class AdminCoreDeadlineManagementTest(ProgramFrameworkTest):
     def test_deadline_management_close(self):
         """Close should set end_date on the permission."""
         group = Group.objects.create(name='TestGroupClose')
-        perm_type = 'StudentReg'
+        perm_type = 'Student/Classes'
         Permission.objects.create(
             role=group,
             permission_type=perm_type,
@@ -124,7 +130,7 @@ class AdminCoreDeadlineManagementTest(ProgramFrameworkTest):
     def test_deadline_management_delete(self):
         """Delete should remove the permission entirely."""
         group = Group.objects.create(name='TestGroupDelete')
-        perm_type = 'StudentReg'
+        perm_type = 'Student/Classes'
         perm = Permission.objects.create(
             role=group,
             permission_type=perm_type,
@@ -171,3 +177,4 @@ class AdminCoreWipeTestDataTest(ProgramFrameworkTest):
             self.assertTrue(response.context['success'])
             self.assertEqual(response.context['target_user'], self.testUser)
             mock_execute.assert_called_once()
+
