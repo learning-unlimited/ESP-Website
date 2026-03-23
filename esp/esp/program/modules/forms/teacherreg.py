@@ -40,6 +40,7 @@ from django.utils.safestring import mark_safe
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
+import logging
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
 from esp.program.modules.module_ext import ClassRegModuleInfo
 from esp.users.models import UserAvailability
@@ -49,6 +50,9 @@ from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
 from datetime import datetime, timedelta
 import json
+
+
+logger = logging.getLogger(__name__)
 
 class TeacherClassRegForm(FormWithRequiredCss):
     location_choices = [    (True, "I will use my own space for this class (e.g. space in my laboratory).  I have explained this in 'Message for Directors' below."),
@@ -223,11 +227,38 @@ class TeacherClassRegForm(FormWithRequiredCss):
             if tag_data:
                 self.fields[field].help_text = tag_data
 
+        # Allow bulk field customization (including custom fields) via JSON maps.
+        label_overrides = Tag.getProgramTag('teacherreg_label_overrides', prog)
+        if label_overrides:
+            try:
+                for field_name, label_text in json.loads(label_overrides).items():
+                    if field_name in self.fields:
+                        self.fields[field_name].label = label_text
+            except (TypeError, ValueError, AttributeError):
+                logger.warning('Invalid teacherreg_label_overrides for program %s', prog.id)
+
+        help_text_overrides = Tag.getProgramTag('teacherreg_help_text_overrides', prog)
+        if help_text_overrides:
+            try:
+                for field_name, help_text in json.loads(help_text_overrides).items():
+                    if field_name in self.fields:
+                        self.fields[field_name].help_text = help_text
+            except (TypeError, ValueError, AttributeError):
+                logger.warning('Invalid teacherreg_help_text_overrides for program %s', prog.id)
+
         #   Hide fields as desired.
         tag_data = Tag.getProgramTag('teacherreg_hide_fields', prog)
         if tag_data:
             for field_name in [x.strip().lower() for x in tag_data.split(',')]:
-                hide_field(self.fields[field_name])
+                field = self.fields.get(field_name)
+                if field and not field.required:
+                    hide_field(field)
+
+        # Add aria-label fallback for fields intentionally shown without a visible label.
+        for field_name, field in self.fields.items():
+            if field.label in (None, '') and 'aria-label' not in field.widget.attrs:
+                fallback_label = field.help_text or field_name.replace('_', ' ').strip().title()
+                field.widget.attrs['aria-label'] = str(fallback_label)
 
         tag_data = Tag.getProgramTag('teacherreg_default_min_grade', prog)
         if tag_data:

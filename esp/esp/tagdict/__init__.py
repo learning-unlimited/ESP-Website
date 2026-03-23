@@ -900,6 +900,22 @@ all_program_tags = {
         'category': 'class',
         'is_setting': True,
     },
+    'teacherreg_label_overrides': {
+        'is_boolean': False,
+        'help_text': 'JSON object mapping class registration field names to replacement labels (applies to built-in and custom teacher registration fields)',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+        'field': JSONValidatedCharField(required=False),
+    },
+    'teacherreg_help_text_overrides': {
+        'is_boolean': False,
+        'help_text': 'JSON object mapping class registration field names to replacement help text (applies to built-in and custom teacher registration fields)',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+        'field': JSONValidatedCharField(required=False),
+    },
     'teacherreg_default_min_grade': {
         'is_boolean': False,
         'help_text': 'The default minimum grade selected in the class creation/editing form',

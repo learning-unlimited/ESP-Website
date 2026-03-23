@@ -3,6 +3,8 @@ from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, StudentRegistration, RegistrationProfile, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+from esp.program.modules.forms.teacherreg import TeacherClassRegForm
 
 
 class RegistrationTypeManagementTest(ProgramFrameworkTest):
@@ -350,3 +352,26 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
             pmo = ProgramModuleObj.objects.get(id=mid)
             # seq should be unchanged (not reset) because default_seq was not sent
             self.assertEqual(pmo.seq, 999)
+
+
+class TeacherRegCustomFieldSettingsTest(ProgramFrameworkTest):
+    def test_hide_field_settings_include_optional_custom_fields(self):
+        Tag.setTag('teacherreg_custom_forms', value='["ChicagoTeacherQuestionsForm"]')
+        try:
+            form = ProgramTagSettingsForm(program=self.program)
+            hide_choices = dict(form.fields['teacherreg_hide_fields'].choices)
+            self.assertIn('discussion_type', hide_choices)
+            self.assertIn('other_explain', hide_choices)
+        finally:
+            Tag.unSetTag('teacherreg_custom_forms')
+
+    def test_blank_label_custom_field_gets_accessible_aria_label(self):
+        Tag.setTag('teacherreg_custom_forms', value='["ChicagoTeacherQuestionsForm"]')
+        try:
+            form = TeacherClassRegForm(self.program.classregmoduleinfo)
+            custom_field = form.fields['discussion_type']
+            self.assertEqual(custom_field.label, '')
+            self.assertIn('aria-label', custom_field.widget.attrs)
+            self.assertEqual(custom_field.widget.attrs['aria-label'], custom_field.help_text)
+        finally:
+            Tag.unSetTag('teacherreg_custom_forms')
