@@ -1019,9 +1019,7 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return None
 
-    def get_teacher_event_times(self, event_type):
-        """event_type should be 'interview' or 'training'"""
-        event_type_obj = EventType.teacher_event_types()[event_type]
+    def get_teacher_event_times(self, event_type_obj):
         return Event.objects.filter(
             program=self, event_type=event_type_obj).order_by('start')
 
@@ -1071,8 +1069,26 @@ class Program(models.Model, CustomFormsLinkModel):
             return [result[c] for c in result]
 
     def getAvailableResources(self, timeslot, queryset=False):
-        #   Filters down the floating resources to those that are not taken.
-        return [x for x in self.getFloatingResources(timeslot=timeslot, queryset=queryset) if x.is_available()]
+        from esp.resources.models import ResourceAssignment
+        #   Filters down the floating resources to those that are not taken
+        #   and that have been returned from any earlier assignment.
+        floating = list(self.getFloatingResources(timeslot=timeslot, queryset=queryset))
+        if not floating:
+            return []
+        floating_names = [r.name for r in floating]
+        floating_type_ids = set(r.res_type_id for r in floating)
+        unreturned_keys = set(
+            ResourceAssignment.objects.filter(
+                resource__name__in=floating_names,
+                resource__res_type_id__in=floating_type_ids,
+                resource__event__end__lte=timeslot.start,
+                resource__event__program=self,
+                resource__is_unique=True,
+                returned=False,
+            ).values_list('resource__name', 'resource__res_type_id')
+        )
+        return [x for x in floating
+                if x.is_available() and (x.name, x.res_type_id) not in unreturned_keys]
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
@@ -1108,6 +1124,35 @@ class Program(models.Model, CustomFormsLinkModel):
         durationList = list(durationDict.items())
 
         return sorted(durationList, key=lambda x: x[0])
+
+    def countTimeSlots(self, round_15=False):
+        """Calculate the number of instances of each duration that can fit in a given block. Returns dictionary mapping timeslot length to number of timeslots"""
+        from decimal import Decimal
+
+        times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
+        durations = [x[0] for x in self.getDurations(round_15)]
+        numDurations = {}
+
+        #iterates over all durations
+        for duration in durations:
+            numDurations[str(duration.quantize(Decimal('.01')))] = 0
+            lenDuration = duration * 3600
+            #iterates over blocks
+            for block in times:
+                numSections = len(block)
+                i = 0
+                while i < numSections:
+                    #makes an increasing list of lengths for each block, section by section
+                    for j in range(i, numSections):
+                        time_option = Event.total_length([block[i], block[j]])
+                        #if enough time exists, increment
+                        if lenDuration <= time_option.seconds:
+                            numDurations[str(duration.quantize(Decimal('.01')))] += 1
+                            i = j
+                            break
+                    i += 1
+
+        return numDurations
 
     def getSurveys(self):
         from esp.survey.models import Survey
@@ -1746,7 +1791,7 @@ def get_subclass_instance(cls, obj):
         result = None
         try:
             result = c.objects.get(id=obj.id)
-        except:
+        except c.DoesNotExist:
             pass
         if result:
             return get_subclass_instance(c, result)
