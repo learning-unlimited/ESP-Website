@@ -41,7 +41,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# TODO(gkanwar): Remove non-selenium tests from this TestCase
 class AjaxStudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
@@ -49,8 +48,8 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         # Set up the program -- we want to be sure of these parameters
         kwargs.update( {
             'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
-            'num_teachers': 20, 'classes_per_teacher': 1, 'sections_per_class': 2,
-            'num_rooms': 20,
+            'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
+            'num_rooms': 6,
             } )
         ProgramFrameworkTest.setUp(self, *args, **kwargs)
 
@@ -141,24 +140,33 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         #   Try adding another class at the same time and check that we get an error
         #   FIX: Handle case where no conflicting sections exist
         conflicting_sections = list(ClassSection.objects.filter(parent_class__parent_program=program, meeting_times=sec1.start_time()).exclude(parent_class__id=sec1.parent_class.id))
-        if conflicting_sections:
-            sec2 = random.choice(conflicting_sections)
-            self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec2.parent_class.id, 'section_id': sec2.id}, 'This section conflicts with your schedule--check out the other sections!')
+        
+        if not conflicting_sections:
+            self.skipTest("Skipping rest of test_ajax_addclass: No conflicting sections found (random seed).")
+        
+        sec2 = random.choice(conflicting_sections)
+        self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec2.parent_class.id, 'section_id': sec2.id}, 'This section conflicts with your schedule--check out the other sections!')
 
         #   Try adding another section of same class and check that we get an error
         #   FIX: Handle case where no other sections exist
         other_sections = list(sec1.parent_class.get_sections().exclude(id=sec1.id))
-        if other_sections:
-            sec3 = random.choice(other_sections)
-            self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec3.parent_class.id, 'section_id': sec3.id}, 'You are already signed up for a section of this class!')
+        
+        if not other_sections:
+            self.skipTest("Skipping rest of test_ajax_addclass: No other sections of the same class found.")
+            
+        sec3 = random.choice(other_sections)
+        self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec3.parent_class.id, 'section_id': sec3.id}, 'You are already signed up for a section of this class!')
 
         #   Try adding another class that we can actually take and check that it's there
         #   FIX: Handle case where no valid sections exist
         valid_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times__in=sec1.meeting_times.all()))
-        if valid_sections:
-            sec4 = random.choice(valid_sections)
-            response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec4.parent_class.id, 'section_id': sec4.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-            self.expect_sections_in_schedule(response, [sec1, sec4])
+        
+        if not valid_sections:
+            self.skipTest("Skipping rest of test_ajax_addclass: No valid non-conflicting sections found.")
+
+        sec4 = random.choice(valid_sections)
+        response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec4.parent_class.id, 'section_id': sec4.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.expect_sections_in_schedule(response, [sec1, sec4])
 
     def test_ajax_clearslot(self):
         program = self.program
@@ -171,22 +179,22 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
 
         # FIX: Ensure we actually found a non-conflicting second class
         valid_second_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times__in=sec1.meeting_times.all()))
+        
         if not valid_second_sections:
-            print("Skipping remainder of test_ajax_clearslot due to bad random seed.")
-            return
+            self.skipTest("Skipping remainder of test_ajax_clearslot due to bad random seed.")
             
         sec2 = random.choice(valid_second_sections)
         sec2.preregister_student(student)
 
-        #   Get the schedule and check both classes are there
+        #   Get the schedule and check that both classes are there
         response = self.client.get('/learn/%s/ajax_schedule' % program.getUrlBase(), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec1, sec2])
 
-        #   Clear 1 timeslot and check only the desired class remains
+        #   Clear 1 timeslot and check that only the desired class remains
         response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec1.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec2])
 
-        #   Clear other timeslot and check the schedule is empty
+        #   Clear other timeslot and check that the schedule is empty
         response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec2.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
 

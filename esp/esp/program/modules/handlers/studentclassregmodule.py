@@ -358,7 +358,10 @@ class StudentClassRegModule(ProgramModuleObj):
                 json_data['addbutton_catalog_sec%d_html' % sec_id] = addbutton_str2
             except Exception as inst:
                 # Manually return the JSON error after the removal of middleware
-                return HttpResponse(json.dumps({'status' : 200, 'error': 'Encountered an error retrieving updated buttons: %s' % inst}))
+                return HttpResponse(
+                    json.dumps({'status': 200, 'error': 'Encountered an error retrieving updated buttons: %s' % inst}),
+                    content_type='application/json'
+                )
 
         return HttpResponse(json.dumps(json_data))
 
