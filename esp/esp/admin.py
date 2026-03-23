@@ -37,6 +37,11 @@ from esp.users.views import signout
 from django.contrib.admin.sites import AdminSite
 from django.views.decorators.cache import never_cache
 
+from django.contrib.sites.models import Site
+
+from django.contrib.redirects.models import Redirect
+from django.utils.module_loading import autodiscover_modules
+
 #   Override the logout view on the admin site to use our own code
 class ESPAdminSite(AdminSite):
 
@@ -49,13 +54,13 @@ admin_site = ESPAdminSite()
 
 #   A copy of Django's autodiscover function that accepts a site instance.
 def autodiscover(site):
-    from django.utils.module_loading import autodiscover_modules
+    
 
     autodiscover_modules('admin', register_to=site)
 
 #   Properly add needed contrib modules to the Admin site
-from django.contrib.sites.models import Site
+
 admin_site.register(Site)
 
-from django.contrib.redirects.models import Redirect
+
 admin_site.register(Redirect)
