@@ -146,7 +146,7 @@ class ResourceRequest(models.Model):
 
     target = models.ForeignKey('program.ClassSection', null=True, on_delete=models.CASCADE)
     target_subj = models.ForeignKey('program.ClassSubject', null=True, on_delete=models.CASCADE)
-    res_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     desired_value = models.TextField()
 
     def __str__(self):
