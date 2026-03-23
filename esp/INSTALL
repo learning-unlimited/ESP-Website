@@ -19,7 +19,7 @@ Note: I will refer to the directory which contains this README file as '/'.
 
 Note: The ESP Web site is based on the Django Web framework; the Django
 documentation will be very helpful.  Refer to it at:
-http://docs.djangoproject.com/en/dev/
+https://docs.djangoproject.com/en/dev/
 
 Automatic install (for Ubuntu):
 
@@ -164,3 +164,14 @@ and access the site you've set up in a Web browser.  You can now:
 Please refer to the documentation pages on the Learning Unlimited Wiki, which
 explain how to perform many common tasks with your newly set-up site:
   http://wiki.learningu.org/How_to_use_the_website
+---------------------------------------------------------
+Troubleshooting: macOS (Apple Silicon) & Python 3.10+
+---------------------------------------------------------
+If you are setting up the project locally on a newer Mac (M1/M2/M3) or using Python 3.10+, you may encounter a few common dependency errors during the `pip install` phase. 
+
+1. psycopg2 "pg_config executable not found" error:
+   Your system may lack the specific C-compiler tools for PostgreSQL. To bypass this, open `esp/requirements.txt`, find the `psycopg2` line, and change it to `psycopg2-binary`. 
+
+2. pytz "cannot import name 'Mapping' from 'collections'" error:
+   Python 3.10+ removed legacy code that older versions of pytz rely on. You can fix this by force-upgrading the library in your virtual environment: 
+   Run `pip install --upgrade pytz` before running your database migrations.
