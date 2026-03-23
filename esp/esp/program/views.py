@@ -48,7 +48,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -596,6 +596,24 @@ def userview(request):
     change_grade_form.fields['graduation_year'].initial = user.getYOG()
     change_grade_form.fields['graduation_year'].choices = [choice for choice in change_grade_form.fields['graduation_year'].choices if bool(choice[0])]
 
+    # Split enrolled sections: those from the selected program vs. all others
+    all_enrolled = user.getEnrolledSections().order_by('parent_class__parent_program', 'id')
+    if program:
+        program_enrolled = all_enrolled.filter(parent_class__parent_program=program)
+        other_enrolled = all_enrolled.exclude(parent_class__parent_program=program)
+    else:
+        program_enrolled = all_enrolled
+        other_enrolled = all_enrolled.none()
+
+    # Split taken/applied sections the same way
+    all_taken = user.getSections().order_by('parent_class__parent_program', 'id')
+    if program:
+        program_taken = all_taken.filter(parent_class__parent_program=program)
+        other_taken = all_taken.exclude(parent_class__parent_program=program)
+    else:
+        program_taken = all_taken
+        other_taken = all_taken.none()
+
     # Get StudentSubjectInterests (starred classes) for this user
     starred_classes = []
     if program:
@@ -608,8 +626,10 @@ def userview(request):
     context = {
         'user': user,
         'taught_classes': user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
-        'enrolled_classes': user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
-        'taken_classes': user.getSections().order_by('parent_class__parent_program', 'id'),
+        'program_enrolled': program_enrolled,
+        'other_enrolled': other_enrolled,
+        'program_taken': program_taken,
+        'other_taken': other_taken,
         'starred_classes': starred_classes,
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
@@ -801,7 +821,7 @@ def submit_transaction(request):
     transaction.commit()
     try:
         return _submit_transaction(request, log_record)
-    except:
+    except Exception:
         subject = '[ESP CC] Failed to process Cybersource postback'
         log_uri = request.build_absolute_uri(
             reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
@@ -852,7 +872,7 @@ def manage_pages(request):
                 #   Handle submission of bulk move form
                 if form.is_valid():
                     form.save_data()
-                    return HttpResponseRedirect('/manage/pages')
+                    return HttpResponseRedirect(reverse('manage_pages'))
 
             #   Create and display the form
             qsd_id_list = []
@@ -881,7 +901,7 @@ def manage_pages(request):
                 for q in all_qsds:
                     q.disabled = True
                     q.save()
-        return HttpResponseRedirect('/manage/pages')
+        return HttpResponseRedirect(reverse('manage_pages'))
 
     elif 'cmd' in request.GET:
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])

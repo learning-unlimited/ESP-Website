@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest, PlainRedirect
@@ -90,6 +91,59 @@ class CommModule(ProgramModuleObj):
             "choosable": 1,
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "commpanel":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_commpanel",
+            url="/manage/%s/commpanel" % base,
+            title="Email (Communications Panel)",
+            category="Coordinate",
+            keywords=["email", "communications", "commpanel", "messages"],
+        )
+
+    @staticmethod
+    def get_mailer_warnings(listcount, filterid, sendto_fn_name):
+        from esp.users.models import ESPUser, PersistentQueryFilter
+        from esp.dbmail.models import MessageRequest
+        mailer_warnings = []
+
+        # a. Warn if massive mailer (over 2000 recipients)
+        try:
+            listcount_int = int(listcount)
+        except (TypeError, ValueError):
+            listcount_int = 0
+
+        if listcount_int >= 2000:
+            mailer_warnings.append(f"Caution: You are about to send a massive mailer to {listcount_int} recipients.")
+
+        # b. Warn if no grade range filter is used
+        filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        filter_name = getattr(filter_obj, 'useful_name', '') or ''
+
+        if filter_name and 'grade' not in filter_name.lower():
+            mailer_warnings.append("Warning: You haven't selected a grade range filter.")
+
+        # c. Warn if parent/emergency contact emails are included
+        guardian_or_emergency_sentto_values = set()
+
+        for attr_name in dir(MessageRequest):
+            if not attr_name.startswith('SEND_TO_'):
+                continue
+            value = getattr(MessageRequest, attr_name)
+            if not isinstance(value, str):
+                continue
+            lower_value = value.lower()
+            if 'guardian' in lower_value or 'emergency' in lower_value:
+                guardian_or_emergency_sentto_values.add(value)
+
+        if sendto_fn_name in guardian_or_emergency_sentto_values:
+            mailer_warnings.append("Note: This mailer includes parent and/or emergency contact emails.")
+
+        return mailer_warnings
+
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
@@ -129,7 +183,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             filterid = int(filterid)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Corrupted POST data!  Please contact us at" +
             "websupport@learningu.org and tell us how you got this error," +
             "and we'll look into it.")
@@ -138,7 +192,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             firstuser = userlist[0]
-        except:
+        except IndexError:
             raise ESPError("You seem to be trying to email 0 people!  " +
             "Please go back, edit your search, and try again.")
 
@@ -253,7 +307,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             filterid = int(filterid)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Corrupted POST data!  Please contact us at " +
             "websupport@learningu and tell us how you got this error, " +
             "and we'll look into it.")
@@ -304,6 +358,7 @@ class CommModule(ProgramModuleObj):
 
         context['listcount'] = self.approx_num_of_recipients(filterObj, context['sendto_fn'])
         context['filterid'] = filterObj.id
+        context['mailer_warnings'] = self.get_mailer_warnings(context['listcount'], context['filterid'], context['sendto_fn_name'])
 
         # Use the info redirect (make one for the default email address if it doesn't exist)
         prs = PlainRedirect.objects.filter(original = "info")
@@ -344,6 +399,7 @@ class CommModule(ProgramModuleObj):
                 context['filterid'] = filterObj.id
                 context['sendto_fn_name'] = sendto_fn_name
                 context['listcount'] = self.approx_num_of_recipients(filterObj, sendto_fn)
+                context['mailer_warnings'] = self.get_mailer_warnings(context['listcount'], context['filterid'], context['sendto_fn_name'])
                 context['selected'] = selected
                 # Use the info redirect (make one for the default email address if it doesn't exist)
                 prs = PlainRedirect.objects.filter(original = "info")
@@ -359,6 +415,7 @@ class CommModule(ProgramModuleObj):
                 context['sendto_fn_name'] = msgreq.sendto_fn_name
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(msgreq.sendto_fn_name)
                 context['listcount'] = self.approx_num_of_recipients(msgreq.recipients, sendto_fn)
+                context['mailer_warnings'] = self.get_mailer_warnings(context['listcount'], context['filterid'], context['sendto_fn_name'])
                 context['from'] = msgreq.sender
                 context['subject'] = msgreq.subject
                 context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
@@ -393,6 +450,7 @@ class CommModule(ProgramModuleObj):
                                                'selected': selected,
                                                'filterid': filterid,
                                                'sendto_fn_name': sendto_fn_name,
+                                               'mailer_warnings': self.get_mailer_warnings(listcount, filterid, sendto_fn_name),
                                                'from': fromemail,
                                                'replyto': replytoemail,
                                                'subject': subject,
