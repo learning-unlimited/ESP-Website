@@ -112,6 +112,58 @@ class LoginTest(TestCase):
         self.assertTrue(user.check_password(self.password),
                        "Password should be correctly hashed and verifiable")
 
+    def test_logout(self):
+        """Test that a logged-in user can successfully log out."""
+        
+        # STEP 1: First, log in the user
+        login_successful = self.client.login(
+            username=self.username,
+            password=self.password
+        )
+        self.assertTrue(login_successful,
+                       "User should be able to log in")
+        
+        # STEP 2: Verify user is authenticated before logout
+        response = self.client.get('/myesp/login/')
+        self.assertTrue(response.wsgi_request.user.is_authenticated,
+                       "User should be authenticated before logout")
+        self.assertEqual(response.wsgi_request.user.username, self.username,
+                        "Logged-in user should match our test user")
+        
+        # STEP 3: Perform logout via the logout URL
+        # The logout view is typically at /myesp/signout/
+        logout_response = self.client.get('/myesp/signout/', follow=True)
+        
+        # STEP 4: Verify logout was successful
+        # After logout, the user should be anonymous (not authenticated)
+        self.assertFalse(logout_response.wsgi_request.user.is_authenticated,
+                        "User should not be authenticated after logout")
+        
+        # STEP 5: Verify we can't access the user's session anymore
+        # Try to access a page - the user should be anonymous
+        response_after_logout = self.client.get('/myesp/login/')
+        self.assertFalse(response_after_logout.wsgi_request.user.is_authenticated,
+                        "User should remain logged out")
+        
+        # STEP 6: Verify user can log in again after logout
+        # This ensures logout didn't break anything
+        login_data = {
+            'username': self.username,
+            'password': self.password,
+        }
+        response = self.client.post('/myesp/login/', login_data, follow=True)
+        self.assertTrue(response.wsgi_request.user.is_authenticated,
+                       "User should be able to log in again after logout")
+        
+        # STEP 7: Alternative logout method - using client.logout()
+        # This is Django's test utility for logging out
+        self.client.logout()
+        
+        # Verify logout worked
+        response = self.client.get('/myesp/login/')
+        self.assertFalse(response.wsgi_request.user.is_authenticated,
+                        "client.logout() should successfully log out the user")
+
     def test_login_with_invalid_username(self):
         """Test that login fails when username does not exist."""
         
