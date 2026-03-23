@@ -139,7 +139,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
 
         #   Try adding another class at the same time and check that we get an error
         #   FIX: Handle case where no conflicting sections exist
-        conflicting_sections = list(ClassSection.objects.filter(parent_class__parent_program=program, meeting_times=sec1.start_time()).exclude(parent_class__id=sec1.parent_class.id))
+        conflicting_sections = list(ClassSection.objects.filter(parent_class__parent_program=program, meeting_times=sec1.start_time()).exclude(parent_class=sec1.parent_class))
         
         if not conflicting_sections:
             self.skipTest("Skipping rest of test_ajax_addclass: No conflicting sections found (random seed).")
@@ -159,7 +159,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
 
         #   Try adding another class that we can actually take and check that it's there
         #   FIX: Handle case where no valid sections exist
-        valid_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times__in=sec1.meeting_times.all()))
+        valid_sections = list(program.sections().exclude(parent_class=sec1.parent_class).exclude(meeting_times__in=sec1.meeting_times.all()))
         
         if not valid_sections:
             self.skipTest("Skipping rest of test_ajax_addclass: No valid non-conflicting sections found.")
@@ -178,7 +178,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         sec1.preregister_student(student)
 
         # FIX: Ensure we actually found a non-conflicting second class
-        valid_second_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times__in=sec1.meeting_times.all()))
+        valid_second_sections = list(program.sections().exclude(parent_class=sec1.parent_class).exclude(meeting_times__in=sec1.meeting_times.all()))
         
         if not valid_second_sections:
             self.skipTest("Skipping remainder of test_ajax_clearslot due to bad random seed.")
@@ -197,4 +197,3 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         #   Clear other timeslot and check that the schedule is empty
         response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec2.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
-

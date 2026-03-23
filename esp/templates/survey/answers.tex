@@ -78,7 +78,7 @@
         \vspace*{0.1in}       
         \textbf{Number of responses:} {{ q.answers|length }}/{{ num_participants }} \\
     \switchcolumn
-    {% ifequal q.question.question_type.name "Favorite Class" %}
+    {% if q.question.question_type.name == "Favorite Class" %}
         \vspace*{0.1in} \small
         \begin{enumerate}
         {% for fav in q.answers|unpack_answers|favorite_classes:20 %}
@@ -102,7 +102,7 @@
             There are no responses to this question.
         {% endif %}
         \vspace*{0.1in}
-    {% endifequal %}
+    {% endif %}
     \end{paracol} %\\ \hline
 {% endif %}
 \vspace{6pt}

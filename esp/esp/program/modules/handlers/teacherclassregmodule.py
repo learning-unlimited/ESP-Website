@@ -56,6 +56,7 @@ from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
 
+from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
@@ -76,6 +77,30 @@ class TeacherClassRegModule(ProgramModuleObj):
             "inline_template": "listclasses.html",
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # We only want to surface the main entry point to register a class,
+        # which is the 'makeaclass' or 'copyclasses' view.
+        # Everything else (ajaxstudentattendance, editclass, etc.) should be hidden.
+        if view_name not in ["makeaclass", "copyclasses"]:
+            return None
+
+        base = program.getUrlBase()
+
+        entries = {
+            "makeaclass": ("Register Your Classes (Teacher Lookup)", "Other", ["teacher", "classes", "registration", "lookup", "add"]),
+            "copyclasses": ("Copy Your Classes", "Other", ["teacher", "classes", "registration", "copy"]),
+        }
+
+        title, category, keywords = entries[view_name]
+        return AdminSearchEntry(
+            id="teach_%s" % view_name,
+            url="/teach/%s/%s" % (base, view_name),
+            title=title,
+            category=category,
+            keywords=keywords,
+        )
 
     @property
     def crmi(self):
@@ -98,16 +123,14 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['open_class_category'] = self.program.open_class_category.category
         return context
 
-    def noclasses(self):
+
+    def noclasses(self, user=None):
         """ Returns true of there are no classes in this program """
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return not self.clslist(user).exists()
 
-    def isCompleted(self):
-        return not self.noclasses()
+    def isCompleted(self, user=None):
+        return not self.noclasses(user)
 
     def get_resource_pairs(self):
         items = []
@@ -1006,7 +1029,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
 
         # Search for teachers with names that start with search string
-        if not 'name' in request.GET or 'name' in request.POST:
+        if 'name' not in request.GET and 'name' not in request.POST:
             return self.goToCore(tl)
 
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
