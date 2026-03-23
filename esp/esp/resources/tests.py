@@ -44,6 +44,8 @@ class ResourceTypeTest(TestCase):
         self.assertFalse(ResourceType.objects.filter(id=res_type_id).exists())
         self.assertFalse(Resource.objects.filter(id=resource_id).exists())
         self.assertFalse(ResourceRequest.objects.filter(id=request_id).exists())
+
+
 class FloatingResourceAvailabilityTest(TestCase):
 
     def setUp(self):
