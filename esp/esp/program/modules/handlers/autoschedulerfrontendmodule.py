@@ -98,7 +98,11 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
             return {'response': [
                 {'error_msg': 'missing autoscheduler_data POST field'}]}
 
-        data, options = json.loads(request.POST['autoscheduler_data'])
+        try:
+            data, options = json.loads(request.POST['autoscheduler_data'])
+        except (ValueError, TypeError):
+            return {'response': [{'error_msg': 'malformed JSON payload for autoscheduler_data'}]}
+
         try:
             schedulerObj = AutoschedulerController(prog, **options)
             schedulerObj.import_assignments(data)
