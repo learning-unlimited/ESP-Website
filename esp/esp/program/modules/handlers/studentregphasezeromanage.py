@@ -78,7 +78,15 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     newcounts = copy.copy(counts)
                     for j in sibs:
                         grade = j.getGrade(prog)
-                        grade_keys = [key for key in grade_caps if grade in key]
+                        grade_keys = []
+                        for key in grade_caps:
+                            if '-' in key:
+                                start, end = map(int, key.split('-'))
+                                if start <= grade <= end:
+                                    grade_keys.append(key)
+                            else:
+                                if int(key) == grade:
+                                    grade_keys.append(key)
                         if len(grade_keys) == 1:
                             newcounts[grade_keys[0]] += 1
                         elif len(grade_keys) == 0:

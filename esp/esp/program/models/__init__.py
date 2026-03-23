@@ -1260,6 +1260,13 @@ class Program(models.Model, CustomFormsLinkModel):
         return retVal
     getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.program})
 
+    def grade_caps(self):
+        val = Tag.getProgramTag("program_size_by_grade", self)
+        if val:
+            import json
+            return json.loads(val)
+        return None
+
     def visibleEnrollments(self):
         """
         Returns whether class enrollments should show up in the catalog.
