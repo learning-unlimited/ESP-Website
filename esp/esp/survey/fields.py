@@ -4,10 +4,10 @@ Kept separate from `esp.survey.models` to avoid importing heavy model modules
 from other apps at import time (which can create circular imports).
 """
 
-from __future__ import absolute_import
 
 
-class ListField(object):
+
+class ListField:
     """Create a list type field descriptor.
 
     Allows packing lists/tuples into a delimited string stored in another field.
