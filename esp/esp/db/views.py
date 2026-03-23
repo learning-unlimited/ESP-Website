@@ -1,15 +1,34 @@
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.core import serializers
 from django.http import HttpResponse
 import json
 
-""" Removed the staff-only restriction and instead pass a flag to ajax_autocomplete if the user
-    is not a staff member.  The staff bit is checked at the per-function level, so that students
-    can call ajax_autocomplete on K12School but not on User or DataTree (for example).
+_AUTOCOMPLETE_MODEL_ALLOWLIST = None
 
-user_is_staff = user_passes_test(lambda u: u.is_authenticated and u.is_staff and u.is_authenticated)
-@user_is_staff
-"""
+def _get_autocomplete_allowlist():
+    global _AUTOCOMPLETE_MODEL_ALLOWLIST
+    if _AUTOCOMPLETE_MODEL_ALLOWLIST is not None:
+        return _AUTOCOMPLETE_MODEL_ALLOWLIST
+
+    from esp.users.models import (
+        ESPUser, K12School, ContactInfo,
+        StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo,
+    )
+    from esp.program.models.class_ import ClassSubject, ClassSection
+
+    _AUTOCOMPLETE_MODEL_ALLOWLIST = {
+        ('esp.users.models', 'ESPUser'):       ESPUser,
+        ('esp.users.models', 'K12School'):     K12School,
+        ('esp.users.models', 'ContactInfo'):   ContactInfo,
+        ('esp.users.models', 'StudentInfo'):   StudentInfo,
+        ('esp.users.models', 'TeacherInfo'):   TeacherInfo,
+        ('esp.users.models', 'GuardianInfo'):  GuardianInfo,
+        ('esp.users.models', 'EducatorInfo'):  EducatorInfo,
+        ('esp.program.models.class_', 'ClassSubject'): ClassSubject,
+        ('esp.program.models.class_', 'ClassSection'): ClassSection,
+    }
+    return _AUTOCOMPLETE_MODEL_ALLOWLIST
+
 
 def autocomplete_wrapper(function, data, is_staff, **kwargs):
     if is_staff:
@@ -27,7 +46,7 @@ def ajax_autocomplete(request):
     AjaxForeignKey, and return the data for the autocompletion.
     """
     try:
-        limit = int(request.GET.get('limit', 10))
+        limit = min(int(request.GET.get('limit', 10)), 50)
         model_module = request.GET['model_module']
         model_name   = request.GET['model_name']
         ajax_func    = request.GET.get('ajax_func', 'ajax_autocomplete')
@@ -36,13 +55,16 @@ def ajax_autocomplete(request):
         grade        = request.GET.get('grade')
         last_name_range = request.GET.get('last_name_range')
     except (KeyError, ValueError):
-        # bad request
         response = HttpResponse('Malformed Input')
         response.status_code = 400
         return response
 
-    # import the model
-    Model = getattr(__import__(model_module, (), (), [str(model_name)]), model_name)
+    # Resolve the model from the explicit allowlist — never via __import__.
+    Model = _get_autocomplete_allowlist().get((model_module, model_name))
+    if Model is None:
+        response = HttpResponse('Not allowed')
+        response.status_code = 403
+        return response
 
     from esp.program.models import Program
     try:
@@ -64,5 +86,4 @@ def ajax_autocomplete(request):
 
     content = json.dumps({'result': output2})
 
-    return HttpResponse(content,
-                        content_type='javascript/javascript')
+    return HttpResponse(content, content_type='application/json')
