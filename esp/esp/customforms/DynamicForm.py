@@ -21,6 +21,7 @@ from esp.program.models import Program
 from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, FieldDoesNotExist
+from django.db.models.query import QuerySet
 from esp.middleware import ESPError
 
 from datetime import datetime
@@ -410,7 +411,11 @@ class ComboForm(SessionWizardView):
                     else:
                         clean_data[field_name] = value
                 except FieldDoesNotExist:
-                    # Skip invalid/unknown fields safely
+                    logger.warning(
+                        "Skipping unknown linked field '%s' on model %s",
+                        field_name,
+                        v['model'].__name__,
+                    )
                     continue
 
             if v['instance'] is not None:
@@ -422,20 +427,23 @@ class ComboForm(SessionWizardView):
             else:
                 try:
                     v['instance'] = v['model'].objects.create(**clean_data)
-                except Exception as e:
-                    logger.error(
-                        "Failed to create linked model %s: %s",
+                except Exception:
+                    logger.exception(
+                        "Failed to create linked model %s",
                         v['model'].__name__,
-                        str(e)
                     )
                     continue
 
             for field_name, value in m2m_data.items():
                 if value is None:
-                    value = []
-                elif not isinstance(value, list):
-                    value = [value]
-                getattr(v['instance'], field_name).set(value)
+                    normalized_value = []
+                elif isinstance(value, QuerySet):
+                    normalized_value = value
+                elif isinstance(value, (list, tuple, set)):
+                    normalized_value = list(value)
+                else:
+                    normalized_value = [value]
+                getattr(v['instance'], field_name).set(normalized_value)
 
             if v['instance'] is not None:
                 data[f'link_{v["model"].__name__}'] = v['instance']
@@ -597,15 +605,20 @@ class FormHandler:
                         else:
                             # Get the instance from the model method that should have been defined
                             link_models_cache[v['model'].__name__] = getattr(v['model'], 'cf_link_instance')(self.request)
-                        if link_models_cache[v['model'].__name__] is not None:
-                            link_models_cache[v['model'].__name__] = link_models_cache[v['model'].__name__].__dict__
-                    if link_models_cache[v['model'].__name__] is not None:
+                    instance = link_models_cache[v['model'].__name__]
+                    if instance is not None:
                         if not isinstance(v['model_field'], list):
                             # Simple field
-                            initial_data[handler.seq].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
+                            try:
+                                value = getattr(instance, v['model_field'])
+                            except AttributeError:
+                                value = getattr(instance, f"{v['model_field']}_id", None)
+                            initial_data[handler.seq].update({k: value})
                         else:
                             # Compound field. Needs to be passed a list of values.
-                            initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
+                            initial_data[handler.seq].update({
+                                k: [getattr(instance, val) for val in v['model_field']]
+                            })
         return initial_data
 
     def get_initial_data(self, initial_data=None):
