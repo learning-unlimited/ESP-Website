@@ -106,7 +106,17 @@ def _inject_active_program_tags(request, context):
             return
         if not request.user.isAdministrator(program=program):
             return
-        active_tags = Tag.get_nondefault_program_tags(program)
+        all_nondefault = Tag.get_nondefault_program_tags(program)
+        if not all_nondefault:
+            return
+        accessed_keys = getattr(request, '_active_program_tag_keys', None)
+        if accessed_keys is not None:
+            # Page-specific: only show tags that were actually consulted
+            # by the view logic while handling this request.
+            active_tags = [t for t in all_nondefault if t['key'] in accessed_keys]
+        else:
+            # Fallback: tracking wasn't initialized, show all non-default tags.
+            active_tags = all_nondefault
         if active_tags:
             context['active_program_tags'] = active_tags
             context['active_program_tags_url'] = program.get_manage_url() + 'tags'

@@ -117,6 +117,15 @@ class Tag(models.Model):
         # this works.
         if program is not None:
             res = cls._getTag(key, target=program)
+            # Record that this page consulted this tag key for this program,
+            # so _inject_active_program_tags can filter to page-specific tags.
+            try:
+                from esp.middleware.threadlocalrequest import get_current_request
+                req = get_current_request()
+                if req is not None and hasattr(req, '_active_program_tag_keys'):
+                    req._active_program_tag_keys.add(key)
+            except Exception:
+                pass
         if res is None:
             res = cls._getTag(key)
         if res is None:
