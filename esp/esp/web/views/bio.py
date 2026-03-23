@@ -37,7 +37,6 @@ from django.core.files.base import ContentFile
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response
-from esp.middleware import ESPError
 from django.http          import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.contrib.auth.decorators import login_required
 from datetime             import datetime
@@ -59,7 +58,7 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, userna
             else:
                 founduser = ESPUser.getUserFromNum(first, last, usernum)
                 old_url = True
-    except (ESPUser.DoesNotExist, ESPError):
+    except:
         return bio_not_found(request)
 
     foundprogram = get_from_id(progid, Program, 'program', False)
@@ -160,17 +159,10 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
                     'bio': lastbio.bio, 'picture': lastbio.picture}
         form = BioEditForm(formdata)
 
-    # Fetch all classes the teacher has taught and gather documents
-    previous_classes = founduser.getTaughtClasses()
-    previous_docs = []
-    for p_cls in previous_classes:
-        previous_docs.extend(list(p_cls.getDocuments()))
-
     return render_to_response('users/teacherbioedit.html', request, {'form':    form,
                                                    'institution': settings.INSTITUTION_NAME,
                                                    'user':    founduser,
-                                                   'picture_file': lastbio.picture,
-                                                   'previous_docs': previous_docs})
+                                                   'picture_file': lastbio.picture})
 
 
 def bio_not_found(request, user=None, edit_url=None):
@@ -190,7 +182,7 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
         else:
             founduser = ESPUser.getUserFromNum(first, last, usernum)
             old_url = True
-    except (ESPUser.DoesNotExist, ESPError):
+    except:
         return bio_not_found(request)
 
     return bio_user(request, founduser, old_url)
