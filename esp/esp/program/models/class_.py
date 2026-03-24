@@ -227,7 +227,7 @@ class ClassManager(Manager):
         #   Filter out duplicates by ID.  This is necessary because Django's ORM
         #   adds the related fields (e.g. sections__meeting_times) to the SQL
         #   SELECT statement and doesn't include them in the result.
-        #   See http://docs.djangoproject.com/en/dev/ref/models/querysets/#s-distinct
+        #   See https://docs.djangoproject.com/en/dev/ref/models/querysets/#s-distinct
         counter = 0
         index = 0
         max_count = len(classes)
@@ -290,7 +290,12 @@ class ClassManager(Manager):
         count = classes.count()
         return classes[random.randint(0, count - 1)]
 
+class ClassSectionManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().order_by('id')
+
 class ClassSection(models.Model):
+    objects = ClassSectionManager()
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
 
