@@ -7,7 +7,7 @@ To activate your custom menu add the following to your settings.py::
 """
 
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from admin_tools.menu import items, Menu
 
