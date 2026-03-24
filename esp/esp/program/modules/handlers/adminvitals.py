@@ -32,6 +32,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+from collections.abc import MutableMapping
+
 from esp.program.modules.base import ProgramModuleObj
 
 class KeyDoesNotExist(Exception):
@@ -52,6 +54,8 @@ class AdminVitals(ProgramModuleObj):
             }
 
     def prepare(self, context=None):
+        if not isinstance(context, MutableMapping):
+            context = {}
         return context
 
     def isStep(self):
