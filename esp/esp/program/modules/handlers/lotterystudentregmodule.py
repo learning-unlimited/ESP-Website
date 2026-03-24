@@ -42,7 +42,7 @@ from django.http                 import HttpResponse, HttpResponseRedirect
 from django.views.decorators.cache import cache_control
 from urllib.parse               import quote
 
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
+from esp.program.modules.base    import ProgramModuleObj, _login_redirect, not_logged_in, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
 from esp.program.models          import StudentRegistration
 from esp.program.views           import lsr_submit as lsr_view_submit
 from esp.utils.web               import render_to_response
@@ -51,16 +51,10 @@ from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
 
 
-def _lottery_login_redirect(request):
-    return HttpResponseRedirect(
-        '%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME,
-                      quote(request.get_full_path())))
-
-
 def _lottery_submit_requires_student(method):
     def _check_student(moduleObj, request, *args, **kwargs):
-        if not request.user or not request.user.is_authenticated or not request.user.id:
-            return _lottery_login_redirect(request)
+        if not_logged_in(request):
+            return _login_redirect(request)
 
         if request.user.isStudent() or request.user.isAdmin(moduleObj.program):
             return method(moduleObj, request, *args, **kwargs)
