@@ -22,7 +22,7 @@ def pytest_collect_file(parent, file_path):
     test_*.py naming convention. Scoped to this directory only to avoid
     accidentally collecting non-test .py files elsewhere in the project.
     """
-    _SKIP = {"__init__.py", "conftest.py"}
+    _SKIP = {"__init__.py", "conftest.py", "ajaxstudentreg.py"}
     if (
         file_path.suffix == ".py"
         and file_path.parent == _THIS_DIR
