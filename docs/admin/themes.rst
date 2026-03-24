@@ -11,7 +11,8 @@ To simplify front end design, there is now an app for configuring the front end
 (appearance and navigation) of your site.  Behind the scenes, the app is
 generating template overrides and CSS stylesheets based on your configuration.
 
-The themes app can be accessed at https://[yoursite].learningu.org/themes/.  There are 3 steps:
+The themes app can be accessed at ``/themes/`` on your site.
+There are 3 steps:
 
 * Select a theme (/themes/select/)
 
