@@ -119,124 +119,55 @@ class Command(BaseCommand):
     # ── flush ─────────────────────────────────────────────────────────────────
 
     def flush_seeded_data(self):
-        from django.db import connection
+        from django.db.models import Q
 
-        program_ids = list(
-            Program.objects.filter(url__in=SEED_PROGRAM_URLS).values_list('id', flat=True)
-        )
-        if not program_ids:
+        programs = Program.objects.filter(url__in=SEED_PROGRAM_URLS)
+        if not programs.exists():
             self.stdout.write('  Nothing to flush.')
             return
 
-        ids_sql = '(' + ','.join(str(i) for i in program_ids) + ')'
+        sections = ClassSection.objects.filter(
+            parent_class__parent_program__in=programs)
+        subjects = ClassSubject.objects.filter(parent_program__in=programs)
 
-        with connection.cursor() as cursor:
-            # Delete in dependency order using raw SQL to bypass
-            # the "unhashable type: ClassSubject" bug in ClassSubject.delete()
+        StudentRegistration.objects.filter(section__in=sections).delete()
+        ResourceAssignment.objects.filter(target__in=sections).delete()
+        sections.delete()
+        subjects.delete()
 
-            # Student registrations -> sections -> subjects
-            cursor.execute(f"""
-                DELETE FROM program_studentregistration
-                WHERE section_id IN (
-                    SELECT cs.id FROM program_classsection cs
-                    JOIN program_class c ON cs.parent_class_id = c.id
-                    WHERE c.parent_program_id IN {ids_sql}
-                )
-            """)
-            cursor.execute(f"""
-                DELETE FROM program_classsection_meeting_times
-                WHERE classsection_id IN (
-                    SELECT cs.id FROM program_classsection cs
-                    JOIN program_class c ON cs.parent_class_id = c.id
-                    WHERE c.parent_program_id IN {ids_sql}
-                )
-            """)
-            cursor.execute(f"""
-                DELETE FROM resources_resourceassignment
-                WHERE target_id IN (
-                    SELECT cs.id FROM program_classsection cs
-                    JOIN program_class c ON cs.parent_class_id = c.id
-                    WHERE c.parent_program_id IN {ids_sql}
-                )
-            """)
-            cursor.execute(f"""
-                DELETE FROM program_classsection
-                WHERE parent_class_id IN (
-                    SELECT id FROM program_class WHERE parent_program_id IN {ids_sql}
-                )
-            """)
-            cursor.execute(f"DELETE FROM program_class_meeting_times WHERE classsubject_id IN (SELECT id FROM program_class WHERE parent_program_id IN {ids_sql})")
-            cursor.execute(f"DELETE FROM program_class_teachers WHERE classsubject_id IN (SELECT id FROM program_class WHERE parent_program_id IN {ids_sql})")
-            cursor.execute(f"DELETE FROM program_class WHERE parent_program_id IN {ids_sql}")
+        vol_requests = VolunteerRequest.objects.filter(program__in=programs)
+        VolunteerOffer.objects.filter(request__in=vol_requests).delete()
+        vol_requests.delete()
+        RegistrationProfile.objects.filter(program__in=programs).delete()
+        TeacherBio.objects.filter(program__in=programs).delete()
 
-            # Other program-related tables
-            cursor.execute(f"DELETE FROM program_volunteeroffer WHERE request_id IN (SELECT id FROM program_volunteerrequest WHERE program_id IN {ids_sql})")
-            cursor.execute(f"DELETE FROM program_volunteerrequest WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM program_registrationprofile WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM program_teacherbio WHERE program_id IN {ids_sql}")
+        events = Event.objects.filter(program__in=programs)
+        UserAvailability.objects.filter(event__in=events).delete()
+        resources = Resource.objects.filter(event__in=events)
+        ResourceAssignment.objects.filter(resource__in=resources).delete()
+        resources.delete()
+        events.delete()
 
-            # users_useravailability references cal_event via event_id
-            cursor.execute(f"""
-                DELETE FROM users_useravailability
-                WHERE event_id IN (SELECT id FROM cal_event WHERE program_id IN {ids_sql})
-            """)
-            # resources_resourceassignment also references resources_resource via resource_id
-            cursor.execute(f"""
-                DELETE FROM resources_resourceassignment
-                WHERE resource_id IN (
-                    SELECT id FROM resources_resource
-                    WHERE event_id IN (SELECT id FROM cal_event WHERE program_id IN {ids_sql})
-                )
-            """)
-            # resources_resource references cal_event via event_id
-            cursor.execute(f"""
-                DELETE FROM resources_resource
-                WHERE event_id IN (SELECT id FROM cal_event WHERE program_id IN {ids_sql})
-            """)
-            cursor.execute(f"DELETE FROM cal_event WHERE program_id IN {ids_sql}")
+        surveys = Survey.objects.filter(program__in=programs)
+        responses = SurveyResponse.objects.filter(survey__in=surveys)
+        Answer.objects.filter(survey_response__in=responses).delete()
+        responses.delete()
+        Question.objects.filter(survey__in=surveys).delete()
+        surveys.delete()
 
-            # Survey tables reference program_program; delete in FK order
-            cursor.execute(f"""
-                DELETE FROM survey_answer
-                WHERE survey_response_id IN (
-                    SELECT id FROM survey_surveyresponse
-                    WHERE survey_id IN (SELECT id FROM survey_survey WHERE program_id IN {ids_sql})
-                )
-            """)
-            cursor.execute(f"""
-                DELETE FROM survey_surveyresponse
-                WHERE survey_id IN (SELECT id FROM survey_survey WHERE program_id IN {ids_sql})
-            """)
-            cursor.execute(f"""
-                DELETE FROM survey_question
-                WHERE survey_id IN (SELECT id FROM survey_survey WHERE program_id IN {ids_sql})
-            """)
-            cursor.execute(f"DELETE FROM survey_survey WHERE program_id IN {ids_sql}")
+        AJAXChangeLog.objects.filter(program__in=programs).delete()
+        AJAXSectionDetail.objects.filter(program__in=programs).delete()
+        StudentClassRegModuleInfo.objects.filter(program__in=programs).delete()
+        ClassRegModuleInfo.objects.filter(program__in=programs).delete()
+        DBReceipt.objects.filter(program__in=programs).delete()
+        ProgramModuleObj.objects.filter(program__in=programs).delete()
 
-            # All modules_* tables that hold a FK to program_program
-            cursor.execute(f"""
-                DELETE FROM modules_ajaxchangelog_entries
-                WHERE ajaxchangelog_id IN (
-                    SELECT id FROM modules_ajaxchangelog WHERE program_id IN {ids_sql}
-                )
-            """)
-            cursor.execute(f"DELETE FROM modules_ajaxchangelog WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM modules_ajaxsectiondetail WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM modules_studentclassregmoduleinfo WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM modules_classregmoduleinfo WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM modules_dbreceipt WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM modules_programmoduleobj WHERE program_id IN {ids_sql}")
+        ESPPermission.objects.filter(program__in=programs).delete()
+        Record.objects.filter(program__in=programs).delete()
 
-            # users_permission and users_record hold a FK to program_program
-            cursor.execute(f"DELETE FROM users_permission WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM users_record WHERE program_id IN {ids_sql}")
+        SplashInfo.objects.filter(program__in=programs).delete()
+        programs.delete()
 
-            cursor.execute(f"DELETE FROM program_program_program_modules WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM program_program_class_categories WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM program_splashinfo WHERE program_id IN {ids_sql}")
-            cursor.execute(f"DELETE FROM program_program WHERE id IN {ids_sql}")
-
-        from django.db.models import Q
         qsd_filter = Q(url='index') | Q(url='faq') | Q(url='contact')
         qsd_filter |= Q(url='learn/index') | Q(url='teach/index') | Q(url='volunteer/index')
         for prog_url in SEED_PROGRAM_URLS:
