@@ -227,7 +227,7 @@ class ClassManager(Manager):
         #   Filter out duplicates by ID.  This is necessary because Django's ORM
         #   adds the related fields (e.g. sections__meeting_times) to the SQL
         #   SELECT statement and doesn't include them in the result.
-        #   See http://docs.djangoproject.com/en/dev/ref/models/querysets/#s-distinct
+        #   See https://docs.djangoproject.com/en/dev/ref/models/querysets/#s-distinct
         counter = 0
         index = 0
         max_count = len(classes)
