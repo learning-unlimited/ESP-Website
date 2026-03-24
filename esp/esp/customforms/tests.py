@@ -41,10 +41,6 @@ from esp.users.models import ESPUser, AnonymousESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
-from django.conf import settings
-import os
-import tempfile
-
 class CustomFormsTest(TestCase):
     """ Tests for the backend views/models provided by the custom forms app. """
 
