@@ -3,6 +3,7 @@ import json
 
 from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
+from django.urls import reverse
 from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.db import connection
 from django.core.serializers.json import DjangoJSONEncoder
@@ -115,9 +116,9 @@ def onSubmit(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError('No program with ID %i' % (metadata['link_id']))
+                        return ESPError(f'No program with ID {metadata["link_id"]}')
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError('Program does not have %s enabled' % (metadata['link_module']))
+                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -125,7 +126,7 @@ def onSubmit(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
+                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
 
                 # Inserting pages
                 for page in metadata['pages']:
@@ -185,8 +186,10 @@ def onModify(request):
                 metadata = json.loads(request.body)
                 try:
                     form = Form.objects.get(id=int(metadata['form_id']))
+
                 except (Form.DoesNotExist, ValueError):
-                    raise ESPError('Form %s not found' % metadata['form_id'], log=False)
+                    raise ESPError(f'Form {metadata["form_id"]} not found', log=False)
+
                 dmh = DMH(form=form)
                 link_models_list = []     # Stores a cache of link models that should not be removed
 
@@ -208,9 +211,9 @@ def onModify(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError('No program with ID %i' % (metadata['link_id']))
+                        return ESPError(f'No program with ID {metadata["link_id"]}')
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError('Program does not have %s enabled' % (metadata['link_module']))
+                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -218,7 +221,7 @@ def onModify(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
+                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
 
                 # Check if only_fkey links have changed
                 if form.link_type != metadata['link_type'] or form.link_id != metadata['link_id']:
@@ -349,7 +352,7 @@ def viewResponse(request, form_id):
     """
     # Only teachers and admins can view responses; others are redirected to home
     if not (request.user.isTeacher() or request.user.isAdministrator()):
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('home'))
 
     try:
         form_id = int(form_id)
@@ -373,7 +376,7 @@ def getExcelData(request, form_id):
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
     response = HttpResponse(wbk.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    response['Content-Disposition']='attachment; filename=%s.xlsx' % form.title
+    response['Content-Disposition']=f'attachment; filename={form.title}.xlsx'
     return response
 
 @user_passes_test(test_func)
