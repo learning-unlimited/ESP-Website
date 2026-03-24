@@ -40,7 +40,7 @@ from esp.customforms.views import hasPerm
 from esp.users.models import ESPUser, AnonymousESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import override_settings
+import tempfile
 class CustomFormsTest(TestCase):
     """ Tests for the backend views/models provided by the custom forms app. """
 
@@ -484,13 +484,16 @@ class FormBuilderViewTest(TestCase):
         response = self.client.get('/customforms/create')
         self.assertRedirects(response, '/accounts/login/?next=/customforms/create')
 
-    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     def test_orphaned_upload_files_cleanup_on_failed_submission(self):
         """Test that uploaded files are cleaned up when form submission fails."""
+        import os
+
         # Create a form with a file upload field
         test_user = ESPUser.objects.create_user(username='file_test_user', password='password')
         test_user.makeRole('Student')
 
+        # For this test, we create a 2-page form so that step 0 succeeds, the file is saved temporarily,
+        # but the wizard doesn't complete yet.
         form_data = {
             'title': 'File Upload Test Form',
             'perms': '',
@@ -508,6 +511,16 @@ class FormBuilderViewTest(TestCase):
                     'data': {'help_text': '', 'question_text': '', 'seq': 0}
                 }],
                 'seq': 0
+            },
+            {
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Step 2 Name', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {'charlimits': '0,10'}, 'help_text': ''}},
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 1
             }],
             'link_type': '-1',
             'desc': 'Test file upload'
@@ -524,33 +537,58 @@ class FormBuilderViewTest(TestCase):
         name_field_id = fields.get(label='Name').id
         file_field_id = fields.get(label='Upload File').id
 
-        # Login as student and attempt to submit with file
-        self.client.login(username=test_user.username, password='password')
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            from esp.customforms.DynamicForm import ComboForm
+            original_location = ComboForm.file_storage.location
+            ComboForm.file_storage.location = tmp_dir
+            
+            try:
+                # Login as student and attempt to submit with file
+                self.client.login(username=test_user.username, password='password')
 
-        # Create a test file
-        test_file = SimpleUploadedFile(
-            "test_file.txt",
-            b"file_content",
-            content_type="text/plain"
-        )
+                # Create a test file
+                test_file = SimpleUploadedFile(
+                    "test_file.txt",
+                    b"file_content",
+                    content_type="text/plain"
+                )
 
-        # Get the form view first to establish session
-        response = self.client.get(f"/customforms/view/{form.id}/")
-        self.assertEqual(response.status_code, 200)
+                # Get the form view first to establish session
+                response = self.client.get(f"/customforms/view/{form.id}/")
+                self.assertEqual(response.status_code, 200)
 
-        # Submit with a file but invalid data to cause validation error
-        post_data = {
-            'combo_form-current_step': '0',
-            f'question_{name_field_id}': 'Test User',
-            f'question_{file_field_id}': test_file,
-        }
+                # Submit with a file and valid data for step 0
+                post_data = {
+                    'combo_form-current_step': '0',
+                    f'question_{name_field_id}': 'Test User',
+                    f'question_{file_field_id}': test_file,
+                }
 
-        response = self.client.post(f"/customforms/view/{form.id}/", post_data)
+                response = self.client.post(f"/customforms/view/{form.id}/", post_data)
 
-        # The form should accept the file upload but we're testing the cleanup mechanism
-        # When the user abandons or a new form starts, cleanup should occur
-        # This is tested indirectly through the session tracking
+                # Should return 200 with step 1
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'Step 2 Name')
 
-        # Verify the cleanup tracking is in place by starting a new form submission
-        response = self.client.get(f"/customforms/view/{form.id}/")
-        self.assertEqual(response.status_code, 200)
+                # File should exist on disk now
+                uploaded_files = os.listdir(tmp_dir)
+                self.assertTrue(any("test_file" in f for f in uploaded_files))
+                saved_filename = [f for f in uploaded_files if "test_file" in f][0]
+
+                # Verify the file is tracked in session
+                session_key = f'customform_upload_files_{form.id}'
+                self.assertIn(session_key, self.client.session)
+                self.assertIn(saved_filename, self.client.session[session_key])
+
+                # Now simulate abandonment by doing a GET (fresh start)
+                response = self.client.get(f"/customforms/view/{form.id}/")
+                self.assertEqual(response.status_code, 200)
+
+                # The file should be deleted
+                uploaded_files_after = os.listdir(tmp_dir)
+                self.assertFalse(any("test_file" in f for f in uploaded_files_after))
+                
+                # Session tracking key should be empty
+                self.assertFalse(self.client.session.get(session_key))
+            finally:
+                ComboForm.file_storage.location = original_location

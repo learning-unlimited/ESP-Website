@@ -25,6 +25,7 @@ from esp.middleware import ESPError
 
 from datetime import datetime
 import os
+from django.core.files.uploadedfile import UploadedFile
 from django.conf import settings
 
 class BaseCustomForm(BetterForm):
@@ -360,10 +361,12 @@ class ComboForm(SessionWizardView):
             if hasattr(form.fields.get(field_name), 'to_python') and \
                isinstance(form.fields.get(field_name), forms.FileField) and \
                field_value:
-                # Get the file path from the uploaded file
-                file_path = field_value.name if hasattr(field_value, 'name') else str(field_value)
-                if file_path not in self.request.session[session_key]:
-                    self.request.session[session_key].append(file_path)
+                # Restrict tracking to newly uploaded temp files
+                if isinstance(field_value, UploadedFile):
+                    # Get the file path from the uploaded file
+                    file_path = field_value.name if hasattr(field_value, 'name') else str(field_value)
+                    if file_path not in self.request.session[session_key]:
+                        self.request.session[session_key].append(file_path)
 
         self.request.session.modified = True
 
@@ -377,9 +380,8 @@ class ComboForm(SessionWizardView):
 
         for file_path in file_paths:
             try:
-                full_path = os.path.join(settings.MEDIA_ROOT, file_path)
-                if os.path.exists(full_path):
-                    os.remove(full_path)
+                if self.file_storage.exists(file_path):
+                    self.file_storage.delete(file_path)
             except Exception as e:
                 # Log the error but don't fail the request
                 import logging
@@ -410,13 +412,15 @@ class ComboForm(SessionWizardView):
         """
         Override dispatch to add cleanup on session timeout or form abandonment.
         """
+        self.request = request
+        self.prefix = self.get_prefix(request, *args, **kwargs)
+        self.storage = self.get_storage(request, self.prefix, *args, **kwargs)
+
         # Check if this is a fresh start (no wizard data) for this form
         # If so, cleanup old orphaned files
-        if not request.session.get(self.get_prefix(), None):
-            # This is a fresh form start - cleanup any orphaned files from previous attempts
+        if not self.storage.current_step:
             session_key = self._get_session_key()
             if session_key in request.session:
-                self.request = request
                 self._cleanup_uploaded_files()
 
         return super().dispatch(request, *args, **kwargs)
