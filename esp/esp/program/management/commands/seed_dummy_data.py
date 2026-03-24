@@ -37,7 +37,11 @@ from esp.program.models import (
     TeacherBio, ProgramModule, SplashInfo,
 )
 from esp.program.models.class_ import ClassSubject, ClassSection, ClassCategories
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.program.modules.module_ext import (
+    ClassRegModuleInfo, StudentClassRegModuleInfo,
+    AJAXChangeLog, AJAXSectionDetail, DBReceipt,
+)
+from esp.program.modules.base import ProgramModuleObj
 from esp.cal.models import Event, EventType
 from esp.resources.models import Resource, ResourceType, ResourceAssignment
 from esp.accounting.controllers import GlobalAccountingController
@@ -244,6 +248,9 @@ class Command(BaseCommand):
         NavBarCategory.objects.filter(name='Dev Navbar').delete()
         for username in SEED_USERNAMES:
             ESPUser.objects.filter(username=username).delete()
+        Group.objects.filter(name__in=[
+            'seed_students', 'seed_teachers', 'seed_volunteers', 'seed_admins',
+        ]).delete()
 
     # ── site & groups ─────────────────────────────────────────────────────────
 
@@ -256,7 +263,8 @@ class Command(BaseCommand):
 
     def _seed_groups(self):
         for name in ['Student', 'Teacher', 'Guardian', 'Educator',
-                     'Volunteer', 'Administrator', 'StudentRep']:
+                     'Volunteer', 'Administrator', 'StudentRep',
+                     'seed_students', 'seed_teachers', 'seed_volunteers', 'seed_admins']:
             Group.objects.get_or_create(name=name)
 
     # ── lookup / reference data ───────────────────────────────────────────────
@@ -360,6 +368,7 @@ class Command(BaseCommand):
             user.set_password('password')
             user.save()
             user.makeRole('Administrator')
+            user.groups.add(Group.objects.get(name='seed_admins'))
             self._make_contact(user, 'Admin', 'User')
         return user
 
@@ -480,6 +489,7 @@ class Command(BaseCommand):
                 user.set_password('password')
                 user.save()
                 user.makeRole('Teacher')
+                user.groups.add(Group.objects.get(name='seed_teachers'))
 
             ti, _ = TeacherInfo.objects.get_or_create(user=user, defaults=dict(
                 graduation_year=str(random.randint(2010, 2024)),
@@ -567,6 +577,7 @@ class Command(BaseCommand):
                 user.set_password('password')
                 user.save()
                 user.makeRole('Student')
+                user.groups.add(Group.objects.get(name='seed_students'))
 
             grade = random.randint(program.grade_min, program.grade_max)
             dob = datetime(current_year - grade - 6, random.randint(1, 12), random.randint(1, 28))
@@ -616,6 +627,7 @@ class Command(BaseCommand):
                 user.set_password('password')
                 user.save()
                 user.makeRole('Volunteer')
+                user.groups.add(Group.objects.get(name='seed_volunteers'))
             contact = self._make_contact(user, user.first_name, user.last_name)
             self._make_reg_profile(user, program, contact_user=contact)
             volunteers.append(user)
