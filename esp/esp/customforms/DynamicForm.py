@@ -25,7 +25,6 @@ from esp.middleware import ESPError
 
 from datetime import datetime
 import os
-import shutil
 from django.conf import settings
 
 class BaseCustomForm(BetterForm):
