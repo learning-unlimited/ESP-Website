@@ -160,12 +160,14 @@ class ClassCreationController(object):
         # Pre-compute real model field names to avoid setting form-only keys
         model_field_names = {f.name for f in ClassSubject._meta.get_fields()}
 
-        # Default: clear allowable_class_size_ranges on every draft save.
-        # If the field appears in the POST data the loop will overwrite this
-        # with the submitted IDs; if the browser omits the field entirely
-        # (all checkboxes unchecked) the empty list persists and .set([])
-        # clears the M2M after save.
-        cls._pending_allowable_class_size_range_ids = []
+        # Default: when allowable_class_size_ranges is in use for this form,
+        # clear allowable_class_size_ranges on every draft save.  If the field
+        # appears in the POST data the loop will overwrite this with the
+        # submitted IDs; if the browser omits the field entirely (all
+        # checkboxes unchecked) the empty list persists and .set([]) clears
+        # the M2M after save.
+        if getattr(self.crmi, 'use_allowable_class_size_ranges', False):
+            cls._pending_allowable_class_size_range_ids = []
 
         # Handle ALL fields systematically, following the same pattern as set_class_data
         for field_name, field_value in reg_data.items():
@@ -260,9 +262,9 @@ class ClassCreationController(object):
                         if field_name == 'session_count':
                             cls.session_count = 1
                         elif field_name == 'grade_min':
-                            setattr(cls, field_name, 0)
+                            setattr(cls, field_name, getattr(self.program, 'grade_min', 0))
                         elif field_name == 'grade_max':
-                            setattr(cls, field_name, 12)
+                            setattr(cls, field_name, getattr(self.program, 'grade_max', 12))
                         else:
                             setattr(cls, field_name, None)
                 else:

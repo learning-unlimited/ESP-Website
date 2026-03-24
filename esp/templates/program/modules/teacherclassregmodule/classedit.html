@@ -160,7 +160,7 @@
     </tr>
     <tr>
         <td colspan="2" class="smaller"><p>
-        Please review the above information carefully, then click "{% if class.id %}Submit{% else %}Teach for {{ one }}!{% endif %}" to submit your class.{% if show_draft_button %}  You may also save your progress as a draft to finish later.{% endif %}  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
+        Please review the above information carefully, then click "{% if class.id and not show_draft_button %}Save course!{% elif class.id %}Submit{% else %}Teach for {{ one }}!{% endif %}" to submit your class.{% if show_draft_button %}  You may also save your progress as a draft to finish later.{% endif %}  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
         </p></td>
     </tr>
     <tr>
@@ -180,8 +180,10 @@
             {% else %}
                 {% if module.deadline_met %}
                     <button type="submit" class="btn btn-success btn-large" name="save_action" value="submit">
-                    {% if class.id %}
+                    {% if class.id and not show_draft_button %}
                         <span class="glyphicon glyphicon-floppy-saved"></span>
+                        Save course!
+                    {% elif class.id %}
                         Submit
                     {% else %}
                         <span class="glyphicon glyphicon-education"></span>

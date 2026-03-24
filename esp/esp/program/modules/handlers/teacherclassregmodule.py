@@ -1074,9 +1074,12 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['otherclass'] = context['classes'][1 - context['isopenclass']]
         context['qsd_name'] = 'classedit_' + context['classtype']
 
-        # Show the draft button only in create flows (not when editing
-        # an already-submitted class).
-        context['show_draft_button'] = action in ('create', 'createopenclass')
+        # Show the draft button in create flows, and also when editing a class
+        # that is still in draft status (but not when editing an already-submitted class).
+        context['show_draft_button'] = (
+            action in ('create', 'createopenclass')
+            or (newclass is not None and newclass.status == ClassStatus.DRAFT)
+        )
         context['manage'] = False
         context['sectionNums'] = prog.countTimeSlots()
 
