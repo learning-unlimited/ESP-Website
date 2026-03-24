@@ -19,6 +19,10 @@ them.
 
 from types import SimpleNamespace
 
+import pytest
+
+pytestmark = pytest.mark.django_db
+
 from esp.program.models import Program, RegistrationProfile
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.statistics import (
@@ -45,7 +49,9 @@ def _form(limit=0):
     return SimpleNamespace(cleaned_data={"limit": limit})
 
 
-class StatisticsTestBase(ProgramFrameworkTest):
+from django.test import TestCase
+
+class StatisticsTestBase(TestCase):
     """Base that wires up the QuerySets expected by all statistics functions."""
 
     def setUp(self, *args, **kwargs):
@@ -57,10 +63,19 @@ class StatisticsTestBase(ProgramFrameworkTest):
         kwargs.setdefault("classes_per_teacher", 1)
         kwargs.setdefault("sections_per_class", 1)
         kwargs.setdefault("num_rooms", 3)
-        super().setUp(*args, **kwargs)
+
+        self._pf = ProgramFrameworkTest()
+        self._pf._pre_setup()
+        self._pf.setUp()
+
         # Ensure RegistrationProfile rows exist for all users so that stats
         # functions which filter on profiles exercise real data paths.
-        self.add_user_profiles()
+        self._pf.add_user_profiles()
+
+        # Copy attributes
+        self.program = self._pf.program
+        self.students = self._pf.students
+        self.teachers = self._pf.teachers
 
         # Build QuerySets from the list fixtures set by ProgramFrameworkTest.
         self.programs = Program.objects.filter(pk=self.program.pk)
@@ -78,6 +93,10 @@ class StatisticsTestBase(ProgramFrameworkTest):
         )
         self.empty_users = ESPUser.objects.none()
         self.empty_profiles = RegistrationProfile.objects.none()
+    
+    def tearDown(self):
+        if hasattr(self, "_pf"):
+            self._pf._post_teardown()
 
 
 # ===========================================================================
@@ -175,15 +194,18 @@ class DemographicsTest(StatisticsTestBase):
         self.assertIsInstance(result, str)
         self.assertEqual(rd["finaid_applied"], 0)
         self.assertEqual(rd["finaid_approved"], 0)
+        self.assertIn("birthyear_data", rd)
+        self.assertIn("gradyear_data", rd)
 
     def test_gradyear_data_is_list(self):
         _, rd = self._call(rd={})
-        self.assertIsInstance(rd["gradyear_data"], list)
+        self.assertIn("gradyear_data", rd)
+        self.assertIsInstance(rd.get("gradyear_data", []), list)
 
     def test_birthyear_data_is_list(self):
         _, rd = self._call(rd={})
-        self.assertIsInstance(rd["birthyear_data"], list)
-
+        self.assertIn("birthyear_data", rd)
+        self.assertIsInstance(rd.get("birthyear_data", []), list)
 
 # ===========================================================================
 # schools()
