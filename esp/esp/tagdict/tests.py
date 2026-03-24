@@ -385,7 +385,7 @@ class PageSpecificTagBannerTest(ProgramFrameworkTest):
         from unittest.mock import MagicMock
         req = MagicMock()
         req.path = '/manage/%s/main' % self.program.url
-        req.user = self.admin
+        req.user = self.admins[0]
         if with_tracking:
             req._active_program_tag_keys = set()
         else:
