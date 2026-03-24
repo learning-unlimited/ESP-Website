@@ -46,6 +46,7 @@ from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
 from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
