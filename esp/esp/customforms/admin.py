@@ -25,23 +25,27 @@ field_form.short_description = 'Form'
 """ Classes to control display of instances on admin site """
 
 class FormAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['title', 'date_created', 'created_by', num_fields]
     search_fields = default_user_search('created_by') + ['title', 'description']
     date_hierarchy = 'date_created'
 admin_site.register(Form, FormAdmin)
 
 class PageAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['__str__', 'form', 'seq', num_sections]
     list_filter = ('form',)
 admin_site.register(Page, PageAdmin)
 
 class SectionAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['title', page_form, 'page', 'seq', num_fields]
     search_fields = ('title', 'description')
     list_filter = ('page', 'page__form')
 admin_site.register(Section, SectionAdmin)
 
 class FieldAdmin(admin.ModelAdmin):
+    save_as = True
     list_filter = ('form',)
     search_fields = ('label',)
     list_display = ['__str__', 'form', 'label', 'field_type', 'section', 'seq', 'required']
@@ -49,6 +53,7 @@ class FieldAdmin(admin.ModelAdmin):
 admin_site.register(Field, FieldAdmin)
 
 class AttributeAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['attr_type', 'field', 'value', field_form]
     list_filter = ('attr_type', 'field__form')
     list_editable = ['value']
