@@ -389,13 +389,13 @@ class ComboForm(SessionWizardView):
 
         self.request.session.modified = True
 
-    def process_step_post(self, form):
+    def process_step(self, form):
         """
         Override to track uploaded files. Called after form validation passes.
         """
         # Track files before calling parent implementation
         self._track_uploaded_files(form)
-        return super().process_step_post(form)
+        return super().process_step(form)
 
     def form_invalid(self, form):
         """
