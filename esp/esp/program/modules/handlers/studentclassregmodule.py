@@ -369,10 +369,10 @@ class StudentClassRegModule(ProgramModuleObj):
             except ClassSection.DoesNotExist:
                 # Section doesn't exist, skip it
                 continue
-            except Exception as inst:
+            except Exception:
                 # Manually return the JSON error after the removal of middleware
                 return HttpResponse(
-                    json.dumps({'status': 200, 'error': 'Encountered an error retrieving updated buttons: %s' % inst}),
+                    json.dumps({'status': 200, 'error': 'Encountered an error retrieving updated buttons.'}),
                     content_type='application/json'
                 )
 
@@ -449,7 +449,8 @@ class StudentClassRegModule(ProgramModuleObj):
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
             # Manually return the JSON error after removal of middleware
-            return HttpResponse(json.dumps({'status' : 200, 'error': str(inst)}), content_type='application/json')
+            error_message = inst.args[0] if inst.args else "An error occurred."
+            return HttpResponse(json.dumps({'status' : 200, 'error': str(error_message)}), content_type='application/json')
 
     @staticmethod
     def sort_categories(classes, prog, force_sort=False):
