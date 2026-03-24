@@ -872,11 +872,18 @@ class TeacherClassRegModule(ProgramModuleObj):
                     # If an existing draft is being submitted, validate and
                     # promote it via submit_draft to avoid orphaned drafts.
                     if newclass is None and action in ('create', 'createopenclass'):
-                        newclass = ClassSubject.objects.filter(
+                        draft_qs = ClassSubject.objects.filter(
                             parent_program=self.program,
                             teachers=request.user,
                             status=ClassStatus.DRAFT
-                        ).first()
+                        )
+                        open_cat = getattr(self.program, 'open_class_category', None)
+                        if open_cat is not None and open_cat.pk:
+                            if action == 'createopenclass':
+                                draft_qs = draft_qs.filter(category=open_cat)
+                            else:
+                                draft_qs = draft_qs.exclude(category=open_cat)
+                        newclass = draft_qs.first()
                     if newclass is not None and newclass.status == ClassStatus.DRAFT:
                         if action in ('create', 'edit'):
                             newclass = ccc.submit_draft(request.user, request.POST, newclass.id)
@@ -911,13 +918,22 @@ class TeacherClassRegModule(ProgramModuleObj):
                 resource_formset = e.resource_formset
 
         else:
-            # Check for existing drafts for create actions
+            # Check for existing drafts for create actions.
+            # Distinguish open-class vs normal-class drafts so each
+            # form only loads its own draft.
             if action in ['create', 'createopenclass'] and newclass is None:
-                existing_draft = ClassSubject.objects.filter(
+                draft_qs = ClassSubject.objects.filter(
                     parent_program=self.program,
                     teachers=request.user,
                     status=ClassStatus.DRAFT
-                ).first()
+                )
+                open_cat = getattr(self.program, 'open_class_category', None)
+                if open_cat is not None and open_cat.pk:
+                    if action == 'createopenclass':
+                        draft_qs = draft_qs.filter(category=open_cat)
+                    else:
+                        draft_qs = draft_qs.exclude(category=open_cat)
+                existing_draft = draft_qs.first()
                 if existing_draft:
                     newclass = existing_draft
 

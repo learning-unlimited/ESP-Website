@@ -93,6 +93,9 @@ class ClassCreationController(object):
         except (TypeError, ClassSubject.DoesNotExist):
             raise ESPError(f"The class you're trying to submit (ID {repr(clsid)}) does not exist!", log=False)
 
+        if cls.status != ClassStatus.DRAFT:
+            raise ESPError("Cannot submit a non-draft class via submit_draft.", log=False)
+
         if form_class == TeacherOpenClassRegForm:
             reg_form.cleaned_data['grade_min'] = self.program.grade_min
             reg_form.cleaned_data['grade_max'] = self.program.grade_max
@@ -114,12 +117,21 @@ class ClassCreationController(object):
 
         # Create or get class
         if action in ['create', 'createopenclass']:
-            # Check if user already has a draft for this program
-            existing_draft = ClassSubject.objects.filter(
+            # Check if user already has a draft for this program.
+            # Distinguish between normal and open-class drafts so each
+            # flow only picks up its own draft.
+            draft_qs = ClassSubject.objects.filter(
                 parent_program=self.program,
                 teachers=user,
                 status=ClassStatus.DRAFT
-            ).first()
+            )
+            open_cat = getattr(self.program, 'open_class_category', None)
+            if open_cat is not None and open_cat.pk:
+                if action == 'createopenclass':
+                    draft_qs = draft_qs.filter(category=open_cat)
+                else:
+                    draft_qs = draft_qs.exclude(category=open_cat)
+            existing_draft = draft_qs.first()
 
             if existing_draft:
                 cls = existing_draft
@@ -147,6 +159,13 @@ class ClassCreationController(object):
 
         # Pre-compute real model field names to avoid setting form-only keys
         model_field_names = {f.name for f in ClassSubject._meta.get_fields()}
+
+        # Default: clear allowable_class_size_ranges on every draft save.
+        # If the field appears in the POST data the loop will overwrite this
+        # with the submitted IDs; if the browser omits the field entirely
+        # (all checkboxes unchecked) the empty list persists and .set([])
+        # clears the M2M after save.
+        cls._pending_allowable_class_size_range_ids = []
 
         # Handle ALL fields systematically, following the same pattern as set_class_data
         for field_name, field_value in reg_data.items():
@@ -195,26 +214,28 @@ class ClassCreationController(object):
                         cls.optimal_class_size_range = ClassSizeRange.objects.get(id=int(field_value))
                     except (ClassSizeRange.DoesNotExist, ValueError):
                         cls.optimal_class_size_range = None
+                else:
+                    # Field submitted but blank; clear any existing value.
+                    cls.optimal_class_size_range = None
                 continue
 
             if field_name == 'allowable_class_size_ranges':
+                # Collect selected IDs (may be empty if all unchecked).
+                range_ids = []
                 if field_value:
-                    # Handle both single value and lists
                     if isinstance(field_value, list):
                         raw_range_ids = field_value
                     else:
                         raw_range_ids = reg_data.getlist('allowable_class_size_ranges')
-                    # Normalize to valid integer IDs, ignoring blanks/invalids
-                    range_ids = []
                     for raw_id in raw_range_ids:
                         try:
                             if raw_id not in (None, ''):
                                 range_ids.append(int(raw_id))
                         except (TypeError, ValueError):
                             continue
-                    if range_ids:
-                        # Defer M2M update until after cls.save()
-                        cls._pending_allowable_class_size_range_ids = range_ids
+                # Defer M2M update until after cls.save(); store even
+                # an empty list so that unchecking all ranges is persisted.
+                cls._pending_allowable_class_size_range_ids = range_ids
                 continue
 
             # Handle grade_range (used when Tag grade_ranges is set instead of grade_min/grade_max)
@@ -279,9 +300,10 @@ class ClassCreationController(object):
         # Save the class first
         cls.save()
 
-        # Apply deferred M2M relationships now that cls has a PK
+        # Apply deferred M2M relationships now that cls has a PK.
+        # An empty list clears the relation (user unchecked everything).
         pending_range_ids = getattr(cls, '_pending_allowable_class_size_range_ids', None)
-        if pending_range_ids:
+        if pending_range_ids is not None:
             cls.allowable_class_size_ranges.set(
                 ClassSizeRange.objects.filter(id__in=pending_range_ids)
             )
@@ -295,7 +317,7 @@ class ClassCreationController(object):
         num_sections = 1
         if 'num_sections' in reg_data:
             try:
-                num_sections = int(reg_data['num_sections'])
+                num_sections = max(1, int(reg_data['num_sections']))
             except (ValueError, TypeError):
                 num_sections = 1
 
