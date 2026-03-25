@@ -349,6 +349,10 @@ class CommPanelViewsTest(ProgramFrameworkTest):
         response = self.client.post(
             '/manage/%s/maincomm2' % self.program.getUrlBase(), post_data)
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'program/modules/commmodule/step2.html',
+        )
 
     def test_commprev_renders_preview(self):
         """POST to commprev should render the email preview page."""
@@ -395,3 +399,7 @@ class CommPanelViewsTest(ProgramFrameworkTest):
         response = self.client.post(
             '/manage/%s/commprev' % self.program.getUrlBase(), post_data)
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'program/modules/commmodule/preview.html',
+        )
