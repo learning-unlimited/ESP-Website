@@ -336,11 +336,14 @@ def build_contributor_rows(
     """Build the rows for the Contributor Activity sheet."""
     header = [
         "Contributor", "Open PRs", "Merged PRs", "Closed PRs",
-        "Assigned Open Issues", "Last Activity",
+        "Assigned Open Issues", "Oldest Open PR", "Last Activity",
     ]
 
     activity: dict[str, dict] = defaultdict(
-        lambda: {"open_prs": 0, "assigned_issues": 0, "last_activity": ""}
+        lambda: {
+            "open_prs": 0, "assigned_issues": 0,
+            "last_activity": "", "oldest_open_pr": "",
+        }
     )
 
     for pr in prs:
@@ -348,6 +351,9 @@ def build_contributor_rows(
         activity[login]["open_prs"] += 1
         if pr["updatedAt"] > activity[login]["last_activity"]:
             activity[login]["last_activity"] = pr["updatedAt"]
+        created = pr["createdAt"]
+        if not activity[login]["oldest_open_pr"] or created < activity[login]["oldest_open_pr"]:
+            activity[login]["oldest_open_pr"] = created
 
     for issue in issues:
         for assignee in issue["assignees"]["nodes"]:
@@ -380,6 +386,7 @@ def build_contributor_rows(
             link_count(merged_pr_url, merged_counts.get(login, 0)),
             link_count(closed_pr_url, closed_counts.get(login, 0)),
             link_count(issues_url, info["assigned_issues"]),
+            fmt_time(info["oldest_open_pr"]),
             fmt_time(info["last_activity"]),
         ])
 
