@@ -9,7 +9,9 @@ if [ "$CI_JOB" = "test" ]; then
     if [ "$GITHUB_ACTIONS" != true ]; then
         psql -c "DROP DATABASE IF EXISTS test_test_django;" -U postgres
         psql -c "DROP DATABASE IF EXISTS test_django;" -U postgres
-        psql -c "CREATE DATABASE test_django OWNER postgres;" -U postgres
+        psql -c "DROP ROLE IF EXISTS testuser;" -U postgres
+        psql -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U postgres
+        psql -c "CREATE DATABASE test_django OWNER testuser;" -U postgres
     fi
 elif [ "$CI_JOB" = "lint" ]; then
     :

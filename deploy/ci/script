@@ -3,10 +3,6 @@ set -euf -o pipefail
 
 if [ "$CI_JOB" = "test" ]; then
     cd esp
-    if [ "${CI_DEBUG:-false}" = "true" ]; then
-        printenv
-        ./manage.py shell -c "from django.conf import settings; print('ACTIVE DATABASES SETTING:', settings.DATABASES)"
-    fi
     ./manage.py collectstatic --noinput -v 0
     pytest -n auto --cov=. --cov-report=xml
 elif [ "$CI_JOB" = "lint" ]; then
