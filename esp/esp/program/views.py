@@ -648,6 +648,44 @@ def userview(request):
     }
     return render_to_response("users/userview.html", request, context )
 
+@admin_required
+def userview_edit(request):
+    """ Handle AJAX updates for user information from userview """
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError
+
+    if request.method != 'POST':
+        return HttpResponseBadRequest('Only POST requests are allowed.')
+
+    try:
+        user = ESPUser.objects.get(username=request.POST.get('username'))
+    except ESPUser.DoesNotExist:
+        return HttpResponseBadRequest('User not found.')
+
+    field = request.POST.get('field')
+
+    if field == 'name':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        if not first_name and not last_name:
+            return HttpResponseBadRequest('At least one of first or last name must be provided.')
+        user.first_name = first_name
+        user.last_name = last_name
+    elif field == 'email':
+        email = request.POST.get('email', '').strip()
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                return HttpResponseBadRequest('Invalid email address.')
+        user.email = email
+    else:
+        return HttpResponseBadRequest('Invalid field.')
+
+    user.save()
+    return HttpResponse(json.dumps({'success': True}), content_type="application/json")
+
+
 def deactivate_user(request):
     return activate_or_deactivate_user(request, activate=False)
 
