@@ -1,4 +1,3 @@
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -76,7 +75,7 @@ class BaseAppElement(object):
             del kwargs['form_prefix']
         else:
             if hasattr(self, 'id') and self.id:
-                form_prefix = '%s_%d' % (self._element_name, self.id)
+                form_prefix = f'{self._element_name}_{self.id}'
             else:
                 form_prefix = 'TEMP'
 
@@ -117,7 +116,6 @@ class BaseAppElement(object):
                 setattr(self, field_name, form.cleaned_data[field_name])
         self.save()
 
-@python_2_unicode_compatible
 class StudentAppQuestion(BaseAppElement, models.Model):
     """ A question for a student application form, a la Junction or Delve.
     Questions pertaining to the program or to classes the student has
@@ -134,15 +132,14 @@ class StudentAppQuestion(BaseAppElement, models.Model):
 
     def __str__(self):
         if self.subject is not None:
-            return '%s (%s)' % (self.question[:80], self.subject.title)
+            return f'{self.question[:80]} ({self.subject.title})'
         else:
-            return '%s (%s)' % (self.question[:80], self.program.niceName())
+            return f'{self.question[:80]} ({self.program.niceName()})'
 
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappquestion'
 
-@python_2_unicode_compatible
 class StudentAppResponse(BaseAppElement, models.Model):
     """ A response to an application question. """
     question = models.ForeignKey(StudentAppQuestion, editable=False, on_delete=models.CASCADE)
@@ -153,13 +150,12 @@ class StudentAppResponse(BaseAppElement, models.Model):
     _field_names = ['response', 'complete']
 
     def __str__(self):
-        return 'Response to %s: %s...' % (self.question.question, self.response[:80])
+        return f'Response to {self.question.question}: {self.response[:80]}...'
 
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappresponse'
 
-@python_2_unicode_compatible
 class StudentAppReview(BaseAppElement, models.Model):
     """ An individual review for a student application question.
     The application can be reviewed by any director of the program or
@@ -175,13 +171,12 @@ class StudentAppReview(BaseAppElement, models.Model):
     _field_names = ['score', 'comments', 'reject']
 
     def __str__(self):
-        return '%s by %s: %s...' % (self.score, self.reviewer.username, self.comments[:80])
+        return f'{self.score} by {self.reviewer.username}: {self.comments[:80]}...'
 
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappreview'
 
-@python_2_unicode_compatible
 class StudentApplication(models.Model):
     """ Student applications for Junction and any other programs that need them. """
     from esp.program.models import Program
