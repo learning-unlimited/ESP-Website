@@ -77,11 +77,10 @@ class StudentRegSanityController(object):
             for sec in w.get_sections():
                 srs = sec.getRegistrations()
                 report.append((sec, srs.count()))
-
-        for sr in srs:
-            if not fake:
-                if csvlog: csvwriter.writerow([w.title(), ', '.join(sec.friendly_times()), sr.user.name(), str(sr.relationship)])
-                sr.expire()
+                for sr in srs:
+                    if not fake:
+                        if csvlog: csvwriter.writerow([w.title(), ', '.join(sec.friendly_times()), sr.user.name(), str(sr.relationship)])
+                        sr.expire()
         logger.debug(report)
         if closeatend: csvfile.close()
         logger.info("Walkins checked")

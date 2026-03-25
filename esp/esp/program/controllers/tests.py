@@ -320,6 +320,26 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
             "Second walk-in section should have 1 enrolment",
         )
 
+    def test_real_run_expires_registrations_in_all_walkin_sections(self):
+        """fake=False must expire registrations from every walk-in section,
+        not just the last one visited in the loop."""
+        _, walkin_section_2 = self._create_special_class("Walk-in Activity")
+        sr1 = self._enrol_student(self.students[0], self.walkin_section)
+        sr2 = self._enrol_student(self.students[1], walkin_section_2)
+
+        self.controller.sanitize_walkin(fake=False)
+
+        sr1.refresh_from_db()
+        sr2.refresh_from_db()
+        self.assertFalse(
+            sr1.is_valid(),
+            "First walk-in section registration must be expired",
+        )
+        self.assertFalse(
+            sr2.is_valid(),
+            "Second walk-in section registration must be expired",
+        )
+
 
 # ---------------------------------------------------------------------------
 # 3.  sanitize_lunch tests
