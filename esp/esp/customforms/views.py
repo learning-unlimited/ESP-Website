@@ -3,6 +3,7 @@ import json
 
 from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
+from django.urls import reverse
 from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.db import connection
 from django.core.serializers.json import DjangoJSONEncoder
@@ -351,7 +352,7 @@ def viewResponse(request, form_id):
     """
     # Only teachers and admins can view responses; others are redirected to home
     if not (request.user.isTeacher() or request.user.isAdministrator()):
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('home'))
 
     try:
         form_id = int(form_id)
