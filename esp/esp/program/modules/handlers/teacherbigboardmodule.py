@@ -315,7 +315,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
         # class size is optimal if it's available, otherwise max, otherwise zero
         hours = [
             (timestamp, size_optimal or size_max or 0, duration_sum)
-            for (timestamp, size_max, size_optimal, duration_sum) in hours
+            for (timestamp, size_max, size_optimal, duration_sum) in classes
         ]
 
         # use mindate if a class is missing a timestamp so we can still calculate static stats

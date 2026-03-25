@@ -249,6 +249,9 @@ def emptydb(owner="esp", interactive=True):
     # Delete and recreate the Postgres user and database. Note that the PASSWORD
     # command requires single-quotes, not double-quotes as is usual.
     psql("DROP DATABASE IF EXISTS %s", env.dbname)
+    # Drop the test database if it exists; Django's test runner creates it and
+    # leaves it behind, which causes DROP ROLE to fail with "objects depend on it".
+    psql("DROP DATABASE IF EXISTS test_%s", env.dbname)
     psql("DROP ROLE IF EXISTS %s", owner)
 
     psql("CREATE ROLE %s CREATEDB LOGIN PASSWORD '" + password + "'", owner)

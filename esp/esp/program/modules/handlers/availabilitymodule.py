@@ -380,7 +380,7 @@ class AvailabilityModule(ProgramModuleObj):
         timeslots = self.program.getTimeSlotList()
 
         # Get the times that the teacher is marked as available
-        marked_available = set(teacher.getAvailableTimes(self.program, True))
+        marked_available = set(teacher.getAvailableTimes(self.program, ignore_classes=True, ignore_moderation=True))
 
         # Now get times that teacher is teaching
         # Also keep track of what class it is

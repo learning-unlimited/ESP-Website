@@ -57,7 +57,10 @@
 
 {% if form.errors %}
 <p align="center">
-<font color="red" size="+1">Please fix the errors in the form below.</font>
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        Please fix the errors in the form below.
+</div>
 </p>
 {% endif %}
 
@@ -101,7 +104,7 @@
 
 
     {% inline_program_qsd_block program "classreg_submit_advisories" %}
-        <p>Please review the above information carefully, then click "Teach for {{ one }}!" to submit your class.  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."</p>
+        <p>Please review the above information carefully, then click "Teach for {{ one }}!" to submit your class.  Don't forget to click on "Modify Coteachers" for this class to add your coteachers! You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."</p>
     {% end_inline_program_qsd_block %}
 
 

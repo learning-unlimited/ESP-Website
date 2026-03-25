@@ -9,11 +9,8 @@ def set_my_defaults(apps, schema_editor):
     RegistrationProfile = apps.get_model('program', 'RegistrationProfile')
 
     # Pre-fetch the latest RP user for each CI for each relationship type.
-    # This replaces per-row ci.as_user.exists() / ci.as_user.latest() queries
-    # with three bulk queries upfront. The conditional logic in the loop below
-    # is otherwise identical to the original.
+    # Returns {ci_id: user_id} mapping the latest (by last_ts) RP per CI.
     def latest_user_by_ci(field):
-        # Returns {ci_id: user_id} mapping the latest (by last_ts) RP per CI.
         result = {}
         for rp in RegistrationProfile.objects.filter(
             **{field + '__isnull': False}
@@ -21,32 +18,50 @@ def set_my_defaults(apps, schema_editor):
             result[rp[field]] = rp['user']  # later (newer) entries overwrite earlier
         return result
 
-    as_user_map     = latest_user_by_ci('contact_user')
-    as_guardian_map = latest_user_by_ci('contact_guardian')
+    as_user_map      = latest_user_by_ci('contact_user')
+    as_guardian_map  = latest_user_by_ci('contact_guardian')
     as_emergency_map = latest_user_by_ci('contact_emergency')
 
-    delete_emergency_ids = []
-    delete_orphan_ids = []
+    # Build priority update mapping: user > guardian > emergency.
+    updates = {}  # ci_id -> user_id
+    for ci_id, user_id in as_user_map.iteritems():
+        updates[ci_id] = user_id
+    for ci_id, user_id in as_guardian_map.iteritems():
+        if ci_id not in updates:
+            updates[ci_id] = user_id
 
-    for ci in ContactInfo.objects.filter(user=None).iterator():
-        # Look for associated registration profiles with user info
-        if ci.id in as_user_map:
-            ci.user_id = as_user_map[ci.id]
-            ci.save()
-        elif ci.id in as_guardian_map:
-            ci.user_id = as_guardian_map[ci.id]
-            ci.save()
-        elif ci.id in as_emergency_map:
-            if not (ci.first_name and ci.last_name):
-                # We want to delete emergency contact info for non-students
-                # Collect IDs for bulk delete below
-                delete_emergency_ids.append(ci.id)
+    # Emergency contacts need a name check before assigning; fetch only the
+    # fields we need (id, first_name, last_name) rather than full instances.
+    emergency_only_ids = set(as_emergency_map.keys()) - set(updates.keys())
+    delete_emergency_ids = []
+    if emergency_only_ids:
+        for ci in ContactInfo.objects.filter(
+            id__in=emergency_only_ids, user=None
+        ).values('id', 'first_name', 'last_name'):
+            if ci['first_name'] and ci['last_name']:
+                updates[ci['id']] = as_emergency_map[ci['id']]
             else:
-                ci.user_id = as_emergency_map[ci.id]
-                ci.save()
-        else:
-            # ContactInfo isn't associated with any registration profiles or user
-            delete_orphan_ids.append(ci.id)
+                # We want to delete emergency contact info for non-students
+                delete_emergency_ids.append(ci['id'])
+
+    # Bulk-update all assignments in one shot using psycopg2 execute_values
+    # (assembles a single UPDATE ... FROM (VALUES ...) statement) rather than
+    # one save() per row — the previous bottleneck at ~200k rows.
+    if updates:
+        from psycopg2.extras import execute_values
+        table = ContactInfo._meta.db_table
+        with schema_editor.connection.cursor() as cursor:
+            execute_values(
+                cursor,
+                """
+                UPDATE {table} AS ci
+                SET user_id = data.user_id
+                FROM (VALUES %s) AS data(ci_id, user_id)
+                WHERE ci.id = data.ci_id AND ci.user_id IS NULL
+                """.format(table=table),
+                list(updates.iteritems()),
+                page_size=1000,
+            )
 
     # Bulk delete emergency contacts without names: clear FK first so we don't
     # accidentally delete the RegistrationProfile when we delete the ContactInfo
@@ -56,9 +71,9 @@ def set_my_defaults(apps, schema_editor):
         ).update(contact_emergency=None)
         ContactInfo.objects.filter(id__in=delete_emergency_ids).delete()
 
-    # Bulk delete orphaned CIs
-    if delete_orphan_ids:
-        ContactInfo.objects.filter(id__in=delete_orphan_ids).delete()
+    # Delete all remaining user=None CIs (orphans not referenced by any RP).
+    # After the bulk update above, only true orphans still have user_id IS NULL.
+    ContactInfo.objects.filter(user=None).delete()
 
 def reverse_func(apps, schema_editor):
     return
