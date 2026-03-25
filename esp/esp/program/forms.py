@@ -65,8 +65,8 @@ class ProgramCreationForm(BetterModelForm):
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
-    grade_min = forms.IntegerField(label="grade_min" , min_value=0)
-    grade_max = forms.IntegerField(label="grade_max" , min_value=0)
+    grade_min = forms.IntegerField(label="Minimum grade" , min_value=0)
+    grade_max = forms.IntegerField(label="Maximum grade" , min_value=0)
     base_cost         = forms.IntegerField(label = 'Cost of Program Admission $', min_value = 0 )
     sibling_discount  = forms.DecimalField(min_value = 0, max_digits=9, decimal_places=2, required=False, initial=None,
                                            help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
