@@ -48,7 +48,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -648,6 +648,44 @@ def userview(request):
     }
     return render_to_response("users/userview.html", request, context )
 
+@admin_required
+def userview_edit(request):
+    """ Handle AJAX updates for user information from userview """
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError
+
+    if request.method != 'POST':
+        return HttpResponseBadRequest('Only POST requests are allowed.')
+
+    try:
+        user = ESPUser.objects.get(username=request.POST.get('username'))
+    except ESPUser.DoesNotExist:
+        return HttpResponseBadRequest('User not found.')
+
+    field = request.POST.get('field')
+
+    if field == 'name':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        if not first_name and not last_name:
+            return HttpResponseBadRequest('At least one of first or last name must be provided.')
+        user.first_name = first_name
+        user.last_name = last_name
+    elif field == 'email':
+        email = request.POST.get('email', '').strip()
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                return HttpResponseBadRequest('Invalid email address.')
+        user.email = email
+    else:
+        return HttpResponseBadRequest('Invalid field.')
+
+    user.save()
+    return HttpResponse(json.dumps({'success': True}), content_type="application/json")
+
+
 def deactivate_user(request):
     return activate_or_deactivate_user(request, activate=False)
 
@@ -872,7 +910,7 @@ def manage_pages(request):
                 #   Handle submission of bulk move form
                 if form.is_valid():
                     form.save_data()
-                    return HttpResponseRedirect('/manage/pages')
+                    return HttpResponseRedirect(reverse('manage_pages'))
 
             #   Create and display the form
             qsd_id_list = []
@@ -901,7 +939,7 @@ def manage_pages(request):
                 for q in all_qsds:
                     q.disabled = True
                     q.save()
-        return HttpResponseRedirect('/manage/pages')
+        return HttpResponseRedirect(reverse('manage_pages'))
 
     elif 'cmd' in request.GET:
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])

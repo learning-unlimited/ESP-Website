@@ -65,9 +65,12 @@ Quick Start
    - Collect static files
 
    On subsequent runs, migrations and static file collection are skipped for
-   faster startup. To force them to run again (e.g., after pulling new code)::
+   faster startup. To force them to run again (e.g., after pulling new code):
 
-    FORCE_SETUP=1 docker compose up
+   a) Delete the `.docker-setup-done` file.
+   b) Run the following command::
+
+      docker compose up
 
 4. Once you see ``Starting development server at http://0.0.0.0:8000/``,
    open your browser and navigate to http://localhost:8000.

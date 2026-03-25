@@ -1427,6 +1427,79 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
         except ESPUser.DoesNotExist:
             raise AssertionError('bulk_account_create did not create all accounts it was supposed to')
 
+    def testProfileCreation(self):
+        """Test that bulk-created accounts have complete profile."""
+        from esp.users.models import ContactInfo
+        from esp.program.models import RegistrationProfile
+
+        # Create bulk accounts for Students
+        form_data = {
+            'groups': ('Student',),
+            'prefix1': 'bulkprof',
+            'count1': '3'
+        }
+
+        url = '/manage/%s/bulk_account_create' % self.program.getUrlBase()
+        response = self.client.post(url, data=form_data)
+        self.assertEqual(response.status_code, 200)
+
+        # Verify each created user has complete profile data
+        for i in range(1, 4):
+            username = 'bulkprof{}'.format(i)
+            user = ESPUser.objects.get(username=username)
+
+            # Check ContactInfo exists
+            contact_info = ContactInfo.objects.filter(user=user)
+            self.assertTrue(contact_info.exists(),
+                            'ContactInfo not created for user {}'
+                            .format(username))
+            contact = contact_info.first()
+            self.assertEqual(contact.first_name, username,
+                             'ContactInfo first_name should be '
+                             'set to username')
+
+            # Check RegistrationProfile exists and is linked to program
+            reg_profile = RegistrationProfile.objects.filter(
+                user=user, program=self.program)
+            self.assertTrue(reg_profile.exists(),
+                            'RegistrationProfile not created for '
+                            'user {} and program'.format(username))
+            profile = reg_profile.first()
+
+            # Check ContactInfo is linked to profile
+            self.assertIsNotNone(
+                profile.contact_user,
+                'RegistrationProfile.contact_user not set for '
+                'user {}'.format(username))
+            self.assertEqual(
+                profile.contact_user.id, contact.id,
+                'RegistrationProfile.contact_user not correctly '
+                'linked')
+
+            # Check StudentInfo exists for Student group
+            self.assertIsNotNone(
+                profile.student_info,
+                'StudentInfo not created for bulk student {}'
+                .format(username))
+            student_info = profile.student_info
+            self.assertIsNotNone(
+                student_info.graduation_year,
+                'StudentInfo.graduation_year not set for user {}'
+                .format(username))
+            from django.db.models import Max
+            yog_qs = (
+                RegistrationProfile.objects
+                .filter(user=user, program=self.program)
+                .exclude(student_info__isnull=True)
+                .exclude(student_info__graduation_year__isnull=True)
+                .values('user_id')
+                .annotate(yog=Max('student_info__graduation_year'))
+            )
+            self.assertEqual(
+                yog_qs.count(), 1,
+                'Bulk user {} should appear in onsite grade '
+                'queries'.format(username))
+
     def checkForBulkCreateError(self, test_case, form_data):
         bulk_account_create_response = self.client.post('/manage/%s/bulk_account_create' % self.program.getUrlBase(),
                                                         data=form_data)
@@ -1925,10 +1998,12 @@ class ManageDocsViewTest(TestCase):
         self.assertIn('<p>', html)
         self.assertIn('This is a paragraph.', html)
 
+    @patch('esp.program.views.os.path.isdir')
     @patch('esp.program.views.os.path.isfile')
-    def test_serve_image_file(self, mock_isfile):
+    def test_serve_image_file(self, mock_isfile, mock_isdir):
         """Image files are served natively by the manage_docs view."""
         mock_isfile.return_value = True
+        mock_isdir.return_value = False
         self.client.login(username='docstestadmin', password=self.password)
         # Mock open so it doesn't crash trying to open a fake image
         from unittest.mock import mock_open
