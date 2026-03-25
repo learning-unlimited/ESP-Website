@@ -12,23 +12,25 @@
 
 {% block main %}
 
-<div class="container">
-  {% if request.COOKIES.esp_testing_role %}
-  <div
-    style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
-    <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
-    You are logged in as a test account.
-    <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to
-      Admin</a>
-  </div>
-  {% endif %}
-  <div class="row-fluid">
-    {% block sidebar %}
-    <h3>Navigation</h3>
-    {% load navbar %}
-    {% navbar_gen request.path None navbar_list %}
-    {% include "users/loginbox_content.html" %}
-    {% endblock sidebar %}
+    <div class="container">
+      {% if request.COOKIES.esp_testing_role %}
+      <div
+       style="background: #fbf0b3; border: 1px solid #c09852; color: #c09852; padding: 0px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+       <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }}):</strong> &mdash;
+       You are logged in as a test account.
+       <a href="/myesp/stop_testing/" style="color: #a1702c; text-decoration: underline;">Stop testing &mdash; Return to
+         Admin</a>
+      </div>
+      {% endif %}
+      <div class="row-fluid">
+        {% block sidebar %}
+          <div style="margin-bottom: 20px;">
+            <h3>Navigation</h3>
+            {% load navbar %}
+            {% navbar_gen request.path None navbar_list %}
+            {% include "users/loginbox_content.html" %}
+          </div>
+        {% endblock sidebar %}
 
     <div id="main" class="span12 resizable">
       {% if messages %}
@@ -37,6 +39,17 @@
         {{ message }}
       </div>
       {% endfor %}
+      {% endif %}
+      {% if active_program_tags %}
+      <div class="alert alert-info alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <strong>Admin notice:</strong>
+        This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
+        {% for tag in active_program_tags %}
+          <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        {% endfor %}
+        &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
+      </div>
       {% endif %}
       {% block content %}
       {% endblock content %}
