@@ -144,6 +144,7 @@ class LunchCategoryAndSubjectTest(ProgramFrameworkTest):
     def test_get_lunch_sections_reuses_existing_sections(self):
         """Existing lunch sections should be reused and reset to accepted."""
         day = list(self.gen.days.keys())[0]
+        self.gen.get_lunch_subject(day).refresh_from_db()
         sections = list(self.gen.get_lunch_sections(day))
         sections[0].status = 0
         sections[0].save()
@@ -158,7 +159,7 @@ class ApplyBinaryOpTest(ProgramFrameworkTest):
     """Tests for the boolean expression tree builder."""
 
     def setUp(self):
-        super().setUp(num_timeslots=2, timeslot_length=50, timeslot_gap=10)
+        super().setUp(num_timeslots=4, timeslot_length=50, timeslot_gap=10)
         self.gen = LunchConstraintGenerator(
             self.program, lunch_timeslots=[], generate_constraints=False
         )
@@ -252,6 +253,7 @@ class ClearExistingConstraintsTest(ProgramFrameworkTest):
         """Lunch sections outside configured lunch slots and empty subjects should be deleted."""
         day = list(self.gen.days.keys())[0]
         lunch_subject = self.gen.get_lunch_subject(day)
+        lunch_subject.refresh_from_db()
         stale_section = lunch_subject.add_section(status=ClassStatus.ACCEPTED)
         stale_section.meeting_times.add(self.all_ts[0])
 
