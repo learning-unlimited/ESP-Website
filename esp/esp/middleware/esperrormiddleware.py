@@ -93,11 +93,11 @@ def ESPError(message=None, log=True):
     else:
         return cls(message)
 
-""" Adapted from http://www.djangosnippets.org/snippets/802/ """
+""" Adapted from https://www.djangosnippets.org/snippets/802/ """
 class AjaxErrorMiddleware(MiddlewareMixin):
     '''Return AJAX errors to the browser in a sensible way.
 
-    Includes some code from http://www.djangosnippets.org/snippets/650/
+    Includes some code from https://www.djangosnippets.org/snippets/650/
     '''
 
     # Some useful errors that this middleware will catch.
@@ -115,7 +115,7 @@ class AjaxErrorMiddleware(MiddlewareMixin):
     def process_exception(self, request, exception):
         #   This line has been commented out for debugging so that requests
         #   can be made using a normal browser like Firefox with UrlParams.
-        if request.headers.get('X-Requested-With') != 'XMLHttpRequest': return
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest': return
 
         if isinstance(exception, (ObjectDoesNotExist, Http404)):
             return self.not_found(request, exception)
@@ -145,11 +145,11 @@ class AjaxErrorMiddleware(MiddlewareMixin):
         if settings.DEBUG:
             import sys, traceback
             (exc_type, exc_info, tb) = sys.exc_info()
-            message = "%s\n" % exc_type.__name__
-            message += "%s\n\n" % exc_info
+            message = f"{exc_type.__name__}\n"
+            message += f"{exc_info}\n\n"
             message += "TRACEBACK:\n"
             for tb in traceback.format_tb(tb):
-                message += "%s\n" % tb
+                message += f"{tb}\n"
             return self.serialize_error(500, message)
         else:
             return self.serialize_error(500, _('Internal error'))
@@ -242,11 +242,10 @@ class ESPErrorMiddleware(MiddlewareMixin):
             # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
             #   TEMPLATE in main?
             context = RequestContext(request, context).flatten()
-        except:
+        except BaseException:
             # well, we couldn't, but at least display something
             # (actually it will immediately fail on main because someone
-            # removed the safe version of the template and
-            # miniblog_for_user doesn't silently fail but best not to put
+            # removed the safe version of the template but best not to put
             # in ugly hacks and make random variables just happen to work.)
             pass
         # All error templates now extend error_base.html, which provides

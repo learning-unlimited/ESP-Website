@@ -118,8 +118,10 @@ DATABASES = {'default':
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-import socket
-SERVER_EMAIL = 'server@{}'.format(socket.gethostname())
+try:
+    SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
+except AttributeError:
+    SERVER_EMAIL = 'server@localhost'  # os.uname() is Unix-only
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
 EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
@@ -225,12 +227,12 @@ APPEND_SLASH=False
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'esp.tagdict',  # Early so Tag table exists before other esp apps' migrations
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
     'esp.users.apps.UsersConfig',
-    'esp.miniblog',
     'esp.web.apps.WebConfig',
     'esp.program.apps.ProgramConfig',
     'esp.program.modules.apps.ModulesConfig',
@@ -243,7 +245,6 @@ INSTALLED_APPS = (
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
-    'esp.tagdict',
     'esp.seltests',
     'esp.themes',
     'esp.varnish',
@@ -292,8 +293,6 @@ DEFAULT_REDIRECT = '/myesp/redirect'
 
 USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
-
-SELENIUM_PATH = os.path.join(os.path.dirname(__file__), '../../../dependencies/selenium-server-standalone-2.9.0/selenium-server-standalone-2.9.0.jar')
 
 AUTHENTICATION_BACKENDS = (
     'esp.utils.auth_backend.ESPAuthBackend',

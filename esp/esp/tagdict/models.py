@@ -2,6 +2,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
+from django.db.utils import ProgrammingError, OperationalError
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from argcache import cache_function
@@ -11,7 +12,7 @@ from esp.tagdict import all_global_tags, all_program_tags
 # aseering 3/23/2010
 # This model is based on the sample "TaggedItem" model from the Django
 # documentation, as described at
-# http://www.djangoproject.com/documentation/models/generic_relations/
+# https://www.djangoproject.com/documentation/models/generic_relations/
 
 class Tag(models.Model):
     """A tag on an item."""
@@ -34,7 +35,7 @@ class Tag(models.Model):
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
 
     def __str__(self):
-        return "%s: %s (%s)" % (self.key, self.value, self.target)
+        return f"{self.key}: {self.value} ({self.target})"
 
     EMPTY_TAG = " "
 
@@ -87,6 +88,13 @@ class Tag(models.Model):
                 return cls.objects.get(key=key, content_type__isnull=True, object_id__isnull=True).value
         except cls.DoesNotExist:
             return default
+        except (ProgrammingError, OperationalError) as e:
+            # Table may not exist yet (e.g. during migrations when another app's
+            # migration runs code that touches Tag before tagdict has been migrated).
+            err = str(e).lower()
+            if 'does not exist' in err or 'no such table' in err:
+                return default
+            raise
     _getTag.depend_on_row('tagdict.Tag', lambda tag: {'key': tag.key, 'target': tag.target})
     _getTag = classmethod(_getTag)
 
@@ -179,6 +187,30 @@ class Tag(models.Model):
             tag.save()
 
         return tag.value
+
+    @classmethod
+    def get_nondefault_program_tags(cls, program):
+        """
+        Return a list of dicts describing tags that have been explicitly set for
+        the given program (i.e., Tag rows exist with that program as the target
+        and the key is in all_program_tags with is_setting=True).
+
+        Each dict has keys: 'key', 'value', 'help_text'.
+        """
+        ct = ContentType.objects.get_for_model(program)
+        program_tag_rows = cls.objects.filter(content_type=ct, object_id=program.id)
+        result = []
+        for tag in program_tag_rows:
+            if tag.key in all_program_tags and all_program_tags[tag.key].get('is_setting', False):
+                default = all_program_tags[tag.key].get('default')
+                if default is not None and tag.value == str(default):
+                    continue
+                result.append({
+                    'key': tag.key,
+                    'value': tag.value,
+                    'help_text': all_program_tags[tag.key].get('help_text', ''),
+                })
+        return result
 
     @classmethod
     def unSetTag(cls, key, target=None):

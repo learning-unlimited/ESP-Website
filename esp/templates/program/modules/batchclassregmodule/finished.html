@@ -1,0 +1,54 @@
+{% extends "main.html" %}
+
+{% block title %}Batch Class Registration - Results{% endblock %}
+
+{% block content %}
+
+<h1>Batch Class Registration</h1>
+<h2>Results</h2>
+
+<p>Registration to <strong>{{ section.emailcode }}: {{ section.title }}</strong> complete.</p>
+
+<div class="alert alert-info">
+    Processed <strong>{{ total }}</strong> students:
+    <strong>{{ success_count }}</strong> succeeded,
+    <strong>{{ fail_count }}</strong> failed,
+    <strong>{{ skip_count }}</strong> skipped.
+</div>
+
+{% if results %}
+<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+<thead>
+<tr>
+    <th style="padding: 6px 10px; border: 1px solid #ddd; background-color: #f5f5f5;">Student</th>
+    <th style="padding: 6px 10px; border: 1px solid #ddd; background-color: #f5f5f5;">ID</th>
+    <th style="padding: 6px 10px; border: 1px solid #ddd; background-color: #f5f5f5;">Status</th>
+    <th style="padding: 6px 10px; border: 1px solid #ddd; background-color: #f5f5f5;">Details</th>
+</tr>
+</thead>
+<tbody>
+{% for entry in results %}
+<tr>
+    <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ entry.name }}</td>
+    <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ entry.user_id }}</td>
+    <td style="padding: 6px 10px; border: 1px solid #ddd;">
+        {% if entry.status == "ok" %}
+            <span class="label label-success">OK</span>
+        {% elif entry.status == "skip" %}
+            <span class="label label-warning">Skipped</span>
+        {% elif entry.status == "conflict" %}
+            <span class="label label-important">Conflict</span>
+        {% elif entry.status == "full" %}
+            <span class="label label-important">Full</span>
+        {% endif %}
+    </td>
+    <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ entry.detail }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}
