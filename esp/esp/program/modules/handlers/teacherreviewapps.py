@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, aux_call
 from esp.middleware.esperrormiddleware import ESPError
-from esp.program.modules import module_ext
+from esp.program.modules import program_settings
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
@@ -129,7 +129,7 @@ class TeacherReviewApps(ProgramModuleObj):
         """ Edit the subject-specific questions that students will respond to on
         their applications. """
         subjects = request.user.getTaughtClasses(prog)
-        clrmi = module_ext.ClassRegModuleInfo.objects.get(program=self.program)
+        clrmi = program_settings.ClassRegModuleInfo.objects.get(program=self.program)
         question_list = []
 
         #   Provide forms to modify existing questions, and also blank forms for new questions
@@ -246,7 +246,7 @@ class TeacherReviewApps(ProgramModuleObj):
                                    'form': form})
 
     def prepare(self, context):
-        clrmi = module_ext.ClassRegModuleInfo.objects.get(program=self.program)
+        clrmi = program_settings.ClassRegModuleInfo.objects.get(program=self.program)
         context['num_teacher_questions'] = clrmi.num_teacher_questions;
         context['classes'] = get_current_request().user.getTaughtClasses().filter(parent_program = self.program)
         return context

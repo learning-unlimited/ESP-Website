@@ -172,7 +172,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             giving them the option of printing a confirmation            """
         self.request = request
 
-        from esp.program.modules.module_ext import DBReceipt
+        from esp.program.modules.program_settings import DBReceipt
         from esp.program.modules.forms.admincore import get_template_source
 
         user = request.user
@@ -247,7 +247,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def cancelreg(self, request, tl, one, two, module, extra, prog):
         self.request = request
 
-        from esp.program.modules.module_ext import DBReceipt
+        from esp.program.modules.program_settings import DBReceipt
 
         # Block cancellation only if the user has made an actual payment via credit card.
         from esp.accounting.controllers import IndividualAccountingController
