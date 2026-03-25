@@ -433,7 +433,7 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(iac.amount_due(), 0)
 
     def test_finaid_uses_model_form_field_assignment(self):
-        student = random.choice(self.students)
+        student = self.students[0]
         FinancialAidRequest.objects.create(user=student, program=self.program)
         field = FinancialAidRequest._meta.get_field('household_income')
 
