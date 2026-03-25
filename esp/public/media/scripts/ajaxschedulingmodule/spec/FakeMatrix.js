@@ -2,6 +2,7 @@
 // These stubs allow the test suite to run without the production page context.
 var contiguous_tolerance = "0";
 var has_moderator_module = "False";
+var has_autoscheduler_frontend = "False";
 var prog_id = "TestProgram/2020";
 
 function generateFakeMatrix(){

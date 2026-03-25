@@ -153,7 +153,7 @@ describe("SectionsSpec", function() {
             sections.scheduleSectionLocal(sections.getById(2), "room-2", [5]);
             expect(cell1.addSection).toHaveBeenCalledWith(sections.getById(2));
             expect(cell2.addSection).not.toHaveBeenCalledWith(sections.getById(2));
-            expect(sections.scheduleAssignments[2]).toEqual({room_name: "room-2", timeslots: [5], id: 2});
+            expect(sections.scheduleAssignments[2]).toEqual({room_id: "room-2", timeslots: [5], id: 2});
         });
 
         it("unschedules the class from the old location", function(){
@@ -161,7 +161,7 @@ describe("SectionsSpec", function() {
             spyOn(cell, 'removeSection');
             sections.scheduleSectionLocal(sections.getById(1), "room-2", [5]);
             expect(cell.removeSection).toHaveBeenCalled();
-            expect(sections.scheduleAssignments[1]).toEqual({room_name: "room-2", timeslots: [5], id: 1});
+            expect(sections.scheduleAssignments[1]).toEqual({room_id: "room-2", timeslots: [5], id: 1});
         });
 
         describe("when the class is already scheduled in the same spot", function(){
@@ -205,9 +205,9 @@ describe("SectionsSpec", function() {
         });
 
         it("modifies the schedule_assignments data structure", function(){
-            expect(sections.scheduleAssignments[1]).toEqual({room_name: "room-1", timeslots: [3], id: 1});
+            expect(sections.scheduleAssignments[1]).toEqual({room_id: "room-1", timeslots: [3], id: 1});
             sections.unscheduleSectionLocal(sections.getById(1));
-            expect(sections.scheduleAssignments[1]).toEqual({room_name: null, timeslots: [], id: 1});
+            expect(sections.scheduleAssignments[1]).toEqual({room_id: null, timeslots: [], id: 1});
         });
     });
 
