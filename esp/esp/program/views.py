@@ -910,7 +910,7 @@ def manage_pages(request):
                 #   Handle submission of bulk move form
                 if form.is_valid():
                     form.save_data()
-                    return HttpResponseRedirect('/manage/pages')
+                    return HttpResponseRedirect(reverse('manage_pages'))
 
             #   Create and display the form
             qsd_id_list = []
@@ -939,7 +939,7 @@ def manage_pages(request):
                 for q in all_qsds:
                     q.disabled = True
                     q.save()
-        return HttpResponseRedirect('/manage/pages')
+        return HttpResponseRedirect(reverse('manage_pages'))
 
     elif 'cmd' in request.GET:
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])
