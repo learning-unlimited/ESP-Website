@@ -141,7 +141,15 @@ class ClassCreationController(object):
                 cls.status = ClassStatus.DRAFT
                 # Set required NOT-NULL field defaults so cls.save()
                 # succeeds even if the POST data omits them.
-                cls.category = ClassCategories.objects.first()
+                if action == 'createopenclass':
+                    # For open-class drafts, default to the program's open-class category.
+                    default_category = open_cat
+                else:
+                    # For normal drafts, prefer any existing category.
+                    default_category = ClassCategories.objects.first()
+                if default_category is None or not default_category.pk:
+                    raise ESPError("No class categories are configured; unable to create a draft class.", log=False)
+                cls.category = default_category
                 cls.grade_min = self.program.grade_min
                 cls.grade_max = self.program.grade_max
         else:  # edit actions
@@ -369,17 +377,18 @@ class ClassCreationController(object):
 
         for i in range(total_forms):
             resource_type_id = reg_data.get(f'request-{i}-resource_type')
-            desired_value = reg_data.get(f'request-{i}-desired_value')
+            desired_values = reg_data.getlist(f'request-{i}-desired_value')
 
-            if resource_type_id and desired_value:
+            if resource_type_id and desired_values:
                 try:
                     resource_type = ResourceType.objects.get(id=int(resource_type_id))
                     for section in cls.sections.all():
-                        rr = ResourceRequest()
-                        rr.target = section
-                        rr.res_type = resource_type
-                        rr.desired_value = desired_value
-                        rr.save()
+                        for desired_value in desired_values:
+                            rr = ResourceRequest()
+                            rr.target = section
+                            rr.res_type = resource_type
+                            rr.desired_value = desired_value
+                            rr.save()
                 except (ResourceType.DoesNotExist, ValueError):
                     continue
 

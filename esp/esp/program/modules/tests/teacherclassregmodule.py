@@ -211,13 +211,13 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Reject a class from self.teacher, approve a class from self.other_teacher1, make a class from self.other_teacher2 proposed
         cls1 = random.choice(self.teacher.getTaughtClasses())
-        cls1.status = -1
+        cls1.status = ClassStatus.REJECTED
         cls1.save()
         cls2 = random.choice(self.other_teacher1.getTaughtClasses())
-        cls2.status = 1
+        cls2.status = ClassStatus.ACCEPTED
         cls2.save()
         cls3 = random.choice(self.other_teacher2.getTaughtClasses())
-        cls3.status = 0
+        cls3.status = ClassStatus.UNREVIEWED
         cls3.save()
         # Check them
         d = self.moduleobj.teachers()

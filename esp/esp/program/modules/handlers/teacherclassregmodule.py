@@ -861,7 +861,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     if action not in ('create', 'createopenclass'):
                         if newclass is None or newclass.status != ClassStatus.DRAFT:
                             raise ESPError(
-                                "Draft saving is only available when creating a new class.",
+                                "Draft saving is only available when creating a new class or editing a class in draft status.",
                                 log=False)
                     newclass = ccc.save_class_draft(request.user, request.POST, extra, action)
                     # For drafts, return to the form with a success message.
