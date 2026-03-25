@@ -158,7 +158,7 @@ class ProgramCreationForm(BetterModelForm):
             if g_min is not None and g_max is not None:
                 if g_min > g_max:
                     # Using the syntax you requested to attach the error to a specific field
-                    self.add_error('grade_max', "The maximum grade must be strictly greater than the minimum grade.")
+                    self.add_error('grade_max', "The maximum grade must be greater than or equal to the minimum grade.")
 
     class Meta:
         fieldsets = [
