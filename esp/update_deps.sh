@@ -40,8 +40,24 @@ then
     rm -rf ${VIRTUALENV_DIR:-$BASEDIR/env} || :
 fi
 
+# Install pip
+# How we add the repository depends on the version of Ubuntu
+if [ $((${UBUNTU_VERSION%.*}+0)) -gt 12 ]
+then
+sudo add-apt-repository universe
+else
+sudo add-apt-repository "deb http://old-releases.ubuntu.com/ubuntu $(lsb_release -sc) universe"
+fi
+
 sudo apt-get update
 xargs sudo apt-get install -y < $BASEDIR/esp/packages_base.txt
+
+if [ $((${UBUNTU_VERSION%.*}+0)) -ge 20 ]
+then
+sudo apt install -y curl
+else
+sudo apt-get install -y curl
+fi
 
 # This nodejs/less installation only works on Ubuntu 16+
 # The versions on the production server don't seem to break anything, so we'll just skip it
@@ -60,23 +76,7 @@ then
     fi
 fi
 
-# Install pip
-# How we add the repository depends on the version of Ubuntu
-if [ $((${UBUNTU_VERSION%.*}+0)) -gt 12 ]
-then
-sudo add-apt-repository universe
-else
-sudo add-apt-repository "deb http://old-releases.ubuntu.com/ubuntu $(lsb_release -sc) universe"
-fi
 
-if [ $((${UBUNTU_VERSION%.*}+0)) -ge 20 ]
-then
-sudo apt update
-sudo apt install -y curl
-else
-sudo apt-get update
-sudo apt-get install -y curl
-fi
 
 # Ensure that the virtualenv exists and is activated.
 if [[ -z "$VIRTUAL_ENV" ]]

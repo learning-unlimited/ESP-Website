@@ -313,9 +313,9 @@ def loaddb(filename=None):
     #   GRANT ALL ON TABLE program_class TO esp;
     #
     # ...which we can then parse to get the user. :D
-    query = "ALTER TABLE public.program_class OWNER TO|GRANT ALL ON TABLE public.program_class TO"
-    contents = run("strings " + env.encfab + "dbdump | grep -E '" + query + "'")
-    pg_owner = contents.split()[-1][:-1]
+    query = "ALTER TABLE public.program_class OWNER TO|GRANT ALL ON TABLE program_class TO| TABLE public program_class "
+    contents = run("{ strings " + env.encfab + "dbdump; pg_restore -l " + env.encfab + "dbdump; } | grep -E '" + query + "' | head -1")
+    pg_owner = contents.split()[-1].rstrip(';')
 
     # Reset the database
     emptydb(pg_owner, interactive=False)
@@ -330,7 +330,12 @@ def loaddb(filename=None):
     # public on CREATE DATABASE. If the dev VM is ever upgraded to PostgreSQL
     # 15+, this DROP will fail with "schema does not exist" and should be
     # removed (or made conditional).
-    sudo("psql -AXqt --dbname=" + pipes.quote(env.dbname) + " -c 'DROP SCHEMA public'", user="postgres")
+    # Only drop if the dump includes CREATE SCHEMA public; some pg_dump versions
+    # omit it for the default schema, in which case nothing would recreate it.
+    with settings(warn_only=True):
+        has_schema_public = run("pg_restore -l " + env.encfab + "dbdump | grep -q ' SCHEMA - public '")
+    if not has_schema_public.failed:
+        sudo("psql -AXqt --dbname=" + pipes.quote(env.dbname) + " -c 'DROP SCHEMA public'", user="postgres")
 
     # Load the database dump using the appropriate command for the format
     if "PostgreSQL custom database dump" in run("file " + env.encfab + "dbdump"):
