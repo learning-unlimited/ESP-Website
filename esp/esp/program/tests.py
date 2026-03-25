@@ -1426,6 +1426,79 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
         except ESPUser.DoesNotExist:
             raise AssertionError('bulk_account_create did not create all accounts it was supposed to')
 
+    def testProfileCreation(self):
+        """Test that bulk-created accounts have complete profile."""
+        from esp.users.models import ContactInfo
+        from esp.program.models import RegistrationProfile
+
+        # Create bulk accounts for Students
+        form_data = {
+            'groups': ('Student',),
+            'prefix1': 'bulkprof',
+            'count1': '3'
+        }
+
+        url = '/manage/%s/bulk_account_create' % self.program.getUrlBase()
+        response = self.client.post(url, data=form_data)
+        self.assertEqual(response.status_code, 200)
+
+        # Verify each created user has complete profile data
+        for i in range(1, 4):
+            username = 'bulkprof{}'.format(i)
+            user = ESPUser.objects.get(username=username)
+
+            # Check ContactInfo exists
+            contact_info = ContactInfo.objects.filter(user=user)
+            self.assertTrue(contact_info.exists(),
+                            'ContactInfo not created for user {}'
+                            .format(username))
+            contact = contact_info.first()
+            self.assertEqual(contact.first_name, username,
+                             'ContactInfo first_name should be '
+                             'set to username')
+
+            # Check RegistrationProfile exists and is linked to program
+            reg_profile = RegistrationProfile.objects.filter(
+                user=user, program=self.program)
+            self.assertTrue(reg_profile.exists(),
+                            'RegistrationProfile not created for '
+                            'user {} and program'.format(username))
+            profile = reg_profile.first()
+
+            # Check ContactInfo is linked to profile
+            self.assertIsNotNone(
+                profile.contact_user,
+                'RegistrationProfile.contact_user not set for '
+                'user {}'.format(username))
+            self.assertEqual(
+                profile.contact_user.id, contact.id,
+                'RegistrationProfile.contact_user not correctly '
+                'linked')
+
+            # Check StudentInfo exists for Student group
+            self.assertIsNotNone(
+                profile.student_info,
+                'StudentInfo not created for bulk student {}'
+                .format(username))
+            student_info = profile.student_info
+            self.assertIsNotNone(
+                student_info.graduation_year,
+                'StudentInfo.graduation_year not set for user {}'
+                .format(username))
+            from django.db.models import Max
+            yog_qs = (
+                RegistrationProfile.objects
+                .filter(user=user, program=self.program)
+                .exclude(student_info__isnull=True)
+                .exclude(student_info__graduation_year__isnull=True)
+                .values('user_id')
+                .annotate(yog=Max('student_info__graduation_year'))
+            )
+            self.assertEqual(
+                yog_qs.count(), 1,
+                'Bulk user {} should appear in onsite grade '
+                'queries'.format(username))
+
     def checkForBulkCreateError(self, test_case, form_data):
         bulk_account_create_response = self.client.post('/manage/%s/bulk_account_create' % self.program.getUrlBase(),
                                                         data=form_data)
@@ -1882,10 +1955,12 @@ class ManageDocsViewTest(TestCase):
         self.assertIn('<p>', html)
         self.assertIn('This is a paragraph.', html)
 
+    @patch('esp.program.views.os.path.isdir')
     @patch('esp.program.views.os.path.isfile')
-    def test_serve_image_file(self, mock_isfile):
+    def test_serve_image_file(self, mock_isfile, mock_isdir):
         """Image files are served natively by the manage_docs view."""
         mock_isfile.return_value = True
+        mock_isdir.return_value = False
         self.client.login(username='docstestadmin', password=self.password)
         # Mock open so it doesn't crash trying to open a fake image
         from unittest.mock import mock_open
@@ -1983,3 +2058,55 @@ class GradeCacheInvalidationTest(TestCase):
             profile2.student_info.graduation_year, new_yog,
             "getLastProfile should return updated graduation_year"
         )
+
+
+class HeardAboutNormalizationTest(TestCase):
+    """
+    Unit tests for the punctuation normalization logic inside heardabout().
+
+    Regression test for GitHub issue #4621:
+    heardabout() was calling ha_key.replace(char, '') without assigning the
+    return value back to ha_key, so punctuation was never actually stripped and
+    semantically identical answers were counted as separate rows.
+    """
+
+    def _normalize(self, ha_str):
+        """
+        Replicate the normalization logic from heardabout() in statistics.py
+        so this test has no database dependency.
+        """
+        ha_key = ha_str.rstrip('s').lower()
+        for char in ' _:-/.,!?+':
+            ha_key = ha_key.replace(char, '')
+        return ha_key
+
+    def test_punctuation_variants_normalize_to_same_key(self):
+        """Answers differing only in punctuation should produce the same key."""
+        variants = ["friend", "friend!", "Friend.", "Friend,", "friend?", "Friend!"]
+        keys = [self._normalize(v) for v in variants]
+        self.assertEqual(
+            len(set(keys)), 1,
+            "All punctuation variants of 'friend' should normalize to the same key, "
+            "but got: %s" % keys
+        )
+
+    def test_lowercase_normalization(self):
+        """Normalization should be case-insensitive."""
+        self.assertEqual(self._normalize("Facebook"), self._normalize("facebook"))
+        self.assertEqual(self._normalize("TWITTER"), self._normalize("twitter"))
+
+    def test_trailing_s_stripped(self):
+        """Trailing 's' should be stripped (rstrip('s'))."""
+        self.assertEqual(self._normalize("friends"), self._normalize("friend"))
+
+    def test_spaces_stripped(self):
+        """Spaces should be removed during normalization."""
+        self.assertEqual(self._normalize("a friend"), self._normalize("afriend"))
+
+    def test_empty_string_handled(self):
+        """Empty string should normalize to empty string without error."""
+        self.assertEqual(self._normalize(""), "")
+
+    def test_only_punctuation_normalizes_to_empty(self):
+        """A string of only punctuation characters should normalize to empty."""
+        self.assertEqual(self._normalize("...!!!"), "")

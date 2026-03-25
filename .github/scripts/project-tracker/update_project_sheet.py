@@ -295,12 +295,48 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
     return rows
 
 
+def fetch_pr_counts(logins: list[str], search_filter: str) -> dict[str, int]:
+    """
+    Fetch PR counts per contributor for an arbitrary search filter using
+    batched GraphQL search queries (up to 20 per request).
+
+    *search_filter* is appended after ``repo:… is:pr author:{login}``,
+    e.g. ``"is:merged"`` or ``"is:closed is:unmerged"``.
+    """
+    counts: dict[str, int] = {}
+    batch_size = 20
+
+    for i in range(0, len(logins), batch_size):
+        batch = logins[i : i + batch_size]
+        fragments = []
+        for j, login in enumerate(batch):
+            q = (
+                f"repo:{REPO_OWNER}/{REPO_NAME} is:pr "
+                f"author:{login} {search_filter}"
+            )
+            fragments.append(
+                f'u{j}: search(query: "{q}", type: ISSUE) {{ issueCount }}'
+            )
+        query = "query {\n" + "\n".join(fragments) + "\n}"
+        data = graphql(query)
+        for j, login in enumerate(batch):
+            counts[login] = data[f"u{j}"]["issueCount"]
+
+    return counts
+
+
+def link_count(url: str, count: int) -> str:
+    """Google Sheets HYPERLINK formula displaying a count."""
+    return f'=HYPERLINK("{url}", {count})'
+
+
 def build_contributor_rows(
     prs: list[dict], issues: list[dict]
 ) -> list[list[str]]:
     """Build the rows for the Contributor Activity sheet."""
     header = [
-        "Contributor", "Open PRs", "Assigned Open Issues", "Last Activity",
+        "Contributor", "Open PRs", "Merged PRs", "Closed PRs",
+        "Assigned Open Issues", "Last Activity",
     ]
 
     activity: dict[str, dict] = defaultdict(
@@ -320,13 +356,30 @@ def build_contributor_rows(
             if issue["updatedAt"] > activity[login]["last_activity"]:
                 activity[login]["last_activity"] = issue["updatedAt"]
 
+    # Fetch merged and closed (unmerged) PR counts in batched queries
+    all_logins = list(activity.keys())
+    merged_counts = fetch_pr_counts(all_logins, "is:merged")
+    closed_counts = fetch_pr_counts(all_logins, "is:closed is:unmerged")
+
     rows = [header]
     for login in sorted(activity, key=lambda k: activity[k]["open_prs"], reverse=True):
         info = activity[login]
+        open_pr_url = f"{REPO_URL}/pulls/{login}"
+        merged_pr_url = (
+            f"{REPO_URL}/pulls?q=is%3Apr+is%3Amerged+author%3A{login}"
+        )
+        closed_pr_url = (
+            f"{REPO_URL}/pulls?q=is%3Apr+is%3Aclosed+is%3Aunmerged+author%3A{login}"
+        )
+        issues_url = (
+            f"{REPO_URL}/issues?q=is%3Aissue%20state%3Aopen%20assignee%3A{login}"
+        )
         rows.append([
             link_profile(login),
-            info["open_prs"],
-            info["assigned_issues"],
+            link_count(open_pr_url, info["open_prs"]),
+            link_count(merged_pr_url, merged_counts.get(login, 0)),
+            link_count(closed_pr_url, closed_counts.get(login, 0)),
+            link_count(issues_url, info["assigned_issues"]),
             fmt_time(info["last_activity"]),
         ])
 

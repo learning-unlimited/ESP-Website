@@ -12,7 +12,7 @@ from esp.tagdict import all_global_tags, all_program_tags
 # aseering 3/23/2010
 # This model is based on the sample "TaggedItem" model from the Django
 # documentation, as described at
-# http://www.djangoproject.com/documentation/models/generic_relations/
+# https://www.djangoproject.com/documentation/models/generic_relations/
 
 class Tag(models.Model):
     """A tag on an item."""
@@ -35,7 +35,7 @@ class Tag(models.Model):
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
 
     def __str__(self):
-        return "%s: %s (%s)" % (self.key, self.value, self.target)
+        return f"{self.key}: {self.value} ({self.target})"
 
     EMPTY_TAG = " "
 
@@ -187,6 +187,30 @@ class Tag(models.Model):
             tag.save()
 
         return tag.value
+
+    @classmethod
+    def get_nondefault_program_tags(cls, program):
+        """
+        Return a list of dicts describing tags that have been explicitly set for
+        the given program (i.e., Tag rows exist with that program as the target
+        and the key is in all_program_tags with is_setting=True).
+
+        Each dict has keys: 'key', 'value', 'help_text'.
+        """
+        ct = ContentType.objects.get_for_model(program)
+        program_tag_rows = cls.objects.filter(content_type=ct, object_id=program.id)
+        result = []
+        for tag in program_tag_rows:
+            if tag.key in all_program_tags and all_program_tags[tag.key].get('is_setting', False):
+                default = all_program_tags[tag.key].get('default')
+                if default is not None and tag.value == str(default):
+                    continue
+                result.append({
+                    'key': tag.key,
+                    'value': tag.value,
+                    'help_text': all_program_tags[tag.key].get('help_text', ''),
+                })
+        return result
 
     @classmethod
     def unSetTag(cls, key, target=None):

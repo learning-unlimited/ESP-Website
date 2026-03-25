@@ -2364,8 +2364,14 @@ the specific language governing permissions and limitations under the Apache Lic
             var opts = this.parent.prepareOpts.apply(this, arguments),
                 self=this;
 
-            // TODO validate placeholder is a string if specified
-
+            
+            if (opts.placeholder != null && typeof opts.placeholder !== 'string') {
+                if (typeof console !== "undefined" && console && typeof console.error === "function") {
+                    console.error("Select2: placeholder must be a string");
+                }
+                delete opts.placeholder;
+            }
+            
             if (opts.element.get(0).tagName.toLowerCase() === "select") {
                 // install sthe selection initializer
                 opts.initSelection = function (element, callback) {
