@@ -52,3 +52,20 @@ from esp.program.modules.tests.classsearchmodule import ClassSearchModuleTest
 from esp.program.modules.tests.auth import ProgramModuleAuthTest
 from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest
 from esp.program.modules.tests.testallviews import AllViewsTest
+from esp.program.modules.tests.equityoutreach import EquityOutreachTest
+from esp.program.modules.tests.admintestingmodule import AdminTestingModuleTest
+from esp.program.modules.tests.batchclassregmodule import BatchClassRegModuleTest
+from esp.program.modules.tests.formstackappmodule import FormstackAppModuleTest
+from esp.program.modules.tests.test_creditcard_required import (
+    CreditCardRequiredTest, CreditCardCybersourceRequiredTest, CreditCardSelfBlockingTest
+)
+from esp.program.modules.tests.test_class_creation import (
+    MakeAClassViewTest,
+    ClassStatusOnEditTest,
+    ClassTeacherListTest,
+    ClassFormValidationTest,
+    TeacherAvailabilityConsistencyTest,
+)
+from esp.program.modules.tests.resolve_user import ResolveUserTest
+from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest
+from esp.program.modules.tests.test_enrolled_split import EnrolledSplitViewTest

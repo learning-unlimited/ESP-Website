@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.conf import settings
+from pathlib import Path
 
 import os
 
@@ -78,4 +79,4 @@ class Command(BaseCommand):
         call_command('collectstatic', clear = options["clear"], no_input = options["no_input"], verbosity = verbosity)
         call_command('recompile_theme', verbosity = verbosity)
         call_command('flushcache', verbosity = verbosity)
-        os.system("touch " + file)
+        Path(file).touch()
