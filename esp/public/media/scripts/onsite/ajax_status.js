@@ -531,6 +531,7 @@ function unlock_schedule() {
 function add_student(student_id, section_id, size_override)
 {
     if (!lock_schedule()) {
+        console.warn("Warning: schedule locked, refusing to add section " + section_id);
         return;
     }
     disable_checkboxes();
@@ -568,6 +569,7 @@ function add_student(student_id, section_id, size_override)
 function remove_student(student_id, section_id)
 {
     if (!lock_schedule()) {
+        console.warn("Warning: schedule locked, refusing to remove section " + section_id);
         return;
     }
     disable_checkboxes();
@@ -633,16 +635,8 @@ function register_student(student_id, dialog)
                 }
             },
 
-            error: function () {
-                // On failure, remove the placeholder student entry and
-                // restore the dialog so the user can retry or cancel.
-                if (data.students && data.students[student_id]) {
-                    delete data.students[student_id];
-                }
-                // Re-enable the register button in case it was disabled.
-                $j("#dialog-confirm-button-register").button("enable");
-                // Provide basic user-visible feedback about the failure.
-                window.alert("Registration failed due to a network or server error. Please try again.");
+            error: function (result) {
+                console.log(result);
             }
     });
 }
@@ -738,6 +732,10 @@ function autocomplete_select_item(event, ui)
             set_current_student(parseInt(student_id));
         }
         
+    }    
+    else
+    {
+        console.log("Invalid student selected: " + student_id);
     }
 }
 
@@ -1308,7 +1306,9 @@ function populate_counts()
         var num_students_attending = data.counts[i][2];
 
         //  If we have a conflict, assume the larger number of students are enrolled.
-        if (data.sections[sec_id]) {
+        if (!data.sections[sec_id])
+            console.warn("Could not find section " + sec_id);
+        else {
             data.sections[sec_id].num_students_attending = num_students_attending;
             if (data.sections[sec_id].num_students_enrolled != num_students)
             {
@@ -1328,7 +1328,9 @@ function populate_full()
         var sec_id = data.full[i][0];
         var full = data.full[i][1];
 
-        if (data.sections[sec_id]) {
+        if (!data.sections[sec_id])
+            console.warn("Could not find section " + sec_id);
+        else {
             data.sections[sec_id].full = full;
         }
     }
