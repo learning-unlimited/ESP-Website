@@ -462,13 +462,51 @@ class IndividualAccountingController(ProgramAccountingController):
 
         # Reconcile Transfers with what's listed in the identifier. Note that
         # any exception will roll back the entire transaction.
-        transfer_total = 0
+        parsed_items = []
+        line_item_ids = set()
         for item in transfer_list.split(';'):
             line_item_id, saved_amount = item.split(',')
-            transfer = Transfer.objects.get(
-                user=iac.user,
-                line_item__id=int(line_item_id),
-            )
+            line_item_id = int(line_item_id)
+            parsed_items.append((line_item_id, saved_amount))
+            line_item_ids.add(line_item_id)
+
+        candidate_transfers = Transfer.objects.filter(
+            user=iac.user,
+            line_item__id__in=line_item_ids,
+        ).select_related('line_item').order_by('id')
+
+        transfers_by_line_item = {}
+        for transfer in candidate_transfers:
+            transfers_by_line_item.setdefault(transfer.line_item_id, []).append(transfer)
+
+        consumed_transfer_ids = set()
+        transfer_total = 0
+        for line_item_id, saved_amount in parsed_items:
+            available_candidates = []
+            for candidate in transfers_by_line_item.get(line_item_id, []):
+                if candidate.id in consumed_transfer_ids:
+                    continue
+                if candidate.paid_in:
+                    continue
+                available_candidates.append(candidate)
+
+            transfer = None
+            if trusted:
+                if available_candidates:
+                    transfer = available_candidates[0]
+            else:
+                for candidate in available_candidates:
+                    if '%.2f' % candidate.amount == saved_amount:
+                        transfer = candidate
+                        break
+                if transfer is None and available_candidates:
+                    transfer = available_candidates[0]
+
+            if transfer is None:
+                raise ReconciliationError(
+                    f"Failed on processing line item type {line_item_id}: no unpaid transfer found")
+
+            consumed_transfer_ids.add(transfer.id)
 
             # This case is rare, since it's unusual to change the program of a
             # Line Item Type after it's been created.
