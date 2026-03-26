@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.core import serializers
 from django.http import HttpResponse
+from django.http import HttpResponseForbidden
 import json
 
 _AUTOCOMPLETE_MODEL_ALLOWLIST = None
@@ -16,17 +17,23 @@ def _get_autocomplete_allowlist():
     )
     from esp.program.models.class_ import ClassSubject, ClassSection
 
+    models = [
+        ESPUser,
+        K12School,
+        ContactInfo,
+        StudentInfo,
+        TeacherInfo,
+        GuardianInfo,
+        EducatorInfo,
+        ClassSubject,
+        ClassSection,
+    ]
+
     _AUTOCOMPLETE_MODEL_ALLOWLIST = {
-        ('esp.users.models', 'ESPUser'):       ESPUser,
-        ('esp.users.models', 'K12School'):     K12School,
-        ('esp.users.models', 'ContactInfo'):   ContactInfo,
-        ('esp.users.models', 'StudentInfo'):   StudentInfo,
-        ('esp.users.models', 'TeacherInfo'):   TeacherInfo,
-        ('esp.users.models', 'GuardianInfo'):  GuardianInfo,
-        ('esp.users.models', 'EducatorInfo'):  EducatorInfo,
-        ('esp.program.models.class_', 'ClassSubject'): ClassSubject,
-        ('esp.program.models.class_', 'ClassSection'): ClassSection,
+        (model.__module__, model.__name__): model
+        for model in models
     }
+
     return _AUTOCOMPLETE_MODEL_ALLOWLIST
 
 
@@ -46,7 +53,7 @@ def ajax_autocomplete(request):
     AjaxForeignKey, and return the data for the autocompletion.
     """
     try:
-        limit = min(int(request.GET.get('limit', 10)), 50)
+        limit = max(0, min(int(request.GET.get('limit', 10)), 50))
         model_module = request.GET['model_module']
         model_name   = request.GET['model_name']
         ajax_func    = request.GET.get('ajax_func', 'ajax_autocomplete')
@@ -62,9 +69,7 @@ def ajax_autocomplete(request):
     # Resolve the model from the explicit allowlist — never via __import__.
     Model = _get_autocomplete_allowlist().get((model_module, model_name))
     if Model is None:
-        response = HttpResponse('Not allowed')
-        response.status_code = 403
-        return response
+        return HttpResponseForbidden('Not allowed')
 
     from esp.program.models import Program
     try:
