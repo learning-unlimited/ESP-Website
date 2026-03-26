@@ -1,12 +1,13 @@
-/**
- * Dynamic Dark Mode Accessibility Engine
- * Zero-config setup leveraging data-bs-theme
- */
 (function() {
     const STORAGE_KEY = 'esp-theme-preference';
 
     const getPreferredTheme = () => {
-        const storedTheme = localStorage.getItem(STORAGE_KEY);
+        let storedTheme = null;
+        try {
+            storedTheme = localStorage.getItem(STORAGE_KEY);
+        } catch (e) {
+            // storage blocked
+        }
         if (storedTheme) {
             return storedTheme;
         }
@@ -25,20 +26,33 @@
 
     // Listen for OS changes
     if (window.matchMedia) {
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            const storedTheme = localStorage.getItem(STORAGE_KEY);
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleColorSchemeChange = () => {
+            let storedTheme = null;
+            try {
+                storedTheme = localStorage.getItem(STORAGE_KEY);
+            } catch (e) {}
             if (storedTheme !== 'light' && storedTheme !== 'dark') {
                 setTheme(getPreferredTheme());
             }
-        });
+        };
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', handleColorSchemeChange);
+        } else if (typeof mediaQuery.addListener === 'function') {
+            mediaQuery.addListener(handleColorSchemeChange);
+        }
     }
-
     // Expose engine to other scripts
     window.ESPThemeEngine = {
         toggleTheme: () => {
             const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            localStorage.setItem(STORAGE_KEY, newTheme);
+
+            try {
+                localStorage.setItem(STORAGE_KEY, newTheme);
+            } catch (e) {
+                // ignore
+            }
             setTheme(newTheme);
             return newTheme;
         },
