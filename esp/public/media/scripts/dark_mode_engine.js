@@ -38,7 +38,12 @@
         toggleTheme: () => {
             const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            localStorage.setItem(STORAGE_KEY, newTheme);
+            try {
+                localStorage.setItem(STORAGE_KEY, newTheme);
+            } catch (e) {
+                // If persistence fails (e.g., quota exceeded or storage disabled),
+                // continue applying the theme without storing the preference.
+            }
             setTheme(newTheme);
             return newTheme;
         },
