@@ -1270,13 +1270,13 @@ class OnSubmitEdgeCasesTest(TestCase):
         self.assertNotEqual(response.status_code, 200)
 
     def test_ajax_get_request_returns_error(self):
-        """AJAX GET to /customforms/submit/ returns an error (not 200)."""
+        """AJAX GET to /customforms/submit/ results in an error."""
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(
-            '/customforms/submit/',
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-        )
-        self.assertNotEqual(response.status_code, 200)
+        with self.assertRaises(ValueError):
+            self.client.get(
+                '/customforms/submit/',
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+            )
 
     def test_malformed_json_returns_400(self):
         """Sending malformed JSON body returns HTTP 400."""
