@@ -4,11 +4,12 @@ button (#1166) and minimum class requirement (#2535) features.
 """
 
 import random
+import json
 
 from django.core import mail
 
 from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
-from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.program.modules.base import CoreModule, ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.users.models import Record, RecordType
@@ -72,6 +73,10 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             user=student, section=section, relationship=reg_type).delete()
         StudentRegistration.objects.create(
             user=student, section=section, relationship=reg_type)
+
+    def _save_priorities_request(self, timeslot, priorities):
+        """Helper: build the save_priorities payload for one timeslot."""
+        return {'json_data': json.dumps({str(timeslot.id): priorities})}
 
     # ---------------------------------------------------------------
     # Test: Main registration page loads
@@ -401,6 +406,21 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 400)
 
+    def test_mark_classes_interested_wrong_shape_returns_400(self):
+        """Non-list interested/not_interested values should return 400."""
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        response = self.client.post(
+            '/learn/%s/mark_classes_interested' % self.program.getUrlBase(),
+            {'json_data': json.dumps({
+                'interested': 'not-a-list',
+                'not_interested': [],
+            })},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+
     # ---------------------------------------------------------------
     # Tests: Module helper methods (isCompleted, students, studentDesc)
     # ---------------------------------------------------------------
@@ -547,7 +567,6 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
 
     def test_save_priorities_bad_format(self):
         """Mis-formatted json_data in save_priorities should return 400."""
-        import json as json_module
         student = random.choice(self.students)
         self.assertTrue(
             self.client.login(username=student.username, password='password'))
@@ -555,9 +574,43 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         # Multiple timeslot keys (should be exactly one)
         response = self.client.post(
             '/learn/%s/save_priorities' % self.program.getUrlBase(),
-            {'json_data': json_module.dumps({'1': {}, '2': {}})})
+            {'json_data': json.dumps({'1': {}, '2': {}})})
         self.assertEqual(response.status_code, 400)
 
+    def test_save_priorities_empty_priorities_dict_noop(self):
+        """Empty priorities map should no-op and still return goToCore."""
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        # Snapshot registrations for this student before calling save_priorities.
+        registrations_before = list(
+            StudentRegistration.objects.filter(user=student).values_list('id', flat=True)
+        )
+
+        timeslot = self.program.getTimeSlots()[0]
+        response = self.client.post(
+            '/learn/%s/save_priorities' % self.program.getUrlBase(),
+            self._save_priorities_request(timeslot, {}),
+        )
+
+        # Should redirect to the active core module URL.
+        self.assertEqual(response.status_code, 302)
+        core_url = next(
+            mod.get_full_path()
+            for mod in self.program.getModules(student, 'learn')
+            if isinstance(mod, CoreModule)
+        )
+        self.assertEqual(
+            response['Location'],
+            core_url,
+        )
+
+        # Empty priorities must not create, delete, or otherwise change registrations.
+        registrations_after = list(
+            StudentRegistration.objects.filter(user=student).values_list('id', flat=True)
+        )
+        self.assertEqual(sorted(registrations_before), sorted(registrations_after))
     # ---------------------------------------------------------------
     # Tests: Module properties
     # ---------------------------------------------------------------
