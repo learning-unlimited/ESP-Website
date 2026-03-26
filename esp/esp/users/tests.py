@@ -5,6 +5,7 @@ from django import forms
 from django.core import mail
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import Group
+from django.test import TestCase
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
@@ -141,31 +142,62 @@ class ESPUserTest(TestCase):
                 user.delete()
 
     def testUnsubscribeOneclickVulnerability(self):
-        """Test that one-click unsubscribe requires a valid token."""
+        """Test that one-click unsubscribe requires a valid token and handles edge cases."""
         user = ESPUser.objects.create(username='vuln_test_user', is_active=True)
+        user.set_password('password123')
+        user.save()
+        other_user = ESPUser.objects.create(username='other_test_user', is_active=True)
+        other_user.set_password('password123')
+        other_user.save()
+
         try:
+            # extract valid token
+            link = user.unsubscribe_link()
+            parts = [p for p in link.split('/') if p]
+            valid_token = parts[-1]
             invalid_token = 'invalid-token-123'
             
-            # Send a POST request triggering the one-click logic
+            # check token, if invalid or malformed then request should fail, user remains active
+            with self.assertRaises(ESPError):
+                self.client.post(
+                    reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': invalid_token}),
+                    data={'List-Unsubscribe': 'One-Click'}
+                )
+            user.refresh_from_db()
+            self.assertTrue(user.is_active, "User should remain active if an invalid token is used.")
+            
+            # check logged-in user or token mismatch
+            self.client.login(username=other_user.username, password='password123')
+            with self.assertRaises(ESPError):
+                self.client.post(
+                    reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': valid_token}),
+                    data={'List-Unsubscribe': 'One-Click'}
+                )
+            user.refresh_from_db()
+            self.assertTrue(user.is_active, "User should remain active if a different user attempts the action.")
+            
+            # Logout
+            self.client.logout()
+
+            # check token, if valid then user should be deactivated
             response = self.client.post(
-                reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': invalid_token}),
+                reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': valid_token}),
                 data={'List-Unsubscribe': 'One-Click'}
             )
-            
-            # The request with an invalid token should not succeed with a 2xx status.
-            self.assertFalse(
-                200 <= response.status_code < 300,
-                f"Expected invalid token request to be rejected, got status {response.status_code}",
-            )
-            
-            # Refresh user from database
+            self.assertEqual(response.status_code, 200)
             user.refresh_from_db()
-            
-            # Before the fix: user is deactivated (is_active=False) despite an invalid token.
-            # After the fix: user remains active (is_active=True).
-            self.assertTrue(user.is_active, "VULNERABILITY: User was deactivated despite an invalid token.")
+            self.assertFalse(user.is_active, "User should be deactivated with a valid token.")
+
+            # check token reusage
+            with self.assertRaises(ESPError):
+                self.client.post(
+                    reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': valid_token}),
+                    data={'List-Unsubscribe': 'One-Click'}
+                )
+
         finally:
             user.delete()
+            other_user.delete()
 
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.

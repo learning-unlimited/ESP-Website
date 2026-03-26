@@ -218,7 +218,7 @@ def unsubscribe(request, username, token, oneclick = False):
     if ( (request.user.is_authenticated and request.user == user) or user.check_token(token)):
         # if POSTing, they clicked the confirm button
         # if oneclick=True, then they came here from an email client
-        if request.POST.get("List-Unsubscribe") == "One-Click" or oneclick == True:
+        if request.POST.get("List-Unsubscribe") == "One-Click" or oneclick:
             # "unsubscribe" them (deactivate their account)
             user.is_active = False
             user.save()
