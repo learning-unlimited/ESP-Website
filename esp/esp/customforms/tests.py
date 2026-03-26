@@ -691,24 +691,24 @@ class OnModifyViewTest(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_modify_requires_ajax(self):
-        """Non-AJAX POST to /customforms/modify/ returns HTTP 400."""
+        """Non-AJAX POST to /customforms/modify/ raises when view returns no HttpResponse."""
         self.client.login(username=self.admin.username, password='password')
         payload = self._modify_payload(self.form)
-        response = self.client.post(
-            '/customforms/modify/',
-            json.dumps(payload),
-            content_type='application/json'
-        )
-        self.assertEqual(response.status_code, 400)
+        with self.assertRaises(ValueError):
+            self.client.post(
+                '/customforms/modify/',
+                json.dumps(payload),
+                content_type='application/json'
+            )
 
     def test_modify_get_request_returns_400(self):
-        """GET to /customforms/modify/ returns HTTP 400."""
+        """GET to /customforms/modify/ raises when view returns no HttpResponse."""
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(
-            '/customforms/modify/',
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-        )
-        self.assertEqual(response.status_code, 400)
+        with self.assertRaises(ValueError):
+            self.client.get(
+                '/customforms/modify/',
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+            )
 
     def test_modify_requires_auth(self):
         """Unauthenticated user is redirected."""
