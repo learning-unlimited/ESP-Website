@@ -2796,7 +2796,7 @@ class Permission(ExpirableModel):
                 #not actually a program
                 return False
             if user.isAdmin(prog): return True
-            m2 = re.match("Classes/(.)(\d+)/(.*)", rest)
+            m2 = re.match(r"Classes/(.)(\d+)/(.*)", rest)
             if m2:
                 (code, cls_id, basename) = m2.groups()
                 try:
