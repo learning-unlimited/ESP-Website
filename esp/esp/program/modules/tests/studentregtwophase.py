@@ -583,13 +583,29 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertTrue(
             self.client.login(username=student.username, password='password'))
 
+        # Snapshot registrations for this student before calling save_priorities.
+        registrations_before = list(
+            StudentRegistration.objects.filter(user=student).values_list('id', flat=True)
+        )
+
         timeslot = self.program.getTimeSlots()[0]
         response = self.client.post(
             '/learn/%s/save_priorities' % self.program.getUrlBase(),
             self._save_priorities_request(timeslot, {}),
         )
-        self.assertEqual(response.status_code, 302)
 
+        # Should redirect to the core URL.
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response['Location'],
+            '/learn/%s/core' % self.program.getUrlBase(),
+        )
+
+        # Empty priorities must not create, delete, or otherwise change registrations.
+        registrations_after = list(
+            StudentRegistration.objects.filter(user=student).values_list('id', flat=True)
+        )
+        self.assertEqual(sorted(registrations_before), sorted(registrations_after))
     # ---------------------------------------------------------------
     # Tests: Module properties
     # ---------------------------------------------------------------
