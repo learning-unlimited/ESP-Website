@@ -27,7 +27,9 @@ class TestAutoschedulerFrontendModule(TestCase):
             'autoscheduler_random_string': 'hello'
         })
         
-        response = self.module.autoscheduler_execute(request, 'manage', 'one', 'two', 'module', 'extra', self.prog)
+        # Bypass @needs_admin and @json_response decorators to test only parsing logic
+        undecorated_execute = AutoschedulerFrontendModule.autoscheduler_execute.__wrapped__
+        response = undecorated_execute(self.module, request, 'manage', 'one', 'two', 'module', 'extra', self.prog)
         
         # Verify AutoschedulerController was called with appropriately cast types
         MockController.assert_called_once_with(self.prog, 
@@ -46,7 +48,8 @@ class TestAutoschedulerFrontendModule(TestCase):
             'autoscheduler_data': '{"malformed": json'
         })
         
-        response = self.module.autoscheduler_save(request, 'manage', 'one', 'two', 'module', 'extra', self.prog)
+        undecorated_save = AutoschedulerFrontendModule.autoscheduler_save.__wrapped__
+        response = undecorated_save(self.module, request, 'manage', 'one', 'two', 'module', 'extra', self.prog)
         
         self.assertIn('response', response)
         self.assertEqual(len(response['response']), 1)
@@ -61,6 +64,7 @@ class TestAutoschedulerFrontendModule(TestCase):
             'autoscheduler_data': json.dumps([{}, {}])
         })
         
-        response = self.module.autoscheduler_save(request, 'manage', 'one', 'two', 'module', 'extra', self.prog)
+        undecorated_save = AutoschedulerFrontendModule.autoscheduler_save.__wrapped__
+        response = undecorated_save(self.module, request, 'manage', 'one', 'two', 'module', 'extra', self.prog)
         
         self.assertEqual(response['response'][0]['error_msg'], "Graceful constraint failure")
