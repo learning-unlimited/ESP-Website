@@ -53,8 +53,14 @@ class DraftCreationTestMixin(object):
         self.client = Client()
 
         # Set up resource types for testing in a deterministic way
-        classroom_type, _ = ResourceType.objects.get_or_create(name='Classroom')
-        test_resource_type, _ = ResourceType.objects.get_or_create(name='Test Resource')
+        classroom_type, _ = ResourceType.objects.get_or_create(
+            name='Classroom',
+            defaults={'description': ''},
+        )
+        test_resource_type, _ = ResourceType.objects.get_or_create(
+            name='Test Resource',
+            defaults={'description': ''},
+        )
         self.resource_types = [classroom_type, test_resource_type]
 
     def _make_draft_form_data(self, teacher):

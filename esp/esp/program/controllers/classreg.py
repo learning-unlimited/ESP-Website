@@ -145,8 +145,16 @@ class ClassCreationController(object):
                     # For open-class drafts, default to the program's open-class category.
                     default_category = open_cat
                 else:
-                    # For normal drafts, prefer any existing category.
-                    default_category = ClassCategories.objects.first()
+                    # For normal drafts, prefer a category enabled for this program,
+                    # and only fall back to a global category if the program has none.
+                    try:
+                        prog_categories = self.program.class_categories.all()
+                        default_category = prog_categories.first()
+                    except AttributeError:
+                        # If the program has no class_categories relation, fall back to global.
+                        default_category = None
+                    if default_category is None:
+                        default_category = ClassCategories.objects.first()
                 if default_category is None or not default_category.pk:
                     raise ESPError("No class categories are configured; unable to create a draft class.", log=False)
                 cls.category = default_category
