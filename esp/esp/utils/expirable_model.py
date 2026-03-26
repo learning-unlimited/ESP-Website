@@ -37,7 +37,6 @@ from datetime import datetime
 from django.db import models
 from django.db.models.query import Q
 
-
 class ExpirableModel(models.Model):
     """
     Abstract model which any models requiring start/end and expiry should extend.
@@ -79,3 +78,4 @@ class ExpirableModel(models.Model):
 
     class Meta:
         abstract = True
+

@@ -137,6 +137,7 @@ urlpatterns += [
     re_path(r'^(?P<url>.*)\.html$', esp.qsd.views.qsd, name='qsd_page'),
 ]
 
+
 # QSD Media
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
 urlpatterns += [
