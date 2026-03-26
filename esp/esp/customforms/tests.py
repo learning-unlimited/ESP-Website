@@ -33,10 +33,8 @@ Learning Unlimited, Inc.
 """
 
 import json
-import tempfile
 
 from django.core.exceptions import ValidationError
-from django.core.files.uploadedfile import SimpleUploadedFile
 
 from esp.customforms.models import Form, Field
 from esp.customforms.DynamicModel import DynamicModelHandler
