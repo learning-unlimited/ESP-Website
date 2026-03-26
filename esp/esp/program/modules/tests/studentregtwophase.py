@@ -9,7 +9,7 @@ import json
 from django.core import mail
 
 from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
-from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.program.modules.base import CoreModule, ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.users.models import Record, RecordType
@@ -594,11 +594,16 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             self._save_priorities_request(timeslot, {}),
         )
 
-        # Should redirect to the core URL.
+        # Should redirect to the active core module URL.
         self.assertEqual(response.status_code, 302)
+        core_url = next(
+            mod.get_full_path()
+            for mod in self.program.getModules(student, 'learn')
+            if isinstance(mod, CoreModule)
+        )
         self.assertEqual(
             response['Location'],
-            '/learn/%s/core' % self.program.getUrlBase(),
+            core_url,
         )
 
         # Empty priorities must not create, delete, or otherwise change registrations.
