@@ -215,26 +215,22 @@ class ProgramModuleObj(models.Model):
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
 
-        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module')
-        if len(BaseModuleList) < 1:
-            BaseModule = ProgramModuleObj()
-            BaseModule.program = prog
-            BaseModule.module = mod
-            # If an old program is specified, use the seq and required values from that program
-            old_pmo = ProgramModuleObj.objects.filter(program = old_prog, module = mod)
-            if len(old_pmo) == 1:
-                BaseModule.seq = old_pmo[0].seq
-                BaseModule.required = old_pmo[0].required
-                BaseModule.required_label = old_pmo[0].required_label
-            else:
-                BaseModule.seq = mod.seq
-                BaseModule.required = mod.required
-            BaseModule.save()
+        # Determine defaults from old_prog if available, otherwise fall back to
+        # the module's own defaults.  These are only used when creating a new row.
+        defaults = {'seq': mod.seq, 'required': mod.required}
+        if old_prog is not None:
+            old_pmo = ProgramModuleObj.objects.filter(program=old_prog, module=mod)
+            if old_pmo.count() == 1:
+                defaults['seq'] = old_pmo[0].seq
+                defaults['required'] = old_pmo[0].required
+                defaults['required_label'] = old_pmo[0].required_label
 
-        elif len(BaseModuleList) > 1:
-            assert False, 'Too many module objects!'
-        else:
-            BaseModule = BaseModuleList[0]
+        # Use get_or_create so that concurrent requests never produce duplicate
+        # rows (the unique_together constraint on (program, module) makes this
+        # atomic at the database level, eliminating the previous race condition).
+        BaseModule, _created = ProgramModuleObj.objects.get_or_create(
+            program=prog, module=mod, defaults=defaults
+        )
 
         ModuleObj   = mod.getPythonClass()()
         ModuleObj.__dict__.update(BaseModule.__dict__)
