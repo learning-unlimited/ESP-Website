@@ -255,11 +255,11 @@ def logos(request):
             Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
             _generate_favicon_variants(settings.MEDIA_ROOT + 'images/favicon.ico', settings.MEDIA_ROOT + 'images')
 
-    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "logo\..*\.png")]
-    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "header\..*\.png")]
+    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"logo\..*\.png")]
+    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"header\..*\.png")]
     favicon_paths = tc.list_filenames(
     settings.MEDIA_ROOT + 'images/backups',
-    "favicon\..*\.ico"
+    r"favicon\..*\.ico"
     )
 
     favicon_paths.sort(
