@@ -67,11 +67,13 @@
         // Set initial icon visibility
         updateIcons(window.ESPThemeEngine.getCurrentTheme());
 
-        // Watch for programmatic theme changes
-        const observer = new MutationObserver(() => {
-            updateIcons(window.ESPThemeEngine.getCurrentTheme());
-        });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+        // Watch for programmatic theme changes, if supported
+        if (typeof MutationObserver !== 'undefined') {
+            const observer = new MutationObserver(() => {
+                updateIcons(window.ESPThemeEngine.getCurrentTheme());
+            });
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+        }
 
         // Bind clicks for all buttons with class 'dark-mode-toggle'
         document.querySelectorAll('.dark-mode-toggle').forEach(btn => {
