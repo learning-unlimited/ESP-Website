@@ -25,12 +25,19 @@
 
     // Listen for OS changes
     if (window.matchMedia) {
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleColorSchemeChange = () => {
             const storedTheme = localStorage.getItem(STORAGE_KEY);
             if (storedTheme !== 'light' && storedTheme !== 'dark') {
                 setTheme(getPreferredTheme());
             }
-        });
+        };
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', handleColorSchemeChange);
+        } else if (typeof mediaQuery.addListener === 'function') {
+            mediaQuery.addListener(handleColorSchemeChange);
+        }
     }
 
     // Expose engine to other scripts
