@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -55,7 +54,7 @@ def matrix_td(status_str):
     else:
         tdcolor = '#CCFFDD'
 
-    return '<td style="background-color: %s">%s</td>' % (tdcolor, status_str)
+    return f'<td style="background-color: {tdcolor}">{status_str}</td>'
 
 
 @register.filter
@@ -66,4 +65,4 @@ def color_needs(status_str):
     else:
         color = '#330033'
 
-    return '<span style="color: %s">%s</span>' % (color, status_str)
+    return f'<span style="color: {color}">{status_str}</span>'

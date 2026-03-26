@@ -1,13 +1,9 @@
-from __future__ import absolute_import
 import datetime
 import operator
 
 from django.db.models.query import Q
 
 from esp.middleware import ESPError
-from six.moves import map
-import six
-from six.moves import zip
 from functools import reduce
 
 
@@ -29,7 +25,7 @@ class QueryBuilder(object):
     def __init__(self, base, filters, english_name=None):
         self.base = base
         if english_name is None:
-            self.english_name = six.text_type(base.model._meta.verbose_name_plural)
+            self.english_name = str(base.model._meta.verbose_name_plural)
         else:
             self.english_name = english_name
         self.filters = filters
@@ -71,7 +67,7 @@ class QueryBuilder(object):
             else:
                 return self.base.filter(filter_q)
         else:
-            raise ESPError('Invalid filter %s' % value.get('filter'))
+            raise ESPError(f'Invalid filter {value.get("filter")}')
 
 
 class SearchFilter(object):
@@ -158,8 +154,7 @@ class SelectInput(object):
         if value in self.options:
             return Q(**{self.field_name: value})
         else:
-            raise ESPError('Invalid choice %s for input %s'
-                           % (value, self.field_name))
+            raise ESPError(f'Invalid choice {value} for input {self.field_name}')
 
 class SelectQInput(object):
     """An input represented by an HTML <select> with a fixed set of options. Each

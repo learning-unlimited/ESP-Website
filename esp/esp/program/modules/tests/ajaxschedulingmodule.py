@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.tests import ProgramFrameworkTest
-from esp.program.modules.tests.support import TestProgramManager
+from esp.program.modules.tests.support import ProgramManagerTestHelper
 from esp.program.modules.module_ext import AJAXChangeLog
 import json
 import time
@@ -48,8 +47,8 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
             'num_timeslots': 4, 'timeslot_length': 50, 'timeslot_gap': 10,
             'num_teachers': 3, 'classes_per_teacher': 2, 'sections_per_class': 1
             })
-        super(AJAXSchedulingModuleTestBase, self).setUp(*args, **kwargs)
-        self.program_manager = TestProgramManager(self.client, self.program, self.teachers, self.rooms, self.timeslots)
+        super().setUp(*args, **kwargs)
+        self.program_manager = ProgramManagerTestHelper(self.client, self.program, self.teachers, self.rooms, self.timeslots)
 
         # Set the section durations to 1:50
         for sec in self.program.sections():
@@ -88,7 +87,7 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
 class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
     def setUp(self, *args, **kwargs):
-        super(AJAXSchedulingModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
         self.changelog, created = AJAXChangeLog.objects.get_or_create(program=self.program)
 
     def testModelAPI(self):
@@ -182,7 +181,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.clearScheduleAvailability()
 
         (section, times, rooms, success) = self.program_manager.scheduleClass()
-        self.failUnless(success)
+        self.assertTrue(success)
 
         self.program_manager.unschedule_class(section.id)
 
@@ -196,7 +195,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         #change log should not include failed scheduling of classes
         self.clearScheduleAvailability()
         (s1, times, rooms, success) = self.program_manager.scheduleClass()
-        self.failUnless(success)
+        self.assertTrue(success)
 
         #Long setup to create an unsuccessful scheduling attempt
         #choose another section taught by the same teacher
@@ -207,7 +206,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         s2 = sections[0]
         #schedule it
         (section, times, rooms, success) = self.program_manager.scheduleClass(section=s2, timeslots=times, rooms=rooms)
-        self.failIf(success)
+        self.assertFalse(success)
 
         #change log should not include it
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 1 })

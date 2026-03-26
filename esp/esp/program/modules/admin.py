@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -66,7 +65,14 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
         'seq',
         'required',
         'required_label',
+        'link_title',
     )
     list_filter = ('program', 'module')
-    search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title')
+    search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title', 'link_title')
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('program', 'module')
+        return self.readonly_fields
+
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)

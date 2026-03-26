@@ -1,7 +1,6 @@
-## Code from <http://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
+## Code from <https://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
 ## Modified to not use (process-)global variables
 
-from __future__ import absolute_import
 import logging
 logger = logging.getLogger(__name__)
 import threading
@@ -15,6 +14,14 @@ except ImportError:
 
 def get_current_request():
     return getattr(_threading_local, 'request', None)
+
+def clear_current_request():
+    """Remove the thread-local request, if any.
+
+    Useful in tests where a stale request may reference a rolled-back user.
+    """
+    if hasattr(_threading_local, 'request'):
+        del _threading_local.request
 
 def AutoRequestContext(*args, **kwargs):
     request = get_current_request()

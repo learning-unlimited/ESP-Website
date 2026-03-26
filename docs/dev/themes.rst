@@ -33,7 +33,7 @@ Setup
 
 
 - Note: You will need version 1.3.1 of LESS (the one that comes with Ubuntu 13.04). You can install LESS from https://github.com/less/less.js (git clone, then git checkout v1.3.1) or, in Ubuntu, by adding this PPA: https://launchpad.net/~george-edison55/+archive/less
-- Note: You will need version 0.10 or higher of Node.js.  You can install Node.js from https://github.com/joyent/node.git (git clonse, then git checkout v0.11.9-release).
+- Note: You will need version 0.10 or higher of Node.js.  You can install Node.js from https://github.com/joyent/node.git (git clone, then git checkout v0.11.9-release).
 
 2) Back up your database, or at least the template overrides.
 3) Make sure the Web server user has execute and write permission on all of the directories under esp/public/media.  (The theme editor will be copying images and generating style files.)    
@@ -44,7 +44,7 @@ Architecture
 Each theme consists of a set of pre-defined template overrides, images and
 styles.  This information is stored in the code repository 
 (esp/themes/theme_data directory).  The styles are stored in LESS
-(http://lesscss.org) format and compiled into CSS with user-specified
+(https://lesscss.org) format and compiled into CSS with user-specified
 parameters.
 
 From the end user perspective, there are 3 steps to setting up their 
@@ -247,7 +247,7 @@ in the past by including different CSS files).  Use selectors to differentiate
 between elements.
 
 Further setup and usage information is available at:
-  http://wiki.learningu.org/Generic_Templates
+  https://wiki.learningu.org/Generic_Templates
 
 
 

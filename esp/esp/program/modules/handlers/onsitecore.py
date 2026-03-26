@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, CoreModule, main_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 
 
@@ -49,6 +49,19 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
             "seq": -1000,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if tl != "onsite" or view_name != "main":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="onsite_main",
+            url="/onsite/%s/main" % base,
+            title="Onsite Interface",
+            category="Quick Links",
+            keywords=["onsite", "check-in", "day-of", "logistics"],
+        )
 
     @main_call
     @needs_onsite
@@ -74,7 +87,6 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
 
     def isStep(self):
         return False
-
 
 
     class Meta:

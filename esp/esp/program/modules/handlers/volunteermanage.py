@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,6 +36,7 @@ Learning Unlimited, Inc.
 import codecs
 from esp.program.models import VolunteerRequest
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.forms.volunteer import VolunteerRequestForm, VolunteerImportForm
 from esp.program.modules.handlers.volunteersignup import VolunteerSignup
 from esp.users.models import ESPUser
@@ -58,6 +58,19 @@ class VolunteerManage(ProgramModuleObj):
             "seq": 0,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "volunteering":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_volunteering",
+            url="/manage/%s/volunteering" % base,
+            title="Volunteers",
+            category="Logistics",
+            keywords=["volunteers", "shifts", "signups"],
+        )
 
     """
         Create/delete timeslots for volunteers
@@ -199,10 +212,10 @@ class VolunteerManage(ProgramModuleObj):
 
         try:
             volunteer = ESPUser.objects.get(id=target_id)
-        except:
+        except ESPUser.DoesNotExist:
             try:
                 volunteer = ESPUser.objects.get(username=target_id)
-            except:
+            except ESPUser.DoesNotExist:
                 raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
 
         vs = VolunteerSignup

@@ -5,6 +5,7 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/top_classes.css" type="text/css" />
 {% endblock %}
 
 {% block content %}
@@ -21,6 +22,9 @@ td, th {
 }
 </style>
 <a name="top"></a><h1>Survey Responses for {{ program.niceName }} </h1>
+{% if tl == "teach" %}
+<p>To view your survey results across all programs, <a href="/myesp/survey_responses">go here</a>.</p>
+{% endif %}
 
 {% if teacher_form %}
 <form method="POST" action="{{ request.get_full_path }}">

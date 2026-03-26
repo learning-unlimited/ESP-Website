@@ -13,6 +13,6 @@ Since `this picture <models.png>`_ may not be the most useful way to figure out 
 * ``esp.program.models.StudentRegistration``: A student’s registration for or interest in a ClassSection, like "benkraft marked X9002s1 as Priority/1".
 * ``esp.program.models.StudentSubjectInterest``: A student’s interest in a ClassSubject (correspond to stars in the two-phase lottery).
 * ``esp.cal.models.Event``: A timeblock (or sometimes another timed event such as a teacher training), associated with a program.
-* ``esp.resources.models.Resource``: A resource, like a classroom or the LCD projector in a classroom.  Note``: the resources models are a bit of a mess, and we’re working on rewriting them.
+* ``esp.resources.models.Resource``: A resource, like a classroom or the LCD projector in a classroom.  Note: the resources models are a bit of a mess, and we’re working on rewriting them.
 * ``esp.accounting.models.LineItemType``: A type of payment, such as "Saturday Lunch for Splash Fall 2014 ($5)"
 * ``esp.tagdict.models.Tag``: A generic key/value pair, optionally associated to another object in the database (most commonly a Program).  Commonly used for settings.

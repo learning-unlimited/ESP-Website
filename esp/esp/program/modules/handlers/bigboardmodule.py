@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import datetime
 import subprocess
 
@@ -11,8 +10,6 @@ from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.web import render_to_response
-import six
-from six.moves import zip
 
 
 class BigBoardModule(ProgramModuleObj):
@@ -280,7 +277,7 @@ class BigBoardModule(ProgramModuleObj):
         for id, sr_time in sr_times:
             if id not in ssi_times_dict or sr_time < ssi_times_dict[id]:
                 ssi_times_dict[id] = sr_time
-        return sorted(six.itervalues(ssi_times_dict))
+        return sorted(ssi_times_dict.values())
 
     @cache_function_for(105)
     def times_enrolled(self, prog):
@@ -360,7 +357,7 @@ class BigBoardModule(ProgramModuleObj):
             uptime = subprocess.check_output('uptime')
             # The output ends in e.g. "load average: 1.65, 1.84, 1.67\n"
             return [float(x.strip(',')) for x in uptime.strip().split()[-3:]]
-        except:
+        except Exception:
             return []
 
     def isStep(self):

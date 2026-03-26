@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules         import module_ext
 from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
@@ -61,6 +61,20 @@ class AJAXSchedulingModule(ProgramModuleObj):
             "seq": 7,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "ajax_scheduling":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_ajax_scheduling",
+            url="/manage/%s/ajax_scheduling" % base,
+            title="Scheduling",
+            category="Logistics",
+            keywords=["schedule", "rooms", "times", "ajax", "scheduling"],
+        )
+
     def prepare(self, context={}):
         if context is None: context = {}
 
@@ -104,7 +118,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), content_type='text/csv')
 
     #helper functions for ajax_schedule_class
-    #seperated out here to make code more readeable and enable testing
+    #separated out here to make code more readable and enable testing
     def makeret(self, prog, **kwargs):
         last_changed = self.ajax_schedule_last_changed_helper(prog).raw_value
         kwargs['val'] = last_changed['val']
@@ -375,7 +389,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         """
         try:
             lock_level = int(request.POST.get('lock_level', '0'))
-        except:
+        except (ValueError, TypeError):
             lock_level = 0
 
         if request.method == 'POST':

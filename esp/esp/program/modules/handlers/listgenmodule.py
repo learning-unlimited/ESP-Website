@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -35,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
@@ -49,7 +48,7 @@ class UserAttributeGetter(object):
         """ Enter labels for available fields here; they are sorted alphabetically by key
             The values should be dictionaries with at least "label" and "usertype" keys.
             The value for the "label" key will be the text shown in the form.
-            The value for the "usertype" key should be a set of user types that the field is releveant for.
+            The value for the "usertype" key should be a set of user types that the field is relevant for.
             Use 'any' to show the field for all user types (all fields will be shown for combo lists, as well) """
         fields = {  '01_id': {'label': 'ID', 'usertype': {'any'}},
                     '02_username': {'label': 'Username', 'usertype': {'any'}},
@@ -275,7 +274,6 @@ class UserAttributeGetter(object):
         else:
             return None
 
-
 class ListGenForm(forms.Form):
     attr_choices = list(UserAttributeGetter.getFunctions().items())
     attr_choices.sort(key=lambda x: x[0])
@@ -286,7 +284,7 @@ class ListGenForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         usertype = kwargs.pop('usertype', 'any')
-        super(ListGenForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         #   If we have a specific recipient user type,
         #   filter to only the fields that are relevant to that user type
         if usertype != 'combo':
@@ -306,6 +304,19 @@ class ListGenModule(ProgramModuleObj):
             "seq": 500,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "selectList":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_selectList",
+            url="/manage/%s/selectList" % base,
+            title="Arbitrary User List",
+            category="Coordinate",
+            keywords=["user list", "search users", "export", "mailing list"],
+        )
 
     @aux_call
     @needs_admin
@@ -354,21 +365,24 @@ class ListGenModule(ProgramModuleObj):
                     lists.append({'users': users})
 
                 if output_type == 'csv':
-                    # properly speaking, this should be text/csv, but that
-                    # causes Chrome to open in an external editor, which is
-                    # annoying
-                    mimetype = 'text/plain'
+                    mimetype = 'text/csv'
                 elif output_type == 'html':
                     mimetype = 'text/html'
                 else:
                     # WTF?
                     mimetype = 'text/html'
-                return render_to_response(
+
+                response = render_to_response(
                     self.baseDir()+('list_%s.html' % output_type),
                     request,
                     {'users': users, 'lists': lists, 'fields': fields, 'listdesc': filterObj.useful_name},
                     content_type=mimetype,
                 )
+
+                if output_type == 'csv':
+                    response['Content-Disposition'] = 'attachment; filename="user_list.csv"'
+
+                return response
             else:
                 context = {
                     'form': form,

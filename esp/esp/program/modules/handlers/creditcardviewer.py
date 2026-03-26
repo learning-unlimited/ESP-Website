@@ -1,5 +1,4 @@
 
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -92,7 +91,7 @@ class CreditCardViewer(ProgramModuleObj):
     setup_title = "Set up the website for credit card payments (including the 'stripe settings' tag) (you may need to reach out to the websupport team)"
     setup_path = "tags/learn"
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         return self.program.getModule('CreditCardModule_Stripe').check_setup()
 
     class Meta:

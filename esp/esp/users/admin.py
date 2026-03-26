@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 from esp.admin import admin_site
@@ -56,6 +55,11 @@ admin_site.register(ESPUser, ESPUserAdmin)
 class RecordTypeAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'description']
     search_fields = ['name', 'description']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('name',)
+        return self.readonly_fields
 admin_site.register(RecordType, RecordTypeAdmin)
 
 class RecordAdmin(admin.ModelAdmin):

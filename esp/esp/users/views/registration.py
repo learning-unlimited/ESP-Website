@@ -1,7 +1,6 @@
-from __future__ import absolute_import
 import logging
 import random
-import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
+import urllib.request, urllib.parse, urllib.error
 
 log = logging.getLogger(__name__)
 
@@ -77,7 +76,7 @@ This function is overloaded to handle either one or two phase reg"""
                                     password=form.cleaned_data['password'])
 
             login(request, user)
-            return HttpResponseRedirect('/myesp/profile/')
+            return HttpResponseRedirect(reverse('myesp_profile'))
         else:
             send_activation_email(user, userkey)
             return render_to_response('registration/account_created_activation_required.html', request,
@@ -100,7 +99,7 @@ When there are already accounts with this email address (depending on some tags)
         if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts'):
             accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(form.cleaned_data['initial_role'], True))
             existing_accounts = accounts_role.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
-            awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex='\$(.*)_').exclude(password='emailuser')
+            awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex=r'\$(.*)_').exclude(password='emailuser')
             if len(existing_accounts)+len(awaiting_activation_accounts) != 0:
                 #they have accounts. go back to the same page, but ask them
                 #if they want to try to log in
@@ -110,8 +109,8 @@ When there are already accounts with this email address (depending on some tags)
                     { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'initial_role':form.cleaned_data['initial_role'], 'site': Site.objects.get_current(), 'form': form })
 
         #form is valid, and not caring about multiple accounts
-        email = six.moves.urllib.parse.quote(form.cleaned_data['email'])
-        initial_role = six.moves.urllib.parse.quote(form.cleaned_data['initial_role'])
+        email = urllib.parse.quote(form.cleaned_data['email'])
+        initial_role = urllib.parse.quote(form.cleaned_data['initial_role'])
         return HttpResponseRedirect(reverse('esp.users.views.user_registration_phase2')+'?email='+email+'&initial_role='+initial_role)
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
@@ -153,8 +152,8 @@ def user_registration_phase2(request):
         return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
 
     try:
-        email = six.moves.urllib.parse.unquote(request.GET['email'])
-        initial_role = six.moves.urllib.parse.unquote(request.GET['initial_role'])
+        email = urllib.parse.unquote(request.GET['email'])
+        initial_role = urllib.parse.unquote(request.GET['initial_role'])
     except MultiValueDictKeyError:
         return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
     form = UserRegForm(initial={'email':email,'confirm_email':email,'initial_role':initial_role})
@@ -168,7 +167,7 @@ def activate_account(request):
 
     try:
         u = ESPUser.objects.get(username = request.GET['username'])
-    except:
+    except ESPUser.DoesNotExist:
         raise ESPError("Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
     if u.is_active:
@@ -181,7 +180,7 @@ def activate_account(request):
     u.is_active = True
     u.save()
 
-    return HttpResponseRedirect('/myesp/profile/')
+    return HttpResponseRedirect(reverse('myesp_profile'))
 
 def send_activation_email(user, userkey):
     t = loader.get_template('registration/activation_email.txt')
@@ -235,6 +234,6 @@ class GradeChangeRequestView(CreateView):
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
-        return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)
+        return super().dispatch(*args, **kwargs)
 
 
