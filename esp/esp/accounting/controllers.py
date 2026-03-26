@@ -482,29 +482,35 @@ class IndividualAccountingController(ProgramAccountingController):
         consumed_transfer_ids = set()
         transfer_total = 0
         for line_item_id, saved_amount in parsed_items:
-            available_candidates = []
+            unpaid_candidates = []
+            all_candidates = []
             for candidate in transfers_by_line_item.get(line_item_id, []):
                 if candidate.id in consumed_transfer_ids:
                     continue
-                if candidate.paid_in:
-                    continue
-                available_candidates.append(candidate)
+                all_candidates.append(candidate)
+                if not candidate.paid_in:
+                    unpaid_candidates.append(candidate)
 
             transfer = None
             if trusted:
-                if available_candidates:
-                    transfer = available_candidates[0]
+                if unpaid_candidates:
+                    transfer = unpaid_candidates[0]
             else:
-                for candidate in available_candidates:
+                for candidate in unpaid_candidates:
                     if '%.2f' % candidate.amount == saved_amount:
                         transfer = candidate
                         break
-                if transfer is None and available_candidates:
-                    transfer = available_candidates[0]
+                if transfer is None and unpaid_candidates:
+                    transfer = unpaid_candidates[0]
 
             if transfer is None:
+                # Distinguish between "transfer already paid" and "transfer doesn't exist"
+                paid_candidates = [c for c in all_candidates if c.paid_in]
+                if paid_candidates:
+                    raise DuplicatePaymentError(
+                        f"Failed on processing line item type {line_item_id}: transfer already paid")
                 raise ReconciliationError(
-                    f"Failed on processing line item type {line_item_id}: no unpaid transfer found")
+                    f"Failed on processing line item type {line_item_id}: no transfer found")
 
             consumed_transfer_ids.add(transfer.id)
 
@@ -513,11 +519,6 @@ class IndividualAccountingController(ProgramAccountingController):
             if transfer.line_item.program != iac.program:
                 raise ReconciliationError(
                     f"Failed on processing Transfer {transfer.id}: program changed")
-
-            # Check for duplicate payment
-            if transfer.paid_in:
-                raise DuplicatePaymentError(
-                    f"Failed on processing Transfer {transfer.id}: already paid")
 
             # Check to see if the amount changed
             if '%.2f' % transfer.amount != saved_amount:
