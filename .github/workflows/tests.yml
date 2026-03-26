@@ -107,3 +107,69 @@ jobs:
         verbose: true
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  migrations:
+    name: Migration Consistency Check
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: test_django
+        ports:
+          - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      memcached:
+        image: memcached:alpine
+        ports:
+          - 11211:11211
+    env:
+      DJANGO_SETTINGS_MODULE: esp.settings
+    steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+    - name: Set up Python 3.7
+      uses: deadsnakes/action@e640ac8743173a67cca4d7d77cd837e514bf98e8  # v3.2.0
+      with:
+        python-version: "3.7"
+    - name: Cache pip packages
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-3.7-${{ hashFiles('esp/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-3.7-
+          ${{ runner.os }}-pip-
+    - name: Get apt packages list
+      id: apt-action-migrations
+      run: |
+        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+        echo "packages=$PKGS" >> $GITHUB_OUTPUT
+    - name: Cache apt packages
+      uses: Eeems-Org/apt-cache-action@v1
+      with:
+        packages: ${{ steps.apt-action-migrations.outputs.packages }}
+    - name: Prepare for Installing Dependencies
+      run: deploy/ci/before_install
+      env:
+        PYTHON_VERSION: "3.7"
+    - name: Install Dependencies
+      env:
+        CI_JOB: test
+        PYTHON_VERSION: "3.7"
+      run: deploy/ci/install
+    - name: Prepare for Migration Check
+      env:
+        CI_JOB: test
+        PYTHON_VERSION: "3.7"
+      run: deploy/ci/before_script
+    - name: Run Migration Check
+      env:
+        DATABASE_USER: testuser
+        DATABASE_PASSWORD: testpassword
+        DATABASE_NAME: test_django
+      run: |
+        cd esp
+        python manage.py makemigrations --check --dry-run
