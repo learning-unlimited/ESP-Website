@@ -251,7 +251,31 @@ def _get_type_url(type):
 
     return _really_get_type_url
 
+class ProgramManager(models.Manager):
+    def get_queryset(self):
+        # this explicitly adds the ordering to every query
+        return super().get_queryset().order_by('-id')
+
+class ProgramEmailField(models.EmailField):
+    """EmailField that excludes environment-specific kwargs from migrations.
+
+    default, help_text, and validators all reference settings.SITE_INFO[1],
+    which varies by environment. Stripping them from deconstruct() means
+    migrations are environment-independent while the field still works
+    normally at runtime.
+    """
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs.pop('default', None)
+        kwargs.pop('help_text', None)
+        kwargs.pop('validators', None)
+        # Present as a plain EmailField in migrations
+        path = 'django.db.models.EmailField'
+        return name, path, args, kwargs
+
 class Program(models.Model, CustomFormsLinkModel):
+    objects = ProgramManager()
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
     form_link_name='Program'
@@ -261,8 +285,8 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
-    director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(rf'(^.+@{settings.SITE_INFO[1].replace(".", ".")}$)|(^.+@(\w+\.)?learningu\.org$)')],
+    director_email = ProgramEmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
+                                       validators=[validators.RegexValidator(r'(^.+@' + re.escape(settings.SITE_INFO[1]) + r'$)|(^.+@(\w+\.)?learningu\.org$)')],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
@@ -1430,9 +1454,9 @@ class SplashInfo(models.Model):
     program = AjaxForeignKey(Program, null=True, on_delete=models.CASCADE)
     lunchsat = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
     lunchsun = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
-    siblingdiscount = models.NullBooleanField(default=False, blank=True)
+    siblingdiscount = models.BooleanField(default=False, blank=True, null=True)
     siblingname = models.CharField(max_length=64, blank=True, null=True)
-    submitted = models.NullBooleanField(default=False, blank=True)
+    submitted = models.BooleanField(default=False, blank=True, null=True)
 
     class Meta:
         app_label = 'program'
@@ -1493,7 +1517,7 @@ class RegistrationProfile(models.Model):
     last_ts = models.DateTimeField(default=timezone.now)
     most_recent_profile = models.BooleanField(default=False)
 
-    old_text_reminder = models.NullBooleanField(db_column='text_reminder')  ## Kept around for database-migration purposes
+    old_text_reminder = models.BooleanField(null=True, db_column='text_reminder')  ## Kept around for database-migration purposes
 
     ## Oops, I didn't see this field, and I reimplemented its functionality...
     ## Wrap it for backwards compatibility. -- aseering 8/18/2010

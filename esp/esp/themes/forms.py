@@ -42,7 +42,7 @@ import json
 
 class ThemeConfigurationForm(forms.Form):
     theme = forms.CharField(widget=forms.HiddenInput)
-    just_selected = forms.NullBooleanField(widget=forms.HiddenInput, initial=False)
+    just_selected = forms.BooleanField(widget=forms.HiddenInput, initial=False, required=False)
 
     def prepare_for_serialization(self, data):
         return data
