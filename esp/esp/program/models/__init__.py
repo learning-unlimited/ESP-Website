@@ -256,6 +256,18 @@ class ProgramManager(models.Manager):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by('-id')
 
+
+class ProgramEmailField(models.EmailField):
+    """EmailField that omits environment-specific kwargs from migrations."""
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs.pop('default', None)
+        kwargs.pop('help_text', None)
+        kwargs.pop('validators', None)
+        path = 'django.db.models.EmailField'
+        return name, path, args, kwargs
+
 class DirectorEmailValidator(validators.RegexValidator):
     # RegexValidator in Django 2.x doesn't implement __eq__ — it inherits object.__eq__,
     # which compares by identity (memory address) and causes spurious migrations
@@ -283,7 +295,7 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
-    director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
+    director_email = ProgramEmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
                                        validators=[DirectorEmailValidator(rf'(^.+@{settings.SITE_INFO[1].replace(".", ".")}$)|(^.+@(\w+\.)?learningu\.org$)')],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
