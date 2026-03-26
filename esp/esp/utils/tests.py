@@ -28,6 +28,11 @@ from esp import utils
 from esp.utils import query_builder
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
+from django.test import Client
+from django.conf import settings
+import os
+from esp.utils.models import TemplateOverride
+from esp.users.models import ESPUser
 
 # Code from <https://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
@@ -523,6 +528,108 @@ class StripBase64ImagesTest(DjangoTestCase):
         self.assertEqual(result, html)
         self.assertEqual(count, 0)
 
+class DiffTemplateOverrideViewTest(DjangoTestCase):
+
+    def setUp(self):
+        self.client = Client()
+
+        # Create users
+        self.admin = ESPUser.objects.create_user(username="admin", password="pass")
+        self.admin.makeAdmin()
+
+        self.user = ESPUser.objects.create_user(username="user", password="pass")
+
+        # Create template directory + file
+        self.template_dir = os.path.join(settings.PROJECT_ROOT, "templates")
+        os.makedirs(self.template_dir, exist_ok=True)
+
+        self.template_path = os.path.join(self.template_dir, "test_template.html")
+
+        with open(self.template_path, "w") as f:
+            f.write("Original Content")
+
+        # Create TemplateOverride object
+        self.override = TemplateOverride.objects.create(
+            name="test_template.html",
+            content="Hello Override",
+            version=1
+        )
+
+    def tearDown(self):
+        if os.path.exists(self.template_path):
+            os.remove(self.template_path)
+
+    # 1️. Admin access
+    def test_admin_can_access_diff(self):
+        self.client.login(username="admin", password="pass")
+
+        response = self.client.get(
+            f"/manage/templateoverride/{self.override.id}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    # 2️. Non-admin → 403
+    def test_non_admin_forbidden(self):
+        self.client.login(username="user", password="pass")
+
+        response = self.client.get(
+            f"/manage/templateoverride/{self.override.id}"
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    # 3️. Invalid ID → 404
+    def test_invalid_template_id(self):
+        self.client.login(username="admin", password="pass")
+
+        response = self.client.get("/manage/templateoverride/9999")
+
+        self.assertEqual(response.status_code, 404)
+
+    # 4️. Diff rendering validation (🔥 MAIN TEST)
+    def test_diff_output_contains_expected_content(self):
+        self.client.login(username="admin", password="pass")
+
+        response = self.client.get(
+            f"/manage/templateoverride/{self.override.id}"
+        )
+
+        content = response.content.decode()
+
+        self.assertIn("diff", content)
+        self.assertIn("Original", content)
+        self.assertIn("Override", content)
+
+    # 5️. Same content edge case
+    def test_same_content_diff(self):
+        self.client.login(username="admin", password="pass")
+
+        self.override.content = "Original Content"
+        self.override.save()
+
+        response = self.client.get(
+            f"/manage/templateoverride/{self.override.id}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    # 6️. Template file exists (no crash)
+    def test_template_file_exists_handling(self):
+        self.client.login(username="admin", password="pass")
+
+        response = self.client.get(
+            f"/manage/templateoverride/{self.override.id}"
+        )
+
+        self.assertNotEqual(response.status_code, 500)
+
+    # 7. Missing original file → 404, not 500
+    def test_missing_original_file_returns_404(self):
+        self.client.login(username="admin", password="pass")
+        os.remove(self.template_path)
+        response = self.client.get(f"/manage/templateoverride/{self.override.id}")
+        self.assertEqual(response.status_code, 404)
 
 def suite():
     """Choose tests to expose to the Django tester."""
@@ -532,5 +639,3 @@ def suite():
     # Add doctests from esp.utils.__init__.py
     s.addTest(doctest.DocTestSuite(utils))
     return s
-
-
