@@ -17,8 +17,7 @@ students.  We convert the list attributes to QuerySets where functions require
 them.
 """
 
-import datetime
-from datetime import date
+from datetime import datetime, date
 from unittest.mock import patch
 
 from types import SimpleNamespace
