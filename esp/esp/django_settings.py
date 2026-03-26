@@ -143,6 +143,11 @@ ORGANIZATION_SHORT_NAME = 'Splash'
 # The host for ESP site-supported email lists.
 EMAIL_HOST = 'localhost'
 
+# SendGrid SMTP configuration
+SENDGRID_SMTP_HOST = "smtp.sendgrid.net"
+SENDGRID_SMTP_PORT = 587
+SENDGRID_SMTP_USERNAME = "apikey"
+
 #################################
 # Default localization settings #
 #################################

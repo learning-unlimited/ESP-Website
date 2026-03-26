@@ -39,7 +39,7 @@ local_fabfile.py
 *.orig
 *.swp
 .espsettings
-
+.github/copilot-instructions.md
 
 # Mac
 .DS_Store

@@ -3,18 +3,30 @@
 # Main mailgate
 # Handles incoming messages etc.
 
-import sys, os, email, re, smtplib, socket, hashlib, random
-from io import open
+from __future__ import absolute_import
+from __future__ import print_function
+
+import logging
+import os.path
+import sys
+import smtplib
+import traceback
+from email import policy
+from email.parser import BytesParser
+from email.utils import getaddresses
+
+# Custom header marker for loop prevention
+FORWARDER_HEADER = "X-Forwarded-By: lu-forwarder"
+
+# Configure paths and environment variables
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
 sys.path.insert(0, "/usr/sbin/")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
-import logging
 # Make sure we end up in our logger even though this file is outside esp/esp/
 logger = logging.getLogger('esp.mailgate')
 
-import os.path
 project = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 # Path for site code
@@ -29,139 +41,147 @@ if os.environ.get('VIRTUAL_ENV') is None:
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
     exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
 
+# TODO: Better:
+#if sys.prefix == sys.base_prefix:
+#    os.execv("env/bin/python", ["env/bin/python"] + sys.argv)
+
+# Import Django and site-defined modules after activating the virtual environment
 import django
 django.setup()
-from esp.dbmail.models import EmailList
-from django.conf import settings
-
-import email.utils
-from django.core.mail import send_mail as django_send_mail
+from esp.dbmail.models import EmailList, PlainRedirect, send_mail
 from esp.users.models import ESPUser
+from django.conf import settings
+from django.db.models.functions import Lower
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
-host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
-MAIL_PATH = '/usr/sbin/sendmail'
-server = smtplib.SMTP('localhost')
-ARCHIVE = settings.DEFAULT_EMAIL_ADDRESSES['archive']
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
 ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
+DOMAIN = '.learningu.org'
 
 #DEBUG=True
 DEBUG=False
+######################################################################################################################
 
-user = "UNKNOWN USER"
 
-def send_mail(message):
-    p = os.popen("%s -i -t" % MAIL_PATH, 'w')
-    p.write(message)
+def get_final_sender(sender):
+    logger.debug("In final sender")
+    return "hello@dev5.learningu.org"
 
-try:
-    user = os.environ['LOCAL_PART']
 
-    message = email.message_from_bytes(sys.stdin.buffer.read())
+def get_final_recipients(recipients):
+    """
+    Expand and deduplicate recipients using alias_map.
+    """
+    logger.debug("In final recipients")
+    resolved = []
 
-    handlers = EmailList.objects.all()
+    # Insert lookup logic here
+    # TODO
 
-    matched_any_handler = False
+    # Deduplicate while preserving order
+    seen = set()
+    unique = []
+    for r in resolved:
+        if r not in seen:
+            seen.add(r)
+            unique.append(r)
 
-    for handler in handlers:
-        re_obj = re.compile(handler.regex)
-        match = re_obj.search(user)
+    return ["miles@learningu.org"]
 
-        if not match: continue
 
-        matched_any_handler = True
-
-        Class = getattr(__import__(import_location + handler.handler.lower(), (), (), ['']), handler.handler)
-
-        instance = Class(handler, message)
-
-        instance.process(user, *match.groups(), **match.groupdict())
-
-        if not instance.send:
-            continue
-
-        if not getattr(instance, 'preserve_headers', False):
-            # Group broadcasts (ClassList, SectionList, PlainList):
-            # Strip headers, prefix subject, regen Message-ID
-            del(message['to'])
-            del(message['cc'])
-            message['X-ESP-SENDER'] = 'version 2'
-            message['X-FORWARDED-FOR'] = message['X-CLIENT-IP'] if message['X-Client-IP'] else message['Client-IP']
-
-            subject = message['subject']
-            del(message['subject'])
-            if hasattr(instance, 'emailcode') and instance.emailcode:
-                subject = '[%s] %s' % (instance.emailcode, subject)
-            if handler.subject_prefix:
-                subject = '[%s] %s' % (handler.subject_prefix, subject)
-            message['Subject'] = subject
-
-            if handler.from_email:
-                del(message['from'])
-                message['From'] = handler.from_email
-
-            del message['Message-ID']
-            message['Message-ID'] = '<%s@%s>' % (hashlib.sha1(str(random.random()).encode()).hexdigest(),
-                                                 host)
-
-        # Common path for ALL handlers — iterate recipients
-        if handler.cc_all:
-            # send one mass-email
-            del(message['To'])
-            message['To'] = ', '.join(instance.recipients)
-            send_mail(str(message))
-        else:
-            # send an email for each recipient
-            for recipient in instance.recipients:
-                del(message['To'])
-                message['To'] = recipient
-                send_mail(str(message))
-
-        sys.exit(0)
-
-    # ----- No handler accepted the email -----
-    # Only bounce if no handler regex matched (true invalid address).
-    # If a handler matched but chose not to send (permission issue), stay silent.
-    if not matched_any_handler:
-        _sender_name, sender_email = email.utils.parseaddr(message.get('From', ''))
-        # Anti-loop: never bounce to our own system address
-        if (sender_email
-                and sender_email.lower() != SUPPORT.lower()
-                and ESPUser.objects.filter(email__iexact=sender_email).exists()):
-            try:
-                django_send_mail(
-                    'Undeliverable mail to %s@%s' % (user, host),
-                    'Your message to "%s@%s" could not be delivered.\n\n'
-                    'The address does not exist or is not currently accepting '
-                    'messages. If you believe this is an error, please contact '
-                    '%s for assistance.\n' % (user, host, SUPPORT),
-                    SUPPORT,
-                    [sender_email],
-                    fail_silently=True,
-                )
-            except Exception:
-                logger.warning("Failed to send bounce to '%s'", sender_email)
-
-    # Exit 0 so MTA considers delivery "handled" — no native NDR bounce
-    sys.exit(0)
-
-except Exception as e:
-    # we don't want to care if it's an exit
-    if isinstance(e, SystemExit):
-        raise
-
-    if DEBUG:
-        raise
+def has_been_forwarded(raw_email):
+    """
+    Detect if this email has already passed through our system.
+    """
+    if isinstance(raw_email, bytes):
+        try:
+            raw_email_str = raw_email.decode("utf-8", errors="ignore")
+        except Exception:
+            return False
     else:
-        logger.warning("Couldn't find user '%s'", user)
-        print("""
-%s MAIL SERVER
-===============
+        raw_email_str = raw_email
 
-Could not find user "%s"
+    return FORWARDER_HEADER in raw_email_str
 
-If you are experiencing difficulty, please email %s.
 
-""" % (ORGANIZATION_NAME, user, SUPPORT))
-        sys.exit(1)
+def forward_email(raw_email, sender, recipients):
+    """
+    Forward email via SendGrid without modifying raw MIME content so that it
+      * is S/MIME safe
+      * prevents loops (read-only check)
+      * uses separate bounce address
+    """
+
+    # Loop prevention (read-only so that we don't modify the message)
+    if has_been_forwarded(raw_email):
+        logger.warning("Email already forwarded. Skipping to prevent loop.")
+        return
+
+
+    if not recipients:
+        logger.info("No recipients after alias resolution of `{}`. Skipping.".format(recipients))
+        return
+
+    try:
+        smtp = smtplib.SMTP(settings.SENDGRID_SMTP_HOST, settings.SENDGRID_SMTP_PORT)
+        smtp.starttls()
+        smtp.login(settings.SENDGRID_SMTP_USERNAME, settings.SENDGRID_API_KEY)
+
+        # Send one email to each recipient, using bounce address as envelope sender
+        for recipient in recipients:
+            smtp.sendmail(sender, recipient, raw_email)
+
+        smtp.quit()
+
+        logger.info("Forwarded email from {} to {} via SendGrid".format(sender, recipients))
+
+    except Exception as e:
+        logger.exception("Failed to forward email: ".format(e))
+        raise
+
+
+def main():
+    logger.debug("Main has been executed")
+
+    # Read the raw email exactly as Exim provides it
+    raw_email = sys.stdin.buffer.read()
+    logger.debug("Read raw email from buffer")
+    if not raw_email:
+        logger.info("No email to forward")
+        return
+
+    # Get sender and recipient(s) for routing logic
+    msg = BytesParser(policy=policy.default).parsebytes(raw_email)
+    logger.debug("Getting sender")
+    original_sender = msg.get("From", "")
+    logger.debug("Getting recipients")
+    addresses = getaddresses(msg.get_all("to", []) +
+                             msg.get_all("cc", []) +
+                             msg.get_all("bcc", []))
+    original_recipients = [addr for name, addr in addresses]
+
+    # Look up sender's account alias
+    logger.debug("Looking up sender")
+    final_sender = get_final_sender(original_sender)
+    logger.debug("Aliasing original `{}` as `{}`".format(original_sender, final_sender))
+    # Look up emails associated with recipient alias(es)
+    final_recipients = get_final_recipients(original_recipients)
+    logger.debug("Resolving original `{}` as `{}`".format(original_recipients, final_recipients))
+
+    # Send unchanged message to new recipient(s) with aliased sender
+    forward_email(raw_email, final_sender, final_recipients)
+    logger.info("Sent mail from `{}` to `{}`".format(final_sender, final_recipients))
+
+
+if __name__ == "__main__":
+    logger.debug("Beginning")
+    try:
+        main()
+    except Exception as e: # TODO: improve this
+        logger.debug("Traceback: {}".format(e))
+        error_info = traceback.format_exc()
+        logger.debug("Traceback is\n{}".format(error_info))
+        raise Exception("Python script failed")
+
