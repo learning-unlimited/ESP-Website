@@ -39,9 +39,7 @@ from esp.survey.models  import QuestionType, Question, Survey
 from esp.survey.views   import survey_review, survey_graphical, survey_review_single, top_classes, survey_dump
 from esp.program.modules.forms.surveys import SurveyForm, QuestionForm, SurveyImportForm, CSVQuestionImportForm, parse_csv
 
-import csv
-import io
-import json
+import csv\nimport json
 
 from django.http import HttpResponse
 
@@ -59,7 +57,7 @@ class SurveyManagement(ProgramModuleObj):
             }
 
     @needs_admin
-    def survey_manage(self, request, tl, one, two, module, extra, prog):
+    def survey_manage(self, request, tl, one, two, module, extra, prog, extra_context=None):
         context = {'program': prog}
         # Make some dummy data for survey questions that need it
         classes = [ClassSubject(id = i, title="Test %s" %i, parent_program = prog, category = prog.class_categories.all()[0],
@@ -225,7 +223,13 @@ class SurveyManagement(ProgramModuleObj):
 
         if request.method == 'POST' and 'import_confirm' in request.POST:
             # Step 2: Confirmed import — create Question objects
-            survey_id = request.POST.get('survey_id')
+            survey_id_raw = request.POST.get('survey_id')
+            try:
+                survey_id = int(survey_id_raw)
+            except (TypeError, ValueError):
+                from esp.middleware import ESPError
+                raise ESPError('Invalid survey selection for import.', log=False)
+
             try:
                 survey = Survey.objects.get(id=survey_id, program=prog)
             except Survey.DoesNotExist:
@@ -234,8 +238,10 @@ class SurveyManagement(ProgramModuleObj):
 
             imported_count = 0
             rows_data = request.POST.getlist('row_data')
-            for row_json in rows_data:
-                row = json.loads(row_json)
+            
+            try:
+                for row_json in rows_data:
+                    row = json.loads(row_json)
                 try:
                     question_type = QuestionType.objects.get(id=row['question_type_id'])
                 except QuestionType.DoesNotExist:
@@ -250,7 +256,14 @@ class SurveyManagement(ProgramModuleObj):
                 )
                 imported_count += 1
 
-            context['imported_count'] = imported_count
+                except (ValueError, KeyError, json.JSONDecodeError):
+
+                from esp.middleware import ESPError
+
+                raise ESPError('There was a problem with the submitted import data. Please restart the CSV import process.', log=False)
+
+
+                context['imported_count'] = imported_count
             context['survey'] = survey
             return render_to_response('program/modules/surveymanagement/csv_import_done.html', request, context)
 
@@ -291,8 +304,8 @@ class SurveyManagement(ProgramModuleObj):
                 })
                 return render_to_response('program/modules/surveymanagement/csv_import.html', request, context)
             else:
-                context['csv_import_form'] = form
-                return self.survey_manage(request, tl, one, two, module, 'manage', prog)
+                # Form is invalid: preserve the bound form so errors are displayed
+                return self.survey_manage(request, tl, one, two, module, 'manage', prog, extra_context={'csv_import_form': form})
         else:
             return self.survey_manage(request, tl, one, two, module, 'manage', prog)
 
@@ -302,3 +315,4 @@ class SurveyManagement(ProgramModuleObj):
     class Meta:
         proxy = True
         app_label = 'modules'
+

@@ -228,13 +228,13 @@ class CSVImportTest(TestCase):
             category='learn',
         )
         self.qt_yesno = QuestionType.objects.create(
-            name='yes-no response',
+            name='test yes-no response',
             _param_names='',
             is_numeric=False,
             is_countable=False,
         )
         self.qt_rating = QuestionType.objects.create(
-            name='numeric rating',
+            name='test numeric rating',
             _param_names='Number of ratings|Lower text|Upper text',
             is_numeric=True,
             is_countable=True,
@@ -251,8 +251,8 @@ class CSVImportTest(TestCase):
 
         csv_content = (
             'question_text,question_type,per_class,seq,param_values\n'
-            'Do you like it?,yes-no response,false,1,\n'
-            'Rate the class,numeric rating,true,2,5|Low|High\n'
+            'Do you like it?,test yes-no response,false,1,\n'
+            'Rate the class,test numeric rating,true,2,5|Low|High\n'
         )
         parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
         self.assertEqual(len(errors), 0)

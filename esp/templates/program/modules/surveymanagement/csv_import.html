@@ -54,9 +54,10 @@
             <td class="underline">{{ row.question_type_name }}</td>
             <td class="underline">{% if row.per_class %}&#10003;{% endif %}</td>
             <td class="underline">{{ row.seq }}</td>
-            <td class="underline">{{ row.param_values }}</td>
+            <td class="underline">{{ row.param_values }}
+                <input type="hidden" name="row_data" value='{{ row.json_data }}' />
+            </td>
         </tr>
-        <input type="hidden" name="row_data" value='{{ row.json_data }}' />
         {% endfor %}
         <tr><td colspan="6" align="center"><input class="btn btn-primary" type="submit" value="Confirm Import" /></td></tr>
     </table>

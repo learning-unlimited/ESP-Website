@@ -108,8 +108,22 @@ def parse_csv(csv_file):
 
     # Build a case-insensitive lookup for QuestionType names
     question_types = {}
+    duplicate_qtype_names = set()
     for qt in QuestionType.objects.all():
-        question_types[qt.name.lower()] = qt
+        key = qt.name.lower()
+        if key in question_types and question_types[key].id != qt.id:
+            duplicate_qtype_names.add(key)
+        else:
+            question_types[key] = qt
+    
+    # If there are duplicate QuestionType names (case-insensitive), fail fast
+    if duplicate_qtype_names:
+        errors.append({
+            'row_number': 0,
+            'message': ('Multiple QuestionType entries share the same name (case-insensitive): %s. '
+                       'Please resolve these duplicates before importing.') % ', '.join(sorted(duplicate_qtype_names)),
+        })
+        return parsed_rows, errors
 
     # Normalize fieldnames for lookup
     col_map = {f.strip().lower(): f for f in reader.fieldnames}
