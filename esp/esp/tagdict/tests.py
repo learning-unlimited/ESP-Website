@@ -388,8 +388,7 @@ class PageSpecificTagBannerTest(ProgramFrameworkTest):
         req.user = self.admins[0]
         if with_tracking:
             req._active_program_tag_keys = set()
-        else:
-            del req._active_program_tag_keys
+        # else: leave _active_program_tag_keys unset so getattr returns None
         return req
 
     def test_only_accessed_tag_shown(self):
@@ -437,16 +436,17 @@ class PageSpecificTagBannerTest(ProgramFrameworkTest):
 
     def test_get_program_tag_records_access(self):
         """Calling getProgramTag with a program populates _active_program_tag_keys."""
-        from esp.middleware.threadlocalrequest import _threading_local
+        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
         # Simulate middleware having set up the request
         from unittest.mock import MagicMock
         req = MagicMock()
         req._active_program_tag_keys = set()
         _threading_local.request = req
-
-        Tag.getProgramTag("test", program=self.program)
-
-        self.assertIn("test", req._active_program_tag_keys)
+        try:
+            Tag.getProgramTag("test", program=self.program)
+            self.assertIn("test", req._active_program_tag_keys)
+        finally:
+            clear_current_request()
 
 
 
