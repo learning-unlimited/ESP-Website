@@ -256,6 +256,22 @@ class ProgramManager(models.Manager):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by('-id')
 
+class DirectorEmailValidator(validators.RegexValidator):
+    # RegexValidator in Django 2.x doesn't implement __eq__ — it inherits object.__eq__,
+    # which compares by identity (memory address) and causes spurious migrations
+    def __eq__(self, other):
+        return (
+            type(self) == type(other)
+            and self.regex.pattern == other.regex.pattern
+            and self.flags == other.flags
+            and self.inverse_match == other.inverse_match
+            and self.message == other.message
+            and self.code == other.code
+        )
+
+    def __hash__(self):
+        return hash((type(self), self.regex.pattern, self.flags, self.inverse_match, self.message, self.code))
+
 class Program(models.Model, CustomFormsLinkModel):
     objects = ProgramManager()
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
@@ -268,7 +284,7 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
     director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(rf'(^.+@{settings.SITE_INFO[1].replace(".", ".")}$)|(^.+@(\w+\.)?learningu\.org$)')],
+                                       validators=[DirectorEmailValidator(rf'(^.+@{settings.SITE_INFO[1].replace(".", ".")}$)|(^.+@(\w+\.)?learningu\.org$)')],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
