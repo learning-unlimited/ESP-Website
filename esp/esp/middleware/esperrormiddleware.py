@@ -93,11 +93,11 @@ def ESPError(message=None, log=True):
     else:
         return cls(message)
 
-""" Adapted from http://www.djangosnippets.org/snippets/802/ """
+""" Adapted from https://www.djangosnippets.org/snippets/802/ """
 class AjaxErrorMiddleware(MiddlewareMixin):
     '''Return AJAX errors to the browser in a sensible way.
 
-    Includes some code from http://www.djangosnippets.org/snippets/650/
+    Includes some code from https://www.djangosnippets.org/snippets/650/
     '''
 
     # Some useful errors that this middleware will catch.
@@ -115,7 +115,7 @@ class AjaxErrorMiddleware(MiddlewareMixin):
     def process_exception(self, request, exception):
         #   This line has been commented out for debugging so that requests
         #   can be made using a normal browser like Firefox with UrlParams.
-        if request.headers.get('X-Requested-With') != 'XMLHttpRequest': return
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest': return
 
         if isinstance(exception, (ObjectDoesNotExist, Http404)):
             return self.not_found(request, exception)

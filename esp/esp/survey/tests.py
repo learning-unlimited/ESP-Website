@@ -3,6 +3,7 @@ Tests for esp.survey
 
 - Model tests: ListField descriptor, Survey, SurveyResponse, QuestionType, Question, Answer
 - CSV Import tests: parse_csv utility function for bulk question import
+- Model tests: ListField descriptor, Survey, SurveyResponse, QuestionType, Question, Answer
 - View tests: Cross-program teacher survey responses page
 """
 import datetime
@@ -31,6 +32,7 @@ def _setup_roles():
 
 
 # ===== Model Tests =====
+# ===== Model Tests (from main) =====
 
 class ListFieldTest(TestCase):
     """Test the ListField descriptor used in QuestionType."""
@@ -333,6 +335,7 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
             'num_rooms': 6,
         })
         super().setUp(*args, **kwargs)
+
         self.add_student_profiles()
         self.schedule_randomly()
 
@@ -345,6 +348,8 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         self.survey, _ = Survey.objects.get_or_create(
             name='Test Student Survey', program=self.program, category='learn')
         text_qtype, _ = QuestionType.objects.get_or_create(name='yes-no response')
+        text_qtype, _ = QuestionType.objects.get_or_create(
+            name='yes-no response')
         number_qtype, _ = QuestionType.objects.get_or_create(
             name='numeric rating', is_numeric=True, is_countable=True,
             _param_names="Number of ratings|Lower text|Middle text|Upper text")
@@ -409,6 +414,8 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         admin = self.admins[0]
         self.client.login(username=admin.username, password='password')
         response = self.client.get('/myesp/survey_responses?teacher_id=%d' % self.teacher.id)
+        response = self.client.get(
+            '/myesp/survey_responses?teacher_id=%d' % self.teacher.id)
         self.assertEqual(response.status_code, 200)
         content = str(response.content, encoding='UTF-8')
         self.assertIn(self.teacher.name(), content)
@@ -420,6 +427,8 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         # Delete all surveys for this teacher's sections
         self.survey.delete()
         self.client.login(username=other_teacher.username, password='password')
+        self.client.login(
+            username=other_teacher.username, password='password')
         response = self.client.get('/myesp/survey_responses')
         self.assertEqual(response.status_code, 200)
         content = str(response.content, encoding='UTF-8')
@@ -438,6 +447,8 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         admin = self.admins[0]
         self.client.login(username=admin.username, password='password')
         response = self.client.get('/myesp/survey_responses?teacher_id=notanumber')
+        response = self.client.get(
+            '/myesp/survey_responses?teacher_id=notanumber')
         self.assertEqual(response.status_code, 200)
 
     def test_admin_search_nonexistent_teacher(self):
@@ -445,6 +456,8 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         admin = self.admins[0]
         self.client.login(username=admin.username, password='password')
         response = self.client.get('/myesp/survey_responses?teacher_id=999999')
+        response = self.client.get(
+            '/myesp/survey_responses?teacher_id=999999')
         self.assertEqual(response.status_code, 200)
 
     def test_summary_table_and_accordion_present(self):
@@ -475,6 +488,9 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         self.client.login(username=admin.username, password='password')
         response = self.client.post('/myesp/survey_responses',
                                     {'target_user': self.teacher.id})
+        response = self.client.post(
+            '/myesp/survey_responses',
+            {'target_user': self.teacher.id})
         self.assertEqual(response.status_code, 200)
         content = str(response.content, encoding='UTF-8')
         self.assertIn(self.teacher.name(), content)
@@ -486,6 +502,9 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         self.client.login(username=admin.username, password='password')
         response = self.client.post('/myesp/survey_responses',
                                     {'target_user': 'not-a-valid-id'})
+        response = self.client.post(
+            '/myesp/survey_responses',
+            {'target_user': 'not-a-valid-id'})
         self.assertEqual(response.status_code, 200)
 
     def test_teacher_no_responses_but_survey_exists(self):
@@ -509,6 +528,7 @@ class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
             'num_rooms': 6,
         })
         super().setUp(*args, **kwargs)
+
         self.add_student_profiles()
         self.schedule_randomly()
 
@@ -558,11 +578,14 @@ class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
         # Should show aggregated avg: (3+5)/2 = 4.0
         self.assertIn('4.0', content)
 
+        # Should show aggregated avg: (3+5)/2 = 4.0
+        self.assertIn('4.0', content)
         # The class emailcode should appear only once in summary table
         emailcode = self.sections[0].parent_class.emailcode()
         summary_section = content.split('Detailed Responses')[0]
         self.assertEqual(summary_section.count(emailcode), 1,
                         "Class should appear exactly once in summary table")
 
+                         "Class should appear exactly once in summary table")
         # Should show total 2 responses in the summary table
         self.assertIn('>2<', summary_section)
