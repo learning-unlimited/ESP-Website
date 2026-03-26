@@ -135,21 +135,21 @@ class ZipcodesTest(StatisticsTestBase):
     def test_valid_zipcode_counting(self):
         profile = SimpleNamespace(contact_user=SimpleNamespace(address_zip="53419"))
         _, rd = self._call(profiles=[profile])
-        self.assertEqual(dict(rd['zip_data']), {"53419": 1})
-        self.assertEqual(rd['invalid'], 0)
+        self.assertEqual(dict(rd["zip_data"]), {"53419": 1})
+        self.assertEqual(rd["invalid"], 0)
 
     def test_invalid_zipcode_formats(self):
         short_zip = SimpleNamespace(contact_user=SimpleNamespace(address_zip="123"))
         alpha_zip = SimpleNamespace(contact_user=SimpleNamespace(address_zip="abcde"))
 
         _, rd = self._call(profiles=[short_zip, alpha_zip])
-        self.assertEqual(rd['invalid'], 2)
-        self.assertEqual(rd['zip_data'], [])
+        self.assertEqual(rd["invalid"], 2)
+        self.assertEqual(rd["zip_data"], [])
 
     def test_missing_contact_info(self):
         no_contact = SimpleNamespace(contact_user=None)
         _, rd = self._call(profiles=[no_contact])
-        self.assertEqual(rd['invalid'], 1)
+        self.assertEqual(rd["invalid"], 1)
 
 
 # ===========================================================================
