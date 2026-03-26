@@ -1265,6 +1265,12 @@ def statistics(request, program=None):
             #   program duplicates the groups join on each OR branch and is very
             #   slow; (prog_q1 | prog_q2 | ...) & role is equivalent for students
             #   and avoids that.
+            student_reg_types_on_form = [
+                choice[0] for choice in form.fields.get('student_reg_types').choices
+            ] if 'student_reg_types' in form.fields else []
+            teacher_reg_types_on_form = [
+                choice[0] for choice in form.fields.get('teacher_reg_types').choices
+            ] if 'teacher_reg_types' in form.fields else []
             student_users_q = None
             teacher_users_q = None
 
@@ -1272,7 +1278,15 @@ def statistics(request, program=None):
                 student_q = None
                 if not teacher_only:
                     if form.cleaned_data.get('student_reg_type_all'):
-                        student_q = program.students_union(QObject=True)
+                        # "All" should be limited to the registration types shown
+                        # on the statistics form. `program.students_union()`
+                        # includes extra categories like attended_past/enrolled_past
+                        # which can be very expensive and are not part of this query.
+                        students_objects = program.students(QObjects=True)
+                        student_q = Q(pk__in=[])
+                        for reg_type in student_reg_types_on_form:
+                            if reg_type in students_objects:
+                                student_q |= students_objects[reg_type]
                     elif form.cleaned_data.get('student_reg_types'):
                         students_objects = program.students(QObjects=True)
                         student_q = Q(pk__in=[])
@@ -1289,7 +1303,12 @@ def statistics(request, program=None):
                 teacher_q = None
                 if teacher_only:
                     if form.cleaned_data.get('teacher_reg_type_all'):
-                        teacher_q = program.teachers_union(QObject=True)
+                        # Same restriction as the student side.
+                        teachers_objects = program.teachers(QObjects=True)
+                        teacher_q = Q(pk__in=[])
+                        for reg_type in teacher_reg_types_on_form:
+                            if reg_type in teachers_objects:
+                                teacher_q |= teachers_objects[reg_type]
                     elif form.cleaned_data.get('teacher_reg_types'):
                         teachers_objects = program.teachers(QObjects=True)
                         teacher_q = Q(pk__in=[])
