@@ -301,8 +301,7 @@ class SchoolsTest(StatisticsTestBase):
         expected_names = ["Amrita Vishwa Vidyapeetham", "Chaitanya Techno School"]
         actual_names = [item[0] for item in rd['school_data']]
 
-        self.assertIn("Chaitanya Techno School", actual_names)
-        self.assertIn("Amrita Vishwa Vidyapeetham", actual_names)
+        self.assertCountEqual(actual_names, expected_names)
 
 
 # ===========================================================================
