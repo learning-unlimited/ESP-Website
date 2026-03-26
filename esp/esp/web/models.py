@@ -49,8 +49,6 @@ class NavBarCategory(models.Model):
 
     def get_navbars(self):
         return self.navbarentry_set.all().select_related('category').order_by('sort_rank')
-
-    @cache_function
     def from_request(section, path):
         """ A function to guess the appropriate navigation category when one
             is not provided in the context. """
