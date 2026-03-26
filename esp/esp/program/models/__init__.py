@@ -1202,6 +1202,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def getModules(self, user = None, tl = None, old_prog = None):
         """ Gets modules for this program, optionally attaching a user. """
         modules = self.getModules_cached(tl, old_prog)
+        modules = [m for m in modules if m.is_valid()]  #filter it
         if user:
             for module in modules:
                 module.user = user

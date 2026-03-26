@@ -53,6 +53,7 @@ from django.conf import settings
 from urllib.parse import quote
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
+from esp.utils.expirable_model import ExpirableModel
 
 from django.core.exceptions import ImproperlyConfigured
 from esp.middleware import ESPError
@@ -69,7 +70,8 @@ class CoreModule(object):
     """
     pass
 
-class ProgramModuleObj(models.Model):
+#class ProgramModuleObj(models.Model):
+class ProgramModuleObj(ExpirableModel):
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
