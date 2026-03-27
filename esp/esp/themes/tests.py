@@ -6,12 +6,16 @@ import os
 import random
 import re
 import shutil
+import tempfile
 
 from django.conf import settings
 
+from esp.middleware import ESPError
+from esp.middleware.esperrormiddleware import ESPError_Log
 from esp.users.models import ESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.themes.controllers import ThemeController
+from esp.themes.views import _safe_backup_path
 from esp.themes import settings as themes_settings
 from io import open
 
@@ -232,3 +236,62 @@ class ThemesTest(TestCase):
 
         #   We're done.  Log out.
         self.client.logout()
+
+
+class BaseDirPathTraversalTest(TestCase):
+    """Tests for ThemeController.base_dir() path traversal protection."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+
+    def test_valid_theme_name_returns_path(self):
+        """A normal theme name returns a path inside THEME_PATH."""
+        from esp.themes.controllers import THEME_PATH
+        result = self.tc.base_dir('barebones')
+        self.assertEqual(result, os.path.join(THEME_PATH, 'barebones'))
+
+    def test_traversal_attempt_raises(self):
+        """A theme name containing '../' raises ESPError."""
+        with self.assertRaises(ESPError_Log):
+            self.tc.base_dir('../../etc/passwd')
+
+    def test_absolute_path_raises(self):
+        """An absolute path as theme name raises ESPError."""
+        with self.assertRaises(ESPError_Log):
+            self.tc.base_dir('/etc/passwd')
+
+    def test_nested_traversal_raises(self):
+        """A nested traversal sequence raises ESPError."""
+        with self.assertRaises(ESPError_Log):
+            self.tc.base_dir('barebones/../../etc/passwd')
+
+
+class SafeBackupPathTest(TestCase):
+    """Tests for the _safe_backup_path() helper in views.py."""
+
+    def setUp(self):
+        self.backups_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.backups_dir, ignore_errors=True)
+
+    def test_valid_filename_returns_path(self):
+        """A plain filename returns an absolute path inside backups_dir."""
+        result = _safe_backup_path('logo.png', self.backups_dir)
+        self.assertEqual(result, os.path.realpath(
+            os.path.join(self.backups_dir, 'logo.png')))
+
+    def test_traversal_attempt_raises(self):
+        """A filename with '../' raises ESPError."""
+        with self.assertRaises(ESPError_Log):
+            _safe_backup_path('../../etc/passwd', self.backups_dir)
+
+    def test_absolute_path_raises(self):
+        """An absolute path as filename raises ESPError."""
+        with self.assertRaises(ESPError_Log):
+            _safe_backup_path('/etc/passwd', self.backups_dir)
+
+    def test_sibling_directory_raises(self):
+        """A filename that resolves to a sibling directory raises ESPError."""
+        with self.assertRaises(ESPError_Log):
+            _safe_backup_path('../sibling/logo.png', self.backups_dir)

@@ -134,7 +134,11 @@ class ThemeController(object):
         self.set_template_settings(self.get_template_settings())
 
     def base_dir(self, theme_name):
-        return os.path.join(THEME_PATH, theme_name)
+        raw_path = os.path.join(THEME_PATH, theme_name)
+        resolved = os.path.realpath(raw_path)
+        if not resolved.startswith(os.path.realpath(THEME_PATH) + os.sep):
+            raise ESPError("Invalid theme name: %s" % theme_name, log=True)
+        return raw_path
 
     def list_filenames(self, dir, file_regexp, mask_base=False):
         """ Quick search for files in the specified directory (dir) which match
@@ -398,10 +402,11 @@ class ThemeController(object):
             if filename == '__pycache__':
                 continue
             full_filename = os.path.join(dir, filename)
-            if os.path.isdir(filename):
+            if os.path.isdir(full_filename):
                 result += self.get_file_summaries(full_filename)
             else:
-                file_data = open(full_filename, 'rb').read()
+                with open(full_filename, 'rb') as f:
+                    file_data = f.read()
                 result.append((full_filename, os.path.getsize(full_filename), hashlib.sha1(file_data).hexdigest()))
         return result
 

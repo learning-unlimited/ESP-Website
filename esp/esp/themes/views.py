@@ -42,14 +42,15 @@ from esp.themes.controllers import ThemeController
 
 from esp.utils.web import render_to_response
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.conf import settings
 
 from datetime import datetime
 import json
 import logging
+import os
 import random
 import string
-import os.path
 import shutil
 
 logger = logging.getLogger(__name__)
@@ -147,6 +148,16 @@ def _generate_favicon_variants(ico_path, images_dir):
         )
 
 
+def _safe_backup_path(filename, backups_dir):
+    """
+    Resolve a user-supplied backup filename to an absolute path and verify it
+    stays within backups_dir. Raises ESPError on path traversal attempts.
+    """
+    resolved = os.path.realpath(os.path.join(backups_dir, filename))
+    if not resolved.startswith(os.path.realpath(backups_dir) + os.sep):
+        raise ESPError("Invalid file selection.", log=True)
+    return resolved
+
 THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
                      "If you want to switch to one of the standard themes, " + \
                      "please contact the web team."
@@ -239,26 +250,31 @@ def logos(request):
             _generate_favicon_variants(settings.MEDIA_ROOT + 'images/favicon.ico', settings.MEDIA_ROOT + 'images')
         elif 'logo_select' in request.POST:
             # Overwrite existing logo file
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['logo_select'], settings.MEDIA_ROOT + 'images/theme/logo.png')
+            backups_dir = settings.MEDIA_ROOT + 'images/backups'
+            src = _safe_backup_path(request.POST['logo_select'], backups_dir)
+            shutil.copyfile(src, settings.MEDIA_ROOT + 'images/theme/logo.png')
             # Update logo version
             Tag.setTag("current_logo_version", value = hex(random.getrandbits(16)))
         elif 'header_select' in request.POST:
             # Overwrite existing header file
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['header_select'], settings.MEDIA_ROOT + 'images/theme/header.png')
+            backups_dir = settings.MEDIA_ROOT + 'images/backups'
+            src = _safe_backup_path(request.POST['header_select'], backups_dir)
+            shutil.copyfile(src, settings.MEDIA_ROOT + 'images/theme/header.png')
             # Update header version
             Tag.setTag("current_header_version", value = hex(random.getrandbits(16)))
         elif 'favicon_select' in request.POST:
-            # Update favicon version
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['favicon_select'], settings.MEDIA_ROOT + 'images/favicon.ico')
+            backups_dir = settings.MEDIA_ROOT + 'images/backups'
+            src = _safe_backup_path(request.POST['favicon_select'], backups_dir)
+            shutil.copyfile(src, settings.MEDIA_ROOT + 'images/favicon.ico')
             # Update favicon version
             Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
             _generate_favicon_variants(settings.MEDIA_ROOT + 'images/favicon.ico', settings.MEDIA_ROOT + 'images')
 
-    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "logo\..*\.png")]
-    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "header\..*\.png")]
+    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"logo\..*\.png")]
+    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"header\..*\.png")]
     favicon_paths = tc.list_filenames(
     settings.MEDIA_ROOT + 'images/backups',
-    "favicon\..*\.ico"
+    r"favicon\..*\.ico"
     )
 
     favicon_paths.sort(
@@ -352,7 +368,7 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
                 tc.load_theme(form.cleaned_data['theme'], backup_info=backup_info)
 
             form.save_to_tag()
-            return HttpResponseRedirect('/themes/')
+            return HttpResponseRedirect(reverse('themes_landing'))
     else:
         form = form_class.load_from_tag(theme_name=current_theme, just_selected=force_display)
 
@@ -457,5 +473,5 @@ def recompile(request, keep_files=None):
         return confirm_overwrite(request, current_theme=theme_name, differences=differences, orig_view='recompile')
 
     tc.recompile_theme(keep_files=keep_files)
-    return HttpResponseRedirect('/themes/')
+    return HttpResponseRedirect(reverse('themes_landing'))
 
