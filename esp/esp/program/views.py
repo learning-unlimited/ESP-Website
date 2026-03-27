@@ -1406,7 +1406,7 @@ def statistics(request, program=None):
             # Batch-fetch latest profile per user to avoid N+1
             profile_by_user = {}
             if user_list:
-                for p in RegistrationProfile.objects.filter(user__in=users).select_related('user').order_by('user_id', '-last_ts'):
+                for p in RegistrationProfile.objects.filter(user__in=user_list).select_related('user', 'contact_user', 'student_info', 'student_info__k12school').order_by('user_id', '-last_ts'):
                     if p.user_id not in profile_by_user:
                         profile_by_user[p.user_id] = p
             profiles = [profile_by_user.get(u.id) or RegistrationProfile(user=u) for u in user_list]
@@ -1438,6 +1438,9 @@ def statistics(request, program=None):
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                result = {}
+                result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
+                result['script'] = render_to_string('program/statistics/script.js', context)
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
