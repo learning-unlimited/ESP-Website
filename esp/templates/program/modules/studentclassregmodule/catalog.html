@@ -85,18 +85,30 @@ Viewing classes for: {{ timeslot.friendly_name }}
 <br>
 
 {% if categories %}
+{% if not category_page %}
 <table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
  <tr>
   <th colspan="2">
    <a name="top"></a>Jump to Categories
   </th>
  </tr>
+ {% if separate_catalog %}
+ <tr>
+  <td colspan="2" style="padding: 10px 20px; font-style: italic; color: #555;">
+   To browse available classes, please select a category below.
+  </td>
+ </tr>
+ {% endif %}
 
 {% for category in categories %}
 {% if forloop.counter0|divisibleby:2 %}
 <tr>{% endif %}
   <td style="width: 50%; vertical-align: top;" valign="top" align="center">
+    {% if separate_catalog %}
+    <a href="/learn/{{ program.getUrlBase }}/catalog/{{ category.id }}" data-category="{{ category.id }}">{{category.category}}</a>
+    {% else %}
     <a href="#cat{{ category.id }}" data-category="{{ category.id }}" title="Click to skip down to `{{ category.category }}'">{{category.category}}</a>
+    {% endif %}
   </td>
  {% if forloop.counter|divisibleby:2 %}
 </tr>{% endif %} 
@@ -105,6 +117,9 @@ Viewing classes for: {{ timeslot.friendly_name }}
 </tr>
 {% endif %}
 </table>
+{% else %}
+<p><a href="/learn/{{ program.getUrlBase }}/catalog">&laquo; Back to Category List</a></p>
+{% endif %}
 {% endif %}
 
 {% load render_qsd %}
