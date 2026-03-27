@@ -226,10 +226,7 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         """Return (ClassSubject, ClassSection) with a meeting in ``timeslot``."""
         for cls in self.program.classes():
             for sec in cls.get_sections():
-                times = list(sec.meeting_times.all())
-                if not times:
-                    continue
-                if times[0].start == timeslot.start:
+                if sec.meeting_times.filter(pk=timeslot.pk).exists():
                     return cls, sec
         return None, None
 
