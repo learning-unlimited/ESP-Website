@@ -87,20 +87,25 @@ if (currentPrograms && currentPrograms.forEach) {
                     '<a href="/manage/pages">Manage static pages</a><br />' +
                     (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
                     '<a href="/admin/filebrowser/browse/">Manage media files</a><br />' +
-                    '<a href="/themes/">Manage theme settings</a>';
+                    '<a href="/themes/">Manage theme settings</a><br />' +
+                    '<a href="/manage/docs/">Website Documentation</a>';
 
     // Append extra links configured in theme settings (never replaces defaults)
     if (typeof toolbarLinks !== 'undefined' && toolbarLinks.length > 0) {
         toolbarLinks.forEach(function(link) {
-            var a = document.createElement('a');
-            a.href = link.link;
-            a.textContent = link.text;
-            linksHtml += '<br/>' + a.outerHTML;
+            // Only allow relative URLs and http/https to prevent XSS
+            var url = link.link;
+            if (url && (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://'))) {
+                var a = document.createElement('a');
+                a.href = url;
+                a.textContent = link.text;
+                linksHtml += '<br/>' + a.outerHTML;
+            }
         });
     }
 
     ESP.registerAdminModule({
-        content_html: linksHtml,
+        content_html: '<div class="content">' + linksHtml + '</div>',
         name: 'Other',
         displayName: 'Other Important Links'
     });

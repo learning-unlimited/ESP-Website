@@ -48,7 +48,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -294,7 +294,13 @@ def lsr_submit(request, program=None):
 
     priority_limit = program.priorityLimit()
 
-    data = json.loads(request.POST['json_data'])
+    json_data = request.POST.get('json_data')
+    if not json_data:
+        return HttpResponse(json.dumps([{"text": "Missing required data"}]), status=400, content_type='application/json')
+    try:
+        data = json.loads(json_data)
+    except (ValueError, TypeError):
+        return HttpResponse(json.dumps([{"text": "Invalid JSON data"}]), status=400, content_type='application/json')
 
     if priority_limit > 1:
         return lsr_submit_HSSP(request, program, priority_limit, data) # temporary function. will merge the two later -jmoldow 05/31
@@ -380,15 +386,26 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
     classes_flagged = [set() for i in range(0, priority_limit+1)] # 1-indexed
     sections_by_block = [defaultdict(set) for i in range(0, priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
 
-    for section_id, (priority, block_id) in data.items():
-        section_id = int(section_id)
-        priority = int(priority)
-        block_id = int(block_id)
+    errors = []
+
+    for section_id, value in data.items():
+        try:
+            priority, block_id = value
+        except (ValueError, TypeError):
+            errors.append({"text": "Invalid data structure for class registration", "cls_sections": []})
+            continue
+
+        try:
+            section_id = int(section_id)
+            priority = int(priority)
+            block_id = int(block_id)
+        except (ValueError, TypeError):
+            errors.append({"text": "Invalid data format", "cls_sections": []})
+            continue
+
         classes_flagged[0].add(section_id)
         classes_flagged[priority].add(section_id)
         sections_by_block[priority][block_id].add(section_id)
-
-    errors = []
 
     for i in range(1, priority_limit+1):
         for block in sections_by_block[i].keys():
@@ -449,8 +466,8 @@ def find_user(userstr):
     userstr_parts = [part.strip() for part in userstr.split(' ') if part]
 
     if len(userstr_parts) == 2 and \
-       re.match("\A\(\d\d\d\)\Z", userstr_parts[0]) and \
-       re.match("[^A-Za-z]*", userstr_parts[1]):
+    re.match(r"\A\(\d\d\d\)\Z", userstr_parts[0]) and \
+    re.match(r"[^A-Za-z]*", userstr_parts[1]):
         # HACK: coerce ["(555)", "555-5555"] to ["(555)555-5555"] so that the
         # first branch of the if statement gets taken
         userstr_parts = ["".join(userstr_parts)]
@@ -579,6 +596,24 @@ def userview(request):
     change_grade_form.fields['graduation_year'].initial = user.getYOG()
     change_grade_form.fields['graduation_year'].choices = [choice for choice in change_grade_form.fields['graduation_year'].choices if bool(choice[0])]
 
+    # Split enrolled sections: those from the selected program vs. all others
+    all_enrolled = user.getEnrolledSections().order_by('parent_class__parent_program', 'id')
+    if program:
+        program_enrolled = all_enrolled.filter(parent_class__parent_program=program)
+        other_enrolled = all_enrolled.exclude(parent_class__parent_program=program)
+    else:
+        program_enrolled = all_enrolled
+        other_enrolled = all_enrolled.none()
+
+    # Split taken/applied sections the same way
+    all_taken = user.getSections().order_by('parent_class__parent_program', 'id')
+    if program:
+        program_taken = all_taken.filter(parent_class__parent_program=program)
+        other_taken = all_taken.exclude(parent_class__parent_program=program)
+    else:
+        program_taken = all_taken
+        other_taken = all_taken.none()
+
     # Get StudentSubjectInterests (starred classes) for this user
     starred_classes = []
     if program:
@@ -591,8 +626,10 @@ def userview(request):
     context = {
         'user': user,
         'taught_classes': user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
-        'enrolled_classes': user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
-        'taken_classes': user.getSections().order_by('parent_class__parent_program', 'id'),
+        'program_enrolled': program_enrolled,
+        'other_enrolled': other_enrolled,
+        'program_taken': program_taken,
+        'other_taken': other_taken,
         'starred_classes': starred_classes,
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
@@ -610,6 +647,44 @@ def userview(request):
         'grade_change_requests': user.requesting_student_set.filter(approved=None),
     }
     return render_to_response("users/userview.html", request, context )
+
+@admin_required
+def userview_edit(request):
+    """ Handle AJAX updates for user information from userview """
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError
+
+    if request.method != 'POST':
+        return HttpResponseBadRequest('Only POST requests are allowed.')
+
+    try:
+        user = ESPUser.objects.get(username=request.POST.get('username'))
+    except ESPUser.DoesNotExist:
+        return HttpResponseBadRequest('User not found.')
+
+    field = request.POST.get('field')
+
+    if field == 'name':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        if not first_name and not last_name:
+            return HttpResponseBadRequest('At least one of first or last name must be provided.')
+        user.first_name = first_name
+        user.last_name = last_name
+    elif field == 'email':
+        email = request.POST.get('email', '').strip()
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                return HttpResponseBadRequest('Invalid email address.')
+        user.email = email
+    else:
+        return HttpResponseBadRequest('Invalid field.')
+
+    user.save()
+    return HttpResponse(json.dumps({'success': True}), content_type="application/json")
+
 
 def deactivate_user(request):
     return activate_or_deactivate_user(request, activate=False)
@@ -784,7 +859,7 @@ def submit_transaction(request):
     transaction.commit()
     try:
         return _submit_transaction(request, log_record)
-    except:
+    except Exception:
         subject = '[ESP CC] Failed to process Cybersource postback'
         log_uri = request.build_absolute_uri(
             reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
@@ -835,7 +910,7 @@ def manage_pages(request):
                 #   Handle submission of bulk move form
                 if form.is_valid():
                     form.save_data()
-                    return HttpResponseRedirect('/manage/pages')
+                    return HttpResponseRedirect(reverse('manage_pages'))
 
             #   Create and display the form
             qsd_id_list = []
@@ -864,7 +939,7 @@ def manage_pages(request):
                 for q in all_qsds:
                     q.disabled = True
                     q.save()
-        return HttpResponseRedirect('/manage/pages')
+        return HttpResponseRedirect(reverse('manage_pages'))
 
     elif 'cmd' in request.GET:
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])
@@ -1215,19 +1290,87 @@ def statistics(request, program=None):
                 programs = programs.filter(url__in=form.cleaned_data['program_instances'])
             result_dict['programs'] = programs
 
-            #   Get list of users the query applies to
-            users_q = Q()
+            #   Which registration dimension applies matches StatisticsQueryForm.hide_unwanted_fields:
+            #   teacher_reg / class_reg hide student fields; all other stats hide teacher fields.
+            #   Hidden fields still leave initial=True on the other role (e.g. teacher_reg_type_all),
+            #   which used to OR in teachers_union() for zipcodes etc. and produced enormous SQL.
+            stats_query = form.cleaned_data['query']
+            teacher_only = stats_query in ('teacher_reg', 'class_reg')
+
+            #   Get list of users the query applies to.
+            #   Accumulate per-program registration Q objects, then apply each role
+            #   filter once (Student / Teacher). Doing (prog_q & role) for every
+            #   program duplicates the groups join on each OR branch and is very
+            #   slow; (prog_q1 | prog_q2 | ...) & role is equivalent for students
+            #   and avoids that.
+            student_reg_types_on_form = [
+                choice[0] for choice in form.fields.get('student_reg_types').choices
+            ] if 'student_reg_types' in form.fields else []
+            teacher_reg_types_on_form = [
+                choice[0] for choice in form.fields.get('teacher_reg_types').choices
+            ] if 'teacher_reg_types' in form.fields else []
+            student_users_q = None
+            teacher_users_q = None
+
             for program in programs:
-                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types']:
-                    students_objects = program.students(QObjects=True)
-                    for reg_type in form.cleaned_data['student_reg_types']:
-                        if reg_type in list(students_objects.keys()):
-                            users_q = users_q | students_objects[reg_type]
-                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types']:
-                    teachers_objects = program.teachers(QObjects=True)
-                    for reg_type in form.cleaned_data['teacher_reg_types']:
-                        if reg_type in list(teachers_objects.keys()):
-                            users_q = users_q | teachers_objects[reg_type]
+                student_q = None
+                if not teacher_only:
+                    if form.cleaned_data.get('student_reg_type_all'):
+                        # "All" should be limited to the registration types shown
+                        # on the statistics form. `program.students_union()`
+                        # includes extra categories like attended_past/enrolled_past
+                        # which can be very expensive and are not part of this query.
+                        students_objects = program.students(QObjects=True)
+                        student_q = Q(pk__in=[])
+                        for reg_type in student_reg_types_on_form:
+                            if reg_type in students_objects:
+                                student_q |= students_objects[reg_type]
+                    elif form.cleaned_data.get('student_reg_types'):
+                        students_objects = program.students(QObjects=True)
+                        student_q = Q(pk__in=[])
+                        for reg_type in form.cleaned_data['student_reg_types']:
+                            if reg_type in students_objects:
+                                student_q |= students_objects[reg_type]
+
+                    if student_q:
+                        if student_users_q is None:
+                            student_users_q = student_q
+                        else:
+                            student_users_q |= student_q
+
+                teacher_q = None
+                if teacher_only:
+                    if form.cleaned_data.get('teacher_reg_type_all'):
+                        # Same restriction as the student side.
+                        teachers_objects = program.teachers(QObjects=True)
+                        teacher_q = Q(pk__in=[])
+                        for reg_type in teacher_reg_types_on_form:
+                            if reg_type in teachers_objects:
+                                teacher_q |= teachers_objects[reg_type]
+                    elif form.cleaned_data.get('teacher_reg_types'):
+                        teachers_objects = program.teachers(QObjects=True)
+                        teacher_q = Q(pk__in=[])
+                        for reg_type in form.cleaned_data['teacher_reg_types']:
+                            if reg_type in teachers_objects:
+                                teacher_q |= teachers_objects[reg_type]
+
+                    if teacher_q:
+                        if teacher_users_q is None:
+                            teacher_users_q = teacher_q
+                        else:
+                            teacher_users_q |= teacher_q
+
+            users_q = None
+            if student_users_q is not None:
+                # Restrict to students so teachers/volunteers with registration-like
+                # records are not counted as students.
+                users_q = student_users_q & ESPUser.getAllOfType('Student')
+            if teacher_users_q is not None:
+                tq = teacher_users_q & ESPUser.getAllOfType('Teacher')
+                users_q = tq if users_q is None else (users_q | tq)
+
+            if users_q is None:
+                users_q = Q(pk__in=[])
 
             #   Narrow down by school (perhaps not ideal results, but faster)
             if form.cleaned_data['school_query_type'] == 'name':
@@ -1253,8 +1396,12 @@ def statistics(request, program=None):
                 zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
                 users_q = users_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
 
-            users = ESPUser.objects.filter(users_q).distinct()
-            result_dict['num_users'] = users.count()
+            #   Distinct PKs only (avoids running the heavy filter twice for count() + list()).
+            user_ids = list(
+                ESPUser.objects.filter(users_q).values_list('pk', flat=True).distinct()
+            )
+            result_dict['num_users'] = len(user_ids)
+            users = ESPUser.objects.filter(pk__in=user_ids)
             user_list = list(users)
             # Batch-fetch latest profile per user to avoid N+1
             profile_by_user = {}

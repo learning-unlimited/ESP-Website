@@ -41,13 +41,111 @@ from esp.themes.controllers import ThemeController
 
 from esp.utils.web import render_to_response
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.conf import settings
 
 from datetime import datetime
+import json
+import logging
 import random
 import string
 import os.path
 import shutil
+
+logger = logging.getLogger(__name__)
+
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
+# Favicon variant sizes for modern browsers and mobile (see #4304, #4466)
+FAVICON_SIZES = [
+    (16, 'favicon-16x16.png'),
+    (32, 'favicon-32x32.png'),
+    (180, 'apple-touch-icon.png'),
+    (192, 'android-chrome-192x192.png'),
+    (512, 'android-chrome-512x512.png'),
+]
+
+
+def _generate_favicon_variants(ico_path, images_dir):
+    """
+    Generate PNG favicon variants and site.webmanifest from an existing favicon.ico.
+    Used when a new favicon is uploaded or selected so modern browsers and mobile get
+    the correct icons (see #4304, #4466).
+    """
+    if not HAS_PIL:
+        logger.warning(
+            "Skipping favicon variant generation for %s because Pillow (PIL) is not available.",
+            ico_path,
+        )
+        return
+    if not os.path.exists(ico_path):
+        logger.warning(
+            "Skipping favicon variant generation because source favicon.ico does not exist: %s",
+            ico_path,
+        )
+        return
+    try:
+        os.makedirs(images_dir, exist_ok=True)
+    except OSError as e:
+        logger.warning(
+            "Failed to create images directory '%s' for favicon variants; skipping generation: %s",
+            images_dir,
+            e,
+            exc_info=True,
+        )
+        return
+    try:
+        with Image.open(ico_path) as img:
+            img = img.convert('RGBA')
+            # LANCZOS for quality; Pillow 10+ has Image.Resampling.LANCZOS, older versions have Image.LANCZOS
+            try:
+                resample = Image.Resampling.LANCZOS  # type: ignore[attr-defined]
+            except AttributeError:
+                resample = getattr(
+                    Image,
+                    'LANCZOS',
+                    getattr(Image, 'BICUBIC', getattr(Image, 'BILINEAR', 0)),
+                )
+            for size, filename in FAVICON_SIZES:
+                out_path = os.path.join(images_dir, filename)
+                resized = img.resize((size, size), resample)
+                resized.save(out_path, 'PNG')
+        name = Tag.getTag('full_group_name') or getattr(settings, 'INSTITUTION_NAME', 'ESP Website')
+        short_name = Tag.getTag('full_group_name') or getattr(settings, 'ORGANIZATION_SHORT_NAME', 'ESP')
+        if name is None:
+            name = 'ESP Website'
+        elif not isinstance(name, str):
+            name = str(name)
+        if short_name is None:
+            short_name = 'ESP'
+        elif not isinstance(short_name, str):
+            short_name = str(short_name)
+        media_url = settings.MEDIA_URL.rstrip('/') + '/'
+        manifest = {
+            "name": name,
+            "short_name": short_name,
+            "icons": [
+                {"src": media_url + "images/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png"},
+                {"src": media_url + "images/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png"},
+            ],
+            "theme_color": "#ffffff",
+            "background_color": "#ffffff",
+            "display": "standalone",
+        }
+        manifest_path = os.path.join(images_dir, 'site.webmanifest')
+        with open(manifest_path, 'w') as f:
+            json.dump(manifest, f, indent=2)
+            f.write('\n')
+    except Exception as e:
+        logger.exception(
+            "Favicon variant generation failed for %s (corrupt image or permission issue?): %s",
+            ico_path, e
+        )
+
 
 THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
                      "If you want to switch to one of the standard themes, " + \
@@ -86,7 +184,7 @@ def selector(request, keep_files=None):
             if tc.get_config_form_class(theme_name) is not None:
                 return configure(request, current_theme=theme_name, force_display=True, keep_files=keep_files)
 
-            tc.save_customizations('%s-last' % tc.get_current_theme())
+            tc.save_customizations(f'{tc.get_current_theme()}-last')
             backup_info = tc.clear_theme(keep_files=keep_files)
             tc.load_theme(theme_name, backup_info=backup_info)
 
@@ -138,6 +236,7 @@ def logos(request):
             with open(settings.MEDIA_ROOT + 'images/backups/favicon.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.ico', 'wb+') as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
+            _generate_favicon_variants(settings.MEDIA_ROOT + 'images/favicon.ico', settings.MEDIA_ROOT + 'images')
         elif 'logo_select' in request.POST:
             # Overwrite existing logo file
             shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['logo_select'], settings.MEDIA_ROOT + 'images/theme/logo.png')
@@ -153,12 +252,13 @@ def logos(request):
             shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['favicon_select'], settings.MEDIA_ROOT + 'images/favicon.ico')
             # Update favicon version
             Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
+            _generate_favicon_variants(settings.MEDIA_ROOT + 'images/favicon.ico', settings.MEDIA_ROOT + 'images')
 
-    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "logo\..*\.png")]
-    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "header\..*\.png")]
+    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"logo\..*\.png")]
+    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"header\..*\.png")]
     favicon_paths = tc.list_filenames(
-        settings.MEDIA_ROOT + 'images/backups',
-        "favicon\..*\.ico"
+     settings.MEDIA_ROOT + 'images/backups',
+      r"favicon\..*\.ico"
     )
 
     favicon_paths.sort(
@@ -199,7 +299,7 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
 
         #   Build a list of filenames that we are not supposed to overwrite.
         for entry in diffs_current:
-            post_key = 'overwrite_%s' % entry['filename_hash']
+            post_key = f'overwrite_{entry["filename_hash"]}'
             post_val = request.POST.get(post_key, None)
             if post_val is not None:
                 if post_val != 'overwrite':
@@ -252,7 +352,7 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
                 tc.load_theme(form.cleaned_data['theme'], backup_info=backup_info)
 
             form.save_to_tag()
-            return HttpResponseRedirect('/themes/')
+            return HttpResponseRedirect(reverse('themes_landing'))
     else:
         form = form_class.load_from_tag(theme_name=current_theme, just_selected=force_display)
 
@@ -280,7 +380,7 @@ def editor(request):
                 if theme_name == 'None':
                     #   Generate a temporary theme name
                     random_slug  = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
-                    theme_name = 'theme-%s-%s' % (datetime.now().strftime('%Y%m%d'), random_slug)
+                    theme_name = f'theme-{datetime.now().strftime("%Y%m%d")}-{random_slug}'
             else:
                 theme_name = request.POST['saveThemeName']
             vars = request.POST.dict()
@@ -357,4 +457,4 @@ def recompile(request, keep_files=None):
         return confirm_overwrite(request, current_theme=theme_name, differences=differences, orig_view='recompile')
 
     tc.recompile_theme(keep_files=keep_files)
-    return HttpResponseRedirect('/themes/')
+return HttpResponseRedirect(reverse('themes_landing'))

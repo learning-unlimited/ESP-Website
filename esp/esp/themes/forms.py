@@ -42,7 +42,7 @@ import json
 
 class ThemeConfigurationForm(forms.Form):
     theme = forms.CharField(widget=forms.HiddenInput)
-    just_selected = forms.NullBooleanField(widget=forms.HiddenInput, initial=False)
+    just_selected = forms.BooleanField(widget=forms.HiddenInput, initial=False, required=False)
 
     # Extra admin toolbar links — editable from /themes/ for all themes
     toolbar_links = forms.Field(
