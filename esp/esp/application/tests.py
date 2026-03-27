@@ -8,7 +8,7 @@ from django.contrib.auth.models import Group
 
 from esp.application.models import StudentClassApp, StudentProgramApp
 from esp.program.models import Program
-from esp.program.models.class_ import ClassCategories, ClassSubject
+from esp.program.models.class_ import CLASSCATEGORY, ClassSubject
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser
 
@@ -61,7 +61,7 @@ class StudentClassAppTest(TestCase):
         self.teacher = ESPUser.objects.create_user(
             username='classteacher', password='password',
         )
-        self.category = ClassCategories.objects.create(
+        self.category = CLASSCATEGORY.objects.create(
             category='Test Category',
             symbol='T',
             seq=0,

@@ -35,7 +35,7 @@ from collections import OrderedDict
 from django              import forms
 from django.db.models.query import Q
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
-from esp.accounting.models import LineItemOptions
+from esp.accounting.models import LineItemOption
 from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models  import SplashInfo
@@ -167,9 +167,9 @@ class StudentExtraCosts(ProgramModuleObj):
                 raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
 
         #   Determine which line item types we will be asking about
-        costs_list = self.lineitemtypes().filter(max_quantity__lte=1, lineitemoptions__isnull=True)
-        multicosts_list = self.lineitemtypes().filter(max_quantity__gt=1, lineitemoptions__isnull=True)
-        multiselect_list = self.lineitemtypes().filter(lineitemoptions__isnull=False)
+        costs_list = self.lineitemtypes().filter(max_quantity__lte=1, LineItemOption__isnull=True)
+        multicosts_list = self.lineitemtypes().filter(max_quantity__gt=1, LineItemOption__isnull=True)
+        multiselect_list = self.lineitemtypes().filter(LineItemOption__isnull=False)
         if prog.sibling_discount:
             sibling_line_item = iac.default_siblingdiscount_lineitemtype()
             sibling_form = SiblingDiscountForm(prefix="%s" % sibling_line_item.id, program=prog)
@@ -233,7 +233,7 @@ class StudentExtraCosts(ProgramModuleObj):
                                 option_id = form.cleaned_data['option']
                                 option_amount = None
                             if option_id:
-                                option = LineItemOptions.objects.get(id=option_id)
+                                option = LineItemOption.objects.get(id=option_id)
                                 #   Give error if no amount was typed in
                                 if option.is_custom and not option_amount:
                                     preserve_items.append(lineitem_type.text)
@@ -313,7 +313,7 @@ class StudentExtraCosts(ProgramModuleObj):
         for x in multiselect_list:
             new_entry = {'type': 'select', 'LineItem': x}
             option_data = {}
-            for option in x.lineitemoptions_set.all():
+            for option in x.LineItemOption_set.all():
                 option_data[option.id] = {'cost': option.amount_dec_inherited,
                                           'is_custom': 'true' if option.is_custom else 'false',
                                           'for_finaid': 'true' if x.for_finaid else 'false'}
@@ -323,7 +323,7 @@ class StudentExtraCosts(ProgramModuleObj):
                 #   and the saved amount differs from the amount this option would normally cost.
                 custom_amount = ''
                 if count_map[x.text][3]:
-                    default_amount = LineItemOptions.objects.get(id=count_map[x.text][3]).amount_dec_inherited
+                    default_amount = LineItemOption.objects.get(id=count_map[x.text][3]).amount_dec_inherited
                     if count_map[x.text][2] != default_amount:
                         custom_amount = count_map[x.text][2]
                 form_kwargs['initial'] = {'option': (count_map[x.text][3], custom_amount)}

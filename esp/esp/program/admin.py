@@ -45,7 +45,7 @@ from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstrai
 
 from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord, ModeratorRecord
 
-from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
+from esp.program.models import ClassSection, ClassSubject, CLASSCATEGORY, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
 from esp.program.models import ClassFlag, ClassFlagType
@@ -324,7 +324,7 @@ class SubjectAdmin(admin.ModelAdmin):
     )
 admin_site.register(ClassSubject, SubjectAdmin)
 
-class Admin_ClassCategories(admin.ModelAdmin):
+class Admin_CLASSCATEGORY(admin.ModelAdmin):
      list_display = ('category', 'symbol', 'seq', )
 
      def get_readonly_fields(self, request, obj=None):
@@ -332,7 +332,7 @@ class Admin_ClassCategories(admin.ModelAdmin):
              return self.readonly_fields + ('symbol',)
          return self.readonly_fields
 
-admin_site.register(ClassCategories, Admin_ClassCategories)
+admin_site.register(CLASSCATEGORY, Admin_CLASSCATEGORY)
 
 class Admin_ClassSizeRange(admin.ModelAdmin):
      list_display = ('program', 'range_min', 'range_max', )

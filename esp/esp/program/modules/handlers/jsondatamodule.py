@@ -49,7 +49,7 @@ from esp.cal.models import Event, EventType
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.class_status import ClassStatus
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, CLASSCATEGORY, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student_in_grade, needs_admin, no_auth, aux_call
 from esp.resources.models import ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
@@ -205,9 +205,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def categories(prog):
         categories = prog.class_categories.all()
         if prog.open_class_registration:
-            categories = categories.union(ClassCategories.objects.filter(pk=prog.open_class_category.pk))
+            categories = categories.union(CLASSCATEGORY.objects.filter(pk=prog.open_class_category.pk))
         if len(categories) == 0:
-            categories = ClassCategories.objects.filter(program__isnull=True)
+            categories = CLASSCATEGORY.objects.filter(program__isnull=True)
 
         categories_dicts = [
             {
@@ -881,8 +881,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         if crmi.open_class_registration:
             Q_categories |= Q(pk=prog.open_class_category.pk)
         #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
-        program_categories = ClassCategories.objects.filter(Q_categories).distinct().values_list('id', flat=True)
-        annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections'), num_class_hours=Sum('cls__sections__duration')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'num_class_hours', 'category').distinct()
+        program_categories = CLASSCATEGORY.objects.filter(Q_categories).distinct().values_list('id', flat=True)
+        annotated_categories = CLASSCATEGORY.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections'), num_class_hours=Sum('cls__sections__duration')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'num_class_hours', 'category').distinct()
         #   Convert Decimal values to float for serialization
         for i in range(len(annotated_categories)):
             if annotated_categories[i]['num_class_hours'] is None:

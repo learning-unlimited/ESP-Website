@@ -237,7 +237,7 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='ZipCodeSearches',
+            name='ZIPCODESEARCH',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('distance', models.DecimalField(max_digits=15, decimal_places=3)),
@@ -245,7 +245,7 @@ class Migration(migrations.Migration):
                 ('zip_code', models.ForeignKey(to='users.ZipCode', on_delete=models.CASCADE)),
             ],
             options={
-                'db_table': 'users_zipcodesearches',
+                'db_table': 'users_ZIPCODESEARCH',
             },
         ),
         migrations.CreateModel(

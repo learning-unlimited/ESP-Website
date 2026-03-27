@@ -1,8 +1,8 @@
 from django.test import RequestFactory
 
 from esp.admin import admin_site
-from esp.program.admin import ProgramModuleAdmin, Admin_ClassCategories
-from esp.program.models import ProgramModule, ClassCategories
+from esp.program.admin import ProgramModuleAdmin, Admin_CLASSCATEGORY
+from esp.program.models import ProgramModule, CLASSCATEGORY
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 
@@ -22,7 +22,7 @@ class AdminReadonlyFieldsTest(TestCase):
         self.assertIn('module_type', edit_fields)
 
     def test_class_categories_symbol_edit_only(self):
-        admin = Admin_ClassCategories(ClassCategories, admin_site)
+        admin = Admin_CLASSCATEGORY(CLASSCATEGORY, admin_site)
 
         create_fields = admin.get_readonly_fields(self.request, obj=None)
         edit_fields = admin.get_readonly_fields(self.request, obj=object())

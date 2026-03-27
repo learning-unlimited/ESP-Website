@@ -39,7 +39,7 @@ import unicodedata
 from django.conf import settings
 from esp.middleware import ESPError
 from esp.users.models import StudentInfo, K12School, RecordType
-from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
+from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, CLASSCATEGORY
 from esp.dbmail.models import PlainRedirect
 from esp.utils.widgets import DateTimeWidget
 from django import forms
@@ -460,7 +460,7 @@ class RecordTypeForm(forms.ModelForm):
 
 class CategoryForm(forms.ModelForm):
     class Meta:
-        model = ClassCategories
+        model = CLASSCATEGORY
         fields = ['category', 'symbol', 'seq']
         widgets = {
             'symbol': forms.TextInput(attrs={'pattern': '[A-Za-z]{1}', 'title': 'Single letter'})

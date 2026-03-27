@@ -34,11 +34,11 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, \
-    LineItemType, LineItemOptions, CybersourcePostback
+    LineItemType, LineItemOption, CybersourcePostback
 from esp.utils.admin_user_search import default_user_search
 
 class LIOInline(admin.TabularInline):
-    model = LineItemOptions
+    model = LineItemOption
 
 class LITAdmin(admin.ModelAdmin):
     list_display = ['text', 'amount_dec', 'program', 'required', 'for_finaid', 'num_options', 'max_quantity']

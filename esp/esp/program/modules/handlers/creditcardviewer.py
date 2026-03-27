@@ -80,7 +80,7 @@ class CreditCardViewer(ProgramModuleObj):
         iac = IndividualAccountingController(prog, student)
         return (student, iac.get_transfers(), iac.amount_requested(), iac.amount_due())
     _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemType')
-    _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemOptions')
+    _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemOption')
     _payment_table_row_cached.__func__.depend_on_model('accounting.FinancialAidGrant')
     _payment_table_row_cached.__func__.depend_on_model('accounting.Account')
     _payment_table_row_cached.__func__.depend_on_model('accounting.Transfer')

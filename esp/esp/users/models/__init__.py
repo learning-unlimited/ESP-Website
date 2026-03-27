@@ -1919,7 +1919,7 @@ class ZipCode(models.Model):
         if distance < 0:
             distance *= -1
 
-        oldsearches = ZipCodeSearches.objects.filter(zip_code = self,
+        oldsearches = ZIPCODESEARCH.objects.filter(zip_code = self,
                                                      distance = distance_decimal)
 
         if len(oldsearches) > 0:
@@ -1931,7 +1931,7 @@ class ZipCode(models.Model):
         winners += [ zipc.zip_code for zipc in all_zips
                      if self.distance(zipc) <= distance_float ]
 
-        newsearch = ZipCodeSearches(zip_code = self,
+        newsearch = ZIPCODESEARCH(zip_code = self,
                                     distance = distance,
                                     zipcodes = ','.join(winners))
         newsearch.save()
@@ -1943,14 +1943,14 @@ class ZipCode(models.Model):
                                 self.latitude)
 
 
-class ZipCodeSearches(models.Model):
+class ZIPCODESEARCH(models.Model):
     zip_code = models.ForeignKey(ZipCode, on_delete=models.CASCADE)
     distance = models.DecimalField(max_digits = 15, decimal_places = 3)
     zipcodes = models.TextField()
 
     class Meta:
         app_label = 'users'
-        db_table = 'users_zipcodesearches'
+        db_table = 'users_zipcodesearches'  # ← KEEP OLD TABLE NAME
         verbose_name_plural = 'Zip code searches'
 
     def __str__(self):

@@ -67,7 +67,7 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType, StudentSubjectInterest
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, CLASSCATEGORY, ClassFlagType, StudentSubjectInterest
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -1152,13 +1152,13 @@ def catsflagsrecs(request, section=""):
                     cat_form = CategoryForm()
             elif request.POST.get('command') == 'load': # Load existing category into form
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
+                cats = CLASSCATEGORY.objects.filter(id = cat_id)
                 if cats.count() == 1:
                     cat = cats[0]
                     cat_form = CategoryForm(instance = cat)
             elif request.POST.get('command') == 'edit': # Edit existing category
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
+                cats = CLASSCATEGORY.objects.filter(id = cat_id)
                 if cats.count() == 1:
                     cat = cats[0]
                     cat_form = CategoryForm(request.POST, instance = cat)
@@ -1167,7 +1167,7 @@ def catsflagsrecs(request, section=""):
                         cat_form = CategoryForm()
             elif request.POST.get('command') == 'delete': # Delete category
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
+                cats = CLASSCATEGORY.objects.filter(id = cat_id)
                 if cats.count() == 1:
                     cat = cats[0]
                     cat.delete()
@@ -1231,7 +1231,7 @@ def catsflagsrecs(request, section=""):
     context['cat_form'] = cat_form
     context['flag_form'] = flag_form
     context['rec_form'] = rec_form
-    context['categories'] = ClassCategories.objects.all().order_by('seq')
+    context['categories'] = CLASSCATEGORY.objects.all().order_by('seq')
     context['flag_types'] = ClassFlagType.objects.all().order_by('seq')
     rec_types = RecordType.objects.all().order_by('id')
     context['record_types'] = sorted(rec_types, key = lambda x:x.is_custom(), reverse=True)

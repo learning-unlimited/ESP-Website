@@ -2,7 +2,7 @@
 Tests for esp.accounting.models
 Source: esp/esp/accounting/models.py
 
-Tests LineItemType, LineItemOptions, Account, Transfer, and FinancialAidGrant models.
+Tests LineItemType, LineItemOption, Account, Transfer, and FinancialAidGrant models.
 """
 from decimal import Decimal
 
@@ -11,7 +11,7 @@ from django.contrib.auth.models import Group
 from esp.accounting.models import (
     Account,
     FinancialAidGrant,
-    LineItemOptions,
+    LineItemOption,
     LineItemType,
     Transfer,
 )
@@ -49,7 +49,7 @@ class LineItemTypeTest(TestCase):
         self.assertEqual(self.lit.num_options, 0)
 
     def test_num_options_with_options(self):
-        LineItemOptions.objects.create(
+        LineItemOption.objects.create(
             lineitem_type=self.lit,
             description='Option A',
             amount_dec=Decimal('10.00'),
@@ -60,12 +60,12 @@ class LineItemTypeTest(TestCase):
         self.assertIsNone(self.lit.options_cost_range)
 
     def test_options_cost_range_with_options(self):
-        LineItemOptions.objects.create(
+        LineItemOption.objects.create(
             lineitem_type=self.lit,
             description='Cheap',
             amount_dec=Decimal('5.00'),
         )
-        LineItemOptions.objects.create(
+        LineItemOption.objects.create(
             lineitem_type=self.lit,
             description='Expensive',
             amount_dec=Decimal('50.00'),
@@ -77,7 +77,7 @@ class LineItemTypeTest(TestCase):
         self.assertFalse(self.lit.has_custom_options)
 
     def test_has_custom_options_true(self):
-        LineItemOptions.objects.create(
+        LineItemOption.objects.create(
             lineitem_type=self.lit,
             description='Custom',
             amount_dec=Decimal('0.00'),
@@ -97,7 +97,7 @@ class LineItemTypeTest(TestCase):
         self.assertIn('Test Item', result)
 
 
-class LineItemOptionsTest(TestCase):
+class LineItemOptionTest(TestCase):
     def setUp(self):
         super().setUp()
         _setup_roles()
@@ -107,12 +107,12 @@ class LineItemOptionsTest(TestCase):
             amount_dec=Decimal('25.00'),
             program=self.program,
         )
-        self.option_with_amount = LineItemOptions.objects.create(
+        self.option_with_amount = LineItemOption.objects.create(
             lineitem_type=self.lit,
             description='With Amount',
             amount_dec=Decimal('15.00'),
         )
-        self.option_without_amount = LineItemOptions.objects.create(
+        self.option_without_amount = LineItemOption.objects.create(
             lineitem_type=self.lit,
             description='Inherits',
             amount_dec=None,

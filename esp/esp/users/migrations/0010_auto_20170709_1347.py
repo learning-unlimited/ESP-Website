@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name='zipcodesearches',
+            name='ZIPCODESEARCH',
             options={'verbose_name_plural': 'Zip Code Searches'},
         ),
     ]

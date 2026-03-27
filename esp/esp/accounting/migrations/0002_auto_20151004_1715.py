@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(to='program.Program', on_delete=models.CASCADE),
         ),
         migrations.AddField(
-            model_name='lineitemoptions',
+            model_name='LineItemOption',
             name='lineitem_type',
             field=models.ForeignKey(to='accounting.LineItemType', on_delete=models.CASCADE),
         ),

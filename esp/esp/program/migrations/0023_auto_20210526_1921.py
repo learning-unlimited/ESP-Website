@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name='classcategories',
+            name='CLASSCATEGORY',
             options={'verbose_name_plural': 'Class categories'},
         ),
         migrations.AlterModelOptions(

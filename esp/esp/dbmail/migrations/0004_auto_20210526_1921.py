@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name='messagevars',
+            name='MessageVar',
             options={'verbose_name_plural': 'Message variables'},
         ),
         migrations.AlterModelOptions(

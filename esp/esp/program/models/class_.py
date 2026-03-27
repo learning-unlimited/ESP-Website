@@ -86,7 +86,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 from esp.customforms.linkfields import CustomFormsLinkModel
 
-__all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'ClassSizeRange']
+__all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'CLASSCATEGORY', 'ClassSizeRange']
 
 STATUS_CHOICES = (
         (ClassStatus.CANCELLED, "cancelled"),
@@ -1439,7 +1439,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     title = models.TextField()
     parent_program = models.ForeignKey(Program, on_delete=models.CASCADE)
-    category = models.ForeignKey('ClassCategories', related_name = 'cls', on_delete=models.CASCADE)
+    category = models.ForeignKey('CLASSCATEGORY', related_name = 'cls', on_delete=models.CASCADE)
     class_info = models.TextField(blank=True)
     teachers = models.ManyToManyField(ESPUser)
     allow_lateness = models.BooleanField(default=False)
@@ -2151,7 +2151,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         db_table = 'program_class'
         app_label = 'program'
 
-class ClassCategories(models.Model):
+class CLASSCATEGORY(models.Model):
     """ A list of all possible categories for an ESP class
 
     Categories include 'Mathematics', 'Science', 'Social Sciences', etc.
@@ -2167,7 +2167,7 @@ class ClassCategories(models.Model):
     class Meta:
         verbose_name_plural = 'Class categories'
         app_label = 'program'
-        db_table = 'program_classcategories'
+        db_table = 'program_classcategories'  # ← KEEP OLD TABLE NAME
 
     def __str__(self):
         return f'{self.category} ({self.symbol})'
@@ -2191,6 +2191,6 @@ def install():
         'X': 'Miscellaneous',
     }
 
-    if not ClassCategories.objects.exists():
+    if not CLASSCATEGORY.objects.exists():
         for key in category_dict:
-            ClassCategories.objects.create(symbol=key, category=category_dict[key])
+            CLASSCATEGORY.objects.create(symbol=key, category=category_dict[key])

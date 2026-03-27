@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
-from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, CLASSCATEGORY, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
 from esp.resources.models import Resource, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
@@ -303,8 +303,8 @@ class ProgramHappenTest(TestCase):
     def makeprogram(self):
         """ Test program creation through the web form. """
         # Make stuff that a program needs
-        ClassCategories.objects.create(symbol='X', category='Everything')
-        ClassCategories.objects.create(symbol='N', category='Nothing')
+        CLASSCATEGORY.objects.create(symbol='X', category='Everything')
+        CLASSCATEGORY.objects.create(symbol='N', category='Nothing')
         ProgramModule.objects.create(link_title='Default Module', admin_title='Default Module (do stuff)', module_type='learn', handler='StudentRegCore', seq=0, required=False)
         ProgramModule.objects.create(link_title='Register Your Classes', admin_title='Teacher Class Registration', module_type='teach', handler='TeacherClassRegModule',
             inline_template='listclasses.html', seq=10, required=False)
@@ -325,7 +325,7 @@ class ProgramHappenTest(TestCase):
                 'program_size_max': '3000',
                 'program_type': 'Prubbogrubbam!',
                 'program_modules': [x.id for x in ProgramModule.objects.all()],
-                'class_categories': [x.id for x in ClassCategories.objects.all()],
+                'class_categories': [x.id for x in CLASSCATEGORY.objects.all()],
                 'admins': self.admin.id,
                 'teacher_reg_start': '2000-01-01 00:00:00',
                 'teacher_reg_end':   '3001-01-01 00:00:00',
@@ -560,7 +560,7 @@ class ProgramFrameworkTest(TestCase):
         #   Create class categories
         self.categories = []
         for i in range(settings['num_categories']):
-            cat, created = ClassCategories.objects.get_or_create(category='Category %d' % i, symbol=chr(65+i))
+            cat, created = CLASSCATEGORY.objects.get_or_create(category='Category %d' % i, symbol=chr(65+i))
             self.categories.append(cat)
 
         #   Create users

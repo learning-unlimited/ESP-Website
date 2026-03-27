@@ -371,7 +371,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_lunch_timeslots_cached.depend_on_model('cal.Event')
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassSection')
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassSubject')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassCategories')
+    ajax_lunch_timeslots_cached.depend_on_model('program.CLASSCATEGORY')
     ajax_lunch_timeslots_cached.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
 
     @aux_call
