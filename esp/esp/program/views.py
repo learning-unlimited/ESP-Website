@@ -56,7 +56,7 @@ from django.contrib.redirects.models import Redirect
 from django.contrib.sites.models import Site
 from django.db.models.query import Q
 from django.db.models import Min
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.core.mail import mail_admins
 from django.core.cache import cache
 from django.urls import reverse
@@ -730,6 +730,85 @@ def manage_programs(request):
                'user': request.user}
     return render_to_response('program/manage_programs.html', request, context)
 
+
+def _schedule_program_mailing_lists(program):
+    if not (settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys())):
+        return
+
+    def create_program_lists():
+        mailing_list_name = "%s_%s" % (program.program_type, program.program_instance)
+        teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
+        students_list_name = "%s-%s" % (mailing_list_name, "students")
+
+        create_list(students_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
+        create_list(teachers_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
+
+        load_list_settings(teachers_list_name, "lists/program_mailman.config")
+        load_list_settings(students_list_name, "lists/program_mailman.config")
+
+        apply_list_settings(teachers_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], program.director_email]})
+        apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], program.director_email]})
+
+        if 'archive' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
+            add_list_members(students_list_name, [program.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+            add_list_members(teachers_list_name, [program.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+
+    transaction.on_commit(create_program_lists)
+
+
+def _create_program_from_form(form, template_prog_id=None):
+    with transaction.atomic():
+        perms, _ = prepare_program(form.save(commit=False), form.cleaned_data)
+        new_prog = form.save(commit=True)
+        commit_program(new_prog, perms, form.cleaned_data['base_cost'], form.cleaned_data['sibling_discount'])
+
+        # Create the default resource types now
+        default_restypes = Tag.getTag('default_restypes')
+        if default_restypes:
+            resource_type_labels = json.loads(default_restypes)
+            for label in resource_type_labels:
+                ResourceType.get_or_create(label, new_prog)
+
+        # If a template program was chosen, load modules based on that program's
+        if template_prog_id is not None:
+            # Force all ProgramModuleObjs and their extensions to be created now
+            old_prog = Program.objects.get(id=template_prog_id)
+            # If we are using another program as a template, let's copy the seq and required values from that program.
+            new_prog.getModules(old_prog=old_prog)
+            # Copy CRMI settings from old program
+            old_crmi = ClassRegModuleInfo.objects.get(program=old_prog)
+            new_crmi = ClassRegModuleInfo.objects.get(program=new_prog)
+            for field in old_crmi._meta.fields:
+                if field.name not in ["id", "program"]:
+                    setattr(new_crmi, field.name, getattr(old_crmi, field.name))
+            new_crmi.save()
+            # Copy SCRMI settings from old program
+            old_scrmi = StudentClassRegModuleInfo.objects.get(program=old_prog)
+            new_scrmi = StudentClassRegModuleInfo.objects.get(program=new_prog)
+            for field in old_scrmi._meta.fields:
+                if field.name not in ["id", "program"]:
+                    setattr(new_scrmi, field.name, getattr(old_scrmi, field.name))
+            new_scrmi.save()
+            # Copy tags from old program
+            ct = ContentType.objects.get_for_model(old_prog)
+            old_tags = Tag.objects.filter(content_type=ct, object_id=old_prog.id)
+            for old_tag in old_tags:
+                # Some tags we don't want to import
+                if old_tag.key not in ['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id', 'student_lottery_run']:
+                    new_tag, created = Tag.objects.get_or_create(key=old_tag.key, content_type=ct, object_id=new_prog.id)
+                    # Some tags get created during program creation (e.g. sibling discount), and we don't want to override those
+                    if created:
+                        new_tag.value = old_tag.value
+                        new_tag.save()
+        # If no template program is selected, create new modules
+        else:
+            # Create new modules
+            new_prog.getModules()
+
+        _schedule_program_mailing_lists(new_prog)
+        return new_prog
+
+
 @admin_required
 def newprogram(request):
     # First, if the user selected a template program, pre-populate fields with that program's data.
@@ -775,71 +854,24 @@ def newprogram(request):
     if request.method == 'POST':
         form = ProgramCreationForm(request.POST)
         if form.is_valid():
-            temp_prog = form.save(commit=False)
-            perms, modules = prepare_program(temp_prog, form.cleaned_data)
-            new_prog = form.save(commit = True)
-            commit_program(new_prog, perms, form.cleaned_data['base_cost'], form.cleaned_data['sibling_discount'])
-            # Create the default resource types now
-            default_restypes = Tag.getTag('default_restypes')
-            if default_restypes:
-                resource_type_labels = json.loads(default_restypes)
-                resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
-            # If a template program was chosen, load modules based on that program's
-            if template_prog is not None:
-                # Force all ProgramModuleObjs and their extensions to be created now
-                old_prog = Program.objects.get(id=template_prog_id)
-                # If we are using another program as a template, let's copy the seq and required values from that program.
-                new_prog.getModules(old_prog=old_prog)
-                # Copy CRMI settings from old program
-                old_crmi = ClassRegModuleInfo.objects.get(program=old_prog)
-                new_crmi = ClassRegModuleInfo.objects.get(program=new_prog)
-                for field in old_crmi._meta.fields:
-                    if field.name not in ["id", "program"]:
-                        setattr(new_crmi, field.name, getattr(old_crmi, field.name))
-                new_crmi.save()
-                # Copy SCRMI settings from old program
-                old_scrmi = StudentClassRegModuleInfo.objects.get(program=old_prog)
-                new_scrmi = StudentClassRegModuleInfo.objects.get(program=new_prog)
-                for field in old_scrmi._meta.fields:
-                    if field.name not in ["id", "program"]:
-                        setattr(new_scrmi, field.name, getattr(old_scrmi, field.name))
-                new_scrmi.save()
-                # Copy tags from old program
-                ct = ContentType.objects.get_for_model(old_prog)
-                old_tags = Tag.objects.filter(content_type=ct, object_id=old_prog.id)
-                for old_tag in old_tags:
-                    # Some tags we don't want to import
-                    if old_tag.key not in ['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id', 'student_lottery_run']:
-                        new_tag, created = Tag.objects.get_or_create(key=old_tag.key, content_type=ct, object_id=new_prog.id)
-                        # Some tags get created during program creation (e.g. sibling discount), and we don't want to override those
-                        if created:
-                            new_tag.value = old_tag.value
-                            new_tag.save()
-            # If no template program is selected, create new modules
+            try:
+                new_prog = _create_program_from_form(form, template_prog_id=template_prog_id)
+            except IntegrityError:
+                existing_program = Program.objects.filter(url=form.cleaned_data.get('new_url')).order_by('id').first()
+                if existing_program and existing_program.name == form.cleaned_data.get('new_name'):
+                    logger.warning(
+                        'Duplicate program creation submission detected for %s; redirecting to program %s.',
+                        existing_program.url,
+                        existing_program.id,
+                    )
+                    return HttpResponseRedirect('/manage/' + existing_program.url + '/resources')
+                logger.warning('Program creation rolled back due to database conflict.', exc_info=True)
+                form.add_error(
+                    None,
+                    'Program creation hit a database conflict while finalizing related data. No changes were saved. Please reload and try again.',
+                )
             else:
-                # Create new modules
-                new_prog.getModules()
-            manage_url = '/manage/' + new_prog.url + '/resources'
-            # While we're at it, create the program's mailing list
-            if settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
-                mailing_list_name = "%s_%s" % (new_prog.program_type, new_prog.program_instance)
-                teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
-                students_list_name = "%s-%s" % (mailing_list_name, "students")
-
-                create_list(students_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
-                create_list(teachers_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
-
-                load_list_settings(teachers_list_name, "lists/program_mailman.config")
-                load_list_settings(students_list_name, "lists/program_mailman.config")
-
-                apply_list_settings(teachers_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
-                apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
-
-                if 'archive' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
-                    add_list_members(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
-                    add_list_members(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
-            # Submit and create the program
-            return HttpResponseRedirect(manage_url)
+                return HttpResponseRedirect('/manage/' + new_prog.url + '/resources')
     # If the form has not been submitted, the default view is a blank form (or the pre-populated form with the template data).
     else:
         if template_prog:
