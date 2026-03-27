@@ -552,7 +552,7 @@ class RequireCSRFFailureFilterTest(DjangoTestCase):
     def test_blocks_request_logger(self):
         record = self._make_record("django.request")
         self.assertFalse(self.filter.filter(record))
-        
+
 def suite():
     """Choose tests to expose to the Django tester."""
     s = unittest.TestSuite()
