@@ -134,47 +134,32 @@ class AutoschedulerController(object):
                 self.optimizer.manipulator.history):
             row = []
             if action["action"] == "schedule":
-                row.append(["Scheduled {}:".format(
-                                self.section_identifier(action["section"])),
+                row.append([f"Scheduled {self.section_identifier(action['section'])}:",
                            self.section_info(action["section"])])
-                row.append(["In {}:".format(
-                                self.roomslot_identifier(
-                                    action["start_roomslot"])),
+                row.append([f"In {self.roomslot_identifier(action['start_roomslot'])}:",
                            self.roomslot_info(action["start_roomslot"])])
             elif action["action"] == "move":
-                row.append(["Moved {}:".format(
-                                self.section_identifier(action["section"])),
+                row.append([f"Moved {self.section_identifier(action['section'])}:",
                            self.section_info(action["section"])])
-                row.append(["From {}:".format(
-                                self.roomslot_identifier(
-                                    action["prev_start_roomslot"])),
+                row.append([f"From {self.roomslot_identifier(action['prev_start_roomslot'])}:",
                            self.roomslot_info(action["prev_start_roomslot"])])
-                row.append(["To {}:".format(
-                                self.roomslot_identifier(
-                                    action["start_roomslot"])),
+                row.append([f"To {self.roomslot_identifier(action['start_roomslot'])}:",
                            self.roomslot_info(action["start_roomslot"])])
             elif action["action"] == "unschedule":
-                row.append(["Unscheduled {}:".format(
-                                self.section_identifier(action["section"])),
+                row.append([f"Unscheduled {self.section_identifier(action['section'])}:",
                            self.section_info(action["section"])])
-                row.append(["From {}:".format(
-                                self.roomslot_identifier(
-                                    action["prev_start_roomslot"])),
+                row.append([f"From {self.roomslot_identifier(action['prev_start_roomslot'])}:",
                            self.roomslot_info(action["prev_start_roomslot"])])
             elif action["action"] == "swap":
                 sec1, sec2 = action["sections"]
                 rs2, rs1 = action["original_roomslots"]
-                row.append(["Swapped {}:".format(
-                                self.section_identifier(sec1)),
+                row.append([f"Swapped {self.section_identifier(sec1)}:",
                            self.section_info(sec1)])
-                row.append(["Now in {}:".format(
-                                self.roomslot_identifier(rs1)),
+                row.append([f"Now in {self.roomslot_identifier(rs1)}:",
                            self.roomslot_info(rs1)])
-                row.append(["and {}:".format(
-                                self.section_identifier(sec2)),
+                row.append([f"and {self.section_identifier(sec2)}:",
                            self.section_info(sec2)])
-                row.append(["Now in {}:".format(
-                                self.roomslot_identifier(rs2)),
+                row.append([f"Now in {self.roomslot_identifier(rs2)}:",
                            self.roomslot_info(rs2)])
             else:
                 raise SchedulingError("History was broken.")
@@ -199,16 +184,15 @@ class AutoschedulerController(object):
 
             def format_row(row):
                 scorer, weight, delta = row
-                return "{} (wt {}): chg {:.3f} -> {:.3f}".format(
-                    scorer, weight, delta, weight * delta // total_wt)
+                return f"{scorer} (wt {weight}): chg {delta:.3f} -> {weight * delta // total_wt:.3f}"
             new_row = []
             if len(diffs) > 6:
                 new_row += [format_row(r) for r in diffs[:3]]
-                new_row += ["[{} more truncated]".format(len(diffs) - 6)]
+                new_row += [f"[{len(diffs) - 6} more truncated]"]
                 new_row += [format_row(r) for r in diffs[-3:]]
             else:
                 new_row += [format_row(r) for r in diffs]
-            new_row += ["Total change: {}".format(total_change)]
+            new_row += [f"Total change: {total_change}"]
             rows.append([[
                 "Major score changes (weight, change, contribution):",
                 new_row]])
@@ -216,62 +200,48 @@ class AutoschedulerController(object):
 
     def section_identifier(self, section):
         section_obj = ClassSection.objects.get(id=section.id)
-        manage = "/manage/{}/manageclass/{}".format(
-            section_obj.parent_class.parent_program.getUrlBase(),
-            section.parent_class)
-        manage_link = "<a href='{}'>Manage</a>".format(manage)
-        edit = "/manage/{}/editclass/{}".format(
-            section_obj.parent_class.parent_program.getUrlBase(),
-            section.parent_class)
-        edit_link = "<a href='{}'>Edit</a>".format(edit)
-        return "{}: {} (id: {}) ({}, {})".format(
-            section_obj.emailcode(), section_obj.parent_class.title,
-            section.id, manage_link, edit_link)
+        manage = f"/manage/{section_obj.parent_class.parent_program.getUrlBase()}/manageclass/{section.parent_class}"
+        manage_link = f"<a href='{manage}'>Manage</a>"
+        edit = f"/manage/{section_obj.parent_class.parent_program.getUrlBase()}/editclass/{section.parent_class}"
+        edit_link = f"<a href='{edit}'>Edit</a>"
+        return f"{section_obj.emailcode()}: {section_obj.parent_class.title} (id: {section.id}) ({manage_link}, {edit_link})"
 
     def section_info(self, section):
         info = []
         teachers_list = [ESPUser.objects.get(id=teacher.id).name()
                          for teacher in section.teachers]
-        info.append("<b>Teachers:</b> {}".format(
-            ", ".join(teachers_list)))
-        info.append("<b>Capacity: </b>{}".format(section.capacity))
-        info.append("<b>Duration: </b>{}".format(section.duration))
-        info.append("<b>Grades: </b>{}-{}".format(
-            section.grade_min, section.grade_max))
+        info.append(f"<b>Teachers:</b> {', '.join(teachers_list)}")
+        info.append(f"<b>Capacity: </b>{section.capacity}")
+        info.append(f"<b>Duration: </b>{section.duration}")
+        info.append(f"<b>Grades: </b>{section.grade_min}-{section.grade_max}")
         resources = ""
         for restype in section.resource_requests.values():
             resources += "<li>"
             if restype.value == "":
                 resources += restype.name
             else:
-                resources += "{}: {}".format(restype.name, restype.value)
+                resources += f"{restype.name}: {restype.value}"
             resources += "</li>"
-        info.append("<b>Resource requests:</b><ul>{}</ul>".format(
-            resources))
+        info.append(f"<b>Resource requests:</b><ul>{resources}</ul>")
         cls = ClassSection.objects.get(id=section.id).parent_class
-        info.append("<b>Class Flags: </b>{}".format(", ".join(
-            cls.flags.values_list(
-                'flag_type__name', flat=True))))
+        info.append(f"<b>Class Flags: </b>{', '.join(cls.flags.values_list('flag_type__name', flat=True))}")
         return info
 
     def roomslot_identifier(self, roomslot):
-        return "{} starting at {}".format(
-                roomslot.room.name,
-                roomslot.timeslot.start.strftime("%A %-I:%M%p"))
+        return f"{roomslot.room.name} starting at {roomslot.timeslot.start.strftime('%A %-I:%M%p')}"
 
     def roomslot_info(self, roomslot):
         info = []
-        info.append("<b>Capacity:</b> {}".format(roomslot.room.capacity))
+        info.append(f"<b>Capacity:</b> {roomslot.room.capacity}")
         resources = ""
         for restype in roomslot.room.furnishings.values():
             resources += "<li>"
             if restype.value == "":
                 resources += restype.name
             else:
-                resources += "{}: {}".format(restype.name, restype.value)
+                resources += f"{restype.name}: {restype.value}"
             resources += "</li>"
-        info.append("<b>Furnishings:</b><ul>{}</ul>".format(
-            resources))
+        info.append(f"<b>Furnishings:</b><ul>{resources}</ul>")
         return info
 
     def simplify_history(self, history):
@@ -363,7 +333,7 @@ class AutoschedulerController(object):
                 emailcode = ClassSection.objects.get(
                         id=int(section)).emailcode()
                 raise SchedulingError(
-                    "Section {} was moved.".format(emailcode))
+                    f"Section {emailcode} was moved.")
         if not self.optimizer.manipulator.load_history(history):
             raise SchedulingError("Unable to replay assignments.")
 
@@ -382,7 +352,7 @@ def load_all_resource_criteria(prog, use_comments=False):
             ignore_comments=(not use_comments))
     if use_comments:
         for k in resource_criteria:
-            comment = "{}_comment".format(k)
+            comment = f"{k}_comment"
             if comment in resource_criteria:
                 resource_criteria[k] = \
                     (resource_criteria[comment][0], resource_criteria[k][1])
