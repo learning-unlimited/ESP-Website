@@ -47,8 +47,7 @@ $(document).on('click', '.ajax-deadline', function(e) {
 
     $.ajax({
         url: url,
-        type: 'POST',
-        data: {csrfmiddlewaretoken: csrftoken},
+        type: 'GET',
         success: function(data) {
             if (typeof data === "string" && data.indexOf("message_bad") !== -1) {
                 alert("Failed to update deadline.");
@@ -61,10 +60,6 @@ $(document).on('click', '.ajax-deadline', function(e) {
             $th.toggleClass('is_open is_closed');
             $this.text(isOpening ? 'Close' : 'Open');
             $this.toggleClass('btn-success btn-danger');
-
-            var temp = $this.data('open-url');
-            $this.data('open-url', $this.data('close-url'));
-            $this.data('close-url', temp);
 
             $this.removeClass('disabled');
         },
@@ -154,7 +149,7 @@ $(document).on('click', '.ajax-deadline', function(e) {
                             <span class="bituri">{{ perm_type }}</span>
                             <br /><br />
                             {% if details.is_open %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}"
+                           <a {% if not details.implied_open %}href="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}"{% endif %}
                                 class="btn btn-danger ajax-deadline {% if details.implied_open %}disabled{% endif %}"
                                 {% if details.implied_open %}title="Can not be closed due to implied deadline"{% endif %}
                                 data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"
@@ -188,7 +183,8 @@ $(document).on('click', '.ajax-deadline', function(e) {
                             </td>
                     </tr>
                     {% empty %}
-                    <td colspan="3">No deadline set</td>
+                    <tr>
+                        <td colspan="4">No deadline set</td>
                     </tr>
                     {% endfor %}
                     {% endfor %}
@@ -286,7 +282,8 @@ $(document).on('click', '.ajax-deadline', function(e) {
                         </td>
                     </tr>
                     {% empty %}
-                    <td colspan="3">No permissions set</td>
+                    <tr>
+                        <td colspan="4">No permissions set</td>
                     </tr>
                     {% endfor %}
                 </tbody>
