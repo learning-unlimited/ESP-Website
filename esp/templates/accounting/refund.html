@@ -1,0 +1,158 @@
+{% extends "main.html" %}
+
+{% block title %}Refunds{% endblock %}
+
+{% block content %}
+
+<h1>Refund Management</h1>
+
+<div class="alert alert-warning"
+    style="border: 2px solid #f0ad4e; padding: 15px; margin-bottom: 20px; background-color: #fcf8e3;">
+    <h4 style="margin-top: 0;"><strong>Important Notice</strong></h4>
+    <ul>
+        <li><strong>Process refunds promptly</strong> to avoid credit card disputes.</li>
+        <li>If for any reason you believe this refund page did not work properly,
+            please send an email to <a href="mailto:cfo@learningu.org">cfo@learningu.org</a>
+            with details, including the list of students and amounts to be refunded,
+            so that refunds can be issued manually through the Stripe website.</li>
+    </ul>
+</div>
+
+<p>Only transactions from the last {{ max_age_days }} days are shown.
+    For older transactions, please send an email to <a href="mailto:cfo@learningu.org">cfo@learningu.org</a>
+    with the list of students and amounts to be refunded.</p>
+
+<hr />
+
+<h2>Search for Transactions</h2>
+
+<form method="post" action="{% url 'accounting_refund' %}">{% csrf_token %}
+    <input type="hidden" name="search" value="1" />
+    <table>
+        <tr>
+            <td><label for="id_program">Program:</label></td>
+            <td>{{ form.program }}</td>
+        </tr>
+        <tr>
+            <td><label for="id_target_user">Student:</label></td>
+            <td>{{ form.target_user }}</td>
+        </tr>
+    </table>
+    <br />
+    <button type="submit" id="search-transactions-btn" class="btn btn-primary">Search Transactions</button>
+</form>
+
+<script>
+    (function () {
+        var searchBtn = document.getElementById('search-transactions-btn');
+        var studentInput = document.getElementById('id_target_user');
+
+        function updateSearchButton() {
+            if (studentInput) {
+                // Determine if a student is genuinely selected based on the input text
+                searchBtn.disabled = !studentInput.value.trim();
+            }
+        }
+
+        if (studentInput) {
+            studentInput.addEventListener('input', updateSearchButton);
+            studentInput.addEventListener('change', updateSearchButton);
+            // Also listen to jQuery events on the hidden input in case autocomplete triggers it
+            if (window.$j || window.jQuery) {
+                var $ = window.$j || window.jQuery;
+                $(studentInput).on('autocompleteselect autocompletechange', function () {
+                    setTimeout(updateSearchButton, 50);
+                });
+            }
+            updateSearchButton();
+        }
+    })();
+</script>
+
+{% if selected_program %}
+<hr />
+<h2>Transactions for {{ selected_program.niceName }}</h2>
+
+{% if has_transactions %}
+<form method="post" action="{% url 'accounting_refund_process' %}">{% csrf_token %}
+    <input type="hidden" name="program_id" value="{{ selected_program.id }}" />
+
+    <table class="table table-bordered table-striped" style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: #f5f5f5;">
+                <th>User ID</th>
+                <th>Username</th>
+                <th>Full Name</th>
+
+                <th>Date</th>
+                <th>Amount Paid</th>
+                <th>Already Refunded</th>
+                <th>Remaining</th>
+                <th>Refund Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in transaction_rows %}
+            <tr>
+                <td>{{ row.user_id }}</td>
+                <td>{{ row.username }}</td>
+                <td>{{ row.full_name }}</td>
+                <td>{{ row.timestamp|date:"Y-m-d H:i" }}</td>
+                <td>${{ row.amount_paid }}</td>
+                <td>${{ row.amount_refunded }}</td>
+                <td>${{ row.amount_remaining }}</td>
+                <td>
+                    {% if row.amount_remaining > 0 %}
+                    <input type="number" name="refund_amount_{{ row.transfer.id }}" value="{{ row.amount_remaining }}"
+                        min="0" max="{{ row.amount_remaining }}" step="0.01" style="width: 100px;" />
+                    {% else %}
+                    <em>Fully refunded</em>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="alert alert-info"
+        style="padding: 10px; margin-top: 15px; background-color: #d9edf7; border: 1px solid #bce8f1;">
+        <strong>Review carefully before submitting.</strong> Refunds cannot be reversed.
+        Set the refund amount to 0 (or clear it) for any transaction you do NOT want to refund.
+    </div>
+
+    <button type="submit" id="process-refunds-btn" class="btn btn-danger" style="margin-top: 10px;" disabled
+        onclick="return confirm('Are you sure you want to process these refunds? This action cannot be undone.');">
+        Process Refunds
+    </button>
+</form>
+
+<script>
+    (function () {
+        var btn = document.getElementById('process-refunds-btn');
+        var inputs = document.querySelectorAll('input[name^="refund_amount_"]');
+        function updateButton() {
+            var hasPositive = false;
+            for (var i = 0; i < inputs.length; i++) {
+                var val = parseFloat(inputs[i].value);
+                if (!isNaN(val) && val > 0) {
+                    hasPositive = true;
+                    break;
+                }
+            }
+            btn.disabled = !hasPositive;
+        }
+        for (var i = 0; i < inputs.length; i++) {
+            inputs[i].addEventListener('input', updateButton);
+        }
+        updateButton();
+    })();
+</script>
+
+{% else %}
+<p><em>No payment transactions found for the selected program{% if searched_with_user %} and student{% endif %}
+        within the last {{ max_age_days }} days.</em></p>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
