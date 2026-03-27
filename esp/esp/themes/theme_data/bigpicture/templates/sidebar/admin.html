@@ -9,6 +9,7 @@
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
 </div>
+{{ theme.toolbar_links|default:"[]"|json_script:"toolbar-links-data" }}
 <script type="text/javascript">
 var currentPrograms = [
 {% for current_program in current_programs %}
@@ -20,7 +21,7 @@ var currentPrograms = [
 {% endfor %}
 ];
 var debug = {{ settings.DEBUG|yesno:"true,false" }};
-var toolbarLinks = JSON.parse("{{ theme.toolbar_links|default:'[]'|escapejs }}");
+var toolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').textContent);
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
 {% comment %} === End Admin Toolbar === {% endcomment %}

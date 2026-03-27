@@ -89,9 +89,13 @@ var currentPrograms = [
 ];
 
 var debug = {{ settings.DEBUG|yesno:"true,false" }};
-var toolbarLinks = JSON.parse("{{ theme.toolbar_links|default:'[]'|escapejs }}");
+</script>
+{{ theme.toolbar_links|default:"[]"|json_script:"toolbar-links-data" }}
+<script type="text/javascript">
+var toolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').textContent);
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
+
     <div id="page" class="{{ request.path|extract_theme }}">
 
 
