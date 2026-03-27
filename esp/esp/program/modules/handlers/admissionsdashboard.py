@@ -81,7 +81,7 @@ class AdmissionsDashboard(ProgramModuleObj):
     @needs_teacher
     @json_response(None)
     def apps(self, request, tl, one, two, module, extra, prog):
-        classapps = StudentClassApp.objects.filter(app__program=prog)
+        classapps = StudentClassApp.objects.filter(app__program=prog).select_related('app', 'app__user', 'subject')
         if not request.user.isAdmin(prog):
             classes = request.user.getTaughtClassesFromProgram(prog)
             classapps = classapps.filter(subject__in=classes)
@@ -89,6 +89,24 @@ class AdmissionsDashboard(ProgramModuleObj):
             classapps = classapps.filter(subject__id=extra)
         if tl != 'manage':
             classapps = classapps.filter(app__admin_status=StudentProgramApp.APPROVED)
+
+        is_admin_manage = (tl == 'manage' and request.user.isAdmin(prog))
+        decisions_by_app = {}
+        if is_admin_manage:
+            classapps = list(classapps)
+            app_ids = set(ca.app_id for ca in classapps)
+            
+            decision_apps = StudentClassApp.objects.filter(
+                app_id__in=app_ids,
+                admission_status__in=[StudentClassApp.ADMITTED, StudentClassApp.WAITLIST]
+            ).select_related('subject')
+            
+            for da in decision_apps:
+                decisions_by_app.setdefault(da.app_id, {'admitted': None, 'waitlisted': []})
+                if da.admission_status == StudentClassApp.ADMITTED:
+                    decisions_by_app[da.app_id]['admitted'] = da.subject.title
+                elif da.admission_status == StudentClassApp.WAITLIST:
+                    decisions_by_app[da.app_id]['waitlisted'].append(da.subject.title)
 
         results = []
         for classapp in classapps:
@@ -102,16 +120,19 @@ class AdmissionsDashboard(ProgramModuleObj):
             result['teacher_ranking'] = classapp.teacher_ranking
             result['teacher_comment'] = classapp.teacher_comment
             result['student_preference'] = classapp.student_preference
-            if tl == 'manage' and request.user.isAdmin(prog):
+            if is_admin_manage:
                 result['admin_status'] = classapp.app.admin_status
                 result['admin_comment'] = classapp.app.admin_comment
                 decision_status_lines = []
-                cls = classapp.app.admitted_to_class()
-                if cls is not None:
-                    line = 'Admitted: {0}'.format(cls.title)
+                app_decisions = decisions_by_app.get(classapp.app_id, {})
+                admitted_title = app_decisions.get('admitted')
+                waitlist_titles = app_decisions.get('waitlisted', [])
+                
+                if admitted_title:
+                    line = 'Admitted: {0}'.format(admitted_title)
                     decision_status_lines.append(line)
-                for cls in classapp.app.waitlisted_to_class():
-                    line = 'Waitlisted: {0}'.format(cls.title)
+                for title in waitlist_titles:
+                    line = 'Waitlisted: {0}'.format(title)
                     decision_status_lines.append(line)
                 result['decision_status'] = '\n'.join(decision_status_lines)
             results.append(result)
