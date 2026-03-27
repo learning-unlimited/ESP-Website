@@ -81,13 +81,13 @@
     <!-- Login -->
     <div class="box" style="text-align: right;">
     {% include "users/loginbox_content.html" %}
-        <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
+        <li class="unmorph hidden"><a href="{% url 'myesp_switchback' %}">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
     </div>
     
 
     <!-- Onsite -->
     <div class="box onsite hidden">
-    <div class="box_header"><a href="/myesp/onsite/">Onsite registration</a></div>
+    <div class="box_header"><a href="{% url 'myesp_onsite' %}">Onsite registration</a></div>
     </div>
 
 </div>
@@ -97,7 +97,7 @@
     <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
       <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
       You are logged in as a test account.
-      <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
+      <a href="{% url 'myesp_stop_testing' %}" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
     </div>
     {% endif %}
     {% if request.mod_required %}

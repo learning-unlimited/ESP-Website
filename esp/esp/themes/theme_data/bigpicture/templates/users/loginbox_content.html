@@ -3,7 +3,7 @@
 
   <div class="logged_in hidden">
     <form class="navbar-form form-inline">
-      <a href="/myesp/profile/" class="username">
+      <a href="{% url 'myesp_profile' %}" class="username">
         <i class="icon-user"></i> Hello, <span id="user_first_name"></span>!
       </a>
 
@@ -15,7 +15,7 @@
         </button>
 
         <ul class="dropdown-menu pull-right">
-          <li><a href="/myesp/accountmanage/">Manage Account</a></li>
+          <li><a href="{% url 'myesp_accountmanage' %}">Manage Account</a></li>
           <li><a href="/myesp/loginhelp.html">Help</a></li>
           <li><a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a></li>
         </ul>
