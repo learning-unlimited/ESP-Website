@@ -6,7 +6,7 @@ from esp.users.models import User, ESPUser, PersistentQueryFilter
 from django.db.models.query import Q
 from io import open
 
-url = 'http://splashchicago.learningu.org/manage/Splash/2010_Fall/maincomm'
+url = 'https://splashchicago.learningu.org/manage/Splash/2010_Fall/maincomm'
 filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'past_students.txt')
 
 file = open(filename)

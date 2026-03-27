@@ -86,12 +86,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """ Whether the user has fully paid for this program. """
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return IndividualAccountingController(self.program, user).has_paid(in_full=True)
     have_paid = isCompleted
 
@@ -168,7 +165,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   and followed by a 24 character base64-encoded string.
         valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
         valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
-        if not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
+        if not self.settings.get('publishable_key') or not self.settings.get('secret_key') or not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
             return False
         return True
 
@@ -188,7 +185,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         for module in modules:
             if module.id == self.id:
                 continue
-            if not module.isCompleted() and module.isRequired():
+            if not module.isCompleted(request.user) and module.isRequired():
                 completedAll = False
         if not completedAll and not request.user.isAdmin(prog):
             raise ESPError("Please go back and ensure that you have completed all required steps of registration before paying by credit card.", log=False)
