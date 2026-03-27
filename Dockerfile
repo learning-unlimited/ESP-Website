@@ -56,7 +56,7 @@ RUN printf '%s\n' \
 
 # Install runtime dependencies:
 #   - Slim runtime libraries (counterparts of builder's -dev packages)
-#   - Runtime tools from packages_base.txt (filtering out python*, build-essential, -dev packages)
+#   - Runtime tools from packages_base.txt (filtering out python*, build-essential, npm, git, postgres*, memcached, and -dev packages)
 COPY esp/packages_base.txt /tmp/packages_base.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
