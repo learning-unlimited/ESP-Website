@@ -19,6 +19,8 @@
 
 {% block body %}
 
+<a href="#main" class="skip-nav">Skip to main content</a>
+
 <div id="content">
 <div id="topleft"><a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{ theme.titlebar_prefix }}" /></a></div>
 
@@ -101,7 +103,7 @@
     </div>
   </div>
 
-  <div id="chicago_main">
+  <main id="main" tabindex="-1">
 
 <div id="chicago_main_header">{% block welcome_message %}<!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. --><table width="600px" height="30px"><tr><td valign="middle">{{ theme.welcome_message }}</td></tr></table>{% endblock %}</div>
 
@@ -163,7 +165,7 @@
 
     <div id="footer">{% block footer %}{% endblock %}</div>
 
-  </div>
+  </main>
 
 </div>
 {% endblock %}
