@@ -388,7 +388,10 @@ class PageSpecificTagBannerTest(ProgramFrameworkTest):
         req.user = self.admins[0]
         if with_tracking:
             req._active_program_tag_keys = set()
-        # else: leave _active_program_tag_keys unset so getattr returns None
+        else:
+            # Explicitly set to None so getattr() returns None (not a MagicMock),
+            # simulating a request where the middleware never ran.
+            req._active_program_tag_keys = None
         return req
 
     def test_only_accessed_tag_shown(self):
