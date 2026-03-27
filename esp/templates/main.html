@@ -26,7 +26,7 @@
 
 {% block body %}
 
-<a href="#main-content" class="skip-nav">Skip to main content</a>
+<a href="#main" class="skip-nav">Skip to main content</a>
 
 {% block main %}
 
@@ -52,7 +52,7 @@
           {% endblock sidebar %}
         </aside>
 
-        <main id="main-content" class="span12 resizable" tabindex="-1">
+        <main id="main" class="span12 resizable" tabindex="-1">
           {% if messages %}
           {% for message in messages %}
           <div class="alert alert-{{ message.tags }}">

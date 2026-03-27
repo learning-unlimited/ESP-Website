@@ -72,6 +72,7 @@
 {% endblock %}
 
 {% block body %}
+<a href="#main" class="skip-nav">Skip to main content</a>
 <link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
 <div id="adminbar" class="admin hidden" style="position: fixed !important">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
@@ -191,6 +192,7 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
       {% navbar_gen request.path None navbar_list %}
       {% endblock %}
 
+      <main id="main" tabindex="-1">
       <div id="content">
           {% if request.COOKIES.esp_testing_role %}
           <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
@@ -235,6 +237,7 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
         {% endif %}
         {% block content %}{% endblock %}
       </div>
+      </main>
       <!--[if lte IE 6]>
       <div id="ie6_warning">
 <p>You're using a really old Web browser!  This site will look a lot better if you <a href="http://www.microsoft.com/windows/internet-explorer/">upgrade</a>.</p>
