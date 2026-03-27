@@ -50,7 +50,7 @@ from django.core import validators
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db.models.query import QuerySet
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
@@ -293,12 +293,18 @@ class Program(models.Model, CustomFormsLinkModel):
         if self.grade_min is not None and self.grade_max is not None:
             if self.grade_min > self.grade_max:
                 raise ValidationError({
-                    "grade_min": "grade_min cannot be greater than grade_max"
+                    "__all__": "Minimum grade cannot exceed maximum grade."
                 })
     class Meta:
         app_label = 'program'
         db_table = 'program_program'
         ordering = ('-id',)
+        constraints = [
+            models.CheckConstraint(
+                check=Q(grade_min__lte=F('grade_max')),
+                name='program_grade_min_lte_grade_max'
+         ),
+        ]
 
     USER_TYPES_WITH_LIST_FUNCS  = ['Student', 'Teacher', 'Volunteer']   # user types that have ProgramModule user filters
     USER_TYPE_LIST_FUNCS        = [user_type.lower()+'s' for user_type in USER_TYPES_WITH_LIST_FUNCS]   # the names of these filter methods, e.g. students(), teachers(), volunteers()
