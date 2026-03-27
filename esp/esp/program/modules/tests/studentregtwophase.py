@@ -247,9 +247,18 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
     def test_save_priorities_approved_class_creates_priority_registration(self):
         """When section and class are approved, save_priorities records Priority/1."""
         self.schedule_randomly()
-        timeslot = self.timeslots[0]
-        cls, sec = self._find_class_and_section_for_timeslot(timeslot)
-        self.assertIsNotNone(cls, 'Need a class scheduled in the first timeslot')
+        timeslot = None
+        cls = None
+        sec = None
+        for ts in self.timeslots:
+            cls, sec = self._find_class_and_section_for_timeslot(ts)
+            if cls is not None:
+                timeslot = ts
+                break
+        self.assertIsNotNone(
+            cls,
+            'Expected at least one class to be scheduled in some timeslot',
+        )
         student = self.students[0]
 
         RegistrationType.objects.get_or_create(name='Priority/1', category='student')
