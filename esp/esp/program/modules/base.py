@@ -57,6 +57,7 @@ from django.template import TemplateDoesNotExist
 from django.core.exceptions import ImproperlyConfigured
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
+from django.utils import timezone
 
 def _login_redirect(request):
     return HttpResponseRedirect(
@@ -482,6 +483,16 @@ class ProgramModuleObj(models.Model):
             update_props(prop)
 
         return props
+    
+    def is_active(self):
+        now = timezone.now()
+
+        if hasattr(self, "start_date") and self.start_date and now < self.start_date:
+            return False
+        if hasattr(self, "end_date") and self.end_date and now > self.end_date:
+            return False
+
+        return True
 
     class Meta:
         app_label = 'modules'
