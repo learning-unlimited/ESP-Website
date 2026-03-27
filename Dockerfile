@@ -85,6 +85,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libevent-2.1-7 \
     zlib1g \
     imagemagick \
+    ghostscript \
     inkscape \
     wamerican-large \
     wget \
