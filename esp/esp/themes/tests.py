@@ -248,7 +248,7 @@ class BaseDirPathTraversalTest(TestCase):
         """A normal theme name returns a path inside THEME_PATH."""
         from esp.themes.controllers import THEME_PATH
         result = self.tc.base_dir('barebones')
-        self.assertTrue(result.startswith(os.path.realpath(THEME_PATH) + os.sep))
+        self.assertEqual(result, os.path.join(THEME_PATH, 'barebones'))
 
     def test_traversal_attempt_raises(self):
         """A theme name containing '../' raises ESPError."""

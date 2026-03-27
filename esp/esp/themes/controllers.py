@@ -134,12 +134,11 @@ class ThemeController(object):
         self.set_template_settings(self.get_template_settings())
 
     def base_dir(self, theme_name):
-        # Resolve the full path and confirm it stays within THEME_PATH to
-        # prevent path traversal attacks (e.g. theme_name = "../../etc/passwd").
-        theme_path = os.path.realpath(os.path.join(THEME_PATH, theme_name))
-        if not theme_path.startswith(os.path.realpath(THEME_PATH) + os.sep):
+        raw_path = os.path.join(THEME_PATH, theme_name)
+        resolved = os.path.realpath(raw_path)
+        if not resolved.startswith(os.path.realpath(THEME_PATH) + os.sep):
             raise ESPError("Invalid theme name: %s" % theme_name, log=True)
-        return theme_path
+        return raw_path
 
     def list_filenames(self, dir, file_regexp, mask_base=False):
         """ Quick search for files in the specified directory (dir) which match
