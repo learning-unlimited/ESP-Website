@@ -40,9 +40,9 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: test_django
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: esp_website_test
         ports:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
@@ -95,10 +95,10 @@ jobs:
       env:
         CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
-        # Match PostgreSQL service credentials so connection uses testuser, not runner user (e.g. root)
-        DATABASE_USER: testuser
-        DATABASE_PASSWORD: testpassword
-        DATABASE_NAME: test_django
+        # Match PostgreSQL service credentials to prevent runner user (root) defaulting
+        DATABASE_USER: postgres
+        DATABASE_PASSWORD: postgres
+        DATABASE_NAME: esp_website_test
       run: deploy/ci/script
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de  # v5

@@ -1,0 +1,110 @@
+{% extends "main.html" %}
+
+{% block title %}Site Media{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+<style type="text/css">
+#uploadform table {
+   border-width: 0;
+}
+td.instructions {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+}
+</style>
+<h1>Manage Site Media</h1>
+
+<div id="battlescreen">
+
+<p>
+Use this page to manage site-wide files such as team photos, campus maps, and policy documents. These files are not tied to a specific program. To manage program-specific materials, use the Course Materials page from the program's management area.
+</p>
+
+<table cellpadding="3" cellspacing="0" align="center" width="90%">
+    <tr>
+        <th colspan="3" style="text-align: center;">
+            Site media files
+        </th>
+    </tr>
+    {% if site_media_list %}
+    <tr>
+        <td class="clsmiddle" style="text-indent: 20px"><b>Document</b></td>
+        <td class="clsmiddle"><b>Delete</b></td>
+        <td class="clsmiddle" width="60%"><b>Rename</b></td>
+    </tr>
+    {% for doc in site_media_list %}
+    <tr>
+        <td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
+        <td class="clsmiddle">
+            <form method="post" action="/manage/site_media/" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs }}?');">
+                {% csrf_token %}
+                <input type="hidden" name="docid" value="{{ doc.id }}">
+                <input type="hidden" name="command" value="delete">
+                <input class="button" type="submit" value="Delete">
+            </form>
+        </td>
+        <td class="clsmiddle" width="60%">
+            <form method="post" action="/manage/site_media/" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="docid" value="{{ doc.id }}">
+                <input type="hidden" name="command" value="rename">
+                <input type="text" name="title" value="{{ doc.friendly_name }}">
+                <input class="button" type="submit" value="Rename">
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    <tr>
+        <td colspan="3">There are no site media files yet. You may add some below.</td>
+    </tr>
+    {% endif %}
+</table>
+
+<br />
+<br />
+
+<form method="post" action="/manage/site_media/" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="command" value="add">
+    <table cellpadding="12" cellspacing="0" align="center" width="70%">
+        <tr>
+            <th colspan="2" style="text-align: center;">
+                Add a site media file
+            </th>
+        </tr>
+        <tr>
+            <td class="instructions">
+                <b>Instructions:</b>
+                <br />
+                Enter a title for the file (e.g. "Campus map" or "Team photo") and select a file to upload. Then click "Submit".
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div id="uploadform">
+                    <table align="center">
+                        {{ uploadform.as_table }}
+                    </table>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class="instructions" align="center">
+                <input class="button" type="submit" value="Submit Document">
+            </td>
+        </tr>
+    </table>
+</form>
+
+</div>
+
+<br />
+<br />
+<p>
+    <a class="btn btn-primary" href="/manage/programs/">Return to manage programs</a>
+</p>
+
+{% endblock %}
