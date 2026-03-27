@@ -1,0 +1,219 @@
+
+.container {
+  width: auto !important;
+  max-width: 960px;
+  padding-left: 16px;
+  padding-right: 16px;
+  box-sizing: border-box;
+}
+
+.container > .row-fluid {
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+#main {
+  float: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+}
+
+/* ── Sidebar → navigation card ────────────────────────── */
+.container > .row-fluid > div:first-child:not(#main) {
+  background: #fff;
+  border: 1px solid #dde3ea;
+  border-radius: 10px;
+  padding: 24px 32px;
+  margin-bottom: 28px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* Navigation heading inside sidebar */
+.container > .row-fluid > div:first-child:not(#main) > h3 {
+  font-size: 1.2em;
+  margin: 0 0 12px;
+  color: #1a2a3a;
+}
+
+/* Navbar links inside the sidebar card */
+.container > .row-fluid > div:first-child:not(#main) .nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  list-style: none;
+  padding: 0;
+}
+
+.container > .row-fluid > div:first-child:not(#main) .nav > li {
+  float: none;
+}
+
+/* Login form: inputs + button in a centered row */
+.container > .row-fluid > div:first-child:not(#main) .navbar-form,
+.container > .row-fluid > div:first-child:not(#main) .form-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+}
+
+.container > .row-fluid > div:first-child:not(#main) .inputbox {
+  flex: 0 1 180px;
+  min-width: 0;
+  height: auto;
+  padding: 8px 12px;
+  font-size: 0.95em;
+  border: 1px solid #ccd3db;
+  border-radius: 6px;
+  box-sizing: border-box;
+  margin-bottom: 0;
+}
+
+.container > .row-fluid > div:first-child:not(#main) .inputbox:focus {
+  border-color: #0074ad;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 116, 173, 0.15);
+}
+
+.container > .row-fluid > div:first-child:not(#main) .btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Homepage content container ───────────────────────── */
+.homepage-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 0 48px;
+  float: none !important;
+  width: auto !important;
+  box-sizing: border-box;
+}
+
+/* ── Shared card base ─────────────────────────────────── */
+.homepage-card {
+  background: #fff;
+  border: 1px solid #dde3ea;
+  border-radius: 10px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+/* ── Hero section ─────────────────────────────────────── */
+.homepage-hero {
+  text-align: center;
+  margin-bottom: 28px;
+  border-top: 4px solid #0074ad;
+}
+
+.homepage-hero h1 {
+  font-size: 2em;
+  margin: 0 0 8px;
+  color: #1a2a3a;
+  letter-spacing: -0.02em;
+}
+
+.homepage-hero h3 {
+  font-weight: normal;
+  font-size: 1.1em;
+  color: #556677;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.homepage-hero .btn {
+  display: inline-block;
+  max-width: 420px;
+  width: 100%;
+  font-size: 1.05em;
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.homepage-hero .btn:hover {
+  box-shadow: 0 4px 12px rgba(0, 116, 173, 0.3);
+}
+
+/* ── Feature cards grid ───────────────────────────────── */
+.homepage-features {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.homepage-feature-card {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  float: none !important;
+  width: auto !important;
+  margin-left: 0 !important;
+}
+
+.homepage-feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
+}
+
+.homepage-feature-card h2 {
+  font-size: 1.4em;
+  margin: 0 0 12px;
+  color: #1a2a3a;
+}
+
+.homepage-feature-card p {
+  margin: 0;
+  color: #556677;
+  line-height: 1.6;
+}
+
+.homepage-feature-card a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.homepage-feature-card a:hover h2 {
+  color: #0074ad;
+  text-decoration: underline;
+}
+
+/* ── Responsive: stack on small screens ────────────────── */
+@media (max-width: 768px) {
+  .homepage-features {
+    flex-direction: column;
+  }
+
+  .homepage-hero,
+  .homepage-card {
+    padding: 24px 20px;
+  }
+
+  /* Stack nav form inputs vertically */
+  .container > .row-fluid > div:first-child:not(#main) .navbar-form,
+  .container > .row-fluid > div:first-child:not(#main) .form-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .container > .row-fluid > div:first-child:not(#main) .inputbox {
+    flex: none;
+    width: 100%;
+  }
+
+  .container > .row-fluid > div:first-child:not(#main) {
+    padding: 20px;
+  }
+}
