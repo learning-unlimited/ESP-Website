@@ -66,6 +66,7 @@ from esp.utils.query_utils import nest_Q
 from esp.utils import cmp
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
+from django.utils import timezone
 
 # ESP models
 from esp.cal.models import Event
@@ -2147,6 +2148,18 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                     teachers_list_name = f"{mailing_list_name}-teachers"
                     remove_list_member(teachers_list_name, t.email)
 
+#in future this code can be modify to deleate old class if we want 
+#for now it change status to deactivate them from getting spam
+    @classmethod
+    def old_Class(cls):
+        cutoff = timezone.now() - timezone.timedelta(days=1825)
+        targets = cls.objects.filter(sections__meeting_times__start__lt=cutoff).exclude(status=ClassStatus.REJECTED).distinct()
+        count = 0
+        for item in targets:
+            item.set_all_sections_to_status(ClassStatus.REJECTED)
+            count += 1
+        return count
+
     class Meta:
         db_table = 'program_class'
         app_label = 'program'
@@ -2194,3 +2207,4 @@ def install():
     if not ClassCategories.objects.exists():
         for key in category_dict:
             ClassCategories.objects.create(symbol=key, category=category_dict[key])
+
