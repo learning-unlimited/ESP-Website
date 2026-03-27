@@ -6,9 +6,27 @@
 {{ block.super }}
 {# Default stylesheets, no customization #}
 <link rel="stylesheet" type="text/css" href="/media/theme_editor/bootstrap_initial.css" />
+<style>
+  .skip-nav {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #000;
+    color: #fff;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 100;
+  }
+  .skip-nav:focus,
+  .skip-nav:focus-visible {
+    top: 0;
+  }
+</style>
 {% endblock stylesheets %}
 
 {% block body %}
+
+<a href="#main-content" class="skip-nav">Skip to main content</a>
 
 {% block main %}
 
@@ -23,39 +41,41 @@
       </div>
       {% endif %}
       <div class="row-fluid">
-        {% block sidebar %}
-          <div style="margin-bottom: 20px;">
-            <h3>Navigation</h3>
-            {% load navbar %}
-            {% navbar_gen request.path None navbar_list %}
+        <aside aria-label="Sidebar">
+          {% block sidebar %}
+            <nav aria-label="Main navigation">
+              <h3>Navigation</h3>
+              {% load navbar %}
+              {% navbar_gen request.path None navbar_list %}
+            </nav>
             {% include "users/loginbox_content.html" %}
-          </div>
-        {% endblock sidebar %}
+          {% endblock sidebar %}
+        </aside>
 
-    <div id="main" class="span12 resizable">
-      {% if messages %}
-      {% for message in messages %}
-      <div class="alert alert-{{ message.tags }}">
-        {{ message }}
+        <main id="main-content" class="span12 resizable" tabindex="-1">
+          {% if messages %}
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+          </div>
+          {% endfor %}
+          {% endif %}
+          {% if active_program_tags %}
+          <div class="alert alert-info alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <strong>Admin notice:</strong>
+            This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
+            {% for tag in active_program_tags %}
+              <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+            {% endfor %}
+            &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
+          </div>
+          {% endif %}
+          {% block content %}
+          {% endblock content %}
+        </main>
       </div>
-      {% endfor %}
-      {% endif %}
-      {% if active_program_tags %}
-      <div class="alert alert-info alert-dismissible" role="alert">
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <strong>Admin notice:</strong>
-        This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
-        {% for tag in active_program_tags %}
-          <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
-        {% endfor %}
-        &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
-      </div>
-      {% endif %}
-      {% block content %}
-      {% endblock content %}
     </div>
-  </div>
-</div>
 {% endblock main %}
 
 {% endblock body %}
