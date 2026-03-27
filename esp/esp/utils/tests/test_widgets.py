@@ -1,13 +1,13 @@
 import json
 import datetime
-from django.test import TestCase
+from django.test import SimpleTestCase
 from esp.utils.widgets import (
     ClassAttrMergingSelect, NullCheckboxSelect, DummyWidget,
     BlankSelectWidget, NullRadioSelect, ContactFieldsWidget,
     DateTimeWidget, SplitDateWidget, NavStructureWidget 
 )
 
-class UtilsWidgetsTests(TestCase):
+class UtilsWidgetsTests(SimpleTestCase):
     
     def test_class_attr_merging_select(self):
         """Test that extra 'class' attributes are merged, not overwritten."""
@@ -51,18 +51,26 @@ class UtilsWidgetsTests(TestCase):
         self.assertEqual(list(widget.choices), [(True, 'Yes'), (False, 'No')])
 
     def test_contact_fields_widget_datadict(self):
-        """Test JSON parsing in ContactFieldsWidget."""
+        """Test JSON parsing in ContactFieldsWidget with multiple entries."""
         widget = ContactFieldsWidget()
-        test_json = '{"icon": "envelope", "link": "/contact", "text": "email us"}'
+        test_data_list = [
+            {"icon": "envelope", "link": "/contact", "text": "email us"},
+            {"icon": "phone", "link": "/call", "text": "call us"}
+        ]
+        test_json = json.dumps(test_data_list)
         test_data = {'contact_data': test_json}
         
         result = widget.value_from_datadict(test_data, {}, 'contact_data')
-        self.assertEqual(result, {"icon": "envelope", "link": "/contact", "text": "email us"})
+        
+        # Verify the structure matches what was dumped
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["icon"], "envelope")
+        self.assertEqual(result[1]["icon"], "phone")
+        self.assertEqual(result, test_data_list)
 
     def test_datetime_widget_parsing(self):
         """Test parsing of date strings into datetime objects."""
         widget = DateTimeWidget()
-        # Using a standard format Django's DateTimeWidget expects
         data = {'event_date': '2026-03-27 09:00:00'}
         value = widget.value_from_datadict(data, {}, 'event_date')
         self.assertIsNotNone(value)
@@ -71,7 +79,6 @@ class UtilsWidgetsTests(TestCase):
         """Test breaking a date into [Month, Day, Year]."""
         widget = SplitDateWidget()
         test_date = datetime.date(2026, 3, 27)
-        # Verify it decompresses to the format expected by the widget
         self.assertEqual(widget.decompress(test_date), [3, 27, 2026])
 
     def test_nav_structure_json(self):
@@ -79,4 +86,4 @@ class UtilsWidgetsTests(TestCase):
         widget = NavStructureWidget()
         test_data = [{"header": "Home", "links": []}]
         result = widget.value_from_datadict({'nav': json.dumps(test_data)}, {}, 'nav')
-        self.assertEqual(result[0]['header'], "Home")  
+        self.assertEqual(result[0]['header'], "Home") 
