@@ -445,11 +445,12 @@ class LotteryAssignmentController(object):
             self.student_schedules[selected_students, timeslots[i]] = True
             self.student_enrollments[selected_students, timeslots[i]] = self.section_ids[si]
 
-            #   Update student utilities
-            if priority:
-                self.student_utilities[selected_students] += 1.5
-            else:
-                self.student_utilities[selected_students] += 1
+        #   Update student utilities (once per section assignment; scale by duration)
+        duration = self.section_lengths[si]
+        if priority:
+            self.student_utilities[selected_students] += 1.5 * duration
+        else:
+            self.student_utilities[selected_students] += 1 * duration
 
         #   Update student weights
         self.student_weights[selected_students] /= weight_factor
