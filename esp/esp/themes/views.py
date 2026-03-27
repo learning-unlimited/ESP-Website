@@ -471,5 +471,5 @@ def recompile(request, keep_files=None):
     if len(differences) > 0 and keep_files is None:
         return confirm_overwrite(request, current_theme=theme_name, differences=differences, orig_view='recompile')
 
-    tc.recompile_theme(keep_files=keep_files)
-return HttpResponseRedirect(reverse('themes_landing'))
+   tc.recompile_theme(keep_files=keep_files)
+    return HttpResponseRedirect(reverse('themes_landing'))
