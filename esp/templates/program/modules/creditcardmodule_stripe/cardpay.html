@@ -83,7 +83,7 @@ $j(document).ready(function () {
 {% if module.settings.offer_donation %}
 <input type="checkbox" name="select_donation" onclick="toggle_donation();" {% if has_donation %}checked {% endif %}/>
 {% inline_program_qsd_block program "stripe_learningu_donation" %}
-Check here to support <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> with an additional donation. Learning Unlimited supports {{ institution }} and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country.
+Check here to support <a href="https://www.learningu.org/about" target="_blank">Learning Unlimited</a> with an additional donation. Learning Unlimited supports {{ institution }} and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country.
 {% end_inline_program_qsd_block %}
 <div id="donation_choices">
     {% include "program/modules/donationmodule/donation_form.html" %}
