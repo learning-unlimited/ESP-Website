@@ -164,7 +164,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
     pronoun = forms.CharField(max_length=50, required=False)
-    graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7, 13)])
+    graduation_year = forms.ChoiceField(choices=[])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
     school = forms.CharField(max_length=128, required=False)
