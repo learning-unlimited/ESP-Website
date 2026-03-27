@@ -135,7 +135,7 @@ class ProgramCreationForm(BetterModelForm):
         super().clean()
         if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
             #   Filter out unwanted characters from program type to form URL
-            ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
+            ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
             new_url = '%(type)s/%(term)s' \
                 % {'type': ptype_slug
                   ,'term': self.cleaned_data['term']
@@ -176,7 +176,7 @@ class ProgramCreationForm(BetterModelForm):
         }
         model = Program
 ProgramCreationForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'size': 40,
-                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
+                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', r'\.')})
 ProgramCreationForm.base_fields['director_cc_email'].widget = forms.EmailInput(attrs={'size': 40})
 ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.EmailInput(attrs={'size': 40})
 '''
