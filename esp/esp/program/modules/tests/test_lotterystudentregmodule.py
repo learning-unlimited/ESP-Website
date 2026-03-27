@@ -112,7 +112,8 @@ class LotteryStudentRegModuleTest(ProgramFrameworkTest):
     def test_lotterystudentreg_get_blocked_for_anonymous_user(self):
         self.client.logout()
         response = self.client.get(self.module.get_full_path())
-        self.assertNotEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('?next=', response.url)
 
     def test_lotterystudentreg_get_blocked_for_teacher(self):
         teacher = self.teachers[0]
@@ -122,7 +123,7 @@ class LotteryStudentRegModuleTest(ProgramFrameworkTest):
         )
         response = self.client.get(self.module.get_full_path())
         self.assertEqual(response.status_code, 200)
-        self.assertNotIn(b'lottery', response.content.lower()[:500])
+        self.assertTemplateUsed(response, 'errors/program/notastudent.html')
 
     def test_timeslots_json_returns_200(self):
         response = self.client.get(
@@ -169,4 +170,5 @@ class LotteryStudentRegModuleTest(ProgramFrameworkTest):
         response = self.client.get(
             '/learn/%s/viewlotteryprefs' % self.program.getUrlBase()
         )
-        self.assertNotEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('?next=', response.url)
