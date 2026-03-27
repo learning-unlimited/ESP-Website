@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -35,6 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.themes.controllers import ThemeController
 from esp.tagdict.models import Tag
+from esp.utils.widgets import ContactFieldsWidget
 
 from django import forms
 
@@ -43,6 +43,14 @@ import json
 class ThemeConfigurationForm(forms.Form):
     theme = forms.CharField(widget=forms.HiddenInput)
     just_selected = forms.NullBooleanField(widget=forms.HiddenInput, initial=False)
+
+    # Extra admin toolbar links — editable from /themes/ for all themes
+    toolbar_links = forms.Field(
+        required=False,
+        widget=ContactFieldsWidget,
+        label='Extra admin toolbar links (use absolute or relative URLs)',
+        initial=[]
+    )
 
     def prepare_for_serialization(self, data):
         return data
@@ -74,4 +82,3 @@ class ThemeConfigurationForm(forms.Form):
         A dictionary of the initial values of the configuration form fields.
         """
         return dict([(k_v[0], k_v[1].initial) for k_v in cls().fields.items()])
-

@@ -22,6 +22,7 @@
       {% endfor %}
       ];
       var debug = {{ settings.DEBUG|yesno:"true,false" }};
+      var toolbarLinks = {{ theme.toolbar_links|default:"[]"|safe }};
       </script>
       <script type="text/javascript" src="/media/scripts/theme/admin_bar.js"> </script>
       {% comment %} === End Admin Toolbar === {% endcomment %}

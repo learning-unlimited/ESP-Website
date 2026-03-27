@@ -1,4 +1,3 @@
-
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -49,11 +48,6 @@ import random
 import string
 import os.path
 import shutil
-#new imports
-import json
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from esp.themes.models import AdminToolbarLink
 
 THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
                      "If you want to switch to one of the standard themes, " + \
@@ -163,18 +157,18 @@ def logos(request):
     context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "logo\..*\.png")]
     context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "header\..*\.png")]
     favicon_paths = tc.list_filenames(
-    settings.MEDIA_ROOT + 'images/backups',
-    "favicon\..*\.ico"
+        settings.MEDIA_ROOT + 'images/backups',
+        "favicon\..*\.ico"
     )
 
     favicon_paths.sort(
-    key=lambda p: os.path.getmtime(p),
-    reverse=True
+        key=lambda p: os.path.getmtime(p),
+        reverse=True
     )
 
     context['favicon_files'] = [
-    (path.split('public')[1], path.split('images/backups/')[1])
-    for path in favicon_paths
+        (path.split('public')[1], path.split('images/backups/')[1])
+        for path in favicon_paths
     ]
 
     context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
@@ -364,19 +358,3 @@ def recompile(request, keep_files=None):
 
     tc.recompile_theme(keep_files=keep_files)
     return HttpResponseRedirect('/themes/')
-
-
-
-
-
-@login_required
-def admin_toolbar_links(request):
-    # Only allow admin/staff users
-    if not request.user.is_staff:
-        return JsonResponse({'error': 'Forbidden'}, status=403)
-    
-    links = AdminToolbarLink.objects.filter(is_active=True).values(
-        'id', 'title', 'url', 'order'
-    )
-    
-    return JsonResponse({'links': list(links)})
