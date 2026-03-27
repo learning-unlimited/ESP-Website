@@ -220,7 +220,7 @@ LOGGING = {
         },
         'django': {
             'handlers': ['file', 'filescript', 'console', 'consolescript',
-                         'mail_admins', 'sentry'],
+                         'mail_admins','sentry'],
             'level': 'DEBUG',
         },
         'py.warnings': {
