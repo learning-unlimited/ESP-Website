@@ -442,3 +442,4 @@ def recompile(request, keep_files=None):
 
     tc.recompile_theme(keep_files=keep_files)
     return HttpResponseRedirect(reverse('themes_landing'))
+
