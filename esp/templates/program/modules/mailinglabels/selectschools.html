@@ -1,0 +1,13 @@
+{% extends "main.html" %}
+
+{% block title %}Select Schools{% endblock %}
+
+{% block content %}
+<h1>Select Schools for Mailing Labels</h1>
+
+<form method="post" action="">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="submit" value="Generate Labels" />
+</form>
+{% endblock %}

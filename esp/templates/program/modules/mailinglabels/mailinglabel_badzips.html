@@ -1,0 +1,18 @@
+{% extends "main.html" %}
+
+{% block title %}Ban Zip Codes{% endblock %}
+
+{% block content %}
+<h1>Mark Zip Codes as Undeliverable</h1>
+
+<p>
+  Enter zip+4 codes (one per line) to mark matching contacts as undeliverable.
+  Lines shorter than 10 characters will be silently skipped.
+</p>
+
+<form method="post" action="">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="submit" value="Ban Zip Codes" />
+</form>
+{% endblock %}

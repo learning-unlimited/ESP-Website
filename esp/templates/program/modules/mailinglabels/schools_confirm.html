@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+
+{% block title %}Confirm School Mailing Labels{% endblock %}
+
+{% block content %}
+<h1>Confirm Mailing Labels</h1>
+
+<p>Found {{ num }} matching schools.</p>
+
+<form method="post" action="">
+  {% csrf_token %}
+  <input type="hidden" name="filter_id" value="{{ filter.id }}" />
+  <input type="hidden" name="combine" value="{{ combine }}" />
+  <input type="submit" value="Generate Labels" />
+</form>
+{% endblock %}
