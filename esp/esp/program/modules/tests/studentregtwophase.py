@@ -64,15 +64,27 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             starred.append(cls)
         return starred
 
-    def _set_priorities(self, student, section):
-        """Helper: set Priority/1 registration for a student on a section."""
-        reg_type, _ = RegistrationType.objects.get_or_create(
-            name='Priority/1', category='student')
-        StudentRegistration.valid_objects().filter(
-            user=student, section=section, relationship=reg_type).delete()
-        StudentRegistration.objects.create(
-            user=student, section=section, relationship=reg_type)
+from django.db import transaction
 
+def _set_priorities(self, student, section):
+    """Helper: set Priority/1 registration for a student on a section."""
+    with transaction.atomic():
+        reg_type, _ = RegistrationType.objects.get_or_create(
+            name='Priority/1', category='student'
+        )
+
+        StudentRegistration.valid_objects().filter(
+            user=student,
+            section=section,
+            relationship=reg_type
+        ).delete()
+
+        StudentRegistration.objects.create(
+            user=student,
+            section=section,
+            relationship=reg_type
+        )
+        
     # ---------------------------------------------------------------
     # Test: Main registration page loads
     # ---------------------------------------------------------------

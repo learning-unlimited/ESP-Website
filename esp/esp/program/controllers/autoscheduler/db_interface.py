@@ -16,7 +16,7 @@ from esp.program.models import ClassSection
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, UserAvailability
 from esp.cal.models import Event
-from esp.program.modules import module_ext
+from esp.program.modules import program_settings
 from esp.tagdict.models import Tag
 
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
@@ -93,7 +93,7 @@ def load_sections_and_teachers_and_classrooms(
         sections = sections.exclude(
                 parent_class__category=schedule.program.open_class_category)
     if exclude_locked:
-        locked_sections = module_ext.AJAXSectionDetail.objects.filter(
+        locked_sections = program_settings.AJAXSectionDetail.objects.filter(
             program=schedule.program, locked=True).values_list(
                     "cls_id", flat=True)
         sections = sections.exclude(id__in=locked_sections)
@@ -268,7 +268,7 @@ def check_can_schedule_sections(section_infos, schedule):
     A SchedulingError is thrown if any of these occur, otherwise nothing
     happens. This function should avoid caching anything because the cached
     value won't get rolled back by the transaction"""
-    locked_sections = set(module_ext.AJAXSectionDetail.objects.filter(
+    locked_sections = set(program_settings.AJAXSectionDetail.objects.filter(
             program=schedule.program, locked=True).values_list(
                     "cls_id", flat=True))
 
@@ -348,10 +348,10 @@ def schedule_section(section, times, room, ajax_change_log):
 def get_ajax_change_log(prog):
     """Returns the AJAXChangeLog for a program. Duplicates logic from
     the ajaxschedulingmodule handler's get_change_log."""
-    change_log = module_ext.AJAXChangeLog.objects.filter(program=prog)
+    change_log = program_settings.AJAXChangeLog.objects.filter(program=prog)
 
     if change_log.count() == 0:
-        change_log = module_ext.AJAXChangeLog()
+        change_log = program_settings.AJAXChangeLog()
         change_log.update(prog)
         change_log.save()
     else:

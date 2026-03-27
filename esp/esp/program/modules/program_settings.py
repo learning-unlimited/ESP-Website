@@ -51,7 +51,7 @@ from esp.users.models import ESPUser
 # happens to have a name that suggests it has something to do with a program
 # module.  They still have a little to do with modules -- they're autocreated
 # when the corresponding program modules get added to a program (see
-# esp.program.models.maybe_create_module_ext), but that's about it.
+# esp.program.models.program_settings), but that's about it.
 # TODO(benkraft): rename this to "program settings" or something.
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """

@@ -49,7 +49,7 @@ from esp.db.forms import AjaxForeignKeyNewformField
 from esp.program.controllers.testingutils import TestDataCleanupController
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.admin_search import AdminSearchEntry, serialize_admin_search_entries
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
 from esp.users.models import Permission, ESPUser
 from esp.utils.web import render_to_response

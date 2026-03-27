@@ -64,7 +64,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             }
 
     def apply_settings(self):
-        #   Rather than using a model in module_ext.*, configure the module
+        #   Rather than using a model in program_settings.*, configure the module
         #   from a Tag (which can be per-program or global), combining the
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {

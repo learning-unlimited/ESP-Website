@@ -37,7 +37,7 @@ Learning Unlimited, Inc.
 from esp.utils.web import render_to_response
 from esp.users.models import PersistentQueryFilter, K12School, ContactInfo, ESPUser, User, ESPError, ZipCode
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules import program_settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
 from esp.program.modules.forms.mailinglabels_schools import SchoolSelectForm

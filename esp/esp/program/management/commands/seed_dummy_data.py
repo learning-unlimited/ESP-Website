@@ -37,7 +37,7 @@ from esp.program.models import (
     TeacherBio, ProgramModule, SplashInfo,
 )
 from esp.program.models.class_ import ClassSubject, ClassSection, ClassCategories
-from esp.program.modules.module_ext import (
+from esp.program.modules.program_settings import (
     ClassRegModuleInfo, StudentClassRegModuleInfo,
     AJAXChangeLog, AJAXSectionDetail, DBReceipt,
 )
