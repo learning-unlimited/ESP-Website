@@ -29,7 +29,7 @@ RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
-RUN npm install -g less@3.13.1
+RUN npm install -g --prefix /usr less@3.13.1
 
 # Install Python dependencies (Docker layer caching speeds up rebuilds)
 COPY esp/requirements.txt /tmp/requirements.txt
@@ -68,7 +68,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6 \
     zlib1g \
     ca-certificates \
-    $(grep -v -E '^(#|$|python|build-essential|npm|git)' /tmp/packages_base.txt | grep -v -- '-dev$' | tr '\n' ' ') \
+    $(grep -v -E '^(#|$|python|build-essential|npm|git|postgres|memcached)' /tmp/packages_base.txt | grep -v -- '-dev$' | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Node.js and LESS from builder
