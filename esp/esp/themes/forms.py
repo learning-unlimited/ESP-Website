@@ -52,6 +52,19 @@ class ThemeConfigurationForm(forms.Form):
         initial=[]
     )
 
+    def __init__(self, *args, **kwargs):
+        super(ThemeConfigurationForm, self).__init__(*args, **kwargs)
+        # Make toolbar_links tolerant of invalid/missing JSON, given required=False
+        widget = self.fields['toolbar_links'].widget
+        original_vfd = widget.value_from_datadict
+        def safe_value_from_datadict(data, files, name, _orig=original_vfd):
+            try:
+                return _orig(data, files, name)
+            except (TypeError, ValueError, KeyError):
+                # On invalid or missing input, treat as empty list
+                return []
+        widget.value_from_datadict = safe_value_from_datadict
+
     def prepare_for_serialization(self, data):
         return data
 

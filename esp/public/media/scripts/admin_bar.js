@@ -1,3 +1,5 @@
+// Default to empty array if theme template did not define toolbarLinks
+if (typeof toolbarLinks === 'undefined') { var toolbarLinks = []; }
 ESP = (function () {
   var loaded = false;
   var queued_modules = [];
@@ -89,12 +91,16 @@ if (currentPrograms && currentPrograms.forEach) {
                     '<a href="/manage/docs/">Website Documentation</a>';
 
     // Append extra links configured in theme settings (never replaces defaults)
-    if (typeof toolbarLinks !== 'undefined' && toolbarLinks.length > 0) {
+   if (typeof toolbarLinks !== 'undefined' && toolbarLinks.length > 0) {
         toolbarLinks.forEach(function(link) {
-            var a = document.createElement('a');
-            a.href = link.link;
-            a.textContent = link.text;
-            linksHtml += '<br/>' + a.outerHTML;
+            // Only allow relative URLs and http/https to prevent javascript:/data: XSS
+            var url = link.link;
+            if (url && (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://'))) {
+                var a = document.createElement('a');
+                a.href = url;
+                a.textContent = link.text;
+                linksHtml += '<br/>' + a.outerHTML;
+            }
         });
     }
 
