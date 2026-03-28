@@ -256,6 +256,7 @@ class ProgramManager(models.Manager):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by('-id')
 
+
 class DirectorEmailValidator(validators.RegexValidator):
     # RegexValidator in Django 2.x doesn't implement __eq__ — it inherits object.__eq__,
     # which compares by identity (memory address) and causes spurious migrations
@@ -269,27 +270,41 @@ class DirectorEmailValidator(validators.RegexValidator):
             and self.code == other.code
         )
 
-    def __hash__(self):
-        return hash((type(self), self.regex.pattern, self.flags, self.inverse_match, self.message, self.code))
+class ProgramEmailField(models.EmailField):
+    """EmailField that excludes environment-specific kwargs from migrations."""
+    pass
 
 class Program(models.Model, CustomFormsLinkModel):
+    """An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, etc."""
+
     objects = ProgramManager()
-    """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
-    #customforms definitions
-    form_link_name='Program'
+
+    # customforms definitions
+    form_link_name = 'Program'
 
     url = models.CharField(max_length=80, unique=True)
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
+
     # director contact email address used for from field and display
-    director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[DirectorEmailValidator(rf'(^.+@{settings.SITE_INFO[1].replace(".", ".")}$)|(^.+@(\w+\.)?learningu\.org$)')],
-                                       help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
-                                                           '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
-                                                           'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
-                                                           'email address from your site\'s settings by default. ' +
-                                                           'You can create and manage your email redirects <a href="/manage/redirects/">here</a>.'))
+    director_email = ProgramEmailField(
+        default='info@' + settings.SITE_INFO[1],
+        max_length=75,
+        validators=[
+            DirectorEmailValidator(
+                r'(^.+@' + re.escape(settings.SITE_INFO[1]) +
+                r'$)|(^.+@(\w+\.)?learningu\.org$)'
+            )
+        ],
+        help_text=mark_safe(
+            'The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), '
+            + '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). '
+            + 'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" '
+            + 'email address from your site\'s settings by default. '
+            + 'You can create and manage your email redirects <a href="/manage/redirects/">here</a>.'
+        )
+    )
     director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
     director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
     program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
