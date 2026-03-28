@@ -15,6 +15,9 @@ class TemplateOverrideAdmin(VersionAdmin):
     list_display = ['id', 'name', 'version', ]
     list_display_links = ['id', 'name', ]
 
+    class Media:
+        js = ('/media/scripts/admin_templateoverride.js',)
+
 class PrinterAdmin(admin.ModelAdmin):
     list_display = ['name', 'printer_type']
 
