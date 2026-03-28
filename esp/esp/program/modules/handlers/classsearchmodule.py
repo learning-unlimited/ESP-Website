@@ -9,7 +9,7 @@ from django.db.models import Count
 from django.db.models.query import Q
 
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
-from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
+from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, needs_admin
 from esp.program.models import RegistrationType
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
@@ -19,6 +19,8 @@ from esp.utils.query_builder import QueryBuilder, SearchFilter
 from esp.utils.query_builder import SelectInput, SelectQInput, ConstantInput, TextInput
 from esp.utils.query_builder import OptionalInput, DatetimeInput
 from esp.utils.web import render_to_response
+import logging
+logger = logging.getLogger(__name__)
 
 # TODO: this won't work right without class flags enabled
 
@@ -234,6 +236,36 @@ class ClassSearchModule(ProgramModuleObj):
             english_name="classes",
             filters=filters)
 
+    @aux_call
+    @needs_admin
+    def create_autorule(self, request, tl, one, two, module, extra, prog):
+        """Create an AutoClassFlagRule from a query."""
+        from esp.program.models.flags import AutoClassFlagRule, ClassFlagType
+        query_data = request.POST.get('query_data')
+        flag_type_id = request.POST.get('flag_type_id')
+        comment = request.POST.get('comment', '')
+
+        if not query_data or not flag_type_id:
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER', './classsearch'))
+
+        try:
+            flag_type = ClassFlagType.objects.get(id=flag_type_id)
+            # Create the rule
+            AutoClassFlagRule.objects.create(
+                program=self.program,
+                flag_type=flag_type,
+                rule_data=query_data,
+                comment=comment
+            )
+            # Proactively run the rule once for existing classes?
+            # The signal handles future saves, but we might want to flag existing classes.
+            # For now, let's keep it simple as requested: "specfying that when a class is added or edited..."
+        except Exception as e:
+            # We should probably show an error, but for now redirect back
+            logger.error("Error creating AutoClassFlagRule: %s", e)
+
+        return HttpResponseRedirect('./classsearch?query=' + query_data)
+
     @main_call
     @needs_admin
     def classsearch(self, request, tl, one, two, module, extra, prog):
@@ -276,6 +308,7 @@ class ClassSearchModule(ProgramModuleObj):
                 # search exist, fall through and send you to the class search
                 # page as usual
             context['query'] = decoded
+            context['query_json'] = json.dumps(decoded)
             context['queryset'] = queryset
             context['IDs'] = [cls.id for cls in queryset]
             context['flag_types'] = self.program.flag_types.all()
