@@ -852,11 +852,26 @@ def newprogram(request):
 @csrf_exempt
 @transaction.non_atomic_requests
 def submit_transaction(request):
+    from esp.program.cybersource_utils import verify_cybersource_signature
+
     # Before we do anything else, log the raw postback to the database
     pretty_postdata = json.dumps(request.POST, sort_keys=True, indent=4,
                                  separators=(', ', ': '))
     log_record = CybersourcePostback.objects.create(post_data=pretty_postdata)
     transaction.commit()
+
+    # Verify HMAC signature before processing
+    secret_key = settings.CYBERSOURCE_CONFIG.get('secret_key', '')
+    if not secret_key:
+        logger.error("Cybersource secret_key not configured — rejecting postback")
+        return HttpResponseBadRequest("Payment processing not configured")
+
+    if not verify_cybersource_signature(request.POST, secret_key):
+        logger.warning("Cybersource postback with invalid signature rejected")
+        log_record.post_data += "\n\n[REJECTED: Invalid signature]"
+        log_record.save()
+        return HttpResponseBadRequest("Invalid signature")
+
     try:
         return _submit_transaction(request, log_record)
     except Exception:
