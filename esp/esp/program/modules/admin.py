@@ -69,4 +69,10 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
     )
     list_filter = ('program', 'module')
     search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title', 'link_title')
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('program', 'module')
+        return self.readonly_fields
+
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)
