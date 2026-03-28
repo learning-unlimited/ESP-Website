@@ -568,6 +568,35 @@ class StripBase64ImagesTest(DjangoTestCase):
         self.assertEqual(result, html)
         self.assertEqual(count, 0)
 
+class RequireCSRFFailureFilterTest(DjangoTestCase):
+    """Tests for the RequireCSRFFailure logging filter."""
+
+    def setUp(self):
+        from esp.utils.log import RequireCSRFFailure
+        self.filter = RequireCSRFFailure()
+
+    def _make_record(self, name):
+        return logging.LogRecord(
+            name=name,
+            level=logging.WARNING,
+            pathname="",
+            lineno=0,
+            msg="Test CSRF message",
+            args=(),
+            exc_info=None,
+        )
+
+    def test_allows_csrf_logger(self):
+        record = self._make_record("django.security.csrf")
+        self.assertTrue(self.filter.filter(record))
+
+    def test_blocks_other_security_loggers(self):
+        record = self._make_record("django.security.SuspiciousOperation")
+        self.assertFalse(self.filter.filter(record))
+
+    def test_blocks_request_logger(self):
+        record = self._make_record("django.request")
+        self.assertFalse(self.filter.filter(record))
 
 def suite():
     """Choose tests to expose to the Django tester."""
@@ -577,5 +606,3 @@ def suite():
     # Add doctests from esp.utils.__init__.py
     s.addTest(doctest.DocTestSuite(utils))
     return s
-
-
