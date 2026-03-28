@@ -54,13 +54,22 @@
             }
         }
 
+        // Debounce expensive form serialization during rapid typing.
+        var updateDraftButtonStateTimer = null;
+        function scheduleDraftButtonUpdate() {
+            if (updateDraftButtonStateTimer !== null) {
+                clearTimeout(updateDraftButtonStateTimer);
+            }
+            updateDraftButtonStateTimer = setTimeout(function() {
+                updateDraftButtonState();
+                updateDraftButtonStateTimer = null;
+            }, 150);
+        }
+
         // Monitor form changes
         if (form) {
-            form.addEventListener('input', updateDraftButtonState);
-            form.addEventListener('change', updateDraftButtonState);
-
-            // Also monitor keyup for real-time updates
-            form.addEventListener('keyup', updateDraftButtonState);
+            form.addEventListener('input', scheduleDraftButtonUpdate);
+            form.addEventListener('change', scheduleDraftButtonUpdate);
         }
 
         // Initial state

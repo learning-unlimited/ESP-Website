@@ -395,8 +395,15 @@ class ClassCreationController(object):
             if resource_type_id and desired_values:
                 try:
                     resource_type = ResourceType.objects.get(id=int(resource_type_id))
+                    valid_choice_values = set([str(choice) for choice in resource_type.choices])
+                    cleaned_desired_values = [
+                        str(value) for value in desired_values
+                        if str(value) in valid_choice_values
+                    ]
+                    if not cleaned_desired_values:
+                        continue
                     for section in cls.sections.all():
-                        for desired_value in desired_values:
+                        for desired_value in cleaned_desired_values:
                             rr = ResourceRequest()
                             rr.target = section
                             rr.res_type = resource_type
