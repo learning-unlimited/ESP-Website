@@ -65,8 +65,16 @@ class TimeslotForm(forms.Form):
             slot.event_type = EventType.get_from_desc("Class Time Block")    # default event type for now
         slot.group = self.cleaned_data['group']
         slot.program = program
-        slot.save()
-
+        qs=Event.objects.filter(program=program, start=self.cleaned_data['start'], end=slot.end,short_description=self.cleaned_data.get('name'),
+                description=self.cleaned_data.get('description'),
+                event_type=slot.event_type,
+                group=self.cleaned_data.get('group')).exists()
+        if qs is False:
+            slot.save()
+        
+        if qs is True:
+                raise forms.ValidationError("A timeslot with the same data already exists for this program.")
+      
 class ResourceTypeForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
     name = forms.CharField()
