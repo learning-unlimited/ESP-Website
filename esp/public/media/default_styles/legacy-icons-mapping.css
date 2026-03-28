@@ -1,0 +1,70 @@
+/* legacy-icons-mapping.css */
+/* Map legacy Glyphicons (Bootstrap 2.3.2) to modern Bootstrap Icons */
+
+[class^="icon-"]:not(.bi),
+[class*=" icon-"]:not(.bi),
+[class^="glyphicon-"]:not(.bi),
+[class*=" glyphicon-"]:not(.bi) {
+  display: inline-block;
+  font-family: 'bootstrap-icons' !important;
+  font-style: normal;
+  font-weight: normal !important;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  vertical-align: -0.125em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-image: none !important; /* Disable old sprite backgrounds */
+  width: auto !important;
+  height: auto !important;
+}
+
+/* User & Account */
+.icon-user:before, .glyphicon-user:before { content: "\f4e1"; } /* person-fill */
+.icon-lock:before, .glyphicon-lock:before { content: "\f46d"; } /* lock-fill */
+.icon-plus:before, .glyphicon-plus:before { content: "\f4fe"; } /* plus-lg */
+.icon-minus:before, .glyphicon-minus:before { content: "\f4a0"; } /* dash-lg */
+
+/* Navigation & Global */
+.icon-home:before, .glyphicon-home:before { content: "\f425"; } /* house-fill */
+.icon-search:before, .glyphicon-search:before { content: "\f52a"; } /* search */
+.icon-envelope:before, .glyphicon-envelope:before { content: "\f32f"; } /* envelope-fill */
+.icon-cog:before, .glyphicon-cog:before { content: "\f3e5"; } /* gear-fill */
+.icon-wrench:before, .glyphicon-wrench:before { content: "\f623"; } /* wrench */
+.icon-refresh:before, .glyphicon-refresh:before { content: "\f116"; } /* arrow-repeat */
+.icon-share-alt:before, .glyphicon-share-alt:before { content: "\f52d"; } /* reply-fill */
+.icon-list:before, .glyphicon-list:before { content: "\f479"; } /* list */
+.icon-th:before, .glyphicon-th:before { content: "\f406"; } /* grid-3x3-gap-fill */
+.icon-th-list:before, .glyphicon-th-list:before { content: "\f47b"; } /* list-ul */
+
+/* Status & Feedback */
+.icon-ok:before, .glyphicon-ok:before, .glyphicon-ok-sign:before { content: "\f26b"; } /* check-lg */
+.icon-remove:before, .glyphicon-remove:before, .glyphicon-remove-sign:before { content: "\f659"; } /* x-lg */
+.icon-info-sign:before, .glyphicon-info-sign:before { content: "\f431"; } /* info-circle-fill */
+.icon-exclamation-sign:before, .glyphicon-exclamation-sign:before { content: "\f33a"; } /* exclamation-circle-fill */
+.icon-star:before, .glyphicon-star:before { content: "\f588"; } /* star-fill */
+.icon-star-empty:before, .glyphicon-star-empty:before { content: "\f586"; } /* star */
+
+/* Actions */
+.icon-pencil:before, .glyphicon-pencil:before, .icon-edit:before, .glyphicon-edit:before { content: "\f4cb"; } /* pencil-square */
+.icon-trash:before, .glyphicon-trash:before { content: "\f5ad"; } /* trash-fill */
+.icon-download-alt:before, .glyphicon-download-alt:before, .glyphicon-import:before { content: "\f30a"; } /* download */
+.icon-list-alt:before, .glyphicon-list-alt:before { content: "\f474"; } /* list-task */
+.icon-stats:before, .glyphicon-stats:before { content: "\f400"; } /* graph-up */
+.icon-duplicate:before, .glyphicon-duplicate:before { content: "\f3ed"; } /* files */
+
+/* Miscellaneous */
+.icon-book:before, .glyphicon-book:before { content: "\f199"; } /* book-fill */
+.icon-time:before, .glyphicon-time:before { content: "\f28f"; } /* clock-fill */
+.icon-phone:before, .glyphicon-phone:before { content: "\f5c1"; } /* telephone-fill */
+.icon-flag:before, .glyphicon-flag:before { content: "\f390"; } /* flag-fill */
+.icon-globe:before, .glyphicon-globe:before { content: "\f3e8"; } /* globe */
+.icon-calendar:before, .glyphicon-calendar:before { content: "\f22d"; } /* calendar3 */
+.icon-random:before, .glyphicon-random:before { content: "\f554"; } /* shuffle */
+.icon-comment:before, .glyphicon-comment:before { content: "\f2be"; } /* chat-fill */
+.icon-heart:before, .glyphicon-heart:before { content: "\f417"; } /* heart-fill */
+.icon-gift:before, .glyphicon-gift:before { content: "\f3f6"; } /* gift-fill */
+.icon-camera:before, .glyphicon-camera:before { content: "\f215"; } /* camera-fill */
+.icon-eye-open:before, .glyphicon-eye-open:before { content: "\f341"; } /* eye-fill */
+.icon-eye-close:before, .glyphicon-eye-close:before { content: "\f340"; } /* eye-slash-fill */
