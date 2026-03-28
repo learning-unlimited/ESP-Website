@@ -1,4 +1,3 @@
-from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -68,7 +67,7 @@ class StudentRegSanityController(object):
                 closeatend = True
                 if directory is None: directory = self.options['directory']
                 filefullname = directory +'/sanitize_walkins_log.csv'
-                csvfile = open(filefullname, 'ab+')
+                csvfile = open(filefullname, 'a', newline='', encoding='utf-8')
                 csvwriter = csv.writer(csvfile)
             csvwriter.writerow(['Sanitizing Walkins'])
             csvwriter.writerow(['Class Title', 'Scheduled at:', 'Student', 'Enrollment Type:'])
@@ -78,11 +77,10 @@ class StudentRegSanityController(object):
             for sec in w.get_sections():
                 srs = sec.getRegistrations()
                 report.append((sec, srs.count()))
-
-        for sr in srs:
-            if not fake:
-                if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
-                sr.expire()
+                for sr in srs:
+                    if not fake:
+                        if csvlog: csvwriter.writerow([w.title(), ', '.join(sec.friendly_times()), sr.user.name(), str(sr.relationship)])
+                        sr.expire()
         logger.debug(report)
         if closeatend: csvfile.close()
         logger.info("Walkins checked")
@@ -98,7 +96,7 @@ class StudentRegSanityController(object):
                 closeatend = True
                 if directory is None: directory = self.options['directory']
                 filefullname = directory +'/sanitize_lunch_log.csv'
-                csvfile = open(filefullname, 'ab+')
+                csvfile = open(filefullname, 'a', newline='', encoding='utf-8')
                 csvwriter = csv.writer(csvfile)
             csvwriter.writerow(['Sanitizing Lunch Blocks'])
             csvwriter.writerow(['Lunch Block', 'Student', 'Enrollment Type:'])
@@ -111,7 +109,7 @@ class StudentRegSanityController(object):
             report.append((l, srs.count()))
             if not fake:
                 for sr in srs:
-                    if csvlog: csvwriter.writerow([l.title().encode('ascii', 'ignore'), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
+                    if csvlog: csvwriter.writerow([l.title(), sr.user.name(), str(sr.relationship)])
                     sr.expire()
         logger.debug(report)
         if closeatend: csvfile.close()
@@ -148,7 +146,7 @@ class StudentRegSanityController(object):
             import csv
             if directory is None: directory = self.options['directory']
             filefullname = directory + '/'+ datetime.now().strftime("%Y-%m-%d_") + 'sanitize_log.csv'
-            csvfile = open(filefullname, 'ab+')
+            csvfile = open(filefullname, 'a', newline='', encoding='utf-8')
             csvwriter = csv.writer(csvfile)
         self.reports = {}
         for ck in checks:
