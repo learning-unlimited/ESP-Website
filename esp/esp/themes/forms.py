@@ -95,4 +95,5 @@ class ThemeConfigurationForm(forms.Form):
         label='Extra admin toolbar links (use absolute or relative URLs)',
         initial=[]
     )
-    
+
+
