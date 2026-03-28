@@ -285,63 +285,60 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                 if form.amount:
                     iac.set_preference('Donation to Learning Unlimited', 1, amount=form.amount)
 
-        #   Set Stripe key based on settings.  Also require the API version
-        #   which our code is designed for.
+        #   Set Stripe key based on settings.
         stripe.api_key = self.settings['secret_key']
-        # We are using the 2014-03-13 version of the Stripe API, which is
-        # v1.12.2.
         stripe.api_version = '2014-03-13'
 
+        # Safe PO number check
         if request.POST.get('ponumber', '') != iac.get_id():
-            #   If we received a payment for the wrong PO:
-            #   This is not a Python exception, but an error nonetheless.
             context['error_type'] = 'inconsistent_po'
-            context['error_info'] = {'request_po': request.POST.get('ponumber', ''), 'user_po': iac.get_id()}
+            context['error_info'] = {
+                'request_po': request.POST.get('ponumber', ''),
+                'user_po': iac.get_id()
+            }
 
+        # ✅ FIX 1: Safe totalcost_cents handling
         if 'error_type' not in context:
-            #   Check the amount in the POST against the amount in our records.
-            #   If they don't match, raise an error.
-            amount_cents_post = Decimal(request.POST['totalcost_cents'])
-            amount_cents_iac = Decimal(iac.amount_due()) * 100
-            if amount_cents_post != amount_cents_iac:
-                context['error_type'] = 'inconsistent_amount'
-                context['error_info'] = {
-                    'amount_cents_post': amount_cents_post,
-                    'amount_cents_iac':  amount_cents_iac,
-                }
+            amount_cents_raw = request.POST.get('totalcost_cents')
+
+            if not amount_cents_raw:
+                context['error_type'] = 'missing_amount'
+            else:
+                amount_cents_post = Decimal(amount_cents_raw)
+                amount_cents_iac = Decimal(iac.amount_due()) * 100
+
+                if amount_cents_post != amount_cents_iac:
+                    context['error_type'] = 'inconsistent_amount'
+                    context['error_info'] = {
+                        'amount_cents_post': amount_cents_post,
+                        'amount_cents_iac': amount_cents_iac,
+                    }
+
+        # ✅ FIX 2: Safe stripeToken handling
+        if 'error_type' not in context:
+            stripe_token = request.POST.get('stripeToken')
+
+            if not stripe_token:
+                context['error_type'] = 'missing_token'
 
         if 'error_type' not in context:
             try:
                 with transaction.atomic():
-                    # Save a record of the charge if we can uniquely identify the user/program.
-                    # If this causes an error, the user will get a 500 error
-                    # page, and the card will NOT be charged.
-                    # If an exception is later raised by
-                    # stripe.Charge.create(), then the transaction will be
-                    # rolled back.
-                    # Thus, we will never be in a state where the card has been
-                    # charged without a record being created on the site, nor
-                    # vice-versa.
-                    totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
+                    totalcost_dollars = Decimal(amount_cents_raw) / 100
 
-                    #   Create a record of the transfer without the transaction ID.
                     transfer = iac.submit_payment(totalcost_dollars, 'TBD')
 
-                    # Create the charge on Stripe's servers - this will charge
-                    # the user's card.
                     charge = stripe.Charge.create(
                         amount=amount_cents_post,
                         currency="usd",
-                        card=request.POST['stripeToken'],
+                        card=stripe_token,
                         description="Payment for %s %s - %s" % (group_name, prog.niceName(), request.user.name()),
-                        statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
+                        statement_descriptor=group_name[0:22],
                         metadata={
-                            'ponumber': request.POST['ponumber'],
+                            'ponumber': request.POST.get('ponumber', ''),
                         },
                     )
 
-                    #   Now that the charge has been performed by Stripe, save its
-                    #   transaction ID for our records.
                     transfer.transaction_id = charge.id
                     transfer.save()
 
@@ -349,8 +346,6 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                 context['error_type'] = 'declined'
                 context['error_info'] = e.json_body['error']
             except stripe.error.InvalidRequestError as e:
-                #   While this is a generic error meaning invalid parameters were supplied
-                #   to Stripe's API, we will usually see it because of a duplicate request.
                 context['error_type'] = 'invalid'
             except stripe.error.AuthenticationError as e:
                 context['error_type'] = 'auth'
@@ -359,17 +354,16 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             except stripe.error.StripeError as e:
                 context['error_type'] = 'generic'
 
+        # Handle all errors
         if 'error_type' in context:
-            #   If we got any sort of error, send an email to the admins and render an error page.
             self.send_error_email(request, context)
             return render_to_response(self.baseDir() + 'failure.html', request, context)
 
-        #   Render the success page, which doesn't do much except direct back to studentreg.
+        # Success
         context['amount_paid'] = totalcost_dollars
         context['statement_descriptor'] = group_name[0:22]
         context['can_confirm'] = self.deadline_met('/Confirm')
         return render_to_response(self.baseDir() + 'success.html', request, context)
-
     def isStep(self):
         return self.check_setup()
 
