@@ -338,7 +338,7 @@ class ListGenModule(ProgramModuleObj):
                 self.send_error_email(request, context)
                 return render_to_response(self.baseDir() + 'failure.html', request, context)
 
-
+# fix applied for invalid filterid
 
 
         usertype = request.POST.get('recipient_type', 'combo').lower()
