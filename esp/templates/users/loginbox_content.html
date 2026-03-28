@@ -1,3 +1,4 @@
+{% if request.path != "/myesp/login/" %}
 <div id="loginbox">
 
   {% if login_result %}
@@ -69,6 +70,7 @@
     </form>
   </div>
 </div>
+{% endif %}
 
 
 
