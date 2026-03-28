@@ -10,7 +10,7 @@
 
 {% block xtrajs %}
     {{ block.super }}
-    <script type="text/javascript" src="/media/scripts/program/modules/extracosts.js"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/extracosts.js?v=2"></script>
 {% endblock %}
 
 {% block module_content %}
@@ -61,6 +61,23 @@ td>ul { list-style-type: none; padding: 0px }
         {% elif f.type == "select" %}
             {% if f.form.option.errors %}<div style="color: red;">{{ f.form.option.errors|join:", " }}</div>{% endif %}
             {{ f.form.option }}
+        {% elif f.type == "multiselect" %}
+            {% if f.form.options.errors %}<div style="color: red;">{{ f.form.options.errors|join:", " }}</div>{% endif %}
+            {{ f.form.options }}
+            {% if f.custom_amount_fields %}
+            <div style="margin-top: 10px;">
+                <b>Custom amounts</b>
+                <ul style="list-style-type: none; padding-left: 0;">
+                    {% for opt, field in f.custom_amount_fields %}
+                    <li style="margin-top: 5px;">
+                        {{ opt.description }}:
+                        {% if field.errors %}<span style="color: red;">{{ field.errors|join:", " }}</span>{% endif %}
+                        {{ field }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
         {% elif f.type == "sibling" %}
             {% if f.form.siblingdiscount.errors %}<div style="color: red;">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
             {{ f.form.siblingdiscount }}
@@ -85,7 +102,7 @@ td>ul { list-style-type: none; padding: 0px }
         {# be able to remove a selected item, we need a button. The Javascript    #}
         {# code for the button is in extracosts.js.                               #}
 
-        {% if f.LineItem.num_options and not f.LineItem.required %}
+        {% if f.LineItem.num_options and not f.LineItem.required and f.type != "multiselect" %}
             <button type="button"
                     class="remove-item"
                     name="{{ f.form.prefix }}-option{% if f.type == "select" and f.LineItem.has_custom_options %}_0{% endif %}"
