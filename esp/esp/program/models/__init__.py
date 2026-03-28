@@ -48,6 +48,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from phonenumber_field.modelfields import PhoneNumberField
 from django.core import validators
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Count
 from django.db.models import Q
@@ -2018,7 +2019,13 @@ class ScheduleConstraint(models.Model):
     condition = models.ForeignKey(BooleanExpression, related_name='condition_constraint', on_delete=models.CASCADE)
     requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint', on_delete=models.CASCADE)
     #   This is a function of one argument, schedule_map, which returns an updated schedule_map.
-    on_failure = models.TextField()
+    # On failure actions are restricted to safe predefined behavior.
+    ON_FAILURE_CHOICES = [
+        ('noop', 'No operation'),
+        ('retry', 'Retry once'),
+        ('clear', 'Clear schedule'),
+    ]
+    on_failure = models.CharField(max_length=32, choices=ON_FAILURE_CHOICES, default='noop')
 
     class Meta:
         app_label = 'program'
@@ -2047,18 +2054,33 @@ class ScheduleConstraint(models.Model):
             return True
 
     def handle_failure(self):
-        #   Try the on_failure callback but be very lenient about it (fail silently)
-        try:
-            func_str = """def _f(schedule_map):
-{chr(10).join(f'    {l.rstrip()}' for l in self.on_failure.strip().split(chr(10)))}"""
-            exec(func_str)
-            result = _f(self.schedule_map)
-            return result
-        except Exception as inst:
-            #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
-            pass
-        #   If we got nothing from the on_failure function, just provide Nones.
+        # Safe handling must not execute arbitrary code from DB.
+        action = getattr(self, 'on_failure', 'noop')
+        if action == 'noop':
+            return (None, None)
+
+        if action == 'retry':
+            # Return the current schedule_map to allow a second evaluation attempt.
+            return self.schedule_map
+
+        if action == 'clear':
+            # Clear all constraints / data in schedule_map in a safe way.
+            try:
+                if hasattr(self.schedule_map, 'clear'):
+                    self.schedule_map.clear()
+                    return self.schedule_map
+            except Exception:
+                pass
+            return (None, None)
+
+        # Unknown action: fail safe
         return (None, None)
+
+    def clean(self):
+        super().clean()
+        if self.on_failure not in dict(self.ON_FAILURE_CHOICES):
+            raise ValidationError({'on_failure': 'Invalid failure action'})
+
 
 class ScheduleTestTimeblock(BooleanToken):
     """ A boolean value that keeps track of a timeblock.
