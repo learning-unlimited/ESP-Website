@@ -267,6 +267,24 @@ program_url_validator = validators.RegexValidator(
     'Program URL must be of the form Segment1/Segment2 without spaces or characters like <, >, ", \', or extra slashes.'
 )
 
+class ProgramEmailField(models.EmailField):
+    """EmailField that excludes environment-specific kwargs from migrations.
+
+    default, help_text, and validators all reference settings.SITE_INFO[1],
+    which varies by environment. Stripping them from deconstruct() means
+    migrations are environment-independent while the field still works
+    normally at runtime.
+    """
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs.pop('default', None)
+        kwargs.pop('help_text', None)
+        kwargs.pop('validators', None)
+        # Present as a plain EmailField in migrations
+        path = 'django.db.models.EmailField'
+        return name, path, args, kwargs
+
 class Program(models.Model, CustomFormsLinkModel):
     objects = ProgramManager()
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
@@ -278,8 +296,8 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
-    director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(rf'(^.+@{settings.SITE_INFO[1].replace(".", ".")}$)|(^.+@(\w+\.)?learningu\.org$)')],
+    director_email = ProgramEmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
+                                       validators=[validators.RegexValidator(r'(^.+@' + re.escape(settings.SITE_INFO[1]) + r'$)|(^.+@(\w+\.)?learningu\.org$)')],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
