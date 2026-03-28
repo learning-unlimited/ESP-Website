@@ -274,3 +274,20 @@ button.sidetoolbar {
     text-align: center;
     background: rgba(200,200,200,0.5) url('/media/default_images/ajax_loader.gif') no-repeat center; /*.gif file or just div with message etc. however you like*/
 }
+
+#clear-change-log-wrapper {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    text-align: center;
+}
+
+#clear-change-log-wrapper a {
+    display: inline-block;
+    padding: 2px 6px;
+    border: 2px outset #ddd;
+    background-color: #f0f0f0;
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
