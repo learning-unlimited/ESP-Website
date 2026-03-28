@@ -124,7 +124,7 @@ you arrive.
                 No classes
             </td>
         {% elif timeslot.1.0.first_meeting_time %}
-            <td style="vertical-align: middle; border-left: 5px solid {% cycle 'black' 'lightgray' %}" align="center" rowspan="{{ timeslot.1.0.section.get_meeting_times|length }}" class="class_desc">
+            <td style="vertical-align: middle; border-left: 5px solid {% cycle 'black' 'lightgray' %}" align="center" rowspan="{{ timeslot.1.0.meeting_span }}" class="class_desc">
             {% for cls in timeslot.1 %}
                 {% comment %}{% if use_priority %}{% endcomment %}
                     {% if not cls.section.verbs|length_is:0 %}
