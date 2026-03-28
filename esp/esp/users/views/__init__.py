@@ -214,19 +214,21 @@ def unsubscribe(request, username, token, oneclick = False):
             raise ESPError("User " + users[0].username + " is already unsubscribed.")
     else:
         raise ESPError("No user matching that unsubscribe request.")
-
-    # if POSTing, they clicked the confirm button
-    # if oneclick=True, then they came here from an email client
-    if request.POST.get("List-Unsubscribe") == "One-Click" or oneclick == True:
-        # "unsubscribe" them (deactivate their account)
-        user.is_active = False
-        user.save()
-        return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
-
-    # otherwise show them a confirmation button
-    # if they are logged into the correct account or the token is valid
+    
+    # first, we need to check that user is logged into the correct account or the token is valid
+    # if authorization is true, then we proceed
     if ( (request.user.is_authenticated and request.user == user) or user.check_token(token)):
+        # if POSTing, they clicked the confirm button
+        # if oneclick=True, then they came here from an email client
+        if request.POST.get("List-Unsubscribe") == "One-Click" or oneclick:
+            # "unsubscribe" them (deactivate their account)
+            user.is_active = False
+            user.save()
+            return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
+            
+        # if this isn't true, then show them the confirmation button
         return render_to_response('users/unsubscribe.html', request, context = {'user': user})
+
     # if they are logged into a different account
     # tell them to log out and try again
     elif request.user.is_authenticated and request.user != user:
