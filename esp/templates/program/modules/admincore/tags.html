@@ -10,6 +10,11 @@
         #id_grade_increment_date_year {
             display: none;
         }
+        .tag-row.highlighted-match td {
+            background-color: #fff3cd !important;
+            transition: background-color 0.2s ease;
+        }
+
     </style>
 {% endblock %}
 
@@ -34,7 +39,15 @@
   Please be aware that these settings can be very sensitive and there are currently only a few warnings or blocks in place to prevent you from providing incorrect values. Please use caution, read the help text, and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions.
 </div>
 
+<div style="margin-bottom: 15px;">
+  <input type="text" id="tag-search-input" class="form-control"
+         placeholder="Search tags by name or description..."
+         style="max-width: 400px;" />
+</div>
+
 <form action="/manage/{% if program %}{{ program.getUrlBase }}/{% endif %}tags/" method="post">
+<div id="tag-list">
+
 {% autoescape off %}
 {% if form.errors %}
 <div class="alert alert-danger">
@@ -60,9 +73,10 @@
       <p class="description">{{ fieldset.description }}</p>
     {% endif %}
 
-    <table class="contact">
+     <table class="contact">
     {% for field in fieldset %}
-     <tr>
+     <tr class="tag-row" data-search-text="{{ field.name|escape }} {{ field.help_text|escape }}">
+
       {% if field.is_hidden %}
        <td style="padding-bottom: 15px;"> {{ field }} </td>
        {% else %}
@@ -100,9 +114,58 @@
   </div>
 {% endif %}
 {% endfor %}
+</div>
 </form>
 
+
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+<script src="/media/scripts/utils/search_filter.js"></script>
+<script>
+  if (window.initSearchFilter) {
+    initSearchFilter('tag-search-input', 'tag-list', '.tag-row');
+
+    var originallyActive = [];
+    document.querySelectorAll('.dsphead.active').forEach(function(el) {
+        originallyActive.push(el);
+    });
+
+    // Expand collapsed categories on match, highlight results, and handle reset
+    document.getElementById('tag-search-input').addEventListener('input', _.debounce(function () {
+      var query = this.value.trim().toLowerCase();
+      
+      if (query === '') {
+        // Reset everything
+        document.querySelectorAll('.tag-row').forEach(function(row) {
+          row.classList.remove('highlighted-match');
+        });
+        document.querySelectorAll('.dsphead').forEach(function (head) {
+          // Collapse expanded categories that weren't originally active
+          if (head.classList.contains('active') && !originallyActive.includes(head)) {
+            head.click();
+          }
+        });
+        return;
+      }
+
+      // Highlight results and expand categories
+      document.querySelectorAll('.tag-row').forEach(function(row) {
+        var text = row.getAttribute('data-search-text') || row.textContent;
+        if (text.toLowerCase().includes(query)) {
+          row.classList.add('highlighted-match');
+        } else {
+          row.classList.remove('highlighted-match');
+        }
+      });
+
+      document.querySelectorAll('.dsphead').forEach(function (head) {
+        if (!head.classList.contains('active')) {
+          head.click();
+        }
+      });
+    }, 200));
+  }
+
+</script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
