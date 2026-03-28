@@ -616,20 +616,11 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @staticmethod
     def coteachers_logic(cls, request, prog, template, ajax, is_admin = False):
-        # set txtTeachers and coteachers....
-        if not 'coteachers' in request.POST:
-            coteachers = cls.get_teachers()
-            if not is_admin:
-                coteachers = [user for user in coteachers if user.id != request.user.id]
-            txtTeachers = ",".join([str(user.id) for user in coteachers ])
-
-        else:
-            txtTeachers = request.POST['coteachers']
-            coteachers = txtTeachers.split(',')
-            coteachers = [ x for x in coteachers if x != '' ]
-            coteachers = [ ESPUser.objects.get(id=userid)
-                           for userid in coteachers                ]
-            add_list_members("%s_%s-teachers" % (prog.program_type, prog.program_instance), coteachers)
+        # set txtTeachers and coteachers from the database, never from POST.
+        coteachers = list(cls.get_teachers())
+        if not is_admin:
+            coteachers = [user for user in coteachers if user.id != request.user.id]
+        txtTeachers = ",".join([str(user.id) for user in coteachers])
 
         op = ''
         if 'op' in request.POST:
@@ -780,6 +771,11 @@ class TeacherClassRegModule(ProgramModuleObj):
             for moderator in to_be_deleted:
                 section.moderators.remove(moderator)
             # should we send the moderator or directors an email?
+
+        # Ensure all current teachers are present on the program-level teacher list
+        # using server-side teacher data.
+        if request.POST and op in ('add', 'del'):
+            add_list_members("%s_%s-teachers" % (prog.program_type, prog.program_instance), cls.get_teachers())
 
         return render_to_response(template, request, {'class': cls,
                                                       'ajax': ajax,
