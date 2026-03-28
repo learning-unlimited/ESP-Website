@@ -1,5 +1,5 @@
 import logging
-
+import math
 from esp.program.models import StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.controllers.lottery import LotteryAssignmentController, LotteryException
@@ -36,9 +36,9 @@ class LotteryFrontendModule(ProgramModuleObj):
 
     def is_float(self, s):
         try:
-            float(s)
-            return True
-        except ValueError:
+            value = float(s)
+            return math.isfinite(value)
+        except (ValueError,TypeError):
             return False
 
     @aux_call
@@ -49,7 +49,7 @@ class LotteryFrontendModule(ProgramModuleObj):
         options = {}
 
         for key in request.POST:
-            if 'lottery_' in key:
+            if key.startswith("lottery_"):
                 value = request.POST[key]
 
                 if value == 'True':
@@ -61,7 +61,7 @@ class LotteryFrontendModule(ProgramModuleObj):
                 elif self.is_float(value):
                     value = float(value)
 
-                options[key.split('_', 1)[1]] = value
+                options[key[len("lottery_"):]] = value
 
         try:
             lotteryObj = LotteryAssignmentController(prog, **options)
