@@ -260,8 +260,12 @@ function Matrix(
         } else {
             addClassToTimeslots(available_timeslots, "teacher-available-cell");
             addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
+            var moderator_only_unavailable = timeslots[2] || [];
+            if(moderator_only_unavailable.length > 0) {
+                addClassToTimeslots(moderator_only_unavailable, "moderator-only-unavailable-cell");
+            }
         }
-        
+
         if(section){
             $j.each(available_timeslots, function(j, timeslot_id) {
                 $j.each(this.rooms, function(k, room) {
@@ -339,6 +343,10 @@ function Matrix(
         } else {
             removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
             removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
+            var moderator_only_unavailable = timeslots[2] || [];
+            if(moderator_only_unavailable.length > 0) {
+                removeClassFromTimeslots(moderator_only_unavailable, "moderator-only-unavailable-cell");
+            }
             removeClassFromSections(Object.keys(this.sections.scheduleAssignments), "teacher-is-teaching-this-cell");
         }
     };
