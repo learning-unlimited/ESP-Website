@@ -44,14 +44,6 @@ class ThemeConfigurationForm(forms.Form):
     theme = forms.CharField(widget=forms.HiddenInput)
     just_selected = forms.BooleanField(widget=forms.HiddenInput, initial=False, required=False)
 
-    # Extra admin toolbar links — editable from /themes/ for all themes
-    toolbar_links = forms.Field(
-        required=False,
-        widget=ContactFieldsWidget,
-        label='Extra admin toolbar links (use absolute or relative URLs)',
-        initial=[]
-    )
-
     def __init__(self, *args, **kwargs):
         super(ThemeConfigurationForm, self).__init__(*args, **kwargs)
         # Make toolbar_links tolerant of invalid/missing JSON, given required=False
@@ -95,3 +87,12 @@ class ThemeConfigurationForm(forms.Form):
         A dictionary of the initial values of the configuration form fields.
         """
         return dict([(k_v[0], k_v[1].initial) for k_v in cls().fields.items()])
+
+    # Extra admin toolbar links — editable from /themes/ for all themes
+    toolbar_links = forms.Field(
+        required=False,
+        widget=ContactFieldsWidget,
+        label='Extra admin toolbar links (use absolute or relative URLs)',
+        initial=[]
+    )
+    
