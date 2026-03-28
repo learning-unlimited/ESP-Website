@@ -24,7 +24,7 @@
         var draftButton = document.querySelector('button[name="save_action"][value="draft"]');
         if (!draftButton) return;
 
-        // Snapshot initial form state by manually serializing all inputs.
+        // Snapshot initial form state by manually serializing all inputs (not FormData).
         // This correctly handles radio groups and multi-select checkboxes.
         var form = document.getElementById('clsform');
         var initialFormSnapshot = '';

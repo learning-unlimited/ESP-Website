@@ -201,7 +201,12 @@ class ClassCreationController(object):
 
             # Handle custom fields separately
             if field_name in custom_fields:
-                custom_data[field_name] = field_value
+                field = custom_fields[field_name]
+                # Preserve all selected values for multi-select custom widgets.
+                if getattr(field.widget, 'allow_multiple_selected', False):
+                    custom_data[field_name] = reg_data.getlist(field_name)
+                else:
+                    custom_data[field_name] = field_value
                 continue
 
             # Handle special fields that need specific processing

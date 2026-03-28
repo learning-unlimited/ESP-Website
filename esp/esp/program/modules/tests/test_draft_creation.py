@@ -9,6 +9,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.models.class_ import ClassSubject
 from esp.program.class_status import ClassStatus
 from esp.resources.models import ResourceRequest, ResourceType
+from esp.tagdict.models import Tag
 
 # ---------------------------------------------------------------------------
 # URL helper
@@ -632,3 +633,42 @@ class MakeAClassDraftTest(DraftCreationTestMixin, ProgramFrameworkTest):
         # custom_form_data should be set (possibly empty dict) — never None
         self.assertIsNotNone(draft.custom_form_data,
                              "custom_form_data should be initialised, not None")
+
+    def test_draft_with_multi_select_custom_field(self):
+        """Draft should persist all selected values for multi-select custom fields."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+
+        Tag.setTag('teacherreg_custom_forms', value='["ChicagoTeacherQuestionsForm"]')
+
+        draft_data = self._make_draft_form_data(teacher)
+        draft_data.update({
+            'room_type': 'discussion',
+            'std_equipment': ['audio', 'video'],
+        })
+
+        response = self.client.post(
+            self._makeaclass_url(),
+            draft_data
+        )
+
+        self.assertIn(response.status_code, [200, 302])
+
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program,
+            teachers=teacher,
+            status=ClassStatus.DRAFT,
+        ).first()
+
+        self.assertIsNotNone(draft, "Draft class should have been created")
+        self.assertIsNotNone(draft.custom_form_data,
+                             "custom_form_data should be initialised, not None")
+        self.assertEqual(draft.custom_form_data.get('room_type'), 'discussion')
+        self.assertEqual(
+            sorted(draft.custom_form_data.get('std_equipment', [])),
+            ['audio', 'video'],
+            "All selected values from multi-select custom field should be saved",
+        )
