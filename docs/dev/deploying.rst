@@ -43,7 +43,19 @@ To deactivate a site, simply remove or comment out its lines in
 ``/etc/exim4/update-exim4.conf.conf``, and move its site directory to
 ``/lu/sites/archive``.
 
-TODO(benkraft): write a quick script for this.
+A helper script is available for this workflow:
+``deploy/deactivate_site.py``.
+
+Run it in dry-run mode first (default), including tokens that identify the
+site's config lines (usually the site directory and hostname): ::
+
+  sudo python3 ./deploy/deactivate_site.py SITE_DIR --token SITE_HOSTNAME
+
+If the output looks correct, re-run with ``--apply`` to comment matching lines
+in the three config files and move ``/lu/sites/SITE_DIR`` to
+``/lu/sites/archive``: ::
+
+  sudo python3 ./deploy/deactivate_site.py SITE_DIR --token SITE_HOSTNAME --apply
 
 Setting up a new server
 -----------------------
