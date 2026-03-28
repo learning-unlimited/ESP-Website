@@ -42,7 +42,6 @@ from datetime import datetime
 from django.conf import settings
 from django.db.models.base import ObjectDoesNotExist
 from django.http import HttpResponse, Http404
-from django.template import RequestContext
 from django.utils.translation import ugettext as _
 
 try:
@@ -234,23 +233,11 @@ class ESPErrorMiddleware(MiddlewareMixin):
             'error_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'error_url': request.build_absolute_uri(),
         }
-        try:
-            # attempt to set up variables the template needs
-            # - actually, some things will fail to be set up due to our
-            #   silly render_to_response hack, but hopefully that will all
-            #   just silently fail...
-            # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
-            #   TEMPLATE in main?
-            context = RequestContext(request, context).flatten()
-        except BaseException:
-            # well, we couldn't, but at least display something
-            # (actually it will immediately fail on main because someone
-            # removed the safe version of the template but best not to put
-            # in ugly hacks and make random variables just happen to work.)
-            pass
-        # All error templates now extend error_base.html, which provides
+        # render_to_response() automatically handles context processors,
+        # so all configured context processors will be applied.
+        # All error templates extend error_base.html, which provides
         # a consistent layout with two-tier information (user vs admin)
-        # and a pre-filled report button. This resolves the TODO above.
+        # and a pre-filled report button.
         response = render_to_response(template, request, context)
         response.status_code = status
         return response
