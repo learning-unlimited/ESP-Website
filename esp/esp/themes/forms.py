@@ -28,7 +28,7 @@ MIT Educational Studies Program
   Email: esp-webmasters@mit.edu
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
-  Phone: 617-379-0178
+  Phone: 617-379-0179
   Email: web-team@learningu.org
 """
 
@@ -46,6 +46,11 @@ class ThemeConfigurationForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(ThemeConfigurationForm, self).__init__(*args, **kwargs)
+
+        # Move toolbar_links to the end of the form
+        toolbar_links = self.fields.pop('toolbar_links')
+        self.fields['toolbar_links'] = toolbar_links
+
         # Make toolbar_links tolerant of invalid/missing JSON, given required=False
         widget = self.fields['toolbar_links'].widget
         original_vfd = widget.value_from_datadict
@@ -95,5 +100,3 @@ class ThemeConfigurationForm(forms.Form):
         label='Extra admin toolbar links (use absolute or relative URLs)',
         initial=[]
     )
-
-
