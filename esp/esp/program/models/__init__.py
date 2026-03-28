@@ -2243,8 +2243,11 @@ class PhaseZeroRecord(models.Model):
         return str(self.id)
 
     user = models.ManyToManyField(ESPUser)
-    program = models.ForeignKey(Program, blank=True, on_delete=models.CASCADE)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        pass
 
     def display_user(self):
         # Creates a string for the Users. This is required to display user in Admin.
