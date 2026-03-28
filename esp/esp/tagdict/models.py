@@ -9,6 +9,32 @@ from argcache import cache_function
 
 from esp.tagdict import all_global_tags, all_program_tags
 
+
+# ============================================================
+# SAFE TAG SELECTOR FUNCTION - FIX FOR ISSUE #1959
+# ============================================================
+def safe_tag_selector(tag):
+    """
+    Safely get tag dependencies, handling stale content types.
+    This prevents AttributeError when accessing deleted model instances.
+    """
+    try:
+        # Try to access the target (GenericForeignKey)
+        if tag.target is not None:
+            return {'key': tag.key, 'target': tag.target}
+        else:
+            return {'key': tag.key}
+    except AttributeError as e:
+        # Stale content type - log error and return only the key
+        logger.error(f"Stale content type in tag selector for key '{tag.key}': {e}")
+        return {'key': tag.key}
+    except Exception as e:
+        # Any other unexpected error
+        logger.error(f"Unexpected error in tag selector for key '{tag.key}': {e}")
+        return {'key': tag.key}
+# ============================================================
+
+
 # aseering 3/23/2010
 # This model is based on the sample "TaggedItem" model from the Django
 # documentation, as described at
@@ -95,7 +121,14 @@ class Tag(models.Model):
             if 'does not exist' in err or 'no such table' in err:
                 return default
             raise
-    _getTag.depend_on_row('tagdict.Tag', lambda tag: {'key': tag.key, 'target': tag.target})
+    
+    # ============================================================
+    # FIXED LINE - Using safe_tag_selector instead of lambda
+    # This fixes issue #1959 (stale content types causing AttributeError)
+    # ============================================================
+    _getTag.depend_on_row('tagdict.Tag', safe_tag_selector)
+    # ============================================================
+    
     _getTag = classmethod(_getTag)
 
     @classmethod

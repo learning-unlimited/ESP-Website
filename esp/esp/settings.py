@@ -37,6 +37,8 @@ import warnings
 import tempfile
 import django
 
+from deploy.config_templates.local_settings import MIDDLEWARE_LOCAL
+
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 # Django expects BASE_DIR
 BASE_DIR = PROJECT_ROOT

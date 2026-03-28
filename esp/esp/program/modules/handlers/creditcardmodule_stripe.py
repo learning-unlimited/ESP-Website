@@ -151,15 +151,12 @@ logger = logging.getLogger(__name__)
 def check_setup(self):
     """
     Validate the keys specified in the stripe_settings tag.
-    Returns False if configuration is invalid, otherwise True.
-    """
-
+    Returns False if configuration is invalid, otherwise True."""
     try:
         self.apply_settings()
     except Exception as e:
         logger.warning(f"Stripe setup failed while applying settings: {e}")
         return False
-
     # Handle donation setup safely
     if self.settings.get('offer_donation'):
         try:
@@ -171,29 +168,23 @@ def check_setup(self):
         except Exception as e:
             logger.warning(f"Error creating donation LineItemType: {e}")
             return False
-
     # Regex patterns
     valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
     valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
-
     # Safely get keys
     publishable_key = self.settings.get('publishable_key')
     secret_key = self.settings.get('secret_key')
-
     # Validate presence first
     if not publishable_key or not secret_key:
         logger.warning("Stripe keys missing: publishable_key or secret_key not set.")
         return False
-
     # Validate format
     if not re.match(valid_pk_re, publishable_key):
         logger.warning("Invalid Stripe publishable_key format.")
         return False
-
     if not re.match(valid_sk_re, secret_key):
         logger.warning("Invalid Stripe secret_key format.")
         return False
-
     return True
 
     @main_call
