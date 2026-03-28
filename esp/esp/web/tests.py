@@ -312,3 +312,48 @@ class JavascriptSyntaxTest(TestCase):
             self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
 
 
+class TabMatchingTest(TestCase):
+    """
+    Tests the URL to tab matching logic in the extract_theme template filter,
+    ensuring directory boundary logic works and sub-links win ties over header links.
+    """
+    def test_extract_theme(self):
+        from esp.web.templatetags.main import extract_theme
+        
+        # Mock settings dictionary with a structure similar to what ThemeController returns
+        settings_dict = {
+            'nav_structure': [
+                {
+                    'header_link': '/teach/splash.html',
+                    'links': [
+                        {'link': '/teach/splash.html', 'text': 'Splash'},
+                        {'link': '/teach/classes.html', 'text': 'Classes'},
+                        {'link': '/teach/ideas.html', 'text': 'Ideas'},
+                    ]
+                },
+                {
+                    'header_link': '/learn/',
+                    'links': [
+                        {'link': '/learn/catalog', 'text': 'Catalog'},
+                    ]
+                }
+            ]
+        }
+        
+        # Patch ThemeController to return our fixed settings_dict
+        from unittest.mock import patch
+        with patch('esp.themes.controllers.ThemeController.get_template_settings', return_value=settings_dict):
+            # Test 1: Identical URL for header and sublink. The exact sublink should win (tab_1)
+            self.assertEqual(extract_theme('/teach/splash.html'), 'tabcolor1')
+            
+            # Test 2: Substring mismatch test. /teach/index.html shares '/teach/i' with 
+            # /teach/ideas.html. Ensure we don't partial match and mistakenly pick tab_3 (ideas).
+            # It should fall back to matching '/teach/' which matches the header_link best (tab_0)
+            self.assertEqual(extract_theme('/teach/index.html'), 'tabcolor0')
+            
+            # Test 3: Normal sublink should match
+            self.assertEqual(extract_theme('/teach/classes.html'), 'tabcolor2')
+            
+            # Test 4: Another category base
+            self.assertEqual(extract_theme('/learn/index.html'), 'tabcolor0')
+
