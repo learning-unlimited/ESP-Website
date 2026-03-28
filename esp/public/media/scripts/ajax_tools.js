@@ -95,6 +95,19 @@ var apply_fragment_changes = function(data)
     }
 }
 
+var handle_error = function(jqXHR, textStatus, errorThrown)
+{
+    //  Safety-net handler for non-2xx responses (e.g. if a non-AJAX
+    //  middleware returns 404/500).  Tries to extract a JSON error
+    //  message; falls back to a generic alert.
+    var message = 'An error occurred while processing your request.';
+    try {
+        var data = JSON.parse(jqXHR.responseText);
+        if ('error' in data) { message = data['error']; }
+    } catch (e) { /* non-JSON response, use default message */ }
+    alert(message);
+}
+
 var handle_success = function(data, textStatus, jqXHR)
 {
     if ('error' in data)
@@ -129,11 +142,11 @@ var handle_submit = function(mode, attrs, eventObject)
     //  I'm not sure if these calls are correct -- test this
     if (mode == 'post')
     {
-	$j.post(attrs.url, attrs.content, handle_success, "json");
+	$j.post(attrs.url, attrs.content, handle_success, "json").fail(handle_error);
     }
     else
     {
-	$j.get(attrs.url, attrs.content, handle_success, "json");
+	$j.get(attrs.url, attrs.content, handle_success, "json").fail(handle_error);
     }
 }
 
@@ -143,7 +156,7 @@ var fetch_fragment = function(attrs)
 {
     //  console.log("Fetching fragment with attributes: " + JSON.stringify(attrs, null, '\t'));
     if (! attrs.url) { return; }
-    $j.get(attrs.url, handle_success, "json");
+    $j.get(attrs.url, handle_success, "json").fail(handle_error);
 }
     
 function CallbackForm(id, url)
