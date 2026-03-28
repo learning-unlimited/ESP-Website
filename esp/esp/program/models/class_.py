@@ -152,11 +152,6 @@ class ClassManager(Manager):
         if catalog is None:
             # Get it from the DB, then try prefetching class sizes
             catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only, order_args_override=order_args_override)
-        else:
-            for cls in catalog:
-                for sec in cls.get_sections():
-                    if hasattr(sec, '_count_students'):
-                        del sec._count_students
 
         return catalog
 
@@ -342,19 +337,8 @@ class ClassSection(models.Model):
 
     @classmethod
     def prefetch_catalog_data(cls, queryset):
-        """ Take a queryset of a set of ClassSubject's, and annotate each class in it with the '_count_students' and 'event_ids' fields (used internally when available by many functions to save on queries later) """
-        now = datetime.datetime.now()
-        enrolled_type = RegistrationType.get_map()['Enrolled']
-
-        select = OrderedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))')])
-
-        select_params = [ enrolled_type.id,
-                          now,
-                          now,
-                         ]
-
+        """ Take a queryset of a set of ClassSubject's, and annotate each class in it with the 'event_ids' fields (used internally when available by many functions to save on queries later) """
         sections = queryset.prefetch_related('meeting_times')
-        sections = sections.extra(select=select, select_params=select_params)
         sections = list(sections)
 
         # Now, to combine all of the above:
@@ -1022,15 +1006,13 @@ class ClassSection(models.Model):
     @cache_function
     def num_students(self, verbs=['Enrolled']):
         if verbs == ['Enrolled']:
-            if not hasattr(self, '_count_students'):
-                self._count_students = self.students(verbs).count()
-            return self._count_students
+            return self.enrolled_students
         return self.students(verbs).count()
     num_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
     def count_enrolled_students(self):
-        return self.num_students(use_cache=False)
+        return self.students(['Enrolled']).count()
     count_enrolled_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
