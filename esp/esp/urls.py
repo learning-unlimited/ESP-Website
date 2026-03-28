@@ -163,6 +163,8 @@ re_path(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Z
 
 
 urlpatterns += [
+    re_path(r'^manage/templateoverride/default_content/?$',
+        esp.utils.views.get_default_template_content),
     re_path(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
         esp.utils.views.diff_templateoverride, name='diff_templateoverride'),
 ]
