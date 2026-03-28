@@ -160,7 +160,7 @@
     </tr>
     <tr>
         <td colspan="2" class="smaller"><p>
-        Please review the above information carefully, then click "{% if class.id and not show_draft_button %}Save course!{% elif class.id %}Submit{% else %}Teach for {{ one }}!{% endif %}" to submit your class.{% if show_draft_button %}  You may also save your progress as a draft to finish later.{% endif %}  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
+        Please review the above information carefully, then click "{% if class.id and not show_draft_button %}Save course!{% elif class.id %}Submit{% else %}Teach for {{ one }}!{% endif %}" {% if class.id and not show_draft_button %}to save your changes.{% else %}to submit your class.{% endif %}{% if show_draft_button %}  You may also save your progress as a draft to finish later.{% endif %}  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
         </p></td>
     </tr>
     <tr>
