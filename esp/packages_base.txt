@@ -3,10 +3,10 @@ build-essential
 texlive
 texlive-latex-extra
 imagemagick
+ghostscript
 dvipng
 python3.7
 postgresql
-libevent-dev
 python3.7-dev
 zlib1g-dev
 inkscape
