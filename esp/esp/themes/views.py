@@ -161,7 +161,18 @@ def landing(request):
     context['theme_name'] = tc.get_current_theme()
     context['last_customization_name'] = tc.get_current_customization()
     context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
-    return render_to_response('themes/landing.html', request, context)
+    
+    # Get frontpage style from theme configuration
+    theme_config = tc.get_template_settings()
+    frontpage_style = theme_config.get('frontpage_style', 'default')
+    
+    # Choose template based on frontpage style
+    if frontpage_style == 'circles':
+        template_name = 'themes/circles_frontpage.html'
+    else:
+        template_name = 'themes/landing.html'
+    
+    return render_to_response(template_name, request, context)
 
 @admin_required
 def selector(request, keep_files=None):
