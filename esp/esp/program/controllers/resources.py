@@ -62,8 +62,16 @@ class ResourceController(object):
         else:
             new_timeslot = Event()
 
-        form.save_timeslot(self.program, new_timeslot)
+        try:
+            form.save_timeslot(self.program, new_timeslot)
+        except:
+            raise ESPError(
+                "An identical timeslot already exists for this program.",
+                log=False
+            )
+
         return new_timeslot
+
 
     def delete_restype(self, id):
         #   delete restype
