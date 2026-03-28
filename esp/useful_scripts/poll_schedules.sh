@@ -1,6 +1,12 @@
 #!/bin/bash
 
-PROGRAM="Spark"
+if [ -z "$1" ]; then
+    echo "Usage: $0 <program_name>"
+    echo "Example: $0 Spark"
+    exit 1
+fi
+
+PROGRAM="$1"
 INSTANCE="2015"
 
 echo "What printer do you want to print to? (lpr printer name)"
