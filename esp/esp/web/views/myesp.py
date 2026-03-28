@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
+from esp.users.models import admin_required
 from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
 from esp.program.models import Program, RegistrationProfile, ClassSubject
 from esp.tagdict.models import Tag
@@ -137,9 +138,35 @@ def edit_profile(request):
         user_types = curUser.groups.all().order_by('-id')
         return profile_editor(request, None, True, user_types[0].name if user_types else '')
 
+@admin_required
+def admin_edit_profile(request, username):
+    """Admin interface to edit a user's profile. Accessible at /myesp/profile/<username>/"""
+    try:
+        target_user = ESPUser.objects.get(username=username)
+    except ESPUser.DoesNotExist:
+        raise ESPError("User not found: {}".format(username), log=False)
+
+    # Determine the role based on the target user's types
+    if target_user.isTeacher():
+        role = 'teacher'
+    elif target_user.isStudent():
+        role = 'student'
+    elif target_user.isGuardian():
+        role = 'guardian'
+    elif target_user.isEducator():
+        role = 'educator'
+    elif target_user.isVolunteer():
+        role = 'volunteer'
+    else:
+        user_types = target_user.groups.all().order_by('-id')
+        role = user_types[0].name if user_types else ''
+
+    # Call profile_editor with the target_user
+    return profile_editor(request, None, True, role, target_user=target_user)
+
 @login_required
-def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
-    """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
+def profile_editor(request, prog_input=None, responseuponCompletion = True, role='', target_user=None):
+    """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program. If target_user is provided (by an admin), edit that user's profile instead of the current user. """
 
     from esp.users.models import K12School
     from esp.web.views.main import registration_redirect
@@ -149,10 +176,23 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     else:
         prog = prog_input
 
-    curUser = request.user
+    # Handle admin editing another user's profile
+    # Note: We check admin permission twice - once via @admin_required decorator on the
+    # view and again here in profile_editor. This provides defense in depth in case
+    # profile_editor is called directly from other code paths.
+    if target_user is not None:
+        # Verify admin permission (defense in depth)
+        if not request.user.isAdmin():
+            raise ESPError("Only administrators can edit other users' profiles.", log=False)
+        curUser = target_user
+    else:
+        curUser = request.user
+
     context = {'logged_in': request.user.is_authenticated }
-    context['user'] = request.user
+    context['user'] = curUser  # Show the target user in the context
+    context['request_user'] = request.user  # Keep the logged-in user available for templates
     context['program'] = prog
+    context['admin_editing_user'] = (target_user is not None)  # Flag for template to adjust display
 
     curUser.updateOnsite(request)
 

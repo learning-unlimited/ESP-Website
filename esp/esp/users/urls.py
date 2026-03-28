@@ -41,6 +41,7 @@ urlpatterns += [
 ]
 
 urlpatterns += [
+
     re_path(r'^switchback/?$', myesp.myesp_switchback, name='myesp_switchback'),
     re_path(r'^stop_testing/?$', myesp.myesp_stop_testing, name='myesp_stop_testing'),
     re_path(r'^onsite/?$', myesp.myesp_onsite, name='myesp_onsite'),
