@@ -32,7 +32,7 @@ from esp.program.models import ClassSubject
 now = timezone.now()
 if now.month == 1 and now.day == 1:
     if 2 <= now.hour < 3:      #the condition can be 2 == now.hour but i am not sure while running it will aline perfectly or not
-        total = ClassSubject.old_Class()  #even if it run 4 time as this cron file autorun every 15 min it shouldnt cause a problem 
+        total = ClassSubject.deactivate_old_class_lists()  #even if it run 4 time as this cron file autorun every 15 min it shouldnt cause a problem 
    
 from esp.dbmail.cronmail import process_messages, send_email_requests
 
