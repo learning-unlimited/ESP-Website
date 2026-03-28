@@ -651,6 +651,7 @@ class FormHandler:
         # Add in the column for link fields, if any
         if form.link_type != "-1":
             only_fkey_model = cf_cache.only_fkey_models[form.link_type]
+            response_data['questions'].append(["link_%s" % only_fkey_model.__name__, form.link_type, 'fk'])
             response_data['questions'].append([f"link_{only_fkey_model.__name__}_id", form.link_type, 'fk'])
         else:
             only_fkey_model = None
@@ -685,15 +686,19 @@ class FormHandler:
                 response['username'] = user.username
 
             # Add in links
+            # Note: .values() returns FK fields with _id suffix (e.g. link_ModelName_id)
             if only_fkey_model is not None:
-                if only_fkey_model.objects.filter(pk=response[f"link_{only_fkey_model.__name__}_id"]).exists():
-                    inst = only_fkey_model.objects.get(pk=response[f"link_{only_fkey_model.__name__}_id"])
-                else: inst = None
-                response[f"link_{only_fkey_model.__name__}_id"] = str(inst)
+                fk_key = f"link_{only_fkey_model.__name__}_id"
+                pk_val = response.get(fk_key)
+                inst = only_fkey_model.objects.filter(pk=pk_val).first() if pk_val is not None else None
+                response["link_%s" % only_fkey_model.__name__] = str(inst)
+                response[fk_key] = str(inst)
 
             # Now, put in the additional fields in response
             for qname, data in add_fields.items():
                 if data[0].__name__ not in link_instances_cache:
+                    if data[0].objects.filter(pk=response["link_%s" % data[0].__name__]).exists():
+                        link_instances_cache[data[0].__name__] = data[0].objects.get(pk=response["link_%s" % data[0].__name__])
                     if data[0].objects.filter(pk=response[f"link_{data[0].__name__}_id"]).exists():
                         link_instances_cache[data[0].__name__] = data[0].objects.get(pk=response[f"link_{data[0].__name__}_id"])
                     else:
