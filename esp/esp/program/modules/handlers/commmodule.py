@@ -49,6 +49,7 @@ from esp.middleware import ESPError
 from esp.utils.sanitize import strip_base64_images
 
 import re
+from datetime import datetime
 
 # Match /learn/, /teach/, or /volunteer/ + ProgramName/Instance (program url = two path segments)
 _PROGRAM_URL_PATTERN = re.compile(
@@ -158,6 +159,7 @@ class CommModule(ProgramModuleObj):
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
+        scheduled_send_at = request.POST.get('scheduled_send_at', '').strip()
 
         # Set From address
         if request.POST.get('from', '').strip():
@@ -230,6 +232,7 @@ class CommModule(ProgramModuleObj):
                                                'public_view': public_view,
                                                'body': body,
                                                'template': template,
+                                               'scheduled_send_at': scheduled_send_at,
                                                'rendered_text': rendered_text,
                                                'other_program_urls': other_program_urls})
 
@@ -273,6 +276,7 @@ class CommModule(ProgramModuleObj):
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
         template = request.POST.get('template', 'default')
+        scheduled_send_at = request.POST.get('scheduled_send_at', '').strip()
 
         current_program_url = self.program.getUrlBase()
         other_program_urls = _program_urls_in_text(
@@ -295,6 +299,7 @@ class CommModule(ProgramModuleObj):
                 'public_view': public_view,
                 'body': body,
                 'template': template,
+                'scheduled_send_at': scheduled_send_at,
                 'rendered_text': rendered_text,
                 'other_program_urls': other_program_urls,
                 'confirm_send_required': True,
@@ -328,6 +333,12 @@ class CommModule(ProgramModuleObj):
                                                       public = public_view,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
+
+        if scheduled_send_at:
+            try:
+                newmsg_request.processed_by = datetime.strptime(scheduled_send_at, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                raise ESPError("Invalid scheduled send date/time. Please use the date picker format.")
 
         newmsg_request.save()
 
@@ -444,6 +455,8 @@ class CommModule(ProgramModuleObj):
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
+        scheduled_send_at = request.POST.get('scheduled_send_at', '').strip()
+        template = request.POST.get('template', 'default')
 
         return render_to_response(self.baseDir()+'step2.html', request,
                                               {'listcount': listcount,
@@ -455,7 +468,9 @@ class CommModule(ProgramModuleObj):
                                                'replyto': replytoemail,
                                                'subject': subject,
                                                'body': body,
-                                               'public_view': public_view})
+                                               'public_view': public_view,
+                                               'template': template,
+                                               'scheduled_send_at': scheduled_send_at})
 
     def isStep(self):
         return False
