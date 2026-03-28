@@ -50,3 +50,6 @@ node_modules/
 .collectstatic-done
 esp/db.sqlite3
 esp/esp/db.sqlite3
+temp_auto_push.bat
+temp_interactive_push.bat
+branch_structure.json

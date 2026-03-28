@@ -118,6 +118,7 @@ urlpatterns += [
     re_path(r'^',  include(esp.survey.urls)),
     re_path('^javascript_tests', include(esp.tests.urls)),
     re_path(r'^themes', include(esp.themes.urls)),
+    re_path(r'^myesp$', RedirectView.as_view(url='/myesp/accountmanage/', permanent=False)),
     re_path(r'^myesp/', include(esp.users.urls)),
     re_path(r'^varnish/', include(esp.varnish.urls)),
 ]
