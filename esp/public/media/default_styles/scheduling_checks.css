@@ -1,131 +1,128 @@
-table { border-spacing: 0; }
-td { padding: 10px; cursor: pointer; }
-th { cursor: pointer; }
+.scheduling-check-list {
+  margin-top: 1em;
+}
 
 .scheduling-check {
-     border: 1px solid black;
-     padding: 10px;
-     margin: 10px;
-     border-radius: 4px;
+  border-left: 5px solid #aaa;
+  margin-bottom: 0.5em;
+  padding: 0.4em 0.6em;
+  background: #f9f9f9;
 }
 
 .scheduling-check.items {
-    background-color: yellow;
+  border-left-color: #d9534f;
+  background: #fff5f5;
 }
 
 .scheduling-check.no-items {
-    background-color: rgb(197 224 196);
+  border-left-color: #5cb85c;
+  background: #f5fff5;
 }
 
-.scheduling-check-title {
-     width: 320px;
-	 margin-left: 0px;
-	 margin-right: auto;
-     text-align: center;
-}
-
-.scheduling-check-title span {
-     font-weight: bold;
-     font-size: 14px;
-     cursor: pointer;
-}
-
-.reset-button {
-     margin-left: auto;
-     float: right;
-}
-
-.refresh-button {
-     margin-left: auto;
-     float: right;
-}
-
-.rowGreyed {
-color: lightgray;
-}
-
-.headerSelected {
-  color: blue;
-}
-
-.sortReversed {
-  color: red;
-}
-
-.help-text {
-  margin: 10px;
-  font-style: italic;
+.scheduling-check.loading {
+  border-left-color: #f0ad4e;
+  background: #fffdf0;
 }
 
 .placeholder {
-    text-align: center;
-    border-radius: 3px;
-	width: 240px;
-	margin-left: 40px;
-	margin-right: auto;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 0.85em;
+  margin-right: 0.5em;
 }
 
-.load_ready{
-    background-color: rgb(197 224 196);
+.load_fail { background: #d9534f; color: white; }
+.load_yellow { background: #f0ad4e; color: white; }
+.load_ready { background: #5cb85c; color: white; }
+
+.scheduling-check-title {
+  display: inline;
+  font-weight: bold;
+  cursor: pointer;
 }
 
-.load_yellow{
-    background-color: yellow;
-}
-.load_fail{
-    background-color: red;
-}
-.move_left{
-    margin-left: 10px;
-}
-.jsonHeader{
-    text-transform: capitalize;
-}
-.jsonColumn {
-	text-align: center;
-	padding: 10px;
-}
-table td + td {
-    border-left:1px solid black;
+.scheduling-check-title span:hover { text-decoration: underline; }
+.table-wrapper { overflow-x: auto; margin-top: 0.5em; }
 
-}
-table th + th {
-    border-left:1px solid black;
+.help-text {
+  font-style: italic;
+  color: #555;
+  margin-bottom: 0.5em;
+  font-size: 0.9em;
 }
 
-thead {
-    border-bottom: 1px solid black;
-    text-transform: capitalize;
-    background: #333333;
-    color: #fff;
-}
-table {
-    width: 100%;
-    border-spacing: 1;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    width: 100%;
-    margin: 0 auto;
-    position: relative;
-}
-.alittlepspace {
-	padding-top: 8px;
+.rowGreyed td { color: #aaa !important; background: #eee !important; }
+.headerSelected { background-color: #337ab7 !important; color: white !important; cursor: pointer; }
+.headerSelected.sortReversed { background-color: #d9534f !important; color: white !important; }
+
+th { cursor: pointer; }
+.alittlepspace { margin-top: 0.5em; }
+
+.scheduling-check-legend {
+  display: flex;
+  gap: 1.5em;
+  align-items: center;
+  margin: 0.75em 0 1em 0;
+  padding: 0.5em 0.75em;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9em;
+  flex-wrap: wrap;
 }
 
-.table-wrapper {
-    width: 100%;
-    overflow-x: auto;
+.legend-item { display: flex; align-items: center; gap: 0.4em; }
+
+.legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid #aaa;
 }
 
-#refresh_interval {
-    width: 40px;
-    float: right;
-    margin-right: 10px;
-}
+.legend-swatch.red    { background: #d9534f; }
+.legend-swatch.green  { background: #5cb85c; }
+.legend-swatch.yellow { background: #f0ad4e; }
+.legend-swatch.grey   { background: #aaa; }
 
+/* Controls and auto-refresh alignment */
+.reset-button,
+.refresh-button,
 button[name="refresh"] {
-    float: right;
-    margin-right: 10px;
+  display: inline-block;
+  margin-left: 0.5em;
+  vertical-align: middle;
+}
+#refresh_interval {
+  display: inline-block;
+  width: 5em;
+  margin-left: 0.5em;
+  margin-right: 0.25em;
+  vertical-align: middle;
+}
+.move_left {
+  margin-right: 0.5em;
+}
+
+/* Table styling for scheduling check results */
+.scheduling-check table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5em;
+}
+.scheduling-check th,
+.scheduling-check td {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  text-align: left;
+  vertical-align: top;
+}
+.scheduling-check thead th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+.sortReversed {
+  color: red;
 }
