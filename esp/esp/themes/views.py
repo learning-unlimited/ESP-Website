@@ -42,6 +42,7 @@ from esp.themes.controllers import ThemeController
 
 from esp.utils.web import render_to_response
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.conf import settings
 
 from datetime import datetime
@@ -254,11 +255,11 @@ def logos(request):
             Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
             _generate_favicon_variants(settings.MEDIA_ROOT + 'images/favicon.ico', settings.MEDIA_ROOT + 'images')
 
-    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "logo\..*\.png")]
-    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "header\..*\.png")]
+    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"logo\..*\.png")]
+    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"header\..*\.png")]
     favicon_paths = tc.list_filenames(
     settings.MEDIA_ROOT + 'images/backups',
-    "favicon\..*\.ico"
+    r"favicon\..*\.ico"
     )
 
     favicon_paths.sort(
@@ -352,7 +353,7 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
                 tc.load_theme(form.cleaned_data['theme'], backup_info=backup_info)
 
             form.save_to_tag()
-            return HttpResponseRedirect('/themes/')
+            return HttpResponseRedirect(reverse('themes_landing'))
     else:
         form = form_class.load_from_tag(theme_name=current_theme, just_selected=force_display)
 
@@ -457,5 +458,5 @@ def recompile(request, keep_files=None):
         return confirm_overwrite(request, current_theme=theme_name, differences=differences, orig_view='recompile')
 
     tc.recompile_theme(keep_files=keep_files)
-    return HttpResponseRedirect('/themes/')
+    return HttpResponseRedirect(reverse('themes_landing'))
 

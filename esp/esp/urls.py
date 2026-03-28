@@ -75,7 +75,7 @@ urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + st
 
 # Robots.txt
 urlpatterns += [
-    path('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain"))
+    path('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain"), name='robots_txt')
 ]
 
 # Admin stuff
@@ -84,6 +84,9 @@ urlpatterns += [
     re_path(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     re_path(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
     re_path(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),
+    re_path(r'^admin/ajax_qsd_history/?$', esp.qsd.views.ajax_qsd_history),
+    re_path(r'^admin/ajax_qsd_version_preview/?$', esp.qsd.views.ajax_qsd_version_preview),
+    re_path(r'^admin/ajax_qsd_restore/?$', esp.qsd.views.ajax_qsd_restore),
     re_path(r'^admin/ajax_qsd_image_upload/?$', esp.qsd.views.ajax_qsd_image_upload),
     re_path(r'^admin/ajax_autocomplete/?', esp.db.views.ajax_autocomplete),
     re_path(r'^admin/filebrowser/', filebrowser_site.urls),
@@ -98,8 +101,8 @@ urlpatterns += [
 
 # generic stuff
 urlpatterns += [
-    re_path(r'^$', main.home), # index
-    re_path(r'^set_csrf_token', main.set_csrf_token), # tiny view used to set csrf token
+    re_path(r'^$', main.home, name='home'), # index
+    re_path(r'^set_csrf_token', main.set_csrf_token, name='set_csrf_token'), # tiny view used to set csrf token
 ]
 
 # main list of apps (please consolidate more things into this!)
@@ -131,7 +134,7 @@ urlpatterns += [
 ]
 
 urlpatterns += [
-    re_path(r'^(?P<url>.*)\.html$', esp.qsd.views.qsd),
+    re_path(r'^(?P<url>.*)\.html$', esp.qsd.views.qsd, name='qsd_page'),
 ]
 
 # QSD Media
@@ -139,8 +142,8 @@ urlpatterns += [
 urlpatterns += [
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
-    re_path(r'^contact/contact/?$', main.contact),
-    re_path(r'^contact/contact/(?P<section>[^/]+)/?$', main.contact),
+    re_path(r'^contact/contact/?$', main.contact, name='contact'),
+    re_path(r'^contact/contact/(?P<section>[^/]+)/?$', main.contact, name='contact_section'),
 
     # Program stuff
     re_path(r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.program),
@@ -151,7 +154,7 @@ urlpatterns += [
     re_path(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
     re_path(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
 
-    re_path(r'^email/([0-9]+)/?$', main.public_email),
+    re_path(r'^email/([0-9]+)/?$', main.public_email, name='public_email'),
 ]
 
 urlpatterns += [
@@ -159,6 +162,8 @@ re_path(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Z
 
 
 urlpatterns += [
+    re_path(r'^manage/templateoverride/default_content/?$',
+        esp.utils.views.get_default_template_content),
     re_path(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
-        esp.utils.views.diff_templateoverride),
+        esp.utils.views.diff_templateoverride, name='diff_templateoverride'),
 ]
