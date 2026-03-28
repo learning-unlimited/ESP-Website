@@ -74,7 +74,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
         DEFAULTS.update(settings.STRIPE_CONFIG)
-        tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program))
+        raw = Tag.getProgramTag('stripe_settings', self.program)
+
+        try:
+            tag_data = json.loads(raw) if raw else {}
+        except json.JSONDecodeError:
+            tag_data = {}
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings
