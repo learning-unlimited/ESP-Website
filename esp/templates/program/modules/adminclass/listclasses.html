@@ -28,7 +28,7 @@ json_data = {};
 
   function filterClassRows() {
     var filter = $j.trim($j("#classSearch").val().toLowerCase());
-    $j("#classes_anchor tr").each(function() {
+    $j("#classes_anchor tr:gt(0)").each(function() {
       var rowText = $j(this).text().toLowerCase();
       $j(this).toggle(rowText.indexOf(filter) !== -1);
     });
