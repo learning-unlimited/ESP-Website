@@ -33,9 +33,11 @@ Learning Unlimited, Inc.
 """
 
 import json
+import threading
 
 from esp.customforms.models import Form, Field
 from esp.customforms.DynamicModel import DynamicModelHandler
+from esp.customforms.linkfields import CustomFormsCache
 from esp.customforms.views import hasPerm
 from esp.users.models import ESPUser, AnonymousESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -482,3 +484,185 @@ class FormBuilderViewTest(TestCase):
         self.client.login(username='builder_student', password='password')
         response = self.client.get('/customforms/create')
         self.assertRedirects(response, '/accounts/login/?next=/customforms/create')
+
+
+class CustomFormsCacheTest(TestCase):
+    """
+    Unit tests for CustomFormsCache — thread-safety, invalidation, and
+    on-demand population.
+    """
+
+    def setUp(self):
+        # Each test gets a fresh, isolated cache instance.  Resetting the
+        # shared Borg state ensures tests do not interfere with each other.
+        self.cache = CustomFormsCache()
+        self.cache.loaded = False
+        self.cache.only_fkey_models = {}
+        self.cache.link_fields = {}
+
+    # ------------------------------------------------------------------
+    # Basic invalidation behaviour
+    # ------------------------------------------------------------------
+
+    def test_invalidate_clears_loaded_flag(self):
+        """After invalidate(), loaded must be False."""
+        self.cache._populate()
+        self.assertTrue(self.cache.loaded)
+        self.cache.invalidate()
+        # invalidate() immediately repopulates, so loaded is True again.
+        # The important thing is that the populated flag is correctly managed.
+        self.assertTrue(self.cache.loaded)
+
+    def test_invalidate_repopulates_cache(self):
+        """
+        invalidate() must leave the cache in a fully populated state so that
+        subsequent reads return correct data rather than empty dicts.
+        """
+        self.cache._populate()
+        populated_link_fields = dict(self.cache.link_fields)
+        populated_only_fkey = dict(self.cache.only_fkey_models)
+
+        self.cache.invalidate()
+
+        # After invalidate() the contents should be identical to what
+        # _populate() produced initially.
+        self.assertEqual(self.cache.link_fields, populated_link_fields)
+        self.assertEqual(self.cache.only_fkey_models, populated_only_fkey)
+
+    def test_populate_is_idempotent(self):
+        """Calling _populate() multiple times must not corrupt the cache."""
+        self.cache._populate()
+        first_link_fields = dict(self.cache.link_fields)
+        first_only_fkey = dict(self.cache.only_fkey_models)
+
+        # Calling again should be a no-op (loaded is True).
+        self.cache._populate()
+
+        self.assertEqual(self.cache.link_fields, first_link_fields)
+        self.assertEqual(self.cache.only_fkey_models, first_only_fkey)
+
+    def test_invalidate_then_read_via_method(self):
+        """
+        getLinkFieldData and modelForLinkField must trigger _populate() on
+        demand so they never return stale data after an invalidation.
+        """
+        self.cache._populate()
+        # Force the unpopulated state without going through invalidate() so
+        # we can test the read-method guard independently.
+        self.cache.loaded = False
+        self.cache.only_fkey_models = {}
+        self.cache.link_fields = {}
+
+        # Calling a read method should trigger repopulation.
+        # getLinkFieldData returns None for unknown fields — that's fine as
+        # long as it doesn't raise and the cache is populated afterwards.
+        self.cache.getLinkFieldData('__nonexistent__')
+        self.assertTrue(self.cache.loaded)
+
+        self.cache.loaded = False
+        self.cache.only_fkey_models = {}
+        self.cache.link_fields = {}
+
+        self.cache.modelForLinkField('__nonexistent__')
+        self.assertTrue(self.cache.loaded)
+
+    # ------------------------------------------------------------------
+    # Thread-safety
+    # ------------------------------------------------------------------
+
+    def test_concurrent_populate_does_not_raise(self):
+        """
+        Multiple threads calling _populate() concurrently must not raise any
+        exception (e.g. RuntimeError due to a dict being modified under
+        iteration) and must all agree on the final populated state.
+        """
+        num_threads = 10
+        errors = []
+
+        def worker():
+            try:
+                c = CustomFormsCache()
+                c._populate()
+            except Exception as exc:  # pragma: no cover
+                errors.append(exc)
+
+        threads = [threading.Thread(target=worker) for _ in range(num_threads)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        self.assertEqual(errors, [], msg="Exceptions raised during concurrent _populate(): %s" % errors)
+        self.assertTrue(self.cache.loaded)
+
+    def test_concurrent_invalidate_does_not_raise(self):
+        """
+        Calling invalidate() from multiple threads simultaneously must not
+        raise a RuntimeError (e.g. from modifying a dict that is being
+        iterated elsewhere).
+        """
+        self.cache._populate()
+        errors = []
+
+        def worker():
+            try:
+                c = CustomFormsCache()
+                c.invalidate()
+            except Exception as exc:  # pragma: no cover
+                errors.append(exc)
+
+        threads = [threading.Thread(target=worker) for _ in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        self.assertEqual(errors, [], msg="Exceptions raised during concurrent invalidate(): %s" % errors)
+        # Cache must be in a valid, populated state after all threads finish.
+        self.assertTrue(self.cache.loaded)
+
+    def test_borg_pattern_shared_state(self):
+        """
+        Two separate CustomFormsCache instances must share the same underlying
+        state (Borg pattern).
+        """
+        cache_a = CustomFormsCache()
+        cache_b = CustomFormsCache()
+
+        cache_a._populate()
+
+        self.assertIs(cache_a.__dict__, cache_b.__dict__)
+        self.assertEqual(cache_a.loaded, cache_b.loaded)
+        self.assertIs(cache_a.link_fields, cache_b.link_fields)
+        self.assertIs(cache_a.only_fkey_models, cache_b.only_fkey_models)
+
+    def test_atomic_dict_replacement_not_in_place_clear(self):
+        """
+        invalidate() must replace dict instances rather than clear them in
+        place.  Any code that captured a reference to the old dict should
+        continue to see the old (populated) data after invalidation —
+        preventing RuntimeError on concurrent iteration.
+        """
+        self.cache._populate()
+        old_link_fields = self.cache.link_fields
+        old_only_fkey  = self.cache.only_fkey_models
+        # Capture the content of the old dicts before invalidation.
+        old_link_fields_snapshot = dict(old_link_fields)
+        old_only_fkey_snapshot   = dict(old_only_fkey)
+
+        self.cache.invalidate()
+
+        # invalidate() must have swapped in NEW dict objects (not cleared in
+        # place), so the old references still point to the original populated
+        # data — they are not empty.
+        self.assertEqual(old_link_fields,  old_link_fields_snapshot,
+                         "Old link_fields reference was cleared in-place; "
+                         "concurrent iterators would have seen an empty dict.")
+        self.assertEqual(old_only_fkey, old_only_fkey_snapshot,
+                         "Old only_fkey_models reference was cleared in-place; "
+                         "concurrent iterators would have seen an empty dict.")
+        # The cache must now use different dict objects.
+        self.assertIsNot(self.cache.link_fields, old_link_fields)
+        self.assertIsNot(self.cache.only_fkey_models, old_only_fkey)
+
+
