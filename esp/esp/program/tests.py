@@ -60,6 +60,7 @@ from esp.program.setup import prepare_program, commit_program
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
 from datetime import datetime, timedelta
+from django.utils import timezone
 from decimal import Decimal
 from random import sample
 import hashlib
@@ -369,7 +370,7 @@ class ProgramHappenTest(TestCase):
         self.assertTrue( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
 
         timeslot_type = EventType.get_from_desc('Class Time Block')
-        now = datetime.now()
+        now = timezone.now()
         self.timeslot = Event.objects.create(program=self.prog, description='Now', short_description='Right now',
             start=now, end=now+timedelta(0, 3600), event_type=timeslot_type )
 
@@ -545,7 +546,7 @@ class ProgramFrameworkTest(TestCase):
                     'program_type': 'TestProgram',
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',
-                    'start_time': datetime(2222, 7, 7, 7, 5),
+                    'start_time': timezone.make_aware(datetime(2222, 7, 7, 7, 5)),
                     'base_cost': 666,
                     'sibling_discount': 0
                     }
@@ -601,10 +602,10 @@ class ProgramFrameworkTest(TestCase):
                 'program_modules': settings['modules'],
                 'class_categories': [x.id for x in self.categories],
                 'admins': [x.id for x in self.admins],
-                'teacher_reg_start': '2000-01-01 00:00:00',
-                'teacher_reg_end':   '3001-01-01 00:00:00',
-                'student_reg_start': '2000-01-01 00:00:00',
-                'student_reg_end':   '3001-01-01 00:00:00',
+                'teacher_reg_start': (timezone.now() - timedelta(days=365)).strftime('%Y-%m-%d %H:%M:%S'),
+                'teacher_reg_end':   (timezone.now() + timedelta(days=365)).strftime('%Y-%m-%d %H:%M:%S'),
+                'student_reg_start': (timezone.now() - timedelta(days=365)).strftime('%Y-%m-%d %H:%M:%S'),
+                'student_reg_end':   (timezone.now() + timedelta(days=365)).strftime('%Y-%m-%d %H:%M:%S'),
                 'base_cost':         settings['base_cost'],
                 'sibling_discount':  settings['sibling_discount'],
             }
@@ -796,7 +797,7 @@ class ProgramFrameworkTest(TestCase):
         past_settings = {'num_timeslots': 3,
                     'timeslot_length': 50,
                     'timeslot_gap': 10,
-                    'start_time': datetime(1901, 7, 7, 7, 5),
+                    'start_time': timezone.make_aware(datetime(1901, 7, 7, 7, 5)),
                     }
 
         #   Create timeblocks
@@ -885,7 +886,8 @@ class ProgramCapTest(ProgramFrameworkTest):
             # Join the program!
             StudentRegistration.objects.create(
                 user=user, section=self.program.sections()[0],
-                relationship=enrolled)
+                relationship=enrolled,
+                start_date=timezone.now() - timedelta(days=1))
         for user in self.eleventh_graders[2:]:
             # Assert that no more 11th graders may join.
             self.assertFalse(self.program.user_can_join(user))
@@ -1237,15 +1239,18 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                     sections = [s for s in self.program.sections() if e in s.meeting_times.all()]
                     if len(sections) == 0: continue
                     pri = random.choice(sections)
-                    StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+                    StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt,
+                                                              defaults={'start_date': timezone.now() - timedelta(days=1)})
             for sec in self.program.sections():
                 # 0.25 prob of adding a section as interested
                 if random.random() < 0.25:
-                    StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt)
+                    StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt,
+                                                              defaults={'start_date': timezone.now() - timedelta(days=1)})
             # Make sure the student actually entered the lottery
             if StudentRegistration.objects.filter(user=student, section__parent_class__parent_program=self.program).count() == 0:
                 pri = random.choice(self.program.sections())
-                StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+                StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt,
+                                                          defaults={'start_date': timezone.now() - timedelta(days=1)})
 
     def testLottery(self):
         # Run the lottery!
@@ -2037,8 +2042,8 @@ class GradeCacheInvalidationTest(TestCase):
         Event.objects.create(
             program=self.program,
             event_type=prog_type,
-            start=datetime.now() + timedelta(days=30),
-            end=datetime.now() + timedelta(days=31),
+            start=timezone.now() + timedelta(days=30),
+            end=timezone.now() + timedelta(days=31),
             short_description='Test event'
         )
 
@@ -2046,7 +2051,7 @@ class GradeCacheInvalidationTest(TestCase):
         self.student_info = StudentInfo.objects.create(
             user=self.student,
             graduation_year=initial_yog,
-            dob=datetime.now() - timedelta(days=365*15)
+            dob=timezone.now() - timedelta(days=365*15)
         )
 
         self.reg_profile = RegistrationProfile.objects.create(

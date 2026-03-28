@@ -1027,10 +1027,11 @@ def emails(request):
                                 Should be given in the format "%m/%d/%Y".
     """
     context = {}
+    from django.utils import timezone
     if request.GET and "start_date" in request.GET:
-        start_date = datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d")
+        start_date = timezone.make_aware(datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d"))
     else:
-        start_date = datetime.date.today() - datetime.timedelta(30)
+        start_date = timezone.now() - datetime.timedelta(30)
     context['start_date'] = start_date
 
     context['requests'] = get_email_data(start_date)

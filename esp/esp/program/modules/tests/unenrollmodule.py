@@ -38,7 +38,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
         r = self.client.get('/onsite/' + self.program.url + '/unenroll_students')
         self.assertContains(r, "Select Students to Unenroll")
         for timeslot in self.program.getTimeSlotList():
-            self.assertContains(r, timeslot.short_description)
+            self.assertContains(r, timeslot.short_time())
 
     def test_json_view(self):
         self.client.login(username='admin', password='password')

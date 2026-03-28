@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+from django.utils import timezone
 from pytz import country_names
 import json
 import logging
@@ -1228,7 +1229,7 @@ class BaseESPUser(object):
             subject = ClassSubject.objects.get(id=subject)
         if not StudentAppQuestion.objects.filter(subject=subject).count():
             return 10
-        elif StudentRegistration.objects.filter(section__parent_class=subject, relationship__name="Rejected", end_date__gte=datetime.now(), user=student).exists() or not StudentApplication.objects.filter(user=student, program__classsubject = subject).exists() or not StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student).exists():
+        elif StudentRegistration.objects.filter(section__parent_class=subject, relationship__name="Rejected", end_date__gte=timezone.now(), user=student).exists() or not StudentApplication.objects.filter(user=student, program__classsubject = subject).exists() or not StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student).exists():
             return 1
         for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
             if not len(sar.response.strip()):
@@ -2254,6 +2255,7 @@ class PersistentQueryFilter(models.Model):
     def __str__(self):
         return str(self.useful_name) + " (" + str(self.id) + ")"
 
+
 class DBList(object):
     """ Useful abstraction for the list of users.
         Not meant for anything but users_get_list...
@@ -2346,7 +2348,7 @@ class Record(models.Model):
     program = models.ForeignKey("program.Program", blank=True, null=True, on_delete=models.CASCADE)
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
 
-    time = models.DateTimeField(blank=True, default = datetime.now)
+    time = models.DateTimeField(blank=True, default = timezone.now)
 
     class Meta:
         app_label = 'users'
@@ -2372,20 +2374,21 @@ class Record(models.Model):
           program (Program, optional): The program associated with the event.
                                        Use None for events with no associated program.
           when (datetime, optional):   Only Records from before then are considered.
-                                       Defaults to datetime.now().
+                                       Defaults to timezone.now().
           only_today (bool, optional): If True, only Records from the same day as
                                        'when' are considered.
                                        Defaults to False.
         """
         if when is None:
-            when = datetime.now()
+            when = timezone.now()
         filter = cls.objects.filter(user=user, event__name=event, time__lte=when)
         if program is not None:
             filter = filter.filter(program=program)
         if only_today:
-            filter = filter.filter(time__year=when.year,
-                                   time__month=when.month,
-                                   time__day=when.day)
+            local_when = timezone.localtime(when)
+            filter = filter.filter(time__year=local_when.year,
+                                   time__month=local_when.month,
+                                   time__day=local_when.day)
         return filter.distinct()
 
     @classmethod
@@ -2850,7 +2853,7 @@ class GradeChangeRequest(TimeStampedModel):
             return
 
         if self.approved is not None and not self.acknowledged_time:
-            self.acknowledged_time = datetime.now()
+            self.acknowledged_time = timezone.now()
             self.send_confirmation_email()
 
         #   Update the student's grade if the request has been approved
