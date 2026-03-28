@@ -325,10 +325,21 @@ class ListGenModule(ProgramModuleObj):
             specified in request.GET or a separate argument. """
 
         if filterObj is None:
-            if 'filterid' in request.GET:
-                filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
-            else:
+            filter_id = request.GET.get('filterid')
+
+            if not filter_id:
                 raise ESPError('Could not determine the query filter ID.', log=False)
+
+            try:
+                filterObj = PersistentQueryFilter.objects.get(id=filter_id)
+            except (PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
+                context['error_type'] = 'invalid_filter'
+                context['error_info'] = {'filter_id': filter_id}
+                self.send_error_email(request, context)
+                return render_to_response(self.baseDir() + 'failure.html', request, context)
+
+
+
 
         usertype = request.POST.get('recipient_type', 'combo').lower()
         if request.method == 'POST' and 'fields' in request.POST:
