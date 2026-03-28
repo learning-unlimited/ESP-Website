@@ -31,7 +31,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from collections.abc import Hashable
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
 from esp.users.forms.generic_search_form import StudentSearchForm
@@ -55,6 +55,81 @@ class UserSearchController(object):
 
     def __init__(self, *args, **kwargs):
         self.updated = False
+        self._category_lists_cache = {}
+        self._program_query_lists_cache = {}
+        self._recipient_type_map_cache = {}
+
+    def _program_cache_key(self, program):
+        return getattr(program, 'pk', None) or id(program)
+
+    def _get_category_lists(self, program):
+        cache_key = self._program_cache_key(program)
+        if cache_key in self._category_lists_cache:
+            return self._category_lists_cache[cache_key]
+
+        category_lists = {
+            user_type: OrderedDict()
+            for user_type in Program.USER_TYPES_WITH_LIST_FUNCS
+        }
+
+        for module in program.getModules(None):
+            for user_type, desc_func in zip(Program.USER_TYPES_WITH_LIST_FUNCS, Program.USER_TYPE_LIST_DESC_FUNCS):
+                if not hasattr(module, desc_func):
+                    continue
+                descriptions = getattr(module, desc_func)()
+                if descriptions is None:
+                    continue
+                for name, description in descriptions.items():
+                    item = {'name': name, 'description': description}
+                    if name in UserSearchController.preferred_lists:
+                        item['preferred'] = True
+                    category_lists[user_type][name] = item
+
+        rendered_lists = {
+            user_type: list(items.values())
+            for user_type, items in category_lists.items()
+        }
+
+        for user_type in ESPUser.getTypes():
+            key = user_type.lower() + 's'
+            if user_type not in rendered_lists:
+                rendered_lists[user_type] = []
+            rendered_lists[user_type].insert(0, {
+                'name': 'all_%s' % user_type,
+                'description': 'All %s in the database' % key,
+                'preferred': True,
+                'all_flag': True,
+            })
+
+        rendered_lists['emaillist'] = [{
+            'name': 'all_emaillist',
+            'description': 'Everyone signed up for the mailing list',
+            'preferred': True,
+        }]
+
+        self._category_lists_cache[cache_key] = rendered_lists
+        return rendered_lists
+
+    def _get_program_query_lists(self, program, user_type):
+        cache_key = (self._program_cache_key(program), user_type)
+        if cache_key not in self._program_query_lists_cache:
+            self._program_query_lists_cache[cache_key] = getattr(program, user_type.lower()+'s')(QObjects=True)
+        return self._program_query_lists_cache[cache_key]
+
+    def _get_recipient_type_map(self, program):
+        cache_key = self._program_cache_key(program)
+        if cache_key in self._recipient_type_map_cache:
+            return self._recipient_type_map_cache[cache_key]
+
+        recipient_type_map = {}
+        for user_type, items in self._get_category_lists(program).items():
+            if user_type == 'emaillist':
+                continue
+            for item in items:
+                recipient_type_map[item['name']] = user_type
+
+        self._recipient_type_map_cache[cache_key] = recipient_type_map
+        return recipient_type_map
 
     def filter_from_criteria(self, base_list, criteria, program=None):
         return base_list.filter(self.query_from_criteria('any', criteria, program)).distinct()
@@ -263,9 +338,14 @@ class UserSearchController(object):
             on the main "comm panel" page
         """
 
+        recipient_type_map = self._get_recipient_type_map(program)
+
         def get_recipient_type(list_name):
-            for user_type in Program.USER_TYPE_LIST_FUNCS:
-                raw_lists = getattr(program, user_type)(True)
+            recipient_type = recipient_type_map.get(list_name)
+            if recipient_type:
+                return recipient_type
+            for user_type in Program.USER_TYPES_WITH_LIST_FUNCS:
+                raw_lists = self._get_program_query_lists(program, user_type)
                 if list_name in raw_lists:
                     return user_type
 
@@ -281,7 +361,7 @@ class UserSearchController(object):
                     q_program = Q()
                     recipient_type = data['recipient_type']
                 else:
-                    program_lists = getattr(program, data['recipient_type'].lower()+'s')(QObjects=True)
+                    program_lists = self._get_program_query_lists(program, data['recipient_type'])
                     q_program = program_lists[data['base_list']]
                     """ Some program queries rely on UserBits, and since user types are also stored in
                         UserBits we cannot store both of these in a single Q object.  To compensate, we
@@ -298,7 +378,7 @@ class UserSearchController(object):
             if list_name.startswith('all'):
                 q_program = Q()
             else:
-                q_program = getattr(program, recipient_type.lower()+'s')(QObjects=True)[list_name]
+                q_program = self._get_program_query_lists(program, recipient_type)[list_name]
 
             #   Apply Boolean filters
             #   Base list will be intersected with any lists marked 'AND', and then unioned
@@ -320,7 +400,7 @@ class UserSearchController(object):
 
                 if user_type:
 
-                    qobject = getattr(program, user_type)(QObjects=True)[and_list_name]
+                    qobject = self._get_program_query_lists(program, user_type)[and_list_name]
 
                     if and_list_name in not_keys:
                         q_program = q_program & ~qobject
@@ -361,7 +441,7 @@ class UserSearchController(object):
             for or_list_name in or_keys:
                 user_type = get_recipient_type(or_list_name)
                 if user_type:
-                    qobject = getattr(program, user_type)(QObjects=True)[or_list_name]
+                    qobject = self._get_program_query_lists(program, user_type)[or_list_name]
                     if or_list_name not in not_keys:
                         q_program = q_program | qobject
                     else:
@@ -418,33 +498,14 @@ class UserSearchController(object):
         else:
             return MessageRequest.SEND_TO_SELF_REAL
 
-    def prepare_context(self, program, target_path=None, add_to_context={}):
-        context = add_to_context
+    def prepare_context(self, program, target_path=None, add_to_context=None):
+        context = dict(add_to_context or {})
         context['program'] = program
         context['student_search_form'] = StudentSearchForm()
         context['combo_form'] = True
         context['include_continue'] = True
         context['user_types'] = ESPUser.getTypes()
-        category_lists = {}
-        list_descriptions = program.getListDescriptions()
-
-        #   Add in program-specific lists for most common user types
-        for user_type, list_func in zip(Program.USER_TYPES_WITH_LIST_FUNCS, Program.USER_TYPE_LIST_FUNCS):
-            raw_lists = getattr(program, list_func)(True)
-            category_lists[user_type] = [{'name': key, 'list': raw_lists[key], 'description': list_descriptions[key]} for key in raw_lists]
-            for item in category_lists[user_type]:
-                if item['name'] in UserSearchController.preferred_lists:
-                    item['preferred'] = True
-
-        #   Add in global lists for each user type
-        for user_type in ESPUser.getTypes():
-            key = user_type.lower() + 's'
-            if user_type not in category_lists:
-                category_lists[user_type] = []
-            category_lists[user_type].insert(0, {'name': 'all_%s' % user_type, 'list': ESPUser.getAllOfType(user_type), 'description': 'All %s in the database' % key, 'preferred': True, 'all_flag': True})
-
-        #   Add in mailing list accounts
-        category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
+        category_lists = self._get_category_lists(program)
 
         context['lists'] = category_lists
         context['all_list_names'] = []
@@ -462,7 +523,7 @@ class UserSearchController(object):
 
         return context
 
-    def create_filter(self, request, program, template=None, target_path=None, add_to_context={}):
+    def create_filter(self, request, program, template=None, target_path=None, add_to_context=None):
         from esp.program.modules.handlers.listgenmodule import ListGenModule
         """ Function to obtain a list of users, possibly requiring multiple requests.
             Similar to the old get_user_list function.
@@ -482,7 +543,7 @@ class UserSearchController(object):
         if target_path is None:
             target_path = request.path
 
-        return (render_to_response(template, request, self.prepare_context(program, target_path, add_to_context = add_to_context)), False)
+        return (render_to_response(template, request, self.prepare_context(program, target_path, add_to_context=add_to_context)), False)
 
     def selected_list_from_postdata(self, data):
         selected = []
