@@ -569,6 +569,66 @@ class StripBase64ImagesTest(DjangoTestCase):
         self.assertEqual(count, 0)
 
 
+class TexEscapeTest(unittest.TestCase):
+    """Tests for the texescape template filter (esp.utils.templatetags.latex)."""
+
+    def setUp(self):
+        from esp.utils.templatetags.latex import texescape
+        self.texescape = texescape
+
+    def test_latex_in_math_wrapped(self):
+        result = self.texescape(r'$$\LaTeX$$')
+        self.assertIn(r'\mbox{\LaTeX}', result)
+
+    def test_tex_in_math_wrapped(self):
+        result = self.texescape(r'$$\TeX$$')
+        self.assertIn(r'\mbox{\TeX}', result)
+
+    def test_xelatex_in_math_wrapped(self):
+        result = self.texescape(r'$$\XeLaTeX$$')
+        self.assertIn(r'\mbox{\XeLaTeX}', result)
+
+    def test_lualatex_in_math_wrapped(self):
+        result = self.texescape(r'$$\LuaLaTeX$$')
+        self.assertIn(r'\mbox{\LuaLaTeX}', result)
+
+    def test_amstex_in_math_wrapped(self):
+        result = self.texescape(r'$$\AmSTeX$$')
+        self.assertIn(r'\mbox{\AmSTeX}', result)
+
+    def test_normal_math_unaffected(self):
+        result = self.texescape(r'$$\pi + \sqrt{2}$$')
+        self.assertNotIn(r'\mbox{', result)
+
+    def test_latex_not_partial_match(self):
+        """\\LaTeXe wraps itself in \\mbox internally — must not be matched."""
+        result = self.texescape(r'$$\LaTeXe$$')
+        self.assertNotIn(r'\mbox{', result)
+
+    def test_basic_escaping(self):
+        result = self.texescape('Tom & Jerry')
+        self.assertIn(r'\&', result)
+
+    def test_math_passthrough(self):
+        result = self.texescape(r'$$\sqrt{3}$$')
+        self.assertIn(r'\sqrt{3}', result)
+
+    def test_multiple_math_blocks(self):
+        result = self.texescape(r'$$\alpha$$ and $$\LaTeX$$')
+        self.assertIn(r'\alpha', result)
+        self.assertIn(r'\mbox{\LaTeX}', result)
+
+    def test_unmatched_dollars(self):
+        """Unmatched $$ falls back to full escaping — no math segments."""
+        result = self.texescape(r'$$\LaTeX')
+        self.assertNotIn(r'\mbox{', result)
+
+    def test_already_wrapped_in_text(self):
+        """Redundant nesting is cosmetic but valid LaTeX."""
+        result = self.texescape(r'$$\text{\LaTeX}$$')
+        self.assertIn(r'\mbox{\LaTeX}', result)
+
+
 def suite():
     """Choose tests to expose to the Django tester."""
     s = unittest.TestSuite()
