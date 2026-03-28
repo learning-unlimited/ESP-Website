@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
 import os
 import warnings
 import tempfile
@@ -101,17 +102,9 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 # DisallowedHost errors and deprecation warnings don't go to email ever.
 # In scripts, we log to the console in a shorter format, to a separate log
 # file, and not to email or sentry.
-if SENTRY_DSN:
-    sentry_handler = {
-        'level': 'WARNING',
-        'filters': ['require_not_in_script'],
-        'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
-        'dsn': SENTRY_DSN,
-    }
-else:
-    sentry_handler = {
-        'class': 'logging.NullHandler',
-    }
+sentry_handler = {
+    'class': 'logging.NullHandler',
+}
 
 warnings.simplefilter("default", PendingDeprecationWarning)
 
@@ -264,15 +257,32 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 CSRF_COOKIE_NAME = 'esp_csrftoken'
 
 if SENTRY_DSN:
-    # If SENTRY_DSN is set, send errors to Sentry via the Raven exception
-    # handler. Note that our exception middleware (i.e., ESPErrorMiddleware)
-    # will remain enabled and will receive exceptions before Raven does.
-    import raven
+    # If SENTRY_DSN is set, initialize sentry-sdk for error reporting.
+    # Note that our exception middleware (i.e., ESPErrorMiddleware)
+    # will remain enabled and will receive exceptions before Sentry does.
+    import subprocess
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
 
-    INSTALLED_APPS += (
-        'raven.contrib.django.raven_compat',
+    try:
+        _release = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'],
+            cwd=os.path.join(PROJECT_ROOT, '..'),
+            stderr=subprocess.DEVNULL,
+        ).decode('ascii').strip()
+    except Exception:
+        _release = None
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            LoggingIntegration(
+                level=logging.INFO,
+                event_level=logging.WARNING,
+            ),
+        ],
+        release=_release,
+        send_default_pii=False,
     )
-    RAVEN_CONFIG = {
-        'dsn': SENTRY_DSN,
-        'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
-    }
