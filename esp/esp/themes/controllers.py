@@ -134,12 +134,7 @@ class ThemeController(object):
         self.set_template_settings(self.get_template_settings())
 
     def base_dir(self, theme_name):
-        # Resolve the full path and confirm it stays within THEME_PATH to
-        # prevent path traversal attacks (e.g. theme_name = "../../etc/passwd").
-        theme_path = os.path.realpath(os.path.join(THEME_PATH, theme_name))
-        if not theme_path.startswith(os.path.realpath(THEME_PATH) + os.sep):
-            raise ESPError("Invalid theme name: %s" % theme_name, log=True)
-        return theme_path
+        return os.path.join(THEME_PATH, theme_name)
 
     def list_filenames(self, dir, file_regexp, mask_base=False):
         """ Quick search for files in the specified directory (dir) which match
@@ -406,8 +401,7 @@ class ThemeController(object):
             if os.path.isdir(full_filename):
                 result += self.get_file_summaries(full_filename)
             else:
-                with open(full_filename, 'rb') as f:
-                    file_data = f.read()
+                file_data = open(full_filename, 'rb').read()
                 result.append((full_filename, os.path.getsize(full_filename), hashlib.sha1(file_data).hexdigest()))
         return result
 
