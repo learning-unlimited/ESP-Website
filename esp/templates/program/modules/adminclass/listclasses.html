@@ -26,6 +26,25 @@ json_data = {};
   // Set up sorting control
   $j(document).ready(setup_sort_control);
 
+  function filterClassRows() {
+    var filter = $j.trim($j("#classSearch").val().toLowerCase());
+    $j("#classes_anchor tr").each(function() {
+      var rowText = $j(this).text().toLowerCase();
+      $j(this).toggle(rowText.indexOf(filter) !== -1);
+    });
+  }
+
+  $j(document).ready(function() {
+    $j("#classSearch").on("keyup input", filterClassRows);
+
+    if (window.MutationObserver) {
+      new MutationObserver(filterClassRows).observe(
+        document.getElementById("classes_anchor"),
+        { childList: true, subtree: true }
+      );
+    }
+  });
+
   // Start the AJAX request to get the class data and display it
   json_fetch(["class_subjects"], fillClasses, json_data, function() { alert("Error loading class data"); });
 
@@ -69,6 +88,13 @@ json_data = {};
     </div>
 
     <div id="battlescreen">
+      <input
+        type="text"
+        id="classSearch"
+        placeholder="Search classes..."
+        class="form-control mb-3"
+        style="margin-bottom: 10px;"
+      />
 
       <table id="dashboard_class_table" cellpadding="4px" cellspacing="0" class="sortable">
     {% if noclasses %}
