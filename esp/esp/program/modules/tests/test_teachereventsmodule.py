@@ -37,12 +37,11 @@ import datetime
 from esp.cal.models import Event, EventType
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import ESPUser, UserAvailability
+from esp.users.models import UserAvailability
 from django.contrib.auth.models import Group
 
 
 class TeacherEventsModuleTest(ProgramFrameworkTest):
-    
 
     def setUp(self, *args, **kwargs):
         kwargs.update({
@@ -101,7 +100,6 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
         EventType.objects.filter(is_teacher_type=True).delete()
         super().tearDown()
 
-
     def test_isStep_true_when_events_exist(self):
         self.assertTrue(self.module.isStep())
 
@@ -110,27 +108,21 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
                               event_type__is_teacher_type=True).delete()
         self.assertFalse(self.module.isStep())
 
-
     def test_getTimes_returns_correct_events(self):
-        """getTimes() should return only events matching the given event type."""
         training_times  = self.module.getTimes(self.training_type)
         interview_times = self.module.getTimes(self.interview_type)
-
-        self.assertIn(self.training_event,  training_times)
+        self.assertIn(self.training_event, training_times)
         self.assertNotIn(self.interview_event, training_times)
-
         self.assertIn(self.interview_event, interview_times)
         self.assertNotIn(self.training_event, interview_times)
 
     def test_getTimes_empty_when_no_events_of_type(self):
-        """getTimes() should return an empty queryset when no matching events exist."""
         other_type = EventType.objects.create(
             description='Other Type',
             is_teacher_type=True,
         )
         self.assertFalse(self.module.getTimes(other_type).exists())
         other_type.delete()
-
 
     def test_teachers_returns_signed_up_teacher(self):
         UserAvailability.objects.create(
@@ -196,7 +188,6 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
                               event_type__is_teacher_type=True).delete()
         self.assertTrue(self.module.isCompleted(self.teacher))
 
-
     def test_event_signup_get_renders_for_eligible_teacher(self):
         self.assertTrue(
             self.client.login(username=self.teacher.username, password='password'),
@@ -204,12 +195,24 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
         )
         response = self.client.get(self.module.get_full_path())
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'form', response.content.lower())
+        self.assertTemplateUsed(
+            response,
+            'program/modules/teachereventsmodule/event_signup.html',
+        )
+        self.assertIn(
+            ('event_type_%d' % self.training_type.id).encode(),
+            response.content,
+        )
+        self.assertIn(
+            ('event_type_%d' % self.interview_type.id).encode(),
+            response.content,
+        )
 
     def test_event_signup_get_blocked_for_anonymous_user(self):
         self.client.logout()
         response = self.client.get(self.module.get_full_path())
-        self.assertNotEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('next=', response['Location'])
 
     def test_event_signup_get_blocked_for_student(self):
         student = self.students[0]
@@ -219,7 +222,7 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
         )
         response = self.client.get(self.module.get_full_path())
         self.assertEqual(response.status_code, 200)
-        self.assertNotIn(b'event_type_', response.content)
+        self.assertTemplateUsed(response, 'errors/program/notateacher.html')
 
     def test_event_signup_post_creates_useravailability(self):
         self.assertTrue(
@@ -232,7 +235,6 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
         }
         response = self.client.post(self.module.get_full_path(), data=post_data)
         self.assertEqual(response.status_code, 302)
-
         self.assertTrue(
             UserAvailability.objects.filter(
                 user=self.teacher, event=self.training_event,
@@ -256,12 +258,9 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
             short_description='Training slot 2',
             description='Training slot 2',
         )
-
         self.assertTrue(
             self.client.login(username=self.teacher.username, password='password'),
         )
-
-        
         self.client.post(self.module.get_full_path(), data={
             'event_type_%d' % self.training_type.id:  self.training_event.id,
             'event_type_%d' % self.interview_type.id: '',
@@ -271,8 +270,6 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
                 user=self.teacher, event=self.training_event,
             ).exists()
         )
-
-        
         self.client.post(self.module.get_full_path(), data={
             'event_type_%d' % self.training_type.id:  training_event_2.id,
             'event_type_%d' % self.interview_type.id: '',
@@ -289,21 +286,17 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
             ).exists(),
             "New training signup should exist after re-signup",
         )
-
         training_event_2.delete()
 
     def test_event_signup_post_with_no_selection_clears_entries(self):
-       
         UserAvailability.objects.create(
             user=self.teacher,
             event=self.training_event,
             role=self.teacher_group,
         )
-
         self.assertTrue(
             self.client.login(username=self.teacher.username, password='password'),
         )
-        
         post_data = {
             'event_type_%d' % self.training_type.id:  '',
             'event_type_%d' % self.interview_type.id: '',
@@ -317,8 +310,6 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
             ).exists(),
             "All event availabilities should be cleared after submitting empty form",
         )
-
-    
 
     def test_event_signup_get_prepopulates_existing_selection(self):
         UserAvailability.objects.create(
