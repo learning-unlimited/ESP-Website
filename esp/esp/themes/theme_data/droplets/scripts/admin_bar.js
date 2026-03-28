@@ -91,11 +91,11 @@ if (currentPrograms && currentPrograms.forEach) {
                     '<a href="/manage/docs/">Website Documentation</a>';
 
     // Append extra links configured in theme settings (never replaces defaults)
-    if (typeof toolbarLinks !== 'undefined' && toolbarLinks.length > 0) {
+    if (Array.isArray(toolbarLinks) && toolbarLinks.length > 0) {
         toolbarLinks.forEach(function(link) {
             // Only allow relative URLs and http/https to prevent XSS
             var url = link.link;
-            if (url && (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://'))) {
+            if (url && (url.indexOf('/') === 0 || url.indexOf('http://') === 0 || url.indexOf('https://') === 0)) {
                 var a = document.createElement('a');
                 a.href = url;
                 a.textContent = link.text;

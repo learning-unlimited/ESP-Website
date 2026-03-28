@@ -90,9 +90,10 @@
 
 var debug = {{ settings.DEBUG|yesno:"true,false" }};
 </script>
-{{ theme.toolbar_links|default:"[]"|json_script:"toolbar-links-data" }}
+{{ theme.toolbar_links|json_script:"toolbar-links-data" }}
 <script type="text/javascript">
-var toolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').textContent);
+var rawToolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').textContent);
+var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
 <div id="page" class="{{ request.path|extract_theme }}">
@@ -269,3 +270,4 @@ var toolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').text
 </div>
 
 {% endblock %}
+

@@ -84,17 +84,7 @@ class ThemesTest(TestCase):
         response = self.client.get('/themes/select/')
         self.assertEqual(response.status_code, 200)
 
-        # Move the existing images dir out of the way, so we don't conflict
-        # with it (either what the user has there, or between themes).
-        # TODO(benkraft): Do the same for styles and scripts, although in
-        # practice conflicts there are less likely.
-        # TODO(benkraft): This is a super hacky way to do things!  Instead we
-        # should be doing all these tests in some sort of tmpdir to avoid
-        # touching anything of the user's.
         images_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
-        # Really we should use a tempdir, but on Docker it may be on a
-        # different file system, which causes problems, so we do a hackier
-        # thing instead.
         images_backup_dir = os.path.join(settings.MEDIA_ROOT, 'images',
                                          'theme_backup_for_tests')
         if os.path.exists(images_dir):
@@ -107,15 +97,9 @@ class ThemesTest(TestCase):
                 css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
                 if os.path.exists(css_filename):
                     os.remove(css_filename)
-                # Clobber any stray theme images dir, to avoid conflicts.
-                # Note that we've already backed up any one the user had
-                # created, above.
                 if os.path.exists(images_dir):
                     shutil.rmtree(images_dir)
 
-                # Make sure there won't be any conflicts between this theme and
-                # existing files -- since they would cause harder-to-understand
-                # errors later on.
                 self.assertFalse(tc.check_local_modifications(theme_name))
 
                 #   POST to the theme selector with our choice of theme
@@ -144,6 +128,7 @@ class ThemesTest(TestCase):
                         'faq_link': '/faq.html',
                         'nav_structure': '[{"header": "header", "header_link": "/header_link/", "links": [{"link": "link1", "text": "text1"}]}]',
                         'contact_links': '[{"link": "link1", "text": "text1"}]',
+                        'toolbar_links': '[{"link": "/test/", "text": "Test Link"}]',
                     }
                     for entry in field_matches:
                         if entry[1] not in settings_dict:
@@ -159,7 +144,7 @@ class ThemesTest(TestCase):
 
                 #   Check that the CSS stylesheet has been compiled.
                 self.assertTrue(os.path.exists(css_filename))
-                self.assertTrue(len(open(css_filename).read()) > 1000)  #   Hacky way to check that content is substantial
+                self.assertTrue(len(open(css_filename).read()) > 1000)
 
                 #   Check that the template override is marked with the theme name.
                 self.assertTrue((f'<!-- Theme: {theme_name} -->') in str(response.content, encoding='UTF-8'))
@@ -172,6 +157,35 @@ class ThemesTest(TestCase):
                 shutil.rmtree(images_dir)
             if os.path.exists(images_backup_dir):
                 os.rename(images_backup_dir, images_dir)
+
+    def testToolbarLinks(self):
+        """ Check that toolbar_links round-trips through theme setup correctly. """
+
+        self.client.login(username=self.admin.username, password='password')
+
+        tc = ThemeController()
+
+        # Set toolbar_links via theme settings
+        settings_dict = {
+            'theme': 'droplets',
+            'full_group_name': 'themetest',
+            'titlebar_prefix': 'themetest',
+            'just_selected': 'False',
+            'nav_structure': '[{"header": "header", "header_link": "/header_link/", "links": [{"link": "link1", "text": "text1"}]}]',
+            'contact_links': '[{"link": "/contact.html", "text": "contact us"}]',
+            'toolbar_links': '[{"link": "/custom/", "text": "Custom Link"}]',
+        }
+        response = self.client.post('/themes/setup/', settings_dict, follow=True)
+        self.assertTrue(('/themes/', 302) in response.redirect_chain)
+
+        # Check toolbar_links was saved correctly as a list not a string
+        saved = tc.get_template_settings()
+        self.assertIsInstance(saved.get('toolbar_links'), list)
+        self.assertEqual(len(saved['toolbar_links']), 1)
+        self.assertEqual(saved['toolbar_links'][0]['link'], '/custom/')
+        self.assertEqual(saved['toolbar_links'][0]['text'], 'Custom Link')
+
+        self.client.logout()
 
     def testEditor(self):
         """ Check that the theme editor backend functionality is working. """
@@ -188,8 +202,6 @@ class ThemesTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         #   Check that the "advanced" properties for all themes show up in the form
-        #   (using ThemeController directly for theme switching, since testSelector()
-        #   covers the Web interface)
         tc = ThemeController()
         theme_names = tc.get_theme_names()
         for theme_name in theme_names:
@@ -205,7 +217,6 @@ class ThemesTest(TestCase):
                     self.assertTrue(len(re.findall(r'<input.*?name="%s".*?value="%s".*?>',
                                     str(response.content, encoding='UTF-8'), flags=re.I)) > 0)
 
-        #   Test that we can change a parameter and the right value appears in the stylesheet
         def verify_linkcolor(color_str):
             css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
             regexp = rf'\n\s*?a\s*?{{.*?color:\s*?{color_str};.*?}}'
@@ -218,7 +229,6 @@ class ThemesTest(TestCase):
         self.assertEqual(response.status_code, 200)
         verify_linkcolor(color_str1)
 
-        #   Test that we can save this setting, change it, and reload
         config_dict = {'save': True, 'linkColor': color_str1, 'saveThemeName': 'save_test'}
         response = self.client.post('/themes/customize/', config_dict)
         self.assertEqual(response.status_code, 200)
@@ -234,7 +244,6 @@ class ThemesTest(TestCase):
         self.assertEqual(response.status_code, 200)
         verify_linkcolor(color_str1)
 
-        #   We're done.  Log out.
         self.client.logout()
 
 
@@ -295,3 +304,4 @@ class SafeBackupPathTest(TestCase):
         """A filename that resolves to a sibling directory raises ESPError."""
         with self.assertRaises(ESPError_Log):
             _safe_backup_path('../sibling/logo.png', self.backups_dir)
+            
