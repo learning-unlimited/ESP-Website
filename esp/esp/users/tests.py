@@ -791,6 +791,34 @@ class PermissionTestCase(TestCase):
         implications = ['Teacher/Classes/Create/OpenClass']
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
+        
+    def testUserCanEditQSDTeacherFix(self):
+        """Test that teachers can edit their class QSD pages, ensuring .html suffixes are correctly stripped."""
+        from esp.program.models import ClassSubject, ClassCategories
+        from esp.users.models import Permission
+
+        # Create a test teacher account
+        teacher = ESPUser.objects.create(username='qsd_edit_teacher')
+        
+        # Setup the program and class categories required by the regex matcher
+        cat = ClassCategories.objects.create(category='TestCategory', symbol='T')
+        test_prog = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program3')
+        test_class = ClassSubject.objects.create(
+            parent_program=test_prog,
+            category=cat,
+            grade_min=7,
+            grade_max=12,
+            title='Test Class',
+        )
+        
+        # Assign the teacher to the class
+        test_class.teachers.add(teacher)
+
+        # Generate a test URL matching what the QSD parser expects: "section/Splash/Program3/Classes/T<id>/file.html"
+        test_url = "section/%s/Classes/T%d/welcome.html" % (test_prog.url, test_class.id)
+        
+        # This will fail with the old `url[-5]` code but will pass with your `url[:-5]` fix
+        self.assertTrue(Permission.user_can_edit_qsd(teacher, test_url))
 
 class AjaxAutocompleteViewTest(TestCase):
     def setUp(self):
