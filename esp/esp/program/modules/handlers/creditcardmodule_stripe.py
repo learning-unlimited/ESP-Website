@@ -64,20 +64,33 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             }
 
     def apply_settings(self):
-        #   Rather than using a model in module_ext.*, configure the module
-        #   from a Tag (which can be per-program or global), combining the
-        #   Tag's specifications with defaults in the code.
+        # ✅ If already cached, return it
+        if hasattr(self, '_settings_cache'):
+            return self._settings_cache
+
+        # Default settings
         DEFAULTS = {
             'offer_donation': True,
             'donation_text': 'Donation to Learning Unlimited',
             'donation_options': [10, 20, 50],
             'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
+
+        # Merge with global Stripe config
         DEFAULTS.update(settings.STRIPE_CONFIG)
-        tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program))
-        self.settings = DEFAULTS.copy()
-        self.settings.update(tag_data)
-        return self.settings
+
+        # Fetch program-specific settings safely
+        tag_value = Tag.getProgramTag('stripe_settings', self.program)
+
+        try:
+            tag_data = json.loads(tag_value) if tag_value else {}
+        except Exception:
+            tag_data = {}
+
+        # Merge all settings
+        self._settings_cache = {**DEFAULTS, **tag_data}
+
+        return self._settings_cache
 
     def get_setting(self, name, default=None):
         return self.apply_settings().get(name, default)
