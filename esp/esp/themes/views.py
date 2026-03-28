@@ -101,6 +101,7 @@ def _generate_favicon_variants(ico_path, images_dir):
     try:
         with Image.open(ico_path) as img:
             img = img.convert('RGBA')
+            # LANCZOS for quality; Pillow 10+ has Image.Resampling.LANCZOS, older versions have Image.LANCZOS
             try:
                 resample = Image.Resampling.LANCZOS  # type: ignore[attr-defined]
             except AttributeError:
@@ -175,10 +176,13 @@ def selector(request, keep_files=None):
         if request.POST['action'] == 'select':
             theme_name = request.POST['theme'].replace(' (current)', '')
 
+            #   Check for differences between the theme's files and those in the working copy.
+            #   If there are differences, require a confirmation from the user for each file.
             differences = tc.check_local_modifications(theme_name)
             if len(differences) > 0 and keep_files is None:
                 return confirm_overwrite(request, current_theme=theme_name, differences=differences, orig_view='selector')
 
+            #   Display configuration form if one is provided for the selected theme
             if tc.get_config_form_class(theme_name) is not None:
                 return configure(request, current_theme=theme_name, force_display=True, keep_files=keep_files)
 
@@ -297,6 +301,7 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
         files_to_keep = []
         diffs_current = tc.check_local_modifications(current_theme)
 
+        #   Build a list of filenames that we are not supposed to overwrite.
         for entry in diffs_current:
             post_key = f'overwrite_{entry["filename_hash"]}'
             post_val = request.POST.get(post_key, None)
@@ -304,11 +309,13 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
                 if post_val != 'overwrite':
                     files_to_keep.append(entry['filename'])
 
+        #   Continue with the original view (typically the theme selector).
         view_func = selector
         if request.POST.get('orig_view', '') == 'recompile':
             view_func = recompile
         return view_func(request, keep_files=files_to_keep)
 
+    #   Display the form asking the user which files to keep/overwrite.
     if differences is None:
         differences = tc.check_local_modifications(current_theme)
 
@@ -338,10 +345,13 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
         form = form_class(request.POST.copy())
 
         if form.is_valid():
+            #   Done; save results and go back to landing page.
             if form.cleaned_data['theme'] != tc.get_current_theme():
                 tc.save_customizations('%s-last' % tc.get_current_theme())
 
             if form.cleaned_data['just_selected']:
+                #   Detect which files (in the active media directories) are being preserved,
+                #   and use this information when reloading the theme.
                 keep_files = request.POST.getlist('keep_files', [])
                 backup_info = tc.clear_theme(keep_files=keep_files)
                 tc.load_theme(form.cleaned_data['theme'], backup_info=backup_info)
@@ -366,6 +376,7 @@ def editor(request):
     tc = ThemeController()
 
     if request.method == 'POST':
+        #   Handle form submission
         vars = None
         palette = None
 
@@ -373,6 +384,7 @@ def editor(request):
             if request.POST['saveThemeName'] == '':
                 theme_name = tc.get_current_customization()
                 if theme_name == 'None':
+                    #   Generate a temporary theme name
                     random_slug = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
                     theme_name = f'theme-{datetime.now().strftime("%Y%m%d")}-{random_slug}'
             else:
@@ -389,22 +401,27 @@ def editor(request):
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')
 
+        #   Re-generate the CSS for the current theme given the supplied settings
         if vars:
             tc.customize_theme(vars)
         if palette is not None:
             tc.set_palette(palette)
 
+    #   Get current theme and customization settings
     current_theme = tc.get_current_theme()
     context = tc.find_less_variables(flat=True)
     context.update(tc.get_current_params())
     context['palette'] = tc.get_palette()
     context['theme_name'] = current_theme
 
+    #   Get list of available customizations
     context['available_themes'] = tc.get_customization_names()
     context['last_used_setting'] = tc.get_current_customization()
 
+    #   Load a bunch of preset fonts
     context['sans_fonts'] = themes_settings.sans_serif_fonts.items()
 
+    #   Load the theme-specific options
     adv_vars = tc.find_less_variables(current_theme, theme_only=True)
     context['adv_vars'] = {}
     for filename in adv_vars:
@@ -412,12 +429,15 @@ def editor(request):
         category_vars = []
         keys = sorted(adv_vars[filename].keys())
         for key in keys:
+            #   Detect type of variable based on default value
             initial_val = adv_vars[filename][key]
             if key in context:
                 initial_val = context[key]
             if initial_val.startswith('#'):
                 category_vars.append((key, 'color', initial_val))
             elif 'color' in key:
+                #   This is a nontrivial color value.  However, we only allow overriding
+                #   these variables with specific colors.
                 category_vars.append((key, 'color', ''))
             elif initial_val.endswith('px') or initial_val.endswith('em'):
                 category_vars.append((key, 'length', initial_val))
@@ -436,6 +456,8 @@ def recompile(request, keep_files=None):
 
     tc = ThemeController()
 
+    #   Check for differences between the theme's files and those in the working copy.
+    #   If there are differences, require a confirmation from the user for each file.
     theme_name = tc.get_current_theme()
     differences = tc.check_local_modifications(theme_name)
     if len(differences) > 0 and keep_files is None:

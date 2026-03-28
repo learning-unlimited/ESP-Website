@@ -97,8 +97,8 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
 <div id="page" class="{{ request.path|extract_theme }}">
-    <div id="tab_sidebar">
-      <ul id="menu">
+  <div id="tab_sidebar">
+    <ul id="menu">
       <li id="tab_logo" class="tabcolor0" ><span class="accent">&nbsp;</span><a href="/"><img id="logo" alt="home" src="/media/images/theme/logo.png?v={{ current_logo_version }}" /></a></li>
       {% with request.path|get_nav_category as category %}
       {% for item in category.links %}
