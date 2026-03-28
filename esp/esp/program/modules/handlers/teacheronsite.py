@@ -84,10 +84,11 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
 
         context = self.onsitecontext(request, tl, one, two, prog)
 
-        classes = sorted([cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program = prog)
+        classes = [cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program = prog)
                    if cls.meeting_times.all().exists()
                    and cls.resourceassignment_set.all().exists()
-                   and cls.status > 0])
+                   and cls.status > 0]
+        classes.sort(key=lambda s: s._sort_key())
         # now we sort them by time/title
 
         context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog)
