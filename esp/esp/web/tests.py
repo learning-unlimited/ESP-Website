@@ -312,3 +312,60 @@ class JavascriptSyntaxTest(TestCase):
             self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
 
 
+class TeacherBioUrlTest(ProgramFrameworkTest):
+    """Tests that canonical teacher-bio URLs work and deprecated ones are rejected."""
+
+    def setUp(self):
+        super().setUp()
+        self.teacher = self.teachers[0]
+        # Create TeacherBio objects for testing
+        from esp.program.models import TeacherBio
+        for teacher in self.teachers:
+            bio = TeacherBio.objects.create(
+                user=teacher,
+                bio='Test bio for ' + teacher.username,
+                slugbio='Test Teacher'
+            )
+
+    def test_canonical_bio_view(self):
+        """Canonical /teach/teachers/<username>/bio.html should return 200."""
+        response = self.client.get('/teach/teachers/%s/bio.html' % self.teacher.username)
+        self.assertEqual(response.status_code, 200)
+
+    def test_canonical_bio_edit_requires_login(self):
+        """Canonical bio edit URL should redirect to login when not authenticated."""
+        response = self.client.get('/teach/teachers/%s/bio.edit.html' % self.teacher.username)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response['Location'])
+
+    def test_canonical_bio_edit_authenticated(self):
+        """Canonical bio edit URL should return 200 for the logged-in teacher."""
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/teach/teachers/%s/bio.edit.html' % self.teacher.username)
+        self.assertEqual(response.status_code, 200)
+
+    def test_deprecated_learn_prefix_returns_404(self):
+        """Deprecated /learn/teachers/<username>/bio.html should return 404."""
+        response = self.client.get('/learn/teachers/%s/bio.html' % self.teacher.username)
+        self.assertNotEqual(response.status_code, 200)
+        self.assertNotEqual(response.status_code, 301)
+
+    def test_deprecated_name_based_url_returns_404(self):
+        """Deprecated /teach/teachers/<last>/<first>/bio.html should return 404."""
+        response = self.client.get('/teach/teachers/%s/%s/bio.html' % (
+            self.teacher.last_name, self.teacher.first_name))
+        self.assertEqual(response.status_code, 404)
+
+    def test_nonexistent_user_returns_404(self):
+        """Bio page for a non-existent user should return 404."""
+        response = self.client.get('/teach/teachers/nonexistent_user_xyz/bio.html')
+        self.assertEqual(response.status_code, 404)
+
+    def test_bio_edit_wrong_user_returns_404(self):
+        """A teacher should not be able to edit another teacher's bio."""
+        other_teacher = self.teachers[1]
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/teach/teachers/%s/bio.edit.html' % other_teacher.username)
+        self.assertEqual(response.status_code, 404)
+
+
