@@ -53,7 +53,7 @@ from esp.program.models import VolunteerOffer
 from django import forms
 from django.conf import settings
 from django.http import HttpResponse
-from django.db.models import IntegerField, Case, When, Count
+from django.db.models import IntegerField, Case, When, Count, Prefetch
 from django.template import loader
 from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
@@ -175,8 +175,22 @@ class ProgramPrintables(ProgramModuleObj):
         return open_only, show_rooms, future_only
 
     @staticmethod
+    def _catalog_query_suffix(open_only, future_only, show_rooms):
+        catalog_query = []
+        if open_only:
+            catalog_query.append("open=1")
+        if future_only:
+            catalog_query.append("future=1")
+        if show_rooms:
+            catalog_query.append("show_rooms=1")
+        catalog_query = "&".join(catalog_query)
+        return f"&{catalog_query}" if catalog_query else ""
+
+    @staticmethod
     def _section_has_future_time(section, now):
         for event in section.get_meeting_times():
+            if getattr(event, 'end', None) and event.end > now:
+                return True
             if event.start and event.start > now:
                 return True
         return False
@@ -318,15 +332,7 @@ class ProgramPrintables(ProgramModuleObj):
                 classes.append(cls_dict[clsid])
 
             clsids = ','.join(clsids)
-            catalog_query = []
-            if open_only:
-                catalog_query.append("open=1")
-            if future_only:
-                catalog_query.append("future=1")
-            if show_rooms:
-                catalog_query.append("show_rooms=1")
-            catalog_query = "&".join(catalog_query)
-            catalog_query_suffix = f"&{catalog_query}" if catalog_query else ""
+            catalog_query_suffix = self._catalog_query_suffix(open_only, future_only, show_rooms)
             return render_to_response(self.baseDir()+'catalog_order.html',
                                       request,
                                       {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories, 'open_only': open_only, 'show_rooms': show_rooms, 'future_only': future_only, 'catalog_query_suffix': catalog_query_suffix })
@@ -340,15 +346,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         clsids = ','.join([str(cls.id) for cls in classes])
 
-        catalog_query = []
-        if open_only:
-            catalog_query.append("open=1")
-        if future_only:
-            catalog_query.append("future=1")
-        if show_rooms:
-            catalog_query.append("show_rooms=1")
-        catalog_query = "&".join(catalog_query)
-        catalog_query_suffix = f"&{catalog_query}" if catalog_query else ""
+        catalog_query_suffix = self._catalog_query_suffix(open_only, future_only, show_rooms)
         return render_to_response(self.baseDir()+'catalog_order.html',
                                   request,
                                   {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories, 'open_only': open_only, 'show_rooms': show_rooms, 'future_only': future_only, 'catalog_query_suffix': catalog_query_suffix  })
@@ -385,6 +383,10 @@ class ProgramPrintables(ProgramModuleObj):
             if sort_order[i] == 'timeblock':
                 sort_order[i] = 'meeting_times__start'
         classes = classes.order_by(*sort_order)
+        section_prefetch = ClassSection.objects.order_by('id').prefetch_related('meeting_times')
+        if show_rooms:
+            section_prefetch = section_prefetch.prefetch_related('resourceassignment_set__resource')
+        classes = classes.prefetch_related(Prefetch('sections', queryset=section_prefetch, to_attr='_sections'))
 
         #   Filter out classes that are not scheduled
         classes = [cls for cls in classes
