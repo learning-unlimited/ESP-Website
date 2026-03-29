@@ -2,6 +2,20 @@
 
 {% block title %}Login!{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<style>
+.auth-form .control-group {
+    margin-top: 10px;
+}
+.auth-form .form-actions {
+    padding-left: 180px;
+    margin-top:10px;
+    padding-top: 10px;
+}
+</style>
+{% endblock stylesheets %}
+
 {% block content %}
 <h1>Please log in</h1>
 
@@ -23,7 +37,7 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 
 <div class="well span10">
 
-<form action="{{ request.action }}" class="form-horizontal" method="post">
+<form action="{{ request.action }}" class="form-horizontal auth-form" method="post">
 
 <div class="control-group">
     {% if form.username.errors %}
