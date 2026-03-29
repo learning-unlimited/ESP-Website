@@ -36,8 +36,8 @@
                 center: 'title',
                 right: 'timeGridWeek,timeGridDay'
             },
-            // Use program URL base so we don't depend on undefined template vars
-            events: '{{ prog.getUrlBase }}calendar_data',
+            // Use absolute URL path to avoid fragile relative resolution
+            events: '/teach/{{ prog.getUrlBase }}calendar_data',
             eventClassNames: function(arg) {
                 return ['status-' + arg.event.extendedProps.status];
             },
@@ -57,6 +57,7 @@
                     document.getElementById('submit-btn').disabled = false;
                     
                     // Visual feedback: clear others in same category and mark this one
+                    const category = props.category;
                     calendar.getEvents().forEach(e => {
                         if (e.extendedProps.category === category && e.extendedProps.status === 'mine') {
                             e.setExtendedProp('status', 'available');
