@@ -16,11 +16,78 @@
 	{{ sectionNums|json_script:"section-numbers-per-duration"}}
     <script type="text/javascript" src="/media/scripts/program/modules/teacherclassregmodule.js"></script>
     <script type="text/javascript" src="/media/scripts/program/modules/flag-edit.js"></script>
+
+    {% if show_draft_button %}
+    <script type="text/javascript">
+    // Form change detection for draft button enable/disable
+    document.addEventListener('DOMContentLoaded', function() {
+        var draftButton = document.querySelector('button[name="save_action"][value="draft"]');
+        if (!draftButton) return;
+
+        // Snapshot initial form state by manually serializing all inputs (not FormData).
+        // This correctly handles radio groups and multi-select checkboxes.
+        var form = document.getElementById('clsform');
+        var initialFormSnapshot = '';
+        function serializeForm() {
+            if (!form) return '';
+            var parts = [];
+            var inputs = form.querySelectorAll('input, select, textarea');
+            for (var i = 0; i < inputs.length; i++) {
+                var el = inputs[i];
+                if (!el.name || el.name === 'csrfmiddlewaretoken') continue;
+                if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) continue;
+                parts.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value));
+            }
+            return parts.sort().join('&');
+        }
+        initialFormSnapshot = serializeForm();
+
+        // Function to check if form has changed
+        function hasFormChanged() {
+            return serializeForm() !== initialFormSnapshot;
+        }
+
+        // Function to update draft button state
+        function updateDraftButtonState() {
+            if (draftButton) {
+                draftButton.disabled = !hasFormChanged();
+            }
+        }
+
+        // Debounce expensive form serialization during rapid typing.
+        var updateDraftButtonStateTimer = null;
+        function scheduleDraftButtonUpdate() {
+            if (updateDraftButtonStateTimer !== null) {
+                clearTimeout(updateDraftButtonStateTimer);
+            }
+            updateDraftButtonStateTimer = setTimeout(function() {
+                updateDraftButtonState();
+                updateDraftButtonStateTimer = null;
+            }, 150);
+        }
+
+        // Monitor form changes
+        if (form) {
+            form.addEventListener('input', scheduleDraftButtonUpdate);
+            form.addEventListener('change', scheduleDraftButtonUpdate);
+        }
+
+        // Initial state
+        updateDraftButtonState();
+    });
+    </script>
+    {% endif %}
 {% endblock %}
 
 {% block module_content %}
 
 <h1>{{ addoredit }}ing a {{ classtype }} for {{ program.niceName }}</h1>
+
+{% if request.GET.draft_saved %}
+    <div class="alert alert-success">
+        <strong>Success!</strong> Your draft has been saved. You can continue editing and submit when ready.
+    </div>
+{% endif %}
 
 {% if manage %}
     <p>
@@ -102,7 +169,7 @@
     </tr>
     <tr>
         <td colspan="2" class="smaller"><p>
-        Please review the above information carefully, then click "Teach for {{ one }}!" to submit your class.  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
+        Please review the above information carefully, then click "{% if class.id and not show_draft_button %}Save course!{% elif class.id %}Submit{% else %}Teach for {{ one }}!{% endif %}" {% if class.id and not show_draft_button %}to save your changes.{% else %}to submit your class.{% endif %}{% if show_draft_button %}  You may also save your progress as a draft to finish later.{% endif %}  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
         </p></td>
     </tr>
     <tr>
@@ -112,7 +179,7 @@
                 <input type="hidden" name="class_id" value="{{ class.id }}" />
             {% endif %}
             <input type="hidden" name="class_reg_page" value="" />
-            
+
             {% if manage %}
                 <input type="hidden" name="manage" value="manage" />
                 <button class="button" type="submit" name="manage_submit" value="reload">Save, then reload this page</button><br />
@@ -121,21 +188,35 @@
                 <button class="button" type="submit" name="manage_submit" value="main">Save, then load the {{ program.niceName }} admin portal</button><br />
             {% else %}
                 {% if module.deadline_met %}
-                    <button type="submit" class="btn btn-primary btn-large">
-                    {% if class.id %}
+                    <button type="submit" class="btn btn-success btn-large" name="save_action" value="submit">
+                    {% if class.id and not show_draft_button %}
                         <span class="glyphicon glyphicon-floppy-saved"></span>
                         Save course!
+                    {% elif class.id %}
+                        Submit
                     {% else %}
                         <span class="glyphicon glyphicon-education"></span>
                         Teach for {{one}}!
                     {% endif %}
-                    </button><br />
+                    </button>
+
+                    <br /><br />
+
+                    {% if show_draft_button %}
+                    <button type="submit" class="btn btn-info" name="save_action" value="draft">
+                        <span class="glyphicon glyphicon-save"></span>
+                        Save as Draft
+                    </button>
+
+                    <br /><br />
+                    {% endif %}
+
                 {% endif %}
             {% endif %}
             <input class="btn btn-default" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
             <br /><br />
         </td>
-    </tr>    
+    </tr>
 </table>
 </center>
 </form>
