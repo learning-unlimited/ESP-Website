@@ -39,7 +39,7 @@
     </div>
     <div class="button_wrapper">
         <div class="module_button">
-            <a href="/manage/pages/" title="Manage Static Pages">
+            <a href="{% url 'manage_pages' %}" title="Manage Static Pages">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Manage Static Pages</div>
                     <div class="module_link_caption">(create and manage pages with only static text)</div>
@@ -61,7 +61,7 @@
             </a>
         </div>
         <div class="module_button">
-            <a href="/customforms/" title="Manage Custom Survey Forms">
+            <a href="{% url 'customforms_landing' %}" title="Manage Custom Survey Forms">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Manage Custom Forms</div>
                     <div class="module_link_caption">(create, edit, and view responses to custom form surveys)</div>

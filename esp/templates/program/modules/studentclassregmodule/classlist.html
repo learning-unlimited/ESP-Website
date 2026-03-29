@@ -1,7 +1,7 @@
 
 {% if request.user.onsite_local %}
 <div class="divformcol1" style="text-align:center; font-size: 16pt;">
-    <a class="btn" href="/myesp/switchback/">Go back to {{ request.session.user_morph.retTitle }}</a>
+    <a class="btn" href="{% url 'myesp_switchback' %}">Go back to {{ request.session.user_morph.retTitle }}</a>
 </div>
 {% endif %}
     

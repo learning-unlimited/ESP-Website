@@ -48,9 +48,9 @@
   <p align="center">
     {% include "users/loginbox_userinfo.html" %}
     <div class="unmorph hidden">
-       <br /><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a><br /><div id="unmorph_text"></div>
+       <br /><a href="{% url 'myesp_switchback' %}">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a><br /><div id="unmorph_text"></div>
     </div>
-    <a href="/myesp/accountmanage/">Manage Account</a>
+    <a href="{% url 'myesp_accountmanage' %}">Manage Account</a>
     <br/>
     <a href="/myesp/signout/">Logout</a>
     <br/>
