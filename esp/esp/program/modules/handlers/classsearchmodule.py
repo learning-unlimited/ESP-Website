@@ -9,16 +9,18 @@ from django.db.models import Count
 from django.db.models.query import Q
 
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
-from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
+from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin, aux_call
 from esp.program.models import RegistrationType
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
+from esp.users.models import ESPUser
 from esp.utils.query_builder import QueryBuilder, SearchFilter
-from esp.utils.query_builder import SelectInput, SelectQInput, ConstantInput, TextInput
+from esp.utils.query_builder import SelectInput, SelectQInput, ConstantInput, TextInput, AjaxUserInput
 from esp.utils.query_builder import OptionalInput, DatetimeInput
 from esp.utils.web import render_to_response
+from django.http import JsonResponse
 
 # TODO: this won't work right without class flags enabled
 
@@ -56,6 +58,15 @@ class ClassSearchModule(ProgramModuleObj):
         any_flag_filter = SearchFilter(name='any_flag', title='any flag',
                                        inputs=[any_flag_input] +
                                        flag_datetime_inputs)
+        flag_creator_filter = SearchFilter(
+            name='flag_creator',
+            title='flag creator',
+            inputs=[AjaxUserInput(
+                field_name='flags__created_by',
+                endpoint=f'/manage/{self.program.url}/ajaxflagusers',
+                display_field='username',
+            )]
+        )
 
         resource_types = ResourceType.objects.filter(program=self.program)
         resource_value_input = OptionalInput(name="desired value",
@@ -208,6 +219,7 @@ class ClassSearchModule(ProgramModuleObj):
                 prereq_filter,
                 hardness_filter,
                 flag_filter,
+                flag_creator_filter,
                 any_flag_filter,
                 resource_filter,
                 any_resource_filter,
@@ -285,3 +297,16 @@ class ClassSearchModule(ProgramModuleObj):
 
     def isStep(self):
         return False
+
+    @aux_call
+    @needs_admin
+    def ajaxflagusers(self, request, tl, one, two, module, extra, prog):
+        term = request.GET.get('term', '').strip()
+        users = ESPUser.objects.filter(
+            classflags_created__subject__parent_program=self.program
+        ).distinct()
+        if term:
+            users = users.filter(username__icontains=term)
+        users = users.order_by('username')[:20]
+        data = [{'id': u.id, 'username': u.username} for u in users]
+        return JsonResponse(data, safe=False)
