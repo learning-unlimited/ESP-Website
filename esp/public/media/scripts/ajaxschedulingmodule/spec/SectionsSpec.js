@@ -266,3 +266,38 @@ describe("getSameRoomSections", function() {
         expect(ids).not.toContain(3);
     });
 });
+
+describe("getSameRoomSections swap eligibility (with matrix)", function() {
+    // Uses generateFakeMatrix() so sections.matrix is bound, enabling the
+    // teacher-availability filter in getSameRoomSections.
+    //
+    // Fixture recap (from TestFixtures.js header):
+    //   Section 1 (S11s1): teachers 1 (avail [3,5,7,11]) + 2 (avail [3,5]),
+    //                       scheduled at room-1, timeslot [3]
+    //   Section 4 (S33s1): teacher 1 (avail [3,5,7,11]), unscheduled
+    //   Section 5 (A44s1): teacher 3 (avail [7,11,13]),  unscheduled
+    var matrix;
+
+    beforeEach(function() {
+        matrix = generateFakeMatrix();
+    });
+
+    it("includes a same-room section whose teachers are mutually available", function() {
+        // Place section 4 (teacher 1, avail [3,5,7,11]) in room-1 at timeslot [5].
+        // Section 1's teachers (1 avail at 5 ✓, 2 avail at 5 ✓) can go to [5].
+        // Section 4's teacher (1 avail at 3 ✓) can go to [3].
+        matrix.sections.scheduleAssignments[4] = { room_id: "room-1", id: 4, timeslots: [5] };
+        var result = matrix.sections.getSameRoomSections(matrix.sections.getById(1));
+        var ids = result.map(function(s) { return s.id; });
+        expect(ids).toContain(4);
+    });
+
+    it("excludes a same-room section when a teacher cannot cover the swapped timeslot", function() {
+        // Place section 5 (teacher 3, avail [7,11,13]) in room-1 at timeslot [7].
+        // Section 1's teacher 2 has avail [3,5] — cannot go to [7], so not swappable.
+        matrix.sections.scheduleAssignments[5] = { room_id: "room-1", id: 5, timeslots: [7] };
+        var result = matrix.sections.getSameRoomSections(matrix.sections.getById(1));
+        var ids = result.map(function(s) { return s.id; });
+        expect(ids).not.toContain(5);
+    });
+});

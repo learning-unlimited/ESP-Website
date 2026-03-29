@@ -171,11 +171,11 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         }
         contentDiv.append($j('<br><div><b>Click on another section while holding down "Ctrl"/"Cmd" to swap it with this section</b>'));
 
-        // Show sections in the same classroom that can be swapped
+        // Show sections in the same classroom that can be swapped with this one
         if (this.sections.isScheduled(section)) {
             var sameRoomSections = this.sections.getSameRoomSections(section);
             var swapDiv = $j('<div>');
-            swapDiv.append('<br><b>Other sections in the same classroom:</b>');
+            swapDiv.append('<br><b>Other sections in the same classroom that can be swapped with this one:</b>');
             if (sameRoomSections.length === 0) {
                 swapDiv.append('<div><i>None</i></div>');
             } else {
@@ -193,7 +193,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
                         .text(other.emailcode + ': ' + other.title + (timeslot_labels ? ' (' + timeslot_labels + ')' : ''))
                         .on('click', function(evt) {
                             evt.preventDefault();
-                            this.sections.selectSection(other);
+                            this.sections.swapSections(section, other);
                         }.bind(this));
                     item.append(link);
                     swapList.append(item);
