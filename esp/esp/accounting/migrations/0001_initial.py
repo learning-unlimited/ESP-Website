@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='LineItemOption',
+            name='lineitemoption',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('description', models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')),
@@ -59,7 +59,7 @@ class Migration(migrations.Migration):
                 ('executed', models.BooleanField(default=False)),
                 ('destination', models.ForeignKey(related_name='transfer_destination', blank=True, to='accounting.Account', help_text='Destination account; where the money is going to.  Leave blank if this is a payment to an outsider.', null=True, on_delete=models.CASCADE)),
                 ('line_item', models.ForeignKey(blank=True, to='accounting.LineItemType', null=True, on_delete=models.CASCADE)),
-                ('option', models.ForeignKey(blank=True, to='accounting.LineItemOption', null=True, on_delete=models.CASCADE)),
+                ('option', models.ForeignKey(blank=True, to='accounting.lineitemoption', null=True, on_delete=models.CASCADE)),
                 ('source', models.ForeignKey(related_name='transfer_source', blank=True, to='accounting.Account', help_text='Source account; where the money is coming from.  Leave blank if this is a payment from outside.', null=True, on_delete=models.CASCADE)),
             ],
         ),

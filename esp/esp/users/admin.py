@@ -4,7 +4,7 @@ from esp.admin import admin_site
 from django import forms
 from django.db import models
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZIPCODESEARCH, K12School, ESPUser, RecordType, Record, Permission, GradeChangeRequest
+from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearch, K12School, ESPUser, RecordType, Record, Permission, GradeChangeRequest
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
@@ -21,13 +21,13 @@ class ZipCodeAdmin(admin.ModelAdmin):
     list_display = ('zip_code', 'latitude', 'longitude')
 admin_site.register(ZipCode, ZipCodeAdmin)
 
-class ZIPCODESEARCHAdmin(admin.ModelAdmin):
+class ZipCodeSearchAdmin(admin.ModelAdmin):
     def count(obj):
         return len(obj.zipcodes.split(','))
     count.short_description = "Number of zip codes"
     list_display = ('zip_code', 'distance', count)
     search_fields = ('=zip_code__zip_code',)
-admin_site.register(ZIPCODESEARCH, ZIPCODESEARCHAdmin)
+admin_site.register(ZipCodeSearch, ZipCodeSearchAdmin)
 
 class UserAvailabilityAdmin(admin.ModelAdmin):
     def parent_program(obj): #because 'event__program' for some reason doesn't want to work...

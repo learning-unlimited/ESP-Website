@@ -249,7 +249,7 @@ class MessageRequest(models.Model):
 
         if var_dict is not None:
             new_request.save()
-            MessageVar.createMessageVar(new_request, var_dict) # create the message Variables
+            messagevar.createmessagevar(new_request, var_dict) # create the message Variables
         return new_request
 
     @classmethod
@@ -273,7 +273,7 @@ class MessageRequest(models.Model):
         # prepare variables
         text = str(text)
 
-        context = MessageVar.getContext(self, user)
+        context = messagevar.getContext(self, user)
 
         newtext = ''
         template = Template(text)
@@ -501,7 +501,7 @@ class TextOfEmail(models.Model):
     class Meta:
         verbose_name_plural = 'Email texts'
 
-class MessageVar(models.Model):
+class messagevar(models.Model):
     """ A storage of message variables for a specific message. """
     messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
     pickled_provider = models.BinaryField() # Object which must have obj.get_message_var(key)
@@ -510,10 +510,10 @@ class MessageVar(models.Model):
     @staticmethod
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
-        newMessageVar = MessageVar(messagerequest = msgrequest, provider_name = name)
-        newMessageVar.pickled_provider = pickle.dumps(obj)
-        newMessageVar.save()
-        return newMessageVar
+        newmessagevar = messagevar(messagerequest = msgrequest, provider_name = name)
+        newmessagevar.pickled_provider = pickle.dumps(obj)
+        newmessagevar.save()
+        return newmessagevar
 
     def getDict(self, user):
         provider = pickle.loads(self.pickled_provider)
@@ -545,7 +545,7 @@ class MessageVar(models.Model):
         return Context(context)
 
     @staticmethod
-    def createMessageVar(msgrequest, var_dict):
+    def createmessagevar(msgrequest, var_dict):
         """ Takes a var_dict, which should be of the form:
             {'FirstHalf': obj, ... }
             Where a variable like {{Program.schedule}} should have:
@@ -553,9 +553,9 @@ class MessageVar(models.Model):
             get_msg_vars(userObj, 'schedule') to work
         """
         # for each module in the dictionary, create a corresponding
-        # MessageVar object
+        # messagevar object
         for key, obj in var_dict.items():
-            MessageVar.createVar(msgrequest, key, obj)
+            messagevar.createVar(msgrequest, key, obj)
 
 
         return True

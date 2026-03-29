@@ -13,11 +13,11 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RemoveField(
-            model_name='MessageVar',
+            model_name='messagevars',
             name='pickled_provider_migration2024',
         ),
         migrations.AlterField(
-            model_name='MessageVar',
+            model_name='messagevars',
             name='pickled_provider',
             field=models.BinaryField(default=b''),
             preserve_default=False,

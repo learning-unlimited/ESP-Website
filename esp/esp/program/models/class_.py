@@ -2167,7 +2167,7 @@ class CLASSCATEGORY(models.Model):
     class Meta:
         verbose_name_plural = 'Class categories'
         app_label = 'program'
-        db_table = 'program_classcategories'  # ← KEEP OLD TABLE NAME
+        db_table = 'program_CLASSCATEGORY'  # ← KEEP OLD TABLE NAME
 
     def __str__(self):
         return f'{self.category} ({self.symbol})'

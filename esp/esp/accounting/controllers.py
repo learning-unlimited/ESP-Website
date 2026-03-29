@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 
-from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOption
+from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, lineitemoption
 from esp.accounting import ReconciliationError, DuplicatePaymentError
 from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
@@ -151,7 +151,7 @@ class ProgramAccountingController(BaseAccountingController):
                 program=program,
             )
             for option in item[1]:
-                (lio, created) = LineItemOption.objects.get_or_create(
+                (lio, created) = lineitemoption.objects.get_or_create(
                 lineitem_type=lit_select,
                 description=option[0],
                 amount_dec=option[1]
@@ -370,7 +370,7 @@ class IndividualAccountingController(ProgramAccountingController):
         elif option_id:
             self.get_transfers().filter(line_item=line_item, option__id=option_id).delete()
             #   Pull the amount from the line item options, if it has one
-            option = LineItemOption.objects.get(id=option_id)
+            option = lineitemoption.objects.get(id=option_id)
             if option.amount_dec is not None:
                 amount = option.amount_dec
             else:

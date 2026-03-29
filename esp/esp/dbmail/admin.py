@@ -35,14 +35,14 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 
-from esp.dbmail.models import MessageVar, EmailList, PlainRedirect, MessageRequest, TextOfEmail
+from esp.dbmail.models import messagevar, EmailList, PlainRedirect, MessageRequest, TextOfEmail
 from esp.utils.admin_user_search import default_user_search
 
-class MessageVarAdmin(admin.ModelAdmin):
+class messagevarAdmin(admin.ModelAdmin):
     list_display = ('id', 'messagerequest', 'provider_name')
     list_filter = ('provider_name',)
     search_fields = ('messagerequest__subject',)
-admin_site.register(MessageVar, MessageVarAdmin)
+admin_site.register(messagevar, messagevarAdmin)
 
 class EmailListAdmin(admin.ModelAdmin):
     list_display = ('description', 'regex')

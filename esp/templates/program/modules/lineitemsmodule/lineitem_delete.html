@@ -39,7 +39,7 @@ You have chosen to delete the following line item. Please review the table below
         <td class="underline">{{ lineitem.max_quantity }}</td>
         <td class="underline">
             <ol>
-            {% for opt in lineitem.LineItemOptionset.all %}
+            {% for opt in lineitem.lineitemoptionset.all %}
             <li>{{ opt.description }}: {{ opt.amount_dec }}{% if opt.is_custom %} (Custom){% endif %}</li>
             {% endfor %}</td>
             </ol>

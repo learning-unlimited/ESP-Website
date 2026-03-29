@@ -40,7 +40,7 @@ You have chosen to import the line items from {{ past_program.niceName }} to {{ 
         <td class="underline">{{ li.max_quantity }}</td>
         <td class="underline">
             <ol>
-            {% for opt in li.LineItemOptionset.all %}
+            {% for opt in li.lineitemoption_sett.all %}
             <li>{{ opt.description }}: {{ opt.amount_dec }}{% if opt.is_custom %} (Custom){% endif %}</li>
             {% endfor %}</td>
             </ol>

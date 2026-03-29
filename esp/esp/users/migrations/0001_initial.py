@@ -237,7 +237,7 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='ZIPCODESEARCH',
+            name='ZipCodeSearches',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('distance', models.DecimalField(max_digits=15, decimal_places=3)),

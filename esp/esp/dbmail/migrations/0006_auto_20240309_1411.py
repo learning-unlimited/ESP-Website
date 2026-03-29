@@ -11,12 +11,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameField(
-            model_name='MessageVar',
+            model_name='messagevars',
             old_name='pickled_provider',
             new_name='pickled_provider_migration2024',
         ),
         migrations.AddField(
-            model_name='MessageVar',
+            model_name='messagevars',
             name='pickled_provider',
             field=models.BinaryField(null=True),
         ),

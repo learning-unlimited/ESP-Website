@@ -1,7 +1,7 @@
 from django import forms
 from django.core.validators import RegexValidator
 
-from esp.accounting.models import LineItemType, LineItemOption
+from esp.accounting.models import LineItemType, lineitemoption
 from esp.program.models import Program
 
 exclude_line_items = ["Sibling discount", "Program admission", "Financial aid grant", "Student payment", "Donation to Learning Unlimited"]
@@ -25,7 +25,7 @@ class LineItemForm(forms.ModelForm):
         }
 
 OptionFormset = forms.modelformset_factory(
-    LineItemOption,
+    lineitemoption,
     fields = ('description', 'amount_dec', 'is_custom'),
     max_num = 1000,
     extra = 0,

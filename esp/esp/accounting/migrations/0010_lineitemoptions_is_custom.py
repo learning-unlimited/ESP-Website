@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='LineItemOption',
+            model_name='lineitemoption',
             name='is_custom',
             field=models.BooleanField(default=False),
         ),
