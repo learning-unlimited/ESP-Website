@@ -26,8 +26,23 @@ function initialize()
     }
 }
 
-$j(document).ready(initialize);
+$j(document).ready(function() {
+    initialize();
+    if (window.initSearchFilter) {
+        window.initSearchFilter("add_module_search", "additional_modules_list", "li");
+    }
+});
 </script>
+<script src="/media/scripts/utils/search_filter.js"></script>
+
+{{ admin_search_entries|json_script:"admin-search-entries" }}
+<script type="text/javascript">
+    (function() {
+        var el = document.getElementById('admin-search-entries');
+        if (el) window.ADMIN_SEARCH_ENTRIES = JSON.parse(el.textContent);
+    })();
+</script>
+<script src="/media/scripts/admin_search.js"></script>
 
 {% endblock %}
 
@@ -45,6 +60,24 @@ $j(document).ready(initialize);
 {% load render_qsd %}
 
 <h1>Admin Portal for {{ program.niceName }} (ID: {{ program.id }})</h1>
+
+<div class="module_group" id="admin_search_wrapper" style="margin-top: 10px; margin-bottom: 20px;">
+    <div class="module_group_header">
+        Search admin tools
+    </div>
+    <div class="module_group_body">
+        <input
+            type="text"
+            id="admin_search_input"
+            placeholder="Search for modules, pages, or printables…"
+            style="width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ccc; border-radius: 4px;"
+        >
+        <div id="admin_search_results" style="margin-top: 10px; display: none;"></div>
+        <div id="admin_search_empty" style="margin-top: 10px; display: none; font-style: italic;">
+            No modules found for that search. Look under <a href="#additional_modules">Additional Modules</a> at the bottom of this page for more options.
+        </div>
+    </div>
+</div>
 
 {% inline_program_qsd_block program "manage:main_top" %}
 Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="https://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
@@ -291,10 +324,13 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
 
 <div class="module_group_header">Additional Modules</div>
 <div id="additional_modules" class="module_group_body">
+<div style="padding: 10px 15px; background: #f9f9f9; border-bottom: 1px solid #ddd;">
+    <input type="text" id="add_module_search" placeholder="Search additional modules..." style="width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+</div>
 <table border="0" width="100%">
 <tr>
  <td width="50%">
-<ul>
+<ul id="additional_modules_list">
 {% for module in modules_alph %}
     {% if not module.isAdminPortalFeatured %}
       {% if not module.useTemplate %}
