@@ -10,6 +10,7 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
 import datetime
 
+
 class UserForwarderAdmin(admin.ModelAdmin):
     list_display = ('source', 'target')
     search_fields = default_user_search('source') + default_user_search('target')
@@ -173,4 +174,3 @@ admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group
 admin_site.register(Group, GroupAdmin)
-
