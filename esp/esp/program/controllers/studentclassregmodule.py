@@ -40,7 +40,7 @@ from esp.program.models import RegistrationType, Program
 class RegistrationTypeController(object):
 
     key = 'display_registration_names'
-    default_names = ["Enrolled",]
+    default_names = ["Enrolled", "Waitlisted"]
     default_rts = RegistrationType.objects.filter(name__in=default_names).distinct()
 
     @classmethod

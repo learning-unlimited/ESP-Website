@@ -109,7 +109,7 @@ def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = F
     else:
         errormsg = None
 
-    show_class = (not filter) or (not errormsg)
+    show_class = (not filter) or (not errormsg) or errormsg in ('WAITLIST_AVAILABLE', 'WAITLISTED')
 
     # Allow tag configuration of whether class descriptions get collapsed
     # when the class is full (default: yes)
