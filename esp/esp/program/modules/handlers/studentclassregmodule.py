@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -52,7 +51,7 @@ from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
-from esp.middleware      import ESPError, AjaxError, ESPError_NoLog
+from esp.middleware      import ESPError, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission
 from esp.tagdict.models  import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
@@ -370,10 +369,14 @@ class StudentClassRegModule(ProgramModuleObj):
             except ClassSection.DoesNotExist:
                 # Section doesn't exist, skip it
                 continue
-            except Exception as inst:
-                raise AjaxError('Encountered an error retrieving updated buttons: %s' % inst)
+            except Exception:
+                # Manually return the JSON error after the removal of middleware
+                return HttpResponse(
+                    json.dumps({'status': 200, 'error': 'Encountered an error retrieving updated buttons.'}),
+                    content_type='application/json'
+                )
 
-        return HttpResponse(json.dumps(json_data))
+        return HttpResponse(json.dumps(json_data), content_type='application/json')
 
     @staticmethod
     def addclass_logic(request, tl, one, two, module, extra, prog, webapp=False):
@@ -445,8 +448,9 @@ class StudentClassRegModule(ProgramModuleObj):
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
-            # TODO(benkraft): we shouldn't need to do this.  find a better way.
-            raise AjaxError(inst)
+            # Manually return the JSON error after removal of middleware
+            error_message = inst.args[0] if inst.args else "An error occurred."
+            return HttpResponse(json.dumps({'status' : 200, 'error': str(error_message)}), content_type='application/json')
 
     @staticmethod
     def sort_categories(classes, prog, force_sort=False):
@@ -599,7 +603,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     """@cache_control(public=True, max_age=3600)
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ """Return the program timeslot names for the tabs in the lottery interface""" """
+        \"\"\"Return the program timeslot names for the tabs in the lottery interface\"\"\"
         # using .extra() to select all the category text simultaneously
         timeslots = self.program.getTimeSlots()
 
