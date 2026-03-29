@@ -51,56 +51,59 @@ class TeacherEventsModule(ProgramModuleObj):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    @meets_deadline('/Events')
     @main_call
+    @meets_deadline('/Events')
     def calendar_data(self, request, tl, one, two, module, extra, prog):
         """ Provide AJAX-compatible JSON for the calendar view. """
         from django.http import JsonResponse
-        
+
         user = request.user
-        
-        # Explicit API Custom Auth check requested by Copilot
+
+        # Explicit auth check: return JSON errors instead of HTML redirects
         if not user.is_authenticated:
             return JsonResponse({'error': 'Authentication required'}, status=401)
-        if hasattr(self, 'isTeacher') and not self.isTeacher(user, prog):
+        if not user.isTeacher(prog):
             return JsonResponse({'error': 'Teacher access required'}, status=403)
-            
+
         data = []
-        
-        # Copilot fix: Ensure it accepts all Teacher Types, not just Interview/Training
+
+        # Accept all teacher event types dynamically
         relevant_types = EventType.objects.filter(is_teacher_type=True)
-        
-        # Collect both interviews and training (including past events)
-        all_events = Event.objects.filter(program=self.program, event_type__in=relevant_types).order_by('start')
-        
+
+        # Collect teacher events for this program (including past events)
+        all_events = Event.objects.filter(
+            program=prog,
+            event_type__in=relevant_types
+        ).order_by('start')
+
         for event in all_events:
             entries = UserAvailability.entriesBySlot(event)
             is_mine = entries.filter(user=user).exists()
-            
-            # Check if others are signed up (for interview slots and others requiring single-cap)
-            category = 'interview' if 'interview' in event.event_type.description.lower() else 'training'
+
+            # Interview slots are single-occupancy; training slots are multi-signup
+            desc = (event.event_type.description or '').lower()
+            category = 'interview' if 'interview' in desc else 'training'
             other_entries = entries.exclude(user=user)
-            
-            is_full = False
-            if category == 'interview' and other_entries.count() > 0:
-                is_full = True
-            
-            # Timezone-aware comparison
+
+            is_full = (category == 'interview' and other_entries.exists())
             is_past = event.start < timezone.now()
-            
-            status = 'available'
-            if is_mine: status = 'mine'
-            elif is_full: status = 'full'
-            elif is_past: status = 'past'
-            
-            color = '#3788d8' # Default Blue
-            if is_mine: color = '#28a745' # Success Green
-            elif is_full: color = '#dc3545' # Danger Red
-            elif is_past: color = '#6c757d' # Secondary Gray
-            
+
+            if is_mine:
+                status = 'mine'
+                color = '#28a745'  # Green
+            elif is_full:
+                status = 'full'
+                color = '#dc3545'  # Red
+            elif is_past:
+                status = 'past'
+                color = '#6c757d'  # Gray
+            else:
+                status = 'available'
+                color = '#3788d8'  # Blue
+
             data.append({
                 'id': event.id,
-                'title': f"{category.capitalize()}: {event.name}",
+                'title': '%s: %s' % (category.capitalize(), event.name),
                 'start': event.start.isoformat(),
                 'end': event.end.isoformat(),
                 'color': color,
@@ -111,7 +114,7 @@ class TeacherEventsModule(ProgramModuleObj):
                     'event_type_id': event.event_type.id
                 }
             })
-        
+
         return JsonResponse(data, safe=False)
 
     def availability_role(self):

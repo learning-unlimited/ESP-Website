@@ -7,12 +7,13 @@ from django.utils import timezone
 from datetime import timedelta
 import json
 
+
 class TeacherEventsModuleTest(ProgramFrameworkTest):
     def setUp(self):
         super().setUp()
-        install_cal() # Ensure Teacher Interview/Training types exist
-        
-        # Create a ProgramModule instance for TeacherEventsModule
+        install_cal()  # Ensure Teacher Interview/Training event types exist
+
+        # Get or create the ProgramModule backing record
         self.module_model, _ = ProgramModule.objects.get_or_create(
             handler='TeacherEventsModule',
             defaults={
@@ -22,60 +23,71 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
                 'seq': 20
             }
         )
-        # Create the specific handler instance
+        # Create the concrete module instance attached to this program
         self.te_module = TeacherEventsModule.objects.create(
             program=self.program,
             module=self.module_model,
             seq=20
         )
-        
+
         self.teacher = self.teachers[0]
         self.event_types = EventType.teacher_event_types()
 
-    def test_calendar_data_auth(self):
-        """Test that only teachers can access the calendar data."""
-        url = f'/teach/{self.program.getUrlBase()}/calendar_data'
-        
-        # Logged out
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 401) # 401 Unauthorized for API
-        
-        # Logged in as student
+    def _url(self):
+        return '/teach/%s/calendar_data' % self.program.getUrlBase()
+
+    def test_calendar_data_anonymous_gets_401(self):
+        """Anonymous users should receive a 401 JSON error (not an HTML redirect)."""
+        self.client.logout()
+        response = self.client.get(self._url())
+        self.assertEqual(response.status_code, 401)
+        data = response.json()
+        self.assertIn('error', data)
+
+    def test_calendar_data_student_gets_403(self):
+        """Non-teacher authenticated users should receive a 403 JSON error."""
         self.client.login(username=self.students[0].username, password='password')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 403) # Forbidden
-        
+        response = self.client.get(self._url())
+        self.assertEqual(response.status_code, 403)
+        data = response.json()
+        self.assertIn('error', data)
+
     def test_calendar_data_content(self):
-        """Test the JSON structure and content of the calendar data."""
+        """Test the JSON structure and event status flags."""
         self.client.login(username=self.teacher.username, password='password')
-        
-        # Create some events
+
         now = timezone.now()
-        
-        # 1. Past event
+
+        # 1. Past training event
         past_event = Event.objects.create(
-            name="Past Training",
+            name='Past Training',
             start=now - timedelta(days=1),
-            end=now - timedelta(days=1, hours=-1),
+            end=now - timedelta(hours=23),
+            short_description='Past',
+            description='Past Training',
             event_type=self.event_types['training'],
             program=self.program
         )
-        
-        # 2. Future available event
+
+        # 2. Future available interview slot
         future_event = Event.objects.create(
-            name="Future Interview",
+            name='Future Interview',
             start=now + timedelta(days=1),
             end=now + timedelta(days=1, hours=1),
+            short_description='Future',
+            description='Future Interview',
             event_type=self.event_types['interview'],
             program=self.program
         )
-        
-        # 3. Full interview (taken by another teacher)
+
+        # 3. Full interview slot (taken by another teacher)
         other_teacher = self.teachers[1]
         full_event = Event.objects.create(
-            name="Full Interview",
+            name='Full Interview',
             start=now + timedelta(days=2),
             end=now + timedelta(days=2, hours=1),
+            short_description='Full',
+            description='Full Interview',
             event_type=self.event_types['interview'],
             program=self.program
         )
@@ -84,32 +96,45 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
             event=full_event,
             role=self.te_module.availability_role()
         )
-        
-        url = f'/teach/{self.program.getUrlBase()}/calendar_data'
-        response = self.client.get(url)
+
+        response = self.client.get(self._url())
         self.assertEqual(response.status_code, 200)
-        
+
         data = response.json()
-        self.assertEqual(len(data), 3)
-        
-        # Verify specific states
+        self.assertIsInstance(data, list)
+
+        # Map by id for easy lookup
+        items_by_id = {item['id']: item for item in data}
+
+        self.assertIn(past_event.id, items_by_id)
+        self.assertIn(future_event.id, items_by_id)
+        self.assertIn(full_event.id, items_by_id)
+
+        self.assertEqual(items_by_id[past_event.id]['extendedProps']['status'], 'past')
+        self.assertEqual(items_by_id[future_event.id]['extendedProps']['status'], 'available')
+        self.assertEqual(items_by_id[full_event.id]['extendedProps']['status'], 'full')
+
+        # Check required keys are present in each event
         for item in data:
-            if item['id'] == past_event.id:
-                self.assertEqual(item['extendedProps']['status'], 'past')
-            elif item['id'] == future_event.id:
-                self.assertEqual(item['extendedProps']['status'], 'available')
-            elif item['id'] == full_event.id:
-                self.assertEqual(item['extendedProps']['status'], 'full')
+            self.assertIn('id', item)
+            self.assertIn('title', item)
+            self.assertIn('start', item)
+            self.assertIn('end', item)
+            self.assertIn('color', item)
+            self.assertIn('extendedProps', item)
+            self.assertIn('event_type_id', item['extendedProps'])
 
     def test_calendar_data_is_mine(self):
-        """Test that events I am signed up for are marked as 'mine'."""
+        """Events the current teacher has signed up for should be marked 'mine'."""
         self.client.login(username=self.teacher.username, password='password')
-        
+
         now = timezone.now()
         my_event = Event.objects.create(
-            name="My Training",
+            name='My Training',
             start=now + timedelta(days=3),
             end=now + timedelta(days=3, hours=1),
+            short_description='Mine',
+            description='My Training',
             event_type=self.event_types['training'],
             program=self.program
         )
@@ -118,30 +143,24 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
             event=my_event,
             role=self.te_module.availability_role()
         )
-        
-        url = f'/teach/{self.program.getUrlBase()}/calendar_data'
-        response = self.client.get(url)
-        data = response.json()
-        
-        my_item = next(item for item in data if item['id'] == my_event.id)
-        self.assertEqual(my_item['extendedProps']['status'], 'mine')
-        self.assertEqual(my_item['color'], '#28a745') # Success Green
 
-    def test_calendar_data_unauthorized(self):
-        """Test that unauthorized users receive a 302 redirect (due to @needs_teacher)."""
-        url = f'/teach/{self.program.getUrlBase()}/calendar_data'
-        self.client.logout()
-        response = self.client.get(url)
-        # Our new API returns 401 explicit JSON error, not 302 redirect
-        self.assertEqual(response.status_code, 401)
-
-    def test_calendar_data_empty(self):
-        """Test the response when no events are scheduled."""
-        # Clear existing events
-        Event.objects.all().delete()
-        self.client.login(username=self.teacher.username, password='password')
-        url = f'/teach/{self.program.getUrlBase()}/calendar_data'
-        response = self.client.get(url)
+        response = self.client.get(self._url())
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data, []) # Should be an empty list, not a dict with 'events' key
+
+        my_item = next((item for item in data if item['id'] == my_event.id), None)
+        self.assertIsNotNone(my_item, 'Event signed up for by teacher not found in response')
+        self.assertEqual(my_item['extendedProps']['status'], 'mine')
+        self.assertEqual(my_item['color'], '#28a745')
+
+    def test_calendar_data_empty(self):
+        """When no teacher events exist, the response should be an empty list."""
+        Event.objects.filter(
+            program=self.program,
+            event_type__is_teacher_type=True
+        ).delete()
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get(self._url())
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data, [])
