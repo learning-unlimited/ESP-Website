@@ -21,9 +21,9 @@ Please search for a user: <br />
 </p>
 
 {% if error %}
-<div align="center" class="alert alert-warning">
+<div align="center" class="alert alert-warning" id="user-search-error">
   <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-  Error: No user found by that criteria.
+  {% if error == True %}Error: No user found by that criteria.{% else %}Error: {{ error }}{% endif %}
 </div>
 {% endif %}
 
