@@ -140,12 +140,15 @@ class UserSearchController(object):
 
             for field in ['username', 'last_name', 'first_name', 'email']:
                 if criteria.get(field, '').strip():
-                    #   Check that it's a valid regular expression
-                    try:
-                        rc = re.compile(criteria[field])
-                    except:
-                        raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
-                    filter_dict = {'%s__iregex' % field: criteria[field]}
+                    if field == 'username':
+                        filter_dict = {'username__exact': criteria[field]}
+                    else:
+                        #   Check that it's a valid regular expression
+                        try:
+                            rc = re.compile(criteria[field])
+                        except:
+                            raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
+                        filter_dict = {'%s__iregex' % field: criteria[field]}
                     if '%s__not' % field in criteria:
                         Q_exclude |= Q(**filter_dict)
                     else:
