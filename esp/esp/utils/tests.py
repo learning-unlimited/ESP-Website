@@ -20,12 +20,15 @@ from reversion.models import Version
 import unittest
 
 from django.db.models.query import Q
+from django.conf import settings
+from django.core.cache.backends.base import BaseCache
 from django.template import loader, Template, Context, TemplateDoesNotExist
 from django.test import TestCase as DjangoTestCase
 
 from esp.middleware import ESPError_Log
 from esp.users.models import ESPUser
 from esp import utils
+from esp.utils.memcached_multikey import CacheClass
 from esp.utils import query_builder
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
@@ -147,6 +150,106 @@ class MemcachedKeyLengthTestCase(DjangoTestCase):
     def runTest(self):
         response = self.client.get('/l' + 'o'*256 + 'ngurl.html')
         self.assertTrue(response.status_code != 500, 'Ridiculous URL not handled gracefully.')
+
+
+class _InMemoryWrappedCache:
+    def __init__(self):
+        self.store = {}
+        self.fail_set_keys = set()
+
+    def set(self, key, value, timeout=None, version=None):
+        if key in self.fail_set_keys:
+            return False
+        self.store[key] = value
+        return True
+
+    def get(self, key, default=None, version=None):
+        return self.store.get(key, default)
+
+    def add(self, key, value, timeout=None, version=None):
+        if key in self.store:
+            return False
+        self.store[key] = value
+        return True
+
+    def delete(self, key, version=None):
+        existed = key in self.store
+        self.store.pop(key, None)
+        return existed
+
+    def get_many(self, keys, version=None):
+        return {key: self.store[key] for key in keys if key in self.store}
+
+
+class MemcachedMultiKeyValueTestCase(unittest.TestCase):
+    def setUp(self):
+        self.cache = CacheClass.__new__(CacheClass)
+        BaseCache.__init__(self.cache, {})
+        self.cache._wrapped_cache = _InMemoryWrappedCache()
+        self.cache._value_chunk_size = 128
+        if not hasattr(settings, 'CACHE_PREFIX'):
+            settings.CACHE_PREFIX = ''
+
+    def test_large_value_round_trip_and_delete(self):
+        large_value = {'payload': 'x' * 2048}
+
+        self.assertTrue(self.cache.set('huge', large_value))
+        self.assertEqual(self.cache.get('huge'), large_value)
+
+        cache_key = self.cache.make_key('huge')
+        metadata = self.cache._wrapped_cache.store[cache_key]
+        parsed = self.cache._decode_multikey_metadata(metadata)
+        self.assertIsNotNone(parsed)
+        chunk_prefix, chunk_count = parsed
+        self.assertGreater(chunk_count, 1)
+
+        self.assertTrue(self.cache.delete('huge'))
+        self.assertNotIn(cache_key, self.cache._wrapped_cache.store)
+        for i in range(chunk_count):
+            self.assertNotIn(self.cache._chunk_key(chunk_prefix, i), self.cache._wrapped_cache.store)
+
+    def test_get_many_handles_mixed_values(self):
+        small_value = 'ok'
+        large_value = {'payload': 'y' * 2048}
+
+        self.assertTrue(self.cache.set('small', small_value))
+        self.assertTrue(self.cache.set('large', large_value))
+
+        result = self.cache.get_many(['small', 'large', 'missing'])
+
+        self.assertEqual(result['small'], small_value)
+        self.assertEqual(result['large'], large_value)
+        self.assertNotIn('missing', result)
+
+    def test_overwrite_chunked_value_cleans_old_chunks(self):
+        self.cache._new_chunk_prefix = lambda cache_key: 'MK_old'
+        self.assertTrue(self.cache.set('huge', {'payload': 'x' * 4096}))
+
+        old_chunk_keys = [key for key in self.cache._wrapped_cache.store.keys() if key.startswith('MK_old_')]
+        self.assertGreater(len(old_chunk_keys), 1)
+
+        self.cache._new_chunk_prefix = lambda cache_key: 'MK_new'
+        new_value = {'payload': 'y' * 512}
+        self.assertTrue(self.cache.set('huge', new_value))
+        self.assertEqual(self.cache.get('huge'), new_value)
+
+        for key in old_chunk_keys:
+            self.assertNotIn(key, self.cache._wrapped_cache.store)
+
+    def test_partial_chunk_write_failure_keeps_previous_value(self):
+        self.cache._new_chunk_prefix = lambda cache_key: 'MK_prev'
+        previous_value = {'payload': 'z' * 4096}
+        self.assertTrue(self.cache.set('huge', previous_value))
+
+        self.cache._new_chunk_prefix = lambda cache_key: 'MK_fail'
+        self.cache._wrapped_cache.fail_set_keys.add('MK_fail_1')
+
+        failed_value = {'payload': 'w' * 4096}
+        self.assertFalse(self.cache.set('huge', failed_value))
+        self.assertEqual(self.cache.get('huge'), previous_value)
+
+        leaked_new_chunks = [key for key in self.cache._wrapped_cache.store.keys() if key.startswith('MK_fail_')]
+        self.assertEqual(leaked_new_chunks, [])
 
 
 class TemplateOverrideTest(DjangoTestCase):
