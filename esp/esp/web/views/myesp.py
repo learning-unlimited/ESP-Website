@@ -58,7 +58,7 @@ def myesp_passwd(request):
                                             password=new_data['password'])
 
                         if new_data['password'] == new_data['newpasswd']:
-                            form.add_error(None, "Current password and new password are same.")
+                            form.add_error('newpasswd', "Current password and new password must be different.")
                         else:
                             user.set_password(new_data['newpasswd'])
                             user.save()

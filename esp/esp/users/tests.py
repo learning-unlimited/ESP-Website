@@ -454,8 +454,8 @@ class AccountCreationTest(TestCase):
             url+="information/"
         response = self.client.post(url,
                                    data={"username":"username",
-                                         "password":"passw",
-                                         "confirm_password":"passw",
+                                         "password":"Passw0rd@",
+                                         "confirm_password":"Passw0rd@",
                                          "first_name":"first",
                                          "last_name":"last",
                                          "email":"tsutton125@gmail.com",
