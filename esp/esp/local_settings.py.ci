@@ -76,7 +76,21 @@ MIDDLEWARE_LOCAL = []
 # Database     #
 ################
 
-# Set DB name for this site
-DATABASE_NAME = 'test_django'
-DATABASE_USER = 'testuser'
-DATABASE_PASSWORD = 'testpassword'
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'test_django',
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'USER': 'testuser',
+        'PASSWORD': 'testpassword',
+    }
+}
+
+############
+# Selenium #
+############
+
+SELENIUM_TESTSERVER_HOST = 'localhost'
+SELENIUM_TESTSERVER_PORT = 8000
+SELENIUM_DRIVER = 'Chrome'
