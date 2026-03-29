@@ -358,9 +358,9 @@ class OnSiteClassList(ProgramModuleObj):
             user_id = int(user_param)
             user_obj = ESPUser.objects.get(id=user_id)
         except (ValueError, TypeError, ESPUser.DoesNotExist):
-            return HttpResponse("Error: could not find user %s." % user_param, status=400)
+            return HttpResponse("Error: could not find user.", status=400, content_type="text/plain")
 
-        return ProgramPrintables.get_student_schedules(request, [user_obj], prog, onsite=False)
+        return ProgramPrintables.get_student_schedules(request, [user_obj], prog, onsite=False, extra='pdf')
 
     @aux_call
     @needs_onsite
