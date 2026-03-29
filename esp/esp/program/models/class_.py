@@ -66,10 +66,12 @@ from esp.utils.query_utils import nest_Q
 from esp.utils import cmp
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
+from django.utils import timezone
 
 # ESP models
 from esp.cal.models import Event
 from esp.dbmail.models import send_mail
+from esp.dbmail.models import EmailList
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission, PersistentQueryFilter
@@ -2147,6 +2149,26 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                     teachers_list_name = f"{mailing_list_name}-teachers"
                     remove_list_member(teachers_list_name, t.email)
 
+#in future this code can be modify to deleate old class if we want 
+#for now it change old class list to deactivate email from getting spamed
+    @classmethod
+    def deactivate_old_class_lists(cls):
+        cutoff = timezone.now() - timezone.timedelta(days=1825)
+        old_classes = cls.objects.filter(meeting_times__start__lt=cutoff).distinct()
+        if not old_classes.exists():
+            return 0
+        query = Q()
+        for obj in old_classes:
+            code = obj.emailcode()  # e.g., "H9876"
+            # We match the code at the start of the regex or in the description
+            query |= Q(regex__contains=code) | Q(description__contains=code)
+
+        target_lists = EmailList.objects.filter(query).exclude(admin_hold=True)
+        count = target_lists.count()
+        target_lists.update(admin_hold=True)
+                
+        return count
+
     class Meta:
         db_table = 'program_class'
         app_label = 'program'
@@ -2194,3 +2216,4 @@ def install():
     if not ClassCategories.objects.exists():
         for key in category_dict:
             ClassCategories.objects.create(symbol=key, category=category_dict[key])
+
