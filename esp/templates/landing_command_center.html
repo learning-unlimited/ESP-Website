@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>ESP Events | Command Center</title>
+
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700;800&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#003d9a",
+            "primary-dark": "#002a6b",
+            "secondary": "#096969",
+            "tertiary": "#004c4c",
+            "background": "#fdfdfe",
+            "surface": "#ffffff",
+            "on-surface": "#191c1d",
+            "on-surface-variant": "#3f4948",
+            "outline-variant": "#bec9c8",
+            "surface-container": "#f1f3f4",
+            "accent-blue": "#0053cb"
+          },
+          fontFamily: {
+            "headline": ["Public Sans", "sans-serif"],
+            "body": ["Inter", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "1rem",
+            "2xl": "1.5rem",
+            "full": "9999px"
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .bg-grid-pattern {
+      background-image: radial-gradient(#003d9a 0.5px, transparent 0.5px);
+      background-size: 24px 24px;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .hero-gradient {
+      background: radial-gradient(circle at 70% 30%, #dae2ff 0%, #fdfdfe 100%);
+    }
+    .shimmer {
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .asym-clip {
+      clip-path: polygon(10% 0%, 100% 0%, 100% 100%, 0% 100%);
+    }
+  </style>
+</head>
+<body class="bg-background font-body text-on-surface min-h-screen selection:bg-primary selection:text-white">
+  <header class="flex items-center justify-between px-8 w-full h-20 sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-outline-variant/20">
+    <div class="flex items-center gap-4">
+      <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+        <span class="material-symbols-outlined text-white text-2xl" data-icon="sensors">sensors</span>
+      </div>
+      <div>
+        <span class="text-primary font-extrabold uppercase tracking-tighter font-headline text-xl block leading-none">ESP Events</span>
+        <span class="text-[10px] font-bold text-on-surface-variant/60 tracking-[0.2em] uppercase">Field Ops Clarity</span>
+      </div>
+      <span class="ml-4 px-2 py-0.5 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded tracking-widest border border-outline-variant/30">DJDT</span>
+    </div>
+    <div class="flex items-center gap-8">
+      <div class="hidden md:flex items-center gap-6 text-sm font-semibold">
+        <span class="text-on-surface flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+          Hi, Ken
+        </span>
+        <a href="/myesp/signout/" class="text-on-surface-variant hover:text-primary transition-colors">Logout</a>
+      </div>
+      <div id="profile-menu-container" class="relative">
+        <button id="profile-menu-toggle" type="button" aria-expanded="false" aria-controls="profile-menu" class="w-10 h-10 rounded-full bg-surface-container border border-outline-variant/30 flex items-center justify-center cursor-pointer hover:border-primary/50 transition-all">
+          <span class="material-symbols-outlined text-on-surface-variant" data-icon="account_circle">account_circle</span>
+        </button>
+        <div id="profile-menu" class="hidden absolute right-0 mt-3 w-56 rounded-xl border border-outline-variant/30 bg-white shadow-2xl overflow-hidden z-50">
+          <a href="/myesp/accountmanage/" class="flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined text-base">person</span>
+            My Profile
+          </a>
+          <a href="/myesp/profile/" class="flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined text-base">settings</span>
+            Account Settings
+          </a>
+          <a href="/admin/" class="flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined text-base">admin_panel_settings</span>
+            Admin Console
+          </a>
+          <div class="h-px bg-outline-variant/40"></div>
+          <a href="/myesp/signout/" class="flex items-center gap-3 px-4 py-3 text-sm text-red-700 hover:bg-red-50 transition-colors">
+            <span class="material-symbols-outlined text-base">logout</span>
+            Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1440px] mx-auto w-full px-8 pt-12 pb-24">
+    <section class="relative min-h-[500px] flex items-center rounded-3xl overflow-hidden mb-16 hero-gradient border border-outline-variant/10">
+      <div class="absolute inset-0 bg-grid-pattern opacity-[0.03]"></div>
+      <div class="absolute -right-20 -top-20 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl"></div>
+      <div class="absolute right-0 bottom-0 w-1/2 h-full asym-clip bg-gradient-to-br from-primary/10 to-transparent hidden lg:block"></div>
+      <div class="relative z-10 px-12 py-20 w-full lg:w-2/3">
+        <div class="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white shadow-sm border border-outline-variant/20 text-primary text-xs font-bold mb-8 animate-bounce">
+          <span class="material-symbols-outlined text-sm" data-icon="auto_awesome">auto_awesome</span>
+          CELEBRATING A NEW MILESTONE
+        </div>
+        <h1 class="font-headline font-extrabold text-5xl md:text-6xl text-on-surface leading-[1.1] mb-6 tracking-tight">
+          Your site for <br />
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-blue">LearningUniversity Splash</span> <br />
+          is officially live.
+        </h1>
+        <p class="text-on-surface-variant text-xl font-light mb-10 max-w-xl leading-relaxed">
+          The environment is provisioned and secured. Your field operations command center is ready for participant onboarding.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <a href="/themes/" class="bg-primary text-white px-10 h-14 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 hover:bg-primary-dark transition-all shadow-xl shadow-primary/20 active:scale-95 group">
+            <span class="material-symbols-outlined group-hover:rotate-12 transition-transform" data-icon="palette">palette</span>
+            Configure Appearance
+          </a>
+          <a href="/manage/index.html" class="bg-white text-on-surface border border-outline-variant/30 px-10 h-14 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 hover:bg-surface-container transition-all shadow-sm">
+            Access Dashboard
+          </a>
+        </div>
+      </div>
+      <div class="absolute right-12 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-6 w-64">
+        <div class="glass-card p-6 rounded-2xl shadow-xl transform hover:-translate-y-1 transition-transform border-l-4 border-l-primary">
+          <div class="text-[10px] font-bold text-primary uppercase mb-1">Status</div>
+          <div class="text-2xl font-black font-headline tracking-tighter">OPERATIONAL</div>
+          <div class="w-full h-1.5 bg-surface-container rounded-full mt-3 overflow-hidden">
+            <div class="w-full h-full bg-primary shimmer"></div>
+          </div>
+        </div>
+        <div class="glass-card p-6 rounded-2xl shadow-xl transform hover:-translate-y-1 transition-transform ml-8">
+          <div class="text-[10px] font-bold text-on-surface-variant uppercase mb-1">Load Balance</div>
+          <div class="text-2xl font-black font-headline tracking-tighter">OPTIMAL</div>
+          <div class="flex gap-1 mt-3">
+            <div class="h-4 w-1 bg-primary rounded-full"></div>
+            <div class="h-6 w-1 bg-primary rounded-full"></div>
+            <div class="h-3 w-1 bg-primary rounded-full"></div>
+            <div class="h-5 w-1 bg-primary rounded-full"></div>
+            <div class="h-7 w-1 bg-primary rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-20">
+      <div class="bg-on-surface rounded-2xl p-2 flex flex-wrap items-center gap-2 shadow-2xl">
+        <div class="px-6 py-2 text-white/50 text-xs font-bold uppercase tracking-widest border-r border-white/10 hidden md:block">
+          Quick Launch
+        </div>
+        <div class="flex flex-wrap gap-2 flex-grow">
+          <a href="/manage/index.html" class="flex-grow md:flex-grow-0 px-6 h-12 rounded-xl bg-white/10 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-white hover:text-on-surface transition-all group">
+            <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform" data-icon="monitoring">monitoring</span>
+            Live Dashboard
+          </a>
+          <a href="/admin/" class="flex-grow md:flex-grow-0 px-6 h-12 rounded-xl bg-white/10 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-white hover:text-on-surface transition-all group">
+            <span class="material-symbols-outlined text-lg" data-icon="health_and_safety">health_and_safety</span>
+            Check Health
+          </a>
+          <a href="/themes/" class="flex-grow md:flex-grow-0 px-6 h-12 rounded-xl bg-white/10 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-white hover:text-on-surface transition-all group">
+            <span class="material-symbols-outlined text-lg" data-icon="settings_suggest">settings_suggest</span>
+            Configure Site
+          </a>
+          <a href="/accounts/login/?next=/manage/index.html" class="flex-grow md:flex-grow-0 px-6 h-12 rounded-xl bg-white/10 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-white hover:text-on-surface transition-all group">
+            <span class="material-symbols-outlined text-lg" data-icon="person_add">person_add</span>
+            Invite Admins
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-24">
+      <div class="group relative bg-surface-container/50 rounded-[2rem] p-10 overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-2 border border-outline-variant/10">
+        <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+          <span class="material-symbols-outlined text-9xl text-primary" data-icon="menu_book">menu_book</span>
+        </div>
+        <div class="relative z-10">
+          <div class="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center text-primary mb-8 group-hover:scale-110 transition-transform shadow-lg shadow-blue-200/50">
+            <span class="material-symbols-outlined text-3xl" data-icon="menu_book">menu_book</span>
+          </div>
+          <h3 class="font-headline font-extrabold text-3xl text-on-surface mb-4">Learn</h3>
+          <p class="text-on-surface-variant font-body text-lg leading-relaxed mb-8">
+            Deep dive into documentation and tutorials. Master the engine's core capabilities from session setup to automated grading.
+          </p>
+          <a class="inline-flex items-center gap-3 text-primary font-bold text-base hover:gap-5 transition-all" href="/accounts/login/?next=/learn/index.html">
+            Explore Resources
+            <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+          </a>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full h-1 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></div>
+      </div>
+
+      <div class="group relative bg-surface-container/50 rounded-[2rem] p-10 overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-2 border border-outline-variant/10">
+        <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+          <span class="material-symbols-outlined text-9xl text-secondary" data-icon="record_voice_over">record_voice_over</span>
+        </div>
+        <div class="relative z-10">
+          <div class="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center text-secondary mb-8 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-200/50">
+            <span class="material-symbols-outlined text-3xl" data-icon="record_voice_over">record_voice_over</span>
+          </div>
+          <h3 class="font-headline font-extrabold text-3xl text-on-surface mb-4">Teach</h3>
+          <p class="text-on-surface-variant font-body text-lg leading-relaxed mb-8">
+            Build your curriculum and instructor profiles. Design interactive experiences that keep participants engaged and learning.
+          </p>
+          <a class="inline-flex items-center gap-3 text-secondary font-bold text-base hover:gap-5 transition-all" href="/accounts/login/?next=/teach/index.html">
+            Instructor Portal
+            <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+          </a>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full h-1 bg-secondary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></div>
+      </div>
+
+      <div class="group relative bg-surface-container/50 rounded-[2rem] p-10 overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-2 border border-outline-variant/10">
+        <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+          <span class="material-symbols-outlined text-9xl text-tertiary" data-icon="volunteer_activism">volunteer_activism</span>
+        </div>
+        <div class="relative z-10">
+          <div class="w-16 h-16 rounded-2xl bg-cyan-100 flex items-center justify-center text-tertiary mb-8 group-hover:scale-110 transition-transform shadow-lg shadow-cyan-200/50">
+            <span class="material-symbols-outlined text-3xl" data-icon="volunteer_activism">volunteer_activism</span>
+          </div>
+          <h3 class="font-headline font-extrabold text-3xl text-on-surface mb-4">Volunteer</h3>
+          <p class="text-on-surface-variant font-body text-lg leading-relaxed mb-8">
+            Manage staff and volunteer coordination. Seamless logistics and check-ins designed for the high pressure of event day.
+          </p>
+          <a class="inline-flex items-center gap-3 text-tertiary font-bold text-base hover:gap-5 transition-all" href="/accounts/login/?next=/volunteer/index.html">
+            Staff Management
+            <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+          </a>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full h-1 bg-tertiary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div class="lg:col-span-8 bg-white rounded-3xl p-8 border border-outline-variant/20 shadow-sm overflow-hidden relative">
+        <div class="flex items-center justify-between mb-8">
+          <div>
+            <h2 class="font-headline font-bold text-2xl text-on-surface flex items-center gap-3">
+              <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+              Live Event Pulse
+            </h2>
+            <p class="text-on-surface-variant text-sm mt-1">Real-time site activity and participant flow</p>
+          </div>
+          <div class="flex gap-2">
+            <div class="px-3 py-1 bg-surface-container rounded-lg text-xs font-bold text-on-surface-variant">24H VIEW</div>
+          </div>
+        </div>
+        <div class="h-48 flex items-end justify-between gap-1 mb-6">
+          <div class="w-full bg-primary/10 rounded-t-lg h-[20%] transition-all hover:bg-primary/30"></div>
+          <div class="w-full bg-primary/10 rounded-t-lg h-[15%] transition-all hover:bg-primary/30"></div>
+          <div class="w-full bg-primary/10 rounded-t-lg h-[45%] transition-all hover:bg-primary/30"></div>
+          <div class="w-full bg-primary/10 rounded-t-lg h-[30%] transition-all hover:bg-primary/30"></div>
+          <div class="w-full bg-primary/10 rounded-t-lg h-[60%] transition-all hover:bg-primary/30"></div>
+          <div class="w-full bg-primary/20 rounded-t-lg h-[80%] transition-all hover:bg-primary/40"></div>
+          <div class="w-full bg-primary/10 rounded-t-lg h-[40%] transition-all hover:bg-primary/30"></div>
+          <div class="w-full bg-primary/10 rounded-t-lg h-[25%] transition-all hover:bg-primary/30"></div>
+          <div class="w-full bg-primary/10 rounded-t-lg h-[15%] transition-all hover:bg-primary/30"></div>
+          <div class="w-full bg-primary/10 rounded-t-lg h-[10%] transition-all hover:bg-primary/30"></div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-outline-variant/20 pt-8">
+          <div class="space-y-1">
+            <div class="text-[10px] font-bold text-on-surface-variant uppercase">Current Users</div>
+            <div class="text-xl font-bold font-headline">0 <span class="text-xs font-normal text-on-surface-variant">live</span></div>
+          </div>
+          <div class="space-y-1">
+            <div class="text-[10px] font-bold text-on-surface-variant uppercase">Page Loads</div>
+            <div class="text-xl font-bold font-headline">1.2k <span class="text-xs font-normal text-on-surface-variant">today</span></div>
+          </div>
+          <div class="space-y-1">
+            <div class="text-[10px] font-bold text-on-surface-variant uppercase">Error Rate</div>
+            <div class="text-xl font-bold font-headline text-green-600">0.00%</div>
+          </div>
+          <div class="space-y-1">
+            <div class="text-[10px] font-bold text-on-surface-variant uppercase">Avg. Latency</div>
+            <div class="text-xl font-bold font-headline">42ms</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-4 bg-on-surface text-white rounded-3xl p-8 relative overflow-hidden shadow-2xl">
+        <div class="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        <div class="relative z-10 h-full flex flex-col">
+          <div class="flex items-center gap-3 mb-8">
+            <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+              <span class="material-symbols-outlined text-blue-300" data-icon="admin_panel_settings">admin_panel_settings</span>
+            </div>
+            <div>
+              <h3 class="font-headline font-bold text-xl leading-none">Command Status</h3>
+              <p class="text-white/40 text-[10px] uppercase tracking-widest mt-1">Splash Engine v4.2</p>
+            </div>
+          </div>
+          <div class="flex-grow space-y-8">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-white/60">Server Integrity</span>
+                <span class="text-sm font-bold">100%</span>
+              </div>
+              <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full w-full bg-gradient-to-r from-blue-400 to-primary shimmer"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-white/60">DB Sync Status</span>
+                <span class="text-sm font-bold">Encrypted</span>
+              </div>
+              <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full w-[98%] bg-green-400"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-white/60">Registration Readiness</span>
+                <span class="text-sm font-bold">Armed</span>
+              </div>
+              <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full w-[100%] bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-12 pt-8 border-t border-white/10">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center">
+                <span class="material-symbols-outlined text-green-400" data-icon="verified_user">verified_user</span>
+              </div>
+              <div>
+                <div class="text-sm font-bold">System Secured</div>
+                <p class="text-xs text-white/40">Next scan in 12:44m</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] z-50 flex justify-around items-center px-4 py-3 bg-on-surface/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
+    <a class="flex flex-col items-center justify-center text-white p-2 rounded-xl transition-all" href="/manage/index.html">
+      <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+      <span class="text-[10px] font-bold uppercase mt-1">Ops</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-white/40 p-2 hover:text-white" href="/myesp/accountmanage/">
+      <span class="material-symbols-outlined" data-icon="groups">groups</span>
+      <span class="text-[10px] font-bold uppercase mt-1">People</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-white/40 p-2 hover:text-white" href="/admin/">
+      <span class="material-symbols-outlined" data-icon="insights">insights</span>
+      <span class="text-[10px] font-bold uppercase mt-1">Pulse</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-white/40 p-2 hover:text-white" href="/themes/">
+      <span class="material-symbols-outlined" data-icon="settings">settings</span>
+      <span class="text-[10px] font-bold uppercase mt-1">Setup</span>
+    </a>
+  </nav>
+
+  <div class="h-32 md:hidden"></div>
+  <script>
+    (function () {
+      var menuContainer = document.getElementById('profile-menu-container');
+      var menuToggle = document.getElementById('profile-menu-toggle');
+      var menu = document.getElementById('profile-menu');
+
+      if (!menuContainer || !menuToggle || !menu) {
+        return;
+      }
+
+      function closeMenu() {
+        menu.classList.add('hidden');
+        menuToggle.setAttribute('aria-expanded', 'false');
+      }
+
+      function openMenu() {
+        menu.classList.remove('hidden');
+        menuToggle.setAttribute('aria-expanded', 'true');
+      }
+
+      menuToggle.addEventListener('click', function (event) {
+        event.stopPropagation();
+        if (menu.classList.contains('hidden')) {
+          openMenu();
+        } else {
+          closeMenu();
+        }
+      });
+
+      document.addEventListener('click', function (event) {
+        if (!menuContainer.contains(event.target)) {
+          closeMenu();
+        }
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          closeMenu();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

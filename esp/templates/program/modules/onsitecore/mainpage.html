@@ -39,6 +39,13 @@
             </button></a>
         </div>
         {% endif %}
+        {% if program|hasModule:"AdminOnsiteWebapp" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/onsite_admin"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-dashboard"></i> Admin Onsite Webapp</div>
+            </button></a>
+        </div>
+        {% endif %}
         {% if program|hasModule:"OnSiteRegister" %}
         <div class="module_button">
             <a href="/onsite/{{ program.getUrlBase }}/onsite_create"><button type="button" class="module_link_large">

@@ -41,6 +41,7 @@ from django.views.generic.base import TemplateView
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
 import datetime
+import os
 import re
 
 from esp.dbmail.models import MessageRequest
@@ -62,7 +63,12 @@ def home(request):
     #   Get navbars corresponding to the 'home' category
     nav_category, created = NavBarCategory.objects.get_or_create(name='home')
     context = {'navbar_list': makeNavBar('', nav_category)}
-    return render_to_response('index.html', request, context)
+    landing_path = os.path.join(settings.PROJECT_ROOT, 'templates', 'landing_command_center.html')
+    try:
+        with open(landing_path, encoding='utf-8') as landing_file:
+            return HttpResponse(landing_file.read(), content_type='text/html; charset=utf-8')
+    except OSError:
+        return render_to_response('index.html', request, context)
 
 def program(request, tl, one, two, module, extra = None):
     """ Return program-specific pages """
