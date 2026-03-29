@@ -10,7 +10,7 @@ And to activate the app index dashboard::
     ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 """
 
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.urls import reverse
 
 from admin_tools.dashboard import modules, Dashboard, AppIndexDashboard
@@ -34,7 +34,10 @@ class CustomIndexDashboard(Dashboard):
             children=[
                 [_('Return to site'), '/'],
                 [_('Filebrowser'), '/admin/filebrowser/browse'],
-                [_('Theme Settings'), '/themes']
+                [_('Theme Settings'), '/themes'],
+                [_('Admin Home'), reverse('%s:index' % site_name)],
+                [_('Users'), reverse('%s:esp_espuser_changelist' % site_name)],
+                [_('Programs'), reverse('%s:program_program_changelist' % site_name)],
             ]
         ))
 
@@ -84,7 +87,7 @@ class CustomAppIndexDashboard(AppIndexDashboard):
             ),
             modules.RecentActions(
                 _('Recent Actions'),
-                #include_list=self.models,
+                include_list=self.models,
                 limit=10
             )
         ]
