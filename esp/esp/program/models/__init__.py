@@ -256,21 +256,23 @@ class ProgramManager(models.Manager):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by('-id')
 
-class DirectorEmailValidator(validators.RegexValidator):
-    # RegexValidator in Django 2.x doesn't implement __eq__ — it inherits object.__eq__,
-    # which compares by identity (memory address) and causes spurious migrations
-    def __eq__(self, other):
-        return (
-            type(self) == type(other)
-            and self.regex.pattern == other.regex.pattern
-            and self.flags == other.flags
-            and self.inverse_match == other.inverse_match
-            and self.message == other.message
-            and self.code == other.code
-        )
+class ProgramEmailField(models.EmailField):
+    """EmailField that excludes environment-specific kwargs from migrations.
 
-    def __hash__(self):
-        return hash((type(self), self.regex.pattern, self.flags, self.inverse_match, self.message, self.code))
+    default, help_text, and validators all reference settings.SITE_INFO[1],
+    which varies by environment. Stripping them from deconstruct() means
+    migrations are environment-independent while the field still works
+    normally at runtime.
+    """
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs.pop('default', None)
+        kwargs.pop('help_text', None)
+        kwargs.pop('validators', None)
+        # Present as a plain EmailField in migrations
+        path = 'django.db.models.EmailField'
+        return name, path, args, kwargs
 
 class Program(models.Model, CustomFormsLinkModel):
     objects = ProgramManager()
@@ -283,8 +285,8 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
-    director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[DirectorEmailValidator(rf'(^.+@{settings.SITE_INFO[1].replace(".", ".")}$)|(^.+@(\w+\.)?learningu\.org$)')],
+    director_email = ProgramEmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
+                                       validators=[validators.RegexValidator(r'(^.+@' + re.escape(settings.SITE_INFO[1]) + r'$)|(^.+@(\w+\.)?learningu\.org$)')],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
