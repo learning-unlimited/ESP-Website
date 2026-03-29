@@ -313,8 +313,7 @@ class Command(BaseCommand):
             contact, _ = ContactInfo.objects.get_or_create(
                 user=admin, first_name='School', last_name='Office',
                 defaults=dict(e_mail='office@devhighschool.edu', phone_day='555-0100',
-                              address_country='US', receive_txt_message=False,
-                              undeliverable=False))
+                              address_country='US', receive_txt_message=False))
             school.contact = contact
             school.save()
         return school
@@ -843,7 +842,6 @@ class Command(BaseCommand):
                 address_zip=zip_code,
                 address_country='US',
                 receive_txt_message=False,
-                undeliverable=False,
             ))
         return contact
 
