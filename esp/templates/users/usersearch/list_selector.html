@@ -40,6 +40,7 @@ $j(document).ready(function() {
     </ul>
     <div id="tab_basic">
         <form id="form_basic_list" method="POST" action="{{ action_path }}" autocomplete="off">
+            {% csrf_token %}
 
         <div id="basic_step_container">
 
@@ -115,7 +116,7 @@ $j(document).ready(function() {
     </div>
 
     <div id="tab_combo">
-        {% if combo_form %}<form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off">{% endif %}
+        {% if combo_form %}<form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off"> {% csrf_token %} {% endif %}
         <div id="combo_step_container">
 
         <div id="starting_list_select">
@@ -195,6 +196,7 @@ $j(document).ready(function() {
     <div id="tab_previous">
 
         <form id="form_previous" method="POST" action="{{ action_path }}" autocomplete="off">
+            {% csrf_token %}
         <div id="previous_step_container">
 
         <div id="msgreq_selector_area" class="ui-widget">Begin typing an email title to find a previous message:
