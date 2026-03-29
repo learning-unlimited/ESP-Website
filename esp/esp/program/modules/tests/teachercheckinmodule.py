@@ -142,3 +142,22 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         response = self.client.get('%smissingteachers' % self.program.get_onsite_url())
         phone = phonenumbers.format_number(self.teacher.getLastProfile().contact_user.phone_cell, phonenumbers.PhoneNumberFormat.NATIONAL)
         self.assertIn(phone, str(response.content, encoding='UTF-8'))
+
+    def test_missingteachers_when_defaults_to_date(self):
+        """Viewing missingteachers for a non-today date should default 'when' to that date."""
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+
+        program_dates = self.program.dates()
+        today = datetime.date.today()
+        test_date = next((d for d in program_dates if d != today), None)
+
+        if test_date is not None:
+            date_str = test_date.strftime('%m/%d/%Y')
+            response = self.client.get('%smissingteachers?date=%s' % (
+                self.program.get_onsite_url(), date_str))
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('when', response.context)
+            context_when = response.context['when']
+            self.assertEqual(context_when.date(), test_date)
+            self.assertEqual(context_when.hour, 0)
+            self.assertEqual(context_when.minute, 0)
