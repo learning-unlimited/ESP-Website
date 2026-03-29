@@ -219,16 +219,21 @@ class ProgramModuleObj(models.Model):
         # the module's own defaults.  These are only used when creating a new row.
         defaults = {'seq': mod.seq, 'required': mod.required}
         if old_prog is not None:
-            old_pmo = ProgramModuleObj.objects.filter(program=old_prog, module=mod)
-            if old_pmo.count() == 1:
-                defaults['seq'] = old_pmo[0].seq
-                defaults['required'] = old_pmo[0].required
-                defaults['required_label'] = old_pmo[0].required_label
+            # Fetch at most 2 rows in one query to check for exactly-one semantics
+            # without the extra COUNT(*) query that .count() == 1 would cause.
+            old_pmo_list = list(ProgramModuleObj.objects.filter(program=old_prog, module=mod)[:2])
+            if len(old_pmo_list) == 1:
+                old_pmo_obj = old_pmo_list[0]
+                defaults['seq'] = old_pmo_obj.seq
+                defaults['required'] = old_pmo_obj.required
+                defaults['required_label'] = old_pmo_obj.required_label
 
         # Use get_or_create so that concurrent requests never produce duplicate
         # rows (the unique_together constraint on (program, module) makes this
         # atomic at the database level, eliminating the previous race condition).
-        BaseModule, _created = ProgramModuleObj.objects.get_or_create(
+        # select_related('module') preserves the FK cache on the GET path so
+        # downstream accesses to BaseModule.module don't trigger extra queries.
+        BaseModule, _ = ProgramModuleObj.objects.select_related('module').get_or_create(
             program=prog, module=mod, defaults=defaults
         )
 
