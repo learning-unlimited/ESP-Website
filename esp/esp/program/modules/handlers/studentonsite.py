@@ -44,6 +44,7 @@ from esp.cal.models import Event
 from esp.middleware   import ESPError
 from esp.survey.views   import survey_view
 from esp.tagdict.models  import Tag
+from django.conf import settings
 from django.http import HttpResponseRedirect
 
 from esp.program.modules.handlers.studentregcore import StudentRegCore
@@ -114,7 +115,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['webapp_page'] = 'map'
         context['center'] = Tag.getProgramTag('program_center', program = prog)
         context['zoom'] = Tag.getProgramTag('program_center_zoom', program = prog)
-        context['API_key'] = Tag.getTag('google_cloud_api_key')
+        context['API_key'] = settings.GOOGLE_MAPS_EMBED_KEY
 
         return render_to_response(self.baseDir()+'map.html', request, context)
 
@@ -242,7 +243,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
-        context['map_tab'] = bool(Tag.getTag('google_cloud_api_key').strip())
+        context['map_tab'] = bool(settings.GOOGLE_MAPS_EMBED_KEY)
         return context
 
     def isStep(self):
