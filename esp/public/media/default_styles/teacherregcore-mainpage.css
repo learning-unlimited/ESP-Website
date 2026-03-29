@@ -1,0 +1,92 @@
+.teacher-reg-landing {
+    margin: 10px auto 0;
+    max-width: 1000px;
+}
+
+.teacher-reg-hero {
+    background: #f7fafc;
+    border: 1px solid #dfe8ef;
+    border-radius: 6px;
+    margin-bottom: 18px;
+    padding: 18px 20px;
+}
+
+.teacher-reg-hero h1 {
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 0 0 10px;
+}
+
+.teacher-reg-hero p {
+    font-size: 16px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.teacher-reg-overview-row {
+    margin-bottom: 18px;
+}
+
+.teacher-reg-checklist-panel {
+    background: #ffffff;
+    border: 1px solid #d9e3ea;
+    border-radius: 6px;
+    padding: 14px;
+}
+
+.teacher-reg-records-panel {
+    background: #ffffff;
+    border: 1px solid #d9e3ea;
+    border-radius: 6px;
+    margin-bottom: 18px;
+    padding: 14px;
+}
+
+.teacher-reg-records-panel h2 {
+    font-size: 20px;
+    margin: 0 0 12px;
+}
+
+.teacher-reg-records-panel th,
+.teacher-reg-records-panel td {
+    vertical-align: middle;
+}
+
+.teacher-reg-modules {
+    margin-top: 8px;
+}
+
+.teacher-reg-module-block {
+    border-top: 1px solid #e8edf2;
+    margin-top: 14px;
+    padding-top: 14px;
+}
+
+.teacher-reg-module-block:first-child {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+@media (max-width: 767px) {
+    .teacher-reg-landing {
+        margin-top: 0;
+    }
+
+    .teacher-reg-hero {
+        padding: 14px;
+    }
+
+    .teacher-reg-hero h1 {
+        font-size: 28px;
+    }
+
+    .teacher-reg-hero p {
+        font-size: 15px;
+    }
+
+    .teacher-reg-checklist-panel,
+    .teacher-reg-records-panel {
+        padding: 10px;
+    }
+}
