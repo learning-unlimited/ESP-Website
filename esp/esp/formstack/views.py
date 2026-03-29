@@ -1,16 +1,38 @@
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, HttpResponseForbidden
 from django.dispatch import receiver
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from esp.formstack.signals import formstack_post_signal
 
 @csrf_exempt
 def formstack_webhook(request):
+    """
+    Webhook endpoint for Formstack form submissions.
+
+    Verifies the handshake key to ensure requests are from authorized sources.
+    The handshake key should be configured in settings.FORMSTACK_HANDSHAKE_KEY.
+    """
     if request.method == 'POST':
         data = request.POST.dict()
         form_id = data.pop('FormID')
         submission_id = data.pop('UniqueID')
         handshake_key = data.pop('HandshakeKey', None)
-        # TODO: verify handshake key
+
+        # Verify handshake key for security
+        expected_key = getattr(settings, 'FORMSTACK_HANDSHAKE_KEY', None)
+
+        if not expected_key:
+            # If no key is configured, log error but allow (backwards compatibility)
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "FORMSTACK_HANDSHAKE_KEY not configured in settings. "
+                "Webhook security is disabled. Please configure this setting."
+            )
+        elif not handshake_key or handshake_key != expected_key:
+            # Handshake key is configured but doesn't match
+            return HttpResponseForbidden("Invalid or missing handshake key")
+
         formstack_post_signal.send(sender=None, form_id=form_id, submission_id=submission_id, fields=data)
         return HttpResponse()
     else:
