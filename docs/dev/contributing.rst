@@ -19,7 +19,7 @@ Set up pre-commit hooks to automatically lint staged files before each commit: :
 Other git config you might find useful: ::
 
   git config --global push.default simple # makes git only push the current branch, which is useful for not accidentally messing things up
-  git config --global color.{ui,status,branch,diff,interactive,grep} auto # makes various interfaces usefully colorful
+  git config --global color.{ui,status,branch,diff,interactive,grep} auto # makes various interfaces more colorful and readable
   git config --global log.decorate true # shows branch information in `git log` by default
   git config --global core.pager "less -R"
   git config --global pager.{status,branch,diff,show,log} true
