@@ -2,13 +2,13 @@ from django.test import RequestFactory
 
 from esp.middleware.threadlocalrequest import ThreadLocals, clear_current_request
 from esp.program.modules.handlers.schedulingcheckmodule import (
-    SchedulingCheckModule,
     SchedulingCheckRunner,
     JSONFormatter,
 )
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.models import ProgramModule
 from esp.program.tests import ProgramFrameworkTest
+import json
 
 
 class SchedulingCheckHelpersTest(ProgramFrameworkTest):
@@ -31,7 +31,7 @@ class SchedulingCheckHelpersTest(ProgramFrameworkTest):
         data = [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}]
         result = formatter.format_table(data, {'headings': ['a', 'b']}, help_text='hi')
 
-        parsed = __import__('json').loads(result)
+        parsed = json.loads(result)
         self.assertEqual(parsed['help_text'], 'hi')
         self.assertEqual(parsed['headings'], ['a', 'b'])
         self.assertEqual(parsed['body'], [[1, 2], [3, 4]])
@@ -41,7 +41,7 @@ class SchedulingCheckHelpersTest(ProgramFrameworkTest):
         data = {'x': {'a': 10, 'b': 20}, 'y': {'a': 30, 'b': 40}}
         result = formatter.format_table(data, {'headings': ['a', 'b']}, help_text='ok')
 
-        parsed = __import__('json').loads(result)
+        parsed = json.loads(result)
         self.assertEqual(parsed['help_text'], 'ok')
         self.assertEqual(parsed['headings'], ['', 'a', 'b'])
         self.assertEqual(parsed['body'][0][0], 'x')
@@ -52,7 +52,7 @@ class SchedulingCheckHelpersTest(ProgramFrameworkTest):
         input_list = [10, 20, 30]
         result = formatter.format_list(input_list, ['value'], help_text='list')
 
-        parsed = __import__('json').loads(result)
+        parsed = json.loads(result)
         self.assertEqual(parsed['help_text'], 'list')
         self.assertEqual(parsed['headings'], ['value'])
         self.assertEqual(parsed['body'], [[10], [20], [30]])
@@ -77,4 +77,9 @@ class SchedulingCheckHelpersTest(ProgramFrameworkTest):
         response = moduleobj.scheduling_checks(request, 'manage', None, None, None, 'lunch_blocks_setup', self.program)
 
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.content)
+
+        parsed = json.loads(response.content.decode('utf-8'))
+        # Verify that the extra diagnostic key returns structured JSON output
+        self.assertIn('headings', parsed)
+        # The "lunch_blocks_setup" diagnostic should include a "Lunch Blocks" heading
+        self.assertIn('Lunch Blocks', parsed['headings'])
