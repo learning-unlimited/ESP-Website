@@ -550,6 +550,10 @@ def userview(request):
             raise ESPError("Sorry, can't find that program.", log=False)
     else:
         program = user.get_last_program_with_profile()
+        if program is None:
+            current = Program.current_programs()
+            if current:
+                program = current[0]
 
     learn_modules = []
     teach_modules = []
