@@ -1,5 +1,8 @@
 """
 Tests for esp.survey
+
+- Model tests: ListField descriptor, Survey, SurveyResponse, QuestionType, Question, Answer
+- CSV Import tests: parse_csv utility function for bulk question import
 - Model tests: ListField descriptor, Survey, SurveyResponse, QuestionType, Question, Answer
 - View tests: Cross-program teacher survey responses page
 """
@@ -28,6 +31,7 @@ def _setup_roles():
         Group.objects.get_or_create(name=name)
 
 
+# ===== Model Tests =====
 # ===== Model Tests (from main) =====
 
 class ListFieldTest(TestCase):
@@ -212,6 +216,113 @@ class AnswerTest(TestCase):
         self.assertEqual(self.answer.answer, 'New answer')
 
 
+# ===== CSV Import Tests =====
+
+class CSVImportTest(TestCase):
+    """Test the parse_csv utility function for CSV survey question import."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.survey = Survey.objects.create(
+            name='CSV Test Survey',
+            program=self.program,
+            category='learn',
+        )
+        self.qt_yesno = QuestionType.objects.create(
+            name='test yes-no response',
+            _param_names='',
+            is_numeric=False,
+            is_countable=False,
+        )
+        self.qt_rating = QuestionType.objects.create(
+            name='test numeric rating',
+            _param_names='Number of ratings|Lower text|Upper text',
+            is_numeric=True,
+            is_countable=True,
+        )
+
+    def _make_csv_file(self, content):
+        """Create a file-like object from CSV string content."""
+        import io
+        return io.BytesIO(content.encode('utf-8'))
+
+    def test_csv_parse_valid(self):
+        """Valid CSV with all columns produces correct parsed rows."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = (
+            'question_text,question_type,per_class,seq,param_values\n'
+            'Do you like it?,test yes-no response,false,1,\n'
+            'Rate the class,test numeric rating,true,2,5|Low|High\n'
+        )
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(len(parsed_rows), 2)
+        self.assertEqual(parsed_rows[0]['question_text'], 'Do you like it?')
+        self.assertEqual(parsed_rows[0]['question_type'], self.qt_yesno)
+        self.assertFalse(parsed_rows[0]['per_class'])
+        self.assertEqual(parsed_rows[0]['seq'], 1)
+        self.assertEqual(parsed_rows[1]['question_text'], 'Rate the class')
+        self.assertEqual(parsed_rows[1]['question_type'], self.qt_rating)
+        self.assertTrue(parsed_rows[1]['per_class'])
+        self.assertEqual(parsed_rows[1]['param_values'], '5|Low|High')
+
+    def test_csv_parse_missing_required_column(self):
+        """CSV missing question_text column returns header-level error."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = 'question_type,per_class,seq\nyes-no response,false,1\n'
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(parsed_rows), 0)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]['row_number'], 0)
+        self.assertIn('question_text', errors[0]['message'])
+
+    def test_csv_parse_invalid_question_type(self):
+        """Unrecognized question_type is flagged as error."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = (
+            'question_text,question_type\n'
+            'Some question,nonexistent_type\n'
+        )
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(parsed_rows), 0)
+        self.assertEqual(len(errors), 1)
+        self.assertIn('nonexistent_type', errors[0]['message'])
+
+    def test_csv_parse_invalid_per_class(self):
+        """Non-boolean per_class value is flagged as error."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = (
+            'question_text,question_type,per_class\n'
+            'Some question,yes-no response,maybe\n'
+        )
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(parsed_rows), 0)
+        self.assertEqual(len(errors), 1)
+        self.assertIn('per_class', errors[0]['message'])
+
+    def test_csv_parse_partial_errors(self):
+        """Mix of valid/invalid rows: valid rows succeed, invalid rows reported."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = (
+            'question_text,question_type,per_class,seq\n'
+            'Good question,yes-no response,false,1\n'
+            ',yes-no response,false,2\n'
+            'Another good one,numeric rating,true,3\n'
+        )
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(parsed_rows), 2)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]['row_number'], 3)
+        self.assertIn('question_text is empty', errors[0]['message'])
+
+
 # ===== View Tests (cross-program teacher survey page, #3228) =====
 
 class TeacherSurveyAllTest(ProgramFrameworkTest):
@@ -236,6 +347,7 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         # Create a student survey with per-class questions
         self.survey, _ = Survey.objects.get_or_create(
             name='Test Student Survey', program=self.program, category='learn')
+        text_qtype, _ = QuestionType.objects.get_or_create(name='yes-no response')
         text_qtype, _ = QuestionType.objects.get_or_create(
             name='yes-no response')
         number_qtype, _ = QuestionType.objects.get_or_create(
@@ -301,6 +413,7 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         """Admin can search for a specific teacher via teacher_id GET param."""
         admin = self.admins[0]
         self.client.login(username=admin.username, password='password')
+        response = self.client.get('/myesp/survey_responses?teacher_id=%d' % self.teacher.id)
         response = self.client.get(
             '/myesp/survey_responses?teacher_id=%d' % self.teacher.id)
         self.assertEqual(response.status_code, 200)
@@ -313,6 +426,7 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         other_teacher = self.teachers[2]
         # Delete all surveys for this teacher's sections
         self.survey.delete()
+        self.client.login(username=other_teacher.username, password='password')
         self.client.login(
             username=other_teacher.username, password='password')
         response = self.client.get('/myesp/survey_responses')
@@ -332,6 +446,7 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         """Invalid teacher_id is gracefully ignored."""
         admin = self.admins[0]
         self.client.login(username=admin.username, password='password')
+        response = self.client.get('/myesp/survey_responses?teacher_id=notanumber')
         response = self.client.get(
             '/myesp/survey_responses?teacher_id=notanumber')
         self.assertEqual(response.status_code, 200)
@@ -340,6 +455,7 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         """Non-existent teacher_id is gracefully ignored."""
         admin = self.admins[0]
         self.client.login(username=admin.username, password='password')
+        response = self.client.get('/myesp/survey_responses?teacher_id=999999')
         response = self.client.get(
             '/myesp/survey_responses?teacher_id=999999')
         self.assertEqual(response.status_code, 200)
@@ -370,6 +486,8 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         """Admin can search for a teacher via POST form."""
         admin = self.admins[0]
         self.client.login(username=admin.username, password='password')
+        response = self.client.post('/myesp/survey_responses',
+                                    {'target_user': self.teacher.id})
         response = self.client.post(
             '/myesp/survey_responses',
             {'target_user': self.teacher.id})
@@ -382,6 +500,8 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
         """Admin POST with invalid data shows form errors, not crash."""
         admin = self.admins[0]
         self.client.login(username=admin.username, password='password')
+        response = self.client.post('/myesp/survey_responses',
+                                    {'target_user': 'not-a-valid-id'})
         response = self.client.post(
             '/myesp/survey_responses',
             {'target_user': 'not-a-valid-id'})
@@ -422,6 +542,7 @@ class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
         number_qtype, _ = QuestionType.objects.get_or_create(
             name='numeric rating', is_numeric=True, is_countable=True,
             _param_names="Number of ratings|Lower text|Middle text|Upper text")
+
         self.question_rating, _ = Question.objects.get_or_create(
             survey=self.survey, name='Rate this class',
             question_type=number_qtype, per_class=True, seq=1,
@@ -432,12 +553,14 @@ class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
         assert len(self.sections) >= 2, "Need at least 2 sections for this test"
 
         section_ct = ContentType.objects.get_for_model(self.sections[0])
+
         # Section 1: rating 3
         resp1 = SurveyResponse.objects.create(survey=self.survey)
         Answer.objects.create(
             survey_response=resp1, question=self.question_rating,
             content_type=section_ct, object_id=self.sections[0].id,
             value='3', value_type="<class 'str'>")
+
         # Section 2: rating 5
         resp2 = SurveyResponse.objects.create(survey=self.survey)
         Answer.objects.create(
@@ -451,12 +574,18 @@ class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
         response = self.client.get('/myesp/survey_responses')
         self.assertEqual(response.status_code, 200)
         content = str(response.content, encoding='UTF-8')
+
+        # Should show aggregated avg: (3+5)/2 = 4.0
+        self.assertIn('4.0', content)
+
         # Should show aggregated avg: (3+5)/2 = 4.0
         self.assertIn('4.0', content)
         # The class emailcode should appear only once in summary table
         emailcode = self.sections[0].parent_class.emailcode()
         summary_section = content.split('Detailed Responses')[0]
         self.assertEqual(summary_section.count(emailcode), 1,
+                        "Class should appear exactly once in summary table")
+
                          "Class should appear exactly once in summary table")
         # Should show total 2 responses in the summary table
         self.assertIn('>2<', summary_section)
