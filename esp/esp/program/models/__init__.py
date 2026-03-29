@@ -1278,6 +1278,27 @@ class Program(models.Model, CustomFormsLinkModel):
         return retVal
     getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.program})
 
+    def grade_caps(self):
+        """Parse program_size_by_grade tag into dict with grade tuples as keys.
+
+        Returns dict like {(10,): 5, (11, 12): 2} where keys are tuples of
+        grade integers that can be checked with 'in' operator.
+        """
+        val = Tag.getProgramTag("program_size_by_grade", self)
+        if val:
+            import json
+            tag_dict = json.loads(val)
+            result = {}
+            for key_str, cap in tag_dict.items():
+                if '-' in key_str:
+                    start, end = map(int, key_str.split('-'))
+                    grades = tuple(range(start, end + 1))
+                else:
+                    grades = (int(key_str),)
+                result[grades] = cap
+            return result
+        return None
+
     def visibleEnrollments(self):
         """
         Returns whether class enrollments should show up in the catalog.
