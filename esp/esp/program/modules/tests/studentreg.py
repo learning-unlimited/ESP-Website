@@ -32,14 +32,17 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.models import FinancialAidRequest, SplashInfo
+from esp.program.models import FinancialAidRequest, SplashInfo, RegistrationType, StudentRegistration, ProgramModule
 from esp.accounting.models import FinancialAidGrant, LineItemType
 
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.tagdict.models import Tag
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController
 
 from decimal import Decimal
+import json
 import random
 import re
 
@@ -505,4 +508,226 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(iac.amount_due(), program_cost - 20)
         spi = SplashInfo.getForUser(student, self.program)
         self.assertEqual(spi.siblingname, 'Test Name')
+
+
+class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
+    """
+    Tests for Issue #227: registration type visibility filtering on the student
+    registration page, introduced in PR #207 to resolve Issue #35.
+
+    The 'display_registration_names' Tag controls which RegistrationTypes are
+    shown on the student main registration page.  These tests exercise
+    RegistrationTypeController.getVisibleRegistrationTypeNames() directly and
+    through the live HTTP response to /learn/<prog>/studentreg.
+    """
+
+    def setUp(self):
+        modules = [
+            ProgramModule.objects.get(handler='TeacherClassRegModule'),
+            ProgramModule.objects.get(handler='StudentClassRegModule'),
+            ProgramModule.objects.get(handler='StudentRegCore'),
+        ]
+        super().setUp(modules=modules)
+        self.schedule_randomly()
+        self.add_student_profiles()
+
+        # Disable the required-modules gate so the studentreg page renders directly
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = False
+        scrmi.save()
+
+        # Ensure the registration types we test with exist
+        RegistrationType.objects.get_or_create(name='Enrolled')
+        self.rt_waitlisted, _ = RegistrationType.objects.get_or_create(name='Waitlisted')
+        self.rt_priority, _   = RegistrationType.objects.get_or_create(name='Priority')
+
+        # Pick the first student and give them registrations under all three types
+        self.student = self.students[0]
+        self.student.set_password('password')
+        self.student.save()
+
+        section = self.teachers[0].getTaughtSectionsFromProgram(self.program)[0]
+        for rt_name in ('Enrolled', 'Waitlisted', 'Priority'):
+            rt = RegistrationType.objects.get(name=rt_name)
+            StudentRegistration.objects.get_or_create(
+                user=self.student, section=section, relationship=rt
+            )
+
+        # Start each test with a clean slate — no display_registration_names tag
+        Tag.objects.filter(key='display_registration_names').delete()
+
+    # ------------------------------------------------------------------
+    # Helper
+    # ------------------------------------------------------------------
+
+    def _set_tag(self, names):
+        """Create/update a program-scoped display_registration_names tag."""
+        Tag.setTag(
+            key='display_registration_names',
+            target=self.program,
+            value=json.dumps(names),
+        )
+
+    def _student_login(self):
+        self.assertTrue(
+            self.client.login(username=self.student.username, password='password'),
+            'Could not log in as test student',
+        )
+
+    def _get_studentreg(self):
+        return self.client.get('/learn/' + self.program.url + '/studentreg')
+
+    # ------------------------------------------------------------------
+    # Test A: Default behaviour — no tag set
+    # ------------------------------------------------------------------
+
+    def test_default_no_tag(self):
+        """
+        When no display_registration_names tag exists the controller returns
+        only the default ['Enrolled'] list, and the student reg page does not
+        surface any non-default registration type names.
+        """
+        # Controller returns the hardcoded default
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        self.assertIn('Enrolled', visible)
+        self.assertNotIn('Waitlisted', visible)
+        self.assertNotIn('Priority', visible)
+
+        # HTTP response agrees
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Waitlisted')
+        self.assertNotContains(response, 'Priority')
+
+    # ------------------------------------------------------------------
+    # Test B: Tag restricts which types are visible
+    # ------------------------------------------------------------------
+
+    def test_tag_restricts_visible_types(self):
+        """
+        When the tag lists only 'Waitlisted', the controller returns
+        ['Waitlisted', 'Enrolled'] (tag value merged with the mandatory
+        default).  The student reg page shows 'Waitlisted' but not 'Priority'.
+        """
+        self._set_tag(['Waitlisted'])
+
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        self.assertIn('Enrolled', visible,
+                      'Enrolled must always be present regardless of tag')
+        self.assertIn('Waitlisted', visible)
+        self.assertNotIn('Priority', visible)
+
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Waitlisted')
+        self.assertNotContains(response, 'Priority')
+
+    # ------------------------------------------------------------------
+    # Test C: Changing the tag dynamically updates what the page shows
+    # ------------------------------------------------------------------
+
+    def test_tag_change_reflects_on_page(self):
+        """
+        Updating the tag value is immediately reflected on the next GET of
+        the student reg page without any restart or cache invalidation step.
+        """
+        self._student_login()
+
+        # First configuration: only Waitlisted (+ Enrolled)
+        self._set_tag(['Waitlisted'])
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Waitlisted')
+        self.assertNotContains(response, 'Priority')
+
+        # Second configuration: only Priority (+ Enrolled)
+        Tag.objects.filter(key='display_registration_names').delete()
+        self._set_tag(['Priority'])
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Priority')
+        self.assertNotContains(response, 'Waitlisted')
+
+    # ------------------------------------------------------------------
+    # Test D: 'All' sentinel returns every RegistrationType
+    # ------------------------------------------------------------------
+
+    def test_all_sentinel_shows_every_type(self):
+        """
+        When the tag contains the special value 'All', every RegistrationType
+        name in the database is returned.  Passing for_VRT_form=True additionally
+        appends the literal string 'All' to the result (used by the admin form).
+        """
+        self._set_tag(['All'])
+
+        # Normal (student-facing) call: every RT name, but NOT the literal 'All'
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        all_names = list(
+            RegistrationType.objects.values_list('name', flat=True)
+                                    .distinct().order_by('name')
+        )
+        for name in all_names:
+            self.assertIn(name, visible,
+                         'Expected %r in visible types when tag is "All"' % name)
+        self.assertNotIn('All', visible,
+                         'Literal "All" must not appear in the student-facing list')
+
+        # Admin VRT form call: 'All' appended so the form can re-select it
+        visible_vrt = RegistrationTypeController.getVisibleRegistrationTypeNames(
+            self.program, for_VRT_form=True
+        )
+        self.assertIn('All', visible_vrt)
+
+    # ------------------------------------------------------------------
+    # Test E: Empty or invalid tag falls back safely
+    # ------------------------------------------------------------------
+
+    def test_empty_tag_falls_back_to_default(self):
+        """
+        A tag that exists but carries an empty string value is treated as
+        absent: the controller returns the default ['Enrolled'] list and
+        the student reg page renders without error.
+        """
+        # Manually insert a tag with an empty value (bypasses Tag.setTag validation)
+        Tag.objects.get_or_create(key='display_registration_names', value='')
+
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        # Empty string is falsy -> falls back to default_names
+        self.assertEqual(list(visible), RegistrationTypeController.default_names)
+
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+
+    def test_malformed_tag_falls_back_to_default(self):
+        """
+        A malformed JSON tag value should be ignored safely: the controller
+        falls back to default_names and the student reg page still renders.
+        """
+        Tag.objects.get_or_create(key='display_registration_names', value='not_valid_json')
+
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
+
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+
+    def test_none_program_returns_default(self):
+        """
+        Passing prog=None (or any non-Program value) to the controller is
+        safe: it returns the default set without touching the database.
+        """
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(None)
+        self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
+
+    def test_invalid_program_id_returns_default(self):
+        """
+        Passing a numeric program id that does not exist in the database
+        returns the default set without raising an exception.
+        """
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(999999999)
+        self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
 
