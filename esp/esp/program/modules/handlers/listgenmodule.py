@@ -472,7 +472,10 @@ class ListGenModule(ProgramModuleObj):
             filterObj, found = get_user_list(request, self.program.getLists(True))
         else:
             filterid  = request.GET['filterid']
-            filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+            try:
+                filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+            except (AssertionError, PersistentQueryFilter.DoesNotExist, TypeError, ValueError):
+                raise ESPError("Your recipient filter is invalid or expired. Please go back and rebuild your recipient list.", log=False)
             found     = True
         if not found:
             return filterObj
