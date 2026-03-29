@@ -340,7 +340,7 @@ class ProgramModuleObj(models.Model):
         in the main portion of the admin portal"""
         return self.module.handler in ['OnSiteCheckinModule', 'TeacherCheckinModule', 'OnSiteCheckoutModule',
                                        'OnsiteClassSchedule', 'OnSiteClassList', 'OnSiteRegister',
-                                       'OnSiteAttendance', 'OnsitePaidItemsModule']
+                                       'OnSiteAttendance', 'OnsitePaidItemsModule', 'OnSiteAdminWebApp']
     def _resolve_user(self, user):
         """Return the user to use for per-user module logic.
 

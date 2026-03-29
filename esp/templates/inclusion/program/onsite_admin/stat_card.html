@@ -1,0 +1,4 @@
+<div class="stat-card">
+  <div class="stat-number"{% if card_id %} id="{{ card_id }}"{% endif %}>{{ number|default:"--" }}</div>
+  <div class="stat-label">{{ label }}</div>
+</div>

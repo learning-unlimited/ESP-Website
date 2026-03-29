@@ -1,0 +1,22 @@
+<div class="enrollment-numbers">
+  <span>Enrolled: <strong>{{ enrolled }}</strong> / {{ capacity }}</span>
+  <span>Attending: <strong>{{ attending }}</strong></span>
+</div>
+<div class="progress-bar-container">
+  <div class="progress-bar progress-enrolled {{ status_class }}"
+       style="width: {{ enrolled_pct }}%"
+       title="Enrolled: {{ enrolled }}">
+  </div>
+  <div class="progress-bar progress-attending"
+       style="width: {{ attending_pct }}%"
+       title="Attending: {{ attending }}">
+  </div>
+</div>
+<div class="progress-legend">
+  <span class="legend-item">
+    <span class="legend-color legend-enrolled"></span> Enrolled
+  </span>
+  <span class="legend-item">
+    <span class="legend-color legend-attending"></span> Attending
+  </span>
+</div>

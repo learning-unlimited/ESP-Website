@@ -1,0 +1,35 @@
+{% load onsite_admin %}
+<div class="class-card"
+     data-section-id="{{ section.id }}"
+     data-title="{{ section.title|lower }}"
+     data-emailcode="{{ section.emailcode|lower }}"
+     data-status="{% if section.is_full %}full{% elif section.is_reg_open %}open{% else %}closed{% endif %}">
+
+  <div class="class-card-header">
+    <div class="class-card-title">
+      <a href="/onsite/{{ program_url }}/onsiteadmin_section_detail/{{ section.id }}">
+        <span class="class-code">{{ section.emailcode }}</span>
+        {{ section.title }}
+      </a>
+    </div>
+    {% render_section_status section %}
+  </div>
+
+  <div class="class-card-meta">
+    <span>{{ section.teachers }}</span>
+    <span>{{ section.rooms }}</span>
+    <span>{{ section.times }}</span>
+  </div>
+
+  <div class="class-card-enrollment">
+    {% render_enrollment_progress section.enrolled section.attending section.capacity %}
+  </div>
+
+  <div class="class-card-actions">
+    <button class="btn btn-sm btn-toggle-reg {% if section.is_reg_open %}btn-warning{% else %}btn-success{% endif %}"
+            data-section-id="{{ section.id }}"
+            data-action="{% if section.is_reg_open %}close{% else %}open{% endif %}">
+      {% if section.is_reg_open %}Close Reg{% else %}Open Reg{% endif %}
+    </button>
+  </div>
+</div>

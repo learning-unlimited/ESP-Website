@@ -1,0 +1,135 @@
+{% extends "elements/html" %}
+{% load onsite_admin %}
+
+{% block fulltitle %}{{ section.emailcode }}: {{ cls.title }} - Onsite Admin{% endblock %}
+
+{% block meta %}
+  {{ block.super }}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+{% endblock %}
+
+{% block stylesheets %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="/media/styles/onsite_admin.css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+  var PROGRAM_URL = "{{ program.getUrlBase }}";
+  var SECTION_ID = {{ section.id }};
+</script>
+<script type="text/javascript" src="/media/scripts/onsite/onsite_admin_core.js"></script>
+<script type="text/javascript" src="/media/scripts/onsite/onsite_admin_dashboard.js"></script>
+{% endblock xtrajs %}
+
+{% block body %}
+<div class="onsite-admin-container">
+
+  <!-- Header with Back Button -->
+  <header class="onsite-admin-header">
+    <div class="header-left">
+      <a href="/onsite/{{ program.getUrlBase }}/onsiteadmin" class="btn-back">&larr;</a>
+      <h1 class="header-title">{{ section.emailcode }}</h1>
+    </div>
+  </header>
+
+  <!-- Section Info Card -->
+  <section class="section-info-card">
+    <h2 class="section-title">{{ cls.title }}</h2>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Teachers</span>
+        <span class="info-value">
+          {% for teacher in teachers %}
+            {{ teacher.name }}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        </span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Room</span>
+        <span class="info-value">{% for room in rooms %}{{ room }}{% if not forloop.last %}, {% endif %}{% empty %}TBD{% endfor %}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Time</span>
+        <span class="info-value">{{ times }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Status</span>
+        <span class="info-value">
+          {% render_section_status section %}
+        </span>
+      </div>
+    </div>
+
+    <!-- Enrollment Progress - Using Reusable Component -->
+    <div class="enrollment-section">
+      <div class="enrollment-header">
+        <span>Enrollment Progress</span>
+      </div>
+      {% render_enrollment_progress enrolled_count attending_count capacity %}
+    </div>
+  </section>
+
+  <!-- Quick Actions -->
+  <section class="quick-actions">
+    <button class="btn {% if section.isRegOpen %}btn-warning{% else %}btn-success{% endif %} btn-block"
+            id="btn-toggle-reg"
+            data-section-id="{{ section.id }}"
+            data-action="{% if section.isRegOpen %}close{% else %}open{% endif %}">
+      {% if section.isRegOpen %}Close Registration{% else %}Open Registration{% endif %}
+    </button>
+
+    <div class="capacity-control">
+      <label>Override Capacity:</label>
+      <div class="capacity-input-group">
+        <input type="number" id="input-capacity" value="{{ capacity }}" min="0" class="setting-input">
+        <button class="btn btn-primary" id="btn-set-capacity" data-section-id="{{ section.id }}">
+          Update
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Student Lists -->
+  <section class="student-lists">
+    <h3>Enrolled Students ({{ enrolled_count }})</h3>
+    <div class="student-table-wrapper">
+      <table class="student-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>ID</th>
+            <th>Attending</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for student in enrolled_students %}
+          <tr class="{% if student.id in attending_ids %}attending{% endif %}">
+            <td>{{ student.name }}</td>
+            <td>{{ student.id }}</td>
+            <td>
+              {% if student.id in attending_ids %}
+                <span class="badge badge-open">Yes</span>
+              {% else %}
+                <span class="badge badge-closed">No</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="empty-message">No enrolled students</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Return Link -->
+  <div class="return-link">
+    <a class="btn btn-primary" href="/onsite/{{ program.getUrlBase }}/onsiteadmin">
+      &larr; Back to Dashboard
+    </a>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,683 @@
+/* ==========================================================================
+   Onsite Admin Dashboard - Mobile-first responsive styles
+   ========================================================================== */
+
+/* Reset & Container */
+.onsite-admin-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 12px 24px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #333;
+}
+
+/* ========== Header ========== */
+.onsite-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 2px solid #2c3e50;
+  margin-bottom: 16px;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: #2c3e50;
+}
+
+.header-program {
+  font-size: 13px;
+  color: #7f8c8d;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.last-updated {
+  font-size: 12px;
+  color: #95a5a6;
+}
+
+.btn-refresh {
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.btn-refresh:hover {
+  background: #2980b9;
+}
+
+.btn-back {
+  font-size: 22px;
+  color: #2c3e50;
+  text-decoration: none;
+  padding: 4px 8px;
+}
+
+/* ========== Stats Cards ========== */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 12px 8px;
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ========== Tabs ========== */
+.onsite-tabs {
+  display: flex;
+  border-bottom: 2px solid #e9ecef;
+  margin-bottom: 16px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: #7f8c8d;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  color: #2c3e50;
+  border-bottom-color: #3498db;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* ========== Filters ========== */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-select,
+.filter-input {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  flex: 1;
+  min-width: 120px;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* ========== Class Cards ========== */
+.class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.class-card {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 12px;
+  transition: box-shadow 0.2s;
+}
+
+.class-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.class-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.class-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  flex: 1;
+  margin-right: 8px;
+}
+
+.class-card-title a {
+  color: #2c3e50;
+  text-decoration: none;
+}
+
+.class-card-title a:hover {
+  color: #3498db;
+}
+
+.class-code {
+  font-weight: 700;
+  color: #3498db;
+}
+
+.class-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-open {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-closed {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-full {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.class-card-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #6c757d;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.class-card-enrollment {
+  margin-bottom: 8px;
+}
+
+.enrollment-numbers {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+/* ========== Progress Bars ========== */
+.progress-bar-container {
+  position: relative;
+  height: 12px;
+  background: #e9ecef;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.progress-enrolled {
+  background: #3498db;
+  z-index: 1;
+}
+
+.progress-attending {
+  background: #2ecc71;
+  z-index: 2;
+}
+
+.progress-warning {
+  background: #f39c12;
+}
+
+.progress-danger {
+  background: #e74c3c;
+}
+
+/* Progress Legend */
+.progress-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.legend-enrolled {
+  background: #3498db;
+}
+
+.legend-attending {
+  background: #2ecc71;
+}
+
+/* ========== Card Actions ========== */
+.class-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.btn-toggle-reg {
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ========== Buttons (shared) ========== */
+.btn-warning {
+  background: #f39c12;
+  color: #fff;
+  border: none;
+}
+
+.btn-warning:hover {
+  background: #e67e22;
+}
+
+.btn-success {
+  background: #27ae60;
+  color: #fff;
+  border: none;
+}
+
+.btn-success:hover {
+  background: #219a52;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+}
+
+.btn-block {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+/* ========== Section Detail Page ========== */
+.section-info-card {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 18px;
+  margin: 0 0 12px;
+  color: #2c3e50;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.info-item {
+  padding: 4px 0;
+}
+
+.info-label {
+  display: block;
+  font-size: 11px;
+  color: #95a5a6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.enrollment-section {
+  margin-top: 12px;
+}
+
+.enrollment-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.badge-open {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge-closed {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.badge-full {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* ========== Quick Actions ========== */
+.quick-actions {
+  margin-bottom: 16px;
+}
+
+.capacity-control {
+  margin-top: 12px;
+}
+
+.capacity-control label {
+  font-size: 13px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.capacity-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.capacity-input-group .setting-input {
+  flex: 1;
+}
+
+/* ========== Student Table ========== */
+.student-lists {
+  margin-bottom: 16px;
+}
+
+.student-lists h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: #2c3e50;
+}
+
+.student-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.student-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.student-table th {
+  background: #2c3e50;
+  color: #fff;
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.student-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.student-table tr.attending {
+  background: #eafaf1;
+}
+
+.student-table .empty-message {
+  text-align: center;
+  color: #95a5a6;
+  padding: 20px;
+}
+
+/* ========== Settings ========== */
+.settings-panel {
+  max-width: 500px;
+}
+
+.settings-panel h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+  color: #2c3e50;
+}
+
+.setting-group {
+  margin-bottom: 16px;
+}
+
+.setting-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #34495e;
+}
+
+.setting-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.setting-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ========== Misc ========== */
+.loading-indicator {
+  text-align: center;
+  padding: 40px;
+  color: #95a5a6;
+  font-size: 15px;
+}
+
+.return-link {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+}
+
+/* ========== Responsive: Tablet (<=768px) ========== */
+@media screen and (max-width: 768px) {
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-number {
+    font-size: 24px;
+  }
+
+  .header-program {
+    display: none;
+  }
+
+  .class-card-meta {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========== Responsive: Phone (<=480px) ========== */
+@media screen and (max-width: 480px) {
+  .onsite-admin-container {
+    padding: 0 8px 16px;
+  }
+
+  .onsite-admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 8px 0;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .header-title {
+    font-size: 17px;
+  }
+
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .stat-card {
+    padding: 8px 4px;
+  }
+
+  .stat-number {
+    font-size: 20px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+  }
+
+  .filter-select,
+  .filter-input {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .class-card {
+    padding: 10px;
+  }
+
+  .class-card-title {
+    font-size: 14px;
+  }
+
+  .class-card-actions {
+    flex-wrap: wrap;
+  }
+
+  .enrollment-numbers {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .student-table {
+    font-size: 12px;
+  }
+
+  .student-table th,
+  .student-table td {
+    padding: 6px 8px;
+  }
+}

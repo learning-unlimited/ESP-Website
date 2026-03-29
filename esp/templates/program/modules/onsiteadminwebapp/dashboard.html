@@ -1,0 +1,116 @@
+{% extends "elements/html" %}
+{% load onsite_admin %}
+
+{% block fulltitle %}Onsite Admin Dashboard - {{ program.niceName }}{% endblock %}
+
+{% block meta %}
+  {{ block.super }}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+{% endblock %}
+
+{% block stylesheets %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="/media/styles/onsite_admin.css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript" src="/media/scripts/onsite/onsite_admin_core.js"></script>
+<script type="text/javascript" src="/media/scripts/onsite/onsite_admin_dashboard.js"></script>
+<script type="text/javascript">
+  var PROGRAM_URL = "{{ program.getUrlBase }}";
+  var TIMESLOTS = [
+    {% for ts in timeslots %}
+    { id: {{ ts.id }}, label: "{{ ts.short_description }}", start: "{{ ts.start|date:'H:i' }}" }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+</script>
+{% endblock xtrajs %}
+
+{% block body %}
+<div class="onsite-admin-container">
+
+  <!-- Header Bar -->
+  <header class="onsite-admin-header">
+    <div class="header-left">
+      <h1 class="header-title">Onsite Admin</h1>
+      <span class="header-program">{{ program.niceName }}</span>
+    </div>
+    <div class="header-right">
+      <span class="last-updated" id="last-updated">Loading...</span>
+      <button class="btn btn-sm btn-refresh" id="btn-refresh" title="Refresh now">&#x21bb;</button>
+    </div>
+  </header>
+
+  <!-- Stats Summary Cards - Using Reusable Component -->
+  <section class="stats-cards" id="stats-cards">
+    {% render_stat_card 0 "Checked In" card_id="stat-checked-in" %}
+    {% render_stat_card 0 "Enrolled" card_id="stat-total-enrolled" %}
+    {% render_stat_card 0 "Attending" card_id="stat-total-attending" %}
+    {% render_stat_card 0 "Sections" card_id="stat-num-sections" %}
+  </section>
+
+  <!-- Tabs: Classes | Settings -->
+  <nav class="onsite-tabs">
+    <button class="tab-btn active" data-tab="classes">Classes</button>
+    <button class="tab-btn" data-tab="settings">Settings</button>
+  </nav>
+
+  <!-- Classes Tab -->
+  <div class="tab-content active" id="tab-classes">
+    <!-- Filters -->
+    <div class="filter-bar">
+      <select id="filter-timeslot" class="filter-select">
+        <option value="">All Timeslots</option>
+        {% for ts in timeslots %}
+        <option value="{{ ts.id }}">{{ ts.short_description }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" id="filter-search" class="filter-input" placeholder="Search classes...">
+      <select id="filter-status" class="filter-select">
+        <option value="">All Status</option>
+        <option value="open">Open</option>
+        <option value="closed">Closed</option>
+        <option value="full">Full</option>
+      </select>
+    </div>
+
+    <!-- Class List - Will be populated dynamically using reusable class_card component -->
+    <div class="class-list" id="class-list">
+      <div class="loading-indicator" id="loading-indicator">
+        Loading class data...
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Tab -->
+  <div class="tab-content" id="tab-settings">
+    <div class="settings-panel">
+      <h2>Onsite Configuration</h2>
+
+      <div class="setting-group">
+        <label class="setting-label">Auto-refresh interval (seconds)</label>
+        <input type="number" id="setting-refresh-interval" class="setting-input" value="30" min="10" max="300">
+      </div>
+
+      <div class="setting-group">
+        <label class="setting-label">Bulk Registration Controls</label>
+        <div class="setting-actions">
+          <button class="btn btn-warning btn-block" id="btn-close-all-reg">
+            Close All Registration
+          </button>
+          <button class="btn btn-success btn-block" id="btn-open-all-reg">
+            Open All Registration
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <a class="btn btn-primary" href="/manage/{{ program.getUrlBase }}/main">
+          Return to Program Management
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
