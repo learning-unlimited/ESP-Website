@@ -86,12 +86,18 @@ var apply_fragment_changes = function(data)
                 matching_node.html(data[key]);
             }
         }
-        
-        if (key == 'script')
-        {
-            //  console.log("Evaluating: " + data[key]);
-            eval(data[key]);
-        }
+
+        // SECURITY: Removed eval() execution to prevent XSS vulnerabilities
+        // If you need to execute callbacks from server responses, use predefined
+        // callback functions instead:
+        //
+        // Server response: {"callback": "myPredefinedFunction"}
+        // Client code:
+        //   if (key == 'callback' && typeof window[data[key]] === 'function') {
+        //       window[data[key]]();
+        //   }
+        //
+        // This ensures only whitelisted functions can be called, not arbitrary code.
     }
 }
 
