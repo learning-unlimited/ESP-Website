@@ -21,38 +21,38 @@
    stroke } def
 
 /Xtick{
-%% puts ticks along the x-axis from the origin 
+%% puts ticks along the x-axis from the origin
 %% with displacement xTick until pX to the right and mX to the left
 xTick xTick pX
 {
 0 moveto
 0   tickSize rmoveto
-0   tickSize -2 mul rlineto 
+0   tickSize -2 mul rlineto
 }for
 /nT{xTick -1 mul}def
 nT nT mX
 {
 0 moveto
 0   tickSize rmoveto
-0   tickSize -2 mul rlineto 
+0   tickSize -2 mul rlineto
 }for
 stroke} def
 
 /Ytick{
-%% puts ticks along the y-axis from the origin 
+%% puts ticks along the y-axis from the origin
 %% with displacement yTick until pY up and mY down
 yTick yTick pY
 {
 0 exch moveto
 tickSize  0 rmoveto
-tickSize -2 mul  0 rlineto 
+tickSize -2 mul  0 rlineto
 }for
 /nT{yTick -1 mul}def
 nT nT mY
 {
 0 exch moveto
 tickSize  0 rmoveto
-tickSize -2 mul  0 rlineto 
+tickSize -2 mul  0 rlineto
 }for stroke
 } def
 
@@ -89,7 +89,7 @@ tickSize -2 mul  0 rlineto
 /S1 S1 Sstep add def
 /B1 B1 Bstep add def
 H1 S1 B1 sethsbcolor
-} def 
+} def
 
 /sectionwidth pX {{ num_keys }} div def
 /maxfreq {{ max_freq }} def
@@ -108,7 +108,7 @@ Xtick
 %% Labels
 
 /Arial findfont
-10 scalefont
+{{ font_size }} scalefont
 setfont
 
 {% for ans in results %}
@@ -151,10 +151,15 @@ xlabel sw1 2 div sub ymax yspaceneg add moveto
 ({{ ans.freq }}) show
 
 /sw2 ({{ ans.value }}) stringwidth pop def
-{% if crowded %}
-xlabel sw2 0.924 mul sub sectionwidth 4 div add yspaceneg sw2 0.383 mul sub moveto
+{% if label_rotate == 90 %}
+xlabel yspaceneg moveto
 gsave
-22.5 rotate
+90 rotate
+sw2 2 div neg 0 rmoveto
+{% elif label_rotate == 45 %}
+xlabel sw2 0.707 mul 2 div sub yspaceneg sw2 0.707 mul 2 div sub moveto
+gsave
+45 rotate
 {% else %}
 xlabel sw2 2 div sub yspaceneg moveto
 gsave

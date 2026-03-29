@@ -165,6 +165,10 @@ def histogram(answer_list, args='format=html'):
     import tempfile
 
     image_width = 2.75
+    HISTOGRAM_DEVICE_WIDTH_PT = 216
+    HISTOGRAM_DEVICE_HEIGHT_PT = 162
+    HISTOGRAM_DPI = 192
+    HISTOGRAM_HTML_WIDTH_PX = 288 # to achieve Nx downscale ratio -> (DEVICE_WIDTH_PT * DPI / 72) / N
 
     args_dict = QueryDict(args)
 
@@ -187,17 +191,21 @@ def histogram(answer_list, args='format=html'):
         context['results'] = [{'value': str(x), 'freq': 0} for x in args_dict.get('opts').split("|")]
     else:
         context['results'] = []
-    max_answer_length = 0
+
     for ans in answer_list:
         try:
             i = [r['value'] for r in context['results']].index(str(ans))
             context['results'][i]['freq'] += 1
         except ValueError:
             context['results'].append({'value': ans, 'freq': 1})
-        if len(ans) > max_answer_length:
-            max_answer_length = len(ans)
 
-    context['results'].sort(key=lambda x: x['value'])
+    # sorting key to handle text & number labels
+    def sort_key(x):
+        try:
+            return (0, float(x['value']), '')
+        except ValueError:
+            return (1, 0, x['value'])
+    context['results'].sort(key=sort_key)
 
     #   Compute simple stats so postscript doesn't have to
     max_freq = 0
@@ -207,11 +215,35 @@ def histogram(answer_list, args='format=html'):
             max_freq = item['freq']
             context['max_freq'] = max_freq
 
-    #   Might we have trouble making text not overlap? 36 is an arbitrary limit.
-    if context['num_keys'] * max_answer_length > 36:
-        context['crowded'] = True
+    max_label_length = max([len(r['value']) for r in context['results']], default=1)
+
+    def decide_label_rotate(bar_width_pts, num_keys, max_label_length):
+        if bar_width_pts < 9:
+            return 90
+        elif bar_width_pts < 12 or (num_keys * max_label_length > 36):
+            return 45
+        else:
+            return 0
+
+    num_keys_safe = max(context['num_keys'], 1)
+
+    bar_width_pts = 180 / num_keys_safe
+    context['label_rotate'] = decide_label_rotate(bar_width_pts, context['num_keys'], max_label_length)
+
+    # second pass for crowded (rotated) layouts: use 168pt, which matches the EPS width when crowded
+    if context['label_rotate'] > 0:
+        bar_width_pts = 168 / num_keys_safe
+        context['label_rotate'] = decide_label_rotate(bar_width_pts, context['num_keys'], max_label_length)
+
+    context['crowded'] = context['label_rotate'] > 0
+
+    # Compute font size based on bars number
+    if context['num_keys'] > 15:
+        context['font_size'] = 7
+    elif context['num_keys'] > 10:
+        context['font_size'] = 8
     else:
-        context['crowded'] = False
+        context['font_size'] = 10
 
     import hashlib
     file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
@@ -235,14 +267,20 @@ def histogram(answer_list, args='format=html'):
     elif args_dict.get('format') == 'html':
         image_path = os.path.join(HISTOGRAM_DIR, png_filename)
     if not os.path.exists(image_path):
-        subprocess.call(['gs', '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
-                         '-dDEVICEWIDTHPOINTS=216', '-dDEVICEHEIGHTPOINTS=162',
-                         '-sDEVICE=png16m', '-R96',
-                         '-sOutputFile=' + image_path, file_name])
+        subprocess.call([
+            'gs',
+            '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
+            f'-dDEVICEWIDTHPOINTS={HISTOGRAM_DEVICE_WIDTH_PT}',
+            f'-dDEVICEHEIGHTPOINTS={HISTOGRAM_DEVICE_HEIGHT_PT}',
+            '-sDEVICE=png16m',
+            f'-r{HISTOGRAM_DPI}',
+            '-sOutputFile=' + image_path,
+            file_name
+        ])
     if args_dict.get('format') == 'tex':
         return f'\\includegraphics[width={image_width}in]{{{image_path}}}'
     if args_dict.get('format') == 'html':
-        return f'<img src="/media/{HISTOGRAM_PATH}{png_filename}" />'
+        return f'<img src="/media/{HISTOGRAM_PATH}{png_filename}" style="width: {HISTOGRAM_HTML_WIDTH_PX}px; max-width: 100%; height: auto;"/>'
 
 @register.filter
 def answer_to_list(ans):
