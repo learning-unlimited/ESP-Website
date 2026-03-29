@@ -5,6 +5,7 @@ from django import forms
 from django.core import mail
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import Group
+from django.db.models import Q
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
@@ -17,7 +18,7 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
+from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType, DBList
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -138,6 +139,19 @@ class ESPUserTest(TestCase):
                                 f"Token check failed for username: {username}")
             finally:
                 user.delete()
+
+    def test_db_list_count_cache_invalidated_on_user_save(self):
+        ESPUser.objects.create(username='dblist_before_1')
+        ESPUser.objects.create(username='dblist_before_2')
+
+        baseline = DBList(key='all-users', QObject=Q(id__gt=0)).count()
+
+        ESPUser.objects.create(username='dblist_after_3')
+
+        # Use a fresh DBList instance so the result must come from cache or DB.
+        refreshed = DBList(key='all-users', QObject=Q(id__gt=0)).count()
+
+        self.assertEqual(refreshed, baseline + 1)
 
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
