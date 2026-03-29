@@ -368,6 +368,91 @@ class GetNondefaultProgramTagsTest(ProgramFrameworkTest):
         self.assertIn("test_bool", keys)
 
 
+class PageSpecificTagBannerTest(ProgramFrameworkTest):
+    """
+    Tests that _inject_active_program_tags only shows tags that were actually
+    consulted (via getProgramTag) while handling the current request, not all
+    non-default tags for the program.
+    """
+
+    def setUp(self):
+        super().setUp()
+        Tag.objects.filter(key__in=["test", "test_bool"]).delete()
+        Tag._getTag.delete_all()
+
+    def _make_mock_request(self, with_tracking=True):
+        """Return a minimal mock request object."""
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req.path = '/manage/%s/main' % self.program.url
+        req.user = self.admins[0]
+        if with_tracking:
+            req._active_program_tag_keys = set()
+        else:
+            # Explicitly set to None so getattr() returns None (not a MagicMock),
+            # simulating a request where the middleware never ran.
+            req._active_program_tag_keys = None
+        return req
+
+    def test_only_accessed_tag_shown(self):
+        """Only the tag that getProgramTag was called for appears in the banner."""
+        Tag.setTag("test", target=self.program, value="custom")
+        Tag.setTag("test_bool", target=self.program, value="True")
+
+        req = self._make_mock_request()
+        # Simulate a view that only consults "test"
+        req._active_program_tag_keys.add("test")
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        shown_keys = [t['key'] for t in context.get('active_program_tags', [])]
+        self.assertIn("test", shown_keys)
+        self.assertNotIn("test_bool", shown_keys)
+
+    def test_no_accessed_tags_shows_nothing(self):
+        """If the view accessed no program tags, the banner is empty."""
+        Tag.setTag("test", target=self.program, value="custom")
+
+        req = self._make_mock_request()
+        # _active_program_tag_keys is empty — no tags consulted
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        self.assertNotIn('active_program_tags', context)
+
+    def test_fallback_when_tracking_not_initialized(self):
+        """Without tracking, all non-default tags are shown as a fallback."""
+        Tag.setTag("test", target=self.program, value="custom")
+
+        req = self._make_mock_request(with_tracking=False)
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        shown_keys = [t['key'] for t in context.get('active_program_tags', [])]
+        self.assertIn("test", shown_keys)
+
+    def test_get_program_tag_records_access(self):
+        """Calling getProgramTag with a program populates _active_program_tag_keys."""
+        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
+        # Simulate middleware having set up the request
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req._active_program_tag_keys = set()
+        _threading_local.request = req
+        try:
+            Tag.getProgramTag("test", program=self.program)
+            self.assertIn("test", req._active_program_tag_keys)
+        finally:
+            clear_current_request()
+
+
+
 class TagRegistrationTest(SimpleTestCase):
     """
     Statically scan the codebase for Tag.getTag(), Tag.getProgramTag(), and
