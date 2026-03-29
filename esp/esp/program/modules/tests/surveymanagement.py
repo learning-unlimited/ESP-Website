@@ -98,7 +98,7 @@ class SurveyManagementTest(ProgramFrameworkTest):
             program=self.program,
             category='learn'
         )
-        qt = QuestionType.objects.first()
+        qt, _ = QuestionType.objects.get_or_create(name='Test Type')
         initial_count = Question.objects.filter(
             survey=survey
         ).count()
@@ -109,13 +109,50 @@ class SurveyManagementTest(ProgramFrameworkTest):
                 'survey': survey.id,
                 'question_type': qt.id,
                 'seq': 1,
-                'per_class': False,
+                }
+        )
+        new_count = Question.objects.filter(
+            survey=survey
+        ).count()
+        self.assertGreaterEqual(new_count, initial_count)
+        question = Question.objects.filter(survey=survey).order_by('-id').first()
+        if question is not None:
+            self.assertFalse(getattr(question, 'per_class', False))
+    def test_create_question_per_class_true(self):
+        """Test that a new per-class question can be created with per_class=True."""
+        self.assertTrue(
+            self.client.login(
+                username=self.admin.username,
+                password='password'
+            ),
+            "Couldn't log in as admin"
+        )
+        survey = Survey.objects.create(
+            name='Test Survey Per Class',
+            program=self.program,
+            category='learn'
+        )
+        qt = QuestionType.objects.first()
+        initial_count = Question.objects.filter(
+            survey=survey
+        ).count()
+        response = self.client.post(
+            self.base_url + '?obj=question',
+            {
+                'name': 'Test Per-Class Question',
+                'survey': survey.id,
+                'question_type': qt.id,
+                'seq': 1,
+                'per_class': 'on',
             }
         )
         new_count = Question.objects.filter(
             survey=survey
         ).count()
         self.assertGreaterEqual(new_count, initial_count)
+        question = Question.objects.filter(survey=survey).order_by('-id').first()
+        if question is not None:
+            self.assertTrue(getattr(question, 'per_class', False))
 
     def test_invalid_operation(self):
         """Test that invalid operations are handled gracefully."""

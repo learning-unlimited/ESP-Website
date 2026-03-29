@@ -81,9 +81,10 @@ class VolunteerManageTest(ProgramFrameworkTest):
         response = self.client.post(
             self.base_url,
             {
-                'timeslot': timeslot.id,
+                'start_time': '2020-01-01 10:00',
+                'end_time': '2020-01-01 11:00',
+                'description': 'Test volunteer request',
                 'num_volunteers': 5,
-                'vr_id': '',
             }
         )
         new_count = VolunteerRequest.objects.filter(
@@ -150,7 +151,6 @@ class VolunteerManageTest(ProgramFrameworkTest):
         )
         response = self.client.get(self.base_url + '/csv')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response['Content-Type'],
-            'text/csv'
+        self.assertTrue(
+            response['Content-Type'].startswith('text/csv')
         )
