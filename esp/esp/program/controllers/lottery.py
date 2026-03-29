@@ -50,6 +50,7 @@ from esp.program.models import StudentRegistration, StudentSubjectInterest, Regi
 from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_members, remove_list_member, list_contents
 from esp.tagdict.models import Tag
+from django.utils import timezone
 
 from django.conf import settings
 from django.db import transaction
@@ -131,7 +132,7 @@ class LotteryAssignmentController(object):
         self.options = {key: value[0] for key, value in LotteryAssignmentController.default_options.items()}
         self.options.update(kwargs)
 
-        self.now = datetime.now()
+        self.now = timezone.now()
         numpy.random.seed(self.now.microsecond)
 
         self.initialize()
@@ -766,7 +767,7 @@ class LotteryAssignmentController(object):
             assert(student_ids.shape == section_ids.shape)
 
             relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
-            self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
+            self.now = timezone.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
             srs = StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
             # Trigger any relevant caches
             for sr in srs:
@@ -788,7 +789,7 @@ class LotteryAssignmentController(object):
         if delete:
             old_registrations.delete()
         else:
-            old_registrations.filter(StudentRegistration.is_valid_qobject()).update(end_date=datetime.now())
+            old_registrations.filter(StudentRegistration.is_valid_qobject()).update(end_date=timezone.now())
 
     def export_assignments(self):
         def export_array(arr):
