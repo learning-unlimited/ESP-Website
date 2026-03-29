@@ -55,7 +55,7 @@ from django.db                   import models
 from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
-from django.http import JsonResponse    
+from django.http import JsonResponse
 from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
