@@ -1,0 +1,40 @@
+/* Dark mode compatibility layer for existing ESP Platform */
+html[data-bs-theme="dark"] body {
+    background-color: #121212 !important;
+    color: #e0e0e0 !important;
+}
+
+html[data-bs-theme="dark"] .navbar-inner {
+    background-color: #1f1f1f !important;
+    background-image: none !important;
+    border-color: #333 !important;
+}
+
+html[data-bs-theme="dark"] .navbar .brand, 
+html[data-bs-theme="dark"] .navbar .nav > li > a {
+    color: #e0e0e0 !important;
+    text-shadow: none !important;
+}
+
+html[data-bs-theme="dark"] .well, 
+html[data-bs-theme="dark"] .hero-unit {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+    border-color: #333 !important;
+}
+
+html[data-bs-theme="dark"] a {
+    color: #4da3ff !important;
+}
+
+/* Smooth transition class to be applied temporally by JS */
+.theme-transition,
+.theme-transition body,
+.theme-transition .navbar-inner,
+.theme-transition .navbar .brand,
+.theme-transition .navbar .nav > li > a,
+.theme-transition .well,
+.theme-transition .hero-unit,
+.theme-transition a {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+}

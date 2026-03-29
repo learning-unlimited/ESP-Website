@@ -5,6 +5,7 @@
 {% block stylesheets %}
 {{ block.super }}
 {# Default stylesheets, no customization #}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="/media/theme_editor/bootstrap_initial.css" />
 {% endblock stylesheets %}
 
@@ -25,7 +26,17 @@
       <div class="row-fluid">
         {% block sidebar %}
           <div style="margin-bottom: 20px;">
-            <h3>Navigation</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="margin: 0;">Navigation</h3>
+           <button 
+              class="btn btn-default dark-mode-toggle" 
+              id="darkModeToggle" 
+              type="button"
+              aria-label="Toggle Dark Mode"
+              style="padding: 5px; opacity: 0.8;">
+  <i id="themeIcon" class="bi bi-moon-fill"></i>
+</button>
+            </div>
             {% load navbar %}
             {% navbar_gen request.path None navbar_list %}
             {% include "users/loginbox_content.html" %}
