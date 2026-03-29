@@ -1,0 +1,37 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}Preview Your Message{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Preview Your Message</h1>
+    <p class="lead">Check the message below. This is what students will receive.</p>
+
+    <div class="card mb-4 bg-light">
+        <div class="card-header border-bottom">
+            <strong>Subject:</strong> {{ subject }}
+        </div>
+        <div class="card-body">
+            <div class="border p-3 bg-white" id="preview_text">
+                {{ rendered_text|safe }}
+            </div>
+        </div>
+        <div class="card-footer text-muted">
+            Sending to <strong>{{ listcount }}</strong> students in selected sections.
+        </div>
+    </div>
+
+    <form method="post" action="/teach/{{ program.getUrlBase }}/commfinal/">
+        {% csrf_token %}
+        <input type="hidden" name="section_ids" value="{{ section_ids }}">
+        <input type="hidden" name="subject" value="{{ subject }}">
+        <input type="hidden" name="body" value="{{ body }}">
+        <input type="hidden" name="template" value="{{ template }}">
+        
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button type="submit" class="btn btn-success btn-lg">Send Message Now</button>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary me-md-2">Go Back and Edit</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

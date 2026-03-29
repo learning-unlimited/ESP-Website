@@ -1,0 +1,60 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}Teacher Communications Panel{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Teacher Communications Panel</h1>
+    <p class="lead">Select your classes and students to send an email.</p>
+
+    <form method="post" action="/teach/{{ program.getUrlBase }}/commprev/">
+        {% csrf_token %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">1. Select Your Classes</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for sec in sections %}
+                    <label class="list-group-item">
+                        <input class="form-check-input me-2" type="checkbox" name="section_ids" value="{{ sec.id }}" checked>
+                        <strong>{{ sec.parent_class.title }}</strong> (Section: {{ sec.index }})
+                        <span class="badge bg-secondary float-end">{{ sec.num_students }} students</span>
+                    </label>
+                    {% empty %}
+                    <p class="text-muted">You are not currently assigned to any classes for this program.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">2. Compose Your Message</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="subject" class="form-label">Subject</label>
+                    <input type="text" class="form-control" id="subject" name="subject" required placeholder="Important Update: [Class Name]">
+                </div>
+                <div class="mb-3">
+                    <label for="body" class="form-label">Message Body (Markdown/HTML supported)</label>
+                    <textarea class="form-control" id="body" name="body" rows="10" required placeholder="Hi Students! Just a reminder that..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="template" class="form-label">Email Template</label>
+                    <select class="form-select" id="template" name="template">
+                        <option value="default">Default Template</option>
+                        <option value="simple">Simple Text</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a href="/teach/{{ program.getUrlBase }}/" class="btn btn-outline-secondary me-md-2">Back to Dashboard</a>
+            <button type="submit" class="btn btn-primary btn-lg">Preview Message</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

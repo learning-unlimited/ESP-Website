@@ -1,0 +1,18 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}No Students Found{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">No Students Found</h4>
+        <p>You haven't selected any classes with enrolled students. No one to send an email to!</p>
+        <hr>
+        <p class="mb-0">Please go back and select a class where students are already registered.</p>
+    </div>
+    
+    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg">Back to Selection</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}Messages Sent{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="alert alert-success d-flex align-items-center" role="alert">
+        <div>
+            <h4 class="alert-heading">Success!</h4>
+            <p>Your messages have been queued and are being sent to your students.</p>
+            <hr>
+            <p class="mb-0">You can now safely close this page or return to your dashboard.</p>
+        </div>
+    </div>
+    
+    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+        <a href="/teach/{{ program.getUrlBase }}/" class="btn btn-primary btn-lg">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
