@@ -46,7 +46,7 @@ import re
 from django.conf import settings
 from django.db import models, transaction
 from django.db.models.query import Q
-from django.db.models import signals, Sum
+from django.db.models import Min, OuterRef, Subquery, signals, Sum
 from django.db.models.manager import Manager
 from collections import OrderedDict
 from django.template.loader import render_to_string
@@ -211,12 +211,40 @@ class ClassManager(Manager):
         if order_args_override:
             order_args = order_args_override
         else:
-            order_args = ['category__symbol', 'category__category', 'sections__meeting_times__start', '_num_students', 'id']
+            order_args = ['category__symbol', 'category__category', 'earliest_start', '_num_students', 'id']
             #   First check if there is an ordering specified for the program.
             program_sort_fields = Tag.getProgramTag('catalog_sort_fields', program)
             if program_sort_fields:
                 #   If you found one, use it.
                 order_args = program_sort_fields.split(',')
+
+        #   Translate legacy ordering fields to use earliest_start so that
+        #   older configurations keep working with the new stable behavior.
+        order_args = [
+            'earliest_start' if f == 'sections__meeting_times__start'
+            else '-earliest_start' if f == '-sections__meeting_times__start'
+            else f
+            for f in order_args
+        ]
+
+        #   Only add the earliest_start annotation when the ordering uses it,
+        #   to avoid unnecessary aggregate + joins for other sort configurations.
+        if any(f.lstrip('-') == 'earliest_start' for f in order_args):
+            #   Compute earliest_start via a correlated subquery so that the
+            #   sections → meeting_times join does not multiply rows and
+            #   corrupt the earlier _num_students aggregate.
+            classes = classes.annotate(
+                earliest_start=Subquery(
+                    ClassSubject.objects.filter(pk=OuterRef('pk'))
+                    .annotate(
+                        _es=Min(
+                            'sections__meeting_times__start',
+                            filter=~Q(sections__status=ClassStatus.CANCELLED),
+                        )
+                    )
+                    .values('_es')[:1]
+                )
+            )
 
         #   Order the QuerySet using the specified list.
         classes = classes.order_by(*order_args)
