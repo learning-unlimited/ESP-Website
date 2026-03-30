@@ -18,7 +18,7 @@ window.initSearchFilter = function(inputId, listContainerId, elementSelector) {
             return;
         }
 
-        $input.on("keyup", _.debounce(function() {
+        $input.on("input", _.debounce(function() {
             var query = $input.val().toLowerCase();
             var $elements = $container.find(elementSelector);
 

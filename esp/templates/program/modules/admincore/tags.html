@@ -130,8 +130,19 @@
     });
 
     // Expand collapsed categories on match, highlight results, and handle reset
-    document.getElementById('tag-search-input').addEventListener('input', _.debounce(function () {
+    document.getElementById('tag-search-input').addEventListener('input', function (e) {
       var query = this.value.trim().toLowerCase();
+      if (e && e.inputType !== 'insertText' &&
+        e.inputType.startsWith('insert')) {
+        try {
+          var keyupEvent = new Event('keyup', { bubbles: true, cancelable: true });
+          this.dispatchEvent(keyupEvent);
+        } catch (err) {
+          var legacyEvent = document.createEvent('Event');
+          legacyEvent.initEvent('keyup', true, true);
+          this.dispatchEvent(legacyEvent);
+        }
+      }
       
       if (query === '') {
         // Reset everything
@@ -149,7 +160,7 @@
 
       // Highlight results and expand categories
       document.querySelectorAll('.tag-row').forEach(function(row) {
-        var text = row.getAttribute('data-search-text') || row.textContent;
+        var text = row.textContent || row.getAttribute('data-search-text') || '';
         if (text.toLowerCase().includes(query)) {
           row.classList.add('highlighted-match');
         } else {
@@ -162,7 +173,7 @@
           head.click();
         }
       });
-    }, 200));
+    });
   }
 
 </script>
