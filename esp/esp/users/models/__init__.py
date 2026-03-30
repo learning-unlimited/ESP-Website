@@ -347,7 +347,7 @@ class BaseESPUser(object):
             return -1
         lastname = cmp(self.last_name.upper(), other.last_name.upper())
         if lastname == 0:
-           return cmp(self.first_name.upper(), other.first_name.upper())
+            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
     def __lt__(self, other):
         return self.__cmp__(other) < 0
@@ -2803,8 +2803,7 @@ def install():
     """
     logger.info("Installing esp.users initial data...")
     install_groups()
-    if ESPUser.objects.count() == 1: # We just did a syncdb;
-                                     # the one account is the admin account
+    if ESPUser.objects.count() == 1:    # We just did a syncdb; the one account is the admin account
         user = ESPUser.objects.all()[0]
         user.makeAdmin()
 
