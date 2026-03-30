@@ -1047,7 +1047,7 @@ class ClassSection(models.Model):
         from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
         if include_lottery_students:
-            student_verbs = ['Enrolled', 'Interested', 'Priority/1']
+            student_verbs = ['Enrolled', 'Interested'] + list(RegistrationType.objects.filter(name__startswith='Priority').values_list('name', flat=True))
         else:
             student_verbs = ['Enrolled']
 

@@ -156,7 +156,7 @@ class BigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def num_priority1s(self, prog):
         return StudentRegistration.valid_objects().filter(
-            relationship__name='Priority/1',
+            relationship__name__startswith='Priority',
             section__parent_class__parent_program=prog).count()
 
     @cache_function_for(105)
@@ -196,7 +196,7 @@ class BigBoardModule(ProgramModuleObj):
         fields = [
             ("number of stars", 'parent_class__studentsubjectinterest', sections),
             ("number of first choices", 'studentregistration',
-             sections.filter(studentregistration__relationship__name='Priority/1')),
+             sections.filter(studentregistration__relationship__name__startswith='Priority')),
             ("number of enrollments", "studentregistration",
              sections.filter((Q(studentregistration__start_date=None) | Q(studentregistration__start_date__lte=datetime.datetime.now())) &
                  (Q(studentregistration__end_date=None) | Q(studentregistration__end_date__gte=datetime.datetime.now())) &
@@ -252,7 +252,7 @@ class BigBoardModule(ProgramModuleObj):
                 popular_classes.append((description, series))
         return popular_classes
     popular_classes.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program},
-                                                       filter = lambda sr: (sr.relationship.name in ["Priority/1", "Enrolled"]))
+                                                       filter = lambda sr: (sr.relationship.name.startswith("Priority") or sr.relationship.name == "Enrolled"))
     popular_classes.depend_on_row(StudentSubjectInterest, lambda ssi: {'prog': ssi.subject.parent_program})
 
     @cache_function_for(105)
