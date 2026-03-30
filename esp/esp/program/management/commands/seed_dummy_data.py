@@ -350,6 +350,18 @@ class Command(BaseCommand):
                 program.program_modules.set(
                     ProgramModule.objects.filter(handler__in=all_module_handlers))
 
+                # Seed ProgramModuleObj instances so the program has active modules
+                for pm in ProgramModule.objects.filter(handler__in=all_module_handlers):
+                    ProgramModuleObj.objects.get_or_create(
+                        program=program,
+                        module=pm,
+                        defaults=dict(
+                            seq=pm.seq,
+                            required=pm.required,
+                            required_label='',
+                        )
+                    )
+
                 StudentClassRegModuleInfo.objects.get_or_create(
                     program=program, defaults=dict(
                         enforce_max=True, use_priority=False,
