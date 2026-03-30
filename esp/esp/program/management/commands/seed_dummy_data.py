@@ -345,22 +345,11 @@ class Command(BaseCommand):
                     director_cc_email='', director_confidential_email='',
                     program_size_max=200, program_allow_waitlist=True,
                 ))
+            modules_qs = ProgramModule.objects.filter(handler__in=all_module_handlers)
+
             if created:
                 program.class_categories.set(ClassCategories.objects.all())
-                program.program_modules.set(
-                    ProgramModule.objects.filter(handler__in=all_module_handlers))
-
-                # Seed ProgramModuleObj instances so the program has active modules
-                for pm in ProgramModule.objects.filter(handler__in=all_module_handlers):
-                    ProgramModuleObj.objects.get_or_create(
-                        program=program,
-                        module=pm,
-                        defaults=dict(
-                            seq=pm.seq,
-                            required=pm.required,
-                            required_label='',
-                        )
-                    )
+                program.program_modules.set(modules_qs)
 
                 StudentClassRegModuleInfo.objects.get_or_create(
                     program=program, defaults=dict(
@@ -378,6 +367,19 @@ class Command(BaseCommand):
                         num_teacher_questions=1, allowed_sections='1,2',
                         session_counts='1',
                     ))
+
+            # Backfill ProgramModuleObj rows unconditionally so re-runs fix missing rows
+            for pm in modules_qs:
+                ProgramModuleObj.objects.get_or_create(
+                    program=program,
+                    module=pm,
+                    defaults=dict(
+                        seq=pm.seq,
+                        required=pm.required,
+                        required_label='',
+                    )
+                )
+
             programs.append(program)
         return programs
 
