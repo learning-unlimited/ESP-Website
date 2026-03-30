@@ -14,6 +14,15 @@ from esp.tagdict import all_global_tags, all_program_tags
 # documentation, as described at
 # https://www.djangoproject.com/documentation/models/generic_relations/
 
+def safe_tag_selector(tag):
+    try:
+        target = tag.target
+        if target is not None:
+            return {'key': tag.key, 'target': target}
+        return {'key': tag.key}
+    except AttributeError:
+        return {'key': tag.key}
+
 class Tag(models.Model):
     """A tag on an item."""
     key = models.SlugField(db_index=True)
@@ -38,7 +47,6 @@ class Tag(models.Model):
         return f"{self.key}: {self.value} ({self.target})"
 
     EMPTY_TAG = " "
-
     @classmethod
     def getTag(cls, key, target=None, default=None):
         """
@@ -95,7 +103,7 @@ class Tag(models.Model):
             if 'does not exist' in err or 'no such table' in err:
                 return default
             raise
-    _getTag.depend_on_row('tagdict.Tag', lambda tag: {'key': tag.key, 'target': tag.target})
+    _getTag.depend_on_row('tagdict.Tag', safe_tag_selector)
     _getTag = classmethod(_getTag)
 
     @classmethod
