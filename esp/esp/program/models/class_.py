@@ -107,6 +107,20 @@ REGISTRATION_CHOICES = (
             )
 
 
+def migration_stable_derived_field(field_type, calculator):
+    """Wrap DerivedField so migration deconstruction stays stable across environments."""
+    base_field = DerivedField(field_type, calculator)
+
+    class StableDerivedField(base_field):
+        def deconstruct(self):
+            name, path, args, kwargs = super().deconstruct()
+            if path == 'django.db.models.fields.IntegerField':
+                path = 'django.db.models.IntegerField'
+            return name, path, args, kwargs
+
+    return StableDerivedField
+
+
 class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
     range_max = models.IntegerField(null=False)
@@ -1033,14 +1047,14 @@ class ClassSection(models.Model):
         return self.num_students(use_cache=False)
     count_enrolled_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
-    enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
+    enrolled_students = migration_stable_derived_field(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
     @cache_function
     def count_attending_students(self):
         return self.num_students(verbs=['Attended'], use_cache=False)
     count_attending_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
-    attending_students = DerivedField(models.IntegerField, count_attending_students)(null=False, default=0)
+    attending_students = migration_stable_derived_field(models.IntegerField, count_attending_students)(null=False, default=0)
 
     def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
         # To avoid circular imports
