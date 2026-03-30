@@ -92,7 +92,7 @@ urlpatterns += [
     re_path(r'^admin/filebrowser/', filebrowser_site.urls),
     re_path(r'^admin/', admin_site.urls),
     re_path(r'^accounts/login/$', esp.users.views.CustomLoginView.as_view()),
-    re_path(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
+    re_path(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', RedirectView.as_view(url='/myesp/redirect/', permanent=True)),
 ]
 
 # Adds missing trailing slash to any admin urls that haven't been matched yet.
