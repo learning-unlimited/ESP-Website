@@ -17,8 +17,8 @@ You need to log in before you can access <tt>{{ next }}</tt>.
 </div>
 {% endif %}
 
-<div class="alert span10">
-Both the username and password are <b>case-sensitive</b>: capitalization matters!
+<div class="alert alert-info span10" style="border-left: 4px solid #17a2b8; border-radius: 8px;">
+🔐 Both the username and password are <b>case-sensitive</b>: capitalization matters!
 </div>
 
 <div class="well span10">
@@ -27,44 +27,51 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 
 <div class="control-group">
     {% if form.username.errors %}
-       <ul class="errorlist">
-            {{ form.username.errors|last }}
-       </ul>
+    <div class="alert alert-error" style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 8px; padding: 8px 12px;">
+        ⚠️ {{ form.username.errors|last }}
+    </div>
     {% elif wrong_user %}
-       <ul class="errorlist">
-            The username you entered is not valid. Keep in mind the username is case sensitive.
-       </ul>
+    <div class="alert alert-error" style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 8px; padding: 8px 12px;">
+        ⚠️ The username you entered is not valid. Keep in mind the username is case sensitive.
+    </div>
     {% endif %}
 
     <label class="control-label required" for="id_username">Username:</label>
 
-    <div class="controls">
-    {{ form.username }}
+    <div class="controls" style="position: relative;">
+        {{ form.username }}
+        <span id="username-valid-icon" style="position: absolute; right: 10px; top: 5px; font-size: 16px;"></span>
+        <div id="username-error-msg" style="color: #dc3545; font-size: 12px; margin-top: 5px; display: none;">
+            ✗ Username must contain only letters, numbers, and underscore (3-20 characters)
+        </div>
     </div>
 </div>
 
 <div class="control-group">
     {% if form.password.errors %}
-        <ul class="errorlist">
-            {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
-        </ul>
+    <div class="alert alert-error" style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 8px; padding: 8px 12px;">
+        ⚠️ {% for error in form.password.errors %}{{ error }}{% endfor %}
+    </div>
     {% elif wrong_pw %}
-        <ul class="errorlist">
-            The password you entered is not valid.
-        </ul>
+    <div class="alert alert-error" style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 8px; padding: 8px 12px;">
+        ⚠️ The password you entered is not valid.<br>
+        <a href="/myesp/passwdrecover/" style="color: #721c24; text-decoration: underline;">Forgot your password? Reset it here →</a>
+    </div>
     {% endif %}
 
     <label class="control-label required" for="id_password">Password:</label>
    
-    <div class="controls">
-    {{ form.password }}
+    <div class="controls" style="position: relative;">
+        {{ form.password }}
+        <button type="button" id="toggle-pwd-btn" style="position: absolute; right: 10px; top: 5px; background: none; border: none; cursor: pointer; font-size: 18px;" 
+                onclick="togglePassword()">👁️</button>
     </div>
     
 </div>
 
 <div class="form-actions">
 <input type="hidden" name="next" value="{{ next }}" />
-<input type="submit" class="btn btn-primary btn-large" value="Login" />
+<input type="submit" class="btn btn-primary btn-large" value="Login" id="login-btn" />
 </div>
 
 </form>
@@ -72,9 +79,50 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 <script type="text/javascript">
 <!--
 document.getElementById('id_username').focus();
+function togglePassword() {
+    var pwdField = document.getElementById('id_password');
+    var btn = document.getElementById('toggle-pwd-btn');
+    if (pwdField.type === 'password') {
+        pwdField.type = 'text';
+        btn.textContent = '🙈';
+    } else {
+        pwdField.type = 'password';
+        btn.textContent = '👁️';
+    }
+}
+var usernameField = document.getElementById('id_username');
+if (usernameField) {
+    usernameField.addEventListener('keyup', function() {
+        var username = this.value;
+        var regex = /^[a-zA-Z0-9_]{3,20}$/;
+        var validIcon = document.getElementById('username-valid-icon');
+        var errorMsg = document.getElementById('username-error-msg');
+        
+        if (username.length === 0) {
+            validIcon.textContent = '';
+            errorMsg.style.display = 'none';
+            return;
+        }
+        
+        if (regex.test(username)) {
+            validIcon.textContent = '✅';
+            validIcon.style.color = '#28a745';
+            errorMsg.style.display = 'none';
+        } else {
+            validIcon.textContent = '❌';
+            validIcon.style.color = '#dc3545';
+            errorMsg.style.display = 'block';
+        }
+    });
+}
+
+var submitBtn = document.getElementById('login-btn');
+if (submitBtn) {
+    submitBtn.style.padding = '10px 20px';
+    submitBtn.style.fontSize = '16px';
+}
 //-->
 </script>
-
 </div>
 
 <br />

@@ -3,36 +3,39 @@
 {% block title %}Create a new user account{% endblock %}
 
 {% block content %}
+<!-- ENHANCEMENT 1: Duplicate Account Warning - Modern Styling -->
 {% if accounts %}
-<div class="note">
-  <p>
-    <b>Warning: Account not created!</b> It looks like other accounts already
-    exist for this email address. Do you already have an account for
-    {{ settings.INSTITUTION_NAME }}{{ settings.ORGANIZATION_SHORT_NAME }}?
-    If so, try logging in with one of the following username(s). (If not, just
-    click "Create account" again below.)
-  </p>
+<div class="alert alert-error" style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+  <strong>⚠️ Warning: Account not created!</strong><br>
+  It looks like other accounts already exist for this email address. Do you already have an account for
+  {{ settings.INSTITUTION_NAME }}{{ settings.ORGANIZATION_SHORT_NAME }}?
+  If so, try logging in with one of the following username(s). (If not, just
+  click "Create account" again below.)
+</div>
 
-  <ul>
+<div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+  <h4>Existing accounts found:</h4>
+  <ul style="margin-bottom: 0;">
     {% for u in accounts %}
-    <li>Username: "{{ u.username }}" (
-    <form method="post" action="/myesp/login">
-      <input type="hidden" name="username" value="{{ u.username }}" />
-      <input type="hidden" name="password" value="" />
-      <input type="hidden" name="next" value="/myesp/profile/" />
-      <input type="submit" value="Try logging in" class="btn btn-primary" />
-    </form>
-    <form action="/myesp/passwdrecover/" method="post">
-      <input type="hidden" name="email" value="{{ u.email }}" />
-      <input type="hidden" name="username" value="{{ u.username }}" />
-      <input type="submit" value="I forgot my password!" class="btn btn-default" />
-    </form>
-    )
+    <li style="margin-bottom: 10px;">
+      <strong>Username:</strong> "{{ u.username }}"<br>
+      <form method="post" action="/myesp/login" style="display: inline-block; margin-top: 5px;">
+        <input type="hidden" name="username" value="{{ u.username }}" />
+        <input type="hidden" name="password" value="" />
+        <input type="hidden" name="next" value="/myesp/profile/" />
+        <input type="submit" value="Try logging in" class="btn btn-primary btn-sm" style="padding: 4px 10px; font-size: 12px;" />
+      </form>
+      <form action="/myesp/passwdrecover/" method="post" style="display: inline-block; margin-top: 5px;">
+        <input type="hidden" name="email" value="{{ u.email }}" />
+        <input type="hidden" name="username" value="{{ u.username }}" />
+        <input type="submit" value="I forgot my password!" class="btn btn-default btn-sm" style="padding: 4px 10px; font-size: 12px;" />
+      </form>
     </li>
     {% endfor %}
   </ul>
 </div>
 {% endif %}
+
 <div>
 <h1>Create a new account</h1><br />
 {% load render_qsd %}
@@ -55,27 +58,29 @@
 {% endif %}
 {% end_inline_qsd_block %}
 </div>
+
 <div>
 <form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well">
   <fieldset>
     <h3>User Account Creation Form</h3>
 
+    <!-- ENHANCEMENT 2: Form Errors - Modern Alert Styling -->
     {% if form.errors %}
-
-    <div class="errors">
-      <p>There
-      {% if form.errors|length_is:1 %}is an error{% else %}
-      are errors{% endif %} in the below form. Please fix and resubmit.<p>
+    <div class="alert alert-error" style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+      <strong>⚠️ Please fix the following errors:</strong><br>
+      {% for field, errors in form.errors.items %}
+        {% for error in errors %}
+          • {{ field|capfirst }}: {{ error }}<br>
+        {% endfor %}
+      {% endfor %}
     </div>
-
-
     {% endif %}
 
     {% include "themes/bs_form.html" %}
     {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 
     <div class="form-actions">
-    <input type="submit" value="{% if accounts %}Confirm: Create another account for this email{% else %}Create account{% endif %}" name="submit_btn" class="btn btn-primary" />
+      <input type="submit" value="{% if accounts %}Confirm: Create another account for this email{% else %}Create account{% endif %}" name="submit_btn" class="btn btn-primary" id="submit-btn" />
     </div>
   </fieldset>
 </form>
@@ -83,7 +88,225 @@
 
 <script type="text/javascript">
 <!--
-  document.getElementById('id_first_name').focus();
+document.getElementById('id_first_name').focus();
+
+// ============================================
+// ENHANCEMENT 3 & 4: Password Strength Meter + Real-time Validation
+// ============================================
+
+// Wait for DOM to be ready
+setTimeout(function() {
+    
+    // ---------- PASSWORD STRENGTH METER ----------
+    var pwdField = document.getElementById('id_password');
+    if (pwdField && !document.getElementById('strength-fill')) {
+        // Create meter elements
+        var meterDiv = document.createElement('div');
+        meterDiv.style.cssText = 'margin-top: 5px; height: 5px; background: #e0e0e0; border-radius: 3px; overflow: hidden;';
+        meterDiv.innerHTML = '<div id="strength-fill" style="width: 0%; height: 100%; background: #dc3545; transition: width 0.3s;"></div>';
+        pwdField.parentNode.appendChild(meterDiv);
+        
+        var strengthText = document.createElement('span');
+        strengthText.id = 'strength-text';
+        strengthText.style.cssText = 'font-size: 11px; margin-top: 3px; display: inline-block;';
+        pwdField.parentNode.appendChild(strengthText);
+        
+        var tipsDiv = document.createElement('div');
+        tipsDiv.id = 'pwd-tips';
+        tipsDiv.style.cssText = 'font-size: 11px; color: #666; margin-top: 5px;';
+        pwdField.parentNode.appendChild(tipsDiv);
+        
+        // Add event listener for password strength
+        pwdField.addEventListener('keyup', function() {
+            var pwd = this.value;
+            var strength = 0;
+            var tips = [];
+            
+            if (pwd.length >= 8) strength++; else tips.push('8+ chars');
+            if (pwd.length >= 12) strength++; else if (pwd.length >= 8) tips.push('12+ chars better');
+            if (/[A-Z]/.test(pwd)) strength++; else tips.push('uppercase');
+            if (/[a-z]/.test(pwd)) strength++; else tips.push('lowercase');
+            if (/[0-9]/.test(pwd)) strength++; else tips.push('numbers');
+            if (/[!@#$%^&*]/.test(pwd)) strength++; else tips.push('special chars');
+            
+            var percent = (strength / 6) * 100;
+            var color = '#dc3545';
+            var text = 'Weak';
+            
+            if (percent >= 80) { color = '#28a745'; text = 'Strong'; }
+            else if (percent >= 50) { color = '#ffc107'; text = 'Medium'; }
+            
+            var fill = document.getElementById('strength-fill');
+            if (fill) {
+                fill.style.width = percent + '%';
+                fill.style.backgroundColor = color;
+            }
+            
+            var sText = document.getElementById('strength-text');
+            if (sText) {
+                sText.textContent = text;
+                sText.style.color = color;
+            }
+            
+            var tipsElement = document.getElementById('pwd-tips');
+            if (tipsElement) {
+                if (pwd.length > 0 && tips.length > 0) {
+                    tipsElement.innerHTML = '💡 Tips: ' + tips.join(', ');
+                } else if (tips.length === 0 && pwd.length > 0) {
+                    tipsElement.innerHTML = '✓ Excellent password!';
+                } else {
+                    tipsElement.innerHTML = '';
+                }
+            }
+        });
+    }
+    
+    // ---------- PASSWORD TOGGLE (Eye Icon) ----------
+    var pwdToggleField = document.getElementById('id_password');
+    if (pwdToggleField && !document.getElementById('pwd-toggle-btn')) {
+        var wrapper = pwdToggleField.parentNode;
+        wrapper.style.position = 'relative';
+        var btn = document.createElement('button');
+        btn.id = 'pwd-toggle-btn';
+        btn.type = 'button';
+        btn.textContent = '👁️';
+        btn.style.cssText = 'position: absolute; right: 10px; top: 5px; background: none; border: none; cursor: pointer; font-size: 18px; z-index: 10;';
+        btn.onclick = function() {
+            if (pwdToggleField.type === 'password') {
+                pwdToggleField.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                pwdToggleField.type = 'password';
+                btn.textContent = '👁️';
+            }
+        };
+        wrapper.appendChild(btn);
+    }
+    
+    // ---------- CONFIRM PASSWORD TOGGLE ----------
+    var confirmToggleField = document.getElementById('id_password_confirm');
+    if (confirmToggleField && !document.getElementById('confirm-toggle-btn')) {
+        var confirmWrapper = confirmToggleField.parentNode;
+        confirmWrapper.style.position = 'relative';
+        var confirmBtn = document.createElement('button');
+        confirmBtn.id = 'confirm-toggle-btn';
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = '👁️';
+        confirmBtn.style.cssText = 'position: absolute; right: 10px; top: 5px; background: none; border: none; cursor: pointer; font-size: 18px; z-index: 10;';
+        confirmBtn.onclick = function() {
+            if (confirmToggleField.type === 'password') {
+                confirmToggleField.type = 'text';
+                confirmBtn.textContent = '🙈';
+            } else {
+                confirmToggleField.type = 'password';
+                confirmBtn.textContent = '👁️';
+            }
+        };
+        confirmWrapper.appendChild(confirmBtn);
+    }
+    
+    // ---------- PASSWORD MATCH VALIDATION ----------
+    var matchPwdField = document.getElementById('id_password');
+    var matchConfirmField = document.getElementById('id_password_confirm');
+    if (matchPwdField && matchConfirmField && !document.getElementById('match-msg')) {
+        var matchMsg = document.createElement('div');
+        matchMsg.id = 'match-msg';
+        matchMsg.style.cssText = 'font-size: 12px; margin-top: 5px;';
+        matchConfirmField.parentNode.appendChild(matchMsg);
+        
+        function checkMatch() {
+            if (matchConfirmField.value.length === 0) {
+                matchMsg.style.display = 'none';
+                return;
+            }
+            if (matchPwdField.value === matchConfirmField.value) {
+                matchMsg.innerHTML = '✓ Passwords match';
+                matchMsg.style.color = '#28a745';
+                matchMsg.style.display = 'block';
+            } else {
+                matchMsg.innerHTML = '✗ Passwords do not match';
+                matchMsg.style.color = '#dc3545';
+                matchMsg.style.display = 'block';
+            }
+        }
+        matchConfirmField.addEventListener('keyup', checkMatch);
+        matchPwdField.addEventListener('keyup', checkMatch);
+    }
+    
+    // ---------- REAL-TIME USERNAME VALIDATION ----------
+    var userField = document.getElementById('id_username');
+    if (userField && !document.getElementById('username-icon')) {
+        var userWrapper = userField.parentNode;
+        userWrapper.style.position = 'relative';
+        var userIcon = document.createElement('span');
+        userIcon.id = 'username-icon';
+        userIcon.style.cssText = 'position: absolute; right: 10px; top: 5px; font-size: 16px;';
+        userWrapper.appendChild(userIcon);
+        var userError = document.createElement('div');
+        userError.id = 'username-error';
+        userError.style.cssText = 'color: #dc3545; font-size: 12px; margin-top: 3px; display: none;';
+        userError.innerHTML = '✗ Letters, numbers, underscore only (3-20 characters)';
+        userWrapper.appendChild(userError);
+        
+        userField.addEventListener('keyup', function() {
+            var val = this.value;
+            var regex = /^[a-zA-Z0-9_]{3,20}$/;
+            if (val.length === 0) {
+                userIcon.textContent = '';
+                userError.style.display = 'none';
+            } else if (regex.test(val)) {
+                userIcon.textContent = '✅';
+                userIcon.style.color = '#28a745';
+                userError.style.display = 'none';
+            } else {
+                userIcon.textContent = '❌';
+                userIcon.style.color = '#dc3545';
+                userError.style.display = 'block';
+            }
+        });
+    }
+    
+    // ---------- REAL-TIME EMAIL VALIDATION ----------
+    var emailField = document.getElementById('id_email');
+    if (emailField && !document.getElementById('email-icon')) {
+        var emailWrapper = emailField.parentNode;
+        emailWrapper.style.position = 'relative';
+        var emailIcon = document.createElement('span');
+        emailIcon.id = 'email-icon';
+        emailIcon.style.cssText = 'position: absolute; right: 10px; top: 5px; font-size: 16px;';
+        emailWrapper.appendChild(emailIcon);
+        var emailError = document.createElement('div');
+        emailError.id = 'email-error';
+        emailError.style.cssText = 'color: #dc3545; font-size: 12px; margin-top: 3px; display: none;';
+        emailError.innerHTML = '✗ Valid email: name@domain.com';
+        emailWrapper.appendChild(emailError);
+        
+        emailField.addEventListener('keyup', function() {
+            var val = this.value;
+            var regex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
+            if (val.length === 0) {
+                emailIcon.textContent = '';
+                emailError.style.display = 'none';
+            } else if (regex.test(val)) {
+                emailIcon.textContent = '✅';
+                emailIcon.style.color = '#28a745';
+                emailError.style.display = 'none';
+            } else {
+                emailIcon.textContent = '❌';
+                emailIcon.style.color = '#dc3545';
+                emailError.style.display = 'block';
+            }
+        });
+    }
+    
+    // ---------- MOBILE: Better touch targets ----------
+    var submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+        submitBtn.style.padding = '10px 20px';
+        submitBtn.style.fontSize = '16px';
+    }
+    
+}, 100);
 //-->
 </script>
 
