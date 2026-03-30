@@ -538,7 +538,7 @@ def usersearch(request):
 @admin_required
 def userview(request):
     """ Render a template displaying all the information about the specified user """
-    username=request.GET.get('username')
+    username = request.GET.get('username')
     if not username:
         raise ESPError("No username specified in the request.", log=False)
     try:
