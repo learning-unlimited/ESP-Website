@@ -157,6 +157,16 @@ class TeacherClassRegForm(FormWithRequiredCss):
             del self.fields['grade_range']
         if crmi.use_class_size_max:
             # class_size_max: crmi.getClassSizes
+            # If the current value was set outside the standard choices (e.g. by an admin
+            # via the manage page), add it so the dropdown displays it instead of going blank.
+            current_value = self.data.get('class_size_max') or self.initial.get('class_size_max')
+            if current_value is not None:
+                try:
+                    current_int = int(current_value)
+                    if current_int not in [c[0] for c in class_sizes]:
+                        class_sizes = sorted(class_sizes + [(current_int, current_int)], key=lambda x: x[0])
+                except (ValueError, TypeError):
+                    pass
             self.fields['class_size_max'].widget.choices = class_sizes
         else:
             del self.fields['class_size_max']
