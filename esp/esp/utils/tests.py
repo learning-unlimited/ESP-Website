@@ -524,6 +524,39 @@ class StripBase64ImagesTest(DjangoTestCase):
         self.assertEqual(count, 0)
 
 
+class UtilsDecoratorsTest(DjangoTestCase):
+    def test_disable_csrf_cookie_update(self):
+        from esp.utils.no_autocookie import disable_csrf_cookie_update
+        
+        def dummy_view(request):
+            class Response: pass
+            return Response()
+            
+        decorated = disable_csrf_cookie_update(dummy_view)
+        response = decorated(None)
+        self.assertTrue(getattr(response, 'csrf_processing_done', False))
+        self.assertTrue(getattr(response, 'no_set_cookies', False))
+
+    def test_try_multi(self):
+        from esp.utils.try_multi import try_multi
+        self.tries = 0
+        def fail_twice():
+            self.tries += 1
+            if self.tries < 3:
+                raise ValueError("Fail")
+            return "Success"
+            
+        decorated = try_multi(3)(fail_twice)
+        self.assertEqual(decorated(), "Success")
+        self.assertEqual(self.tries, 3)
+
+        # Test failure
+        self.tries = 0
+        decorated_fail = try_multi(2)(fail_twice)
+        with self.assertRaises(ValueError):
+            decorated_fail()
+
+
 def suite():
     """Choose tests to expose to the Django tester."""
     s = unittest.TestSuite()
