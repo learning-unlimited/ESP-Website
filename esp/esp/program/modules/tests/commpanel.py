@@ -72,11 +72,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         m = ProgramModule.objects.get(handler='CommModule', module_type='manage')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
-    def runTest(self):
-        #   Log in an administrator
-        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
-
-        #   Select users to fetch
+    def _get_filterid_and_listcount(self):
         post_data = {
             'submit_user_list': 'true',
             'base_list': 'enrolled',
@@ -86,12 +82,16 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commpanel_old'), post_data)
         self.assertEqual(response.status_code, 200)
+        content = response.content.decode('UTF-8')
+        filterid = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', content).groups()[0]
+        listcount = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', content).groups()[0]
+        return filterid, listcount
 
-        #   Extract filter ID from response
-        s = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', response.content.decode('UTF-8'))
-        filterid = s.groups()[0]
-        s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content.decode('UTF-8'))
-        listcount = s.groups()[0]
+    def runTest(self):
+        #   Log in an administrator
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+
+        filterid, listcount = self._get_filterid_and_listcount()
 
         #   Enter email information
         post_data = {
@@ -136,6 +136,41 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         m = MessageRequest.objects.filter(recipients__id=filterid, subject='Test Subject 123')
         self.assertTrue(m.count() == 1)
         self.assertTrue(m[0].processed)
+
+    def test_commprev_missing_required_field_shows_friendly_error(self):
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+        filterid, listcount = self._get_filterid_and_listcount()
+
+        post_data = {
+            'filterid': filterid,
+            'listcount': listcount,
+            'subject': 'Preview Subject',
+            # body intentionally omitted
+        }
+        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commprev'), post_data)
+        content = response.content.decode('UTF-8')
+
+        self.assertIn('Required form data is missing (body).', content)
+        self.assertNotIn('MultiValueDictKeyError', content)
+
+    def test_commfinal_missing_required_field_shows_friendly_error(self):
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+        filterid, listcount = self._get_filterid_and_listcount()
+
+        post_data = {
+            'subject': 'Test Subject 123',
+            'body': 'Test Body 123',
+            # from intentionally omitted
+            'replyto': 'replyto@testserver.learningu.org',
+            'filterid': filterid,
+            'listcount': listcount,
+        }
+        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commfinal'), post_data)
+        content = response.content.decode('UTF-8')
+
+        self.assertIn('Required form data is missing (from).', content)
+        self.assertNotIn('MultiValueDictKeyError', content)
+        self.assertEqual(MessageRequest.objects.filter(recipients__id=filterid, subject='Test Subject 123').count(), 0)
 
     def test_program_date_variables_in_comms(self):
         """Test that {{ program.date }}, {{ program.date_range }}, {{ program.teacher_reg_deadline }} work in email templates."""
