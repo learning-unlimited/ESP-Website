@@ -236,6 +236,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
         self.assertEqual(response.status_code, 500)
 
+        # Test to make sure we get an error if we don't specify a username 
+        response = c.get("/manage/userview")
+        self.assertEqual(response.status_code, 500)
+
         # Now, make sure that only admins can view this page
         self.assertTrue( c.login(username=self.fake_admin.username, password=self.password), "Couldn't log in as fake admin" )
         response = c.get("/manage/userview", { 'username': self.user.username })
