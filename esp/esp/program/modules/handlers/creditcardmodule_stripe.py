@@ -146,26 +146,48 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return {'creditcard': """Students who have filled out the credit card form"""}
 
     def check_setup(self):
-        """ Validate the keys specified in the stripe_settings Tag.
-            If something is wrong, return False, otherwise return True. """
+        """
+        Validate the keys specified in the stripe_settings tag.
+        Returns False if configuration is invalid, otherwise True.
+        """
+        logger = logging.getLogger(__name__)
 
-        self.apply_settings()
+        # Apply settings safely
+        try:
+            self.apply_settings()
+        except Exception as e:
+            logger.warning(f"Stripe setup failed while applying settings: {e}")
+            return False
 
-        #   Check for a 'donation' line item type on this program, which we will need
-        #   Note: This could also be created by default for every program,
-        #   in the accounting controllers.
-        if self.settings['offer_donation']:
-            (lit, created) = LineItemType.objects.get_or_create(
-                text=self.settings['donation_text'],
-                program=self.program,
-                required=False
-            )
+        # Handle donation setup safely
+        if self.settings.get('offer_donation'):
+            try:
+                LineItemType.objects.get_or_create(
+                    text=self.settings.get('donation_text', 'Donation'),
+                    program=self.program,
+                    required=False
+                )
+            except Exception as e:
+                logger.warning(f"Error creating donation LineItemType: {e}")
+                return False
 
-        #   A Stripe account comes with 4 keys, starting with e.g. sk_test_
-        #   and followed by a 24 character base64-encoded string.
+        # Regex patterns
         valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
         valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
-        if not self.settings.get('publishable_key') or not self.settings.get('secret_key') or not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
+
+        # Safely get keys
+        publishable_key = self.settings.get('publishable_key')
+        secret_key = self.settings.get('secret_key')
+        # Validate presence
+        if not publishable_key or not secret_key:
+            logger.warning("Stripe keys missing: publishable_key or secret_key not set.")
+            return False
+        # Validate format
+        if not re.match(valid_pk_re, publishable_key):
+            logger.warning("Invalid Stripe publishable_key format.")
+            return False
+        if not re.match(valid_sk_re, secret_key):
+            logger.warning("Invalid Stripe secret_key format.")
             return False
         return True
 
