@@ -165,10 +165,6 @@ def histogram(answer_list, args='format=html'):
     import tempfile
 
     image_width = 2.75
-    HISTOGRAM_DEVICE_WIDTH_PT = 216
-    HISTOGRAM_DEVICE_HEIGHT_PT = 162
-    HISTOGRAM_DPI = 192
-    HISTOGRAM_HTML_WIDTH_PX = 288 # to achieve Nx downscale ratio -> (DEVICE_WIDTH_PT * DPI / 72) / N
 
     args_dict = QueryDict(args)
 
@@ -245,6 +241,60 @@ def histogram(answer_list, args='format=html'):
     else:
         context['font_size'] = 10
 
+    # Dynamically avoiding label overlap
+    # Arial average width is ~0.55 * font_size
+    max_label_width_pts = max_label_length * context['font_size'] * 0.55
+    context['yspaceneg'] = -12
+
+    if context['label_rotate'] == 45:
+        # 45 deg rotation (counter-clockwise), right-aligned, labels extend to the left and down from the tick.
+        left_extent = max_label_width_pts * 0.707 # label_width * cos(45)
+        label_descent = max_label_width_pts * 0.707 # label_width * sin(45)
+    elif context['label_rotate'] == 90:
+        # Straight down (-90 deg clockwise, anchored at start)
+        label_descent = max_label_width_pts
+        left_extent = context['font_size']
+    else:
+        # Horizontal (centered)
+        label_descent = 0
+        left_extent = max_label_width_pts / 2
+
+    # Spacing for axis labels and title
+    RESPONSE_TITLE_HEIGHT = 12
+    PADDING = 10
+
+    PLOT_WIDTH, PLOT_HEIGHT = 180, 100
+    MIN_LEFT_MARGIN, MIN_BOTTOM_MARGIN = 18, 36
+    MARGIN_TOP, MARGIN_RIGHT = 20, 18
+    # offsety (space below the x-axis)
+    # The label descent starts from y_tick_label_base (abs val of yspaceneg)
+    context['offsety'] = int(max(MIN_BOTTOM_MARGIN,
+        abs(context['yspaceneg']) + label_descent + RESPONSE_TITLE_HEIGHT + PADDING))
+
+    # Calculate response_label_y (relative to the axis origin, so negative)
+    # Place at the bottom-most possible position within offsety
+    context['response_label_y'] = - (context['offsety'] - PADDING)
+
+    # Calculate horizontal geometry (offsetx and pX, bb_width)
+    num_keys_safe = max(context['num_keys'], 1)
+    context['pX'] = PLOT_WIDTH
+    sectionwidth = context['pX'] / num_keys_safe
+    xlabel0 = sectionwidth / 2
+
+    # offsetx: needed space to the left of the axis start
+    context['offsetx'] = int(max(MIN_LEFT_MARGIN,
+        left_extent - xlabel0 + PADDING))
+
+    # Calculate pY (bar height) and bb dimensions
+    context['pY'] = PLOT_HEIGHT
+    context['bb_height'] = context['offsety'] + context['pY'] + MARGIN_TOP
+    context['bb_width'] = context['offsetx'] + context['pX'] + MARGIN_RIGHT
+
+    # Ghostscript parameters
+    HISTOGRAM_DPI = 192
+    HISTOGRAM_HTML_DOWNSCALE_FACTOR = 2
+    HISTOGRAM_HTML_WIDTH_PX = int((context['bb_width'] * HISTOGRAM_DPI / 72) / HISTOGRAM_HTML_DOWNSCALE_FACTOR) # to achieve Nx downscale ratio -> (DEVICE_WIDTH_PT * DPI / 72) / N
+
     import hashlib
     file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
     file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
@@ -270,8 +320,8 @@ def histogram(answer_list, args='format=html'):
         subprocess.call([
             'gs',
             '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
-            f'-dDEVICEWIDTHPOINTS={HISTOGRAM_DEVICE_WIDTH_PT}',
-            f'-dDEVICEHEIGHTPOINTS={HISTOGRAM_DEVICE_HEIGHT_PT}',
+            f"-dDEVICEWIDTHPOINTS={context['bb_width']}",
+            f"-dDEVICEHEIGHTPOINTS={context['bb_height']}",
             '-sDEVICE=png16m',
             f'-r{HISTOGRAM_DPI}',
             '-sOutputFile=' + image_path,
