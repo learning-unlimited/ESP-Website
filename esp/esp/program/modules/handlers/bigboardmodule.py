@@ -51,8 +51,8 @@ class BigBoardModule(ProgramModuleObj):
              self.num_users_enrolled(prog)),
             ("students who completed the medical form",
              self.num_medical(prog)),
-            ("first choices entered",
-             self.num_priority1s(prog)),
+            ("priority selections entered",
+             self.num_priority_selections(prog)),
             ("stars entered",
              self.num_ssis(prog)),
             ("lottery preferences entered",
@@ -154,7 +154,7 @@ class BigBoardModule(ProgramModuleObj):
             subject__parent_program=prog).count()
 
     @cache_function_for(105)
-    def num_priority1s(self, prog):
+    def num_priority_selections(self, prog):
         return StudentRegistration.valid_objects().filter(
             relationship__name__startswith='Priority',
             section__parent_class__parent_program=prog).count()
@@ -163,7 +163,7 @@ class BigBoardModule(ProgramModuleObj):
     def num_prefs(self, prog):
         num_srs = StudentRegistration.valid_objects().filter(
             Q(relationship__name='Interested') |
-            Q(relationship__name__contains='Priority/'),
+            Q(relationship__name__startswith='Priority'),
             section__parent_class__parent_program=prog).count()
         return num_srs + self.num_ssis(prog)
 
@@ -195,7 +195,7 @@ class BigBoardModule(ProgramModuleObj):
             parent_class__parent_program=prog).exclude(parent_class__category__category='Lunch')
         fields = [
             ("number of stars", 'parent_class__studentsubjectinterest', sections),
-            ("number of first choices", 'studentregistration',
+            ("number of priority selections", 'studentregistration',
              sections.filter(studentregistration__relationship__name__startswith='Priority')),
             ("number of enrollments", "studentregistration",
              sections.filter((Q(studentregistration__start_date=None) | Q(studentregistration__start_date__lte=datetime.datetime.now())) &
