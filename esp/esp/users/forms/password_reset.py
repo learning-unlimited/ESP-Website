@@ -1,5 +1,5 @@
 
-
+import re
 from django import forms
 from esp.users.models import ESPUser
 from django.utils.html import conditional_escape, mark_safe
@@ -65,4 +65,20 @@ class UserPasswdForm(FormWithRequiredCss):
 
         if self.cleaned_data['newpasswd'] != new_passwd:
             raise forms.ValidationError('Password and confirmation are not equal.')
+        if self.cleaned_data['newpasswd'] != new_passwd:
+            raise forms.ValidationError('Password and confirmation are not equal.')
+        if len(new_passwd) < 8:
+            raise forms.ValidationError("Password must be at least 8 characters long.")
+
+        if not re.search(r"[A-Z]", new_passwd):
+            raise forms.ValidationError("Password must contain at least one uppercase letter.")
+
+        if not re.search(r"[a-z]", new_passwd):
+            raise forms.ValidationError("Password must contain at least one lowercase letter.")
+
+        if not re.search(r"[0-9]", new_passwd):
+            raise forms.ValidationError("Password must contain at least one digit.")
+
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", new_passwd):
+            raise forms.ValidationError("Password must contain at least one special character.")
         return new_passwd
