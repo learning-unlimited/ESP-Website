@@ -3,15 +3,14 @@ FROM python:3.7-slim-bullseye AS builder
 # Build-time environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive \
-    PIP_PREFER_BINARY=1
+    DEBIAN_FRONTEND=noninteractive
 
 # Configure apt-get retries and timeouts for heavy LaTeX downloads
 RUN printf '%s\n' \
     'Acquire::http::Timeout "120";' \
     'Acquire::https::Timeout "120";' \
     'Acquire::ftp::Timeout "120";' \
-    'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99custom \
+    'Acquire::Retries "5";' > /etc/apt/apt.conf.d/99custom \
     && printf '%s\n' 'force-unsafe-io' > /etc/dpkg/dpkg.cfg.d/docker-unsafe-io
 
 # Set the working directory
@@ -41,8 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js and LESS using the same version as packages_base_manual_install.sh.
-RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get update \
     && apt-get install -y --no-install-recommends nodejs \
     && npm install --prefix /usr less@3.13.1 -g \
