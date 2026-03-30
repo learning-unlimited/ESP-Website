@@ -1,0 +1,40 @@
+{% extends "main.html" %}
+
+{% block title %}Add a New School{% endblock %}
+
+{% block content %}
+<div class="row-fluid">
+    <div class="span8">
+        <h2>Add K12 school</h2>
+        <br />
+
+        <form action="{% url 'k12school_create' %}" method="post">
+            {% csrf_token %}
+
+            {% if form.errors %}
+            <div class="alert alert-error">
+                <button type="button" class="close" data-dismiss="alert">x</button>
+                Please correct the errors below.
+            </div>
+            {% endif %}
+
+            {% for field in form %}
+            <div style="margin-bottom: 15px;">
+                <div><strong>{{ field.label }}:</strong></div>
+                <div>{{ field }}</div>
+                {% if field.help_text %}
+                <div style="font-size: 0.8em; color: #666;">{{ field.help_text }}</div>
+                {% endif %}
+                {% for error in field.errors %}
+                <div style="color: red; font-size: 0.9em;">{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+            <div style="margin-top: 20px;">
+                <button type="submit" class="btn btn-primary">Save School</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
