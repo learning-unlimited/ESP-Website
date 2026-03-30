@@ -14,6 +14,7 @@ urlpatterns = [
     re_path(r'^/metadata/$', views.getRebuildData, name='customforms_metadata'),
     re_path(r'^/getperms/$', views.getPerms, name='customforms_get_perms'),
     re_path(r'^/getlinks/$', views.get_links, name='customforms_get_links'),
+    re_path(r'^/getprograms/$', views.get_programs, name='customforms_get_programs'),
     re_path(r'^/getmodules/$', views.get_modules, name='customforms_get_modules'),
     re_path(r'^/builddata/$', views.formBuilderData, name='customforms_build_data'),
     re_path(r'^/exceldata/(?P<form_id>\d{1,6})/$', views.getExcelData, name='customforms_excel_data'),

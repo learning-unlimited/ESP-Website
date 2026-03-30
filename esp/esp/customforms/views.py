@@ -16,6 +16,7 @@ from esp.customforms.linkfields import cf_cache
 from esp.tagdict.models import Tag
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.decorators import user_passes_test, login_required
+from django.db import models
 
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
@@ -437,6 +438,7 @@ def getRebuildData(request):
 def get_links(request):
     """
     Returns the instances for the specified model, to link to in the form builder.
+    Enhanced to support program filtering and search for Course model.
     """
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
@@ -447,12 +449,60 @@ def get_links(request):
                     link_model = cf_cache.link_fields[request.GET['link_model']]['model']
                 except KeyError:
                     return HttpResponse(status=400)
-            link_objects = link_model.objects.all().order_by('-id')
+            
+            link_objects = link_model.objects.all()
+            
+            # Enhanced filtering for Course model
+            if link_model.__name__ == 'ClassSubject':
+                program_id = request.GET.get('program_id')
+                search_query = request.GET.get('search', '').strip()
+                
+                # Filter by program
+                if program_id:
+                    link_objects = link_objects.filter(parent_program_id=program_id)
+                
+                # Filter by search query
+                if search_query:
+                    link_objects = link_objects.filter(
+                        models.Q(title__icontains=search_query) |
+                        models.Q(class_info__icontains=search_query) |
+                        models.Q(emailcode__icontains=search_query)
+                    )
+                
+                # Limit results for performance
+                link_objects = link_objects.order_by('-id')[:100]
+            
             retval = []
             for obj in link_objects:
                 retval.append({'id': obj.id, 'name': str(obj)})
 
             return HttpResponse(json.dumps(retval))
+    return HttpResponse(status=400)
+
+@user_passes_test(test_func)
+def get_programs(request):
+    """
+    Returns programs that have courses for the two-level selection.
+    """
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if request.method == 'GET':
+            try:
+                # Get programs that have ClassSubject courses
+                from esp.program.models import ClassSubject
+                programs_with_courses = Program.objects.filter(
+                    classsubject__isnull=False
+                ).distinct().order_by('name')
+                
+                retval = []
+                for program in programs_with_courses:
+                    retval.append({
+                        'id': program.id,
+                        'name': str(program.name)
+                    })
+                
+                return HttpResponse(json.dumps(retval))
+            except Exception as e:
+                return HttpResponse(json.dumps({'error': str(e)}), status=500)
     return HttpResponse(status=400)
 
 @user_passes_test(test_func)
