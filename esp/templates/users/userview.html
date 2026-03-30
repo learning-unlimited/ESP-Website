@@ -206,16 +206,31 @@
 </div>
 
 <table class="dottedtable">
-<tr><td class="key">Name</td><td>{{ user.first_name }} {{ user.last_name }}</td></tr>
+<tr><td class="key">Name</td><td id="td_name">
+    <span class="disp">{{ user.first_name }} {{ user.last_name }} <a href="#" onclick="toggleEditUser('name', true); return false;" aria-label="Edit name" title="Edit name"><i class="glyphicon glyphicon-pencil" style="font-size: 0.8em; margin-left: 5px; color: #888;" aria-hidden="true"></i></a></span>
+    <span class="edit" style="display:none;">
+        <input type="text" id="edit_first_name" value="{{ user.first_name }}" placeholder="First Name" />
+        <input type="text" id="edit_last_name" value="{{ user.last_name }}" placeholder="Last Name" />
+        <button class="btn btn-small btn-primary" onclick="submitEditUser('name');">Save</button>
+        <button class="btn btn-small btn-default" onclick="toggleEditUser('name', false); return false;">Cancel</button>
+    </span>
+</td></tr>
 <tr><td class="key">Gender</td><td>{% if profile.student_info.gender %}{{ profile.student_info.gender }}{% else %}Not specified{% endif %}</td></tr>
 <tr><td class="key">Pronouns</td><td>{% if profile.teacher_info.pronoun %}{{ profile.teacher_info.pronoun }}{% elif profile.student_info.pronoun %}{{ profile.student_info.pronoun }}{% else %}Not specified{% endif %}</td></tr>
 <tr><td class="key">Username</td><td>{{ user.username }}</td></tr>
 <tr><td class="key">User ID</td><td>{{ user.id }}</td></tr>
-<tr><td class="key">Email</td><td>{{ user.email }}</td></tr>
+<tr><td class="key">Email</td><td id="td_email">
+    <span class="disp">{{ user.email }} <a href="#" onclick="toggleEditUser('email', true); return false;" aria-label="Edit email" title="Edit email"><i class="glyphicon glyphicon-pencil" style="font-size: 0.8em; margin-left: 5px; color: #888;" aria-hidden="true"></i></a></span>
+    <span class="edit" style="display:none;">
+        <input type="email" id="edit_email" value="{{ user.email }}" placeholder="Email" style="width: 250px;" />
+        <button class="btn btn-small btn-primary" onclick="submitEditUser('email');">Save</button>
+        <button class="btn btn-small btn-default" onclick="toggleEditUser('email', false); return false;">Cancel</button>
+    </span>
+</td></tr>
 {% if profile.contact_user %}
     <tr><td class="key">Day Phone</td><td>{{ profile.contact_user.phone_day }}</td></tr>
     <tr><td class="key">Cell Phone</td><td>{{ profile.contact_user.phone_cell }}</td></tr>
-    <tr><td class="key">Address</td><td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{% if profile.contact_user.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
+    <tr><td class="key">Address</td><td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}</td></tr>
 {% else %}
     <tr><td colspan="2"><font color="red">User account not fully created; please fill out a profile!</font></td></tr>
 {% endif %}
@@ -299,7 +314,7 @@
         <tr><td class="key">Email</td><td>{{ profile.contact_emergency.e_mail }}</td></tr>
         <tr><td class="key">Day Phone</td><td>{{ profile.contact_emergency.phone_day }}</td></tr>
         <tr><td class="key">Cell Phone</td><td>{{ profile.contact_emergency.phone_cell }}</td></tr>
-        <tr><td class="key">Address</td><td>{{ profile.contact_emergency.address_street }}<br />{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}{% if profile.contact_emergency.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
+        <tr><td class="key">Address</td><td>{{ profile.contact_emergency.address_street }}<br />{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}</td></tr>
         </table>
     {% else %}
         <em>(None specified)</em>
@@ -314,7 +329,7 @@
         <tr><td class="key">Email</td><td>{{ profile.contact_guardian.e_mail }}</td></tr>
         <tr><td class="key">Day Phone</td><td>{{ profile.contact_guardian.phone_day }}</td></tr>
         <tr><td class="key">Cell Phone</td><td>{{ profile.contact_guardian.phone_cell }}</td></tr>
-        <tr><td class="key">Address</td><td>{{ profile.contact_guardian.address_street }}<br />{{ profile.contact_guardian.address_city }}, {{ profile.contact_guardian.address_state }} {{ profile.contact_guardian.address_zip }}{% if profile.contact_guardian.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
+        <tr><td class="key">Address</td><td>{{ profile.contact_guardian.address_street }}<br />{{ profile.contact_guardian.address_city }}, {{ profile.contact_guardian.address_state }} {{ profile.contact_guardian.address_zip }}</td></tr>
         </table>
     {% else %}
         <em>(None specified)</em>
@@ -421,5 +436,36 @@
     {% if forloop.last %}</ul>{% endif %}
     {% endfor %}
 {% endif %}{% endwith %}
+<script type="text/javascript">
+function submitEditUser(field_type) {
+    var data = {
+        'username': '{{ user.username|escapejs }}',
+        'csrfmiddlewaretoken': (typeof csrf_token === 'function' ? csrf_token() : $j.cookie('esp_csrftoken')),
+        'field': field_type
+    };
+    
+    if (field_type == 'name') {
+        data['first_name'] = $j('#edit_first_name').val();
+        data['last_name'] = $j('#edit_last_name').val();
+    } else if (field_type == 'email') {
+        data['email'] = $j('#edit_email').val();
+    }
+
+    $j.post('/manage/userview_edit/', data).done(function() {
+        location.reload();
+    }).fail(function(xhr) {
+        alert("Error updating user information: " + xhr.responseText);
+    });
+}
+function toggleEditUser(field_type, show) {
+    if (show) {
+        $j('#td_' + field_type + ' .disp').hide();
+        $j('#td_' + field_type + ' .edit').show();
+    } else {
+        $j('#td_' + field_type + ' .edit').hide();
+        $j('#td_' + field_type + ' .disp').show();
+    }
+}
+</script>
 </div>
-{% endblock %}
+{% endblock content %}
