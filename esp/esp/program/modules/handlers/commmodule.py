@@ -56,7 +56,7 @@ def _get_required_post_fields(request, *fields):
     missing = [f for f in fields if f not in request.POST]
     if missing:
         raise ESPError(
-            "Required form data is missing (%s). "
+            "One or more required form fields are missing: %s. "
             "Please go back and try again." % ', '.join(missing)
         )
     return [request.POST[f] for f in fields]

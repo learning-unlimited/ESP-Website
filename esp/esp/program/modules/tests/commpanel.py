@@ -87,7 +87,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         listcount = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', content).groups()[0]
         return filterid, listcount
 
-    def runTest(self):
+    def test_commfinal_sends_email(self):
         #   Log in an administrator
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
@@ -150,7 +150,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commprev'), post_data)
         content = response.content.decode('UTF-8')
 
-        self.assertIn('Required form data is missing (body).', content)
+        self.assertIn('One or more required form fields are missing: body.', content)
         self.assertNotIn('MultiValueDictKeyError', content)
 
     def test_commfinal_missing_required_field_shows_friendly_error(self):
@@ -168,9 +168,27 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commfinal'), post_data)
         content = response.content.decode('UTF-8')
 
-        self.assertIn('Required form data is missing (from).', content)
+        self.assertIn('One or more required form fields are missing: from.', content)
         self.assertNotIn('MultiValueDictKeyError', content)
         self.assertEqual(MessageRequest.objects.filter(recipients__id=filterid, subject='Test Subject 123').count(), 0)
+
+    def test_maincomm2_missing_required_field_shows_friendly_error(self):
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+        filterid, listcount = self._get_filterid_and_listcount()
+
+        post_data = {
+            'filterid': filterid,
+            'listcount': listcount,
+            # from intentionally omitted
+            'replyto': 'replyto@testserver.learningu.org',
+            'subject': 'Draft Subject',
+            'body': 'Draft Body',
+        }
+        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'maincomm2'), post_data)
+        content = response.content.decode('UTF-8')
+
+        self.assertIn('One or more required form fields are missing: from.', content)
+        self.assertNotIn('MultiValueDictKeyError', content)
 
     def test_program_date_variables_in_comms(self):
         """Test that {{ program.date }}, {{ program.date_range }}, {{ program.teacher_reg_deadline }} work in email templates."""
