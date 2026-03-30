@@ -41,7 +41,7 @@ from django.utils.deconstruct import deconstructible
 
 import datetime
 
-__all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication']
+__all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication', 'TeacherAppQuestion', 'TeacherAppResponse', 'TeacherAppReview', 'TeacherApplication']
 
 @deconstructible
 class BaseAppElement(object):
@@ -249,4 +249,146 @@ class StudentApplication(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_junctionstudentapp'
+
+
+class TeacherAppQuestion(StudentAppQuestion):
+    """ Teacher application questions for programs that need them. """
+    from esp.program.models import Program, ClassSubject
+    
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    subject = models.ForeignKey(ClassSubject, null=True, blank=True, on_delete=models.CASCADE)
+    
+    def __str__(self):
+        if self.subject:
+            return f"{self.program.name} - {self.subject.title} - {self.prompt}"
+        else:
+            return f"{self.program.name} - {self.prompt}"
+    
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_teacherappquestion'
+
+
+class TeacherAppResponse(StudentAppResponse):
+    """ Teacher application responses. """
+    question = models.ForeignKey(TeacherAppQuestion, on_delete=models.CASCADE)
+    
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_teacherappresponse'
+
+
+class TeacherAppReview(StudentAppReview):
+    """ Teacher application reviews. """
+    from esp.users.models import ESPUser
+    response = models.ForeignKey(TeacherAppResponse, on_delete=models.CASCADE)
+    reviewer = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
+    
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_teacherappreview'
+
+
+class TeacherApplication(models.Model):
+    """ Teacher applications for programs that need them. """
+    from esp.program.models import Program, ClassSubject
+
+    program = models.ForeignKey(Program, editable=False, on_delete=models.CASCADE)
+    user = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
+    subject = models.ForeignKey(ClassSubject, editable=False, on_delete=models.CASCADE)
+
+    questions = models.ManyToManyField(TeacherAppQuestion)
+    responses = models.ManyToManyField(TeacherAppResponse)
+    reviews = models.ManyToManyField(TeacherAppReview)
+
+    done = models.BooleanField(default=False, editable=False)
+    submitted = models.BooleanField(default=False, editable=False)
+    
+    # Application status
+    approved = models.BooleanField(default=False, editable=False)
+    rejected = models.BooleanField(default=False, editable=False)
+    needs_review = models.BooleanField(default=True, editable=False)
+    
+    # Timestamps
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+    updated = models.DateTimeField(auto_now=True, editable=False)
+    submitted_date = models.DateTimeField(null=True, blank=True, editable=False)
+
+    def __str__(self):
+        return f"{self.user} - {self.subject.title} application"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.save()
+        self.set_questions()
+
+    def set_questions(self):
+        """ Set questions for this application based on program and subject. """
+        existing_list = self.questions.all().values_list('id', flat=True)
+        new_list = list(TeacherAppQuestion.objects.filter(program=self.program).values_list('id', flat=True))
+        new_list += list(TeacherAppQuestion.objects.filter(subject=self.subject).values_list('id', flat=True))
+
+        to_remove = [e for e in existing_list if (e not in new_list)]
+        for i in to_remove:
+            self.questions.remove(i)
+        to_add = [e for e in new_list if (e not in existing_list)]
+        for i in to_add:
+            self.questions.add(i)
+
+    def get_forms(self, data={}):
+        """ Get a list of forms for the teacher to fill out. """
+        forms = []
+        
+        # Get forms for already existing responses
+        for r in self.responses.filter(question__subject=self.subject):
+            f = r.get_form(data)
+            if f is not None:
+                f.target = r
+                forms.append(f)
+
+        # Get forms for questions that don't have responses yet
+        for q in self.questions.filter(subject=self.subject):
+            if not self.responses.filter(question=q).exists():
+                f = q.get_form(data)
+                if f is not None:
+                    f.target = TeacherAppResponse(question=q, user=self.user)
+                    forms.append(f)
+
+        return forms
+
+    def update(self, form):
+        """ Use this if you're not sure what response the form is relevant to. """
+        for r in self.responses.all():
+            r.update(form)
+
+    def submit(self):
+        """ Submit the application for review. """
+        self.done = True
+        self.submitted = True
+        self.submitted_date = datetime.datetime.now()
+        self.save()
+
+    def approve(self):
+        """ Approve the application. """
+        self.approved = True
+        self.rejected = False
+        self.needs_review = False
+        self.save()
+
+    def reject(self):
+        """ Reject the application. """
+        self.approved = False
+        self.rejected = True
+        self.needs_review = False
+        self.save()
+
+    class Meta:
+        app_label = 'program'
+        db_table = 'program_teacherapplication'
+        indexes = [
+            models.Index(fields=['program', 'subject'], name='teacherapp_prog_subj_idx'),
+            models.Index(fields=['user', 'subject'], name='teacherapp_user_subj_idx'),
+            models.Index(fields=['submitted'], name='teacherapp_submitted_idx'),
+            models.Index(fields=['needs_review'], name='teacherapp_review_idx'),
+        ]
 

@@ -340,6 +340,12 @@ class Program(models.Model, CustomFormsLinkModel):
         return bool(StudentAppQuestion.objects.filter(program=self) | StudentAppQuestion.objects.filter(subject__parent_program=self))
     isUsingStudentApps.depend_on_model('program.StudentAppQuestion')
 
+    @cache_function
+    def isUsingTeacherApps(self):
+        from esp.program.models.app_ import TeacherAppQuestion
+        return bool(TeacherAppQuestion.objects.filter(program=self) | TeacherAppQuestion.objects.filter(subject__parent_program=self))
+    isUsingTeacherApps.depend_on_model('program.TeacherAppQuestion')
+
     get_teach_url = _get_type_url("teach")
     get_learn_url = _get_type_url("learn")
     get_manage_url = _get_type_url("manage")
