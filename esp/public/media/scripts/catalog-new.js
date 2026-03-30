@@ -489,6 +489,7 @@ var CatalogViewModel = function () {
             $form.attr('method', 'post');
         }
         else {
+            $form.find('input[name="csrfmiddlewaretoken"]').remove();
             $form.attr('action', learn_url + 'studentreg');
             $form.attr('method', 'get');
         }
@@ -522,6 +523,7 @@ var CatalogViewModel = function () {
             $form.attr('method', 'post');
         }
         else {
+            $form.find('input[name="csrfmiddlewaretoken"]').remove();
             $form.attr('action', learn_url + 'studentreg');
             $form.attr('method', 'get');
         }
