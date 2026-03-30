@@ -979,6 +979,239 @@ class StudentInfoFormGradeTest(TestCase):
             "StudentInfo must NOT be saved when graduation_year is missing.",
         )
 
+
+class DeactivationExpirationTest(ProgramFrameworkTest):
+    """Test that deactivating a user expires their records for upcoming programs."""
+
+    def setUp(self):
+        from esp.cal.models import Event, EventType
+
+        super().setUp(
+            program_type='UpcomingProgram',
+            program_instance_name='2222_Future',
+            program_instance_label='Future 2222',
+            start_time=datetime.datetime(2222, 7, 7, 10, 0),
+            num_timeslots=2,
+        )
+        self.upcoming_program = self.program
+
+        from esp.program.forms import ProgramCreationForm
+        from esp.program.setup import prepare_program, commit_program
+        from esp.program.models import ProgramModule
+
+        prog_form_values = {
+            'term': '2000_Past',
+            'term_friendly': 'Past 2000',
+            'grade_min': '7',
+            'grade_max': '12',
+            'director_email': 'info@test.learningu.org',
+            'program_size_max': '3000',
+            'program_type': 'PastProgram',
+            'program_modules': ProgramModule.objects.all(),
+            'class_categories': [c.id for c in self.categories],
+            'admins': [a.id for a in self.admins],
+            'teacher_reg_start': '2000-01-01 00:00:00',
+            'teacher_reg_end':   '3001-01-01 00:00:00',
+            'student_reg_start': '2000-01-01 00:00:00',
+            'student_reg_end':   '3001-01-01 00:00:00',
+            'base_cost':         0,
+            'sibling_discount':  0,
+        }
+
+        pcf = ProgramCreationForm(prog_form_values)
+        if pcf.is_valid():
+            temp_prog = pcf.save(commit=False)
+            (perms, modules) = prepare_program(temp_prog, pcf.data)
+            new_prog = pcf.save(commit=False)
+            new_prog.url = 'PastProgram/2000_Past'
+            new_prog.name = 'PastProgram Past 2000'
+            new_prog.save()
+            pcf.save_m2m()
+            commit_program(new_prog, perms, 0, 0)
+            self.past_program = new_prog
+
+            event_type = EventType.get_from_desc('Class Time Block')
+            past_time = datetime.datetime(2000, 1, 1, 10, 0)
+            Event.objects.create(
+                program=self.past_program,
+                event_type=event_type,
+                start=past_time,
+                end=past_time + datetime.timedelta(minutes=50),
+                short_description='Past Slot',
+                description='Past timeslot'
+            )
+        else:
+            raise Exception("Failed to create past program: %s" % pcf.errors)
+
+        from esp.program.models.class_ import ClassSubject
+
+        self.upcoming_class = ClassSubject.objects.create(
+            title='Upcoming Class',
+            category=self.categories[0],
+            grade_min=7,
+            grade_max=12,
+            parent_program=self.upcoming_program,
+            class_size_max=30,
+        )
+        self.upcoming_class.add_section(duration=1.0)
+        self.upcoming_section = self.upcoming_class.get_sections()[0]
+
+        self.past_class = ClassSubject.objects.create(
+            title='Past Class',
+            category=self.categories[0],
+            grade_min=7,
+            grade_max=12,
+            parent_program=self.past_program,
+            class_size_max=30,
+        )
+        self.past_class.add_section(duration=1.0)
+        self.past_section = self.past_class.get_sections()[0]
+
+        self.student = self.students[0]
+        self.student.is_active = True
+        self.student.save()
+
+    def test_deactivation_expires_upcoming_student_registration(self):
+        from esp.program.models import StudentRegistration, RegistrationType
+
+        enrolled, _ = RegistrationType.objects.get_or_create(name='Enrolled', category='student')
+
+        sr_upcoming = StudentRegistration.objects.create(
+            user=self.student,
+            section=self.upcoming_section,
+            relationship=enrolled,
+        )
+        sr_past = StudentRegistration.objects.create(
+            user=self.student,
+            section=self.past_section,
+            relationship=enrolled,
+        )
+
+        self.assertTrue(sr_upcoming.is_valid())
+        self.assertTrue(sr_past.is_valid())
+
+        self.student.is_active = False
+        self.student.save()
+
+        sr_upcoming.refresh_from_db()
+        sr_past.refresh_from_db()
+
+        self.assertFalse(sr_upcoming.is_valid())
+        self.assertTrue(sr_past.is_valid())
+
+    def test_deactivation_expires_upcoming_student_subject_interest(self):
+        from esp.program.models import StudentSubjectInterest
+
+        ssi_upcoming = StudentSubjectInterest.objects.create(
+            user=self.student,
+            subject=self.upcoming_class,
+        )
+        ssi_past = StudentSubjectInterest.objects.create(
+            user=self.student,
+            subject=self.past_class,
+        )
+
+        self.assertTrue(ssi_upcoming.is_valid())
+        self.assertTrue(ssi_past.is_valid())
+
+        self.student.is_active = False
+        self.student.save()
+
+        ssi_upcoming.refresh_from_db()
+        ssi_past.refresh_from_db()
+
+        self.assertFalse(ssi_upcoming.is_valid())
+        self.assertTrue(ssi_past.is_valid())
+
+    def test_deactivation_expires_upcoming_permissions(self):
+        perm_upcoming = Permission.objects.create(
+            user=self.student,
+            permission_type='Student/Classes',
+            program=self.upcoming_program,
+        )
+        perm_past = Permission.objects.create(
+            user=self.student,
+            permission_type='Student/Classes',
+            program=self.past_program,
+        )
+
+        self.assertTrue(perm_upcoming.is_valid())
+        self.assertTrue(perm_past.is_valid())
+
+        self.student.is_active = False
+        self.student.save()
+
+        perm_upcoming.refresh_from_db()
+        perm_past.refresh_from_db()
+
+        self.assertFalse(perm_upcoming.is_valid())
+        self.assertTrue(perm_past.is_valid())
+
+    def test_activation_does_not_unexpire_records(self):
+        from esp.program.models import StudentRegistration, RegistrationType
+
+        enrolled, _ = RegistrationType.objects.get_or_create(name='Enrolled', category='student')
+
+        sr_upcoming = StudentRegistration.objects.create(
+            user=self.student,
+            section=self.upcoming_section,
+            relationship=enrolled,
+        )
+
+        self.student.is_active = False
+        self.student.save()
+
+        sr_upcoming.refresh_from_db()
+        self.assertFalse(sr_upcoming.is_valid())
+
+        self.student.is_active = True
+        self.student.save()
+
+        sr_upcoming.refresh_from_db()
+        self.assertFalse(sr_upcoming.is_valid())
+
+    def test_deactivation_removes_volunteer_offers(self):
+        from esp.program.models import VolunteerRequest, VolunteerOffer
+
+        upcoming_timeslot = self.upcoming_program.getTimeSlots().first()
+        past_timeslot = self.past_program.getTimeSlots().first()
+
+        self.assertIsNotNone(upcoming_timeslot, "upcoming_program must have at least one timeslot")
+        self.assertIsNotNone(past_timeslot, "past_program must have at least one timeslot")
+
+        vr_upcoming = VolunteerRequest.objects.create(
+            program=self.upcoming_program,
+            timeslot=upcoming_timeslot,
+            num_volunteers=5,
+        )
+        vr_past = VolunteerRequest.objects.create(
+            program=self.past_program,
+            timeslot=past_timeslot,
+            num_volunteers=5,
+        )
+
+        vo_upcoming = VolunteerOffer.objects.create(
+            request=vr_upcoming,
+            user=self.student,
+            name='Test Student',
+        )
+        vo_past = VolunteerOffer.objects.create(
+            request=vr_past,
+            user=self.student,
+            name='Test Student',
+        )
+
+        # Verify offers exist before deactivation
+        self.assertTrue(VolunteerOffer.objects.filter(id=vo_upcoming.id).exists())
+        self.assertTrue(VolunteerOffer.objects.filter(id=vo_past.id).exists())
+
+        self.student.is_active = False
+        self.student.save()
+
+        self.assertFalse(VolunteerOffer.objects.filter(id=vo_upcoming.id).exists())
+        self.assertTrue(VolunteerOffer.objects.filter(id=vo_past.id).exists())
+
+
 class StudentProfileForm__emailvalidationtest(TestCase):
     """Tests for StudentProfileForm email validation.
 

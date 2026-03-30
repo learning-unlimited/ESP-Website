@@ -1403,6 +1403,7 @@ def update_email(**kwargs):
             # circular.  If we or django ever patch it to do so, we will need
             # to be more careful here.
             users_to_deactivate.update(is_active=False)
+            expire_user_records_for_upcoming_programs_for_queryset(users_to_deactivate)
         # Only remove them from group-based lists; keep them on program and
         # class lists.
         for l in set(group_map.values()):
@@ -1449,6 +1450,103 @@ def update_email(**kwargs):
         if not other_users.exists():
             for l in lists:
                 mailman.remove_list_member(l, old_email)
+
+
+@dispatch.receiver(signals.pre_save, sender=ESPUser,
+                   dispatch_uid='expire_upcoming_records_on_deactivation')
+def expire_upcoming_records_on_deactivation(**kwargs):
+    """Expire registrations/permissions for upcoming programs when user is deactivated."""
+    new_user = kwargs['instance']
+
+    if new_user.id is None:
+        return
+
+    old_user = ESPUser.objects.get(id=new_user.id)
+    if old_user.is_active and not new_user.is_active:
+        expire_user_records_for_upcoming_programs(new_user)
+
+
+def expire_user_records_for_upcoming_programs(user):
+    """Expire a user's registrations and permissions for programs that haven't ended yet."""
+    from esp.program.models import (
+        Program, StudentRegistration, StudentSubjectInterest, VolunteerOffer, Event
+    )
+    from django.db.models import Max
+    from itertools import chain
+
+    now = datetime.now()
+
+    # Determine upcoming programs using DB-side aggregation over Events:
+    # - Programs with at least one "Class Time Block" Event whose latest end >= now
+    # - Programs with no "Class Time Block" Events at all (matches previous datetime_range() None behavior)
+    class_time_events = Event.objects.filter(event_type__description="Class Time Block")
+
+    # Programs that have any "Class Time Block" events
+    program_ids_with_class_times = class_time_events.values_list("program_id", flat=True).distinct()
+
+    # Among those, keep programs whose latest class-time end is in the future or now
+    upcoming_with_events = (
+        class_time_events
+        .values("program_id")
+        .annotate(latest_end=Max("end"))
+        .filter(latest_end__gte=now)
+        .values_list("program_id", flat=True)
+    )
+
+    # Programs with no "Class Time Block" events at all are treated as upcoming
+    programs_without_events = Program.objects.exclude(
+        id__in=program_ids_with_class_times
+    ).values_list("id", flat=True)
+
+    upcoming_program_ids = list(chain(upcoming_with_events, programs_without_events))
+
+    if not upcoming_program_ids:
+        return
+
+    sr_qs = StudentRegistration.valid_objects(now).filter(
+        section__parent_class__parent_program_id__in=upcoming_program_ids,
+        user=user
+    )
+    sr_count = sr_qs.update(end_date=now)
+
+    ssi_qs = StudentSubjectInterest.valid_objects(now).filter(
+        subject__parent_program_id__in=upcoming_program_ids,
+        user=user
+    )
+    ssi_count = ssi_qs.update(end_date=now)
+
+    permission_qs = Permission.valid_objects(now).filter(
+        program_id__in=upcoming_program_ids,
+        user=user
+    )
+    perm_count = permission_qs.update(end_date=now)
+
+    vol_qs = VolunteerOffer.objects.filter(
+        request__program_id__in=upcoming_program_ids,
+        user=user
+    )
+    vol_count = vol_qs.count()
+    vol_qs.delete()
+
+    if sr_count or ssi_count or perm_count or vol_count:
+        logger.info(
+            "Expired records for deactivated user %s (id=%d): "
+            "%d StudentRegistrations, %d StudentSubjectInterests, "
+            "%d Permissions, %d VolunteerOffers",
+            user.username, user.id, sr_count, ssi_count, perm_count, vol_count
+        )
+
+
+def expire_user_records_for_upcoming_programs_for_queryset(user_qs):
+    """Expire registrations and permissions for all users in the given queryset
+    for programs that haven't ended yet.
+
+    This is intended for use after bulk deactivation operations performed via
+    QuerySet.update(...), which do not trigger model save signals.
+    """
+    for user in user_qs:
+        expire_user_records_for_upcoming_programs(user)
+
 
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
