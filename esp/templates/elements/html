@@ -101,7 +101,9 @@
               value: $j(this).prop('value')
           }).appendTo(form);
           <!-- check csrf cookie in form (we prevented this above) -->
-          check_csrf_cookie(form[0]);
+          if (form.attr('method') && form.attr('method').toLowerCase() === 'post') {
+            check_csrf_cookie(form[0]);
+          }
           var submitted = false;
           <!-- check form validity -->
           if(form[0].reportValidity()) {
