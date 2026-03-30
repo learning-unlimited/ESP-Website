@@ -251,17 +251,52 @@ def renew_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
-    search_fields = default_user_search() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
-    list_filter = ['section__parent_class__parent_program', 'relationship', ExpiredListFilter]
+    
+    # Optimized search fields - reduced JOINs for better performance
+    search_fields = ['id', 'user__username', 'user__email', 'section__emailcode']
+    
+    # Optimized list filters - removed expensive relationship traversal
+    list_filter = ['relationship', ExpiredListFilter]
+    
     date_hierarchy = 'start_date'
+    
+    # Performance optimization: preload related objects
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'user', 
+            'section__parent_class__parent_program',
+            'relationship'
+        )
+    
+    # Custom search method for better performance
+    def get_search_results(self, request, queryset, search_term):
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+        
+        # If searching by ID, use exact match for better performance
+        if search_term.isdigit():
+            queryset |= self.model.objects.filter(id=int(search_term))
+        
+        return queryset, use_distinct
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = default_user_search() + ['id', 'subject__id', 'subject__title']
-    list_filter = ['subject__parent_program',]
+    
+    # Optimized search fields - reduced JOINs for better performance
+    search_fields = ['id', 'user__username', 'user__email', 'subject__title']
+    
+    # Optimized list filters - removed expensive relationship traversal
+    list_filter = []
+    
     date_hierarchy = 'start_date'
+    
+    # Performance optimization: preload related objects
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'user', 
+            'subject__parent_program'
+        )
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
 def sec_classrooms(obj):

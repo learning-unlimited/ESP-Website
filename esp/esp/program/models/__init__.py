@@ -2276,6 +2276,13 @@ class StudentRegistration(ExpirableModel):
 
     class Meta:
         app_label = 'program'
+        indexes = [
+            models.Index(fields=['user'], name='esp_studreg_user_idx'),
+            models.Index(fields=['section'], name='esp_studreg_section_idx'),
+            models.Index(fields=['relationship'], name='esp_studreg_rel_idx'),
+            models.Index(fields=['user', 'section'], name='esp_studreg_user_section_idx'),
+            models.Index(fields=['start_date'], name='esp_studreg_start_date_idx'),
+        ]
 
     def __str__(self):
         return f'{self.user} {self.relationship} in {self.section}'
@@ -2289,6 +2296,12 @@ class StudentSubjectInterest(ExpirableModel):
 
     class Meta:
         app_label = 'program'
+        indexes = [
+            models.Index(fields=['user'], name='esp_studint_user_idx'),
+            models.Index(fields=['subject'], name='esp_studint_subject_idx'),
+            models.Index(fields=['user', 'subject'], name='esp_studint_user_subject_idx'),
+            models.Index(fields=['start_date'], name='esp_studint_start_date_idx'),
+        ]
 
     def __str__(self):
         return f'{self.user} interest in {self.subject}'
