@@ -62,6 +62,20 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             "choosable": 1
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if tl != "learn" or view_name != "studentreg":
+            return None
+        from esp.program.modules.admin_search import AdminSearchEntry
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="learn_studentreg",
+            url="/learn/%s/studentreg" % base,
+            title="Student Registration",
+            category="Quick Links",
+            keywords=["student registration", "signup", "enroll"],
+        )
+
     @cache_function
     def have_paid(self, user):
         """ Whether the user has paid for this program.  """
@@ -193,7 +207,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             if hasattr(module, 'onConfirm'):
                 module.onConfirm(request)
-            if not module.isCompleted() and module.isRequired():
+            if not module.isCompleted(request.user) and module.isRequired():
                 completedAll = False
             context = module.prepare(context)
 
@@ -235,8 +249,15 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         from esp.program.modules.module_ext import DBReceipt
 
-        if self.have_paid(request.user):
-            raise ESPError("You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund.", log=False)
+        # Block cancellation only if the user has made an actual payment via credit card.
+        from esp.accounting.controllers import IndividualAccountingController
+        iac = IndividualAccountingController(prog, request.user)
+
+        if iac.get_transfers().exclude(transaction_id='').exists():
+            raise ESPError(
+                "You have already paid for this program. If you want to cancel, please contact us directly to request a refund.",
+                log=False
+            )
 
         recs = Record.objects.filter(user=request.user,
                                      event__name="reg_confirmed",
@@ -259,7 +280,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context["request"] = request
             context["program"] = prog
             return HttpResponse( Template(receipt_text).render( Context(context) ) )
-        except:
+        except Exception:
             return self.goToCore(tl)
 
     @cache_function
@@ -295,7 +316,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             # If completed all required modules so far...
             if context['completedAll']:
-                if not module.isCompleted() and module.isRequired():
+                if not module.isCompleted(request.user) and module.isRequired():
                     context['completedAll'] = False
 
             context = module.prepare(context)
@@ -315,6 +336,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['have_paid'] = self.have_paid(request.user)
         context['extra_steps'] = "learn:extra_steps"
         context['printers'] = self.printer_names()
+
+        # Pass flag to frontend to hide the cancel button if a real CC payment exists
+        iac = IndividualAccountingController(prog, request.user)
+        context['has_external_payment'] = iac.get_transfers().exclude(transaction_id='').exists()
 
         if context['scrmi'] and context['scrmi'].use_priority:
             context['no_confirm'] = True
