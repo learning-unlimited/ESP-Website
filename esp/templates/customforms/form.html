@@ -8,6 +8,12 @@
 {% block title %}{{ form_title }}{% endblock title %}
 
 {% block content %}
+    {% if user.is_authenticated and user.isAdministrator %}
+    <div class="alert alert-info" style="margin-bottom: 15px; padding: 10px; background-color: #d9edf7; border: #bce8f1 1px solid; color: #31708f; border-radius: 4px;">
+        <strong>Admin:</strong> Want to edit this form? 
+        <a href="{% url 'customforms_landing' %}" style="text-decoration: underline;">Click HERE</a>
+    </div>
+    {% endif %}
     <h1 class="form_title">{{ form_title }}</h1>
     <h2 class="form_desc">{{ form_description }}</h2>
     <em class="step_count">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</em>
