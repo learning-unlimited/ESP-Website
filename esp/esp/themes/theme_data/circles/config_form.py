@@ -53,3 +53,12 @@ class ConfigForm(ThemeConfigurationForm):
     faq_link = forms.CharField(required=False, initial='/faq.html',
                                help_text='Leave blank to omit an FAQ link.')
     show_footer_textbox = forms.BooleanField(initial = False, required = False, help_text='Should there be an editable text field in the footer?')
+    frontpage_style = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('default', 'Default Frontpage'),
+            ('circles', 'Circles Frontpage'),
+        ],
+        initial='default',
+        help_text='Choose a frontpage style for this theme.'
+    )

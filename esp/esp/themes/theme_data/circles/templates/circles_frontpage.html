@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ theme.titlebar_prefix }} - Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .circles-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 50px 0;
+            flex-wrap: wrap;
+        }
+        .circle-item {
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+        }
+        .circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .circle:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .circle-label {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .learn-circle { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .teach-circle { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .help-circle { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .more-circle { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        
+        @media (max-width: 768px) {
+            .circles-container {
+                gap: 20px;
+            }
+            .circle {
+                width: 120px;
+                height: 120px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="circles-container">
+        <a href="/learn/index.html" class="circle-item">
+            <div class="circle learn-circle">
+                <div>
+                    <div style="font-size: 36px;">📚</div>
+                    <div>LEARN</div>
+                </div>
+            </div>
+            <div class="circle-label">Explore Programs</div>
+        </a>
+        
+        <a href="/teach/index.html" class="circle-item">
+            <div class="circle teach-circle">
+                <div>
+                    <div style="font-size: 36px;">👨‍🏫</div>
+                    <div>TEACH</div>
+                </div>
+            </div>
+            <div class="circle-label">Teach a Class</div>
+        </a>
+        
+        <a href="/volunteer/index.html" class="circle-item">
+            <div class="circle help-circle">
+                <div>
+                    <div style="font-size: 36px;">🤝</div>
+                    <div>HELP</div>
+                </div>
+            </div>
+            <div class="circle-label">Volunteer</div>
+        </a>
+        
+        <a href="/about/index.html" class="circle-item">
+            <div class="circle more-circle">
+                <div>
+                    <div style="font-size: 36px;">ℹ️</div>
+                    <div>MORE</div>
+                </div>
+            </div>
+            <div class="circle-label">About Us</div>
+        </a>
+    </div>
+    
+    {% if theme.welcome_message %}
+    <div style="text-align: center; margin: 40px 0; padding: 20px; background: white; border-radius: 10px; max-width: 600px; margin-left: auto; margin-right: auto;">
+        <h2>{{ theme.welcome_message }}</h2>
+    </div>
+    {% endif %}
+</body>
+</html>
