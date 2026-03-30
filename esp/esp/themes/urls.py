@@ -1,6 +1,4 @@
-
 from esp.themes.views import editor, selector, configure, confirm_overwrite, landing, recompile, logos
-
 from django.urls import re_path
 
 urlpatterns = [
