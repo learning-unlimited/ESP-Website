@@ -165,8 +165,6 @@ def check_setup(self):
                 program=self.program,
                 required=False
             )
-        except Exception as e:
-            logger.warning(f"Error creating donation LineItemType: {e}")
             return False
     # Regex patterns
     valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
