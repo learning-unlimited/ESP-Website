@@ -1,4 +1,3 @@
-
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -162,6 +161,7 @@ THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. 
                      "If you want to switch to one of the standard themes, " + \
                      "please contact the web team."
 
+
 @admin_required
 def landing(request):
     if settings.LOCAL_THEME:
@@ -172,6 +172,7 @@ def landing(request):
     context['last_customization_name'] = tc.get_current_customization()
     context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
     return render_to_response('themes/landing.html', request, context)
+
 
 @admin_required
 def selector(request, keep_files=None):
@@ -202,6 +203,7 @@ def selector(request, keep_files=None):
     context['theme_name'] = tc.get_current_theme()
     context['themes'] = tc.get_theme_names()
     return render_to_response('themes/selector.html', request, context)
+
 
 @admin_required
 def logos(request):
@@ -294,6 +296,7 @@ def logos(request):
 
     return render_to_response('themes/logos.html', request, context)
 
+
 @admin_required
 def confirm_overwrite(request, current_theme=None, differences=None, orig_view=None):
     """ Display a form asking the user which local modified files
@@ -335,6 +338,7 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
     context['differences'] = differences
     context['orig_view'] = orig_view
     return render_to_response('themes/confirm_overwrite.html', request, context)
+
 
 @admin_required
 def configure(request, current_theme=None, force_display=False, keep_files=None):
@@ -378,6 +382,7 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
 
     return render_to_response('themes/configure_form.html', request, context)
 
+
 @admin_required
 def editor(request):
     if settings.LOCAL_THEME:
@@ -395,7 +400,7 @@ def editor(request):
                 theme_name = tc.get_current_customization()
                 if theme_name == 'None':
                     #   Generate a temporary theme name
-                    random_slug  = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
+                    random_slug = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
                     theme_name = f'theme-{datetime.now().strftime("%Y%m%d")}-{random_slug}'
             else:
                 theme_name = request.POST['saveThemeName']
@@ -457,6 +462,7 @@ def editor(request):
     context['variable_defaults'] = tc.get_variable_defaults(current_theme)
 
     return render_to_response('themes/editor.html', request, context)
+
 
 @admin_required
 def recompile(request, keep_files=None):
