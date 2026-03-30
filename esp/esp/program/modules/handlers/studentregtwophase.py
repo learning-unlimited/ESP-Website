@@ -45,7 +45,7 @@ from django.template.loader import render_to_string
 
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
+from esp.program.models import CLASSCATEGORY, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
 from esp.users.models import Record, RecordType, ESPUser
 from esp.dbmail.models import send_mail
@@ -188,9 +188,9 @@ class StudentRegTwoPhase(ProgramModuleObj):
         # to filter out certain categories of classes
         context['open_class_category_id'] = prog.open_class_category.id
         try:
-            lunch_category = ClassCategories.objects.get(category='Lunch')
+            lunch_category = CLASSCATEGORY.objects.get(category='Lunch')
             context['lunch_category_id'] = lunch_category.id
-        except ClassCategories.DoesNotExist:
+        except CLASSCATEGORY.DoesNotExist:
             context['lunch_category_id'] = -1
         return context
 

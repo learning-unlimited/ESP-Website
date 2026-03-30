@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.accounting.models import LineItemType, LineItemOptions
+from esp.accounting.models import LineItemType, lineitemoption
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call
 from esp.program.modules.admin_search import AdminSearchEntry
@@ -75,7 +75,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             lineitem = LineItemType.objects.get(id=request.GET['id'])
             context['lineitem'] = lineitem
             context['lineitem_form'] = LineItemForm(instance = lineitem)
-            context['option_formset'] = OptionFormset(queryset = lineitem.lineitemoptions_set.all(), prefix='options')
+            context['option_formset'] = OptionFormset(queryset = lineitem.lineitemoption_set.all(), prefix='options')
         elif request.GET.get('op') == 'delete':
             # show delete confirmation page
             context['lineitem'] = LineItemType.objects.get(id=request.GET['id'])
@@ -94,14 +94,14 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             if request.POST.get('command') == 'reallyremove':
                 # deletion confirmed
                 lineitem = LineItemType.objects.get(id=request.POST['id'])
-                lineitem.lineitemoptions_set.all().delete()
+                lineitem.lineitemoption_set.all().delete()
                 lineitem.delete()
             elif request.POST.get('command') == 'reallyimport':
                 # import confirmed
                 past_program = Program.objects.get(id=request.POST['program'])
                 past_lineitems = past_program.lineitemtype_set.exclude(text__in=exclude_line_items)
                 for past_lineitem in past_lineitems:
-                    old_options = past_lineitem.lineitemoptions_set.all()
+                    old_options = past_lineitem.lineitemoption_set.all()
                     past_lineitem.pk = None
                     past_lineitem.program = prog
                     past_lineitem.save()
@@ -137,7 +137,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
         if 'lineitem_form' not in context:
             context['lineitem_form'] = LineItemForm()
         if 'option_formset' not in context:
-            context['option_formset'] = OptionFormset(queryset = LineItemOptions.objects.none(), prefix = "options")
+            context['option_formset'] = OptionFormset(queryset = lineitemoption.objects.none(), prefix = "options")
         if 'import_lineitem_form' not in context:
             context['import_lineitem_form'] = LineItemImportForm(cur_prog = prog)
         context['lineitems'] = prog.lineitemtype_set.exclude(text__in=exclude_line_items)# exclude ones that shouldn't be edited here

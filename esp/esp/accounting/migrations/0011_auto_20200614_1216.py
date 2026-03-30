@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='lineitemoptions',
+            model_name='lineitemoption',
             name='is_custom',
             field=models.BooleanField(default=False, help_text='Should the student be allowed to specify a custom amount for this option?'),
         ),

@@ -180,7 +180,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='program',
             name='class_categories',
-            field=models.ManyToManyField(to='program.ClassCategories'),
+            field=models.ManyToManyField(to='program.CLASSCATEGORY'),
         ),
         migrations.AddField(
             model_name='program',
@@ -210,7 +210,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='classsubject',
             name='category',
-            field=models.ForeignKey(related_name='cls', to='program.ClassCategories', on_delete=models.CASCADE),
+            field=models.ForeignKey(related_name='cls', to='program.CLASSCATEGORY', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='classsubject',
@@ -301,7 +301,7 @@ class Migration(migrations.Migration):
             name='ScheduleTestCategory',
             fields=[
                 ('scheduletesttimeblock_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='program.ScheduleTestTimeblock', on_delete=models.CASCADE)),
-                ('category', models.ForeignKey(help_text='The class category that must be selected for this timeblock', to='program.ClassCategories', on_delete=models.CASCADE)),
+                ('category', models.ForeignKey(help_text='The class category that must be selected for this timeblock', to='program.CLASSCATEGORY', on_delete=models.CASCADE)),
             ],
             bases=('program.scheduletesttimeblock',),
         ),

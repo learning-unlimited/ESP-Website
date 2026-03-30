@@ -9,7 +9,7 @@ import esp.program.controllers.autoscheduler.db_interface as db_interface
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 import esp.program.controllers.autoscheduler.util as util
 from esp.program.models.class_ import \
-        ClassSubject, ClassSection, ClassCategories
+        ClassSubject, ClassSection, CLASSCATEGORY
 from esp.program.modules import module_ext
 from esp.program.tests import ProgramFrameworkTest
 from esp.resources.models import Resource, ResourceType, ResourceRequest
@@ -457,7 +457,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         """Make sure that lunch classes cause lunch timeslots to be loaded,
         but that we can exclude lunch classes. Note that we are NOT testing
         that we can successfully load lunch classes if we wanted."""
-        lunch, created = ClassCategories.objects.get_or_create(
+        lunch, created = CLASSCATEGORY.objects.get_or_create(
                 category="Lunch", symbol="L")
         subj, created = ClassSubject.objects.get_or_create(
                 title="Lunch!", category=lunch, grade_min=7, grade_max=12,

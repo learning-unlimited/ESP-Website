@@ -1,5 +1,5 @@
 from esp.mailman import add_list_member
-from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
+from esp.program.models import Program, ClassSubject, ClassSection, CLASSCATEGORY, ClassSizeRange
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.resources.forms import ResourceRequestFormSet
@@ -126,7 +126,7 @@ class ClassCreationController(object):
         if hasattr(cls, 'duration'):
             cls.duration = Decimal(cls.duration)
 
-        cls.category = ClassCategories.objects.get(id=reg_form.cleaned_data['category'])
+        cls.category = CLASSCATEGORY.objects.get(id=reg_form.cleaned_data['category'])
 
         if 'optimal_class_size_range' in reg_form.cleaned_data and reg_form.cleaned_data['optimal_class_size_range']:
             cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
@@ -229,7 +229,7 @@ class ClassCreationController(object):
         mail_ctxt['DEFAULT_HOST'] = settings.DEFAULT_HOST
 
         # Make some of the fields in new_data nicer for viewing.
-        mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category_id']).category
+        mail_ctxt['category'] = CLASSCATEGORY.objects.get(id=new_data['category_id']).category
         mail_ctxt['global_resources'] = cls.get_sections()[0].getResourceRequests()
 
         # Optimal and allowable class size ranges.

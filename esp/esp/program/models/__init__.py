@@ -300,7 +300,7 @@ class Program(models.Model, CustomFormsLinkModel):
                          help_text='The set of enabled program functionalities. See ' +
                          '<a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">' +
                          'the documentation</a> for details.')
-    class_categories = models.ManyToManyField('ClassCategories',
+    class_categories = models.ManyToManyField('CLASSCATEGORY',
                                               blank=True,
                                               help_text='You can add new categories or modify existing ones <a href="/manage/catsflagsrecs/categories">here</a>.')
 
@@ -739,23 +739,23 @@ class Program(models.Model, CustomFormsLinkModel):
         This assumes you've already created the Category manually.
 
         Returns:
-          A ClassCategories object if one was found, or None.
+          A CLASSCATEGORY object if one was found, or None.
         """
         if not self.open_class_registration:
-            return ClassCategories()
+            return CLASSCATEGORY()
         pk = Tag.getProgramTag('open_class_category', self)
         cc = None
         if pk is not None:
             try:
                 pk = int(pk)
-                cc = ClassCategories.objects.get(pk=pk)
-            except (ValueError, TypeError, ClassCategories.DoesNotExist) as e:
+                cc = CLASSCATEGORY.objects.get(pk=pk)
+            except (ValueError, TypeError, CLASSCATEGORY.DoesNotExist) as e:
                 pass
         if cc is None:
-            cc = ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
+            cc = CLASSCATEGORY.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
         return cc
     open_class_category.depend_on_model('tagdict.Tag')
-    open_class_category.depend_on_model('program.ClassCategories')
+    open_class_category.depend_on_model('program.CLASSCATEGORY')
     open_class_category.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
     open_class_category = property(open_class_category)
 
@@ -2089,7 +2089,7 @@ class ScheduleTestCategory(ScheduleTestTimeblock):
     """ Boolean value testing: Does the schedule contain at least one section
         in the specified category at the specified time?
     """
-    category = models.ForeignKey('ClassCategories', help_text='The class category that must be selected for this timeblock', on_delete=models.CASCADE)
+    category = models.ForeignKey('CLASSCATEGORY', help_text='The class category that must be selected for this timeblock', on_delete=models.CASCADE)
     def boolean_value(self, *args, **kwargs):
         timeblock_id = self.timeblock.id
         user_schedule = kwargs['map']
@@ -2259,7 +2259,7 @@ class ModeratorRecord(models.Model):
     program = models.ForeignKey(Program, on_delete=models.CASCADE)
     will_moderate = models.BooleanField(default = False)
     num_slots = models.PositiveIntegerField(default = 0)
-    class_categories = models.ManyToManyField('ClassCategories', blank=True)
+    class_categories = models.ManyToManyField('CLASSCATEGORY', blank=True)
     comments = models.TextField(blank=True, null=True)
 
     class Meta:

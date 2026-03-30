@@ -249,7 +249,7 @@ class MessageRequest(models.Model):
 
         if var_dict is not None:
             new_request.save()
-            MessageVars.createMessageVars(new_request, var_dict) # create the message Variables
+            messagevar.createmessagevar(new_request, var_dict) # create the message Variables
         return new_request
 
     @classmethod
@@ -273,7 +273,7 @@ class MessageRequest(models.Model):
         # prepare variables
         text = str(text)
 
-        context = MessageVars.getContext(self, user)
+        context = messagevar.getContext(self, user)
 
         newtext = ''
         template = Template(text)
@@ -501,7 +501,7 @@ class TextOfEmail(models.Model):
     class Meta:
         verbose_name_plural = 'Email texts'
 
-class MessageVars(models.Model):
+class messagevar(models.Model):
     """ A storage of message variables for a specific message. """
     messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
     pickled_provider = models.BinaryField() # Object which must have obj.get_message_var(key)
@@ -510,10 +510,10 @@ class MessageVars(models.Model):
     @staticmethod
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
-        newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
-        newMessageVar.pickled_provider = pickle.dumps(obj)
-        newMessageVar.save()
-        return newMessageVar
+        newmessagevar = messagevar(messagerequest = msgrequest, provider_name = name)
+        newmessagevar.pickled_provider = pickle.dumps(obj)
+        newmessagevar.save()
+        return newmessagevar
 
     def getDict(self, user):
         provider = pickle.loads(self.pickled_provider)
@@ -537,7 +537,7 @@ class MessageVars(models.Model):
         """ Get a context-like dictionary for template rendering. """
         from django.template import Context  ## aseering 8-13-2010 -- Yes, this is supposed to be 'Context', not 'RequestContext'.
         context = {}
-        msgvars = msgrequest.messagevars_set.all()
+        msgvars = msgrequest.messagevar_set.all()  # ← CHANGED: messagevars_set → messagevar_set
         for msgvar in msgvars:
             context.update(msgvar.getDict(user))
         context['request'] = ActionHandler(msgrequest, user) # add the request so the public url is accessible
@@ -545,7 +545,7 @@ class MessageVars(models.Model):
         return Context(context)
 
     @staticmethod
-    def createMessageVars(msgrequest, var_dict):
+    def createmessagevar(msgrequest, var_dict):
         """ Takes a var_dict, which should be of the form:
             {'FirstHalf': obj, ... }
             Where a variable like {{Program.schedule}} should have:
@@ -553,9 +553,9 @@ class MessageVars(models.Model):
             get_msg_vars(userObj, 'schedule') to work
         """
         # for each module in the dictionary, create a corresponding
-        # MessageVar object
+        # messagevar object
         for key, obj in var_dict.items():
-            MessageVars.createVar(msgrequest, key, obj)
+            messagevar.createVar(msgrequest, key, obj)
 
 
         return True
@@ -565,6 +565,7 @@ class MessageVars(models.Model):
 
     class Meta:
         verbose_name_plural = 'Message variables'
+         db_table = 'dbmail_messagevars'  # ← KEEP OLD TABLE NAME
 
 class EmailRequest(models.Model):
     """ Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """

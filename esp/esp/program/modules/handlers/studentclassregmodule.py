@@ -50,7 +50,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, m
 from esp.program.modules.admin_search import AdminSearchEntry
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
+from esp.program.models  import ClassSubject, ClassSection, CLASSCATEGORY, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission
@@ -92,7 +92,7 @@ def json_encode(obj):
                  'num_students': obj.num_students(),
                  'capacity': obj.capacity
                  }
-    elif isinstance(obj, ClassCategories):
+    elif isinstance(obj, CLASSCATEGORY):
         return { 'id': obj.id,
                  'category': obj.category,
                  'symbol': obj.symbol

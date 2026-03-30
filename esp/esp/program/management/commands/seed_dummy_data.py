@@ -10,7 +10,7 @@ Covers:
   django_site, auth groups
   users: ESPUser, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo,
          K12School, UserAvailability, Record, RecordType, Permission
-  program: Program, ProgramModule, ClassCategories, ClassSubject, ClassSection,
+  program: Program, ProgramModule, CLASSCATEGORY, ClassSubject, ClassSection,
            TeacherBio, RegistrationProfile, RegistrationType,
            StudentRegistration, VolunteerRequest, VolunteerOffer, SplashInfo
   cal: EventType, Event
@@ -36,7 +36,7 @@ from esp.program.models import (
     VolunteerRequest, VolunteerOffer, RegistrationProfile,
     TeacherBio, ProgramModule, SplashInfo,
 )
-from esp.program.models.class_ import ClassSubject, ClassSection, ClassCategories
+from esp.program.models.class_ import ClassSubject, ClassSection, CLASSCATEGORY
 from esp.program.modules.module_ext import (
     ClassRegModuleInfo, StudentClassRegModuleInfo,
     AJAXChangeLog, AJAXSectionDetail, DBReceipt,
@@ -220,7 +220,7 @@ class Command(BaseCommand):
             ('C', 'Computer Science', 5), ('E', 'Engineering', 6),
             ('X', 'Miscellaneous', 7),
         ]:
-            ClassCategories.objects.get_or_create(symbol=symbol,
+            CLASSCATEGORY.objects.get_or_create(symbol=symbol,
                 defaults=dict(category=category, seq=seq))
 
         for name, category in [
@@ -346,7 +346,7 @@ class Command(BaseCommand):
                     program_size_max=200, program_allow_waitlist=True,
                 ))
             if created:
-                program.class_categories.set(ClassCategories.objects.all())
+                program.class_categories.set(CLASSCATEGORY.objects.all())
                 program.program_modules.set(
                     ProgramModule.objects.filter(handler__in=all_module_handlers))
 
@@ -404,7 +404,7 @@ class Command(BaseCommand):
 
     def _create_teachers(self, program, timeslots, classrooms):
         tgroup = Group.objects.get(name='Teacher')
-        cats = list(ClassCategories.objects.all())
+        cats = list(CLASSCATEGORY.objects.all())
         teachers, sections = [], []
 
         for i in range(1, 6):

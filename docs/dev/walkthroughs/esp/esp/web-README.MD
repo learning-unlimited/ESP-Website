@@ -178,7 +178,7 @@
 | Directory | How it connects |
 |-----------|-----------------|
 | **`/users`** | `profile_editor` imports `ESPUser`, `ContactInfo`, `TeacherInfo`, `StudentInfo`, `GuardianInfo`, `EducatorInfo`, `Permission`, `K12School`, and `RegistrationProfile` to read and write user profiles; `bio.py` uses `ESPUser` for teacher lookup; `myesp_passwd` uses `UserPasswdForm`. |
-| **`/program`** | `program()` in `main.py` resolves a `Program` and delegates to `ProgramModuleObj.findModule`; `bio_user` reads `TeacherBio` and `ArchiveClass`; `archive_classes` queries `ArchiveClass`, `ClassSubject`, and `ClassCategories`; `csrf.py` looks up `Program` to provide context on CSRF failures. |
+| **`/program`** | `program()` in `main.py` resolves a `Program` and delegates to `ProgramModuleObj.findModule`; `bio_user` reads `TeacherBio` and `ArchiveClass`; `archive_classes` queries `ArchiveClass`, `ClassSubject`, and `CLASSCATEGORY`; `csrf.py` looks up `Program` to provide context on CSRF failures. |
 | **`/dbmail`** | `contact()` calls `send_mail` from `esp.dbmail.models`; `public_email` queries `MessageRequest`. |
 | **`/miniblog`** | `myesp.py` imports `AnnouncementLink`, `Entry`, and `preview_miniblog` — however these imports appear to be **unused** in current view functions (likely vestigial from removed dashboard announcement logic). |
 | **`/tagdict`** | `Tag.getBooleanTag` is called in `contact()` (to check `contact_form_enabled`), `registration_redirect` (for `automatic_registration_redirect`), and `profile_editor` (for `allow_change_grade_level`, `require_student_phonenum`). |

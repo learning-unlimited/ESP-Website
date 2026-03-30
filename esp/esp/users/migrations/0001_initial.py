@@ -245,7 +245,7 @@ class Migration(migrations.Migration):
                 ('zip_code', models.ForeignKey(to='users.ZipCode', on_delete=models.CASCADE)),
             ],
             options={
-                'db_table': 'users_zipcodesearches',
+                'db_table': 'users_ZIPCODESEARCH',
             },
         ),
         migrations.CreateModel(

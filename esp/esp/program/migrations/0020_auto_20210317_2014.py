@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='moderatorrecord',
             name='class_categories',
-            field=models.ManyToManyField(blank=True, to='program.ClassCategories'),
+            field=models.ManyToManyField(blank=True, to='program.CLASSCATEGORY'),
         ),
         migrations.AddField(
             model_name='moderatorrecord',
