@@ -193,6 +193,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
                         .text(other.emailcode + ': ' + other.title + (timeslot_labels ? ' (' + timeslot_labels + ')' : ''))
                         .on('click', function(evt) {
                             evt.preventDefault();
+                            evt.stopPropagation();
                             this.sections.swapSections(section, other);
                         }.bind(this));
                     item.append(link);
