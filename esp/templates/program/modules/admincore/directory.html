@@ -148,77 +148,76 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     <div class="button_wrapper">
         {% if manage_resources %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/resources"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/resources" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Resources</div>
                 <div class="module_link_caption">timeslots, classrooms</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
         {% if manage_deadlines %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/deadlines"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/deadlines" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-time"></i> Deadlines</div>
                 <div class="module_link_caption">open/close registration</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
         {% if manage_teacher_events %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/teacher_events"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/teacher_events" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-comment"></i> Teacher Training/Interviews</div>
                 <div class="module_link_caption">edit/monitor teacher events</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
         {% if manage_lunch_constraints %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/lunch_constraints"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/lunch_constraints" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-cutlery"></i> Lunch Constraints</div>
                 <div class="module_link_caption">rules for your students' schedules</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
         {% if manage_registrationtype_management %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/registrationtype_management"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-blackboard"></i> Student Reg. Types</div>
                 <div class="module_link_caption">what classes students see on their schedule</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
         {% if manage_surveys %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/surveys"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/surveys" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Surveys</div>
                 <div class="module_link_caption">create/edit surveys; review results</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
         {% if manage_settings %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/settings"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/settings" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-wrench"></i> Program Settings</div>
                 <div class="module_link_caption">manage settings for the program/registration</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
         {% if manage_modules %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/modules"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/modules" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-list"></i> Manage Modules</div>
                 <div class="module_link_caption">sequence/requiredness of student/teacher modules</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
         {% if manage_tags %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/tags"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/tags" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-cog"></i> Tag Settings</div>
                 <div class="module_link_caption">miscellaneous settings, for experts only</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
-        </ul>
     </div>
 </div>
 
@@ -229,19 +228,18 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     <div class="button_wrapper">
         {% if manage_commpanel %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/commpanel" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-envelope"></i> Email</div>
                 <div class="module_link_caption">communications panel</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
-
         {% if manage_selectList %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/selectList"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/selectList" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Arbitrary User List</div>
                 <div class="module_link_caption">get a list of users</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
     </div>
@@ -254,34 +252,34 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     <div class="button_wrapper">
         {% if manage_dashboard %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/dashboard" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-dashboard"></i> Dashboard</div>
                 <div class="module_link_caption">review classes and stats</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
         {% if manage_ajax_scheduling %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-calendar"></i> Scheduling</div>
                 <div class="module_link_caption">assign rooms and times</div>
-            </button></a>
-        </div class="module_button">
+            </a>
+        </div>
         {% endif %}
         {% if manage_get_materials %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/get_materials" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Documents</div>
                 <div class="module_link_caption">upload and view files</div>
-            </button></a>
-        </div class="module_button">
+            </a>
+        </div>
         {% endif %}
         {% if manage_volunteering %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large">
+            <a href="/manage/{{ program.getUrlBase }}/volunteering" class="module_link_large">
                 <div class="module_link_main"><i class="glyphicon glyphicon-bullhorn"></i> Volunteers</div>
                 <div class="module_link_caption">create shifts, view signups</div>
-            </button></a>
+            </a>
         </div>
         {% endif %}
     </div>
