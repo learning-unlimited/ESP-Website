@@ -54,7 +54,7 @@ class EmailPreviewViewTestCase(CacheFlushTestCase):
             var_dict={'user': self.recipient_user},
             subject='Welcome {{user.first_name}}!',
             msgtext='Hello {{user.first_name}} {{user.last_name}}, welcome to our program.',
-            sender='noreply@example.com',
+            sender='noreply@learningu.org',
             creator=self.admin_user,
             recipients=self.filter
         )
@@ -85,7 +85,7 @@ class EmailPreviewViewTestCase(CacheFlushTestCase):
         """Test that preview displays correct sender"""
         self.client.force_login(self.admin_user)
         response = self.client.get('/dbmail/preview/{}/'.format(self.msg_req.id))
-        self.assertIn('noreply@example.com', response.content.decode())
+        self.assertIn('noreply@learningu.org', response.content.decode())
 
     def test_preview_shows_recipient_count(self):
         """Test that preview shows correct recipient count"""
@@ -137,7 +137,7 @@ class SendTestEmailViewTestCase(CacheFlushTestCase):
             var_dict={'user': self.admin_user},
             subject='Test Subject {{user.first_name}}',
             msgtext='Hello {{user.first_name}}, this is a test.',
-            sender='noreply@example.com',
+            sender='noreply@learningu.org',
             creator=self.admin_user,
             recipients=self.filter
         )
