@@ -63,7 +63,7 @@ from esp.cal.models import Event, EventType
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
-from esp.middleware import ESPError, AjaxError
+from esp.middleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
@@ -2039,7 +2039,6 @@ class ScheduleConstraint(models.Model):
                     (fail_result, data) = self.handle_failure()
                     if isinstance(fail_result, ScheduleMap):
                         self.schedule_map = fail_result
-                    #   raise AjaxError('ScheduleConstraint says %s' % data)
                     return self.evaluate(self.schedule_map, recursive=False)
                 else:
                     return False
