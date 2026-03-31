@@ -1144,6 +1144,14 @@ all_program_tags = {
         'is_setting': True,
         'field': forms.IntegerField(min_value=0),
     },
+    'interview_required_teachers': {
+        'is_boolean': False,
+        'help_text': 'If set to \'first_time\', interviews are only required for first-time teachers (those with no prior interview record from another program). Leave blank to require interviews for all teachers.',
+        'default': None,
+        'category': 'teach',
+        'is_setting': True,
+        'field': forms.ChoiceField(required=False, choices=[('', 'Required for all teachers'), ('first_time', 'Required for first-time teachers only')]),
+    },
     'survey_teacher_filter': {
         'is_boolean': False,
         'help_text': 'Which sets of teachers are allowed to fill out the post-program survey? Specified as a comma-separated list of options in program.teachers().',
