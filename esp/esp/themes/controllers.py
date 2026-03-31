@@ -231,31 +231,48 @@ class ThemeController(object):
         return results
 
     def compile_less(self, less_data):
-        #   Hack to make things work on Windows systems
-        INCLUDE_PATH_SEP = ':'
-        if os.name == 'nt':
-            INCLUDE_PATH_SEP = ';'
+        # Handle include path separator for different OS
+        INCLUDE_PATH_SEP = ':' if os.name != 'nt' else ';'
 
-        less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
+        less_search_path = INCLUDE_PATH_SEP.join(
+            settings.LESS_SEARCH_PATH + [
+                os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')
+            ]
+        )
         logger.debug('LESS search path is "%s"', less_search_path)
 
-        #   Compile to CSS
+        # Ensure lessc is installed
+        if not shutil.which('lessc'):
+            raise ESPError("lessc compiler not found on system", log=True)
+
         lessc_args = [
-            "lessc",
-            f"--include-path={less_search_path}",
-            "-"
+            'lessc',
+            f'--include-path={less_search_path}',
+            '-'
         ]
 
-        lessc_process = subprocess.Popen(
-            lessc_args,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
-        )
-        css_data = lessc_process.communicate(less_data.encode())[0]
+        try:
+            result = subprocess.run(
+                lessc_args,
+                input=less_data.encode(),
+                capture_output=True,
+                timeout=10,
+                check=True
+            )
+            css_data = result.stdout
 
-        if lessc_process.returncode != 0:
-            raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
+        except subprocess.TimeoutExpired:
+            logger.error("LESS compilation timed out")
+            raise ESPError("LESS compilation timed out", log=True)
+
+        except subprocess.CalledProcessError as e:
+            error_output = e.stdout.decode(errors='ignore') if e.stdout else ''
+            logger.error("LESS compilation failed: %s", error_output)
+
+            raise ESPError(
+                f'The stylesheet compiler (lessc) failed.<br /><pre>{error_output}</pre>',
+                log=True
+            )
 
         return css_data
 
