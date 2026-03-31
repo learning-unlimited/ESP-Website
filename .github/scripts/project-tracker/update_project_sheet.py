@@ -325,6 +325,28 @@ def fetch_pr_counts(logins: list[str], search_filter: str) -> dict[str, int]:
     return counts
 
 
+def fetch_profile_names(logins: list[str]) -> dict[str, str]:
+    """
+    Fetch display names from GitHub user profiles using batched GraphQL
+    queries (up to 20 per request).
+    """
+    names: dict[str, str] = {}
+    batch_size = 20
+
+    for i in range(0, len(logins), batch_size):
+        batch = logins[i : i + batch_size]
+        fragments = []
+        for j, login in enumerate(batch):
+            fragments.append(f'u{j}: user(login: "{login}") {{ name }}')
+        query = "query {\n" + "\n".join(fragments) + "\n}"
+        data = graphql(query)
+        for j, login in enumerate(batch):
+            user = data.get(f"u{j}") or {}
+            names[login] = user.get("name") or ""
+
+    return names
+
+
 def link_count(url: str, count: int) -> str:
     """Google Sheets HYPERLINK formula displaying a count."""
     return f'=HYPERLINK("{url}", {count})'
@@ -335,7 +357,7 @@ def build_contributor_rows(
 ) -> list[list[str]]:
     """Build the rows for the Contributor Activity sheet."""
     header = [
-        "Contributor", "Open PRs", "Merged PRs", "Closed PRs",
+        "Contributor", "Name", "Open PRs", "Merged PRs", "Closed PRs",
         "Assigned Open Issues", "Oldest Open PR", "Last Activity",
     ]
 
@@ -362,8 +384,9 @@ def build_contributor_rows(
             if issue["updatedAt"] > activity[login]["last_activity"]:
                 activity[login]["last_activity"] = issue["updatedAt"]
 
-    # Fetch merged and closed (unmerged) PR counts in batched queries
+    # Fetch profile names, merged counts, and closed counts in batched queries
     all_logins = list(activity.keys())
+    profile_names = fetch_profile_names(all_logins)
     merged_counts = fetch_pr_counts(all_logins, "is:merged")
     closed_counts = fetch_pr_counts(all_logins, "is:closed is:unmerged")
 
@@ -382,6 +405,7 @@ def build_contributor_rows(
         )
         rows.append([
             link_profile(login),
+            profile_names.get(login, ""),
             link_count(open_pr_url, info["open_prs"]),
             link_count(merged_pr_url, merged_counts.get(login, 0)),
             link_count(closed_pr_url, closed_counts.get(login, 0)),
