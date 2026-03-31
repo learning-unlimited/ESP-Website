@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='program',
             name='class_categories',
-            field=models.ManyToManyField(blank=True, help_text='You can add new categories or modify existing ones <a href="/manage/catsflagsrecs/categories">here</a>.', to='program.ClassCategories'),
+            field=models.ManyToManyField(blank=True, help_text='You can add new categories or modify existing ones <a href="/manage/catsflagsrecs/categories">here</a>.', to='program.CLASSCATEGORY'),
         ),
         migrations.AlterField(
             model_name='program',

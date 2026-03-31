@@ -52,7 +52,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='ClassCategories',
+            name='CLASSCATEGORY',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('category', models.TextField()),
@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
                 ('seq', models.IntegerField(default=0)),
             ],
             options={
-                'db_table': 'program_classcategories',
+                'db_table': 'program_CLASSCATEGORY',
                 'verbose_name_plural': 'Class Categories',
             },
         ),

@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
             options={'verbose_name_plural': 'User availabilities'},
         ),
         migrations.AlterModelOptions(
-            name='zipcodesearches',
+            name='ZipCodeSearch',
             options={'verbose_name_plural': 'Zip code searches'},
         ),
         migrations.AlterField(

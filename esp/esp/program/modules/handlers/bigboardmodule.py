@@ -232,7 +232,7 @@ class BigBoardModule(ProgramModuleObj):
             # of them is unique.  So in fact if we were to
             #   SELECT MAX(program_class.title) AS title, ...
             # we could remove program_class.title from the GROUP BY (and
-            # likewise for program_classcategories.symbol), and hopefully make
+            # likewise for program_CLASSCATEGORY.symbol), and hopefully make
             # this fast even of a dev server.  This would consist roughly of
             # adding title_=Max('title') to the annotate clause and changing
             # 'title' to 'title_' in values(), and likewise for

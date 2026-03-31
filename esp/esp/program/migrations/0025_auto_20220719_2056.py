@@ -13,17 +13,17 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='classcategories',
+            model_name='CLASSCATEGORY',
             name='category',
             field=models.TextField(help_text='The name of the category'),
         ),
         migrations.AlterField(
-            model_name='classcategories',
+            model_name='CLASSCATEGORY',
             name='seq',
             field=models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.'),
         ),
         migrations.AlterField(
-            model_name='classcategories',
+            model_name='CLASSCATEGORY',
             name='symbol',
             field=models.CharField(default='?', help_text='A single character to represent the category', max_length=1),
         ),
@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='program',
             name='class_categories',
-            field=models.ManyToManyField(blank=True, help_text='You can add new categories or modify existing ones <a href="/manage/categoriesandflags/categories">here</a>.', to='program.ClassCategories'),
+            field=models.ManyToManyField(blank=True, help_text='You can add new categories or modify existing ones <a href="/manage/categoriesandflags/categories">here</a>.', to='program.CLASSCATEGORY'),
         ),
         migrations.AlterField(
             model_name='program',

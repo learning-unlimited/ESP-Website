@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 from esp.cal.models import Event
 from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, ClassSection
-from esp.program.models.class_ import ClassCategories
+from esp.program.models.class_ import CLASSCATEGORY
 from esp.mailman import add_list_member, remove_list_member, list_contents
 
 from django.conf import settings
@@ -61,7 +61,7 @@ class StudentRegSanityController(object):
     def sanitize_walkin(self, fake=True, csvwriter=None, csvlog=False, directory=None):
         """Checks for Student Registrations made for walk-in classes. If fake=False, will remove them."""
         closeatend = False
-        category_walkin = ClassCategories.objects.get(category="Walk-in Activity")
+        category_walkin = CLASSCATEGORY.objects.get(category="Walk-in Activity")
         if csvlog and not(fake): #If I'm actually doing things, and I want a log....
             import csv
             if csvwriter is None:
@@ -103,7 +103,7 @@ class StudentRegSanityController(object):
             csvwriter.writerow(['Sanitizing Lunch Blocks'])
             csvwriter.writerow(['Lunch Block', 'Student', 'Enrollment Type:'])
 
-        category_lunch = ClassCategories.objects.get(category="Lunch")
+        category_lunch = CLASSCATEGORY.objects.get(category="Lunch")
         lunchblocks = self.program.classes().filter(category=category_lunch)
         report = []
         for l in lunchblocks:

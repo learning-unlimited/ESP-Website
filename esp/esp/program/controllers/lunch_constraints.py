@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.class_status import ClassStatus
-from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ClassCategories
+from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, CLASSCATEGORY
 
 import datetime
 
@@ -110,11 +110,11 @@ class LunchConstraintGenerator(object):
         return expression
 
     def get_lunch_category(self):
-        qs = ClassCategories.objects.filter(category='Lunch', symbol='L').order_by('-id')
+        qs = CLASSCATEGORY.objects.filter(category='Lunch', symbol='L').order_by('-id')
         if qs.exists():
             lunch_category = qs[0]
         else:
-            lunch_category, created = ClassCategories.objects.get_or_create(category='Lunch', symbol='L')
+            lunch_category, created = CLASSCATEGORY.objects.get_or_create(category='Lunch', symbol='L')
         self.program.class_categories.add(lunch_category)
         return lunch_category
 

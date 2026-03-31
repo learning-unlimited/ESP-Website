@@ -28,7 +28,7 @@ class TestDataCleanupTest(TestCase):
         user_role_setup()
 
         # Two programs
-        from esp.program.models import ClassCategories, ProgramModule
+        from esp.program.models import CLASSCATEGORY, ProgramModule
         from esp.program.forms import ProgramCreationForm
         from esp.program.setup import prepare_program, commit_program
         import unicodedata
@@ -36,7 +36,7 @@ class TestDataCleanupTest(TestCase):
 
         def make_program(slug):
             categories = []
-            cat, _ = ClassCategories.objects.get_or_create(
+            cat, _ = CLASSCATEGORY.objects.get_or_create(
                 category='Category A', symbol='A')
             categories.append(cat)
 

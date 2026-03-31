@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.users.models import ContactInfo, ESPUser
-from esp.program.models import ArchiveClass, ClassSubject, ClassCategories
+from esp.program.models import ArchiveClass, ClassSubject, CLASSCATEGORY
 from esp.utils.web import render_to_response
 from django.db.models.query import QuerySet
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
@@ -125,7 +125,7 @@ def archive_classes(request, category, options, sortorder = None):
     program_list = list(ArchiveClass.objects.all().values_list('program', flat=True).distinct())
 
     category_dict = {}
-    classcatList = ClassCategories.objects.all()
+    classcatList = CLASSCATEGORY.objects.all()
     for letter in map(chr, list(range(65, 91))):
         category_dict[letter] = 'Unknown Category'
 

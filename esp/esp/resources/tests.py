@@ -4,7 +4,7 @@ from django.db.models import ProtectedError
 
 from esp.cal.models import Event, EventType
 from esp.program.models import Program
-from esp.program.models.class_ import ClassSubject, ClassSection, ClassCategories
+from esp.program.models.class_ import ClassSubject, ClassSection, CLASSCATEGORY
 from esp.middleware.esperrormiddleware import ESPError_Log
 from esp.resources.models import Resource, ResourceType, ResourceRequest, ResourceAssignment
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -21,7 +21,7 @@ class ResourceTypeTest(TestCase):
         )
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.subject = ClassSubject.objects.create(
-            category=ClassCategories.objects.all()[0],
+            category=CLASSCATEGORY.objects.all()[0],
             grade_min=7, grade_max=12,
             parent_program=self.program,
             class_size_max=30,
@@ -67,7 +67,7 @@ class FloatingResourceAvailabilityTest(TestCase):
 
         self.res_type = ResourceType.objects.create(name='Projector', description='')
         self.subject = ClassSubject.objects.create(
-            category=ClassCategories.objects.all()[0],
+            category=CLASSCATEGORY.objects.all()[0],
             grade_min=7, grade_max=12,
             parent_program=self.program,
             class_size_max=30,
@@ -130,7 +130,7 @@ class FloatingResourceAvailabilityTest(TestCase):
         """assign_to_section raises when floating resource has unreturned prior
         assignment belonging to a different section."""
         other_subject = ClassSubject.objects.create(
-            category=ClassCategories.objects.all()[0],
+            category=CLASSCATEGORY.objects.all()[0],
             grade_min=7, grade_max=12,
             parent_program=self.program,
             class_size_max=30,
@@ -186,7 +186,7 @@ class FloatingResourceAvailabilityTest(TestCase):
         """A resource assigned to section A in timeslot1 (unreturned) should
         still block assignment to a DIFFERENT section B in timeslot2."""
         other_subject = ClassSubject.objects.create(
-            category=ClassCategories.objects.all()[0],
+            category=CLASSCATEGORY.objects.all()[0],
             grade_min=7, grade_max=12,
             parent_program=self.program,
             class_size_max=30,

@@ -43,7 +43,7 @@ from django.db import models
 from django.db.models import Count, Min, Q
 from django.contrib.contenttypes.models import ContentType
 from esp.users.models import ESPUser, Record, RecordType, admin_required
-from esp.program.models import Program, ClassCategories, ClassSubject, StudentRegistration, RegistrationType, ClassSection
+from esp.program.models import Program, CLASSCATEGORY, ClassSubject, StudentRegistration, RegistrationType, ClassSection
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.utils.web import render_to_response
 from esp.utils.latex import render_to_latex

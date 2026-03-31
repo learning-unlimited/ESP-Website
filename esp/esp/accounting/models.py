@@ -63,17 +63,17 @@ class LineItemType(models.Model):
 
     @property
     def num_options(self):
-        return self.lineitemoptions_set.all().count()
+        return self.lineitemoption_set.all().count()
 
     @property
     def options(self):
-        return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description', 'is_custom').order_by('-is_custom')
+        return self.lineitemoption_set.all().values_list('id', 'amount_dec', 'description', 'is_custom').order_by('-is_custom')
 
     @property
     def has_custom_options(self):
         """ Return True if at least one of the options for this line item type
             allows a custom dollar amount to be entered.    """
-        return self.lineitemoptions_set.filter(is_custom=True).exists()
+        return self.lineitemoption_set.filter(is_custom=True).exists()
 
     @property
     def option_choices(self):
@@ -81,7 +81,7 @@ class LineItemType(models.Model):
             possible options.  Intended for use as form field choices.  """
         #   We can't use the 'options' property anymore since we need to compute the inherited amount.
         result = []
-        for option in self.lineitemoptions_set.all():
+        for option in self.lineitemoption_set.all():
             if option.is_custom:
                 result.append((option.id, f'{option.description} -- enter amount below'))
             else:
@@ -114,7 +114,7 @@ class LineItemType(models.Model):
     class Meta:
         ordering = ('-program_id',)
 
-class LineItemOptions(models.Model):
+class lineitemoption(models.Model):
     lineitem_type = models.ForeignKey(LineItemType, on_delete=models.CASCADE)
     description = models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this option--leave blank to inherit from the line item type.')
@@ -262,7 +262,7 @@ class Transfer(models.Model):
         on_delete=models.CASCADE)
     user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE)
     line_item = models.ForeignKey(LineItemType, on_delete=models.CASCADE)
-    option = models.ForeignKey(LineItemOptions, blank=True, null=True, on_delete=models.CASCADE)
+    option = models.ForeignKey(lineitemoption, blank=True, null=True, on_delete=models.CASCADE)
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2)
     transaction_id = models.TextField(
         'Transaction ID', max_length=64, blank=True, default='',

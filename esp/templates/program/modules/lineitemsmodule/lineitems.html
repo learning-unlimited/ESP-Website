@@ -104,7 +104,7 @@ You can use this page to add, remove, edit, delete, and import line items, which
         <td class="underline">{% if li.for_finaid %}&#10003;{% endif %}</td>
         <td class="underline">
             <ol>
-            {% for opt in li.lineitemoptions_set.all %}
+            {% for opt in li.lineitemoption_sett.all %}
             <li>{{ opt.description }}: {{ opt.amount_dec }}{% if opt.is_custom %} (Custom){% endif %}</li>
             {% endfor %}</td>
             </ol>
