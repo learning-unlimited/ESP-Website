@@ -260,8 +260,8 @@ th .program_form_small{
 
 #program_form .btn {
     font-size: 13px;
-    display: flex;
-    margin: auto;
+    /* display: flex;
+    margin: auto; */
 }
 #program_form .btn-small, #program_form .btn-mini {
     font-size: 11px;
