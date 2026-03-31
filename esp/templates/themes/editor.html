@@ -45,8 +45,8 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
 {% load main %}
 
-<div class="row-fluid">
-    <div class="span12">
+<div class="row">
+    <div class="col-12">
         <h1>Theme Editor</h1>
         <div class="alert alert-info">
             <p>New to the theme editor? <a href="#help-modal" data-toggle="modal">Click here</a>.</p>
@@ -81,7 +81,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                     <div class="collapse" id="theme_palette">
                         <h5>Your palette holds the colors that are used in your theme. Use this to control the colors available to you in the other sections. The theme has a built-in color palette available; however, if you would prefer other colors, you can add them to the custom palette.</h5>
-                        <div class="control-group">
+                        <div class="mb-3">
                             <div id="palette_base_div">
                                 <h3>Built-in Theme Palette:</h3>
                                 {% for color in palette.base %}
