@@ -7,20 +7,58 @@
     margin-bottom: 25px;
     margin-left: 0;
     margin-right: 0;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
 }
 
 .connectedSortable li {
-    padding: 5px;
-    margin-top: 5px;
-    margin-bottom: 5px;
-    font-size: 1.2em;
+    padding: 12px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    font-size: 1.1em;
     width: 100%;
-    cursor: pointer;
+    cursor: move;
+    background-color: #fff;
+    border-left: 4px solid #e8e8e8;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.connectedSortable li:hover {
+    background-color: #f5f5f5;
+    border-left-color: #0066cc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.connectedSortable li.ui-sortable-helper {
+    background-color: #e8f0ff;
+    border-left-color: #0066cc;
+    box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
+    opacity: 0.9;
+}
+
+.module-title {
+    display: block;
+    font-weight: 500;
+    color: #333;
 }
 
 .connectedSortable li input {
     font-size: small !important;
     max-width: 80%;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-top: 6px;
+}
+
+.connectedSortable li input:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 5px rgba(0, 102, 204, 0.3);
 }
 
 .connectedSortable li input.link_title_input {
@@ -28,14 +66,39 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    margin-top: 2px;
+    margin-top: 8px;
+}
+
+.connectedSortable li input.label_input {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-top: 6px;
 }
 
 .column {
     width: 100%;
     text-align: center;
-    border: 1px dashed #aaa;
+    border: 1px solid #ddd;
+    background-color: #fafafa;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    padding: 15px 0;
+}
+
+.column h3 {
+    margin-top: 15px;
     margin-bottom: 10px;
+    font-size: 1.3em;
+    color: #333;
+    padding: 0 10px;
+    border-bottom: 2px solid #0066cc;
+    padding-bottom: 8px;
+}
+
+.column h3:first-child {
+    margin-top: 0;
 }
 
 .wrapper {
@@ -43,10 +106,19 @@
     width: 46%;
     margin-left: 2%;
     margin-right: 2%;
+    background-color: #fff;
+    border-radius: 4px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .wrapper h2 {
     text-align: center;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #0066cc;
 }
 
 /* Modules whose position is enforced by the system (position_locked).
@@ -56,29 +128,130 @@
    crossing lists (see module_management.js).  Issue #3656. */
 .connectedSortable li.module-locked {
     cursor: not-allowed;
-    opacity: 0.75;
+    opacity: 0.65;
+    background-color: #f0f0f0;
+    border-left-color: #999;
+}
+
+.connectedSortable li.module-locked:hover {
+    background-color: #f0f0f0;
+    border-left-color: #999;
+    box-shadow: none;
 }
 
 /* Per-constraint icons shown inline before the module name.  Issue #3656. */
 .constraint-icon-position,
 .constraint-icon-required,
 .constraint-icon-not-required {
-    font-size: 0.75em;
-    margin-right: 2px;
+    font-size: 0.9em;
+    margin-right: 6px;
     vertical-align: middle;
+    font-weight: bold;
 }
 
-.constraint-icon-position     { color: #555; }
-.constraint-icon-required     { color: #5cb85c; }  /* green — must be required */
-.constraint-icon-not-required { color: #d9534f; }  /* red   — cannot be required */
+.constraint-icon-position     { color: #666; }       /* grey — position fixed */
+.constraint-icon-required     { color: #28a745; }    /* green — must be required */
+.constraint-icon-not-required { color: #dc3545; }    /* red   — cannot be required */
 
 /* Icon legend shown above the module lists. */
 .module-constraint-legend {
-    margin-bottom: 10px;
-    font-size: 0.9em;
-    color: #555;
+    margin: 15px 0 20px 0;
+    padding: 12px;
+    background-color: #f0f7ff;
+    border-left: 4px solid #0066cc;
+    border-radius: 3px;
+    font-size: 0.95em;
+    color: #333;
+}
+
+.module-constraint-legend strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #0066cc;
 }
 
 .module-constraint-legend .legend-item {
-    margin-left: 12px;
+    display: inline-block;
+    margin-right: 20px;
+    margin-bottom: 6px;
+}
+
+/* Button styling for form submissions */
+.btn {
+    padding: 10px 20px;
+    font-size: 1em;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #0066cc;
+    color: white;
+    margin: 15px 5px;
+}
+
+.btn-primary:hover {
+    background-color: #0052a3;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:active {
+    background-color: #003d7a;
+    transform: translateY(1px);
+}
+
+/* Reset form section styling */
+.dsphead {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+    margin-top: 20px;
+    border-radius: 4px;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s ease;
+}
+
+.dsphead:hover {
+    background-color: #efefef;
+}
+
+.dsphead b {
+    color: #333;
+}
+
+.dspcont {
+    display: none;
+    margin-top: 0;
+    padding: 15px;
+    background-color: #fafafa;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.dspcont.active {
+    display: block;
+}
+
+.dspcont label {
+    display: block;
+    margin: 8px 0;
+    font-size: 0.95em;
+    color: #333;
+}
+
+.dspcont input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.dspcont center {
+    margin-top: 15px;
 }
