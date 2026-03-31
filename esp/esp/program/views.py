@@ -977,11 +977,8 @@ def flushcache(request):
     if request.POST:
         if "reason" in request.POST and len(request.POST['reason']) > 5:
             reason = request.POST['reason']
-            _cache = cache
-            while hasattr(_cache, "_wrapped_cache"):
-                _cache = _cache._wrapped_cache
-            if hasattr(_cache, "clear"):
-                _cache.clear()
+            if hasattr(cache, "clear"):
+                cache.clear()
                 mail_admins("Cache Flushed on server '%s'!" % request.META['SERVER_NAME'], "The cache was flushed by %s!  The following reason was given:\n\n%s" % (request.user.username, reason))
                 context['success'] = "Cache Cleared."
             else:
