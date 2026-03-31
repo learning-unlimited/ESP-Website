@@ -2153,8 +2153,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 #for now it change old class list to deactivate email from getting spamed
     @classmethod
     def deactivate_old_class_lists(cls):
-        cutoff = timezone.now() - timezone.timedelta(days=1825)
-        old_classes = cls.objects.filter(meeting_times__start__lt=cutoff).distinct()
+        cutoff = timezone.now() - timedelta(days=1825)
+        old_classes = cls.objects.filter(meeting_times__start__lt=cutoff).exclude(meeting_times__start__gte=cutoff).select_related('category').distinct()
         if not old_classes.exists():
             return 0
         query = Q()

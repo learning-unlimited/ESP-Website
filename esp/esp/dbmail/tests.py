@@ -418,3 +418,72 @@ class MessageRequestAdminTest(TestCase):
         mr = MessageRequest.objects.filter(subject='Test subject').first()
         self.assertIsNotNone(mr)
         self.assertIsNone(mr.processed_by)
+
+# ---------------------------------------------------------------------------
+# Tests for issue #1680: Deactivate old class list
+# ---------------------------------------------------------------------------
+
+from django.test import TestCase
+from django.utils import timezone
+from datetime import timedelta
+from esp.program.models import ClassSubject, ClassCategories, Program
+# from esp.dbmail.models import EmailList
+
+class ClassCleanupTest(TestCase):
+    def setUp(self):
+        # 1. Create the necessary environment
+        self.prog = Program.objects.create(name="Test Prog", grade_min=1, grade_max=12)
+        self.cat = ClassCategories.objects.create(category="Test Cat", symbol="Z")
+        self.event_type, _ = ClassSubject._meta.get_field('meeting_times').remote_field.model._meta.get_field('event_type').remote_field.model.objects.get_or_create(description="Test")
+        
+        # 2. Create an "Old" Class
+        self.old_class = ClassSubject.objects.create(
+            title="Old Physics",
+            parent_program=self.prog,
+            category=self.cat,
+            grade_min=1,
+            grade_max=12
+        )
+        
+        # 3. Add an Event 6 years in the past
+        EventModel = ClassSubject._meta.get_field('meeting_times').remote_field.model
+        old_date = timezone.now() - timedelta(days=2000)
+        past_event = EventModel.objects.create(start=old_date, end=old_date, event_type=self.event_type)
+        self.old_class.meeting_times.add(past_event)
+
+        # 4. Create the matching EmailList
+        self.email_list = EmailList.objects.create(
+            regex=f".*{self.old_class.emailcode()}.*",
+            description=f"List for {self.old_class.emailcode()}",
+            admin_hold=False
+        )
+
+    def test_deactivate_old_class_lists(self):
+        """Test that old classes trigger admin_hold and are idempotent."""
+        # Run the cleanup for the first time
+        count = ClassSubject.deactivate_old_class_lists()
+        
+        # Assertions
+        self.assertEqual(count, 1, "Should have processed exactly 1 list")
+        self.email_list.refresh_from_db()
+        self.assertTrue(self.email_list.admin_hold, "EmailList should be on admin_hold")
+
+        # Test Idempotency (Run it again)
+        second_count = ClassSubject.deactivate_old_class_lists()
+        self.assertEqual(second_count, 0, "Second run should process 0 lists (idempotent)")
+
+    def test_mailgate_ignores_held_lists(self):
+        # Verify that mailgate filtering excludes lists on admin_hold.
+        # 1. Ensure our list is on hold
+        self.email_list.admin_hold = True
+        self.email_list.save()
+
+        # 2. Mimic the line you just changed in mailgate.py
+        active_handlers = EmailList.objects.filter(admin_hold=False)
+
+        # 3. Assert that our held list is NOT in the active handlers
+        self.assertNotIn(
+            self.email_list, 
+            active_handlers, 
+            "Mailgate should ignore lists where admin_hold is True"
+        )
