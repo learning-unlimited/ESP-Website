@@ -57,3 +57,14 @@ class ESPErrorMiddlewareTest(TestCase):
         # Should return an HttpResponse with the error
         if response is not None:
             self.assertEqual(response.status_code, 500)
+
+    def test_process_exception_escapes_html(self):
+        request = self.factory.get('/')
+        request.user = AnonymousESPUser()
+        err = ESPError('<script>alert("XSS")</script>')
+        response = self.middleware.process_exception(request, err)
+        if response is not None:
+            self.assertEqual(response.status_code, 500)
+            content = response.content.decode('utf-8')
+            self.assertNotIn('<script>alert("XSS")</script>', content)
+            self.assertIn('&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;', content)
