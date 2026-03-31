@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.utils.web import render_to_response
 
@@ -49,6 +50,19 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
             "choosable": 1,
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if tl != "teach" or view_name != "teacherreg":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="teach_teacherreg",
+            url="/teach/%s/teacherreg" % base,
+            title="Teacher Registration",
+            category="Quick Links",
+            keywords=["teacher registration", "propose class", "teach"],
+        )
+
     @main_call
     @needs_teacher
     @meets_deadline("/MainPage")
@@ -59,7 +73,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 
         context['completedAll'] = True
         for module in modules:
-            if not module.isCompleted() and module.isRequired():
+            if not module.isCompleted(request.user) and module.isRequired():
                 context['completedAll'] = False
 
             context = module.prepare(context)

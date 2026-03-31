@@ -19,15 +19,8 @@
     }
     .btn {
 		background-image: none;
-        &:active, &:focus {
-            outline: none;
-        }
     }
-	.module_link_large {
-        &:active, &:focus {
-            outline: none;
-        }
-    }
+
     .btn-primary {
 		    text-decoration: none;
     }
@@ -48,7 +41,6 @@
         color: black;
         background-color: #fdfdfd;
         &:focus {
-            outline: none;
             -webkit-box-shadow: none;
                -moz-box-shadow: none;
                     box-shadow: none;
@@ -314,4 +306,17 @@ textarea:not([class*="span"]),
 
 select {
     width: auto;
+}
+
+body #shortcuts-box {
+    top: 60px;
+    z-index: 1000;
+}
+
+@media (max-width: @navbarCollapseWidth) {
+    body #shortcuts-box {
+        top: auto;
+        bottom: 60px;
+        right: 10px;
+    }
 }
