@@ -268,7 +268,7 @@ setTimeout(function() {
         });
     }
     
-    // ---------- REAL-TIME EMAIL VALIDATION ----------
+    // ---------- REAL-TIME EMAIL VALIDATION (FIXED - Safe Regex) ----------
     var emailField = document.getElementById('id_email');
     if (emailField && !document.getElementById('email-icon')) {
         var emailWrapper = emailField.parentNode;
@@ -283,9 +283,11 @@ setTimeout(function() {
         emailError.innerHTML = '✗ Valid email: name@domain.com';
         emailWrapper.appendChild(emailError);
         
+        // FIXED: Safe regex without exponential backtracking vulnerability
         emailField.addEventListener('keyup', function() {
             var val = this.value;
-            var regex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
+            // Safe regex - no nested quantifiers, no exponential backtracking
+            var regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
             if (val.length === 0) {
                 emailIcon.textContent = '';
                 emailError.style.display = 'none';
