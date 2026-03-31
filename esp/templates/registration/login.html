@@ -8,7 +8,7 @@
 <div class="row-fluid">
 <br>
 {% if next and not initiated_login %}
-<div class="alert alert-info span10">
+<div class="alert alert-info span10" style="background-color: #d1ecf1; border-left: 4px solid #0c5460; border-radius: 8px; padding: 15px;">
 {% if "unsubscribe" in next %}
 Unsubscribe token is invalid or has expired (>7 days old). Please login or use an unexpired unsubscribe token.
 {% else %}
@@ -17,8 +17,14 @@ You need to log in before you can access <tt>{{ next }}</tt>.
 </div>
 {% endif %}
 
+<<<<<<< Updated upstream
 <div class="alert alert-info span10" style="border-left: 4px solid #17a2b8; border-radius: 8px;">
 🔐 Both the username and password are <b>case-sensitive</b>: capitalization matters!
+=======
+<!-- ENHANCEMENT: Modern case-sensitive warning with icon -->
+<div class="alert span10" style="background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px; padding: 15px;">
+🔐 <strong>Case-sensitive:</strong> Both the username and password are <b>case-sensitive</b> - capitalization matters!
+>>>>>>> Stashed changes
 </div>
 
 <div class="well span10">
@@ -27,6 +33,7 @@ You need to log in before you can access <tt>{{ next }}</tt>.
 
 <div class="control-group">
     {% if form.username.errors %}
+<<<<<<< Updated upstream
     <div class="alert alert-error" style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 8px; padding: 8px 12px;">
         ⚠️ {{ form.username.errors|last }}
     </div>
@@ -34,21 +41,36 @@ You need to log in before you can access <tt>{{ next }}</tt>.
     <div class="alert alert-error" style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 8px; padding: 8px 12px;">
         ⚠️ The username you entered is not valid. Keep in mind the username is case sensitive.
     </div>
+=======
+       <div style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; font-size: 14px;">
+            {{ form.username.errors|last }}
+       </div>
+    {% elif wrong_user %}
+       <div style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; font-size: 14px;">
+            ⚠️ The username you entered is not valid. Keep in mind the username is case sensitive.
+       </div>
+>>>>>>> Stashed changes
     {% endif %}
 
     <label class="control-label required" for="id_username">Username:</label>
 
     <div class="controls" style="position: relative;">
         {{ form.username }}
+<<<<<<< Updated upstream
         <span id="username-valid-icon" style="position: absolute; right: 10px; top: 5px; font-size: 16px;"></span>
         <div id="username-error-msg" style="color: #dc3545; font-size: 12px; margin-top: 5px; display: none;">
             ✗ Username must contain only letters, numbers, and underscore (3-20 characters)
         </div>
+=======
+        <span id="username-icon" style="position: absolute; right: 10px; top: 5px; font-size: 16px;"></span>
+        <div id="username-error" style="color: #dc3545; font-size: 12px; margin-top: 3px; display: none;"></div>
+>>>>>>> Stashed changes
     </div>
 </div>
 
 <div class="control-group">
     {% if form.password.errors %}
+<<<<<<< Updated upstream
     <div class="alert alert-error" style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 8px; padding: 8px 12px;">
         ⚠️ {% for error in form.password.errors %}{{ error }}{% endfor %}
     </div>
@@ -57,21 +79,46 @@ You need to log in before you can access <tt>{{ next }}</tt>.
         ⚠️ The password you entered is not valid.<br>
         <a href="/myesp/passwdrecover/" style="color: #721c24; text-decoration: underline;">Forgot your password? Reset it here →</a>
     </div>
+=======
+        <div style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px;">
+            {% for error in form.password.errors %}
+                <span>⚠️ {{ error }}</span>
+            {% endfor %}
+            <div style="margin-top: 5px;">
+                <a href="/myesp/passwdrecover/" style="color: #0066cc;">Forgot your password? Reset it here →</a>
+            </div>
+        </div>
+    {% elif wrong_pw %}
+        <div style="background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px;">
+            ⚠️ The password you entered is not valid.
+            <div style="margin-top: 5px;">
+                <a href="/myesp/passwdrecover/" style="color: #0066cc;">Forgot your password? Reset it here →</a>
+            </div>
+        </div>
+>>>>>>> Stashed changes
     {% endif %}
 
     <label class="control-label required" for="id_password">Password:</label>
    
     <div class="controls" style="position: relative;">
         {{ form.password }}
+<<<<<<< Updated upstream
         <button type="button" id="toggle-pwd-btn" style="position: absolute; right: 10px; top: 5px; background: none; border: none; cursor: pointer; font-size: 18px;" 
                 onclick="togglePassword()">👁️</button>
+=======
+        <button type="button" id="pwd-toggle-btn" style="position: absolute; right: 10px; top: 5px; background: none; border: none; cursor: pointer; font-size: 18px; z-index: 10;" aria-label="Show password">👁️</button>
+>>>>>>> Stashed changes
     </div>
     
 </div>
 
 <div class="form-actions">
 <input type="hidden" name="next" value="{{ next }}" />
+<<<<<<< Updated upstream
 <input type="submit" class="btn btn-primary btn-large" value="Login" id="login-btn" />
+=======
+<input type="submit" class="btn btn-primary btn-large" value="Login" id="submit-btn" style="padding: 10px 20px; font-size: 16px;" />
+>>>>>>> Stashed changes
 </div>
 
 </form>
@@ -79,6 +126,7 @@ You need to log in before you can access <tt>{{ next }}</tt>.
 <script type="text/javascript">
 <!--
 document.getElementById('id_username').focus();
+<<<<<<< Updated upstream
 function togglePassword() {
     var pwdField = document.getElementById('id_password');
     var btn = document.getElementById('toggle-pwd-btn');
@@ -112,21 +160,69 @@ if (usernameField) {
             validIcon.textContent = '❌';
             validIcon.style.color = '#dc3545';
             errorMsg.style.display = 'block';
+=======
+
+// ENHANCEMENT 1: Password Visibility Toggle
+var pwdField = document.getElementById('id_password');
+var toggleBtn = document.getElementById('pwd-toggle-btn');
+if (pwdField && toggleBtn) {
+    toggleBtn.onclick = function() {
+        if (pwdField.type === 'password') {
+            pwdField.type = 'text';
+            toggleBtn.textContent = '🙈';
+            toggleBtn.setAttribute('aria-label', 'Hide password');
+        } else {
+            pwdField.type = 'password';
+            toggleBtn.textContent = '👁️';
+            toggleBtn.setAttribute('aria-label', 'Show password');
+        }
+    };
+}
+
+// ENHANCEMENT 2: Real-time Username Validation
+var userField = document.getElementById('id_username');
+var userIcon = document.getElementById('username-icon');
+var userError = document.getElementById('username-error');
+if (userField && userIcon && userError) {
+    userField.addEventListener('keyup', function() {
+        var val = this.value;
+        if (val.length === 0) {
+            userIcon.textContent = '';
+            userError.style.display = 'none';
+        } else if (val.length >= 3) {
+            userIcon.textContent = '✅';
+            userIcon.style.color = '#28a745';
+            userError.style.display = 'none';
+        } else {
+            userIcon.textContent = '❌';
+            userIcon.style.color = '#dc3545';
+            userError.innerHTML = '✗ Username must be at least 3 characters';
+            userError.style.display = 'block';
+>>>>>>> Stashed changes
         }
     });
 }
 
+<<<<<<< Updated upstream
 var submitBtn = document.getElementById('login-btn');
 if (submitBtn) {
     submitBtn.style.padding = '10px 20px';
     submitBtn.style.fontSize = '16px';
+=======
+// ENHANCEMENT 3: Mobile touch targets
+var submitBtn = document.getElementById('submit-btn');
+if (submitBtn) {
+    submitBtn.style.padding = '12px 24px';
+    submitBtn.style.fontSize = '16px';
+    submitBtn.style.minWidth = '120px';
+>>>>>>> Stashed changes
 }
 //-->
 </script>
 </div>
 
 <br />
-<div class="alert alert-info span10">
+<div class="alert alert-info span10" style="background-color: #d1ecf1; border-left: 4px solid #0c5460; border-radius: 8px; padding: 15px;">
 Don't already have an account?  <a href="/myesp/register/">Click here to create one</a>. <br />
 Forgot your password? <a href="/myesp/passwdrecover/" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
 </div>

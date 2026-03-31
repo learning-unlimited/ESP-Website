@@ -6,9 +6,14 @@
 <h1>Account Management &ndash; Change Password </h1>
 {% if Success %}
 
+<<<<<<< Updated upstream
 <div class="alert alert-success" style="background-color: #d4edda; border-left: 4px solid #28a745; border-radius: 8px; padding: 15px;">
 <strong>✅ Congratulations!</strong><br />
 Your password has been successfully changed.
+=======
+<div style="background-color: #d4edda; border-left: 4px solid #28a745; border-radius: 8px; padding: 15px; margin: 20px 0;">
+✓ <strong>Congratulations!</strong> Your password has been successfully changed.
+>>>>>>> Stashed changes
 </div>
 
 {% else %}
@@ -20,6 +25,7 @@ Your password has been successfully changed.
 
 <form action="{{request.path}}" name="changepwform" method="post">
 <input type='hidden' name='op' value='register'>
+<<<<<<< Updated upstream
 <table width='65%' cellpadding='2' align='center' border='0'>
 <tr>
   <td><label for="username"><strong>Username:</strong></label></td>
@@ -61,14 +67,76 @@ Your password has been successfully changed.
     <div id="match-msg" style="font-size: 12px; margin-top: 5px;"></div>
   </td>
 </tr>
+=======
 
-</table>
+<!-- ENHANCEMENT: Modern layout without tables -->
+<div style="max-width: 500px; margin: 0 auto;">
 
+<div style="margin-bottom: 20px;">
+  <label for="username" style="display: block; margin-bottom: 5px; font-weight: bold;"><strong>Username:</strong></label>
+  <div style="background-color: #f5f5f5; padding: 8px 12px; border-radius: 4px; border: 1px solid #ddd;">
+    {{ request.user.username }}
+  </div>
+</div>
+
+<div style="margin-bottom: 20px;">
+  <label for="password" style="display: block; margin-bottom: 5px; font-weight: bold;"><strong>Current Password:</strong></label>
+  <div style="position: relative;">
+    {{ form.password }}
+    <button type="button" id="current-pwd-toggle" style="position: absolute; right: 10px; top: 5px; background: none; border: none; cursor: pointer; font-size: 18px;" aria-label="Show password">👁️</button>
+  </div>
+  {% if form.password.errors %}
+    <div style="color: #dc3545; font-size: 12px; margin-top: 5px;">⚠️ {{ form.password.errors|join:", " }}</div>
+  {% endif %}
+</div>
+>>>>>>> Stashed changes
+
+<div style="margin-bottom: 20px;">
+  <label for="newpasswd" style="display: block; margin-bottom: 5px; font-weight: bold;"><strong>New Password:</strong></label>
+  <div style="position: relative;">
+    {{ form.newpasswd }}
+    <button type="button" id="new-pwd-toggle" style="position: absolute; right: 10px; top: 5px; background: none; border: none; cursor: pointer; font-size: 18px;" aria-label="Show password">👁️</button>
+  </div>
+  {% if form.newpasswd.errors %}
+    <div style="color: #dc3545; font-size: 12px; margin-top: 5px;">⚠️ {{ form.newpasswd.errors|join:", " }}</div>
+  {% endif %}
+  
+  <!-- ENHANCEMENT: Password Strength Meter -->
+  <div id="strength-meter" style="margin-top: 5px; height: 5px; background: #e0e0e0; border-radius: 3px; overflow: hidden; display: none;">
+    <div id="strength-fill" style="width: 0%; height: 100%; background: #dc3545; transition: width 0.3s;"></div>
+  </div>
+  <span id="strength-text" style="font-size: 11px; margin-top: 3px; display: inline-block;"></span>
+  <div id="pwd-tips" style="font-size: 11px; color: #666; margin-top: 5px;"></div>
+</div>
+
+<<<<<<< Updated upstream
 <p style="text-align: center"><input type='submit' value='-  Change My Password  -' class='btn btn-primary' id="submit-btn"></p>
+=======
+<div style="margin-bottom: 20px;">
+  <label for="newpasswdconfirm" style="display: block; margin-bottom: 5px; font-weight: bold;"><strong>New password confirm:</strong></label>
+  <div style="position: relative;">
+    {{ form.newpasswdconfirm }}
+    <button type="button" id="confirm-pwd-toggle" style="position: absolute; right: 10px; top: 5px; background: none; border: none; cursor: pointer; font-size: 18px;" aria-label="Show password">👁️</button>
+  </div>
+  {% if form.newpasswdconfirm.errors %}
+    <div style="color: #dc3545; font-size: 12px; margin-top: 5px;">⚠️ {{ form.newpasswdconfirm.errors|join:", " }}</div>
+  {% endif %}
+  
+  <!-- ENHANCEMENT: Password Match Validation -->
+  <div id="match-msg" style="font-size: 12px; margin-top: 5px; display: none;"></div>
+</div>
+
+<div style="text-align: center; margin-top: 30px;">
+  <input type='submit' value='-  Change My Password  -' class='btn btn-primary' id="submit-btn" style="padding: 10px 20px; font-size: 16px;">
+</div>
+
+</div>
+>>>>>>> Stashed changes
 </form>
 
 <script type="text/javascript">
 <!--
+<<<<<<< Updated upstream
 // ============================================
 // ENHANCEMENTS: Password Toggle + Strength Meter + Password Match
 // ============================================
@@ -222,6 +290,116 @@ setTimeout(function() {
     }
     
 }, 100);
+=======
+// ENHANCEMENT 1: Password Toggles for all 3 fields
+function addToggle(fieldId, btnId) {
+    var field = document.getElementById(fieldId);
+    var btn = document.getElementById(btnId);
+    if (field && btn) {
+        btn.onclick = function() {
+            if (field.type === 'password') {
+                field.type = 'text';
+                btn.textContent = '🙈';
+                btn.setAttribute('aria-label', 'Hide password');
+            } else {
+                field.type = 'password';
+                btn.textContent = '👁️';
+                btn.setAttribute('aria-label', 'Show password');
+            }
+        };
+    }
+}
+
+addToggle('id_password', 'current-pwd-toggle');
+addToggle('id_newpasswd', 'new-pwd-toggle');
+addToggle('id_newpasswdconfirm', 'confirm-pwd-toggle');
+
+// ENHANCEMENT 2: Password Strength Meter
+var newPwdField = document.getElementById('id_newpasswd');
+var strengthMeter = document.getElementById('strength-meter');
+var strengthFill = document.getElementById('strength-fill');
+var strengthText = document.getElementById('strength-text');
+var pwdTips = document.getElementById('pwd-tips');
+
+if (newPwdField && strengthMeter) {
+    newPwdField.addEventListener('keyup', function() {
+        var pwd = this.value;
+        if (pwd.length === 0) {
+            strengthMeter.style.display = 'none';
+            strengthText.textContent = '';
+            pwdTips.innerHTML = '';
+            return;
+        }
+        
+        strengthMeter.style.display = 'block';
+        var strength = 0;
+        var tips = [];
+        
+        if (pwd.length >= 8) strength++; else tips.push('8+ chars');
+        if (pwd.length >= 12) strength++; else if (pwd.length >= 8) tips.push('12+ chars better');
+        if (/[A-Z]/.test(pwd)) strength++; else tips.push('uppercase');
+        if (/[a-z]/.test(pwd)) strength++; else tips.push('lowercase');
+        if (/[0-9]/.test(pwd)) strength++; else tips.push('numbers');
+        if (/[!@#$%^&*]/.test(pwd)) strength++; else tips.push('special chars');
+        
+        var percent = (strength / 6) * 100;
+        var color = '#dc3545';
+        var text = 'Weak';
+        
+        if (percent >= 80) { color = '#28a745'; text = 'Strong'; }
+        else if (percent >= 50) { color = '#ffc107'; text = 'Medium'; }
+        
+        strengthFill.style.width = percent + '%';
+        strengthFill.style.backgroundColor = color;
+        strengthText.textContent = text;
+        strengthText.style.color = color;
+        
+        if (tips.length > 0) {
+            pwdTips.innerHTML = '💡 Tips: ' + tips.join(', ');
+        } else {
+            pwdTips.innerHTML = '✓ Excellent password!';
+        }
+        
+        // Trigger match validation
+        checkMatch();
+    });
+}
+
+// ENHANCEMENT 3: Password Match Validation
+var confirmField = document.getElementById('id_newpasswdconfirm');
+var matchMsg = document.getElementById('match-msg');
+
+function checkMatch() {
+    if (!newPwdField || !confirmField || !matchMsg) return;
+    
+    if (confirmField.value.length === 0) {
+        matchMsg.style.display = 'none';
+        return;
+    }
+    if (newPwdField.value === confirmField.value && newPwdField.value.length > 0) {
+        matchMsg.innerHTML = '✓ Passwords match';
+        matchMsg.style.color = '#28a745';
+        matchMsg.style.display = 'block';
+    } else if (confirmField.value.length > 0) {
+        matchMsg.innerHTML = '✗ Passwords do not match';
+        matchMsg.style.color = '#dc3545';
+        matchMsg.style.display = 'block';
+    }
+}
+
+if (confirmField && matchMsg) {
+    confirmField.addEventListener('keyup', checkMatch);
+    if (newPwdField) newPwdField.addEventListener('keyup', checkMatch);
+}
+
+// ENHANCEMENT 4: Mobile touch targets
+var submitBtn = document.getElementById('submit-btn');
+if (submitBtn) {
+    submitBtn.style.padding = '12px 24px';
+    submitBtn.style.fontSize = '16px';
+    submitBtn.style.minWidth = '200px';
+}
+>>>>>>> Stashed changes
 //-->
 </script>
 
