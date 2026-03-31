@@ -1291,6 +1291,22 @@ class ESPUser(User, BaseESPUser):
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
 
+def invalidate_DBListCount_caches():
+    keys = cache.get('DBListCount_keys', [])
+    for key in keys:
+        cache.delete(key)
+    cache.delete('DBListCount_keys')
+
+@dispatch.receiver(signals.post_save, sender=ESPUser,
+                     dispatch_uid='invalidate_DBListCount_caches_save')
+def invalidate_DBListCount_caches_on_save(sender, instance, **kwargs):
+    invalidate_DBListCount_caches()
+
+@dispatch.receiver(signals.post_delete, sender=ESPUser,
+                     dispatch_uid='invalidate_DBListCount_caches_delete')
+def invalidate_DBListCount_caches_on_delete(sender, instance, **kwargs):
+    invalidate_DBListCount_caches()
+
 @dispatch.receiver(signals.post_save, sender=User,
                      dispatch_uid='make_admin_save')
 def make_admin_save(sender, instance, **kwargs):
@@ -2286,15 +2302,25 @@ class DBList(object):
 
         retVal   = cache.get(cache_id) # get the cached result
         if self.QObject: # if there is a q object we can just
-            if not self.totalnum:
+            if not self.totalnum or cache.get(cache_id) is None:
                 if override:
                     self.totalnum = ESPUser.objects.filter(self.QObject).distinct().count()
                     cache.set(cache_id, self.totalnum, 60)
+                    # register cache key
+                    keys = cache.get('DBListCount_keys', [])
+                    if cache_id not in keys:
+                        keys.append(cache_id)
+                        cache.set('DBListCount_keys', keys, 60*60*24*7)
                 else:
                     cachedval = cache.get(cache_id)
                     if cachedval is None:
                         self.totalnum = ESPUser.objects.filter(self.QObject).distinct().count()
                         cache.set(cache_id, self.totalnum, 60)
+                        # register cache key
+                        keys = cache.get('DBListCount_keys', [])
+                        if cache_id not in keys:
+                            keys.append(cache_id)
+                            cache.set('DBListCount_keys', keys, 60*60*24*7)
                     else:
                         self.totalnum = cachedval
 
