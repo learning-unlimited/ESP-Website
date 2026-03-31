@@ -43,8 +43,13 @@ GRAPHQL_URL = "https://api.github.com/graphql"
 import urllib.request
 
 
-def graphql(query: str, variables: dict | None = None) -> dict:
-    """Execute a GitHub GraphQL query and return the JSON response."""
+def graphql(query: str, variables: dict | None = None, *, allow_partial: bool = False) -> dict:
+    """Execute a GitHub GraphQL query and return the JSON response.
+
+    If *allow_partial* is True, errors are logged but execution continues
+    as long as partial data was returned (useful for batched user lookups
+    where bot accounts like ``dependabot`` are not found).
+    """
     payload = json.dumps({"query": query, "variables": variables or {}}).encode()
     req = urllib.request.Request(
         GRAPHQL_URL,
@@ -57,8 +62,12 @@ def graphql(query: str, variables: dict | None = None) -> dict:
     with urllib.request.urlopen(req) as resp:
         data = json.loads(resp.read())
     if "errors" in data:
-        print("GraphQL errors:", json.dumps(data["errors"], indent=2), file=sys.stderr)
-        sys.exit(1)
+        if allow_partial and data.get("data"):
+            # Log but continue — some entries (e.g. bots) may not resolve
+            pass
+        else:
+            print("GraphQL errors:", json.dumps(data["errors"], indent=2), file=sys.stderr)
+            sys.exit(1)
     return data["data"]
 
 
@@ -328,7 +337,8 @@ def fetch_pr_counts(logins: list[str], search_filter: str) -> dict[str, int]:
 def fetch_profile_names(logins: list[str]) -> dict[str, str]:
     """
     Fetch display names from GitHub user profiles using batched GraphQL
-    queries (up to 20 per request).
+    queries (up to 20 per request).  Bot accounts (e.g. dependabot) that
+    don't resolve as User nodes are silently skipped.
     """
     names: dict[str, str] = {}
     batch_size = 20
@@ -339,7 +349,7 @@ def fetch_profile_names(logins: list[str]) -> dict[str, str]:
         for j, login in enumerate(batch):
             fragments.append(f'u{j}: user(login: "{login}") {{ name }}')
         query = "query {\n" + "\n".join(fragments) + "\n}"
-        data = graphql(query)
+        data = graphql(query, allow_partial=True)
         for j, login in enumerate(batch):
             user = data.get(f"u{j}") or {}
             names[login] = user.get("name") or ""
