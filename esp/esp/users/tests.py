@@ -15,6 +15,7 @@ from esp.program.models import RegistrationProfile, Program
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+from esp.users.forms.password_reset import UserPasswdForm
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.forms.user_profile import StudentProfileForm
 from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
@@ -454,8 +455,8 @@ class AccountCreationTest(TestCase):
             url+="information/"
         response = self.client.post(url,
                                    data={"username":"username",
-                                         "password":"passw",
-                                         "confirm_password":"passw",
+                                 "password":"StrongPass123!",
+                                 "confirm_password":"StrongPass123!",
                                          "first_name":"first",
                                          "last_name":"last",
                                          "email":"tsutton125@gmail.com",
@@ -485,6 +486,47 @@ class AccountCreationTest(TestCase):
         match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
         self.assertEqual(match.group("user"), u.username)
         self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
+
+    def test_phase_2_rejects_weak_password(self):
+        url = "/myesp/register/"
+        if Tag.getBooleanTag("ask_about_duplicate_accounts"):
+            url += "information/"
+
+        response = self.client.post(url,
+                                    data={"username": "weakpassuser",
+                                          "password": "password",
+                                          "confirm_password": "password",
+                                          "first_name": "first",
+                                          "last_name": "last",
+                                          "email": "weakpass@example.com",
+                                          "confirm_email": "weakpass@example.com",
+                                          "initial_role": "Teacher"})
+
+        self.assertTemplateUsed(response, "registration/newuser.html")
+        self.assertFalse(ESPUser.objects.filter(username="weakpassuser").exists())
+        self.assertIn('password', response.context['form'].errors)
+
+
+class PasswordStrengthValidationTest(TestCase):
+    def setUp(self):
+        self.user = ESPUser.objects.create_user(
+            username='password_strength_user',
+            email='password_strength@example.com',
+            password='StrongPass123!'
+        )
+
+    def test_change_password_form_rejects_common_password(self):
+        form = UserPasswdForm(
+            user=self.user,
+            data={
+                'password': 'StrongPass123!',
+                'newpasswd': 'password',
+                'newpasswdconfirm': 'password',
+            },
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('newpasswd', form.errors)
 
 from esp.users.models import GradeChangeRequest
 

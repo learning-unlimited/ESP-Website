@@ -1,4 +1,6 @@
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
 
@@ -111,6 +113,20 @@ class UserRegForm(forms.Form):
         if not (('confirm_password' in self.cleaned_data) and ('password' in self.cleaned_data)) or (self.cleaned_data['confirm_password'] != self.cleaned_data['password']):
             raise forms.ValidationError('Ensure the password and password confirmation are equal.')
         return self.cleaned_data['confirm_password']
+
+    def clean_password(self):
+        password = self.cleaned_data['password']
+        temp_user = ESPUser(
+            username=self.cleaned_data.get('username', ''),
+            first_name=self.cleaned_data.get('first_name', ''),
+            last_name=self.cleaned_data.get('last_name', ''),
+            email=self.cleaned_data.get('email', ''),
+        )
+        try:
+            validate_password(password, user=temp_user)
+        except DjangoValidationError as e:
+            raise forms.ValidationError(e.messages)
+        return password
 
     def clean_confirm_email(self):
         if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):

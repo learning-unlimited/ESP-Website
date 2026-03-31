@@ -1,6 +1,8 @@
 
 
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from esp.users.models import ESPUser
 from django.utils.html import conditional_escape, mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
@@ -65,4 +67,12 @@ class UserPasswdForm(FormWithRequiredCss):
 
         if self.cleaned_data['newpasswd'] != new_passwd:
             raise forms.ValidationError('Password and confirmation are not equal.')
+        return new_passwd
+
+    def clean_newpasswd(self):
+        new_passwd = self.cleaned_data['newpasswd'].strip()
+        try:
+            validate_password(new_passwd, user=self.user)
+        except DjangoValidationError as e:
+            raise forms.ValidationError(e.messages)
         return new_passwd
