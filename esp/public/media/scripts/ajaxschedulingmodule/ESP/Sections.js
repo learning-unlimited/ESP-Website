@@ -287,6 +287,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         this.matrix.sectionInfoPanel.displaySection(section);
         this.availableTimeslots = this.getAvailableTimeslots(section);
         this.matrix.highlightTimeslots(this.availableTimeslots, section);
+        this.matrix.updateRooms();
     };
 
     /**
@@ -313,6 +314,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
         this.unscheduleAsGhost();
+        this.matrix.updateRooms();
     };
 
     /**

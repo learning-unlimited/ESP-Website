@@ -79,24 +79,49 @@ function Matrix(
      */
     this.filteredRooms = function(){
         var returnedRooms = [];
+        var selectedSection = this.sections.selectedSection;
+        var validStartingTimeslots = [];
+    
+        if (selectedSection) {
+            validStartingTimeslots = this.sections.getAvailableTimeslots(selectedSection)[0];
+        }
+    
         $j.each(this.rooms, function(index, room) {
-            var roomValid;
-            // check every criterion in the room filter tab, short-circuiting if possible
-            roomValid = true;
+            var roomValid = true;
+    
+            // Keep existing room filters
             for (var filterName in this.filter) {
                 if (this.filter.hasOwnProperty(filterName)) {
                     var filterObject = this.filter[filterName];
-                    // this loops over properties in this.filter
                     if (filterObject.active && !filterObject.valid(room)) {
                         roomValid = false;
                         break;
                     }
                 }
             }
+    
+            // New part: if a section is selected, only keep rooms that work
+            // for at least one valid starting timeslot for that section
+            if (roomValid && selectedSection) {
+                roomValid = false;
+    
+                $j.each(validStartingTimeslots, function(i, timeslot_id) {
+                    var scheduleTimeslots =
+                        this.timeslots.get_timeslots_to_schedule_section(selectedSection, timeslot_id);
+    
+                    if (scheduleTimeslots !== null &&
+                        this.validateAssignment(selectedSection, room.id, scheduleTimeslots).valid) {
+                        roomValid = true;
+                        return false;
+                    }
+                }.bind(this));
+            }
+    
             if (roomValid) {
                 returnedRooms.push(room);
             }
         }.bind(this));
+    
         return returnedRooms;
     };
     
