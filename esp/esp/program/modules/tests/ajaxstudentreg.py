@@ -76,7 +76,6 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
 
     def expect_ajaxerror(self, request_url, post_data, error_str):
         # We expect the server to return a JSON response with status 200 and an error message.
-        # We no longer catch AjaxErrorMiddleware.AjaxError because that middleware is deprecated.
 
         response = self.client.post(request_url, post_data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
@@ -138,7 +137,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         self.expect_sections_in_schedule(response, [sec1])
 
         #   Try adding another class at the same time and check that we get an error
-        #   FIX: Handle case where no conflicting sections exist
+        #   Handle case where no conflicting sections exist
         conflicting_sections = list(ClassSection.objects.filter(parent_class__parent_program=program, meeting_times=sec1.start_time()).exclude(parent_class=sec1.parent_class))
 
         if not conflicting_sections:
@@ -148,7 +147,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec2.parent_class.id, 'section_id': sec2.id}, 'This section conflicts with your schedule--check out the other sections!')
 
         #   Try adding another section of same class and check that we get an error
-        #   FIX: Handle case where no other sections exist
+        #   Handle case where no other sections exist
         other_sections = list(sec1.parent_class.get_sections().exclude(id=sec1.id))
 
         if not other_sections:
@@ -158,7 +157,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec3.parent_class.id, 'section_id': sec3.id}, 'You are already signed up for a section of this class!')
 
         #   Try adding another class that we can actually take and check that it's there
-        #   FIX: Handle case where no valid sections exist
+        #   Handle case where no valid sections exist
         valid_sections = list(program.sections().exclude(parent_class=sec1.parent_class).exclude(meeting_times__in=sec1.meeting_times.all()))
 
         if not valid_sections:
@@ -177,7 +176,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         sec1 = random.choice(program.sections())
         sec1.preregister_student(student)
 
-        # FIX: Ensure we actually found a non-conflicting second class
+        # Ensure we actually found a non-conflicting second class
         valid_second_sections = list(program.sections().exclude(parent_class=sec1.parent_class).exclude(meeting_times__in=sec1.meeting_times.all()))
 
         if not valid_second_sections:

@@ -370,7 +370,6 @@ class StudentClassRegModule(ProgramModuleObj):
                 # Section doesn't exist, skip it
                 continue
             except Exception:
-                # Manually return the JSON error after the removal of middleware
                 return HttpResponse(
                     json.dumps({'status': 200, 'error': 'Encountered an error retrieving updated buttons.'}),
                     content_type='application/json'
@@ -448,7 +447,6 @@ class StudentClassRegModule(ProgramModuleObj):
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
-            # Manually return the JSON error after removal of middleware
             error_message = inst.args[0] if inst.args else "An error occurred."
             return HttpResponse(json.dumps({'status' : 200, 'error': str(error_message)}), content_type='application/json')
 
