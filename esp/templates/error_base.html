@@ -41,7 +41,7 @@
 {% if request.user.isAdministrator %}
 <hr />
 <h3>Admin Details</h3>
-<table>
+<table class="table table-bordered table-striped table-hover table-responsive">
     <tr>
         <th>Error type</th>
         <td>{{ error_type|default:"Unknown" }}</td>
