@@ -41,7 +41,7 @@ from esp.program.models import RegistrationProfile
 from esp.program.models import TeacherBio, FinancialAidRequest, SplashInfo
 from esp.program.models import VolunteerRequest, VolunteerOffer
 
-from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList, ScheduleTestSubject
 
 from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord, ModeratorRecord
 
@@ -198,6 +198,13 @@ class ScheduleTestSectionListAdmin(admin.ModelAdmin):
     list_display = ('timeblock', program, 'section_ids', 'expr', 'seq', subclass_instance_type, 'text')
     list_filter = ('timeblock__program',)
 admin_site.register(ScheduleTestSectionList, ScheduleTestSectionListAdmin)
+
+class ScheduleTestSubjectAdmin(admin.ModelAdmin):
+    def program(obj):
+        return obj.subject.parent_program
+    list_display = ('subject', program, 'expr', 'seq', subclass_instance_type, 'text')
+    list_filter = ('subject__parent_program',)
+admin_site.register(ScheduleTestSubject, ScheduleTestSubjectAdmin)
 
 class VolunteerOfferInline(admin.StackedInline):
     model = VolunteerOffer
