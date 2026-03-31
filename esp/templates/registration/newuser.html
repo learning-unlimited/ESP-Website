@@ -171,6 +171,7 @@ setTimeout(function() {
         btn.type = 'button';
         btn.textContent = '👁️';
         btn.style.cssText = 'position: absolute; right: 10px; top: 5px; background: none; border: none; cursor: pointer; font-size: 18px; z-index: 10;';
+        btn.setAttribute('aria-label', 'Show password');
         btn.onclick = function() {
             if (pwdToggleField.type === 'password') {
                 pwdToggleField.type = 'text';
@@ -184,7 +185,7 @@ setTimeout(function() {
     }
     
     // ---------- CONFIRM PASSWORD TOGGLE ----------
-    var confirmToggleField = document.getElementById('id_password_confirm');
+    var confirmToggleField = document.getElementById('id_confirm_password');
     if (confirmToggleField && !document.getElementById('confirm-toggle-btn')) {
         var confirmWrapper = confirmToggleField.parentNode;
         confirmWrapper.style.position = 'relative';
@@ -193,6 +194,7 @@ setTimeout(function() {
         confirmBtn.type = 'button';
         confirmBtn.textContent = '👁️';
         confirmBtn.style.cssText = 'position: absolute; right: 10px; top: 5px; background: none; border: none; cursor: pointer; font-size: 18px; z-index: 10;';
+        confirmBtn.setAttribute('aria-label', 'Show confirm password');
         confirmBtn.onclick = function() {
             if (confirmToggleField.type === 'password') {
                 confirmToggleField.type = 'text';
@@ -207,7 +209,7 @@ setTimeout(function() {
     
     // ---------- PASSWORD MATCH VALIDATION ----------
     var matchPwdField = document.getElementById('id_password');
-    var matchConfirmField = document.getElementById('id_password_confirm');
+    var matchConfirmField = document.getElementById('id_confirm_password');
     if (matchPwdField && matchConfirmField && !document.getElementById('match-msg')) {
         var matchMsg = document.createElement('div');
         matchMsg.id = 'match-msg';
@@ -245,12 +247,12 @@ setTimeout(function() {
         var userError = document.createElement('div');
         userError.id = 'username-error';
         userError.style.cssText = 'color: #dc3545; font-size: 12px; margin-top: 3px; display: none;';
-        userError.innerHTML = '✗ Letters, numbers, underscore only (3-20 characters)';
+        userError.innerHTML = '✗ Only letters and numbers (5-30 characters)';
         userWrapper.appendChild(userError);
         
         userField.addEventListener('keyup', function() {
             var val = this.value;
-            var regex = /^[a-zA-Z0-9_]{3,20}$/;
+            var regex = /^[a-zA-Z0-9]{5,30}$/;
             if (val.length === 0) {
                 userIcon.textContent = '';
                 userError.style.display = 'none';
