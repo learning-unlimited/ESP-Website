@@ -41,7 +41,9 @@
 
         <tr>
           <td><label for="password"><strong>Current Password:</strong></label></td>
-          <td>{{ form.password }} {% if form.password.errors %}
+          <td>{{ form.password }}
+            <i class="eye fa-solid fa-eye" id="togglePassword"></i>
+            {% if form.password.errors %}
             <br /><span class="form_error">{{ form.password.errors|join:", " }}</span>
             {% endif %}
           </td>
@@ -49,7 +51,9 @@
 
         <tr>
           <td><label for="newpasswd"><strong>New Password:</strong></label></td>
-          <td>{{ form.newpasswd }} {% if form.newpasswd.errors %}
+          <td>{{ form.newpasswd }}
+            <i class="eye fa-solid fa-eye" id="togglePassword"></i>
+            {% if form.newpasswd.errors %}
             <br /><span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
             {% endif %}
           </td>
@@ -57,7 +61,9 @@
 
         <tr>
           <td><label for="newpasswdconfirm"><strong>New password confirm:</strong></label></td>
-          <td>{{ form.newpasswdconfirm }} {% if form.newpasswdconfirm.errors %}
+          <td>{{ form.newpasswdconfirm }}
+            <i class="eye fa-solid fa-eye" id="togglePassword"></i>
+            {% if form.newpasswdconfirm.errors %}
             <br /><span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
             {% endif %}
           </td>
@@ -75,5 +81,25 @@
 
       <p style="text-align: center"><input type='submit' value='-  Change My Password  -' class='btn btn-primary'></p>
     </form>
+
+    <script>
+      let fields = document.querySelectorAll(".required");
+      let buttons = document.querySelectorAll(".fa-eye");
+      buttons.forEach((btn, index) => {
+        btn.addEventListener("click", () => {
+          if (fields[index].type === "password") {
+            fields[index].type = "text";
+            buttons[index].classList.replace("fa-eye", "fa-eye-slash");
+          } else {
+            fields[index].type = "password";
+            buttons[index].classList.replace("fa-eye-slash", "fa-eye");
+          }
+        });
+      });
+
+
+
+    </script>
+
     {% endif %}
     {% endblock %}
