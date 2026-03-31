@@ -93,7 +93,10 @@ def create_schema(db):
 
     transaction.set_autocommit(False)
     try:
-        db.execute("CREATE SCHEMA customforms")
+        db.execute("SELECT 1 FROM information_schema.schemata WHERE schema_name = 'customforms'")
+        schema_exists = db.fetchone() is not None
+        if not schema_exists:
+            db.execute("CREATE SCHEMA customforms")
     except (DatabaseError, ProgrammingError):
         transaction.rollback()
     else:
