@@ -169,6 +169,33 @@ function fill_status_row(clsid, classes_data) {
         .append(sections_table)
     );
   
+  if (class_info.flags && class_info.flags.length > 0) {
+      var flags_div = $j("<div/>").css({"padding-top": "10px", "padding-left": "10px"});
+      flags_div.append($j("<b>Flags:</b>"));
+      var flags_list = $j("<ul/>");
+      $j.each(class_info.flags, function(i, flag) {
+          var badge = $j('<span/>')
+              .text(flag.name)
+              .css({
+                  'background-color': flag.color,
+                  'color': '#fff',
+                  'border-radius': '3px',
+                  'padding': '1px 6px',
+                  'margin-right': '6px',
+                  'font-size': '0.85em',
+              });
+          var detail = $j("<li/>");
+          detail.append(badge);
+          if (flag.comment) {
+              detail.append($j("<span/>").text(flag.comment + ' '));
+          }
+          detail.append($j("<small/>").text('(by ' + flag.modified_by + ' at ' + flag.modified_time + ')').css('color', '#888'));
+          flags_list.append(detail);
+      });
+      flags_div.append(flags_list);
+      status_wrapper.append(flags_div);
+  }
+
   if (class_info.special_requests || class_info.purchases || class_info.comments) {
       var comments_div = $j("<div/>").css("padding-top", "10px").css("justify-content", "space-around");
       if (class_info.special_requests) comments_div.append(make_attrib_para("Requests", class_info.special_requests));
@@ -299,7 +326,33 @@ function createClassTitleTd(clsObj) {
     }).append(
         $j('<span/>', {'class': title_css_class})
             .text(clsObj.title)
-    ).attr("data-st-key", clsObj.title);
+    ).append(createFlagBadges(clsObj))
+     .attr("data-st-key", clsObj.title);
+}
+
+function createFlagBadges(clsObj) {
+    if (!clsObj.dashboard_flags || clsObj.dashboard_flags.length === 0) {
+        return $j('<span/>');
+    }
+    var container = $j('<span/>', {'class': 'class-flag-badges'}).css('margin-left', '6px');
+    $j.each(clsObj.dashboard_flags, function(i, flag) {
+        container.append(
+            $j('<span/>', {'class': 'class-flag-badge'})
+                .text(flag.name)
+                .attr('title', flag.name)
+                .css({
+                    'background-color': flag.color,
+                    'color': '#fff',
+                    'border-radius': '3px',
+                    'padding': '1px 5px',
+                    'margin-right': '3px',
+                    'font-size': '0.75em',
+                    'white-space': 'nowrap',
+                    'display': 'inline-block',
+                })
+        );
+    });
+    return container;
 }
 
 function createClassStatusTd(clsObj) {
