@@ -1,0 +1,81 @@
+name: Issue Triage Gate
+
+on:
+  issues:
+    types: [opened, unlabeled]
+
+jobs:
+  # When a new issue is opened, lock it and label it for triage
+  # unless the author has triage-level permissions or higher.
+  lock-new-issue:
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Check author permissions
+        id: check-perms
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PERM=$(gh api "repos/${{ github.repository }}/collaborators/${{ github.event.issue.user.login }}/permission" \
+            --jq '.permission' 2>/dev/null || echo "none")
+          echo "permission=$PERM" >> "$GITHUB_OUTPUT"
+
+          # triage, write, maintain, admin → skip the lock
+          case "$PERM" in
+            admin|maintain|write|triage) echo "skip=true" >> "$GITHUB_OUTPUT" ;;
+            *)                           echo "skip=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Add needs-triage label
+        if: steps.check-perms.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --add-label "needs-triage"
+
+      - name: Post triage notice
+        if: steps.check-perms.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "👋 Thanks for opening this issue!
+
+          To keep the tracker focused, new issues are **locked for conversation** until a maintainer has reviewed them. This helps us avoid duplicates and ensure issues are actionable.
+
+          **What happens next:**
+          - A maintainer will review this issue shortly.
+          - If approved, the conversation will be unlocked and the \`needs-triage\` label removed.
+          - If this is a duplicate or out of scope, a maintainer will close it with an explanation.
+
+          Please don't worry — your issue hasn't been rejected, it's just waiting for review. 🙏"
+
+      - name: Lock conversation
+        if: steps.check-perms.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method PUT \
+            "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/lock" \
+            -f lock_reason="resolved"
+
+  # When a maintainer removes the needs-triage label, unlock the issue.
+  unlock-triaged-issue:
+    if: >-
+      github.event.action == 'unlabeled'
+      && github.event.label.name == 'needs-triage'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Unlock conversation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method DELETE \
+            "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/lock"
