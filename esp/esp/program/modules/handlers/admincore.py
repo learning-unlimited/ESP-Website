@@ -360,57 +360,57 @@ class AdminCore(ProgramModuleObj, CoreModule):
         message_bad = ''
 
         #   Handle 'open' / 'close' / 'delete' actions
-        if extra == 'open':
+        if request.method == "POST" and extra == 'open':
             #   If there are no permissions for this permission type, create one and open it now (open ended)
             #   If there are permission(s) for this type, take the most recent(?) and open it (open ended)
-            if 'group' in request.GET and 'perm' in request.GET:
-                group = Group.objects.get(id = request.GET['group'])
-                perms = Permission.objects.filter(role = group, permission_type = request.GET['perm'], program = prog).order_by('-end_date')
+            if 'group' in request.POST and 'perm' in request.POST:
+                group = Group.objects.get(id = request.POST['group'])
+                perms = Permission.objects.filter(role = group, permission_type = request.POST['perm'], program = prog).order_by('-end_date')
                 if perms.count() > 0:
                     perms[0].unexpire()
                 else:
-                    Permission.objects.create(role = group, permission_type = request.GET['perm'], start_date = datetime.now(), program = prog)
-                message_good = 'Deadline opened for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
-            elif 'perm_id' in request.GET:
-                perms = Permission.objects.filter(id=request.GET['perm_id'])
+                    Permission.objects.create(role = group, permission_type = request.POST['perm'], start_date = datetime.now(), program = prog)
+                message_good = 'Deadline opened for %ss: %s.' % (group, Permission.nice_name_lookup(request.POST['perm']))
+            elif 'perm_id' in request.POST:
+                perms = Permission.objects.filter(id=request.POST['perm_id'])
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.unexpire()
                     message_good = 'Permission opened for %s: %s.' % (perm.user, perm.nice_name())
                 else:
-                    message_bad = 'No permission with ID %s.' % (request.GET['perm_id'])
+                    message_bad = 'No permission with ID %s.' % (request.POST['perm_id'])
 
-        elif extra == 'close':
+        elif request.method == "POST" and extra == 'close':
             #   If there are open permission(s) for this type, close them all
-            if 'group' in request.GET and 'perm' in request.GET:
-                group = Group.objects.get(id = request.GET['group'])
-                perms = Permission.valid_objects().filter(permission_type = request.GET['perm'], program = prog, role = group)
+            if 'group' in request.POST and 'perm' in request.POST:
+                group = Group.objects.get(id = request.POST['group'])
+                perms = Permission.valid_objects().filter(permission_type = request.POST['perm'], program = prog, role = group)
                 perms.update(end_date = datetime.now())
-                message_good = 'Deadline closed for %ss: %s.' % (group, Permission.nice_name_lookup(request.GET['perm']))
-            if 'perm_id' in request.GET:
-                perms = Permission.objects.filter(id=request.GET['perm_id'])
+                message_good = 'Deadline closed for %ss: %s.' % (group, Permission.nice_name_lookup(request.POST['perm']))
+            if 'perm_id' in request.POST:
+                perms = Permission.objects.filter(id=request.POST['perm_id'])
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.expire()
                     message_good = 'Permission closed for %s: %s.' % (perm.user, perm.nice_name())
                 else:
-                    message_bad = 'No permission with ID %s.' % (request.GET['perm_id'])
+                    message_bad = 'No permission with ID %s.' % (request.POST['perm_id'])
 
-        elif extra == 'delete' and 'perm_id' in request.GET:
+            elif request.method == "POST" and extra == 'delete' and 'perm_id' in request.POST:
             #   Delete the specified permission if it exists
-            perms = Permission.objects.filter(id=request.GET['perm_id'])
+            perms = Permission.objects.filter(id=request.POST['perm_id'])
             if perms.count() == 1:
                 perm = perms[0]
-                if 'deadline' in request.GET:
+                if 'deadline' in request.POST:
                     message_good = 'Deadline deleted for %ss: %s.' % (perm.role, perm.nice_name())
                 else:
                     message_good = 'Permission deleted for %s: %s.' % (perm.user, perm.nice_name())
                 perm.delete()
             else:
-                if 'deadline' in request.GET:
-                    message_bad = 'Error while deleting deadline with ID %s.' % request.GET['perm_id']
+                if 'deadline' in request.POST:
+                    message_bad = 'Error while deleting deadline with ID %s.' % request.POST['perm_id']
                 else:
-                    message_bad = 'Error while deleting permission with ID %s.' % request.GET['perm_id']
+                    message_bad = 'Error while deleting permission with ID %s.' % request.POST['perm_id']
 
         #   Check incoming form data
         if request.method == 'POST' and 'action' in request.POST:

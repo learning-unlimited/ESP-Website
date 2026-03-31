@@ -77,17 +77,27 @@
             </tr>
             {% endif %}
             <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
-                <th class="{% if details.is_open %}is_open{% else %}is_closed{% endif %}" rowspan = "{% if details.perms|length_is:0 %}1{% else %}{{ details.perms|length }}{% endif %}">
+                <td class="{% if details.is_open %}is_open{% else %}is_closed{% endif %}" rowspan = "{% if details.perms|length_is:0 %}1{% else %}{{ details.perms|length }}{% endif %}">
                     {{ perm_type|perm_nice_name }}{% if details.recursive %}<br /><span style="color: royalblue;">(recursive)</span>{% endif %}<br>
                     <span class="bituri">{{ perm_type }}</span>
                     <br /><br />
                     {% if details.is_open %}
-                        <a {% if not details.implied_open %}href="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}"{% endif %}><button {% if details.implied_open %}disabled title="Can not be closed due to implied deadline" {% endif %}type="button" class="btn btn-danger">Close</button></a>
+                        <form method="POST" action="/manage/{{ program.getUrlBase }}/deadlines/close" style="display:inline;" onsubmit="event.stopPropagation();">
+                            {% csrf_token %}
+                            <input type="hidden" name="group" value="{{ group.id }}">
+                            <input type="hidden" name="perm" value="{{ perm_type }}">
+                            <button type="submit" class="btn btn-danger" {% if details.implied_open %}disabled title="Can not be closed due to implied deadline"{% endif %}>Close</button>
+                        </form>
                     {% else %}
-                        <a href="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"><button type="button" class="btn btn-success">Open</button></a>
+                        <form method="POST" action="/manage/{{ program.getUrlBase }}/deadlines/open" style="display:inline;" onsubmit="event.stopPropagation();">
+                            {% csrf_token %}
+                            <input type="hidden" name="group" value="{{ group.id }}">
+                            <input type="hidden" name="perm" value="{{ perm_type }}">
+                            <button type="submit" class="btn btn-success">Open</button>
+                        </form>
                     {% endif %}
-                </th>
-            {% for perm in details.perms %}
+                </td>
+                {% for perm in details.perms %}
                 {% if not forloop.first %}
                 <tr{% if forloop.last %} style="border-bottom: 1px solid grey;"{% endif %}>
                 {% endif %}
@@ -99,14 +109,20 @@
                     {% else %}
                         <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
                         {% if details.perms|length > 1 %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+                            <form method="POST" action="/manage/{{ program.getUrlBase }}/deadlines/delete" style="display:inline;" onsubmit="event.stopPropagation();">
+                                {% csrf_token %}
+                                <input type="hidden" name="perm_id" value="{{ perm.id }}">
+                                <input type="hidden" name="deadline" value="1">
+                                <button type="submit" class="btn btn-danger btn-small">Delete</button>
+                            </form>
                         {% endif %}
                     {% endif %}
                 </td>
-            </tr>
+                </tr>
             {% empty %}
-                <td colspan="3">No deadline set</td>
-            </tr>
+                <tr>
+                    <td colspan="3">No deadline set</td>
+                </tr>
             {% endfor %}
         {% endfor %}
         </tbody>
@@ -168,16 +184,24 @@
         <th></th>
     </tr>
     {% endif %}
-    <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
+    <tr style="border-top: 1px solid grey;">
         <th>{{ perm.user }}</th>
         <th class="{% if perm.is_valid %}is_open{% else %}is_closed{% endif %}">
             {{ perm.permission_type|perm_nice_name }}<br>
             <span class="bituri">{{ perm.permission_type }}</span>
             <br /><br />
-            {% if perm.is_valid %}
-                <a href="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}"><button type="button" class="btn btn-danger">Close</button></a>
+                       {% if perm.is_valid %}
+                <form method="POST" action="/manage/{{ program.getUrlBase }}/deadlines/close" style="display:inline;" onsubmit="event.stopPropagation();">
+                    {% csrf_token %}
+                    <input type="hidden" name="perm_id" value="{{ perm.id }}">
+                    <button type="submit" class="btn btn-danger">Close</button>
+                </form>
             {% else %}
-                <a href="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"><button type="button" class="btn btn-success">Open</button></a>
+                <form method="POST" action="/manage/{{ program.getUrlBase }}/deadlines/open" style="display:inline;" onsubmit="event.stopPropagation();">
+                    {% csrf_token %}
+                    <input type="hidden" name="perm_id" value="{{ perm.id }}">
+                    <button type="submit" class="btn btn-success">Open</button>
+                </form>
             {% endif %}
         </th>
         <td>
@@ -187,7 +211,12 @@
         </td>
         <td align="center" valign="center">
             <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
-            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+            <form method="POST" action="/manage/{{ program.getUrlBase }}/deadlines/delete" style="display:inline;" onsubmit="event.stopPropagation();">
+                {% csrf_token %}
+                <input type="hidden" name="perm_id" value="{{ perm.id }}">
+                <input type="hidden" name="permission" value="1">
+                <button type="submit" class="btn btn-danger btn-small">Delete</button>
+            </form>
         </td>
     </tr>
     {% empty %}
