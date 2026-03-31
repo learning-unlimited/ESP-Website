@@ -567,6 +567,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_row(ClassFlag, lambda flag: {'prog': flag.subject.parent_program})
+    class_subjects.cached_function.depend_on_row(ClassFlagType, lambda ft: {})
 
     @aux_call
     @json_response({
