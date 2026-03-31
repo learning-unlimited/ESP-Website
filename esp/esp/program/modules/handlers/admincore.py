@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -396,7 +395,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 else:
                     message_bad = 'No permission with ID %s.' % (request.POST['perm_id'])
 
-            elif request.method == "POST" and extra == 'delete' and 'perm_id' in request.POST:
+        elif request.method == "POST" and extra == 'delete' and 'perm_id' in request.POST:
             #   Delete the specified permission if it exists
             perms = Permission.objects.filter(id=request.POST['perm_id'])
             if perms.count() == 1:
