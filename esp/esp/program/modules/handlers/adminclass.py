@@ -199,9 +199,11 @@ class AdminClass(ProgramModuleObj):
         return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
 
     @aux_call
-    @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
+        if not (request.user.is_staff or request.user.canEdit(cls)):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+
         sections = cls.sections.all().order_by('id')
         context = {}
 
