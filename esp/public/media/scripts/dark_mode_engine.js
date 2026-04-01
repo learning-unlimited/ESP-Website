@@ -61,26 +61,11 @@
 
     // Bind generic toggles across the DOM when it loads
     document.addEventListener("DOMContentLoaded", () => {
-        const updateIcons = (theme) => {
-            document.querySelectorAll('.theme-icon-sun').forEach(el => el.style.display = theme === 'dark' ? 'inline-block' : 'none');
-            document.querySelectorAll('.theme-icon-moon').forEach(el => el.style.display = theme === 'dark' ? 'none' : 'inline-block');
-        };
-
-        // Set initial icon visibility
-        updateIcons(window.ESPThemeEngine.getCurrentTheme());
-
-        // Watch for programmatic theme changes
-        const observer = new MutationObserver(() => {
-            updateIcons(window.ESPThemeEngine.getCurrentTheme());
-        });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
-
         // Bind clicks for all buttons with class 'dark-mode-toggle'
         document.querySelectorAll('.dark-mode-toggle').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const newTheme = window.ESPThemeEngine.toggleTheme();
-                updateIcons(newTheme);
                 document.body.classList.add('theme-transition');
                 setTimeout(() => document.body.classList.remove('theme-transition'), 300);
             });
