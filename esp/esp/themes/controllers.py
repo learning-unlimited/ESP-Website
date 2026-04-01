@@ -340,9 +340,9 @@ class ThemeController(object):
 
                 merged_palette = list(set(current_palette) | set(loaded_palette))
                 palette = merged_palette
-            except IOError:
+            except FileNotFoundError:
                 logger.warning("Customization file for %s missing. Using parameters from database.", customization_name)
-                self.set_current_customization(customization_name)
+                self.unset_current_customization()
 
         if vars:
             self.customize_theme(vars)
