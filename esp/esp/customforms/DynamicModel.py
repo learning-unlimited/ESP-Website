@@ -202,37 +202,35 @@ class DynamicModelHandler:
         return self.field_list
 
     def createTable(self):
-        # """
-       # Sets up the database table using self.field_list
-        # """
-
-      if not self.field_list:
-        self._getModelFieldList()
+        """
+        Sets up the database table using self.field_list.
+        """
+        if not self.field_list:
+            self._getModelFieldList()
 
         previous_timeout = None
 
-      try:
-         if transaction.get_autocommit():
-            with transaction.atomic():
+        try:
+            if transaction.get_autocommit():
+                with transaction.atomic():
+                    self._set_lock_timeout()
+                    with connection.schema_editor() as schema_editor:
+                        schema_editor.create_model(self.createDynModel())
+            else:
+                previous_timeout = self._get_lock_timeout()
                 self._set_lock_timeout()
-                with connection.schema_editor() as schema_editor:
-                    schema_editor.create_model(self.createDynModel())
-         else:
-            previous_timeout = self._get_lock_timeout()
-            self._set_lock_timeout()
-            try:
-                with connection.schema_editor() as schema_editor:
-                    schema_editor.create_model(self.createDynModel())
-            finally:
-                self._restore_lock_timeout(previous_timeout)
-
-      except OperationalError as e:
-        error_message = str(e).lower()
-        if "lock timeout" in error_message or "canceling statement due to lock timeout" in error_message:
-            raise Exception(
-                "Custom form table creation failed due to a database lock. Please try again."
-            )
-        raise
+                try:
+                    with connection.schema_editor() as schema_editor:
+                        schema_editor.create_model(self.createDynModel())
+                finally:
+                    self._restore_lock_timeout(previous_timeout)
+        except OperationalError as e:
+            error_message = str(e).lower()
+            if "lock timeout" in error_message or "canceling statement due to lock timeout" in error_message:
+                raise Exception(
+                    "Custom form table creation failed due to a database lock. Please try again."
+                )
+            raise
 
     @transaction.atomic
     def deleteTable(self):
