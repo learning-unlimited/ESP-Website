@@ -8,6 +8,7 @@ from django.contrib.auth.models import Group
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
+from django.urls import reverse
 from django.utils.functional import SimpleLazyObject
 
 from esp.middleware import ESPError
@@ -1099,3 +1100,71 @@ class StudentProfileForm__emailvalidationtest(TestCase):
         email_errors = [e for e in form.non_field_errors()
                         if 'email' in e.lower()]
         self.assertEqual(email_errors, [])
+
+
+class ActivateAccountTest(TestCase):
+    """Tests for the activate_account view (part of #4480)."""
+
+    ACTIVATION_KEY = '123456'
+
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create_user(
+            username='testactivate',
+            email='testactivate@example.com',
+            password='testpassword',
+        )
+        # Simulate an inactive account awaiting activation:
+        # the activation key is appended to the hashed password with '_'
+        self.user.password = self.user.password + '_' + self.ACTIVATION_KEY
+        self.user.is_active = False
+        self.user.save()
+        self.url = reverse('activate_account')
+
+    def test_valid_key_activates_user(self):
+        """A valid username and key activates the account."""
+        self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_valid_key_strips_key_from_password(self):
+        """After activation the key suffix is removed from the stored password."""
+        expected_password = self.user.password[:-(len('_' + self.ACTIVATION_KEY))]
+        self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.password, expected_password)
+
+    def test_valid_key_redirects_to_profile(self):
+        """After activation the user is redirected to the profile page."""
+        response = self.client.get(
+            self.url,
+            {'username': 'testactivate', 'key': self.ACTIVATION_KEY},
+        )
+        self.assertRedirects(response, reverse('myesp_profile'), fetch_redirect_response=False)
+
+    def test_missing_username_raises_error(self):
+        """GET without username raises ESPError."""
+        with self.assertRaises(ESPError):
+            self.client.get(self.url, {'key': self.ACTIVATION_KEY})
+
+    def test_missing_key_raises_error(self):
+        """GET without key raises ESPError."""
+        with self.assertRaises(ESPError):
+            self.client.get(self.url, {'username': 'testactivate'})
+
+    def test_nonexistent_user_raises_error(self):
+        """A username that does not exist raises ESPError."""
+        with self.assertRaises(ESPError):
+            self.client.get(self.url, {'username': 'doesnotexist', 'key': self.ACTIVATION_KEY})
+
+    def test_already_active_user_raises_error(self):
+        """Trying to activate an already active account raises ESPError."""
+        self.user.is_active = True
+        self.user.save()
+        with self.assertRaises(ESPError):
+            self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+
+    def test_wrong_key_raises_error(self):
+        """An incorrect activation key raises ESPError."""
+        with self.assertRaises(ESPError):
+            self.client.get(self.url, {'username': 'testactivate', 'key': 'wrongkey'})
