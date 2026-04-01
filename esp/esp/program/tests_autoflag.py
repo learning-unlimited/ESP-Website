@@ -2,6 +2,7 @@ import json
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.program.models import Program, ClassSubject, ClassCategories
 from esp.program.models.flags import AutoClassFlagRule, ClassFlagType, ClassFlag
+from esp.users.models import ESPUser
 
 class AutoClassFlagTest(TestCase):
     def setUp(self):
@@ -9,27 +10,35 @@ class AutoClassFlagTest(TestCase):
         self.program = Program.objects.create(
             name="Test Program",
             url="testprog",
-            start_date="2026-01-01",
-            end_date="2026-01-02"
+            grade_min=7,
+            grade_max=12
         )
         self.category = ClassCategories.objects.create(
             symbol="S",
             category="Science"
         )
-        self.flag_type = ClassFlagType.objects.create(
-            name="Test Flag",
-            program=self.program
+        self.system_user = ESPUser.objects.create(
+            username="systemadmin",
+            is_staff=True,
+            is_superuser=True
         )
+        self.flag_type = ClassFlagType.objects.create(
+            name="Test Flag"
+        )
+        self.program.flag_types.add(self.flag_type)
         # Create a rule: Title starts with "Trigger"
+        # This uses the QueryBuilder client format expected by ClassSearchModule /
+        # QueryBuilder.as_queryset: groups use "filter": "and"/"or" with "values"
+        # containing child filter objects.
         self.rule_data = {
-            "type": "operator",
-            "operator": "AND",
-            "children": [
+            "filter": "and",
+            "negated": False,
+            "values": [
                 {
-                    "type": "filter",
-                    "filter_id": "title",
+                    "filter": "title",
+                    "negated": False,
                     "operator": "istartswith",
-                    "value": "Trigger"
+                    "values": ["Trigger"],
                 }
             ]
         }

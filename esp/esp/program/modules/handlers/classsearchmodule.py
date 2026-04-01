@@ -1,6 +1,7 @@
 import json
 import random
 import re
+import urllib.parse
 
 from collections import OrderedDict
 
@@ -249,7 +250,7 @@ class ClassSearchModule(ProgramModuleObj):
             return HttpResponseRedirect(request.META.get('HTTP_REFERER', './classsearch'))
 
         try:
-            flag_type = ClassFlagType.objects.get(id=flag_type_id)
+            flag_type = self.program.flag_types.get(id=flag_type_id)
             # Create the rule
             AutoClassFlagRule.objects.create(
                 program=self.program,
@@ -259,12 +260,12 @@ class ClassSearchModule(ProgramModuleObj):
             )
             # Proactively run the rule once for existing classes?
             # The signal handles future saves, but we might want to flag existing classes.
-            # For now, let's keep it simple as requested: "specfying that when a class is added or edited..."
+            # For now, let's keep it simple as requested: "specifying that when a class is added or edited..."
         except Exception as e:
             # We should probably show an error, but for now redirect back
             logger.error("Error creating AutoClassFlagRule: %s", e)
 
-        return HttpResponseRedirect('./classsearch?query=' + query_data)
+        return HttpResponseRedirect('./classsearch?query=' + urllib.parse.quote(query_data))
 
     @main_call
     @needs_admin
