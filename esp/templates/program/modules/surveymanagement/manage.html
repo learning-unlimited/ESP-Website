@@ -29,7 +29,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
 </p>
 
 <div id="program_form">
-    {% ifequal open_section "survey" %}
+    {% if open_section == "survey" %}
     <button class="dsphead active">
        <b>Step 1: Add Surveys</b> (click to expand/contract)
     </button>
@@ -41,7 +41,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
     </button>
 
     <div class="dspcont">
-    {% endifequal %}
+    {% endif %}
     <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey&op=import">
     <table align="center" cellpadding="0" cellspacing="0" width="100%">
         <tr><th colspan="2">Import a survey from a previous program</th></tr>
@@ -82,7 +82,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
         </table></td></tr>
     </table>
     </div>
-    {% ifequal open_section "question" %}
+    {% if open_section == "question" %}
     <button class="dsphead active">
        <b>Step 2: Add Questions</b> (click to expand/contract)
     </button>
@@ -94,7 +94,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
     </button>
 
     <div class="dspcont">
-    {% endifequal %}
+    {% endif %}
     <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=question">
         {% if question_form.id %}
         <input type="hidden" name="question_id" value="{{ question_form.id }}" />
