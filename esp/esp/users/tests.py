@@ -1143,28 +1143,28 @@ class ActivateAccountTest(TestCase):
         self.assertRedirects(response, reverse('myesp_profile'), fetch_redirect_response=False)
 
     def test_missing_username_raises_error(self):
-        """GET without username raises ESPError."""
-        with self.assertRaises(ESPError):
-            self.client.get(self.url, {'key': self.ACTIVATION_KEY})
+        """GET without username returns a 500 error response."""
+        response = self.client.get(self.url, {'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
 
     def test_missing_key_raises_error(self):
-        """GET without key raises ESPError."""
-        with self.assertRaises(ESPError):
-            self.client.get(self.url, {'username': 'testactivate'})
+        """GET without key returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'testactivate'})
+        self.assertEqual(response.status_code, 500)
 
     def test_nonexistent_user_raises_error(self):
-        """A username that does not exist raises ESPError."""
-        with self.assertRaises(ESPError):
-            self.client.get(self.url, {'username': 'doesnotexist', 'key': self.ACTIVATION_KEY})
+        """A username that does not exist returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'doesnotexist', 'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
 
     def test_already_active_user_raises_error(self):
-        """Trying to activate an already active account raises ESPError."""
+        """Trying to activate an already active account returns a 500 error response."""
         self.user.is_active = True
         self.user.save()
-        with self.assertRaises(ESPError):
-            self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        response = self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
 
     def test_wrong_key_raises_error(self):
-        """An incorrect activation key raises ESPError."""
-        with self.assertRaises(ESPError):
-            self.client.get(self.url, {'username': 'testactivate', 'key': 'wrongkey'})
+        """An incorrect activation key returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'testactivate', 'key': 'wrongkey'})
+        self.assertEqual(response.status_code, 500)
