@@ -400,7 +400,7 @@ class StudentClassRegModule(ProgramModuleObj):
             if not scrmi.use_priority:
                 error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
             if scrmi.use_priority or not error:
-                cobj = ClassSubject.objects.select_for_update().get(id=classid)
+                cobj = ClassSubject.objects.get(id=classid)
                 error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
 
             if scrmi.use_priority:
