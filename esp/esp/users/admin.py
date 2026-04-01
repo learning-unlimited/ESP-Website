@@ -10,6 +10,7 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
 import datetime
 
+
 class UserForwarderAdmin(admin.ModelAdmin):
     list_display = ('source', 'target')
     search_fields = default_user_search('source') + default_user_search('target')
@@ -55,6 +56,11 @@ admin_site.register(ESPUser, ESPUserAdmin)
 class RecordTypeAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'description']
     search_fields = ['name', 'description']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('name',)
+        return self.readonly_fields
 admin_site.register(RecordType, RecordTypeAdmin)
 
 class RecordAdmin(admin.ModelAdmin):
@@ -168,4 +174,3 @@ admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group
 admin_site.register(Group, GroupAdmin)
-
