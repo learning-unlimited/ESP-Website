@@ -30,10 +30,6 @@ from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
 from django.test import Client
 from django.conf import settings
-import os
-from esp.utils.models import TemplateOverride
-from esp.users.models import ESPUser
-
 # Code from <https://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
 # though I've had trouble finding documentation to clarify this.
