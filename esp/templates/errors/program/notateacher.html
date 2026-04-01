@@ -20,5 +20,7 @@ Thank you for your understanding.
 <em>If you think you should be registered as a valid {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}teacher,
 and you still are getting this error message, please email us at <u>{{ DEFAULT_EMAIL_ADDRESSES.support }}</u></em>.
 <br />
-<a href="{% url 'signout' %}?redirect=/myesp/register/&role=Teacher" title="Create a teacher account!">Click here to create a new {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }} teacher account!</a>
+{% with "/myesp/register/" as register_path %}
+<a href="{% url 'signout' %}?redirect={{ register_path|urlencode }}&role=Teacher" title="Create a teacher account!">Click here to create a new {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }} teacher account!</a>
+{% endwith %}
 {% endblock %}
