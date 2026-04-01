@@ -39,7 +39,8 @@ from esp.survey.models  import QuestionType, Question, Survey
 from esp.survey.views   import survey_review, survey_graphical, survey_review_single, top_classes, survey_dump
 from esp.program.modules.forms.surveys import SurveyForm, QuestionForm, SurveyImportForm, CSVQuestionImportForm, parse_csv
 
-import csv\nimport json
+import csv
+import json
 
 from django.http import HttpResponse
 
@@ -238,32 +239,29 @@ class SurveyManagement(ProgramModuleObj):
 
             imported_count = 0
             rows_data = request.POST.getlist('row_data')
-            
+
             try:
                 for row_json in rows_data:
                     row = json.loads(row_json)
-                try:
-                    question_type = QuestionType.objects.get(id=row['question_type_id'])
-                except QuestionType.DoesNotExist:
-                    continue
-                Question.objects.create(
-                    survey=survey,
-                    name=row['question_text'],
-                    question_type=question_type,
-                    _param_values=row.get('param_values', ''),
-                    per_class=row['per_class'],
-                    seq=row['seq'],
-                )
-                imported_count += 1
+                    try:
+                        question_type = QuestionType.objects.get(id=row['question_type_id'])
+                    except QuestionType.DoesNotExist:
+                        continue
+                    Question.objects.create(
+                        survey=survey,
+                        name=row['question_text'],
+                        question_type=question_type,
+                        _param_values=row.get('param_values', ''),
+                        per_class=row['per_class'],
+                        seq=row['seq'],
+                    )
+                    imported_count += 1
 
-                except (ValueError, KeyError, json.JSONDecodeError):
-
+            except (ValueError, KeyError, json.JSONDecodeError):
                 from esp.middleware import ESPError
-
                 raise ESPError('There was a problem with the submitted import data. Please restart the CSV import process.', log=False)
 
-
-                context['imported_count'] = imported_count
+            context['imported_count'] = imported_count
             context['survey'] = survey
             return render_to_response('program/modules/surveymanagement/csv_import_done.html', request, context)
 
