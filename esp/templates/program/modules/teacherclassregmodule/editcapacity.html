@@ -1,0 +1,45 @@
+{% extends "program/modules/module_base.html" %}
+
+{% block title %}Edit Capacity for {{ cls.title }}{% endblock %}
+
+{% block module_content %}
+<h1>Edit Capacity: {{ cls.title }}</h1>
+
+{% if saved %}
+<div style="padding: 10px; background-color: #dff0d8; color: #3c763d; border: 1px solid #d6e9c6; border-radius: 4px; margin-bottom: 20px;">
+    <strong>Success!</strong> Class capacity was updated successfully.
+</div>
+{% endif %}
+
+<p>Use the form below to update the maximum capacity for your class sections. Please make sure the capacity is greater than or equal to the number of current enrolled students.</p>
+
+<form method="POST" action="">
+    {% csrf_token %}
+    <table style="width: 100%; max-width: 600px; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+            <tr>
+                <th style="text-align: left; padding: 8px; border-bottom: 2px solid #ddd;">Section</th>
+                <th style="padding: 8px; border-bottom: 2px solid #ddd;">Current Enrolled</th>
+                <th style="padding: 8px; border-bottom: 2px solid #ddd;">Max Capacity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sec in cls.sections.all %}
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">Section {{ sec.index }}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">{{ sec.num_students }}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+                    <input type="number" name="capacity_{{ sec.id }}" value="{{ sec.capacity }}" min="0" style="width: 80px; padding: 4px;" required>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 20px;">
+        <button type="submit" style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Save Changes</button>
+        <a href="/teach/{{ module.program.getUrlBase }}/dashboard" style="margin-left: 10px; text-decoration: underline;">Return to Dashboard</a>
+    </div>
+</form>
+
+{% endblock %}
