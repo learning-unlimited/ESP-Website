@@ -11,10 +11,7 @@ Remove ``--global`` if you don't want it to apply to other git repos on your com
   git config --global user.name "Your Name"
   git config --global user.email you@something.edu
 
-Set up pre-commit hooks to automatically lint staged files before each commit: ::
 
-  pip install pre-commit
-  pre-commit install
 
 Other git config you might find useful: ::
 
@@ -36,9 +33,16 @@ From the directory ``/esp``: ::
 
   git checkout main  # for historical reasons we use 'main' instead of 'master'
   git pull
-  docker compose up --build
+  docker compose up -d 
   docker compose exec web python esp/manage.py update
   git checkout -b new-branch-name
+
+For routine development, ``docker compose up`` is usually sufficient.
+If you've changed dependencies (for example, ``requirements.txt``)
+or modified the Dockerfile, rebuild first::
+
+  docker compose down
+  docker compose up --build   
 
 Write some code!
 Test your code!
