@@ -326,20 +326,17 @@ class Command(BaseCommand):
             'StudentRegCore', 'TeacherRegCore', 'AdminCore',
             'OnsiteCore', 'VolunteerSignup', 'VolunteerManage',
             'RegProfileModule', 'JSONDataModule',
-
             # Student registration
             'StudentClassRegModule', 'StudentRegConfirm',
             'StudentAcknowledgementModule', 'StudentSurveyModule',
             'LotteryStudentRegModule', 'LotteryFrontendModule',
             'FinancialAidAppModule', 'StudentExtracosts', 'DonationModule',
             'CreditCardModule_Stripe', 'StudentOnsite',
-
             # Teacher registration
             'TeacherClassRegModule', 'TeacherBioModule',
             'AvailabilityModule', 'TeacherSurveyModule',
             'TeacherAcknowledgementModule', 'TeacherPreviewModule',
             'TeacherOnsite', 'TeacherEventsModule',
-
             # Admin
             'AdminClass', 'AdminVitals', 'AdminMaterials',
             'ResourceModule', 'SchedulingCheckModule',
