@@ -1,8 +1,11 @@
 import json
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.program.models import Program, ClassSubject, ClassCategories
-from esp.program.models.flags import AutoClassFlagRule, ClassFlagType, ClassFlag
-from esp.users.models import ESPUser
+from esp.program.models import (
+    Program, ClassSubject, ClassFlagType, ClassFlag, AutoClassFlagRule,
+    ESPUser, ClassCategories
+)
+from esp.program.modules.module_ext import ClassRegModuleInfo
+from esp.program.modules.handlers.classsearchmodule import ClassSearchModule
 
 class AutoClassFlagTest(TestCase):
     def setUp(self):
@@ -13,20 +16,23 @@ class AutoClassFlagTest(TestCase):
             grade_min=7,
             grade_max=12
         )
+        # Create required ClassRegModuleInfo for ClassSearchModule to function
+        ClassRegModuleInfo.objects.create(program=self.program)
+
         self.category = ClassCategories.objects.create(
             symbol="S",
             category="Science"
         )
-        self.system_user = ESPUser.objects.create(
+        self.system_user = ESPUser.objects.create_superuser(
             username="systemadmin",
-            is_staff=True,
-            is_superuser=True
+            email="admin@example.com",
+            password="password123"
         )
         self.flag_type = ClassFlagType.objects.create(
             name="Test Flag"
         )
         self.program.flag_types.add(self.flag_type)
-        # Create a rule: Title starts with "Trigger"
+        # Create a rule: Title contains "Trigger"
         # This uses the QueryBuilder client format expected by ClassSearchModule /
         # QueryBuilder.as_queryset: groups use "filter": "and"/"or" with "values"
         # containing child filter objects.
@@ -37,7 +43,6 @@ class AutoClassFlagTest(TestCase):
                 {
                     "filter": "title",
                     "negated": False,
-                    "operator": "istartswith",
                     "values": ["Trigger"],
                 }
             ]
