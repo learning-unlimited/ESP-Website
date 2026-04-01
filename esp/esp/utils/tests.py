@@ -29,7 +29,7 @@ from esp.utils import query_builder
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
 
-# Code from <http://snippets.dzone.com/posts/show/6313>
+# Code from <https://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
 # though I've had trouble finding documentation to clarify this.
 def find_executable(executable, path=None):
