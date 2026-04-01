@@ -67,7 +67,7 @@ DEBUG=False
 
 def get_final_sender(sender):
     logger.debug("In final sender")
-    return "hello@dev5.learningu.org"
+    return sender # TODO: add look-up logic
 
 
 def get_final_recipients(recipients):
