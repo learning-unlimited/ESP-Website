@@ -27,7 +27,7 @@ html[data-bs-theme="dark"] a {
     color: #4da3ff !important;
 }
 
-/* Smooth transition class to be applied temporally by JS */
+/* Smooth transition class to be applied temporarily by JS */
 .theme-transition,
 .theme-transition body,
 .theme-transition .navbar-inner,
