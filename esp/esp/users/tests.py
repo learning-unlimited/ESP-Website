@@ -1103,7 +1103,7 @@ class StudentProfileForm__emailvalidationtest(TestCase):
 
 
 class ActivateAccountTest(TestCase):
-    """Tests for the activate_account view (part of #4480)."""
+    """Tests for the activate_account view."""
 
     ACTIVATION_KEY = '123456'
 
