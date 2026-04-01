@@ -21,5 +21,4 @@ class Migration(migrations.Migration):
                 ('program', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='autoflag_rules', to='program.Program')),
             ],
         ),
-        ),
     ]
