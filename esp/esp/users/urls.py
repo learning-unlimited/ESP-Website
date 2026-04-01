@@ -49,6 +49,7 @@ urlpatterns += [
     re_path(r'^passwd/?$', myesp.myesp_passwd, name='myesp_passwd'),
     re_path(r'^accountmanage/?$', myesp.myesp_accountmanage, name='myesp_accountmanage'),
     re_path(r'^profile/?$', myesp.edit_profile, name='myesp_profile'),
+    re_path(r'^profile/(?P<username>[^/]+)/?$', myesp.admin_edit_profile, name='admin_edit_profile'),
 ]
 
 urlpatterns += [
