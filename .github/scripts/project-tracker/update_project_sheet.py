@@ -306,10 +306,9 @@ def fetch_pr_counts(logins: list[str], search_filter: str) -> dict[str, int]:
     counts: dict[str, int] = {}
     batch_size = 20
 
-    for i in range(0, len(logins), batch_size):
-        batch = logins[i : i + batch_size]
+    def query_for_batch(batch_logins: list[str]) -> str:
         fragments = []
-        for j, login in enumerate(batch):
+        for j, login in enumerate(batch_logins):
             q = (
                 f"repo:{REPO_OWNER}/{REPO_NAME} is:pr "
                 f"author:{login} {search_filter}"
@@ -317,10 +316,33 @@ def fetch_pr_counts(logins: list[str], search_filter: str) -> dict[str, int]:
             fragments.append(
                 f'u{j}: search(query: "{q}", type: ISSUE) {{ issueCount }}'
             )
-        query = "query {\n" + "\n".join(fragments) + "\n}"
-        data = graphql(query)
-        for j, login in enumerate(batch):
-            counts[login] = data[f"u{j}"]["issueCount"]
+        return "query {\n" + "\n".join(fragments) + "\n}"
+
+    for i in range(0, len(logins), batch_size):
+        batch = logins[i : i + batch_size]
+        query = query_for_batch(batch)
+
+        try:
+            data = graphql(query)
+            for j, login in enumerate(batch):
+                counts[login] = data[f"u{j}"]["issueCount"]
+            continue
+        except SystemExit:
+            # Some author qualifiers (for example deleted bot users) can make
+            # a batched search fail. Retry each login independently so one
+            # invalid author doesn't fail the entire workflow.
+            pass
+
+        for login in batch:
+            try:
+                data = graphql(query_for_batch([login]))
+                counts[login] = data["u0"]["issueCount"]
+            except SystemExit:
+                counts[login] = 0
+                print(
+                    f"Warning: skipping PR count lookup for unknown author '{login}'",
+                    file=sys.stderr,
+                )
 
     return counts
 
