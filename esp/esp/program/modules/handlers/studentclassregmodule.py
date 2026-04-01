@@ -263,6 +263,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         schedule = []
         timeslot_dict = {}
+        # Use program-specific tolerance for determining contiguous timeblocks,
+        # falling back to Event.contiguous default (20 minutes) if unavailable.
+        contiguous_tolerance = Tag.getProgramTag('timeblock_contiguous_tolerance', program=program, default=20)
+        try:
+            contiguous_tolerance = int(contiguous_tolerance)
+        except (ValueError, TypeError):
+            contiguous_tolerance = 20
+
         for sec in classList:
             #   Get the verbs all the time in order for the schedule to show
             #   the student's detailed enrollment status.  (Performance hit, I know.)
@@ -272,24 +280,28 @@ class StudentClassRegModule(ProgramModuleObj):
             sec.verb_names = [v.name for v in sec.verbs]
             sec.is_enrolled = True if "Enrolled" in sec.verb_names else False
 
-            # While iterating through the meeting times for a section,
-            # we use this variable to keep track of the first timeslot.
-            # In the section_dict appended to timeslot_dict,
-            # we save whether or not this is the first timeslot for this
-            # section. If it isn't, the student schedule will indicate
-            # this, and will not display the option to remove the
-            # section. This is to prevent students from removing what
-            # they have mistaken to be duplicated classes from their
-            # schedules.
-            first_meeting_time = True
+            # Track contiguous groups per section so we only mark later
+            # contiguous blocks as "continued". Non-contiguous recurring
+            # meetings (e.g. Mon+Wed) should each be treated as a first meeting.
+            previous_meeting_time = None
+            first_entry_in_group = None
 
             for mt in sec.get_meeting_times().order_by('start'):
-                section_dict = {'section': sec, 'first_meeting_time': first_meeting_time}
-                first_meeting_time = False
+                first_meeting_time = (
+                    previous_meeting_time is None or
+                    not Event.contiguous(previous_meeting_time, mt, tol=contiguous_tolerance)
+                )
+                if first_meeting_time:
+                    section_dict = {'section': sec, 'first_meeting_time': True, 'meeting_span': 1}
+                    first_entry_in_group = section_dict
+                else:
+                    section_dict = {'section': sec, 'first_meeting_time': False, 'meeting_span': 0}
+                    first_entry_in_group['meeting_span'] += 1
                 if mt.id in timeslot_dict:
                     timeslot_dict[mt.id].append(section_dict)
                 else:
                     timeslot_dict[mt.id] = [section_dict]
+                previous_meeting_time = mt
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
