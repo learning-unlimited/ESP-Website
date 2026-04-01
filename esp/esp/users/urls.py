@@ -1,4 +1,5 @@
 from django.urls import re_path
+from django.views.generic.base import RedirectView
 
 from esp.users import views
 from esp.users.views.registration import GradeChangeRequestView
@@ -41,6 +42,7 @@ urlpatterns += [
 ]
 
 urlpatterns += [
+    re_path(r'^$', RedirectView.as_view(url='accountmanage/', permanent=False)),
     re_path(r'^switchback/?$', myesp.myesp_switchback, name='myesp_switchback'),
     re_path(r'^stop_testing/?$', myesp.myesp_stop_testing, name='myesp_stop_testing'),
     re_path(r'^onsite/?$', myesp.myesp_onsite, name='myesp_onsite'),
