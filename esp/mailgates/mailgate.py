@@ -72,13 +72,39 @@ def get_final_sender(sender):
 
 def get_final_recipients(recipients):
     """
-    Expand and deduplicate recipients using alias_map.
+    Expand and deduplicate recipients using the ESPUser database
     """
     logger.debug("In final recipients")
     resolved = []
-
-    # Insert lookup logic here
-    # TODO
+    aliases = []
+    for recipient in instance.recipients:
+        # If the recipient has an email address that does not end with @anysite.learningu.org, keep them
+        # Note we `DOMAIN` instead of the `HOSTNAME` because the latter resolves to `thissite.learningu.org`
+        # in settings,  and we want `anysite.learningu.org` while still allowing user@learningu.org because
+        # those resolve to enterprise Gmail addresses
+        if recipient.endswith(DOMAIN):
+            aliases.append(recipient)
+        elif '@' in recipient:
+            resolved.append(recipient)
+        else:
+            logger.warning('Email address without `@` symbol: `{}`'.format(recipient))
+    redirects = PlainRedirect.objects.annotate(original_lower=Lower("original"
+                )).filter(original_lower__in=[x.split('@')[0].lower() for x in aliases]
+                ).exclude(destination__isnull=True).exclude(destination='')
+    # Split out individual email addresses if any of the redirects is a list
+    redirects = list(itertools.chain.from_iterable(map(lambda x: x.destination.split(',') if x.destination else [], redirects)))
+    users = ESPUser.objects.annotate(username_lower=Lower("username"
+            )).filter(username_lower__in=[x.split('@')[0].lower() for x in aliases])
+    # Grab the emails from the users
+    users = [x.email for x in users]
+    # Theoretically at least one of these should be empty, but now doesn't seem like the time
+    # If the redirect resolve to anything@anysite.learningu.org, kill it
+    for address in redirects + users:
+        if not address.endswith(DOMAIN):
+            resolved.append(address)
+    # if the above filtering leaves the 'to' list empty, abort
+    if len(resolved) == 0:
+        continue
 
     # Deduplicate while preserving order
     seen = set()
@@ -88,7 +114,7 @@ def get_final_recipients(recipients):
             seen.add(r)
             unique.append(r)
 
-    return ["miles@learningu.org"]
+    return unique
 
 
 def has_been_forwarded(raw_email):
