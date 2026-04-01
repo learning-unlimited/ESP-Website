@@ -2,14 +2,6 @@
     <th class="smaller">Teacher(s):</th>
 	<td>{% for teacher in class.get_teachers %}<a href="/manage/userview?username={{ teacher.username|urlencode }}&program={{ program.id }}">{{ teacher.nonblank_name }}</a> (<a href="mailto:{{teacher.email}}" target="_blank">{{teacher.email}}</a>)<br/>{% endfor %}</td>
 </tr>
-{% if class.moderators.count > 0 %}
-<tr>
-    <th class="smaller">{{ program.getModeratorTitle }}(s):</th>
-	<td>
-        {% for mod in class.moderators.all %}<a href="/manage/userview?username={{ mod.username|urlencode }}&program={{ program.id }}">{{ mod.nonblank_name }}</a> (<a href="mailto:{{ mod.email }}" target="_blank">{{ mod.email }}</a>)<br/>{% endfor %}
-    </td>
-</tr>
-{% endif %}
 <tr>
     <th></th>
     <td>
@@ -26,7 +18,7 @@
             Section {{ sec.index }}:
             {% with sec.get_moderators as moderators %}
             {% if moderators %}
-            {% for moderator in moderators %}<a href="/manage/userview?username={{ moderator.username|urlencode }}">{{ moderator.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+            {% for moderator in moderators %}<a href="/manage/userview?username={{ moderator.username|urlencode }}&program={{ program.id }}">{{ moderator.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
             {% else %}(none){% endif %}
             {% endwith %}
         {% endfor %}
