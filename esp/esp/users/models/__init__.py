@@ -84,7 +84,7 @@ from esp.utils.query_utils import nest_Q
 from esp.program.class_status import ClassStatus
 from esp.utils import cmp
 
-from urllib.parse import quote
+from urllib.parse import quote, urlencode as urllib_urlencode
 
 try:
     import pickle
@@ -335,6 +335,8 @@ class BaseESPUser(object):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def __cmp__(self, other):
+        if other is None:
+            return 1
         # two anonymous users are equal
         if isinstance(self, AnonymousESPUser) and isinstance(other, AnonymousESPUser):
             return 0
@@ -453,8 +455,9 @@ class BaseESPUser(object):
             from django.utils.encoding import force_bytes
             uid = urlsafe_base64_encode(force_bytes(otheruser.pk))
             token = default_token_generator.make_token(otheruser)
-            return 'http://%s/myesp/resetpassword/%s/%s/' % \
-                         (settings.DEFAULT_HOST, uid, token)
+            scheme = 'http' if getattr(settings, 'DEBUG', False) else 'https'
+            return '%s://%s/myesp/resetpassword/%s/%s/' % \
+                         (scheme, settings.DEFAULT_HOST, uid, token)
         elif key == 'recover_query':
             from django.contrib.auth.tokens import default_token_generator
             from django.utils.http import urlsafe_base64_encode
@@ -1248,13 +1251,15 @@ class BaseESPUser(object):
 
     def unsubscribe_link_full(self):
         unsub_link = self.unsubscribe_link()
-        return 'https://%s%s' % (Site.objects.get_current().domain, unsub_link)
+        protocol = 'http' if settings.DEBUG else 'https'
+        return '%s://%s%s' % (protocol, Site.objects.get_current().domain, unsub_link)
 
     # this is an insecure version that accepts a POST from external sources
     def unsubscribe_oneclick(self):
         unsub_link = self.unsubscribe_link()
         unsub_link = unsub_link.replace("unsubscribe", "unsubscribe_oneclick")
-        return 'http://%s%s' % (Site.objects.get_current().domain, unsub_link)
+        protocol = 'http' if settings.DEBUG else 'https'
+        return '%s://%s%s' % (protocol, Site.objects.get_current().domain, unsub_link)
 
     def make_token(self):
         return TimestampSigner().sign(self.username)
@@ -1286,7 +1291,7 @@ class ESPUser(User, BaseESPUser):
         self.save()
 
     def get_absolute_url(self):
-        return "/manage/userview?username="+self.username
+        return reverse('manage_userview') + '?' + urllib_urlencode({'username': self.username})
 
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
@@ -1642,8 +1647,8 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     pronoun = models.CharField(max_length=50, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     affiliation = models.CharField(max_length=100, blank=True)
-    from_here = models.NullBooleanField(null=True)
-    is_graduate_student = models.NullBooleanField(blank=True, null=True)
+    from_here = models.BooleanField(blank=True, null=True)
+    is_graduate_student = models.BooleanField(blank=True, null=True)
     college = models.CharField(max_length=128, blank=True, null=True)
     major = models.CharField(max_length=32, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -1998,9 +2003,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     address_city = models.CharField('City', max_length=50, blank=True, null=True)
     address_state = models.CharField('State', max_length=32, blank=True, null=True)
     address_zip = models.CharField('Zip code', max_length=5, blank=True, null=True)
-    address_postal = models.TextField(blank=True, null=True)
     address_country = models.CharField('Country', max_length=2, choices=sorted(list(country_names.items()), key = lambda x: x[1]), default='US')
-    undeliverable = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'users'
@@ -2069,24 +2072,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
                 form_data[prepend+key] = val
         return form_data
 
-    def save(self, *args, **kwargs):
-        if self.id is not None:
-            try:
-                old_self = ContactInfo.objects.get(id = self.id)
-                if old_self.address_zip != self.address_zip or \
-                        old_self.address_street != self.address_street or \
-                        old_self.address_city != self.address_city or \
-                        old_self.address_state != self.address_state:
-                    self.address_postal = None
-                    self.undeliverable = False
-            except ContactInfo.DoesNotExist:
-                pass
-        if self.address_postal is not None:
-            self.address_postal = str(self.address_postal)
-
-        super().save(*args, **kwargs)
-
-
     def __str__(self):
         username = ""
         last_name, first_name = '', ''
@@ -2129,7 +2114,7 @@ class K12School(models.Model):
         db_table = 'users_k12school'
 
     @classmethod
-    def ajax_autocomplete(cls, data, allow_non_staff=True):
+    def ajax_autocomplete(cls, data, allow_non_staff=True, **kwargs):
         name = data.strip()
         query_set = cls.objects.filter(name__icontains = name)
         values = query_set.order_by('name', 'id').values('name', 'id')
@@ -2791,7 +2776,7 @@ class Permission(ExpirableModel):
                 #not actually a program
                 return False
             if user.isAdmin(prog): return True
-            m2 = re.match("Classes/(.)(\d+)/(.*)", rest)
+            m2 = re.match(r"Classes/(.)(\d+)/(.*)", rest)
             if m2:
                 (code, cls_id, basename) = m2.groups()
                 try:
@@ -2841,7 +2826,7 @@ class GradeChangeRequest(TimeStampedModel):
     claimed_grade = models.PositiveIntegerField()
     grade_before_request = models.PositiveIntegerField()
     reason = models.TextField()
-    approved = models.NullBooleanField()
+    approved = models.BooleanField(null=True)
     acknowledged_time = models.DateTimeField(blank=True, null=True)
 
     requesting_student = models.ForeignKey(ESPUser, related_name='requesting_student_set', on_delete=models.CASCADE)

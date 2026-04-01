@@ -589,6 +589,13 @@ all_program_tags = {
         'category': 'manage',
         'is_setting': True,
     },
+    'separate_catalog_pages': {
+        'is_boolean': True,
+        'help_text': 'Show category-specific catalog pages instead of a single combined catalog page.',
+        'default': False,
+        'category': 'learn',
+        'is_setting': True,
+    },
     # These help_text tags are in order of the fields in TeacherClassRegForm
     'teacherreg_help_text_title': {
         'is_boolean': False,
