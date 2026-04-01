@@ -95,6 +95,7 @@ Max number: <input type="text" size="3" name="hours_max" value="" />
 <h4 class="teacher"><a href="#">Teachers of a student</a></h4>
 <div>
 <form id="student_in_class" name="student_in_class" method="POST" action="{{ request.path }}">
+    {% csrf_token %}
     {{ student_search_form }}
 </form>
 </div>

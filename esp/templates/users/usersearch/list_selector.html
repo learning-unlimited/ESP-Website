@@ -116,7 +116,10 @@ $j(document).ready(function() {
     </div>
 
     <div id="tab_combo">
-        {% if combo_form %}<form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off"> {% csrf_token %} {% endif %}
+        {% if combo_form %}
+        <form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off">
+            {% csrf_token %}
+        {% endif %}
         <div id="combo_step_container">
 
         <div id="starting_list_select">
