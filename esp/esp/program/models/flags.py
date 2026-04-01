@@ -39,8 +39,6 @@ from esp.middleware.threadlocalrequest import get_current_request
 from argcache import cache_function
 
 from esp.users.models import ESPUser
-from esp.program.models import Program
-
 class ClassFlagType(models.Model):
     name = models.CharField(max_length=255, unique=True, help_text='The name of the flag type')
     show_in_scheduler = models.BooleanField(default=False, help_text='Should this flag type be shown in the scheduler?')
@@ -159,7 +157,7 @@ class ClassFlag(models.Model):
 
 
 class AutoClassFlagRule(models.Model):
-    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='autoflag_rules')
+    program = models.ForeignKey('Program', on_delete=models.CASCADE, related_name='autoflag_rules')
     flag_type = models.ForeignKey(ClassFlagType, on_delete=models.CASCADE)
     rule_data = models.TextField(help_text='JSON representation of the QueryBuilder rule')
     comment = models.TextField(blank=True, help_text='Annotation/comment to add to the flag')
