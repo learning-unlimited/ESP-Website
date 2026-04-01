@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -54,6 +53,7 @@ from esp.tagdict.models import Tag
 from esp.users.models import Permission, ESPUser
 from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
+from esp.utils.audit import AuditLogEntry
 
 from datetime import datetime
 
@@ -420,6 +420,12 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     perm = Permission.objects.create(user=None, permission_type=create_form.cleaned_data['deadline_type'],
                                                      role=Group.objects.get(name=create_form.cleaned_data['role']), program=prog,
                                                      start_date = create_form.cleaned_data['start_date'], end_date = create_form.cleaned_data['end_date'])
+                    AuditLogEntry.objects.create_log(
+                        actor=request.user,
+                        action=AuditLogEntry.ACTION_CREATE,
+                        obj=perm,
+                        extra='Created via deadline management page'
+                    )
                     message_good = 'Deadline created for %ss: %s.' % (create_form.cleaned_data['role'], perm.nice_name())
                     create_form = NewDeadlineForm()
                 else:
@@ -429,6 +435,12 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if perm_form.is_valid():
                     perm = Permission.objects.create(user=perm_form.cleaned_data['user'], permission_type=perm_form.cleaned_data['permission_type'], program=prog,
                                                      start_date = perm_form.cleaned_data['perm_start_date'], end_date = perm_form.cleaned_data['perm_end_date'])
+                    AuditLogEntry.objects.create_log(
+                        actor=request.user,
+                        action=AuditLogEntry.ACTION_CREATE,
+                        obj=perm,
+                        extra='Created via deadline management page'
+                    )
                     message_good = 'Permission created for %s: %s.' % (perm_form.cleaned_data['user'], perm.nice_name())
                     perm_form = NewPermissionForm()
                 else:
@@ -445,6 +457,12 @@ class AdminCore(ProgramModuleObj, CoreModule):
                             perm.start_date = form.cleaned_data['start_date']
                             perm.end_date = form.cleaned_data['end_date']
                             perm.save()
+                            AuditLogEntry.objects.create_log(
+                                actor=request.user,
+                                action=AuditLogEntry.ACTION_UPDATE,
+                                obj=perm,
+                                extra='Updated via deadline management page'
+                            )
                     if num_forms > 0:
                         message_good = 'Deadlines saved.'
                 else:
@@ -461,6 +479,12 @@ class AdminCore(ProgramModuleObj, CoreModule):
                             perm.start_date = form.cleaned_data['start_date']
                             perm.end_date = form.cleaned_data['end_date']
                             perm.save()
+                            AuditLogEntry.objects.create_log(
+                                actor=request.user,
+                                action=AuditLogEntry.ACTION_UPDATE,
+                                obj=perm,
+                                extra='Updated via deadline management page'
+                            )
                     if num_forms > 0:
                         message_good = 'Permissions saved.'
                 else:

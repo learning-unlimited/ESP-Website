@@ -85,11 +85,12 @@ class PrintRequest(models.Model):
 
 class AuditLogEntry(models.Model):
     """
-    Immutable record of a sensitive admin action.
-    Written by AuditedModelAdmin whenever an object is saved or deleted
-    through the Django admin interface.
+    Immutable record of a sensitive admin action, such as a change to
+    financial aid, permissions, or grades.
 
-    Cross-app infrastructure — lives in esp.utils, not in any single app.
+    Written by AuditedModelAdmin whenever a relevant object is saved or deleted
+    through the Django admin interface. Also written by manual calls to
+    AuditLogEntry.objects.create() in other views.
     """
 
     ACTION_CREATE = 'create'

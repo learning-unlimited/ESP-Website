@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.program.models import FinancialAidRequest
 from esp.accounting.models import FinancialAidGrant
+from esp.utils.audit import AuditLogEntry
 
 
 class FinAidApproveModule(ProgramModuleObj):
@@ -104,6 +104,12 @@ class FinAidApproveModule(ProgramModuleObj):
 
                 try:
                     req.approve(dollar_amount = amount_max_dec, discount_percent = percent)
+                    AuditLogEntry.objects.create_log(
+                        actor=request.user,
+                        action=AuditLogEntry.ACTION_UPDATE,
+                        obj=req,
+                        extra='Approved via finaidapprove page'
+                    )
                     users_approved.append(req.user.name())
                 except (ValueError, TypeError):
                     users_error.append(req.user.name())
