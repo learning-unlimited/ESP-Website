@@ -1,4 +1,4 @@
-## Code from <http://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
+## Code from <https://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
 ## Modified to not use (process-)global variables
 
 import logging
@@ -51,6 +51,8 @@ def AutoRequestContext(*args, **kwargs):
                      "This is almost certainly a bug; either Context should "
                      "be being used explicitly, or the request ought to "
                      "be available here.")
+        if autoescape is not None:
+            kwargs['autoescape'] = autoescape
         retVal = Context(*args, **kwargs)
     else:
         if RequestContext is not None:
@@ -64,7 +66,6 @@ def AutoRequestContext(*args, **kwargs):
             # Django 3.0+: RequestContext is not available
             # Build context using the engine's configured context_processors
             from django.template.context import make_context
-            from django.conf import settings
 
             # Start with provided context data
             ctx_data = {}
@@ -73,21 +74,22 @@ def AutoRequestContext(*args, **kwargs):
 
             # Use the template engine's make_context to apply all configured processors
             try:
-                engine = settings.TEMPLATES[0]['ENGINE']
-                context_processors = settings.TEMPLATES[0].get('OPTIONS', {}).get('context_processors', [])
                 retVal = make_context(ctx_data, request=request)
+                if autoescape is not None and hasattr(retVal, 'autoescape'):
+                    retVal.autoescape = autoescape
                 # make_context applies context processors, so we're done
             except Exception:
                 # Fallback if engine config is not available
                 ctx_data['request'] = request
-                retVal = ctx_data
+                retVal = Context(ctx_data, autoescape=(autoescape if autoescape is not None else True))
 
     # We need to return a dictionary-like object
+    if hasattr(retVal, 'flatten'):
+        return retVal.flatten()
     if isinstance(retVal, dict):
         return retVal
-    else:
-        # For RequestContext, convert to dict
-        return dict(retVal)
+    # For other mapping-like types, convert to dict
+    return dict(retVal)
 
 class ThreadLocals(MiddlewareMixin):
     """
