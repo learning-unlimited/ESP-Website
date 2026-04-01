@@ -13,6 +13,7 @@
 
     <li>
       <form class="navbar-form form-inline" action="/myesp/signout">
+        {% csrf_token %}
         <button type="submit" class="btn btn-inverse" style="margin-right:0px;">
           Logout
         </button>
