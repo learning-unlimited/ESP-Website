@@ -20,8 +20,6 @@ class Migration(migrations.Migration):
                 ('flag_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='program.ClassFlagType')),
                 ('program', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='autoflag_rules', to='program.Program')),
             ],
-            options={
-                'app_label': 'program',
-            },
+        ),
         ),
     ]

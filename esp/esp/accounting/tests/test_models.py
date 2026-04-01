@@ -497,4 +497,3 @@ class IndividualAccountingControllerTest(TestCase):
         types = [t['type'] for t in results[0]['transfers']]
         self.assertIn('Refund', types)
         self.assertEqual(results[0]['refunded'], Decimal('15.00'))
-

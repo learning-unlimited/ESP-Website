@@ -6,10 +6,12 @@ from esp.program.models import (
 )
 from esp.program.modules.module_ext import ClassRegModuleInfo
 from esp.program.modules.handlers.classsearchmodule import ClassSearchModule
+from esp.middleware.threadlocalrequest import clear_current_request
 
 class AutoClassFlagTest(TestCase):
     def setUp(self):
         super().setUp()
+        clear_current_request()
         self.program = Program.objects.create(
             name="Test Program",
             url="testprog",
