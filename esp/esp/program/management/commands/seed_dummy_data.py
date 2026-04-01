@@ -331,27 +331,25 @@ class Command(BaseCommand):
             'StudentClassRegModule', 'StudentRegConfirm',
             'StudentAcknowledgementModule', 'StudentSurveyModule',
             'LotteryStudentRegModule', 'LotteryFrontendModule',
-            'FinancialAidAppModule', 'FinAidApproveModule',
-            'StudentExtracosts', 'DonationModule',
+            'FinancialAidAppModule', 'StudentExtracosts', 'DonationModule',
             'CreditCardModule_Stripe', 'StudentOnsite',
-            'UnenrollModule', 'ClassSearchModule',
-            'StudentRegPhaseZero', 'StudentRegTwoPhase',
 
             # Teacher registration
             'TeacherClassRegModule', 'TeacherBioModule',
             'AvailabilityModule', 'TeacherSurveyModule',
-            'TeacherAcknowledgementModule', 'TeacherCheckinModule',
-            'TeacherPreviewModule', 'TeacherOnsite',
-            'TeacherEventsModule',
+            'TeacherAcknowledgementModule', 'TeacherPreviewModule',
+            'TeacherOnsite', 'TeacherEventsModule',
 
             # Admin
             'AdminClass', 'AdminVitals', 'AdminMaterials',
             'ResourceModule', 'SchedulingCheckModule',
             'ProgramPrintables', 'SurveyManagement',
             'CommModule', 'NameTagModule',
-            'BigBoardModule', 'BatchClassRegModule',
+            'BigBoardModule', 'TeacherBigBoardModule', 'BatchClassRegModule',
             'OnSiteCheckinModule', 'OnSiteCheckoutModule',
             'OnSiteClassList', 'OnSiteAttendance',
+            'UnenrollModule', 'ClassSearchModule',
+            'TeacherCheckinModule', 'FinAidApproveModule',
         ]
         programs = []
         for spec in [
