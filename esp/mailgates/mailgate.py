@@ -102,9 +102,6 @@ def get_final_recipients(recipients):
     for address in redirects + users:
         if not address.endswith(DOMAIN):
             resolved.append(address)
-    # if the above filtering leaves the 'to' list empty, abort
-    if len(resolved) == 0:
-        continue
 
     # Deduplicate while preserving order
     seen = set()
