@@ -99,7 +99,7 @@ class ClassChangeRequestModule(ProgramModuleObj):
             choices = [('0', "I'm happy with my current enrollment.")]
             initial = '0'
             for section in sections_by_slot[timeslot]:
-                choices.append((section[0].emailcode(), section[0].emailcode()+": "+section[0].title()))
+                choices.append((section[0].emailcode(), section[0].emailcode()+": "+section[0].title()+" ("+section[0].prettyDuration()+")"))
                 if section[1]:
                     initial = section[0].emailcode()
             fields['timeslot_'+str(i+1)] = forms.ChoiceField(label="Timeslot "+str(i+1)+" ("+timeslot.pretty_time()+")", choices=choices, initial=initial)

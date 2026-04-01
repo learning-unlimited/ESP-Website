@@ -1,7 +1,7 @@
 from copy import deepcopy
 import json
 
-from django.db import transaction
+from django.db import transaction, models
 from django.shortcuts import redirect, HttpResponse
 from django.urls import reverse
 from django.http import Http404, HttpResponseRedirect, JsonResponse
@@ -437,6 +437,7 @@ def getRebuildData(request):
 def get_links(request):
     """
     Returns the instances for the specified model, to link to in the form builder.
+    Enhanced to support program filtering and search for Course model.
     """
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
@@ -447,12 +448,69 @@ def get_links(request):
                     link_model = cf_cache.link_fields[request.GET['link_model']]['model']
                 except KeyError:
                     return HttpResponse(status=400)
-            link_objects = link_model.objects.all().order_by('-id')
+            
+            # Enhanced filtering for Course model
+            if link_model.__name__ == 'ClassSubject':
+                program_id = request.GET.get('program_id')
+                search_query = request.GET.get('search', '').strip()
+                
+                # Start with base queryset
+                link_objects = link_model.objects.all()
+                
+                # Filter by program if specified
+                if program_id and program_id != '':
+                    try:
+                        program_id = int(program_id)
+                        link_objects = link_objects.filter(parent_program_id=program_id)
+                    except ValueError:
+                        pass  # Invalid program_id, ignore filter
+                
+                # Search functionality
+                if search_query:
+                    link_objects = link_objects.filter(
+                        models.Q(title__icontains=search_query) |
+                        models.Q(class_info__icontains=search_query) |
+                        models.Q(emailcode__icontains=search_query)
+                    )
+                
+                # Order and limit results for performance
+                link_objects = link_objects.order_by('-id')[:100]  # Limit to 100 results
+                
+            else:
+                # For non-Course models, use original logic
+                link_objects = link_model.objects.all().order_by('-id')[:100]
+            
             retval = []
             for obj in link_objects:
                 retval.append({'id': obj.id, 'name': str(obj)})
 
             return HttpResponse(json.dumps(retval))
+    return HttpResponse(status=400)
+
+@user_passes_test(test_func)
+def get_programs(request):
+    """
+    Returns available programs for course selection.
+    """
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if request.method == 'GET':
+            try:
+                # Get programs that have courses
+                from esp.program.models import ClassSubject
+                programs_with_courses = ClassSubject.objects.values_list('parent_program_id', flat=True).distinct()
+                programs = Program.objects.filter(id__in=programs_with_courses).order_by('-id')
+                
+                retval = []
+                for program in programs:
+                    retval.append({
+                        'id': program.id,
+                        'name': str(program),
+                        'url': program.url
+                    })
+                
+                return HttpResponse(json.dumps(retval))
+            except Exception as err:
+                return JsonResponse({'message': str(err)}, status=400)
     return HttpResponse(status=400)
 
 @user_passes_test(test_func)

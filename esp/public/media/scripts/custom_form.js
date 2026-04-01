@@ -142,6 +142,20 @@ $j(document).ready(function() {
 	$j('#links_id_specify').on("change", onChangeLinksSpecify);
     $j('#links_id_pick').on("change", onChangeLinksProgram);
     $j('#links_id_tl').on("change", onChangeLinksTL);
+    
+    // Course selection event handlers
+    $j('#course_program_selector').on("change", loadCourses);
+    $j('#course_search_box').on("keyup", function() {
+        // Add a small delay for search to avoid too many requests
+        clearTimeout($j(this).data('timeout'));
+        $j(this).data('timeout', setTimeout(loadCourses, 300));
+    });
+    $j('#course_selector').on("change", function(){
+        // Update the original hidden field with the selected course ID
+        var courseId = $j(this).val();
+        $j('#links_id_pick').val(courseId);
+    });
+    
 	$j('#id_modify').on("change", function(){
 		if($j(this).prop('checked'))
 			$j('#submit').val('Modify Form');
@@ -361,25 +375,34 @@ var onChangeMainLink=function(){
 
 var onChangeLinksSpecify=function(){
 	if($j('#links_id_specify').val()=='particular'){
-		$j.ajax({
-			url:'/customforms/getlinks/',
-			data:{'link_model':$j('#links_id_main').val()},
-			type:'GET',
-			dataType:'json',
-			async:false,
-			success: function(link_objects) {
-				var html_str='';
-				$j.each(link_objects, function(idx, data){
-					html_str+='<option value="'+data.id+'">'+data.name+'</option>';
-				});
-				$j('#links_id_pick').html(html_str);
-				$j('#links_id_pick').trigger("change").parent().show();
-                if($j("#links_id_main").val()=="Program"){
-                    $j('#links_id_tl').parent().show();
-                    $j('#links_id_module').parent().show();
-                }
-			}
-		});
+		var link_model = $j('#links_id_main').val();
+		
+		// Special handling for Course model to implement two-level selection
+		if(link_model == 'Course'){
+			// Show program selector and course selector with search
+			showCourseSelectionUI();
+		} else {
+			// Original behavior for non-Course models
+			$j.ajax({
+				url:'/customforms/getlinks/',
+				data:{'link_model':link_model},
+				type:'GET',
+				dataType:'json',
+				async:false,
+				success: function(link_objects) {
+					var html_str='';
+					$j.each(link_objects, function(idx, data){
+						html_str+='<option value="'+data.id+'">'+data.name+'</option>';
+					});
+					$j('#links_id_pick').html(html_str);
+					$j('#links_id_pick').trigger("change").parent().show();
+	                if(link_model=="Program"){
+	                    $j('#links_id_tl').parent().show();
+	                    $j('#links_id_module').parent().show();
+	                }
+				}
+			});
+		}
 	}
 	else{
 		$j('#links_id_pick').html('');
@@ -387,7 +410,85 @@ var onChangeLinksSpecify=function(){
         $j('#links_id_tl').parent().hide();
         $j('#links_id_module').html('');
         $j('#links_id_module').parent().hide();
+        
+        // Hide course-specific UI elements
+        $j('#course_program_selector').parent().hide();
+        $j('#course_search_box').parent().hide();
+        $j('#course_selector').parent().hide();
 	}
+};
+
+var showCourseSelectionUI=function(){
+	// Load programs and show course selection UI
+	$j.ajax({
+		url:'/customforms/getprograms/',
+		type:'GET',
+		dataType:'json',
+		async:false,
+		success: function(programs) {
+			// Populate program selector
+			var program_html = '<option value="">Select a program...</option>';
+			$j.each(programs, function(idx, program){
+				program_html += '<option value="'+program.id+'">'+program.name+'</option>';
+			});
+			$j('#course_program_selector').html(program_html);
+			
+			// Show course selection UI
+			$j('#course_program_selector').parent().show();
+			$j('#course_search_box').parent().show();
+			$j('#course_selector').parent().show();
+			
+			// Hide original pick dropdown
+			$j('#links_id_pick').parent().hide();
+			
+			// Load courses for first program by default
+			if(programs.length > 0){
+				$j('#course_program_selector').val(programs[0].id).trigger('change');
+			}
+		}
+	});
+};
+
+var loadCourses=function(){
+	var program_id = $j('#course_program_selector').val();
+	var search_query = $j('#course_search_box').val().trim();
+	
+	if(!program_id){
+		// Clear courses if no program selected
+		$j('#course_selector').html('<option value="">Select a program first...</option>');
+		return;
+	}
+	
+	$j.ajax({
+		url:'/customforms/getlinks/',
+		data:{
+			'link_model': 'Course',
+			'program_id': program_id,
+			'search': search_query
+		},
+		type:'GET',
+		dataType:'json',
+		success: function(courses) {
+			var course_html = '';
+			if(courses.length == 0){
+				course_html = '<option value="">No courses found</option>';
+			} else {
+				course_html = '<option value="">Select a course...</option>';
+				$j.each(courses, function(idx, course){
+					course_html += '<option value="'+course.id+'">'+course.name+'</option>';
+				});
+			}
+			$j('#course_selector').html(course_html);
+		},
+		error: function() {
+			$j('#course_selector').html('<option value="">Error loading courses</option>');
+		}
+	});
+};
+
+var getSelectedCourseId=function(){
+	// Get the selected course ID from the course selector
+	return $j('#course_selector').val();
 };
 
 var onChangeLinksProgram=function(){

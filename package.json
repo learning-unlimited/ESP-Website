@@ -1,0 +1,19 @@
+{
+  "name": "esp-website",
+  "version": "1.0.0",
+  "description": "ESP Website - Learning Unlimited",
+  "scripts": {
+    "build-jsx": "node build-jsx.js",
+    "build-jsx:watch": "node build-jsx.js --watch",
+    "build": "npm run build-jsx"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/cli": "^7.22.0",
+    "@babel/preset-react": "^7.22.0",
+    "chokidar": "^3.5.3"
+  },
+  "babel": {
+    "presets": ["@babel/preset-react"]
+  }
+}
