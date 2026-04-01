@@ -115,7 +115,7 @@ def parse_csv(csv_file):
             duplicate_qtype_names.add(key)
         else:
             question_types[key] = qt
-    
+
     # If there are duplicate QuestionType names (case-insensitive), fail fast
     if duplicate_qtype_names:
         errors.append({
