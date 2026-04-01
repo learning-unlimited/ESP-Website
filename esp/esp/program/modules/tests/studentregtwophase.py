@@ -233,6 +233,14 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
                     return cls, sec
         return None, None
 
+    def _first_timeslot_with_scheduled_section(self):
+        """Return (timeslot, cls, sec) for the first timeslot containing a section."""
+        for timeslot in self.timeslots:
+            cls, sec = self._find_class_and_section_for_timeslot(timeslot)
+            if cls is not None and sec is not None:
+                return timeslot, cls, sec
+        self.fail('Expected at least one timeslot with a scheduled class/section')
+
     def _save_priorities_post(self, student, timeslot, class_id):
         self._ensure_student_profile(student)
         self.assertTrue(
@@ -247,9 +255,7 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
     def test_save_priorities_approved_class_creates_priority_registration(self):
         """When section and class are approved, save_priorities records Priority/1."""
         self.schedule_randomly()
-        timeslot = self.timeslots[0]
-        cls, sec = self._find_class_and_section_for_timeslot(timeslot)
-        self.assertIsNotNone(cls, 'Need a class scheduled in the first timeslot')
+        timeslot, cls, sec = self._first_timeslot_with_scheduled_section()
         student = self.students[0]
 
         RegistrationType.objects.get_or_create(name='Priority/1', category='student')
@@ -277,9 +283,7 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
     def test_save_priorities_unapproved_class_skipped_and_warns(self):
         """Unapproved section/class must not get a priority registration; log warning."""
         self.schedule_randomly()
-        timeslot = self.timeslots[0]
-        cls, sec = self._find_class_and_section_for_timeslot(timeslot)
-        self.assertIsNotNone(cls)
+        timeslot, cls, sec = self._first_timeslot_with_scheduled_section()
         student = self.students[1]
 
         RegistrationType.objects.get_or_create(name='Priority/1', category='student')
