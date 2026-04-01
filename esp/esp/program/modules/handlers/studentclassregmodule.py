@@ -397,11 +397,13 @@ class StudentClassRegModule(ProgramModuleObj):
 
         with transaction.atomic():
             section = ClassSection.objects.select_for_update().get(id=sectionid)
+            section_error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
             if not scrmi.use_priority:
-                error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
-            if scrmi.use_priority or not error:
-                cobj = ClassSubject.objects.get(id=classid)
-                error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+                error = section_error
+            if scrmi.use_priority or not section_error:
+                cobj = ClassSubject.objects.select_for_update().get(id=classid)
+                cobj_error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+                error = cobj_error or section_error
 
             if scrmi.use_priority:
                 priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
