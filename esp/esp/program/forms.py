@@ -65,8 +65,10 @@ class ProgramCreationForm(BetterModelForm):
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
+    grade_min = forms.IntegerField(label="Minimum grade" , min_value=0)
+    grade_max = forms.IntegerField(label="Maximum grade" , min_value=0)
     base_cost         = forms.IntegerField(label = 'Cost of Program Admission $', min_value = 0 )
-    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None,
+    sibling_discount  = forms.DecimalField(min_value = 0, max_digits=9, decimal_places=2, required=False, initial=None,
                                            help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
     program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
     program_module_questions   = forms.MultipleChoiceField(choices=[],
@@ -87,7 +89,7 @@ class ProgramCreationForm(BetterModelForm):
                                                         ('Would you be willing to solicit donations for LU?', [x.id for x in ProgramModule.objects.filter(admin_title='Donation Module')]),
                                                         ('Do you plan to have teacher training or interviews?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Training and Interview Signups', 'Manage Teacher Training and Interviews'])]),
                                                         (mark_safe('Will you use lottery admission (as opposed to first come, first served) for <b>classes</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Two-Phase Student Registration', 'Lottery Frontend'])]),
-                                                        (mark_safe('Will you use lottery registration (as opposed to first come, first served) to the <b>program</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Registration Phase Zero', 'Manage Student Registration Phase Zero'])]),
+                                                        (mark_safe('Will you use lottery registration (as opposed to first come, first served) to the <b>program</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Program Lottery Registration', 'Manage Program Lottery'])]),
                                                         ('Will you let students enter a lottery to switch classes after the program has started?', [x.id for x in ProgramModule.objects.filter(admin_title='Class Change Request')]),
                                                         ('Will you have students accept some sort of agreement?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Acknowledgement')]),
                                                         ('Do students have to apply to individual classes?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])]),
@@ -106,6 +108,8 @@ class ProgramCreationForm(BetterModelForm):
         self.fields['program_modules'].required = False
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
+        self.fields['program_size_max'].validators.append(validators.MinValueValidator(0))
+        self.fields['program_size_max'].widget.attrs['min'] = 0
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
 
     def save(self, commit=True):
@@ -131,7 +135,7 @@ class ProgramCreationForm(BetterModelForm):
         super().clean()
         if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
             #   Filter out unwanted characters from program type to form URL
-            ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
+            ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
             new_url = '%(type)s/%(term)s' \
                 % {'type': ptype_slug
                   ,'term': self.cleaned_data['term']
@@ -147,6 +151,14 @@ class ProgramCreationForm(BetterModelForm):
                 self.add_error('term', "A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'])
             if Program.objects.filter(name=new_name).exclude(id=self.instance.id).exists():
                 self.add_error('term_friendly', "A %s program already exists with this name. Please choose a new name or change the name of the old program." % self.cleaned_data['program_type'])
+            g_min = self.cleaned_data.get('grade_min')
+            g_max = self.cleaned_data.get('grade_max')
+
+            # Only run validation if both fields are filled out
+            if g_min is not None and g_max is not None:
+                if g_min > g_max:
+                    # Using the syntax you requested to attach the error to a specific field
+                    self.add_error('grade_max', "The maximum grade must be greater than or equal to the minimum grade.")
 
     class Meta:
         fieldsets = [
@@ -164,7 +176,7 @@ class ProgramCreationForm(BetterModelForm):
         }
         model = Program
 ProgramCreationForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'size': 40,
-                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
+                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', r'\.')})
 ProgramCreationForm.base_fields['director_cc_email'].widget = forms.EmailInput(attrs={'size': 40})
 ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.EmailInput(attrs={'size': 40})
 '''
@@ -432,7 +444,8 @@ class ClassFlagForm(forms.ModelForm):
 class FlagTypeForm(forms.ModelForm):
     class Meta:
         model = ClassFlagType
-        fields = ['name', 'color', 'seq', 'show_in_scheduler', 'show_in_dashboard']
+        fields = ['name', 'color', 'seq', 'show_in_scheduler', 'show_in_dashboard',
+                  'show_to_teacher', 'notify_teacher_by_email']
 
 class RecordTypeForm(forms.ModelForm):
     def clean_name(self):

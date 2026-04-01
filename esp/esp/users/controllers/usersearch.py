@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from collections import defaultdict
+from collections.abc import Hashable
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.middleware import ESPError
@@ -45,7 +46,6 @@ from django.db.models import Count
 from django.db.models.query import Q
 from django.contrib.auth.models import Group
 
-import collections
 import re
 
 class UserSearchController(object):
@@ -80,7 +80,7 @@ class UserSearchController(object):
             for digit in criteria['userid'].split(','):
                 try:
                     userid.append(int(digit))
-                except:
+                except (ValueError, TypeError):
                     raise ESPError('User id invalid, please enter a number or comma-separated list of numbers.', log=False)
 
             if 'userid__not' in criteria:
@@ -97,7 +97,7 @@ class UserSearchController(object):
                 for digit in criteria['clsid'].split(','):
                     try:
                         clsid.append(int(digit))
-                    except:
+                    except (ValueError, TypeError):
                         raise ESPError('Class id invalid, please enter a comma-separated list of numbers.', log=False)
                 if 'regtypes' in criteria:
                     student_verbs = criteria['regtypes']
@@ -143,7 +143,7 @@ class UserSearchController(object):
                     #   Check that it's a valid regular expression
                     try:
                         rc = re.compile(criteria[field])
-                    except:
+                    except re.error:
                         raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
                     filter_dict = {'%s__iregex' % field: criteria[field]}
                     if '%s__not' % field in criteria:
@@ -156,7 +156,7 @@ class UserSearchController(object):
                 len(criteria['zipcode'].strip()) > 0 and len(criteria['zipdistance'].strip()) > 0:
                 try:
                     zipc = ZipCode.objects.get(zip_code = criteria['zipcode'])
-                except:
+                except ZipCode.DoesNotExist:
                     raise ESPError('Zip code not found.  This may be because you didn\'t enter a valid US zipcode.  Tried: "%s"' % criteria['zipcode'], log=False)
                 zipcodes = zipc.close_zipcodes(criteria['zipdistance'])
                 # Excludes zipcodes within a certain radius, giving an annulus; can fail to exclude people who used to live outside the radius.
@@ -199,13 +199,13 @@ class UserSearchController(object):
             if criteria.get('gradyear_min', '').strip():
                 try:
                     gradyear_min = int(criteria['gradyear_min'])
-                except:
+                except (ValueError, TypeError):
                     raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
                 possible_gradyears = [x for x in possible_gradyears if x >= gradyear_min]
             if criteria.get('gradyear_max', '').strip():
                 try:
                     gradyear_max = int(criteria['gradyear_max'])
-                except:
+                except (ValueError, TypeError):
                     raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
                 possible_gradyears = [x for x in possible_gradyears if x <= gradyear_max]
             if criteria.get('gradyear_min', '').strip() or criteria.get('gradyear_max', '').strip():
@@ -378,7 +378,7 @@ class UserSearchController(object):
         clauses_hashable = []
         clauses_unhashable = []
         for clause in qobject.children:
-            if isinstance(clause, Q) or (isinstance(clause, tuple) and isinstance(clause[1], collections.Hashable)):
+            if isinstance(clause, Q) or (isinstance(clause, tuple) and isinstance(clause[1], Hashable)):
                 clauses_hashable.append(clause)
             else:
                 clauses_unhashable.append(clause)

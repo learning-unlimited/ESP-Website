@@ -36,13 +36,14 @@ Learning Unlimited, Inc.
 """
 
 import datetime
-import xlwt
+import openpyxl
 import re
 from io import BytesIO
 from django.db import models
-from django.db.models import Q
+from django.db.models import Count, Min, Q
+from django.contrib.contenttypes.models import ContentType
 from esp.users.models import ESPUser, Record, RecordType, admin_required
-from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
+from esp.program.models import Program, ClassCategories, ClassSubject, StudentRegistration, RegistrationType, ClassSection
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.utils.web import render_to_response
 from esp.utils.latex import render_to_latex
@@ -53,8 +54,6 @@ from esp.users.forms.generic_search_form import ApprovedTeacherSearchForm
 from django.http import Http404, HttpResponse
 from wsgiref.util import FileWrapper
 from django.contrib.auth.decorators import login_required
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, Min
 
 @login_required
 def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):
@@ -302,85 +301,98 @@ def delist(x):
     else:
         return x
 
-def dump_survey_xlwt(user, prog, surveys, request, tl):
+
+def dump_survey_xlsx(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
     if tl == 'manage' and not 'teacher_id' in request.GET and not 'classsection_id' in request.GET and not 'classsubject_id' in request.GET:
-        # Styles yoinked from <http://www.djangosnippets.org/snippets/1151/>
-        datetime_style = xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss')
-        wb=xlwt.Workbook()
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
         survey_index = 0
         for s in surveys:
             # Certain characters are forbidden in sheet names
-            # See <https://github.com/python-excel/xlwt/blob/8f0afdc9b322129600d81e754cabd2944e7064f2/xlwt/Utils.py#L154>
             s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name)
             s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category)
             # The length of sheet names is limited to 31 characters
             survey_index += 1
-            if len(s.name)>31:
-                ws=wb.add_sheet("%d %s... (%s)" % (survey_index, s.name[:17], s.category[:5]))
+            if len(s.name) > 31:
+                ws = wb.create_sheet(f"{survey_index} {s.name[:17]}... ({s.category[:5]})")
             else:
-                ws=wb.add_sheet(s.name)
-            ws.write(0, 0, 'Response ID')
-            ws.write(0, 1, 'Timestamp')
-            qs=list(s.questions.filter(per_class=False).order_by('seq', 'id'))
-            srs=list(s.surveyresponse_set.all().order_by('id'))
-            i=2
-            q_dict={}
+                ws = wb.create_sheet(s.name)
+
+            ws.cell(row=1, column=1, value='Response ID')
+            ws.cell(row=1, column=2, value='Timestamp')
+            qs = list(s.questions.filter(per_class=False).order_by('seq', 'id'))
+            srs = list(s.surveyresponse_set.all().order_by('id'))
+            i = 3
+            q_dict = {}
             for q in qs:
-                q_dict[q.id]=i
-                ws.write(0, i, q.name)
-                i+=1
-            i=1
-            sr_dict={}
+                q_dict[q.id] = i
+                ws.cell(row=1, column=i, value=q.name)
+                i += 1
+            i = 2
+            sr_dict = {}
             for sr in srs:
-                sr_dict[sr.id]=i
-                ws.write(i, 0, sr.id)
-                ws.write(i, 1, sr.time_filled, datetime_style)
-                i+=1
+                sr_dict[sr.id] = i
+                ws.cell(row=i, column=1, value=sr.id)
+                if sr.time_filled:
+                    cell = ws.cell(row=i, column=2, value=sr.time_filled.replace(tzinfo=None))
+                    cell.number_format = 'yyyy-mm-dd hh:mm:ss'
+                i += 1
             for a in Answer.objects.filter(question__in=qs).order_by('id'):
-                ws.write(sr_dict[a.survey_response_id], q_dict[a.question_id], delist(a.answer))
+                if a.survey_response_id in sr_dict and a.question_id in q_dict:
+                    ws.cell(row=sr_dict[a.survey_response_id], column=q_dict[a.question_id], value=delist(a.answer))
+
             # PER-CLASS QUESTIONS
-            # The length of sheet names is limited to 31 characters
-            if len(s.name)>19:
-                ws_perclass=wb.add_sheet("%d %s... (%s, per-class)" % (survey_index, s.name[:5], s.category[:5]))
+            if len(s.name) > 19:
+                ws_perclass = wb.create_sheet(f"{survey_index} {s.name[:5]}... ({s.category[:5]}, per-class)")
             else:
-                ws_perclass=wb.add_sheet(s.name + " (per-class)")
-            ws_perclass.write(0, 0, "Response ID")
-            ws_perclass.write(0, 1, "Timestamp")
-            ws_perclass.write(0, 2, "Class Code")
-            ws_perclass.write(0, 3, "Class Title")
-            qs_perclass=list(s.questions.filter(per_class=True).order_by('seq', 'id'))
-            i=4
-            q_dict_perclass={}
+                ws_perclass = wb.create_sheet(s.name + " (per-class)")
+            ws_perclass.cell(row=1, column=1, value="Response ID")
+            ws_perclass.cell(row=1, column=2, value="Timestamp")
+            ws_perclass.cell(row=1, column=3, value="Class Code")
+            ws_perclass.cell(row=1, column=4, value="Class Title")
+            qs_perclass = list(s.questions.filter(per_class=True).order_by('seq', 'id'))
+            i = 5
+            q_dict_perclass = {}
             for q in qs_perclass:
-                q_dict_perclass[q.id]=i
-                ws_perclass.write(0, i, q.name)
-                i+=1
-            i=1
-            src_dict_perclass={}
+                q_dict_perclass[q.id] = i
+                ws_perclass.cell(row=1, column=i, value=q.name)
+                i += 1
+            i = 2
+            src_dict_perclass = {}
             for a in Answer.objects.filter(question__in=qs_perclass).order_by('id').select_related('survey_response'):
-                sr=a.survey_response
-                cs=a.target
+                sr = a.survey_response
+                cs = a.target
                 if isinstance(cs, ClassSection):
-                    key=(sr, cs)
+                    key = (sr, cs)
                 else:
-                    key=sr
+                    key = sr
                 if key in src_dict_perclass:
-                    row=src_dict_perclass[key]
+                    row = src_dict_perclass[key]
                 else:
-                    row=i
-                    src_dict_perclass[key]=i
-                    ws_perclass.write(i, 0, sr.id)
-                    ws_perclass.write(i, 1, sr.time_filled, datetime_style)
+                    row = i
+                    src_dict_perclass[key] = i
+                    ws_perclass.cell(row=i, column=1, value=sr.id)
+                    if sr.time_filled:
+                        cell = ws_perclass.cell(row=i, column=2, value=sr.time_filled.replace(tzinfo=None))
+                        cell.number_format = 'yyyy-mm-dd hh:mm:ss'
                     if cs:
-                        ws_perclass.write(i, 2, cs.emailcode())
-                        ws_perclass.write(i, 3, cs.title())
-                    i+=1
-                ws_perclass.write(row, q_dict_perclass[a.question_id], delist(a.answer))
-        out=BytesIO()
+                        ws_perclass.cell(row=i, column=3, value=cs.emailcode())
+                        ws_perclass.cell(row=i, column=4, value=cs.title())
+                    i += 1
+                if a.question_id in q_dict_perclass:
+                    ws_perclass.cell(row=row, column=q_dict_perclass[a.question_id], value=delist(a.answer))
+
+        # Ensure at least one sheet exists
+        if len(wb.sheetnames) == 0:
+            wb.create_sheet("Empty")
+
+        out = BytesIO()
         wb.save(out)
-        response=HttpResponse(out.getvalue(), content_type='application/vnd.ms-excel')
-        response['Content-Disposition']='attachment; filename=dump-%s.xls' % (prog.name)
+        wb.close()
+        response = HttpResponse(out.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        out.close()
+        response['Content-Disposition'] = f'attachment; filename=dump-{prog.name}.xlsx'
         return response
     else:
         raise ESPError("You need to be an administrator to dump survey results.", log=False)
@@ -390,7 +402,216 @@ def survey_dump(request, tl, program, instance):
     """ A dump of all survey results in the given program. """
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
-    return dump_survey_xlwt(user, prog, surveys, request, tl)
+    return dump_survey_xlsx(user, prog, surveys, request, tl)
+
+@login_required
+def teacher_survey_all(request):
+    """Aggregated view of all survey responses for a teacher across all programs.
+
+    Teachers see their own responses. Admins can search for any teacher.
+    """
+    user = request.user
+    teacher = None
+    teacher_form = None
+
+    if user.isAdmin():
+        # Admin can search for a specific teacher
+        if 'target_user' in request.POST:
+            teacher_form = ApprovedTeacherSearchForm(request.POST)
+            if teacher_form.is_valid():
+                teacher = teacher_form.cleaned_data['target_user']
+            else:
+                teacher = None
+        elif 'teacher_id' in request.GET:
+            try:
+                t_id = int(request.GET['teacher_id'])
+            except (ValueError, TypeError):
+                t_id = None
+            if t_id is not None:
+                teachers = ESPUser.objects.filter(id=t_id)
+                if teachers.exists() and teachers[0].isTeacher():
+                    teacher = teachers[0]
+        if teacher is None and user.isTeacher():
+            teacher = user
+        if teacher_form is None:
+            if teacher and teacher != user:
+                teacher_form = ApprovedTeacherSearchForm(initial={'target_user': teacher.id})
+            else:
+                teacher_form = ApprovedTeacherSearchForm()
+    elif user.isTeacher():
+        teacher = user
+    else:
+        raise ESPError('You need to be a teacher or administrator to view survey responses.', log=False)
+
+    programs_data = []
+    if teacher is not None:
+        # Fetch ALL taught sections at once with related objects to avoid
+        # N+1 queries on parent_class, category, and parent_program FKs.
+        all_sections = list(
+            teacher.getTaughtSections().select_related(
+                'parent_class__category',
+                'parent_class__parent_program',
+            ).order_by('parent_class__parent_program_id', 'parent_class', 'id')
+        )
+        if not all_sections:
+            pass  # programs_data stays empty
+        else:
+            program_ids = list(set(
+                s.parent_class.parent_program_id for s in all_sections
+            ))
+
+            # 1 query: all programs, ordered newest-first
+            programs = Program.objects.filter(id__in=program_ids).order_by('-id')
+
+            # 1 query: all student surveys across all programs
+            all_surveys = list(
+                Survey.objects.filter(
+                    program_id__in=program_ids, category='learn'
+                ).select_related('program')
+            )
+            if all_surveys:
+                surveys_by_program = {}
+                for survey in all_surveys:
+                    surveys_by_program.setdefault(survey.program_id, []).append(survey)
+
+                sections_by_program = {}
+                for sec in all_sections:
+                    pid = sec.parent_class.parent_program_id
+                    sections_by_program.setdefault(pid, []).append(sec)
+
+                section_ct = ContentType.objects.get_for_model(ClassSection)
+                subject_ct = ContentType.objects.get_for_model(ClassSubject)
+                all_section_ids = [s.id for s in all_sections]
+                all_subject_ids = list(set(s.parent_class_id for s in all_sections))
+                all_survey_ids = [s.id for s in all_surveys]
+
+                # Map subject_id -> list of section objects (for merging subject-level data)
+                sections_by_subject = {}
+                for sec in all_sections:
+                    sections_by_subject.setdefault(sec.parent_class_id, []).append(sec)
+
+                # 1 query: response counts for ALL sections across ALL surveys
+                response_count_map = {}
+                for row in Answer.objects.filter(
+                    question__survey_id__in=all_survey_ids,
+                    question__per_class=True,
+                    content_type=section_ct,
+                    object_id__in=all_section_ids,
+                ).values('question__survey_id', 'object_id').annotate(
+                    count=Count('survey_response', distinct=True)
+                ):
+                    response_count_map[(row['question__survey_id'], row['object_id'])] = row['count']
+
+                # 1 query: response counts for answers stored against ClassSubject
+                subject_response_count = {}
+                if all_subject_ids:
+                    for row in Answer.objects.filter(
+                        question__survey_id__in=all_survey_ids,
+                        question__per_class=True,
+                        content_type=subject_ct,
+                        object_id__in=all_subject_ids,
+                    ).values('question__survey_id', 'object_id').annotate(
+                        count=Count('survey_response', distinct=True)
+                    ):
+                        subject_response_count[(row['question__survey_id'], row['object_id'])] = row['count']
+
+                # 1 query: find the first numeric per-class question per survey
+                first_numeric_qs = {}
+                for q in Question.objects.filter(
+                    survey_id__in=all_survey_ids,
+                    question_type__is_numeric=True,
+                    per_class=True,
+                ).order_by('survey_id', 'seq'):
+                    if q.survey_id not in first_numeric_qs:
+                        first_numeric_qs[q.survey_id] = q
+
+                # 1 query: section-level numeric rating values
+                rating_map = {}
+                numeric_q_ids = [q.id for q in first_numeric_qs.values()]
+                if numeric_q_ids:
+                    for survey_id, obj_id, val in Answer.objects.filter(
+                        question_id__in=numeric_q_ids,
+                        content_type=section_ct,
+                        object_id__in=all_section_ids,
+                    ).values_list('question__survey_id', 'object_id', 'value'):
+                        try:
+                            rating_map.setdefault((survey_id, obj_id), []).append(float(val))
+                        except (ValueError, TypeError):
+                            pass
+
+                # 1 query: subject-level numeric rating values
+                subject_rating_map = {}
+                if numeric_q_ids and all_subject_ids:
+                    for survey_id, obj_id, val in Answer.objects.filter(
+                        question_id__in=numeric_q_ids,
+                        content_type=subject_ct,
+                        object_id__in=all_subject_ids,
+                    ).values_list('question__survey_id', 'object_id', 'value'):
+                        try:
+                            subject_rating_map.setdefault((survey_id, obj_id), []).append(float(val))
+                        except (ValueError, TypeError):
+                            pass
+
+                # Build programs_data by grouping in Python (0 extra queries)
+                for prog in programs:
+                    prog_surveys = surveys_by_program.get(prog.id, [])
+                    prog_sections = sections_by_program.get(prog.id, [])
+                    if not prog_surveys or not prog_sections:
+                        continue
+
+                    for survey in prog_surveys:
+                        class_data = {}
+                        for sec in prog_sections:
+                            cid = sec.parent_class_id
+                            if cid not in class_data:
+                                class_data[cid] = {
+                                    'class': sec.parent_class,
+                                    'emailcode': sec.parent_class.emailcode(),
+                                    'title': sec.title,
+                                    'total_responses': 0,
+                                    'rating_vals': [],
+                                    '_has_section_data': False,
+                                }
+                            key = (survey.id, sec.id)
+                            sec_count = response_count_map.get(key, 0)
+                            sec_ratings = rating_map.get(key, [])
+                            if sec_count or sec_ratings:
+                                class_data[cid]['_has_section_data'] = True
+                            class_data[cid]['total_responses'] += sec_count
+                            class_data[cid]['rating_vals'].extend(sec_ratings)
+
+                        # Merge subject-level data for classes without section-level data
+                        for cid, cd in class_data.items():
+                            if not cd['_has_section_data']:
+                                subj_key = (survey.id, cid)
+                                cd['total_responses'] += subject_response_count.get(subj_key, 0)
+                                cd['rating_vals'].extend(subject_rating_map.get(subj_key, []))
+
+                        classes_summary = []
+                        for cid, cd in class_data.items():
+                            vals = cd['rating_vals']
+                            classes_summary.append({
+                                'class': cd['class'],
+                                'emailcode': cd['emailcode'],
+                                'title': cd['title'],
+                                'total_responses': cd['total_responses'],
+                                'avg_rating': round(sum(vals) / len(vals), 1) if vals else None,
+                            })
+
+                        programs_data.append({
+                            'program': prog,
+                            'survey': survey,
+                            'sections': prog_sections,
+                            'classes_summary': classes_summary,
+                        })
+
+    context = {
+        'teacher': teacher,
+        'programs_data': programs_data,
+        'teacher_form': teacher_form,
+        'is_admin': user.isAdmin(),
+    }
+    return render_to_response('survey/teacher_all_reviews.html', request, context)
 
 @login_required
 def survey_review(request, tl, program, instance, template = 'survey/review.html', context = {}):
@@ -413,7 +634,7 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
         #raise Http404
-        raise ESPError("Can't find the program %s/%s" % (program, instance))
+        raise ESPError(f"Can't find the program {program}/{instance}")
 
     user = request.user
 
@@ -468,60 +689,192 @@ def top_classes(request, tl, program, instance):
             pass
 
     if len(surveys) < 1:
-        raise ESPError('Sorry, no student survey {}exists for this program!'.format('with any of the following IDs ['
-                                                                                    + ','.join(s_id) + '] ' if 's_id'
-                                                                                    in locals() else ''), log=False)
+        raise ESPError(f'Sorry, no student survey {"with any of the following IDs [" + ",".join(str(x) for x in [s_id]) + "] " if "s_id" in locals() else ""}exists for this program!', log=False)
 
     if len(surveys) > 1:
-        return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
+        # if request.POST, then we shouldn't have more than one survey
+        return render_to_response(
+            'survey/choose_survey.html',
+            request,
+            {'surveys': surveys, 'error': request.POST}
+        )
 
     survey = surveys[0]
 
     if tl == 'manage':
         classes = prog.classes()
-        rating_questions = survey.questions.filter(name__contains='overall rating')
-        if len(rating_questions) < 1:
-            raise ESPError('Couldn\'t find an "overall rating" question in this survey.', log=False)
-        rating_question = rating_questions[0]
 
-        rating_cut = 0.0
-        try:
-            rating_cut = float( rating_question.get_params()['number_of_ratings'] ) - 1
-        except ValueError:
-            pass
-        if 'rating_cut' in request.GET:
+        # Try to find an "overall rating" question first
+        rating_question = survey.questions.filter(
+            name__icontains='overall rating'
+        ).first()
+
+        # Determine which type of question we're working with
+        use_favorite_class = rating_question is None
+
+        if use_favorite_class:
+            # If no rating question, try to find a "Favorite Class" question
+            favorite_question = survey.questions.filter(
+                question_type__name='Favorite Class'
+            ).first()
+
+            if favorite_question is None:
+                raise ESPError(
+                    'Couldn\'t find an "overall rating" or "Favorite Class" '
+                    'question in this survey. To compute top classes, the '
+                    'survey must include either (a) a rating question whose '
+                    'name contains "overall rating", or (b) a question '
+                    'whose type is "Favorite Class".',
+                    log=False
+                )
+
+            # Handle Favorite Class questions
+            num_cut = 1
+            if 'num_cut' in request.GET:
+                try:
+                    num_cut = int(request.GET['num_cut'])
+                except ValueError:
+                    pass
+
+            categories = prog.class_categories.all().order_by(
+                'category'
+            )
+
+            # Count votes for each class
+            class_votes = {}
+            for answer in Answer.objects.filter(
+                question=favorite_question
+            ):
+                # Favorite Class answers store class IDs
+                if isinstance(answer.answer, list):
+                    class_ids = answer.answer
+                else:
+                    class_ids = [answer.answer]
+
+                for class_id in class_ids:
+                    try:
+                        class_id = int(class_id)
+                        if class_id in class_votes:
+                            class_votes[class_id] += 1
+                        else:
+                            class_votes[class_id] = 1
+                    except (ValueError, TypeError):
+                        continue
+
+            # Build perclass_data from vote counts
+            perclass_data = []
+            for cls in classes:
+                votes = class_votes.get(cls.id, 0)
+                if votes < num_cut:
+                    continue
+
+                teachers = list(cls.get_teachers())
+                enrollment = sum(
+                    sec.num_students() for sec in cls.get_sections()
+                )
+                class_data = {
+                    'class': cls,
+                    'numratings': votes,
+                    # For favorite class, "avg" is the vote count
+                    'avg': votes,
+                    'enrollment': enrollment,
+                    'teacher': (
+                        teachers[0] if len(teachers) > 0 else None
+                    ),
+                    'numteachers': max(len(teachers), 1)
+                }
+                if len(teachers) > 1:
+                    class_data['coteachers'] = teachers[1:]
+                perclass_data.append(class_data)
+
+            context = {
+                'survey': survey,
+                'program': prog,
+                'perclass_data': perclass_data,
+                # Not applicable for favorite class
+                'rating_cut': 0,
+                'num_cut': num_cut,
+                'categories': categories,
+                'is_favorite_class': True
+            }
+        else:
+            # Handle overall rating questions (original logic)
+            rating_cut = 0.0
             try:
-                rating_cut = float( request.GET['rating_cut'] )
+                rating_cut = float(
+                    rating_question.get_params()['number_of_ratings']
+                ) - 1
             except ValueError:
                 pass
+            if 'rating_cut' in request.GET:
+                try:
+                    rating_cut = float(request.GET['rating_cut'])
+                except ValueError:
+                    pass
 
-        num_cut = 1
-        if 'num_cut' in request.GET:
-            try:
-                num_cut = int( request.GET['num_cut'] )
-            except ValueError:
-                pass
+            num_cut = 1
+            if 'num_cut' in request.GET:
+                try:
+                    num_cut = int(request.GET['num_cut'])
+                except ValueError:
+                    pass
 
-        categories = prog.class_categories.all().order_by('category')
+            categories = prog.class_categories.all().order_by(
+                'category'
+            )
 
-        section_ct=ContentType.objects.get(app_label="program", model="classsection")
+            section_ct = ContentType.objects.get(
+                app_label="program",
+                model="classsection"
+            )
 
-        perclass_data = []
-        initclass_data = [ { 'class': cls, 'ratings': [ float(x.answer) for sec in cls.get_sections() for x in Answer.objects.filter(object_id=sec.id, content_type=section_ct, question=rating_question)] } for cls in classes ]
-        for c in initclass_data:
-            c['numratings'] = len(c['ratings'])
-            if c['numratings'] < num_cut:
-                continue
-            c['avg'] = sum(c['ratings']) * 1.0 / c['numratings']
-            if c['avg'] < rating_cut:
-                continue
-            teachers = list(c['class'].get_teachers())
-            c['teacher'] = teachers[0] if len(teachers) > 0 else None
-            c['numteachers'] = max(len(teachers), 1) #in case there are no teachers
-            if c['numteachers'] > 1:
-                c['coteachers'] = teachers[1:]
-            del c['ratings']
-            perclass_data.append(c)
-    context = { 'survey': survey, 'program': prog, 'perclass_data': perclass_data, 'rating_cut': rating_cut, 'num_cut': num_cut, 'categories': categories }
+            perclass_data = []
+            initclass_data = [
+                {
+                    'class': cls,
+                    'ratings': [
+                        float(x.answer)
+                        for sec in cls.get_sections()
+                        for x in Answer.objects.filter(
+                            object_id=sec.id,
+                            content_type=section_ct,
+                            question=rating_question
+                        )
+                    ]
+                }
+                for cls in classes
+            ]
+            for c in initclass_data:
+                c['numratings'] = len(c['ratings'])
+                if c['numratings'] < num_cut:
+                    continue
+                c['avg'] = sum(c['ratings']) * 1.0 / c['numratings']
+                if c['avg'] < rating_cut:
+                    continue
+                teachers = list(c['class'].get_teachers())
+                c['teacher'] = (
+                    teachers[0] if len(teachers) > 0 else None
+                )
+                # in case there are no teachers
+                c['numteachers'] = max(len(teachers), 1)
+                if c['numteachers'] > 1:
+                    c['coteachers'] = teachers[1:]
+                del c['ratings']
+                perclass_data.append(c)
 
-    return render_to_response('survey/top_classes.html', request, context)
+            context = {
+                'survey': survey,
+                'program': prog,
+                'perclass_data': perclass_data,
+                'rating_cut': rating_cut,
+                'num_cut': num_cut,
+                'categories': categories,
+                'is_favorite_class': False
+            }
+
+    return render_to_response(
+        'survey/top_classes.html',
+        request,
+        context
+    )
+
