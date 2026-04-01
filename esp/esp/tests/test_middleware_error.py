@@ -62,9 +62,14 @@ class ESPErrorMiddlewareTest(TestCase):
         request = self.factory.get('/')
         request.user = AnonymousESPUser()
         err = ESPError('<script>alert("XSS")</script>')
-        response = self.middleware.process_exception(request, err)
-        if response is not None:
-            self.assertEqual(response.status_code, 500)
-            content = response.content.decode('utf-8')
-            self.assertNotIn('<script>alert("XSS")</script>', content)
-            self.assertIn('&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;', content)
+        try:
+            raise err
+        except Exception:
+            response = self.middleware.process_exception(request, err)
+        self.assertIsNotNone(response, "Middleware must return a response for ESPError")
+        self.assertEqual(response.status_code, 500)
+        content = response.content.decode('utf-8')
+        # The raw script tag must NOT appear unescaped in the output
+        self.assertNotIn('<script>alert("XSS")</script>', content)
+        # Django's auto-escaping should convert it to safe HTML entities
+        self.assertIn('&lt;script&gt;', content)
