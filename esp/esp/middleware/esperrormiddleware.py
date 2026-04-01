@@ -78,8 +78,8 @@ def ESPError(message=None, log=True):
     if isinstance(message, bool):
         # trying to pass a bool argument: assume they meant log rather than message
         # this should become deprecated -lua 2013-02-15
-        message = None
         log = message
+        message = None
 
     if log:
         cls = ESPError_Log
