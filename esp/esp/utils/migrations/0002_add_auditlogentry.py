@@ -26,6 +26,7 @@ class Migration(migrations.Migration):
                 ('timestamp', models.DateTimeField(auto_now_add=True, db_index=True)),
                 ('actor', models.ForeignKey(help_text='Admin user who performed the action.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='audit_log_entries', to='users.ESPUser')),
                 ('content_type', models.ForeignKey(blank=True, help_text='Django ContentType of the affected model.', null=True, on_delete=django.db.models.deletion.SET_NULL, to='contenttypes.ContentType')),
+                ('actor_ip', models.GenericIPAddressField(blank=True, help_text='IP address of the admin user at action time.', null=True)),
             ],
             options={
                 'verbose_name': 'audit log entry',

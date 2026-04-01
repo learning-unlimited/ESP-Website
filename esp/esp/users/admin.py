@@ -185,7 +185,7 @@ admin_site.register(Group, GroupAdmin)
 class AuditLogEntryAdmin(admin.ModelAdmin):
     """Read-only browse view for the admin audit log."""
     list_display  = ['timestamp', 'actor', 'actor_ip', 'action', 'content_type', 'object_id', 'object_repr', 'extra']
-    list_filter   = ['action', 'content_type', 'timestamp']
+    list_filter   = ['action', ('content_type', admin.RelatedOnlyFieldListFilter), 'timestamp']
     search_fields = default_user_search('actor') + ['actor_ip', 'object_repr', 'extra']
     date_hierarchy = 'timestamp'
     readonly_fields = ['actor', 'actor_ip', 'action', 'content_type', 'object_id', 'object_repr', 'changes', 'extra', 'timestamp']
