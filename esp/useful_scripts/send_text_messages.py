@@ -3,8 +3,8 @@ from twilio.rest import Client
 
 # TODO(jmoldow): Use Python built-in argparse module.
 if len(sys.argv) < 6:
-  print(("Usage: %s <account SID> <auth token> <file with line-separated phone numbers to send from> <file with line-separated phone numbers recipients> <message to send>" % sys.argv[0]))
-  exit(1)
+    print(("Usage: %s <account SID> <auth token> <file with line-separated phone numbers to send from> <file with line-separated phone numbers recipients> <message to send>" % sys.argv[0]))
+    exit(1)
 
 account_sid = sys.argv[1]
 auth_token = sys.argv[2]

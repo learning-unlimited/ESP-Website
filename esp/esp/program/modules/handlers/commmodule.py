@@ -106,8 +106,8 @@ class CommModule(ProgramModuleObj):
 
     @staticmethod
     def get_mailer_warnings(listcount, filterid, sendto_fn_name):
-        from esp.users.models import ESPUser, PersistentQueryFilter
-        from esp.dbmail.models import MessageRequest
+        from esp.users.models import ESPUser, PersistentQueryFilter # noqa: F811
+        from esp.dbmail.models import MessageRequest # noqa: F811
         mailer_warnings = []
 
         # a. Warn if massive mailer (over 2000 recipients)
@@ -147,7 +147,7 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import PersistentQueryFilter
+        from esp.users.models import PersistentQueryFilter # noqa: F811
         from django.conf import settings
 
         filterid, listcount, subject, body = [request.POST['filterid'],
@@ -260,8 +260,8 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
-        from esp.dbmail.models import MessageRequest
-        from esp.users.models import PersistentQueryFilter
+        from esp.dbmail.models import MessageRequest # noqa: F811
+        from esp.users.models import PersistentQueryFilter # noqa: F811
 
         filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
@@ -364,7 +364,7 @@ class CommModule(ProgramModuleObj):
         prs = PlainRedirect.objects.filter(original = "info")
 
         if not prs.exists():
-           redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+            redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
 
         return render_to_response(self.baseDir()+'step2.html', request, context)
 

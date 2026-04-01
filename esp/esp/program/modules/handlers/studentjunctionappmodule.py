@@ -36,7 +36,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, m
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
 from django.db.models.query       import Q
-from django              import forms
 from esp.middleware.threadlocalrequest import get_current_request
 
 class StudentJunctionAppModule(ProgramModuleObj):
