@@ -335,7 +335,6 @@ class Command(BaseCommand):
             'StudentExtracosts', 'DonationModule',
             'CreditCardModule_Stripe', 'StudentOnsite',
             'UnenrollModule', 'ClassSearchModule',
-            'StudentRegPhaseZero', 'StudentRegTwoPhase',
 
             # Teacher registration
             'TeacherClassRegModule', 'TeacherBioModule',
