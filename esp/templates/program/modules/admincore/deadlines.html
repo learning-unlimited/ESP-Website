@@ -266,53 +266,39 @@
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 <script type="text/javascript">
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-var csrftoken = getCookie('csrftoken');
-
 $(document).on('click', '.ajax-deadline', function(e) {
     e.preventDefault();
+    e.stopPropagation(); 
+
+    
+
     var $this = $(this);
     if ($this.hasClass('disabled')) return;
 
     $this.addClass('disabled');
 
-    var $th = $this.closest('th');
-    var url = $th.hasClass('is_open') ? $this.data('close-url') : $this.data('open-url');
+    var $container = $this.closest('th, td');
+
+    var url = $container.hasClass('is_open')
+        ? $this.data('close-url')
+        : $this.data('open-url');
+
     $.ajax({
         url: url,
-        type: 'POST',
-        data: {csrfmiddlewaretoken: csrftoken},
+        type: 'GET',
         success: function(data) {
-            // detect failure from HTML response
+
             if (typeof data === "string" && data.indexOf("message_bad") !== -1) {
                 alert("Failed to update deadline.");
                 $this.removeClass('disabled');
                 return;
             }
 
-            var isOpening = !$th.hasClass('is_open');
+            var isOpening = !$container.hasClass('is_open');
 
-            $th.toggleClass('is_open is_closed');
+            $container.toggleClass('is_open is_closed');
             $this.text(isOpening ? 'Close' : 'Open');
             $this.toggleClass('btn-success btn-danger');
-
-            var temp = $this.data('open-url');
-            $this.data('open-url', $this.data('close-url'));
-            $this.data('close-url', temp);
 
             $this.removeClass('disabled');
         },
