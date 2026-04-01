@@ -322,14 +322,36 @@ class Command(BaseCommand):
 
     def _create_programs(self):
         all_module_handlers = [
+            # Core
             'StudentRegCore', 'TeacherRegCore', 'AdminCore',
-            'OnsiteCore', 'VolunteerSignup',
-            'RegProfileModule',
-            'StudentClassRegModule', 'TeacherClassRegModule',
-            'AvailabilityModule', 'TeacherBioModule',
-            'ResourceModule', 'VolunteerManage',
-            'SurveyManagement', 'ProgramPrintables',
-            'AdminVitals', 'JSONDataModule',
+            'OnsiteCore', 'VolunteerSignup', 'VolunteerManage',
+            'RegProfileModule', 'JSONDataModule',
+
+            # Student registration
+            'StudentClassRegModule', 'StudentRegConfirm',
+            'StudentAcknowledgementModule', 'StudentSurveyModule',
+            'LotteryStudentRegModule', 'LotteryFrontendModule',
+            'FinancialAidAppModule', 'FinAidApproveModule',
+            'StudentExtracosts', 'DonationModule',
+            'CreditCardModule_Stripe', 'StudentOnsite',
+            'UnenrollModule', 'ClassSearchModule',
+            'StudentRegPhaseZero', 'StudentRegTwoPhase',
+
+            # Teacher registration
+            'TeacherClassRegModule', 'TeacherBioModule',
+            'AvailabilityModule', 'TeacherSurveyModule',
+            'TeacherAcknowledgementModule', 'TeacherCheckinModule',
+            'TeacherPreviewModule', 'TeacherOnsite',
+            'TeacherEventsModule',
+
+            # Admin
+            'AdminClass', 'AdminVitals', 'AdminMaterials',
+            'ResourceModule', 'SchedulingCheckModule',
+            'ProgramPrintables', 'SurveyManagement',
+            'CommModule', 'NameTagModule',
+            'BigBoardModule', 'BatchClassRegModule',
+            'OnSiteCheckinModule', 'OnSiteCheckoutModule',
+            'OnSiteClassList', 'OnSiteAttendance',
         ]
         programs = []
         for spec in [
