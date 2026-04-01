@@ -82,7 +82,6 @@ LOG_LEVEL = 'INFO'
 DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
-SENTRY_DSN = ""  # (disabled)
 
 INTERNAL_IPS = (
     '127.0.0.1',

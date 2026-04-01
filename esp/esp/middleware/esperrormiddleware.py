@@ -156,10 +156,7 @@ class ESPErrorMiddleware(MiddlewareMixin):
             error_type, ('An error has occurred', 'Please try again.')
         )
 
-        # Safely retrieve the Sentry event ID if available
         error_id = None
-        if hasattr(request, 'sentry') and isinstance(request.sentry, dict):
-            error_id = request.sentry.get('id')
 
         context = {
             'error': exc_info[1],
