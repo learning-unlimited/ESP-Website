@@ -37,6 +37,7 @@ Learning Unlimited, Inc.
 
 import datetime
 import json
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.template import loader
 from django.contrib.contenttypes.models import ContentType
@@ -201,6 +202,32 @@ class Question(models.Model):
         params['list'] = b[min_length:]
 
         return params
+
+    def clean(self):
+        super().clean()
+        self._validate_long_answer_params()
+
+    def _validate_long_answer_params(self):
+        """Ensure Long Answer questions have a valid textarea row count (>= 1)."""
+        if not self.question_type_id:
+            return
+        if self.question_type.name != 'Long Answer':
+            return
+        vals = self.param_values
+        if not vals or not str(vals[0]).strip():
+            raise ValidationError({
+                '_param_values': 'Long Answer questions require a Rows value of at least 1.',
+            })
+        try:
+            rows = int(str(vals[0]).strip())
+        except (ValueError, TypeError):
+            raise ValidationError({
+                '_param_values': 'Rows must be a whole number.',
+            })
+        if rows < 1:
+            raise ValidationError({
+                '_param_values': 'Rows must be at least 1.',
+            })
 
     def __str__(self):
         return f'{self.survey.name}, {self.seq}: "{self.name}" ({self.question_type.name})'
