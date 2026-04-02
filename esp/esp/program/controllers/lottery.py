@@ -311,7 +311,7 @@ class LotteryAssignmentController(object):
         # Populate section lengths (hours)
         self.section_lengths = numpy.array([x.nonzero()[0].size for x in self.section_schedules])
 
-        #   Set student utility weights. Counts total hours of classes that students selected. Used only for computing the overall_utility stat
+        #   Set student utility weights as total scheduled timeslots (hours) of classes each student selected; used only for computing the overall utility stat
         self.student_utility_weights = self.interest.astype(float) @ self.section_lengths + sum([self.priority[i].astype(float) @ self.section_lengths for i in range(1, self.effective_priority_limit+1)])
 
         if self.options['fill_low_priorities']:
