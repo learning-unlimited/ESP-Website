@@ -75,32 +75,62 @@ class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
     # Title for the link displayed for this Program Module in the Programs form
-    link_title = models.CharField(max_length=64, blank=True, null=True)
+    link_title = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text="Optional text displayed as the link label for this program module"
+    )
 
     # Human-readable name for the Program Module
-    admin_title = models.CharField(max_length=128)
+    admin_title = models.CharField(
+        max_length=128,
+        help_text="Name of this module as shown in the admin interface"
+    )
 
     #   A module can have an inline template (whose context is filled by prepare())
     #   independently of its main view.
-    inline_template = models.CharField(max_length=32, blank=True, null=True)
+    inline_template = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        help_text="Template used to render this module inline within a page"
+    )
 
     # One of teach/learn/etc.; What is this module typically used for?
-    module_type = models.CharField(max_length=32)
+    module_type = models.CharField(
+        max_length=32,
+        help_text=mark_safe(
+            'Defines how this module is used (e.g., teach, learn, manage, onsite). '
+            'See <a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst" target="_blank">documentation</a> for details.'
+        )
+    )
 
     # self.__name__, stored neatly in the database
-    handler    = models.CharField(max_length=32)
+    handler = models.CharField(
+        max_length=32,
+        help_text="Handler class or identifier responsible for processing this module"
+    )
 
     # Sequence orderer.  When ProgramModules are listed on a page, order them
     # from smallest to largest 'seq' value
-    seq = models.IntegerField()
+    seq = models.IntegerField(
+        help_text="Controls the display order of modules (lower values appear first)"
+    )
 
     # Must the user supply this ProgramModule with data in order to complete program registration?
-    required = models.BooleanField(default=False)
+    required = models.BooleanField(
+        default=False,
+        help_text="Indicates whether this module must be completed by the user"
+    )
 
     # When creating a new program, should this module be available for admins to select (0), included by default (1)
     # or excluded by default (2).
-    choosable = models.IntegerField(default=0, validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)])
-
+    choosable = models.IntegerField(
+        default=0,
+        validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)],
+        help_text="Determines whether users can select this module (0 = hidden, 1 = optional, 2 = required)"
+    )
     class Meta:
         app_label = 'program'
         db_table = 'program_programmodule'
