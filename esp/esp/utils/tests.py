@@ -94,15 +94,17 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("form_utils")     #Used to create better forms.
         self.assertFalse(self._failed_import)
 
-        # Make sure that we're actually using pylibmc.
-        # Note that this requires a patch to Django (or Django version 1.3 or later).
-        # Patch can be found at:  <https://code.djangoproject.com/ticket/11675>
-        from pylibmc import Client
-        from django.core.cache import cache
-        if hasattr(cache, "_cache"):
-            self.assertTrue(isinstance(cache._cache, Client))
-        elif hasattr(cache, "_wrapped_cache") and hasattr(cache._wrapped_cache, "_cache"):
-            self.assertTrue(isinstance(cache._wrapped_cache._cache, Client))
+        # Make sure production uses pylibmc when default cache is memcached.
+        # test_settings (and similar) use LocMemCache/DummyCache — skip then.
+        from django.conf import settings
+        default_backend = settings.CACHES.get('default', {}).get('BACKEND', '')
+        if 'locmem' not in default_backend.lower() and 'dummy' not in default_backend.lower():
+            from pylibmc import Client
+            from django.core.cache import cache
+            if hasattr(cache, "_cache"):
+                self.assertTrue(isinstance(cache._cache, Client))
+            elif hasattr(cache, "_wrapped_cache") and hasattr(cache._wrapped_cache, "_cache"):
+                self.assertTrue(isinstance(cache._wrapped_cache._cache, Client))
 
         self.tryExecutable("latex")  # Used for a whole pile of program printables, as well as inline LaTeX
         self.tryExecutable("dvips")  # Used to convert LaTeX output (.dvi) to .ps files
