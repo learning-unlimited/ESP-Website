@@ -41,8 +41,17 @@ if _project not in sys.path:
 if os.environ.get('VIRTUAL_ENV') is None:
     _root = os.path.dirname(_project)
     _activate = os.path.join(_root, 'env', 'bin', 'activate_this.py')
-    with io_open(_activate, 'rb') as _fh:
-        exec(compile(_fh.read(), _activate, 'exec'), dict(__file__=_activate))
+    _in_github_actions = os.environ.get('GITHUB_ACTIONS') == 'true'
+    if os.path.exists(_activate):
+        with io_open(_activate, 'rb') as _fh:
+            exec(compile(_fh.read(), _activate, 'exec'), dict(__file__=_activate))
+    elif not _in_github_actions:
+        raise RuntimeError(
+            "Expected virtualenv activation script not found at {!r}. "
+            "Either activate a virtualenv before importing esp_setup "
+            "or create the 'env' virtualenv with an 'activate_this.py' "
+            "script at that location.".format(_activate)
+        )
 
 # ---------------------------------------------------------------------------
 # Point Django at the right settings module, then bootstrap it.
