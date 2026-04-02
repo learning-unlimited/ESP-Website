@@ -67,7 +67,7 @@ class StudentRegSanityController(object):
             if csvwriter is None:
                 closeatend = True
                 if directory is None: directory = self.options['directory']
-                filefullname = directory +'/santitize_walkins_log.csv'
+                filefullname = directory +'/sanitize_walkins_log.csv'
                 csvfile = open(filefullname, 'ab+')
                 csvwriter = csv.writer(csvfile)
             csvwriter.writerow(['Sanitizing Walkins'])
@@ -78,11 +78,10 @@ class StudentRegSanityController(object):
             for sec in w.get_sections():
                 srs = sec.getRegistrations()
                 report.append((sec, srs.count()))
-
-        for sr in srs:
-            if not fake:
-                if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
-                sr.expire()
+                if not fake:
+                    for sr in srs:
+                        if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
+                        sr.expire()
         logger.debug(report)
         if closeatend: csvfile.close()
         logger.info("Walkins checked")
@@ -97,7 +96,7 @@ class StudentRegSanityController(object):
             if csvwriter is None:
                 closeatend = True
                 if directory is None: directory = self.options['directory']
-                filefullname = directory +'/santitize_lunch_log.csv'
+                filefullname = directory +'/sanitize_lunch_log.csv'
                 csvfile = open(filefullname, 'ab+')
                 csvwriter = csv.writer(csvfile)
             csvwriter.writerow(['Sanitizing Lunch Blocks'])
@@ -147,7 +146,7 @@ class StudentRegSanityController(object):
         if csvlog:
             import csv
             if directory is None: directory = self.options['directory']
-            filefullname = directory + '/'+ datetime.now().strftime("%Y-%m-%d_") + 'santitize_log.csv'
+            filefullname = directory + '/'+ datetime.now().strftime("%Y-%m-%d_") + 'sanitize_log.csv'
             csvfile = open(filefullname, 'ab+')
             csvwriter = csv.writer(csvfile)
         self.reports = {}

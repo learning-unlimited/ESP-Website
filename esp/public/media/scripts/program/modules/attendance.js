@@ -48,7 +48,11 @@ $j(function(){
         var secid = $me.data("secid");
         var $msg = $me.closest("td").find(".msg");
         var $checkedin = $me.closest("tr").find("[name=checkedin]");
+        var $table = $me.closest("table.sortable");
         $me.prop('disabled', true);
+        var inFlight = ($table.data('in-flight') || 0) + 1;
+        $table.data('in-flight', inFlight);
+        $table.addClass('sorttable-busy');
         markAttendance(username, secid, !checked, function(response) {
             if (response.error) {
                 alert(response.error);
@@ -67,12 +71,22 @@ $j(function(){
             }
             $msg.text("");
             $me.prop('disabled', false);
-            update_checkboxes($me.parents("table"));
+            var inFlight = ($table.data('in-flight') || 1) - 1;
+            $table.data('in-flight', Math.max(0, inFlight));
+            if (inFlight <= 0) {
+                $table.removeClass('sorttable-busy');
+            }
+            update_checkboxes($table);
         }, function(error) {
             alert("An error (" + error.statusText + ") occurred while attempting to update attendance for " + username + ".");
             $me.prop("checked", !checked);
             $msg.text("");
             $me.prop('disabled', false);
+            var inFlight = ($table.data('in-flight') || 1) - 1;
+            $table.data('in-flight', Math.max(0, inFlight));
+            if (inFlight <= 0) {
+                $table.removeClass('sorttable-busy');
+            }
             // If this is the webapp, we want to toggle the icons as well
             $me.siblings("i").html(!checked ? "check_box" : "check_box_outline_blank");
         });

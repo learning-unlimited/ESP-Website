@@ -54,11 +54,8 @@ class FormstackMedliabModule(ProgramModuleObj):
                 "choosable": 2,
                 }
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return Record.user_completed(
                 user=user,
                 event="med",
@@ -100,7 +97,7 @@ class FormstackMedliabModule(ProgramModuleObj):
         """Landing page redirecting to med-liab form on Formstack."""
         t = Tag.getProgramTag("formstack_id", self.program)
         v = Tag.getProgramTag("formstack_viewkey", self.program)
-        context = {"formstack_id": t, "formstack_viewkey": v}
+        context = {"formstack_id": t, "formstack_viewkey": v, "completed": self.isCompleted()}
         return render_to_response(self.baseDir()+'medliab.html',
                                   request, context)
 
