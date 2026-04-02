@@ -61,8 +61,9 @@ class TeacherBioModuleTest(ProgramFrameworkTest):
 
     # ------------------------------------------------------------------
     # Helper: set the active user on the module.
-    # isCompleted() checks hasattr(self, 'user') first, so setting
-    # self.moduleobj.user is sufficient; get_current_request() is never reached.
+    # ProgramModuleObj._resolve_user() prefers an explicit user argument,
+    # then self.user, then the request user; setting self.moduleobj.user
+    # is therefore sufficient to control which user is seen by isCompleted().
     # ------------------------------------------------------------------
     def _set_user(self, user):
         self.moduleobj.user = user
