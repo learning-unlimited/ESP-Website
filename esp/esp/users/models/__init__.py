@@ -475,16 +475,16 @@ class BaseESPUser(object):
         taught_programs = taught_programs.distinct()
         return taught_programs
 
-    def getTaughtClasses(self, program = None, include_rejected = False, include_cancelled = True):
+    def getTaughtClasses(self, program = None, include_rejected = False, include_cancelled = True, include_drafts = True):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
         if program is None:
-            return self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled)
+            return self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts)
         else:
-            return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected, include_cancelled = include_cancelled)
+            return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts)
 
     @cache_function
-    def getTaughtClassesFromProgram(self, program, include_rejected = False, include_cancelled = True):
+    def getTaughtClassesFromProgram(self, program, include_rejected = False, include_cancelled = True, include_drafts = True):
         from esp.program.models import Program # Need the Class object.
         if not isinstance(program, Program): # if we did not receive a program
             raise ESPError("getTaughtClassesFromProgram expects a Program, not a `"+str(type(program))+"'.")
@@ -494,6 +494,8 @@ class BaseESPUser(object):
                 classes = classes.exclude(status=ClassStatus.REJECTED)
             if not include_cancelled:
                 classes = classes.exclude(status=ClassStatus.CANCELLED)
+            if not include_drafts:
+                classes = classes.exclude(status=ClassStatus.DRAFT)
             return classes
     getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
@@ -523,30 +525,34 @@ class BaseESPUser(object):
             return times
 
     @cache_function
-    def getTaughtOrModeratingSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True):
+    def getTaughtOrModeratingSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True, include_drafts = True):
         from esp.program.models import Program
         from esp.program.models import ClassSection
         if not isinstance(program, Program): # if we did not receive a program
             raise ESPError("getTaughtOrModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
         else:
-            classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
+            classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts))
             sections = ClassSection.objects.filter(parent_class__in=classes)
             if not include_rejected:
                 sections = sections.exclude(status=ClassStatus.REJECTED)
             if not include_cancelled:
                 sections = sections.exclude(status=ClassStatus.CANCELLED)
+            if not include_drafts:
+                sections = sections.exclude(status=ClassStatus.DRAFT)
             return self.moderating_sections.filter(parent_class__parent_program = program) | sections
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
     getTaughtOrModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
 
     @cache_function
-    def getTaughtClassesAll(self, include_rejected = False, include_cancelled = True):
+    def getTaughtClassesAll(self, include_rejected = False, include_cancelled = True, include_drafts = True):
         classes = self.classsubject_set.all()
         if not include_rejected:
             classes = classes.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
             classes = classes.exclude(status=ClassStatus.CANCELLED)
+        if not include_drafts:
+            classes = classes.exclude(status=ClassStatus.DRAFT)
         return classes
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
@@ -557,35 +563,39 @@ class BaseESPUser(object):
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
     getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
 
-    def getTaughtSections(self, program = None, include_rejected = False, include_cancelled = True):
+    def getTaughtSections(self, program = None, include_rejected = False, include_cancelled = True, include_drafts = True):
         if program is None:
-            return self.getTaughtSectionsAll(include_rejected = include_rejected, include_cancelled = include_cancelled)
+            return self.getTaughtSectionsAll(include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts)
         else:
-            return self.getTaughtSectionsFromProgram(program, include_rejected = include_rejected, include_cancelled = include_cancelled)
+            return self.getTaughtSectionsFromProgram(program, include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts)
 
     @cache_function
-    def getTaughtSectionsAll(self, include_rejected = False, include_cancelled = True):
+    def getTaughtSectionsAll(self, include_rejected = False, include_cancelled = True, include_drafts = True):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled))
+        classes = list(self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
             sections = sections.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
             sections = sections.exclude(status=ClassStatus.CANCELLED)
+        if not include_drafts:
+            sections = sections.exclude(status=ClassStatus.DRAFT)
         return sections
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
 
     @cache_function
-    def getTaughtSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True):
+    def getTaughtSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True, include_drafts = True):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
+        classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
             sections = sections.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
             sections = sections.exclude(status=ClassStatus.CANCELLED)
+        if not include_drafts:
+            sections = sections.exclude(status=ClassStatus.DRAFT)
         return sections
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
     getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})

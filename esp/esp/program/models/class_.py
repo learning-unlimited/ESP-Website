@@ -91,6 +91,7 @@ __all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'C
 STATUS_CHOICES = (
         (ClassStatus.CANCELLED, "cancelled"),
         (ClassStatus.REJECTED, "rejected"),
+        (ClassStatus.DRAFT, "draft"),
         (ClassStatus.UNREVIEWED, "unreviewed"),
         (ClassStatus.HIDDEN, "accepted but hidden"),
         (ClassStatus.ACCEPTED, "accepted"),
@@ -943,7 +944,7 @@ class ClassSection(models.Model):
         user = teacher
         if meeting_times is None:
             meeting_times = self.meeting_times.all()
-        for sec in user.getTaughtSections(self.parent_program, include_cancelled = False).exclude(id=self.id):
+        for sec in user.getTaughtSections(self.parent_program, include_cancelled = False, include_drafts = False).exclude(id=self.id):
             for time in sec.meeting_times.all():
                 if meeting_times.filter(id = time.id).exists():
                     return (sec, time)
@@ -1861,7 +1862,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def conflicts(self, teacher):
         user = teacher
-        for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
+        for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False, include_drafts = False):
             for section in cls.get_sections():
                 for time in section.meeting_times.all():
                     for sec in self.sections.all().exclude(id=section.id):
@@ -1877,7 +1878,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             td = tg.duration()
             time_avail += (td.seconds / 3600.0)
         #   Subtract out time already pledged for teaching classes other than this one
-        for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
+        for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False, include_drafts = False):
             if cls.id != self.id:
                 for sec in cls.get_sections():
                     time_avail -= float(str(sec.duration))
@@ -2138,7 +2139,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.status < ClassStatus.UNREVIEWED: #ie, all rejected or cancelled classes.
+        if self.status in (ClassStatus.REJECTED, ClassStatus.CANCELLED):
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:
