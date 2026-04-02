@@ -140,6 +140,21 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         else:
             classes = list(ClassSubject.objects.catalog(prog))
 
+        # Filter by category if requested
+        category_id = request.GET.get('category_id')
+        if category_id:
+            try:
+                category_id = int(category_id)
+                classes = [c for c in classes if c.category_id == category_id]
+            except ValueError:
+                pass
+
+        # Filter by fullness if requested
+        # request.GET.filter is used by the template to decide whether to hide full classes via the templatetag
+        # but we can also filter the list here for efficiency if desired, or just let the template handle it.
+        # Actually, the template already has: {% render_class_webapp class program user request.GET.filter timeslot checked_in %}
+        # where request.GET.filter is passed as the 'filter' argument to the templatetag.
+
         categories_sort = StudentClassRegModule.sort_categories(classes, prog)
 
         context['classes'] = classes
