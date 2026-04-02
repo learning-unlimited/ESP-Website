@@ -51,9 +51,6 @@ jobs:
         image: memcached:alpine
         ports:
           - 11211:11211
-    env:
-      DJANGO_SETTINGS_MODULE: esp.settings
-
     steps:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
     - name: Set up Python ${{ matrix.python-version }}
