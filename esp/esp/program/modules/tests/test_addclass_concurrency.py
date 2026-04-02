@@ -1,5 +1,5 @@
 """
-Regression tests for concurrent student registration (addclass_logic).
+Regression tests for concurrent student registration (ajax_addclass view).
 
 Uses TransactionTestCase so each test runs with real commits and worker threads
 see the same database semantics as production. TestCase wraps tests in a
@@ -7,15 +7,14 @@ transaction that is rolled back, which does not mix well with multi-threaded
 access to the ORM.
 """
 
+import json
 import threading
 import unittest
 
 from django.db import close_old_connections, connection
-from django.test import RequestFactory, TransactionTestCase
+from django.test import Client, TransactionTestCase
 
-from esp.middleware import ESPError
-from esp.program.models import ClassSection, StudentRegistration
-from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
+from esp.program.models import StudentRegistration
 from esp.program.tests import ProgramFrameworkTest
 
 
@@ -59,8 +58,7 @@ class AddClassConcurrencyRegressionTest(TransactionTestCase):
         scrmi.save()
 
     def test_concurrent_addclass_last_seat(self):
-        factory = RequestFactory()
-        # Synchronize both workers so they enter addclass_logic together, maximizing
+        # Synchronize both workers so they hit the endpoint together, maximizing
         # contention on the locked ClassSection / ClassSubject rows.
         barrier = threading.Barrier(2, timeout=60)
         results = {}
@@ -73,31 +71,36 @@ class AddClassConcurrencyRegressionTest(TransactionTestCase):
             """
             close_old_connections()
             try:
-                request = factory.post(
-                    '/learn/%s/ajax_addclass' % self.program.url,
+                client = Client()
+                # If the view raises an exception (e.g., ESPError bubbling out),
+                # we still want to capture that as a failed request rather than
+                # letting the exception escape the worker thread.
+                client.raise_request_exception = False
+                self.assertTrue(
+                    client.login(username=user.username, password='password'),
+                    "Couldn't log in as %s" % user.username,
+                )
+                barrier.wait()
+                resp = client.post(
+                    '/learn/%s/ajax_addclass' % self.program.getUrlBase(),
                     data={
                         'class_id': str(self.parent_class.id),
                         'section_id': str(self.section.id),
+                        # Keep response JSON-only (skip ajax_schedule rendering).
+                        'no_schedule': '1',
                     },
+                    HTTP_X_REQUESTED_WITH='XMLHttpRequest',
                 )
-                request.user = user
-                barrier.wait()
-                # Same entry point as ajax_addclass / addclass (unused args are optional).
-                StudentClassRegModule.addclass_logic(
-                    request,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    self.program,
-                    webapp=False,
-                )
+                payload = None
+                try:
+                    payload = json.loads(resp.content.decode('utf-8'))
+                except Exception:
+                    payload = None
                 with results_lock:
-                    results[user.id] = 'success'
-            except ESPError:
-                with results_lock:
-                    results[user.id] = 'esp_error'
+                    results[user.id] = {
+                        'status_code': resp.status_code,
+                        'payload': payload,
+                    }
             finally:
                 close_old_connections()
 
@@ -114,7 +117,29 @@ class AddClassConcurrencyRegressionTest(TransactionTestCase):
         t1.join()
         t2.join()
 
-        self.assertEqual(set(results.values()), {'success', 'esp_error'})
+        successes = 0
+        failures = 0
+        for r in results.values():
+            ok = (
+                r['status_code'] == 200
+                and isinstance(r['payload'], dict)
+                and r['payload'].get('status') is True
+            )
+            if ok:
+                successes += 1
+            else:
+                failures += 1
+
+        self.assertEqual(
+            successes,
+            1,
+            'Expected exactly one successful ajax_addclass response; got %s (results=%r)' % (successes, results),
+        )
+        self.assertEqual(
+            failures,
+            1,
+            'Expected exactly one failed ajax_addclass response; got %s (results=%r)' % (failures, results),
+        )
 
         enrollment_count = StudentRegistration.valid_objects().filter(
             section=self.section,
