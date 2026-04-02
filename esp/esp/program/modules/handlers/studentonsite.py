@@ -134,8 +134,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                 raise ESPError('Please use the links on the schedule page.', log=False)
             context['timeslot'] = ts
             classes = list(ClassSubject.objects.catalog(prog, ts))
-            # user_grade == 0 means the grade is unknown/unset; show all classes
-            classes = [c for c in classes if user_grade == 0 or (c.grade_min <= user_grade <= c.grade_max)]
+            # grade_in_range() treats grade 0 as unknown/unset and allows all grades.
+            classes = [c for c in classes if ESPUser.grade_in_range(user_grade, c.grade_min, c.grade_max)]
             context['checked_in'] = Record.objects.filter(program=prog, event__name='attended', user=user).exists()
 
         else:

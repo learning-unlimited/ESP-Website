@@ -391,6 +391,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         timeslot = Event.objects.get(pk=timeslot_id)
         priorities = json_data[timeslot_id]
+        student_grade = request.user.getGrade(prog)
         for rel_index, cls_id in priorities.items():
             rel_name = 'Priority/%s' % rel_index
             rel = RegistrationType.objects.get(name=rel_name, category='student')
@@ -426,7 +427,6 @@ class StudentRegTwoPhase(ProgramModuleObj):
             if (not sec.status > 0 or not sec.parent_class.status > 0):
                 logger.warning("Class '%s' was not approved.  Not letting "
                                "user '%s' register.", sec, request.user)
-            student_grade = request.user.getGrade(prog)
             if not ESPUser.grade_in_range(student_grade,
                                           sec.parent_class.grade_min,
                                           sec.parent_class.grade_max):
