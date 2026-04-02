@@ -39,7 +39,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, n
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
-from esp.users.models    import Record, RecordType, Permission
+from esp.users.models    import Record, RecordType, Permission, ESPUser
 from esp.cal.models import Event
 from esp.middleware   import ESPError
 from esp.survey.views   import survey_view
