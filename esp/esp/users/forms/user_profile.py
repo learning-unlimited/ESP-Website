@@ -17,8 +17,14 @@ class DropdownOtherWidget(forms.MultiWidget):
     A widget that presents a dropdown list of choices, as well as an 'Other...' textbox
     """
     def __init__(self, choices, use_textarea = False, attrs=None):
+        text_attrs = attrs.copy() if attrs else {}
+        if 'style' in text_attrs:
+            text_attrs['style'] += ' margin-left: 10px;'
+        else:
+            text_attrs['style'] = 'margin-left: 10px;'
+
         widgets = (forms.Select(attrs=attrs, choices=choices),
-                   forms.Textarea(attrs=attrs) if use_textarea else forms.TextInput(attrs=attrs))
+                   forms.Textarea(attrs=text_attrs) if use_textarea else forms.TextInput(attrs=text_attrs))
         super().__init__(widgets, attrs)
 
     def decompress(self, value):
