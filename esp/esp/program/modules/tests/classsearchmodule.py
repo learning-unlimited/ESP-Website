@@ -3,7 +3,8 @@ import json
 from django.template import Template, Context
 
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
-from esp.middleware import ESPError
+from esp.middleware import ESPError_Log
+from esp.middleware.threadlocalrequest import clear_current_request
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ClassSubject
 from esp.program.models.flags import ClassFlag, ClassFlagType
@@ -12,6 +13,8 @@ from esp.users.models import ESPUser
 
 class ClassSearchModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
+        # Prevent stale request.user from overriding created_by/modified_by ClassFlag
+        clear_current_request()
         super().setUp(*args, **kwargs)
         self.program.getModules()
         self.schedule_randomly()
@@ -100,7 +103,7 @@ class ClassSearchModuleTest(ProgramFrameworkTest):
         self.assertTrue(any(u['username'] == 'admin' for u in data))
 
     def test_flag_creator_rejects_invalid_selection(self):
-        with self.assertRaises(ESPError):
+        with self.assertRaises(ESPError_Log):
             self.qb.as_queryset({
                 'filter': 'flag_creator',
                 'negated': False,
