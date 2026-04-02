@@ -1928,6 +1928,9 @@ class BooleanExpression(models.Model):
     get_stack.depend_on_row('program.ScheduleTestOccupied', lambda token: {'self': token.exp})
     get_stack.depend_on_row('program.ScheduleTestCategory', lambda token: {'self': token.exp})
     get_stack.depend_on_row('program.ScheduleTestSectionList', lambda token: {'self': token.exp})
+    # Fix: ScheduleTestSubject rows were missing; changes to subject FK in admin
+    # would not invalidate the cached stack without this dependency.
+    get_stack.depend_on_row('program.ScheduleTestSubject', lambda token: {'self': token.exp})
 
     def reset(self):
         self.booleantoken_set.all().delete()
@@ -2147,8 +2150,10 @@ class ScheduleTestSubject(BooleanToken):
 
     def boolean_value(self, *args, **kwargs):
         #   Check if subject is in the set of subjects the student is in.
-        #   Use 'map' from evaluate (kwargs['map'])
-        user_schedule_map = kwargs.get('map', {})
+        #   Fix: use `or {}` so a None map (e.g. from a bare evaluate() call
+        #   without keyword arguments) is treated as an empty schedule rather
+        #   than raising AttributeError on .values().
+        user_schedule_map = kwargs.get('map') or {}
         for sections in user_schedule_map.values():
             if any(sec.parent_class_id == self.subject_id for sec in sections):
                 return True
