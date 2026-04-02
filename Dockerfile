@@ -68,7 +68,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6 \
     zlib1g \
     ca-certificates \
-    $(grep -v -E '^(#|$|python|build-essential|npm|git|postgres|memcached)' /tmp/packages_base.txt | grep -v -- '-dev$' | tr '\n' ' ') \
+    $(grep -v -E '^(#|$|python|build-essential|git|postgres|memcached)' /tmp/packages_base.txt | grep -v -- '-dev$' | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Node.js and LESS from builder
