@@ -18,9 +18,9 @@
 <script type="text/javascript">
     var program_base_url = "/onsite/{{ program.getUrlBase }}/";
     var open_class_category = {{ open_class_category }};
-    var hide_categories = "{{ hide_categories }}";
+    var hide_categories = "{{ hide_categories|escapejs }}";
     {% if initial_student %}
-    set_current_student({{ initial_student }});
+    set_current_student({{ initial_student|escapejs }});
     {% endif %}
 </script>
 <style type="text/css">
