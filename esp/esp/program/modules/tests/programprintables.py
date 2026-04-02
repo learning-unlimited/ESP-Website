@@ -118,6 +118,23 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         print((response['Content-Type']))
         self.assertTrue(response['Content-Type'].startswith('application/pdf'))
 
+    def testCatalogHandlesUnicode(self):
+        self._login_admin()
+
+        cls = self.program.classes()[0]
+        cls.class_info = 'Description with unicode: caf\u00e9, pi\u00f1ata, and \u03c0!'
+        cls.save()
+
+        request = self.factory.get(
+            '/learn/%s/catalog/pdf' % self.program.getUrlBase(),
+            {'sort_name_list': 'timeblock'},
+        )
+        request.user = self.admins[0]
+        request.session = self.client.session
+        response = self.moduleobj.coursecatalog(request, None, None, None, self.moduleobj, 'pdf', self.program)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response['Content-Type'].startswith('application/pdf'))
+
     def test_all_classes_spreadsheet_loads(self):
         """
         User must be admin to access the spreadsheet via GET method and that the field selection template
