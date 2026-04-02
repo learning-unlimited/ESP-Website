@@ -99,10 +99,11 @@ class DependenciesTestCase(unittest.TestCase):
         # Patch can be found at:  <https://code.djangoproject.com/ticket/11675>
         from pylibmc import Client
         from django.core.cache import cache
-        if hasattr(cache, "_cache"):
-            self.assertTrue(isinstance(cache._cache, Client))
-        elif hasattr(cache, "_wrapped_cache") and hasattr(cache._wrapped_cache, "_cache"):
-            self.assertTrue(isinstance(cache._wrapped_cache._cache, Client))
+        from django.core.cache.backends.memcached import PyLibMCCache
+        from esp.utils.memcached_multikey import CacheClass
+        self.assertTrue(issubclass(CacheClass, PyLibMCCache))
+        self.assertTrue(hasattr(cache, "_cache"))
+        self.assertTrue(isinstance(cache._cache, Client))
 
         self.tryExecutable("latex")  # Used for a whole pile of program printables, as well as inline LaTeX
         self.tryExecutable("dvips")  # Used to convert LaTeX output (.dvi) to .ps files
@@ -577,5 +578,4 @@ def suite():
     # Add doctests from esp.utils.__init__.py
     s.addTest(doctest.DocTestSuite(utils))
     return s
-
 
