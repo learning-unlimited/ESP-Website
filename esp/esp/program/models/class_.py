@@ -48,6 +48,7 @@ from django.db import models, transaction
 from django.db.models.query import Q
 from django.db.models import signals, Sum
 from django.db.models.manager import Manager
+from django.dispatch import receiver
 from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
@@ -73,7 +74,6 @@ from esp.dbmail.models import send_mail
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission, PersistentQueryFilter
-from esp.program.models import Program
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
@@ -110,7 +110,7 @@ REGISTRATION_CHOICES = (
 class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
     range_max = models.IntegerField(null=False)
-    program   = models.ForeignKey(Program, blank=True, null=True, on_delete=models.CASCADE)
+    program   = models.ForeignKey('program.Program', blank=True, null=True, on_delete=models.CASCADE)
 
     @classmethod
     def get_ranges_for_program(cls, prog):
@@ -255,8 +255,8 @@ class ClassManager(Manager):
         # Now, to combine all of the above
 
         if len(classes) >= 1:
+            from esp.program.models import Program
             p = Program.objects.get(id=classes[0].parent_program_id)
-
         for c in classes:
             c._teachers = list(c.teachers.all())
             c._teachers.sort(key=lambda t: t.last_name)
@@ -1438,7 +1438,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     form_link_name='Course'
 
     title = models.TextField()
-    parent_program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    parent_program = models.ForeignKey('program.Program', on_delete=models.CASCADE)
     category = models.ForeignKey('ClassCategories', related_name = 'cls', on_delete=models.CASCADE)
     class_info = models.TextField(blank=True)
     teachers = models.ManyToManyField(ESPUser)
@@ -2194,3 +2194,62 @@ def install():
     if not ClassCategories.objects.exists():
         for key in category_dict:
             ClassCategories.objects.create(symbol=key, category=category_dict[key])
+
+
+@receiver(signals.post_save, sender=ClassSubject)
+def handle_auto_class_flags(sender, instance, **kwargs):
+    """Automatically add flags to a class if it satisfies certain conditions."""
+    import json
+    from esp.program.models.flags import AutoClassFlagRule, ClassFlag
+    from esp.program.modules.handlers.classsearchmodule import ClassSearchModule
+    from esp.middleware.threadlocalrequest import get_current_request
+    from esp.users.models import ESPUser
+
+    # Get the rules for this program
+    rules = list(AutoClassFlagRule.objects.filter(program=instance.parent_program))
+    if not rules:
+        return
+
+    # Use ClassSearchModule to get a QueryBuilder instance for this program
+    module = ClassSearchModule(program=instance.parent_program)
+    qb = module.query_builder()
+
+    current_request = get_current_request()
+
+    for rule in rules:
+        try:
+            decoded_rule = json.loads(rule.rule_data)
+            # Evaluate if the instance matches the rule
+            qs = qb.as_queryset(decoded_rule)
+            if qs.filter(pk=instance.pk).exists():
+                # Build defaults for get_or_create
+                defaults = {
+                    "comment": rule.comment or "Automatically added by rule.",
+                }
+
+                if current_request is None:
+                    # Fallback for background tasks/scripts: use the first superuser or staff
+                    system_user = ESPUser.objects.filter(is_superuser=True).first() or \
+                                  ESPUser.objects.filter(is_staff=True).first()
+                    if system_user:
+                        defaults["created_by"] = system_user
+                        defaults["modified_by"] = system_user
+                    else:
+                        # If no user found, we can't save ClassFlag due to non-null constraints
+                        logger.warning("AutoClassFlagRule: Could not find a system user to attribute flag creation for class %s", instance.id)
+                        continue
+
+                flag, created = ClassFlag.objects.get_or_create(
+                    subject=instance,
+                    flag_type=rule.flag_type,
+                    defaults=defaults,
+                )
+
+                if created and rule.flag_type.notify_teacher_by_email:
+                    try:
+                        flag.send_teacher_notification()
+                    except Exception as e:
+                        logger.error("AutoClassFlagRule: Failed to send teacher notification for flag %s on class %s: %s",
+                                     flag.id, instance.id, e)
+        except Exception as e:
+            logger.error("Error evaluating AutoClassFlagRule %s: %s", rule.id, e)

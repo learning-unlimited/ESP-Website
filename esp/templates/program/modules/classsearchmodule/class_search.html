@@ -48,7 +48,41 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
     <button class="btn btn-approve" onclick="approveAll({{ IDs|escapejs }});">Approve All</button>
     <button class="btn btn-unreview" onclick="unreviewAll({{ IDs|escapejs }});">Unreview All</button>
     <button class="btn btn-reject" onclick="rejectAll({{ IDs|escapejs }});">Reject All</button>
+    <button class="btn btn-info" onclick="showAutoRuleModal();" {% if not query %}style="display:none;"{% endif %}>Create Auto-Flag Rule</button>
 </div>
+
+<!-- Auto-Flag Rule Modal -->
+<div id="autorule-modal" class="modal hide fade">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">&times;</button>
+    <h3>Create Auto-Flag Rule</h3>
+  </div>
+  <div class="modal-body">
+    <p>This will automatically add the selected flag to any class that matches the current search criteria whenever it is saved.</p>
+    <form id="autorule-form" action="./create_autorule" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="query_data" value="{{ query_json }}">
+        <label for="flag_type_id">Flag Type:</label>
+        <select name="flag_type_id" id="flag_type_id" required>
+            {% for ft in flag_types %}
+                <option value="{{ ft.id }}">{{ ft.name }}</option>
+            {% endfor %}
+        </select>
+        <label for="rule_comment">Comment (optional):</label>
+        <textarea name="comment" id="rule_comment" placeholder="Automatically added by rule."></textarea>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <a href="#" class="btn btn-primary" onclick="$j('#autorule-form').submit();">Save Rule</a>
+  </div>
+</div>
+
+<script type="text/javascript">
+function showAutoRuleModal() {
+    $j('#autorule-modal').modal('show');
+}
+</script>
 <div class="btn-toolbar">
     <div class="btn-group" id="catalog_links">
         <a class="btn" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">Course Catalog</a>
