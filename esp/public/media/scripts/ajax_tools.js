@@ -1,3 +1,5 @@
+'use strict';
+
 //  ESP Ajax tools
 
 //  Current tools include:
@@ -5,50 +7,41 @@
 //  - Handle responses that rewrite DOM nodes by supplying a key of [NODENAME]_html in JSON
 
 //  Define an array for registered forms if they do not exist
-if (!registered_forms)
-{
-    var registered_forms = [];
-}
-if (!registered_fragments)
-{
-    var registered_fragments = [];
-}
-if (!registered_links)
-{
-    var registered_links = [];
-}
+window.registered_forms = window.registered_forms || [];
+window.registered_fragments = window.registered_fragments || [];
+window.registered_links = window.registered_links || [];
 
-var reset_forms = function()
+const reset_forms = function()
 {
     //  Register forms
     //  console.log("Registered forms: " + JSON.stringify(registered_forms, null, '\t'));
-    for (var i = 0; i < registered_forms.length; i++)
+    for (let i = 0; i < window.registered_forms.length; i++)
     {
-        form = registered_forms[i];
-	var formId = '#' + form.id;
-	var theForm = $j(formId);
+        const form = window.registered_forms[i];
+	      const formId = '#' + form.id;
+	      const theForm = $j(formId);
         if (theForm.length > 0)
         {
-	    // Clear existing connections
-	    theForm.unbind('submit');
-	    // Rebind the connection
-	    theForm.submit(registered_forms[i].callback);
+	          // Clear existing connections
+	          theForm.unbind('submit');
+	          // Rebind the connection
+	          theForm.submit(window.registered_forms[i].callback);
         }
     }
     
     //  Register links
     //  console.log("Registered links: " + JSON.stringify(registered_links, null, '\t'));
-    for (var i = 0; i < registered_links.length; i++)
+    for (let i = 0; i < window.registered_links.length; i++)
     {
-        link = registered_links[i];
-	var linkId = '#' + link.id;
-        var theLink = $j(linkId);
+        const link = window.registered_links[i];
+	      const linkId = '#' + link.id;
+        const theLink = $j(linkId);
         if (theLink.length > 0)
         {
             //  Clear existing connections
-	    theLink.unbind('click');
-	    //  Rebind the connection
-	    theLink.click(registered_links[i].callback);
+	          theLink.unbind('click');
+	          //  Rebind the connection
+	          theLink.click(window.registered_links[i].callback);
         }
     }    
     
@@ -56,30 +49,30 @@ var reset_forms = function()
     //  fetch_fragments();
 }
 
-var fetch_fragments = function()
+const fetch_fragments = function()
 {
     //  console.log("Fetching fragments: " + JSON.stringify(registered_fragments, null, '\t'));
-    for (var i = 0; i < registered_fragments.length; i++)
+    for (let i = 0; i < window.registered_fragments.length; i++)
     {
-        frag = registered_fragments[i];
+        const frag = window.registered_fragments[i];
         fetch_fragment(frag);
     }
 }
 
-var apply_fragment_changes = function(data)
+const apply_fragment_changes = function(data)
 {
     //  console.log("Applying fragment changes from data: " + data);
 
     // Parse the keys
-    for (var key in data)
+    for (const key in data)
     {
         //  Check for FOO_html ending, which means "replace HTML content of DOM node FOO"
-        var re_match = key.match("([A-Za-z0-9_]*)_html");
+        const re_match = key.match("([A-Za-z0-9_]*)_html");
         if (re_match)
         {
             //  console.log("Found match: " + re_match[1]);
-	    var matchId = '#' + re_match[1];
-            matching_node = $j(matchId);
+	          const matchId = '#' + re_match[1];
+            const matching_node = $j(matchId);
             if (matching_node.length > 0)
             {
                 //  console.log("Rewriting HTML for element: " + re_match[1])
@@ -90,12 +83,16 @@ var apply_fragment_changes = function(data)
         if (key == 'script')
         {
             //  console.log("Evaluating: " + data[key]);
-            eval(data[key]);
+            //  SECURITY RISK: Executing arbitrary scripts from the server via JSON inherently poses XSS risks.
+            //  Note: new Function() still executes arbitrary code and is not meaningfully safer than eval() for XSS.
+            //  It runs in the global scope (not the local one) and is non-strict unless the payload opts in, so use
+            //  this only if you explicitly need those semantics and fully trust the server-provided script content.
+            new Function(data[key])();
         }
     }
 }
 
-var handle_success = function(data, textStatus, jqXHR)
+const handle_success = function(data, textStatus, jqXHR)
 {
     if ('error' in data)
     {
@@ -109,10 +106,18 @@ var handle_success = function(data, textStatus, jqXHR)
     reset_forms();
 }
 
-var handle_submit = function(mode, attrs, eventObject)
+const handle_submit = function(mode, attrs, eventObject)
 {
     //  Check the csrf cookie and reject the submission if it fails
-    if($j(this).length > 0 && !check_csrf_cookie($j(this)))
+    //  Providing fallback 'this' for jQuery strict mode compliance which yields undefined over window
+    const dynamicThis = this === undefined ? window : this;
+    
+    // Ensure we pass a DOM form element (not a jQuery object) to check_csrf_cookie
+    const $formWrapper = $j(dynamicThis);
+    const formElement = $formWrapper.length > 0 ? $formWrapper[0] : null;
+
+    // Fail closed if the CSRF checker is unavailable or if the check fails
+    if (typeof check_csrf_cookie === 'undefined' || !formElement || !check_csrf_cookie(formElement))
     {
         return false;
     }
@@ -129,17 +134,17 @@ var handle_submit = function(mode, attrs, eventObject)
     //  I'm not sure if these calls are correct -- test this
     if (mode == 'post')
     {
-	$j.post(attrs.url, attrs.content, handle_success, "json");
+	      $j.post(attrs.url, attrs.content, handle_success, "json");
     }
     else
     {
-	$j.get(attrs.url, attrs.content, handle_success, "json");
+	      $j.get(attrs.url, attrs.content, handle_success, "json");
     }
 }
 
 
 
-var fetch_fragment = function(attrs)
+const fetch_fragment = function(attrs)
 {
     //  console.log("Fetching fragment with attributes: " + JSON.stringify(attrs, null, '\t'));
     if (! attrs.url) { return; }
@@ -169,25 +174,31 @@ function CallbackLink(id, url, content, post_form)
     }
 }
 
-var register_form = function(form_attrs)
+const register_form = function(form_attrs)
 {
-    var new_attrs = new CallbackForm(form_attrs.id, form_attrs.url);
-    registered_forms.push(new_attrs);
+    const new_attrs = new CallbackForm(form_attrs.id, form_attrs.url);
+    window.registered_forms.push(new_attrs);
     //  console.log('Registered Ajax form with attributes: ' + JSON.stringify(new_attrs, null, '\t'));
 }
 
-var register_link = function(link_attrs)
+const register_link = function(link_attrs)
 {
-    var new_attrs = new CallbackLink(link_attrs.id, link_attrs.url, link_attrs.content, link_attrs.post_form);
-    registered_links.push(new_attrs);
+    const new_attrs = new CallbackLink(link_attrs.id, link_attrs.url, link_attrs.content, link_attrs.post_form);
+    window.registered_links.push(new_attrs);
     //  console.log('Registered Ajax link with attributes: ' + JSON.stringify(new_attrs, null, '\t'));
 }
 
-var register_fragment = function(fragment_attrs)
+const register_fragment = function(fragment_attrs)
 {
-    registered_fragments.push(fragment_attrs);
+    window.registered_fragments.push(fragment_attrs);
     //  console.log('Registered Ajax page fragment with attributes: ' + JSON.stringify(fragment_attrs, null, '\t'));
 }
+
+// Emplace globals dynamically explicitly to window, preserving interoperability with `<script>` tags externally bypassing const module scope limits.
+window.register_form = register_form;
+window.register_link = register_link;
+window.register_fragment = register_fragment;
+window.apply_fragment_changes = apply_fragment_changes;
 
 $j(document).ready(function()
 {
