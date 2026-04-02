@@ -82,8 +82,8 @@ function Matrix(
         var selectedSection = this.sections.selectedSection;
         var validStartingTimeslots = [];
     
-        if (selectedSection) {
-            validStartingTimeslots = this.sections.getAvailableTimeslots(selectedSection)[0];
+        if (selectedSection && this.sections.availableTimeslots.length > 0) {
+            validStartingTimeslots = this.sections.availableTimeslots[0];
         }
     
         $j.each(this.rooms, function(index, room) {
@@ -100,8 +100,7 @@ function Matrix(
                 }
             }
     
-            // New part: if a section is selected, only keep rooms that work
-            // for at least one valid starting timeslot for that section
+            // If a section is selected, only show rooms with at least one valid placement.
             if (roomValid && selectedSection) {
                 roomValid = false;
     

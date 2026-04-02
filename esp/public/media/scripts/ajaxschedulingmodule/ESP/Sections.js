@@ -270,7 +270,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 this.unselectSection();
                 return;
             } else {
-                this.unselectSection();
+                this.unselectSection(false, true);
             }
         }
 
@@ -295,7 +295,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      * panel, and unhighlight the available cells to place the section.
      * @param override: What should the availability override status be?
      */
-    this.unselectSection = function(override = false) {
+    this.unselectSection = function(override = false, skipRoomUpdate = false) {
         if(!this.selectedSection) {
             return;
         }
@@ -314,7 +314,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
         this.unscheduleAsGhost();
-        this.matrix.updateRooms();
+        if (!skipRoomUpdate) {
+            this.matrix.updateRooms();
+        }
     };
 
     /**
