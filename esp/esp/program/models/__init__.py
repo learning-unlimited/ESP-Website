@@ -63,7 +63,7 @@ from esp.cal.models import Event, EventType
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
-from esp.middleware import ESPError, AjaxError
+from esp.middleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
@@ -75,32 +75,63 @@ class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
     # Title for the link displayed for this Program Module in the Programs form
-    link_title = models.CharField(max_length=64, blank=True, null=True)
+    link_title = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text="Optional title displayed for this module link"
+    )
 
     # Human-readable name for the Program Module
-    admin_title = models.CharField(max_length=128)
+    admin_title = models.CharField(
+        max_length=128,
+        help_text="Title shown in the admin interface"
+    )
 
     #   A module can have an inline template (whose context is filled by prepare())
     #   independently of its main view.
-    inline_template = models.CharField(max_length=32, blank=True, null=True)
+    inline_template = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        help_text="Template used to render this module inline"
+    )
 
     # One of teach/learn/etc.; What is this module typically used for?
-    module_type = models.CharField(max_length=32)
+    # One of teach/learn/etc.; What is this module typically used for?
+    module_type = models.CharField(
+        max_length=32,
+        help_text=mark_safe(
+            'Defines how this module is used (e.g., teach, learn, manage, onsite). '
+            'See <a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst" target="_blank">Program Modules documentation</a> for details.'
+        )
+    )
 
     # self.__name__, stored neatly in the database
-    handler    = models.CharField(max_length=32)
+    handler = models.CharField(
+        max_length=32,
+        help_text="Handler used to process this module"
+    )
 
     # Sequence orderer.  When ProgramModules are listed on a page, order them
     # from smallest to largest 'seq' value
-    seq = models.IntegerField()
+    seq = models.IntegerField(
+        help_text="Order in which this module appears"
+    )
 
     # Must the user supply this ProgramModule with data in order to complete program registration?
-    required = models.BooleanField(default=False)
+    required = models.BooleanField(
+        default=False,
+        help_text="Whether this module is required for completion"
+    )
 
     # When creating a new program, should this module be available for admins to select (0), included by default (1)
     # or excluded by default (2).
-    choosable = models.IntegerField(default=0, validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)])
-
+    choosable = models.IntegerField(
+        default=0,
+        validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)],
+        help_text="Controls whether users can choose this module"
+    )
     class Meta:
         app_label = 'program'
         db_table = 'program_programmodule'
@@ -2039,7 +2070,6 @@ class ScheduleConstraint(models.Model):
                     (fail_result, data) = self.handle_failure()
                     if isinstance(fail_result, ScheduleMap):
                         self.schedule_map = fail_result
-                    #   raise AjaxError('ScheduleConstraint says %s' % data)
                     return self.evaluate(self.schedule_map, recursive=False)
                 else:
                     return False
