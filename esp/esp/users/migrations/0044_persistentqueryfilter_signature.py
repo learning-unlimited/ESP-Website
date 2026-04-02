@@ -8,7 +8,7 @@ import django.db.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0041_remove_passwordrecoveryticket'),
+        ('users', '0043_auto_20260327_1528'),
     ]
 
     operations = [

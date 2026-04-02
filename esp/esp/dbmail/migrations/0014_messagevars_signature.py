@@ -8,7 +8,7 @@ import django.db.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('dbmail', '0011_populate_default_emaillists'),
+        ('dbmail', '0013_auto_20260325_1833'),
     ]
 
     operations = [
