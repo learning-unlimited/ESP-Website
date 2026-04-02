@@ -85,6 +85,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libevent-2.1-7 \
     zlib1g \
     imagemagick \
+    ghostscript \
+    texlive \
+    texlive-latex-extra \
+    dvipng \
     inkscape \
     wamerican-large \
     wget \
