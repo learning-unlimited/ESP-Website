@@ -183,20 +183,15 @@ class ClassCreationController(object):
     def teacher_has_time(self, user, hours):
         """Check whether a teacher has enough free time to teach `hours` more hours.
 
-        We compute the total available teaching time by collapsing all class
-        time blocks (both regular and open-class) so that the cap is consistent
-        with getTaughtTime(), which already counts every taught section
-        regardless of its category.  Using only "Class Time Block" events
-        (as total_duration() does) underestimates the cap for programs that
-        also have "Open Class Time Block" slots, allowing over-registration.
+        The cap is computed over both "Class Time Block" and "Open Class Time
+        Block" slots so it matches getTaughtTime(), which already counts every
+        taught section regardless of category.  Using only "Class Time Block"
+        events (the old behaviour via total_duration()) underestimated the cap
+        on programs with open-class registration, allowing over-registration.
         """
-        from esp.cal.models import Event
-        # Include both regular and open-class time slots in the cap.
-        all_slots = list(self.program.getTimeSlots(
+        program_duration = self.program.total_duration(
             types=['Class Time Block', 'Open Class Time Block']
-        ))
-        collapsed = Event.collapse(all_slots, tol=timedelta(minutes=15))
-        program_duration = sum((e.duration() for e in collapsed), timedelta())
+        )
         return (user.getTaughtTime(self.program, include_scheduled=True)
                 + timedelta(hours=hours)
                 <= program_duration)

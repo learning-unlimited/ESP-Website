@@ -602,11 +602,6 @@ class TeacherHasTimeCheckTest(ClassCreationTestMixin, ProgramFrameworkTest):
 
     def setUp(self):
         super(TeacherHasTimeCheckTest, self).setUp()
-        from esp.cal.models import EventType, Event
-        from esp.program.controllers.classreg import ClassCreationController
-        self._EventType = EventType
-        self._Event = Event
-        self._CCC = ClassCreationController
 
     # ------------------------------------------------------------------
     # helper: create an open-class time block for the program
@@ -646,37 +641,29 @@ class TeacherHasTimeCheckTest(ClassCreationTestMixin, ProgramFrameworkTest):
         program.total_duration() which only counts Class Time Block events,
         causing the cap to be lower than expected for programs that also have
         open-class slots.
+
+        We request 1 hour *beyond* the regular-only cap; the old code would
+        have denied this (cap too low), the fixed code must allow it because
+        the open-class slot adds 2 hours of room.
         """
         from esp.program.controllers.classreg import ClassCreationController
-        from datetime import timedelta
 
-        ccc = ClassCreationController(self.program)
         teacher = self.teachers[0]
 
-        # Baseline: compute the cap from regular class blocks only.
-        regular_only = self.program.total_duration()
+        # Baseline: duration counted by the old code (regular blocks only).
+        regular_only_hours = self.program.total_duration().total_seconds() / 3600.0
 
-        # With no extra teachers, a fresh teacher should be able to teach
-        # at least 0 hours (trivially true).
+        # Add a 2-hour open-class time block; the new cap must absorb it.
+        self._add_open_class_timeslot(hours=2)
+
+        ccc = ClassCreationController(self.program)
+        # Request 1 hour beyond the regular-only cap.  Under the old (broken)
+        # implementation this would return False; under the fix it must be True.
+        extra_hours = regular_only_hours + 1
         self.assertTrue(
-            ccc.teacher_has_time(teacher, 0),
-            "teacher_has_time should be True for 0 additional hours"
-        )
-
-        # Add an open-class time block.
-        open_slot = self._add_open_class_timeslot(hours=2)
-
-        # Now create a CCC that picks up the new slot.
-        ccc2 = ClassCreationController(self.program)
-        # The cap should now include the extra 2 hours.
-        # If the old (broken) code were still in place, it would still use
-        # regular_only and deny the teacher even if they have open-class time.
-        # The fixed code must pass.
-        extra_hours = regular_only.total_seconds() / 3600.0
-        self.assertTrue(
-            ccc2.teacher_has_time(teacher, extra_hours),
-            "teacher_has_time should allow a teacher to fill all regular-block "
-            "hours when the program also has open-class slots"
+            ccc.teacher_has_time(teacher, extra_hours),
+            "teacher_has_time should allow a teacher to use some open-class "
+            "time beyond the regular-block hours when such slots exist"
         )
 
     # ------------------------------------------------------------------
@@ -685,27 +672,24 @@ class TeacherHasTimeCheckTest(ClassCreationTestMixin, ProgramFrameworkTest):
 
     def test_teacher_cannot_exceed_total_program_duration(self):
         """
-        A teacher who is already fully booked should not be allowed to
-        register for even one extra second of class time.
+        Requesting more teaching hours than the total combined program duration
+        (regular + open-class slots) must be denied.  The teacher has no
+        pre-existing classes; we simply ask for total_hours + 1, which exceeds
+        the cap by 1 hour.
         """
         from esp.program.controllers.classreg import ClassCreationController
 
         ccc = ClassCreationController(self.program)
         teacher = self.teachers[0]
 
-        # Find the total available duration.
-        from esp.cal.models import Event
-        from datetime import timedelta
-        all_slots = list(self.program.getTimeSlots(
+        # Total cap: all class-block types combined.
+        total_hours = self.program.total_duration(
             types=['Class Time Block', 'Open Class Time Block']
-        ))
-        collapsed = Event.collapse(all_slots, tol=timedelta(minutes=15))
-        total_hours = sum(
-            e.duration().total_seconds() / 3600.0 for e in collapsed
-        )
+        ).total_seconds() / 3600.0
 
-        # Requesting *more* than the total must be denied.
+        # Requesting 1 hour beyond the cap must be denied.
         self.assertFalse(
             ccc.teacher_has_time(teacher, total_hours + 1),
-            "teacher_has_time must return False when hours exceed program duration"
+            "teacher_has_time must return False when requested hours exceed "
+            "the total combined program duration"
         )
