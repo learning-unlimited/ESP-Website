@@ -63,7 +63,7 @@ from esp.cal.models import Event, EventType
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
-from esp.middleware import ESPError, AjaxError
+from esp.middleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
@@ -256,6 +256,24 @@ class ProgramManager(models.Manager):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by('-id')
 
+class ProgramEmailField(models.EmailField):
+    """EmailField that excludes environment-specific kwargs from migrations.
+
+    default, help_text, and validators all reference settings.SITE_INFO[1],
+    which varies by environment. Stripping them from deconstruct() means
+    migrations are environment-independent while the field still works
+    normally at runtime.
+    """
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs.pop('default', None)
+        kwargs.pop('help_text', None)
+        kwargs.pop('validators', None)
+        # Present as a plain EmailField in migrations
+        path = 'django.db.models.EmailField'
+        return name, path, args, kwargs
+
 class Program(models.Model, CustomFormsLinkModel):
     objects = ProgramManager()
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
@@ -267,8 +285,8 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     # director contact email address used for from field and display
-    director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(rf'(^.+@{settings.SITE_INFO[1].replace(".", ".")}$)|(^.+@(\w+\.)?learningu\.org$)')],
+    director_email = ProgramEmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
+                                       validators=[validators.RegexValidator(r'(^.+@' + re.escape(settings.SITE_INFO[1]) + r'$)|(^.+@(\w+\.)?learningu\.org$)')],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
@@ -2021,7 +2039,6 @@ class ScheduleConstraint(models.Model):
                     (fail_result, data) = self.handle_failure()
                     if isinstance(fail_result, ScheduleMap):
                         self.schedule_map = fail_result
-                    #   raise AjaxError('ScheduleConstraint says %s' % data)
                     return self.evaluate(self.schedule_map, recursive=False)
                 else:
                     return False
