@@ -15,26 +15,6 @@
             });
         });
 
-        // Search Bar Filtering
-        $j(".dashboard-search-bar").prop("disabled", false).attr("placeholder", "Search modules...");
-        $j(".dashboard-search-bar").on("keyup", function () {
-            var query = $j(this).val().toLowerCase();
-            $j(".pill-btn, .large-pill-btn").each(function () {
-                var text = $j(this).text().toLowerCase();
-                if (text.indexOf(query) === -1) {
-                    $j(this).hide();
-                } else {
-                    $j(this).show();
-                    // Auto-open accordion if matched inside
-                    var accordion = $j(this).closest(".collapsible-content");
-                    if (accordion.length > 0 && !accordion.is(":visible")) {
-                         accordion.slideDown();
-                         accordion.prev(".collapsible-btn").find(".dropdown-icon").html("&#9650;");
-                    }
-                }
-            });
-        });
-
         // Timeline/Checklist Toggle
         $j(".switch input").on("change", function () {
             if ($j(this).is(":checked")) {
@@ -132,8 +112,23 @@
         }
     }
 
-    $j(document).ready(initialize);
+    $j(document).ready(function() {
+        initialize();
+        if (window.initSearchFilter) {
+            window.initSearchFilter("add_module_search", "additional_modules_list", "li");
+        }
+    });
 </script>
+<script src="/media/scripts/utils/search_filter.js"></script>
+
+{{ admin_search_entries|json_script:"admin-search-entries" }}
+<script type="text/javascript">
+    (function() {
+        var el = document.getElementById('admin-search-entries');
+        if (el) window.ADMIN_SEARCH_ENTRIES = JSON.parse(el.textContent);
+    })();
+</script>
+<script src="/media/scripts/admin_search.js"></script>
 
 {% endblock %}
 
@@ -208,13 +203,23 @@
     <!-- Main Card ONLY (Sidebars Removed) -->
     <div class="dashboard-main-card">
         
-        <!-- Top Controls: Search Bar -->
-        <div class="search-bar-wrapper" style="float: right; margin-bottom: 20px; position:relative;">
-            <input type="text" id="admin_search_input" placeholder="Search modules, pages..." class="dashboard-search-bar" style="width: 320px; padding-left: 35px; border-radius:30px;">
+        <!-- Top Controls: Search Bar from PR 4255 -->
+        <div class="search-bar-wrapper" id="admin_search_wrapper" style="float: right; margin-bottom: 20px; position:relative; width: 320px;">
+            <input type="text" id="admin_search_input" placeholder="Search modules, pages..." class="dashboard-search-bar" style="width: 100%; padding-left: 35px; border-radius:30px;">
             <i class="glyphicon glyphicon-search search-icon" style="position: absolute; left: 12px; top: 12px; color: #999;"></i>
+            
+            <!-- PR #4255 Result Overlays -->
+            <div id="admin_search_results" style="margin-top: 10px; display: none; position: absolute; right: 0; background: white; border: 1px solid #e0e0e0; width: 100%; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 1000; max-height: 400px; overflow-y: auto;"></div>
+            <div id="admin_search_empty" style="margin-top: 10px; display: none; font-style: italic; position: absolute; color: #777; right: 0; background: white; padding: 10px; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 1000;">
+                No modules found for that search. Look under <a href="#additional_modules">Additional Modules</a> at the bottom of this page for more options.
+            </div>
         </div>
 
         <div style="clear:both;"></div>
+
+        {% inline_program_qsd_block program "manage:main_top" %}
+        Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="https://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
+        {% end_inline_program_qsd_block %}
 
         <!-- Smart Warning Banner -->
         <div id="smart-warning-banner" class="warning-banner banner-green">
@@ -449,4 +454,144 @@
     {% render_inline_program_qsd program "manage:main_bottom" %}
 </div>
 
+<<<<<<< HEAD
 {% endblock %}
+=======
+<div class="module_group" id="module_group_2">
+    <div class="module_group_header">
+        Coordinate with Participants
+    </div>
+    <div class="button_wrapper">
+        {% if manage_commpanel %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-envelope"></i> Email</div>
+                <div class="module_link_caption">communications panel</div>
+            </button></a>
+        </div>
+        {% endif %}
+
+        {% if manage_selectList %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/selectList"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Arbitrary User List</div>
+                <div class="module_link_caption">get a list of users</div>
+            </button></a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="module_group" id="module_group_3">
+    <div class="module_group_header">
+        Manage Logistics
+    </div>
+    <div class="button_wrapper">
+        {% if manage_dashboard %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-dashboard"></i> Dashboard</div>
+                <div class="module_link_caption">review classes and stats</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if manage_ajax_scheduling %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-calendar"></i> Scheduling</div>
+                <div class="module_link_caption">assign rooms and times</div>
+            </button></a>
+        </div class="module_button">
+        {% endif %}
+        {% if manage_get_materials %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Documents</div>
+                <div class="module_link_caption">upload and view files</div>
+            </button></a>
+        </div class="module_button">
+        {% endif %}
+        {% if manage_volunteering %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-bullhorn"></i> Volunteers</div>
+                <div class="module_link_caption">create shifts, view signups</div>
+            </button></a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<table width="100%">
+<tr>
+<td width="50%" style="vertical-align: top;">
+<div class="module_group" id="module_group_4">
+    <div class="module_group_header_half">
+        Quick Links
+    </div>
+    <div class="module_group_body">
+    <ul>
+        {% if learn_catalog %}<li><a href="/learn/{{ program.getUrlBase }}/catalog">Catalog</a></li>{% endif %}
+        {% if learn_studentreg %}<li><a href="/learn/{{ program.getUrlBase }}/studentreg">Student Reg</a></li>{% endif %}
+        {% if teach_teacherreg %}<li><a href="/teach/{{ program.getUrlBase }}/teacherreg">Teacher Reg</a></li>{% endif %}
+        {% if volunteer_signup %}<li><a href="/volunteer/{{ program.getUrlBase }}/signup">Volunteer Reg</a></li>{% endif %}
+        {% if onsite_main %}<li><a href="/onsite/{{ program.getUrlBase }}/main">Onsite</a></li>{% endif %}
+        {% if manage_refund %}<li><a href="/accounting/refund?program={{ program.id }}">Refunds</a></li>{% endif %}
+    </ul>
+    </div>
+</div>
+</td>
+<td width="50%" style="vertical-align: top;">
+<div class="module_group" id="module_group_5">
+    <div class="module_group_header_half">
+        Generate Printables
+    </div>
+    <div class="module_group_body">
+    <ul>
+        {% if manage_catalog %}<li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>{% endif %}
+        {% if manage_studentschedules %}<li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/studentscheduleform">Student Schedule Formatter</a></li>{% endif %}
+        {% if manage_selectidoptions %}<li><a href="/manage/{{ program.getUrlBase }}/selectidoptions">Nametags</a></li>{% endif %}
+        {% if manage_printoptions %}<li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>{% endif %}
+    </ul>
+    </div>
+</div>
+</td>
+</tr>
+</table>
+
+<div class="module_group_header">Additional Modules</div>
+<div id="additional_modules" class="module_group_body">
+<div style="padding: 10px 15px; background: #f9f9f9; border-bottom: 1px solid #ddd;">
+    <input type="text" id="add_module_search" placeholder="Search additional modules..." style="width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+</div>
+<table border="0" width="100%">
+<tr>
+ <td width="50%">
+<ul id="additional_modules_list">
+{% for module in modules_alph %}
+    {% if not module.isAdminPortalFeatured %}
+      {% if not module.useTemplate %}
+        <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
+      {% endif %}
+    {% endif %}
+{% endfor %}
+</ul>
+</td>
+<td style="vertical-align: top;">
+<div class="helpbox">
+<h4><span>Help</span></h4>
+<div id="adminhelp">
+Please select an option to the left to continue, or look down below to select further options.
+</div> <!-- div#adminhelp -->
+</div> <!-- div#helpbox -->
+</td>
+</tr>
+</table>
+</div> <!-- div#additional_modules -->
+
+<td colspan="2">
+{% render_inline_program_qsd program "manage:main_bottom" %}
+</td>
+
+{% endblock %}
+>>>>>>> upstream/main

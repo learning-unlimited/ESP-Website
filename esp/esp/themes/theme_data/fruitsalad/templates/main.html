@@ -72,7 +72,7 @@
 {% endblock %}
 
 {% block body %}
-<link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
+<link rel="stylesheet" type="text/css" href="/media/styles/admin_bar.css">
 <div id="adminbar" class="admin hidden" style="position: fixed !important">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
@@ -87,7 +87,13 @@
   },
   {% endfor %}
 ];
+
 var debug = {{ settings.DEBUG|yesno:"true,false" }};
+</script>
+{{ theme.toolbar_links|json_script:"toolbar-links-data" }}
+<script type="text/javascript">
+var rawToolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').textContent);
+var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
 <div id="page" class="{{ request.path|extract_theme }}">
@@ -217,6 +223,22 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
           {% endif %}
         </div>
         {% endif %}
+          {% if active_program_tags %}
+          <div class="alert alert-info alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <strong>Admin notice:</strong>
+            This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
+            {% for tag in active_program_tags %}
+              <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+            {% endfor %}
+            &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
+          </div>
+          {% endif %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
         {% block content %}{% endblock %}
       </div>
       <!--[if lte IE 6]>
@@ -248,3 +270,4 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
 </div>
 
 {% endblock %}
+
