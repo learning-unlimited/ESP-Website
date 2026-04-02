@@ -73,7 +73,7 @@ class PrintScheduleStatusTests(SimpleTestCase):
 
 
 class SectionDataTests(ProgramFrameworkTest):
-    """Tests for OnSiteClassList.section_data() static method."""
+    """Tests for OnSiteClassList.section_data"""
 
     def setUp(self):
         super().setUp(
