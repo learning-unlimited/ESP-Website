@@ -72,7 +72,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     from_email = from_email.strip()
     # the from_email must match one of our DMARC domains/subdomains
     # or the email may be rejected by email clients
-    if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')), from_email):
+    if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', r'\.')), from_email):
         raise ESPError("Invalid 'From' email address (" + from_email + "). The 'From' email address must " +
                        "end in @" + settings.SITE_INFO[1] + " (your website), " +
                        "@learningu.org, or a valid subdomain of learningu.org " +
@@ -661,7 +661,7 @@ class PlainRedirect(models.Model):
         ordering=('original',)
 
 
-# Adapted from http://www.djangosnippets.org/snippets/735/
+# Adapted from https://www.djangosnippets.org/snippets/735/
 class CustomSMTPBackend(SMTPEmailBackend):
     """ Simple override of Django's default backend to allow a Return-Path to be specified """
 
