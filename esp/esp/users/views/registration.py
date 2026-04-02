@@ -15,6 +15,7 @@ from django.http import HttpResponseRedirect
 from django.template import loader
 from django.utils.datastructures import MultiValueDictKeyError
 from django.utils.decorators import method_decorator
+from django.utils.html import format_html
 
 from vanilla import CreateView
 
@@ -171,7 +172,13 @@ def activate_account(request):
         raise ESPError("Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
     if u.is_active:
-        raise ESPError('The user account supplied has already been activated. If you have lost your password, visit the <a href="/myesp/passwdrecover/">password recovery form</a>.  Otherwise, please <a href="/accounts/login/?next=/myesp/profile/">log in</a>.', log=False)
+        raise ESPError(format_html(
+            'The user account supplied has already been activated. '
+            'If you have lost your password, visit the '
+            '<a href="/myesp/passwdrecover/">password recovery form</a>. '
+            ' Otherwise, please '
+            '<a href="/accounts/login/?next=/myesp/profile/">log in</a>.'
+        ), log=False)
 
     if not u.password.endswith("_%s" % request.GET['key']):
         raise ESPError("Incorrect key.  Please try again to click the link in your email, or copy the url into your browser.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
