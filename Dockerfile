@@ -5,23 +5,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive
 
-WORKDIR /tmp
-
-# Copy and install system dependencies from packages_base.txt
-# Prevent interactive popups during apt-get install (e.g., tzdata)
-ENV DEBIAN_FRONTEND=noninteractive
-
 # Configure apt-get retries and timeouts for heavy LaTeX downloads
 RUN printf '%s\n' \
     'Acquire::http::Timeout "120";' \
     'Acquire::https::Timeout "120";' \
     'Acquire::ftp::Timeout "120";' \
-    'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99custom
+    'Acquire::Retries "5";' > /etc/apt/apt.conf.d/99custom \
+    && printf '%s\n' 'force-unsafe-io' > /etc/dpkg/dpkg.cfg.d/docker-unsafe-io
 
 # Set the working directory
 WORKDIR /app
 
-# Install system dependencies from packages_base.txt to avoid duplication.
+# Install build dependencies while skipping services already provided by Compose.
 COPY esp/packages_base.txt /tmp/packages_base.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -41,24 +36,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     libjpeg-dev \
     libfreetype6-dev \
-    $(grep -v '^python' /tmp/packages_base.txt | grep -v '^#' | grep -v '^$' | grep -v 'build-essential' | grep -v 'libpq-dev' | grep -v 'libcurl' | grep -v 'libssl' | grep -v 'libmemcached' | grep -v 'libevent' | grep -v 'zlib' | grep -v 'libjpeg' | grep -v 'libfreetype' | tr '\n' ' ') \
+    $(grep -Ev '^(#|$|python.*|build-essential|libpq-dev|libcurl4-openssl-dev|libssl-dev|libmemcached-dev|libevent-dev|zlib1g-dev|libjpeg-dev|libfreetype6-dev|npm|postgresql|memcached)$' /tmp/packages_base.txt | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 
-# Install LESS via npm (from packages_base_manual_install.sh)
-RUN npm install --prefix /usr less@3.13.1 -g
-
-# Install Node.js for LESS
-RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+# Install Node.js and LESS using the same version as packages_base_manual_install.sh.
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get update \
     && apt-get install -y --no-install-recommends nodejs \
+    && npm install --prefix /usr less@3.13.1 -g \
     && rm -rf /var/lib/apt/lists/*
-# Install LESS globally
-RUN npm install -g less@1.7.5
 
 # Install Python dependencies (Docker layer caching speeds up rebuilds)
 COPY esp/requirements.txt /tmp/requirements.txt
-RUN pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r /tmp/requirements.txt
+RUN python -m pip install --upgrade pip setuptools wheel && \
+    python -m pip install --prefer-binary --no-cache-dir -r /tmp/requirements.txt
 
 
 # Runtime stage - smaller final image
