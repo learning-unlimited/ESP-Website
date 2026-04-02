@@ -1,4 +1,4 @@
-﻿// Taken from jquery-migrate since toggle() was removed in jQuery 1.9
+// Taken from jquery-migrate since toggle() was removed in jQuery 1.9
 $j.fn.clicktoggle = function( fn, fn2 ) {
 	// Save reference to arguments for access in closure
 	var args = arguments,

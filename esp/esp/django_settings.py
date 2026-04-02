@@ -1,5 +1,4 @@
-﻿""" Django settings for ESP website. """
-from __future__ import absolute_import
+""" Django settings for ESP website. """
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -233,7 +232,6 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.staticfiles',
     'esp.users.apps.UsersConfig',
-    'esp.miniblog',
     'esp.web.apps.WebConfig',
     'esp.program.apps.ProgramConfig',
     'esp.program.modules.apps.ModulesConfig',

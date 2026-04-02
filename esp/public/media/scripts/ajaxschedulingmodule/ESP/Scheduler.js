@@ -1,4 +1,4 @@
-﻿/**
+/**
  * The object that initializes and renders all the pieces of the scheduler
  * Has Timeslots, Sections, MessagePanel, SectionInfoPanel, SectionCommentDialog,
  * Matrix, Directory, and ChangelogFetcher (and possibly ModeratorDirectory)

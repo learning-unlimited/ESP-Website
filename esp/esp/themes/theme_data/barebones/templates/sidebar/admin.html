@@ -1,4 +1,4 @@
-﻿<li class="unmorph hidden"><a href="/myesp/switchback/">
+<li class="unmorph hidden"><a href="/myesp/switchback/">
     <i class="glyphicon glyphicon-user"></i> Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script>
 </a></li>
 
@@ -9,6 +9,7 @@
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
 </div>
+{{ theme.toolbar_links|json_script:"toolbar-links-data" }}
 <script type="text/javascript">
 var currentPrograms = [
 {% for current_program in current_programs %}
@@ -20,6 +21,8 @@ var currentPrograms = [
 {% endfor %}
 ];
 var debug = {{ settings.DEBUG|yesno:"true,false" }};
+var rawToolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').textContent);
+var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
 {% comment %} === End Admin Toolbar === {% endcomment %}

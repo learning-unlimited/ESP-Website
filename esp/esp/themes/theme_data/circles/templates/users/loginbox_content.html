@@ -1,4 +1,4 @@
-﻿<div id="loginbox">
+<div id="loginbox">
 <table align="center" class="loginform" cellspacing="0" cellpadding="5">
 <tr><td>
 
@@ -36,7 +36,7 @@
 <hr>
 
 {% if login_result %}
-    <div><center><span style="color: #BCCAF5;">{{ login_result }}{% ifequal "Invalid username or password" login_result %}<br /><a href="/myesp/login/">Try again here.</a>{% endifequal %}</span></center><br /></div>
+    <div><center><span style="color: #BCCAF5;">{{ login_result }}{% if "Invalid username or password" == login_result %}<br /><a href="/myesp/login/">Try again here.</a>{% endif %}</span></center><br /></div>
 {% else %}
     <div class="not_logged_in hidden">
         <div>Log in here.  If you don't know your username or password, try <a href="/myesp/passwdrecover/">our password reset page</a>.<br /><br /></div>
