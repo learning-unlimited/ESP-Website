@@ -84,7 +84,7 @@
     </script>
 
     <!-- prevent forms from being submitted twice -->
-    <script text="text/javascript">
+    <script type="text/javascript">
       $j(function() {
         $j('[type=submit]:not(.stripe-button-el):not(.save):not(.custom-action)').on('click', function(event){
           <!-- prevent any other behaviors -->

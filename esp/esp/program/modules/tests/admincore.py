@@ -78,7 +78,7 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         modules.append(ProgramModule.objects.get(handler='AvailabilityModule'))
         modules.append(ProgramModule.objects.get(handler='StudentRegConfirm'))
 
-        super(ModuleManagementConstraintsTest, self).setUp(modules=modules)
+        super().setUp(modules=modules)
 
         self.adminUser, created = ESPUser.objects.get_or_create(username='admin_constraints')
         self.adminUser.set_password('password')
@@ -219,7 +219,7 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
         modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule'))
         modules.append(ProgramModule.objects.get(handler='AdminCore'))
 
-        super(ModuleManagementLinkTitleTest, self).setUp(modules=modules)
+        super().setUp(modules=modules)
 
         # Force lazy creation of ProgramModuleObj rows so they exist
         # before individual tests query for them.
