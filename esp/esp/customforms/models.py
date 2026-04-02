@@ -4,11 +4,12 @@ logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, connection
 from django.db.utils import DatabaseError, ProgrammingError
+from django.core.exceptions import ValidationError
 from esp.users.models import ESPUser
 from esp.program.models import Program
 
 class Form(models.Model):
-    title = models.CharField(max_length=40, blank=True)
+    title = models.CharField(max_length=40, blank=False)
     description = models.TextField(blank=True)
     date_created = models.DateField(auto_now_add=True)
     created_by = models.ForeignKey(ESPUser, on_delete=models.CASCADE)
@@ -21,6 +22,16 @@ class Form(models.Model):
 
     def __str__(self):
         return f'{self.title} (created by {self.created_by.username})'
+
+    def clean(self):
+        """Validate that title is not empty or whitespace-only."""
+        if not self.title or not self.title.strip():
+            raise ValidationError('Form Name/Title is required and cannot be empty.')
+
+    def save(self, *args, **kwargs):
+        """Run clean() before saving to enforce validation at all code paths."""
+        self.clean()
+        super().save(*args, **kwargs)
 
 class Page(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE)
