@@ -90,7 +90,8 @@ class VolunteerManageTest(ProgramFrameworkTest):
         new_count = VolunteerRequest.objects.filter(
             program=self.program
         ).count()
-        self.assertGreaterEqual(new_count, initial_count)
+        self.assertIn(response.status_code, (200, 302))
+        self.assertEqual(new_count, initial_count + 1)
 
     def test_delete_volunteer_request(self):
         """Test that a volunteer request can be deleted."""
