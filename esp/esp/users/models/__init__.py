@@ -2197,9 +2197,8 @@ class PersistentQueryFilter(models.Model):
             if self.signature:
                 QObj = verify_and_deserialize(self.q_filter, self.signature, pickle.loads)
             else:
-                logger.warning("PersistentQueryFilter %d has no signature", self.id)
-                QObj = pickle.loads(self.q_filter)
-        except:
+                raise ESPError(f'PersistentQueryFilter {self.id} has no signature - refusing to deserialize unsigned data for security reasons.')
+        except (ValueError, pickle.UnpicklingError, TypeError) as e:
             raise ESPError('Invalid Q object stored in database.')
 
         #   Do not include users if they have disabled their account.
