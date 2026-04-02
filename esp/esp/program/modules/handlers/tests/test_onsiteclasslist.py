@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase, RequestFactory
 
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
+from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 
 
@@ -69,3 +70,48 @@ class PrintScheduleStatusTests(SimpleTestCase):
         with patch.object(ESPUser.objects, "get", side_effect=ESPUser.DoesNotExist):
             resp = self._call({"user": "9999"})
         self._assert_user_not_found(resp)
+
+
+class SectionDataTests(ProgramFrameworkTest):
+    """Tests for OnSiteClassList.section_data() static method."""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=1,
+            num_teachers=2,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=2,
+            num_students=0,
+        )
+        self.section = self.program.sections()[0]
+        self.result = OnSiteClassList.section_data(self.section)
+
+    def test_section_data_has_required_keys(self):
+        """Returned dict must contain exactly the five expected keys."""
+        self.assertEqual(set(self.result.keys()), {'id', 'emailcode', 'title', 'teachers', 'rooms'})
+
+    def test_section_data_id_matches(self):
+        """result['id'] must equal the section's pk."""
+        self.assertEqual(self.result['id'], self.section.id)
+
+    def test_section_data_title_matches(self):
+        """result['title'] must equal section.title()."""
+        self.assertEqual(self.result['title'], self.section.title())
+
+    def test_section_data_teachers_is_string(self):
+        """result['teachers'] must be a string containing at least one teacher's name."""
+        self.assertIsInstance(self.result['teachers'], str)
+        # section_data builds the string from list(sec.teachers)
+        teachers = list(self.section.teachers)
+        self.assertTrue(len(teachers) > 0, "Expected at least one teacher on this section")
+        self.assertIn(teachers[0].name(), self.result['teachers'])
+
+    def test_section_data_rooms_is_string(self):
+        """result['rooms'] must be a string (may be empty if the section has no room assigned)."""
+        self.assertIsInstance(self.result['rooms'], str)
+
+    def test_section_data_emailcode_is_string(self):
+        """result['emailcode'] must be a non-empty string."""
+        self.assertIsInstance(self.result['emailcode'], str)
+        self.assertTrue(len(self.result['emailcode']) > 0)
