@@ -25,6 +25,12 @@
                     $j(this).hide();
                 } else {
                     $j(this).show();
+                    // Auto-open accordion if matched inside
+                    var accordion = $j(this).closest(".collapsible-content");
+                    if (accordion.length > 0 && !accordion.is(":visible")) {
+                         accordion.slideDown();
+                         accordion.prev(".collapsible-btn").find(".dropdown-icon").html("&#9650;");
+                    }
                 }
             });
         });
@@ -32,21 +38,20 @@
         // Timeline/Checklist Toggle
         $j(".switch input").on("change", function () {
             if ($j(this).is(":checked")) {
-                // Checklist Mode: Hide the horizontal timeline
-                $j(".horizontal-timeline-wrapper").slideUp();
+                // Checklist Mode: Hide timeline, show checklist
+                $j(".horizontal-timeline-wrapper").slideUp(function() {
+                    $j(".task-checklist-widget").slideDown();
+                });
             } else {
-                // Timeline Mode: Show the horizontal timeline
-                $j(".horizontal-timeline-wrapper").slideDown();
+                // Timeline Mode: Hide checklist, show timeline
+                $j(".task-checklist-widget").slideUp(function() {
+                    $j(".horizontal-timeline-wrapper").slideDown();
+                });
             }
         });
-        $j(".switch input").trigger("change");
-
-
-        // Ranked By Toggle
-        $j(".ranked-by-menu").hide();
-        $j(".ranked-by-btn").on("click", function () {
-            $j(".ranked-by-menu").slideToggle();
-        });
+        
+        // Hide checklist by default to sync with the initial unchecked toggle state (Timeline mode)
+        $j(".task-checklist-widget").hide(); 
 
         // Filter Logic
         $j("#filter-required-only").on("change", function () {
@@ -91,6 +96,18 @@
             }
         });
 
+        // Collapsible Accordion Sections
+        $j(".collapsible-btn").on("click", function() {
+            var content = $j(this).next();
+            if (content.is(":visible")) {
+                content.slideUp();
+                $j(this).find(".dropdown-icon").html("&#9660;"); // pointing down
+            } else {
+                content.slideDown();
+                $j(this).find(".dropdown-icon").html("&#9650;"); // pointing up
+            }
+        });
+
         // Smart Banner Logic
         var requiredPending = $j('.checklist-item[data-priority="required"][data-status="pending"]').length;
         var optionalPending = $j('.checklist-item[data-priority="optional"][data-status="pending"]').length;
@@ -123,6 +140,64 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="/media/default_styles/management_v2.css" type="text/css" />
+<style>
+/* Override grid since we removed sidebars */
+.dashboard-v2-container {
+    display: block !important;
+}
+
+.dashboard-main-card {
+    max-width: 1000px;
+    margin: 0 auto;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    padding: 40px;
+    background: #fff;
+    border-radius: 8px;
+}
+
+/* Collapsible styling */
+.collapsible-btn {
+    background-color: #f8f9fa;
+    color: #333;
+    cursor: pointer;
+    padding: 15px 20px;
+    width: 100%;
+    border: 1px solid #eee;
+    text-align: left;
+    outline: none;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+.collapsible-btn:hover { 
+    background-color: #f1f3f5; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.collapsible-content {
+    padding: 10px 20px 20px 20px;
+    display: none;
+    overflow: hidden;
+    background-color: white;
+    border-radius: 0 0 8px 8px;
+    margin-top: -8px;
+    margin-bottom: 20px;
+    border: 1px solid #eee;
+    border-top: none;
+}
+.collapsible-btn .glyphicon {
+    margin-right: 10px;
+    color: #666;
+    font-size: 14px;
+}
+
+.pill-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -130,150 +205,112 @@
 {% load render_qsd %}
 
 <div class="dashboard-v2-container">
-    <!-- Left Sidebar -->
-    <div class="dashboard-sidebar-left">
-        <div class="gantt-widget">
-            <div class="gantt-icon">
-                <i class="glyphicon glyphicon-stats"></i>
-            </div>
-            <h4>Gantt Chart</h4>
-            <p class="text-muted">(Power Zoom)</p>
-            <div class="slider-container">
-                <input type="range" min="1" max="100" value="50" class="zoom-slider">
-            </div>
-            <div class="zoom-controls">
-                <span>-</span>
-                <span class="zoom-label">Zoom</span>
-                <span>+</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Card -->
+    <!-- Main Card ONLY (Sidebars Removed) -->
     <div class="dashboard-main-card">
+        
+        <!-- Top Controls: Search Bar -->
+        <div class="search-bar-wrapper" style="float: right; margin-bottom: 20px; position:relative;">
+            <input type="text" id="admin_search_input" placeholder="Search modules, pages..." class="dashboard-search-bar" style="width: 320px; padding-left: 35px; border-radius:30px;">
+            <i class="glyphicon glyphicon-search search-icon" style="position: absolute; left: 12px; top: 12px; color: #999;"></i>
+        </div>
+
+        <div style="clear:both;"></div>
+
         <!-- Smart Warning Banner -->
         <div id="smart-warning-banner" class="warning-banner banner-green">
             {% if messages %}
-            <ul class="messages"
-                style="list-style: none; padding: 0; margin-bottom: 10px; color: #d64545; font-weight: bold;">
+            <ul class="messages" style="list-style: none; padding: 0; margin-bottom: 10px; color: #d64545; font-weight: bold;">
                 {% for message in messages %}
-                <li{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</li>
-                    {% endfor %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
             </ul>
             {% endif %}
             <h2 id="banner-title"><i class="glyphicon glyphicon-ok-circle"></i> ALL SYSTEMS GO</h2>
             <div id="banner-msg" class="banner-msg">Your program is fully configured and ready!</div>
         </div>
 
-        <div class="horizontal-timeline-wrapper">
-            <div class="horizontal-timeline" id="setup_timeline">
-
-                {% for module in modules %}
-                {% if module.isStep and not module.isCompleted %}
-                <div class="timeline-step-icon step-not-done">
-                    <div class="step-icon-inner bg-light-blue"><i class="glyphicon glyphicon-folder-open"></i></div>
-                    <div class="step-label">{{ module.makeSetupLink }}</div>
+        <!-- Inline Controls: Zoom & Toggle -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; margin-top:20px;">
+            <div class="gantt-widget" style="width: 250px; text-align: left; background: none; box-shadow: none; padding: 0;">
+                <p class="text-muted" style="margin:0 0 5px 0; font-weight:bold;">Power Zoom:</p>
+                <div class="slider-container" style="margin:0;">
+                    <input type="range" min="1" max="100" value="50" class="zoom-slider">
                 </div>
-                {% endif %}
-                {% endfor %}
-
-                {% for step in extra_steps %}
-                {% if not step.3 %}
-                <div class="timeline-step-icon step-not-done">
-                    <div class="step-icon-inner bg-light-orange"><i class="glyphicon glyphicon-list-alt"></i></div>
-                    <div class="step-label"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></div>
-                </div>
-                {% endif %}
-                {% endfor %}
-
-                <!-- Completed Steps -->
-                {% for module in modules %}
-                {% if module.isStep and module.isCompleted %}
-                <div class="timeline-step-icon iscompleted">
-                    <div class="step-icon-inner bg-light-green"><i class="glyphicon glyphicon-ok"></i></div>
-                    <div class="step-label">{{ module.makeSetupLink }}</div>
-                </div>
-                {% endif %}
-                {% endfor %}
-
+            </div>
+            
+            <div class="toggle-switch-wrapper" style="margin: 0; padding: 10px 15px; background: #f8f9fa; border-radius: 30px; border: 1px solid #eaeaea; display: flex; align-items: center;">
+                <span class="toggle-label" style="font-weight:600; color:#555;">Timeline</span>
+                <label class="switch" style="margin:0 10px;">
+                    <input type="checkbox">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-label" style="font-weight:600; color:#555;">Checklist</span>
             </div>
         </div>
 
-        <div class="search-bar-wrapper">
-            <input type="text" placeholder="" class="dashboard-search-bar" disabled>
-            <i class="glyphicon glyphicon-search search-icon"></i>
+        <!-- Horizontal Timeline -->
+        <div class="horizontal-timeline-wrapper" style="min-height: 220px; overflow-x: auto; padding-bottom:20px; border: 1px solid #f1f1f1; border-radius: 8px; padding-top:20px; background:#fafbfc;">
+            <div class="horizontal-timeline" id="setup_timeline">
+                
+                <!-- Timeline All Items (Step 3) -->
+                {% for module in modules %}
+                    {% if module.isStep %}
+                        {% if module.isCompleted %}
+                        <div class="timeline-step-icon iscompleted">
+                            <div class="step-icon-inner bg-light-green"><i class="glyphicon glyphicon-ok"></i></div>
+                            <div class="step-label">{{ module.makeSetupLink }}</div>
+                        </div>
+                        {% else %}
+                        <div class="timeline-step-icon step-not-done">
+                            <div class="step-icon-inner bg-light-blue"><i class="glyphicon glyphicon-folder-open"></i></div>
+                            <div class="step-label">{{ module.makeSetupLink }}</div>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                {% for step in extra_steps %}
+                    {% if step.3 %}
+                        <div class="timeline-step-icon iscompleted">
+                            <div class="step-icon-inner bg-light-green"><i class="glyphicon glyphicon-ok"></i></div>
+                            <div class="step-label"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></div>
+                        </div>
+                    {% else %}
+                        <div class="timeline-step-icon step-not-done">
+                            <div class="step-icon-inner bg-light-orange"><i class="glyphicon glyphicon-list-alt"></i></div>
+                            <div class="step-label"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                {% for step in extra_steps_optional %}
+                    {% if step.3 %}
+                        <div class="timeline-step-icon iscompleted">
+                            <div class="step-icon-inner bg-light-green"><i class="glyphicon glyphicon-ok"></i></div>
+                            <div class="step-label"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a><br><small class="text-muted">(Optional)</small></div>
+                        </div>
+                    {% else %}
+                        <div class="timeline-step-icon step-not-done">
+                            <div class="step-icon-inner bg-light-orange"><i class="glyphicon glyphicon-list-alt"></i></div>
+                            <div class="step-label"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a><br><small class="text-muted">(Optional)</small></div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
         </div>
 
-        <div class="pill-grid">
-            {% if manage_resources %}<a href="/manage/{{ program.getUrlBase }}/resources"
-                class="pill-btn pill-blue">Resources <span class="pill-plus">+</span></a>{% endif %}
-            {% if manage_deadlines %}<a href="/manage/{{ program.getUrlBase }}/deadlines"
-                class="pill-btn pill-orange">Deadlines <span class="pill-plus">+</span></a>{% endif %}
-            {% if manage_teacher_events %}<a href="/manage/{{ program.getUrlBase }}/teacher_events"
-                class="pill-btn pill-gray">Teach Events <span class="pill-plus">+</span></a>{% endif %}
-
-            {% if manage_lunch_constraints %}<a href="/manage/{{ program.getUrlBase }}/lunch_constraints"
-                class="pill-btn pill-blue">Lunch Rules <span class="pill-plus">+</span></a>{% endif %}
-            {% if manage_registrationtype_management %}<a
-                href="/manage/{{ program.getUrlBase }}/registrationtype_management" class="pill-btn pill-gray">Reg Types
-                <span class="pill-plus">-</span></a>{% endif %}
-            {% if manage_surveys %}<a href="/manage/{{ program.getUrlBase }}/surveys"
-                class="pill-btn pill-orange">Surveys <span class="pill-plus">+</span></a>{% endif %}
-
-            {% if manage_settings %}<a href="/manage/{{ program.getUrlBase }}/settings"
-                class="pill-btn pill-gray">Settings <span class="pill-plus">+</span></a>{% endif %}
-            {% if manage_modules %}<a href="/manage/{{ program.getUrlBase }}/modules" class="pill-btn pill-blue">Modules
-                <span class="pill-plus">+</span></a>{% endif %}
-            {% if manage_tags %}<a href="/manage/{{ program.getUrlBase }}/tags" class="pill-btn pill-gray">Tags
-                <span class="pill-plus">+</span></a>{% endif %}
-            {% if manage_commpanel %}<a href="/manage/{{ program.getUrlBase }}/commpanel"
-                class="pill-btn pill-orange">Email <span class="pill-plus">+</span></a>{% endif %}
-
-            {% if manage_dashboard %}<a href="/manage/{{ program.getUrlBase }}/dashboard"
-                class="pill-btn pill-gray">Dashboard <span class="pill-plus">+</span></a>{% endif %}
-            {% if manage_get_materials %}<a href="/manage/{{ program.getUrlBase }}/get_materials"
-                class="pill-btn pill-blue">Documents <span class="pill-plus">+</span></a>{% endif %}
-            {% if manage_volunteering %}<a href="/manage/{{ program.getUrlBase }}/volunteering"
-                class="pill-btn pill-orange">Volunteers <span class="pill-plus">+</span></a>{% endif %}
-        </div>
-
-        <div class="bottom-action-buttons">
-            {% if manage_ajax_scheduling %}
-            <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" class="large-pill-btn pill-blue-dark">
-                <i class="glyphicon glyphicon-calendar"></i> Scheduling
-            </a>
-            {% endif %}
-            {% if manage_selectidoptions %}
-            <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="large-pill-btn pill-orange-dark">
-                <i class="glyphicon glyphicon-list-alt"></i> Name Tags
-            </a>
-            {% endif %}
-        </div>
-
-        <div style="margin-top: 40px; text-align: center;">
-            <a href="https://wiki.learningu.org/Main_Page" target="_blank" style="color: #999; font-size: 1.5em;"
-                title="Help & Documentation"><i class="glyphicon glyphicon-question-sign"></i></a>
-        </div>
-    </div>
-
-    <!-- Right Sidebar -->
-    <div class="dashboard-sidebar-right">
-        <div class="toggle-switch-wrapper">
-            <span class="toggle-label">Timeline</span>
-            <label class="switch">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-            <span class="toggle-label">Checklist</span>
-        </div>
-
-        <div class="task-checklist-widget">
-            <h4 style="margin-top: 0; font-weight: bold; font-size: 14px;">Task Checklist</h4>
+        <!-- Task Checklist -->
+        <div class="task-checklist-widget" style="min-height: 220px; padding: 25px; border: 1px solid #f1f1f1; border-radius: 8px; background:#fafbfc; display:none;">
+            <div style="float: right;">
+                <label><input type="checkbox" id="filter-required-only"> Required Only</label>&nbsp;&nbsp;
+                <label><input type="checkbox" id="filter-sort-done"> Sort Completed to Bottom</label>
+            </div>
+            <h4 style="margin-top: 0; font-weight: bold; font-size: 18px; color:#333;">Task Checklist</h4>
+            <br>
             <ul class="mock-checklist task-checklist-actual">
                 {% for module in modules %}
                 {% if module.isStep %}
-                <li class="checklist-item" data-priority="required"
-                    data-status="{% if module.isCompleted %}completed{% else %}pending{% endif %}">
+                <li class="checklist-item" data-priority="required" data-status="{% if module.isCompleted %}completed{% else %}pending{% endif %}">
                     <input type="checkbox" {% if module.isCompleted %}checked{% endif %} disabled>
                     <div class="mock-line-text">{{ module.makeSetupLink }}</div>
                 </li>
@@ -281,117 +318,131 @@
                 {% endfor %}
 
                 {% for step in extra_steps %}
-                <li class="checklist-item" data-priority="required"
-                    data-status="{% if step.3 %}completed{% else %}pending{% endif %}">
+                <li class="checklist-item" data-priority="required" data-status="{% if step.3 %}completed{% else %}pending{% endif %}">
                     <input type="checkbox" {% if step.3 %}checked{% endif %} disabled>
                     <div class="mock-line-text"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></div>
                 </li>
                 {% endfor %}
 
                 {% for step in extra_steps_optional %}
-                <li class="checklist-item" data-priority="optional"
-                    data-status="{% if step.3 %}completed{% else %}pending{% endif %}">
+                <li class="checklist-item" data-priority="optional" data-status="{% if step.3 %}completed{% else %}pending{% endif %}">
                     <input type="checkbox" {% if step.3 %}checked{% endif %} disabled>
-                    <div class="mock-line-text"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a> <span
-                            class="text-muted">(optional)</span></div>
+                    <div class="mock-line-text"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a> <span class="text-muted">(optional)</span></div>
                 </li>
                 {% endfor %}
             </ul>
         </div>
 
-        <div class="ranked-by-dropdown">
-            <div class="ranked-by-label">maybe on top?</div>
-            <div class="ranked-by-btn-group">
-                <button class="ranked-by-btn">ranked by... <i
-                        class="glyphicon glyphicon-chevron-down pull-right"></i></button>
-                <button class="filter-btn"><i class="glyphicon glyphicon-filter"></i></button>
-            </div>
-            <div class="ranked-by-menu">
-                <label><input type="checkbox" id="filter-required-only"> Required Only</label>
-                <label><input type="checkbox" id="filter-sort-done"> Sort Completed to Bottom</label>
+        <div style="margin: 40px 0;"><hr style="border-top: 2px dashed #eaeaea;"></div>
+        <h3 style="font-weight:bold; margin-bottom: 20px; font-size:18px;">Program Configuration Modules</h3>
+
+        <!-- Collapsible Section Groups (Step 4) -->
+        <button class="collapsible-btn">Onsite <span class="dropdown-icon" style="float: right; color: #888; font-size: 14px;">&#9660;</span></button>
+        <div class="collapsible-content">
+            <div class="pill-grid" style="padding: 15px 0 5px 0;">
+                {% if manage_ajax_scheduling %}
+                <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" class="pill-btn pill-blue-dark">Scheduling <span class="pill-plus">+</span></a>
+                {% endif %}
+                {% if manage_selectidoptions %}
+                <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="pill-btn pill-orange-dark">Name Tags <span class="pill-plus">+</span></a>
+                {% endif %}
+                {% if onsite_main %}
+                <a href="/onsite/{{ program.getUrlBase }}/main" class="pill-btn pill-blue">Onsite Main <span class="pill-plus">+</span></a>
+                {% endif %}
             </div>
         </div>
-    </div>
-</div>
 
-<div class="module_group_header" style="margin-top: 40px;">Additional Modules & Info</div>
-<div id="additional_modules" class="module_group_body">
-    <table border="0" width="100%">
-        <tr>
-            <td width="33%" style="vertical-align: top;">
-                <h5>Quick Links</h5>
-                <ul>
-                    {% if learn_catalog %}
-                    <li><a href="/learn/{{ program.getUrlBase }}/catalog">Catalog</a></li>
-                    {% endif %}
+        <button class="collapsible-btn">Printables <span class="dropdown-icon" style="float: right; color: #888; font-size: 14px;">&#9660;</span></button>
+        <div class="collapsible-content">
+            <div class="pill-grid" style="padding: 15px 0 5px 0;">
+                {% if manage_catalog %}
+                <a href="/manage/{{ program.getUrlBase }}/catalog" class="pill-btn pill-blue">PDF Catalog <span class="pill-plus">+</span></a>
+                {% endif %}
+                {% if manage_studentschedules %}
+                <a href="/manage/{{ program.getUrlBase }}/studentschedules" class="pill-btn pill-orange">Student Schedules <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" class="pill-btn pill-gray">Student Schedule Formatter <span class="pill-plus">+</span></a>
+                {% endif %}
+                {% if manage_printoptions %}
+                <a href="/manage/{{ program.getUrlBase }}/printoptions" class="pill-btn pill-blue">All Printables <span class="pill-plus">+</span></a>
+                {% endif %}
+            </div>
+        </div>
 
-                    {% if learn_studentreg %}
-                    <li><a href="/learn/{{ program.getUrlBase }}/studentreg">Student Reg</a></li>
-                    {% endif %}
+        <button class="collapsible-btn">Teach <span class="dropdown-icon" style="float: right; color: #888; font-size: 14px;">&#9660;</span></button>
+        <div class="collapsible-content">
+            <div class="pill-grid" style="padding: 15px 0 5px 0;">
+                {% if manage_teacher_events %}
+                <a href="/manage/{{ program.getUrlBase }}/teacher_events" class="pill-btn pill-gray">Teach Events <span class="pill-plus">+</span></a>
+                {% endif %}
+                {% if teach_teacherreg %}
+                <a href="/teach/{{ program.getUrlBase }}/teacherreg" class="pill-btn pill-blue">Teacher Reg <span class="pill-plus">+</span></a>
+                {% endif %}
+            </div>
+        </div>
 
-                    {% if teach_teacherreg %}
-                    <li><a href="/teach/{{ program.getUrlBase }}/teacherreg">Teacher Reg</a></li>
-                    {% endif %}
+        <button class="collapsible-btn">Sched <span class="dropdown-icon" style="float: right; color: #888; font-size: 14px;">&#9660;</span></button>
+        <div class="collapsible-content">
+            <div class="pill-grid" style="padding: 15px 0 5px 0;">
+                {% if manage_lunch_constraints %}
+                <a href="/manage/{{ program.getUrlBase }}/lunch_constraints" class="pill-btn pill-blue">Lunch Rules <span class="pill-plus">+</span></a>
+                {% endif %}
+                {% if manage_deadlines %}
+                <a href="/manage/{{ program.getUrlBase }}/deadlines" class="pill-btn pill-orange">Deadlines <span class="pill-plus">+</span></a>
+                {% endif %}
+            </div>
+        </div>
 
-                    {% if volunteer_signup %}
-                    <li><a href="/volunteer/{{ program.getUrlBase }}/signup">Volunteer Reg</a></li>
-                    {% endif %}
+        <button class="collapsible-btn">Settings <span class="dropdown-icon" style="float: right; color: #888; font-size: 14px;">&#9660;</span></button>
+        <div class="collapsible-content">
+            <div class="pill-grid" style="padding: 15px 0 5px 0;">
+                {% if manage_settings %}
+                <a href="/manage/{{ program.getUrlBase }}/settings" class="pill-btn pill-gray">Settings <span class="pill-plus">+</span></a>
+                {% endif %}
+                {% if manage_modules %}
+                <a href="/manage/{{ program.getUrlBase }}/modules" class="pill-btn pill-blue">Modules <span class="pill-plus">+</span></a>
+                {% endif %}
+                {% if manage_tags %}
+                <a href="/manage/{{ program.getUrlBase }}/tags" class="pill-btn pill-gray">Tags <span class="pill-plus">+</span></a>
+                {% endif %}
+                {% if manage_registrationtype_management %}
+                <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" class="pill-btn pill-gray">Reg Types <span class="pill-plus">-</span></a>
+                {% endif %}
+            </div>
+        </div>
 
-                    {% if onsite_main %}
-                    <li><a href="/onsite/{{ program.getUrlBase }}/main">Onsite</a></li>
-                    {% endif %}
-
-                    {% if manage_refund %}
-                    <li><a href="/accounting/refund?program={{ program.id }}">Refunds</a></li>
-                    {% endif %}
-                </ul>
-            </td>
-            <td width="33%" style="vertical-align: top;">
-                <h5>Printables</h5>
-                <ul>
-                    {% if manage_catalog %}
-                    <li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>
-                    {% endif %}
-
-                    {% if manage_studentschedules %}
-                    <li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>
-                    <li><a href="/manage/{{ program.getUrlBase }}/studentscheduleform">Student Schedule Formatter</a>
-                    </li>
-                    {% endif %}
-
-                    {% if manage_printoptions %}
-                    <li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>
-                    {% endif %}
-                </ul>
-            </td>
-            <td width="33%" style="vertical-align: top;">
-                <h5>Other</h5>
-                <ul>
-                    {% for module in modules_alph %}
+        <button class="collapsible-btn">Other <span class="dropdown-icon" style="float: right; color: #888; font-size: 14px;">&#9660;</span></button>
+        <div class="collapsible-content">
+            <div class="pill-grid" style="padding: 15px 0 5px 0;">
+                {% if manage_resources %}<a href="/manage/{{ program.getUrlBase }}/resources" class="pill-btn pill-blue">Resources <span class="pill-plus">+</span></a>{% endif %}
+                {% if manage_surveys %}<a href="/manage/{{ program.getUrlBase }}/surveys" class="pill-btn pill-orange">Surveys <span class="pill-plus">+</span></a>{% endif %}
+                {% if manage_commpanel %}<a href="/manage/{{ program.getUrlBase }}/commpanel" class="pill-btn pill-orange">Email <span class="pill-plus">+</span></a>{% endif %}
+                {% if manage_dashboard %}<a href="/manage/{{ program.getUrlBase }}/dashboard" class="pill-btn pill-gray">Dashboard <span class="pill-plus">+</span></a>{% endif %}
+                {% if manage_get_materials %}<a href="/manage/{{ program.getUrlBase }}/get_materials" class="pill-btn pill-blue">Documents <span class="pill-plus">+</span></a>{% endif %}
+                {% if manage_volunteering %}<a href="/manage/{{ program.getUrlBase }}/volunteering" class="pill-btn pill-orange">Volunteers <span class="pill-plus">+</span></a>{% endif %}
+                {% if learn_catalog %}<a href="/learn/{{ program.getUrlBase }}/catalog" class="pill-btn pill-gray">Catalog <span class="pill-plus">+</span></a>{% endif %}
+                {% if learn_studentreg %}<a href="/learn/{{ program.getUrlBase }}/studentreg" class="pill-btn pill-blue">Student Reg <span class="pill-plus">+</span></a>{% endif %}
+                {% if volunteer_signup %}<a href="/volunteer/{{ program.getUrlBase }}/signup" class="pill-btn pill-orange">Volunteer Reg <span class="pill-plus">+</span></a>{% endif %}
+                {% if manage_refund %}<a href="/accounting/refund?program={{ program.id }}" class="pill-btn pill-gray">Refunds <span class="pill-plus">+</span></a>{% endif %}
+                {% if manage_admin_morph %}<a href="/manage/{{ program.getUrlBase }}/admin_morph" class="pill-btn pill-gray">Morph into User <span class="pill-plus">+</span></a>{% endif %}
+                {% if manage_selectList %}<a href="/manage/{{ program.getUrlBase }}/selectList" class="pill-btn pill-blue">Arbitrary User List <span class="pill-plus">+</span></a>{% endif %}
+                {% for module in modules_alph %}
                     {% if not module.isAdminPortalFeatured %}
-                    {% if not module.useTemplate %}
-                    <li>
-                        {% autoescape off %}
-                        {{ module.makeLink }}
-                        {% endautoescape %}
-                    </li>
+                        {% if not module.useTemplate %}
+                            <div style="background:#eee; padding:5px 15px; border-radius:20px; font-weight:bold; font-size:12px; display:inline-block;">
+                            {% autoescape off %}
+                            {{ module.makeLink }}
+                            {% endautoescape %}
+                            </div>
+                        {% endif %}
                     {% endif %}
-                    {% endif %}
-                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
 
-                    {% if manage_admin_morph %}
-                    <li><a href="/manage/{{ program.getUrlBase }}/admin_morph">Morph into
-                            User</a></li>
-                    {% endif %}
-
-                    {% if manage_selectList %}
-                    <li><a href="/manage/{{ program.getUrlBase }}/selectList">Arbitrary User
-                            List</a></li>
-                    {% endif %}
-                </ul>
-            </td>
-        </tr>
-    </table>
+        <div style="margin-top: 40px; text-align: center;">
+            <a href="https://wiki.learningu.org/Main_Page" target="_blank" style="color: #999; font-size: 1.5em;" title="Help & Documentation"><i class="glyphicon glyphicon-question-sign"></i></a>
+        </div>
+    </div>
 </div>
 
 <div style="width: 100%; margin-top: 20px;">
