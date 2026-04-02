@@ -1105,3 +1105,107 @@ class StudentProfileForm__emailvalidationtest(TestCase):
         email_errors = [e for e in form.non_field_errors()
                         if 'email' in e.lower()]
         self.assertEqual(email_errors, [])
+
+
+class PersistentQueryFilterSecurityTest(TestCase):
+    """Test cases for PersistentQueryFilter signature verification security."""
+
+    def setUp(self):
+        from django.db.models import Q
+        from esp.users.models import PersistentQueryFilter
+
+        # Create test data
+        self.test_q = Q(username__startswith='test')
+        self.item_model = 'esp.users.models.ESPUser'
+
+    def test_signed_query_filter_works(self):
+        """Test that properly signed query filters work correctly."""
+        from esp.users.models import PersistentQueryFilter
+
+        # Create a signed filter
+        pqf = PersistentQueryFilter.create_from_Q(self.item_model, self.test_q, 'Test filter')
+
+        # Verify it has a signature
+        self.assertIsNotNone(pqf.signature, "Created filter should have a signature")
+
+        # Verify we can retrieve the Q object
+        retrieved_q = pqf.get_Q()
+        self.assertEqual(str(retrieved_q), str(self.test_q), "Retrieved Q should match original")
+
+    def test_unsigned_query_filter_rejected(self):
+        """Test that unsigned query filters are rejected with ESPError."""
+        from esp.users.models import PersistentQueryFilter
+        from esp.middleware import ESPError
+        import pickle
+
+        # Create filter manually without signature
+        pqf = PersistentQueryFilter()
+        pqf.item_model = self.item_model
+        pqf.q_filter = pickle.dumps(self.test_q)
+        pqf.signature = None  # Explicitly no signature
+        pqf.save()
+
+        # Verify it rejects unsigned data
+        with self.assertRaises(ESPError) as cm:
+            pqf.get_Q()
+
+        self.assertIn('refusing to deserialize unsigned data', str(cm.exception))
+
+    def test_tampered_query_filter_rejected(self):
+        """Test that tampered query filters are rejected."""
+        from django.db.models import Q
+        from esp.users.models import PersistentQueryFilter
+        from esp.middleware import ESPError
+        import pickle
+
+        # Create a properly signed filter
+        pqf = PersistentQueryFilter.create_from_Q(self.item_model, self.test_q, 'Test filter')
+        original_signature = pqf.signature
+
+        # Tamper with the data but keep original signature
+        tampered_q = Q(username__startswith='hacker')
+        pqf.q_filter = pickle.dumps(tampered_q)
+        # Keep original signature - this should fail verification
+        pqf.save()
+
+        # Verify tampered data is rejected
+        with self.assertRaises(ESPError) as cm:
+            pqf.get_Q()
+
+        self.assertIn('Invalid Q object stored in database', str(cm.exception))
+
+    def test_corrupted_signature_rejected(self):
+        """Test that corrupted signatures are properly rejected."""
+        from esp.users.models import PersistentQueryFilter
+        from esp.middleware import ESPError
+
+        # Create a properly signed filter
+        pqf = PersistentQueryFilter.create_from_Q(self.item_model, self.test_q, 'Test filter')
+
+        # Corrupt the signature
+        pqf.signature = b'corrupted_signature_data'
+        pqf.save()
+
+        # Verify corrupted signature is rejected
+        with self.assertRaises(ESPError) as cm:
+            pqf.get_Q()
+
+        self.assertIn('Invalid Q object stored in database', str(cm.exception))
+
+    def test_set_q_creates_valid_signature(self):
+        """Test that set_Q creates a valid signature that can be verified."""
+        from django.db.models import Q
+        from esp.users.models import PersistentQueryFilter
+
+        # Create filter and use set_Q
+        pqf = PersistentQueryFilter()
+        new_q = Q(email__contains='@example.com')
+
+        pqf.set_Q(new_q, self.item_model, 'Email filter')
+
+        # Verify signature was created
+        self.assertIsNotNone(pqf.signature, "set_Q should create a signature")
+
+        # Verify signature validates
+        retrieved_q = pqf.get_Q()
+        self.assertEqual(str(retrieved_q), str(new_q), "Retrieved Q should match set Q")
