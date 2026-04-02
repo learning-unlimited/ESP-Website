@@ -2,10 +2,11 @@ from copy import deepcopy
 import json
 
 from django.db import transaction
-from django.shortcuts import redirect, HttpResponse
+from django.shortcuts import redirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
-from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.db import connection
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 
 from esp.customforms.models import *
@@ -34,7 +35,10 @@ def landing(request):
             if form.link_id == -1:
                 form.link_obj = "User's choice"
             else:
-                form.link_obj = cf_cache.only_fkey_models[form.link_type].objects.get(id=form.link_id)
+                try:
+                    form.link_obj = cf_cache.only_fkey_models[form.link_type].objects.get(id=form.link_id)
+                except ObjectDoesNotExist:
+                    form.link_obj = "(deleted)"
     return render_to_response("customforms/landing.html", request, {'form_list': forms})
 
 @user_passes_test(test_func)
@@ -98,11 +102,16 @@ def onSubmit(request):
                 fields = []
 
                 # truncating field lengths to the character limits specified
-                title = metadata['title'][0:Form._meta.get_field('title').max_length]
+                title = (metadata.get('title') or '').strip()
+                title = title[0:Form._meta.get_field('title').max_length]
                 link_type = metadata['link_type'][0:Form._meta.get_field('link_type').max_length]
                 perms = metadata['perms'][0:Form._meta.get_field('perms').max_length]
                 success_message = metadata['success_message'][0:Form._meta.get_field('success_message').max_length]
                 success_url = metadata['success_url'][0:Form._meta.get_field('success_url').max_length]
+
+                # Validate that title is not empty or missing
+                if not title or not title.strip():
+                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
 
                 # Creating form
                 form = Form.objects.create(title=title,
@@ -196,8 +205,14 @@ def onModify(request):
                 # Populating the old fields list
                 dmh._getModelFieldList()
 
+                # Validate and normalize title (truncate to max_length like onSubmit does)
+                title_raw = (metadata.get('title') or '').strip()
+                title_normalized = title_raw[0:Form._meta.get_field('title').max_length]
+                if not title_normalized or not title_normalized.strip():
+                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
+
                 # NOT updating 'anonymous'
-                form.__dict__.update(title=metadata['title'], description=metadata['desc'], perms=metadata['perms'],
+                form.__dict__.update(title=title_normalized, description=metadata['desc'], perms=metadata['perms'],
                     success_message=metadata['success_message'], success_url=metadata['success_url']
                     )
 
