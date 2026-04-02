@@ -4,6 +4,42 @@
     
 }
 
+
+
+/* Custom User Auth Template Alignments */
+.form-submit-centered {
+    text-align: center;
+}
+
+.auth-header {
+    text-align: center;
+}
+
+.auth-subheader {
+    text-align: center;
+    margin-bottom: 0px;
+}
+
+.auth-instruction {
+    text-align: center;
+    font-weight: normal;
+    margin-top: 0px;
+}
+
+.auth-warning-text {
+    text-align: center;
+    color: #FF0000;
+    margin-bottom: 0px;
+}
+
+.form-table-label-top {
+    vertical-align: top;
+}
+
+.auth-role-select {
+    width: 95%;
+}
+
 /* Profile editor */
 #id_receive_txt_message {
     list-style:none
