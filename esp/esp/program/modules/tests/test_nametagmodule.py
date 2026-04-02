@@ -1,6 +1,6 @@
 from django.test.client import RequestFactory
 
-from esp.middleware import ESPError
+from esp.middleware import ESPError_NoLog
 from esp.program.models import ProgramModule, RegistrationProfile
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -98,7 +98,7 @@ class NameTagModuleTest(ProgramFrameworkTest):
 
     def test_generatetags_missing_type_raises(self):
         request = self._post_request({'progname': self.program.niceName()}, self.admins[0])
-        with self.assertRaises(ESPError):
+        with self.assertRaises(ESPError_NoLog):
             self.module.generatetags(request, 'manage', None, None, None, None, self.program)
 
     def test_generatetags_other_missing_group_raises(self):
@@ -108,7 +108,7 @@ class NameTagModuleTest(ProgramFrameworkTest):
             'group': '',
             'progname': self.program.niceName(),
         }, self.admins[0])
-        with self.assertRaises(ESPError):
+        with self.assertRaises(ESPError_NoLog):
             self.module.generatetags(request, 'manage', None, None, None, None, self.program)
 
     def test_generatetags_blank_invalid_number_raises(self):
