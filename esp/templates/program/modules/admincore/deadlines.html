@@ -14,7 +14,58 @@
 {% endblock %}
 
 {% block xtrajs %}
-<script type="text/javascript" src="/media/scripts/jquery.jstree.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="/media/scripts/jquery.jstree.js"></script>
+
+<script>
+$(function () {
+
+    console.log("JS LOADED");
+
+    setTimeout(function () {  
+
+        $(document).on('click', '.ajax-deadline', function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            console.log("CLICK WORKING");
+
+            var $this = $(this);
+            if ($this.hasClass('disabled')) return false;
+
+            $this.addClass('disabled');
+
+            var $container = $this.closest('th, td');
+
+            var url = $container.hasClass('is_open')
+                ? $this.data('close-url')
+                : $this.data('open-url');
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(data) {
+
+                    var isOpening = !$container.hasClass('is_open');
+
+                    $container.toggleClass('is_open is_closed');
+                    $this.text(isOpening ? 'Close' : 'Open');
+                    $this.toggleClass('btn-success btn-danger');
+
+                    $this.removeClass('disabled');
+                },
+                error: function() {
+                    $this.removeClass('disabled');
+                }
+            });
+
+            return false;
+        });
+
+    }, 0);
+
+});
+</script>
 {% endblock %}
 
 {% block content %}
@@ -97,7 +148,7 @@
                             <span class="bituri">{{ perm_type }}</span>
                             <br /><br />
                             {% if details.is_open %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}"
+                            <a href="javascript:void(0);"
                                 class="btn btn-danger ajax-deadline {% if details.implied_open %}disabled{% endif %}"
                                 {% if details.implied_open %}title="Can not be closed due to implied deadline"{% endif %}
                                 data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"
@@ -105,7 +156,7 @@
                                 Close
                             </a>
                             {% else %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"
+                            <a href="javascript:void(0);"
                                 class="btn btn-success ajax-deadline"
                                 data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"
                                 data-close-url="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}">
@@ -131,7 +182,8 @@
                             </td>
                     </tr>
                     {% empty %}
-                    <td colspan="3">No deadline set</td>
+                    <tr>
+                        <td colspan="4">No deadline set</td>
                     </tr>
                     {% endfor %}
                     {% endfor %}
@@ -203,14 +255,14 @@
                             <span class="bituri">{{ perm.permission_type }}</span>
                             <br /><br />
                             {% if perm.is_valid %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}"
+                            <a href="javascript:void(0);"
                                 class="btn btn-danger ajax-deadline"
                                 data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"
                                 data-close-url="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}">
                                 Close
                             </a>
                             {% else %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"
+                            <a href="javascript:void(0);"
                                 class="btn btn-success ajax-deadline"
                                 data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"
                                 data-close-url="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}">
@@ -229,7 +281,8 @@
                         </td>
                     </tr>
                     {% empty %}
-                    <td colspan="3">No permissions set</td>
+                    <tr>
+                        <td colspan="4">No permissions set</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -264,49 +317,4 @@
 <br /><br />
 
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
-
-<script type="text/javascript">
-$(document).on('click', '.ajax-deadline', function(e) {
-    e.preventDefault();
-    e.stopPropagation(); 
-
-    
-
-    var $this = $(this);
-    if ($this.hasClass('disabled')) return;
-
-    $this.addClass('disabled');
-
-    var $container = $this.closest('th, td');
-
-    var url = $container.hasClass('is_open')
-        ? $this.data('close-url')
-        : $this.data('open-url');
-
-    $.ajax({
-        url: url,
-        type: 'GET',
-        success: function(data) {
-
-            if (typeof data === "string" && data.indexOf("message_bad") !== -1) {
-                alert("Failed to update deadline.");
-                $this.removeClass('disabled');
-                return;
-            }
-
-            var isOpening = !$container.hasClass('is_open');
-
-            $container.toggleClass('is_open is_closed');
-            $this.text(isOpening ? 'Close' : 'Open');
-            $this.toggleClass('btn-success btn-danger');
-
-            $this.removeClass('disabled');
-        },
-        error: function() {
-            alert('Error occurred. Please try again.');
-            $this.removeClass('disabled');
-        }
-    });
-});
-</script>
 {% endblock %}
