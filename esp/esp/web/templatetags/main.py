@@ -23,7 +23,7 @@ def count_matching_chars(url, link):
             
     boundaries = ('/', '?', '#')
     
-    # Check if the match stops in the middle of a word component.
+    # Check if the match stops in the middle of a path segment.
     # This happens if either string has more characters and the next character is NOT a boundary.
     url_bad = (match_len < len(url) and url[match_len] not in boundaries)
     link_bad = (match_len < len(link) and link[match_len] not in boundaries)

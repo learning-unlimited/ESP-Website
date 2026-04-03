@@ -329,6 +329,9 @@ class TabMatchingTest(TestCase):
                         {'link': '/teach/splash.html', 'text': 'Splash'},
                         {'link': '/teach/classes.html', 'text': 'Classes'},
                         {'link': '/teach/ideas.html', 'text': 'Ideas'},
+                        # Additional link to test mid-segment prefix behavior:
+                        # nav link '/teach/ideas' vs URL '/teach/ideas.html'.
+                        {'link': '/teach/ideas', 'text': 'Ideas (no suffix)'},
                     ]
                 },
                 {
@@ -346,11 +349,10 @@ class TabMatchingTest(TestCase):
             # Test 1: Identical URL for header and sublink. The exact sublink should win (tab_1)
             self.assertEqual(extract_theme('/teach/splash.html'), 'tabcolor1')
             
-            # Test 2: Substring mismatch test. /teach/index.html shares '/teach/i' with 
-            # /teach/ideas.html. Ensure we don't partial match and mistakenly pick tab_3 (ideas).
-            # The fallback behavior uses the longest valid common prefix ('/teach/').
-            # Since multiple tabs tie at length 7 and none match exactly, the first checked
-            # string (header_link, tab_0) retains precedence.
+            # Test 2: Substring mismatch test. /teach/index.html shares the prefix '/teach/i' with
+            # /teach/ideas.html. Ensure we don't partial-match on that substring and mistakenly pick
+            # the ideas sublink; instead, we should fall back to the longest common '/teach/' prefix,
+            # which corresponds to the teach header tab (tab_0).
             self.assertEqual(extract_theme('/teach/index.html'), 'tabcolor0')
             
             # Test 3: Normal sublink should match
@@ -359,9 +361,13 @@ class TabMatchingTest(TestCase):
             # Test 4: Another category base
             self.assertEqual(extract_theme('/learn/index.html'), 'tabcolor0')
             
-            # Test 5: Prefix collision regression test from PR feedback.
-            # /teach/ideas is a string prefix of /teach/ideas.html, but the next char '.'
-            # is not a boundary. The algorithm should backtrack to the last boundary ('/teach/'),
-            # preventing a false heavy match. Like Test 2, it falls back to tab_0.
-            self.assertEqual(extract_theme('/teach/ideas'), 'tabcolor0')
+            # Test 5: Exact match for ideas.html should map to its own tab (third sublink).
+            self.assertEqual(extract_theme('/teach/ideas.html'), 'tabcolor3')
+
+            # Test 6: Mid-segment prefix link '/teach/ideas' must not be treated as a match for
+            # URL '/teach/ideas.html'. They should resolve to different tabs.
+            self.assertNotEqual(
+                extract_theme('/teach/ideas.html'),
+                extract_theme('/teach/ideas'),
+            )
 
