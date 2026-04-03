@@ -482,14 +482,40 @@ function Matrix(
      * Render the matrix.
      */
     this.render = function(){
+        this.el.empty();
+        var room_ids = Object.keys(this.rooms).sort(function(room1, room2) {
+            return this.rooms[room1].text.localeCompare(this.rooms[room2].text, undefined, {
+                numeric: true,
+                sensitivity: "base",
+            });
+        }.bind(this));
+        if (!this.timeslots.timeslots_sorted.length || !room_ids.length) {
+            var wrap = $j("<div/>").addClass("scheduler-matrix-empty-state");
+            var toolbar = $j("<div/>").addClass("scheduler-matrix-empty-toolbar");
+            toolbar.append($j("<button type='button' id='print_button' class='scheduler-matrix-toolbar-btn'>Print matrix</button>"));
+            toolbar.append($j("<button type='button' id='legend_button' class='scheduler-matrix-toolbar-btn'>Show legend</button>"));
+            wrap.append(toolbar);
+            if (!this.timeslots.timeslots_sorted.length) {
+                wrap.append($j("<p/>").html("<strong>No time blocks</strong> are configured for this program."));
+            }
+            if (!room_ids.length) {
+                wrap.append($j("<p/>").html("<strong>No classrooms</strong> are available for this program."));
+            }
+            wrap.append($j("<p/>").addClass("scheduler-matrix-empty-hint").text(
+                "Add program time slots and classroom resources in the admin site, then reload this page."));
+            this.el.append(wrap);
+            return;
+        }
+
         var table = $j("<table/>");
         var tbody = $j("<tbody/>");
         var colModal = [{width: 140, align: "center"}];
 
         //Time headers
         var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
-        var header_corner = $j("<th/>").append($j("<button id = 'print_button'>Print Matrix</button>"));
-        header_corner.append($j("<button id = 'legend_button'>Show Legend</button>"));
+        var header_corner = $j("<th/>").addClass("scheduler-matrix-toolbar-cell");
+        header_corner.append($j("<button type='button' id='print_button' class='scheduler-matrix-toolbar-btn'>Print matrix</button>"));
+        header_corner.append($j("<button type='button' id='legend_button' class='scheduler-matrix-toolbar-btn'>Show legend</button>"));
         header_row.append(header_corner);
         $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
             var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
@@ -499,14 +525,6 @@ function Matrix(
         }.bind(this));
         //Room headers
         var rows = {}; //table rows by room name
-        var room_ids = Object.keys(this.rooms);
-        room_ids = room_ids.sort(function (room1, room2) {
-            // sort by building number
-            return rooms[room1].text.localeCompare(rooms[room2].text, undefined, {
-                numeric: true,
-                sensitivity: 'base'
-            })
-        });
         $j.each(this.rooms, function(id, room){
             room = this.rooms[id];
             var room_header = $j("<td>")
