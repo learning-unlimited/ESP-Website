@@ -11,7 +11,6 @@ from django.contrib.auth.models import Group
 
 from esp.cal.models import Event, EventType, install
 from esp.tests.util import CacheFlushTestCase as TestCase
-import pytest
 
 
 def _setup_roles():
