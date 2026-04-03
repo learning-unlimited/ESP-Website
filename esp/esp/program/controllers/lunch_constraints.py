@@ -235,7 +235,7 @@ else:
 
         if self.include_conditions:
             #   Add conditions so the students are only required to have lunch if they have
-            #   classes both before and after lunch
+            #   classes both before AND after lunch (not either one)
             morning_tests = []
             for timeslot in self.days[day]['before']:
                 new_test = ScheduleTestOccupied()
@@ -243,7 +243,7 @@ else:
                 new_test.exp_id = exp_check.id
                 morning_tests.append(new_test)
                 seq_id += 1
-            self.apply_binary_op_to_list(exp_check, 'OR', '0', morning_tests)
+            self.apply_binary_op_to_list(exp_check, 'AND', '0', morning_tests)
 
             afternoon_tests = []
             for timeslot in self.days[day]['after']:
@@ -252,9 +252,9 @@ else:
                 new_test.exp_id = exp_check.id
                 afternoon_tests.append(new_test)
                 seq_id += 1
-            self.apply_binary_op_to_list(exp_check, 'OR', '0', afternoon_tests)
+            self.apply_binary_op_to_list(exp_check, 'AND', '0', afternoon_tests)
 
-            #   Add an AND to the exp_check so that it requires both a morning class and an afternoon class
+            #   Add an AND to the exp_check so that it requires both a morning class AND an afternoon class
             exp_check.add_token('AND')
         else:
             #   Make the check always true (e.g. students must always have a lunch period)
