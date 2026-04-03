@@ -87,10 +87,3 @@ DATABASES = {
     }
 }
 
-############
-# Selenium #
-############
-
-SELENIUM_TESTSERVER_HOST = 'localhost'
-SELENIUM_TESTSERVER_PORT = 8000
-SELENIUM_DRIVER = 'Chrome'
