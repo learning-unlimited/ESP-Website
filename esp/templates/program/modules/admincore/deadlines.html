@@ -15,62 +15,66 @@
 
 {% block xtrajs %}
 {{ block.super }}
-<script type="text/javascript" src="/media/scripts/jquery.jstree.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="/media/scripts/jquery.jstree.js"></script>
 
-<script type="text/javascript">
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
+<script>
+$(function () {
 
-var csrftoken = getCookie('csrftoken');
+    console.log("JS LOADED");
 
-$(document).on('click', '.ajax-deadline', function(e) {
-    e.preventDefault();
-    var $this = $(this);
-    if ($this.hasClass('disabled')) return;
+    setTimeout(function () {  
 
-    $this.addClass('disabled');
+        $(document).on('click', '.ajax-deadline', function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
 
-    var $th = $this.closest('th');
-    var url = $th.hasClass('is_open') ? $this.data('close-url') : $this.data('open-url');
+            console.log("CLICK WORKING");
 
-    $.ajax({
-        url: url,
-        type: 'GET',
-        success: function(data) {
-            if (typeof data === "string" && data.indexOf("message_bad") !== -1) {
-                alert("Failed to update deadline.");
-                $this.removeClass('disabled');
-                return;
-            }
+            var $this = $(this);
+            if ($this.hasClass('disabled')) return false;
 
-            var isOpening = !$th.hasClass('is_open');
+            $this.addClass('disabled');
 
-            $th.toggleClass('is_open is_closed');
-            $this.text(isOpening ? 'Close' : 'Open');
-            $this.toggleClass('btn-success btn-danger');
+            var $container = $this.closest('th, td');
 
-            $this.removeClass('disabled');
-        },
-        error: function() {
-            alert('Error occurred. Please try again.');
-            $this.removeClass('disabled');
-        }
-    });
+            var url = $container.hasClass('is_open')
+                ? $this.data('close-url')
+                : $this.data('open-url');
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(data) {
+
+                    if (typeof data === "string" && data.indexOf("message_bad") !== -1) {
+                        alert("Failed to update deadline.");
+                        $this.removeClass('disabled');
+                        return;
+                    }
+
+                    var isOpening = !$container.hasClass('is_open');
+
+                    $container.toggleClass('is_open is_closed');
+                    $this.text(isOpening ? 'Close' : 'Open');
+                    $this.toggleClass('btn-success btn-danger');
+
+                    $this.removeClass('disabled');
+                },
+                error: function() {
+                    $this.removeClass('disabled');
+                }
+            });
+
+            return false;
+        });
+
+    }, 0);
+
 });
 </script>
 {% endblock %}
+
 {% block content %}
 {% load users %}
 <div id="userbitforms">
@@ -149,7 +153,7 @@ $(document).on('click', '.ajax-deadline', function(e) {
                             <span class="bituri">{{ perm_type }}</span>
                             <br /><br />
                             {% if details.is_open %}
-                           <a {% if not details.implied_open %}href="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}"{% endif %}
+                            <a href="javascript:void(0);"
                                 class="btn btn-danger ajax-deadline {% if details.implied_open %}disabled{% endif %}"
                                 {% if details.implied_open %}title="Can not be closed due to implied deadline"{% endif %}
                                 data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"
@@ -157,7 +161,7 @@ $(document).on('click', '.ajax-deadline', function(e) {
                                 Close
                             </a>
                             {% else %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"
+                            <a href="javascript:void(0);"
                                 class="btn btn-success ajax-deadline"
                                 data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}"
                                 data-close-url="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}">
@@ -256,14 +260,14 @@ $(document).on('click', '.ajax-deadline', function(e) {
                             <span class="bituri">{{ perm.permission_type }}</span>
                             <br /><br />
                             {% if perm.is_valid %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}"
+                            <a href="javascript:void(0);"
                                 class="btn btn-danger ajax-deadline"
                                 data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"
                                 data-close-url="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}">
                                 Close
                             </a>
                             {% else %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"
+                            <a href="javascript:void(0);"
                                 class="btn btn-success ajax-deadline"
                                 data-open-url="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}"
                                 data-close-url="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}">
