@@ -14,13 +14,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="{% block fulltitle %}{% block meta_title %}{% if theme and theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock meta_title %}{% endblock fulltitle %}" />
-    <meta property="og:description" content="{% block description %}{% block meta_description %}{% if theme and theme.full_group_name %}Learn more about {{ theme.full_group_name }} at {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% else %}Learn more about {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% endif %}{% endblock meta_description %}{% endblock description %}" />
+    <meta property="og:title" content="{% block og_title %}{% block fulltitle %}{% endblock fulltitle %}{% endblock og_title %}" />
+    <meta property="og:description" content="{% block og_description %}{% block description %}{% endblock description %}{% endblock og_description %}" />
     <meta property="og:url" content="{{ request.build_absolute_uri }}" />
     <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png?v={{ current_logo_version }}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{% block fulltitle %}{% block meta_title %}{% if theme and theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock meta_title %}{% endblock fulltitle %}" />
-    <meta name="twitter:description" content="{% block description %}{% block meta_description %}{% if theme and theme.full_group_name %}Learn more about {{ theme.full_group_name }} at {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% else %}Learn more about {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% endif %}{% endblock meta_description %}{% endblock description %}" />
+    <meta name="twitter:title" content="{% block twitter_title %}{% block fulltitle %}{% endblock fulltitle %}{% endblock twitter_title %}" />
+    <meta name="twitter:description" content="{% block twitter_description %}{% block description %}{% endblock description %}{% endblock twitter_description %}" />
     <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png?v={{ current_logo_version }}" />
   {% endblock meta %}
 
