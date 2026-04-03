@@ -6,7 +6,6 @@ These tests verify:
 2. That it does NOT delete objects belonging to other users in the same program.
 3. That it does NOT delete objects from other programs.
 """
-from __future__ import absolute_import
 
 from esp.program.controllers.testingutils import TestDataCleanupController
 from esp.program.models import (
