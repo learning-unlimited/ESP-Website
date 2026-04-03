@@ -145,7 +145,10 @@ class UserSearchController(object):
                         rc = re.compile(criteria[field])
                     except re.error:
                         raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
-                    filter_dict = {'%s__iregex' % field: criteria[field]}
+                    if field == 'username':
+            		filter_dict = {'username__iexact': criteria[field].strip()}
+        	    else:
+            		filter_dict = {'%s__iregex' % field: criteria[field]}
                     if '%s__not' % field in criteria:
                         Q_exclude |= Q(**filter_dict)
                     else:
