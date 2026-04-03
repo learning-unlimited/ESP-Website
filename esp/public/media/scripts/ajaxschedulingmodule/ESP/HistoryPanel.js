@@ -66,29 +66,30 @@ HistoryPanel.prototype.render = function() {
         if (!isNewest) {
             btn.prop("disabled", true);
             btn.attr("title", "Undo the most recent action first");
-        }
-        (function(entry) {
+        } else {
             btn.on("click", function() {
-                if (!isNewest) {
-                    return;
-                }
-                self.runUndo(entry);
+                self.runUndoLatest();
             });
-        })(item);
+        }
         li.append(span).append(btn);
         this.container.append(li);
     }
 };
 
-HistoryPanel.prototype.runUndo = function(item) {
+/**
+ * Pop and run the latest undo callback. Does not rely on entry object identity
+ * (avoids stale closure bugs after multiple add/remove/render cycles).
+ */
+HistoryPanel.prototype.runUndoLatest = function() {
     var self = this;
-    if (this.items.length === 0 || this.items[this.items.length - 1] !== item) {
+    if (this.undoing || this.items.length === 0) {
         return;
     }
+    var last = this.items[this.items.length - 1];
     this.items.pop();
     this.render();
     this.undoing = true;
-    item.undo(function() {
+    last.undo(function() {
         self.undoing = false;
     });
 };

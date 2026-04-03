@@ -495,6 +495,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
         // Make sure the assignment is valid
         if (!this.matrix.validateAssignment(section, room_id, schedule_timeslots).valid){
+            if (onComplete) onComplete();
             return;
         }
 
@@ -502,6 +503,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         if (section.schedulingLocked){
             this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
             this.unselectSection();
+            if (onComplete) onComplete();
             return;
         }
 
@@ -634,6 +636,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         if (section.schedulingLocked){
             this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
             this.unselectSection();
+            if (onComplete) onComplete();
             return;
         }
 
@@ -902,6 +905,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         }.bind(this);
 
         if(section.schedulingComment == comment && section.schedulingLocked == locked) {
+            if (doneCallback) doneCallback();
             return;
         }
 
