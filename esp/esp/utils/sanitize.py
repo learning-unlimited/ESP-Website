@@ -106,3 +106,23 @@ def strip_base64_images(html):
         )
 
     return result, total
+
+
+def sanitize_html_comments(value):
+    """Remove nested HTML comment markers that can break Markdown/HTML parsing."""
+    result = []
+    i = 0
+    while i < len(value):
+        start = value.find('<!--', i)
+        if start == -1:
+            result.append(value[i:])
+            break
+        result.append(value[i:start])
+        end = value.find('-->', start + 4)
+        if end == -1:
+            result.append(value[start:])
+            break
+        content = value[start + 4:end].replace('<!--', '').replace('-->', '')
+        result.append('<!--' + content + '-->')
+        i = end + 3
+    return ''.join(result)

@@ -35,12 +35,14 @@ from datetime import datetime
 import hashlib
 
 from django.db import models
+from django.urls import reverse
 
 from markdown import markdown
 from esp.db.fields import AjaxForeignKey
 from argcache import cache_function
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
+from esp.utils.sanitize import sanitize_html_comments
 
 class QSDManager(models.Manager):
 
@@ -145,7 +147,7 @@ class QuasiStaticData(models.Model):
 
     @cache_function
     def html(self):
-        return markdown(self.content)
+        return markdown(sanitize_html_comments(self.content))
     html.depend_on_row('qsd.QuasiStaticData', 'self')
 
     @staticmethod
@@ -179,12 +181,12 @@ class QuasiStaticData(models.Model):
                 if url_parts[0] == 'programs':
                     return (progs[0], '/'.join(url_parts[3:]))
                 else:
-                    return (progs[0], '%s:' % url_parts[0] + '/'.join(url_parts[3:]))
+                    return (progs[0], f'{url_parts[0]}:' + '/'.join(url_parts[3:]))
 
         return None
 
     def get_absolute_url(self):
-        return "/"+self.url+".html"
+        return reverse('qsd_page', kwargs={'url': self.url})
 
     class Meta:
         verbose_name = 'Editable'

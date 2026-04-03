@@ -10,37 +10,15 @@ is only entered by "trusted" users.  The code is also simpler for us since we
 pin to a given version of markdown, and don't use markdown extensions.
 """
 
-import re
-
 from django import template
 from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 
 # Can't conflict with the `markdown` filter name.
 import markdown as md
+from esp.utils.sanitize import sanitize_html_comments
 
 register = template.Library()
-
-
-def _sanitize_html_comments(value):
-    """Remove nested comment markers that break HTML parsing."""
-    result = []
-    i = 0
-    while i < len(value):
-        start = value.find('<!--', i)
-        if start == -1:
-            result.append(value[i:])
-            break
-        result.append(value[i:start])
-        end = value.find('-->', start + 4)
-        if end == -1:
-            result.append(value[start:])
-            break
-        content = value[start + 4:end].replace('<!--', '').replace('-->', '')
-        result.append('<!--' + content + '-->')
-        i = end + 3
-    return ''.join(result)
-
 
 @register.filter(is_safe=True)
 def markdown(value):
@@ -51,5 +29,5 @@ def markdown(value):
 @register.filter(is_safe=True)
 def markdown_safe(value):
     """Runs Markdown with HTML comment sanitization."""
-    sanitized = _sanitize_html_comments(force_text(value))
+    sanitized = sanitize_html_comments(force_text(value))
     return mark_safe(md.markdown(sanitized))
