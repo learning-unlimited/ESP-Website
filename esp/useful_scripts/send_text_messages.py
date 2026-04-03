@@ -1,4 +1,3 @@
-import sys
 import argparse
 from twilio.rest import Client
 
@@ -6,13 +5,15 @@ parser = argparse.ArgumentParser(description="Send text messages using Twilio.")
 parser.add_argument("account_sid", help="Twilio Account SID")
 parser.add_argument("auth_token", help="Twilio Auth Token")
 parser.add_argument("senders_file", help="File with line-separated phone numbers to send from")
-parser.add_argument("recipients_file", help="File with line-separated phone numbers recipients")
+parser.add_argument("recipients_file", help="File with line-separated recipient phone numbers")
 parser.add_argument("message", help="Message to send")
 args = parser.parse_args()
 
 account_sid = args.account_sid
 auth_token = args.auth_token
 ourNumbers = [x.strip() for x in open(args.senders_file, "r").readlines() if x.strip()]
+if not ourNumbers:
+    parser.error("No sender numbers provided in '{}'".format(args.senders_file))
 recipients = [x.strip() for x in open(args.recipients_file, "r").readlines() if x.strip()]
 body = args.message
 
