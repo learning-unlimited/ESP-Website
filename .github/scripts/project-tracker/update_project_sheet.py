@@ -43,8 +43,13 @@ GRAPHQL_URL = "https://api.github.com/graphql"
 import urllib.request
 
 
-def graphql(query: str, variables: dict | None = None) -> dict:
-    """Execute a GitHub GraphQL query and return the JSON response."""
+def graphql(query: str, variables: dict | None = None, *, allow_partial: bool = False) -> dict:
+    """Execute a GitHub GraphQL query and return the JSON response.
+
+    If *allow_partial* is True, errors are logged but execution continues
+    as long as partial data was returned (useful for batched user lookups
+    where bot accounts like ``dependabot`` are not found).
+    """
     payload = json.dumps({"query": query, "variables": variables or {}}).encode()
     req = urllib.request.Request(
         GRAPHQL_URL,
@@ -57,8 +62,12 @@ def graphql(query: str, variables: dict | None = None) -> dict:
     with urllib.request.urlopen(req) as resp:
         data = json.loads(resp.read())
     if "errors" in data:
-        print("GraphQL errors:", json.dumps(data["errors"], indent=2), file=sys.stderr)
-        sys.exit(1)
+        if allow_partial and data.get("data"):
+            # Log but continue — some entries (e.g. bots) may not resolve
+            pass
+        else:
+            print("GraphQL errors:", json.dumps(data["errors"], indent=2), file=sys.stderr)
+            sys.exit(1)
     return data["data"]
 
 
@@ -325,29 +334,99 @@ def fetch_pr_counts(logins: list[str], search_filter: str) -> dict[str, int]:
     return counts
 
 
+def fetch_profile_names(logins: list[str]) -> dict[str, str]:
+    """
+    Fetch display names from GitHub user profiles using batched GraphQL
+    queries (up to 20 per request).  Bot accounts (e.g. dependabot) that
+    don't resolve as User nodes are silently skipped.
+    """
+    names: dict[str, str] = {}
+    batch_size = 20
+
+    for i in range(0, len(logins), batch_size):
+        batch = logins[i : i + batch_size]
+        fragments = []
+        for j, login in enumerate(batch):
+            fragments.append(f'u{j}: user(login: "{login}") {{ name }}')
+        query = "query {\n" + "\n".join(fragments) + "\n}"
+        data = graphql(query, allow_partial=True)
+        for j, login in enumerate(batch):
+            user = data.get(f"u{j}") or {}
+            names[login] = user.get("name") or ""
+
+    return names
+
+
 def link_count(url: str, count: int) -> str:
     """Google Sheets HYPERLINK formula displaying a count."""
     return f'=HYPERLINK("{url}", {count})'
 
 
+# ---------------------------------------------------------------------------
+# Fetch all PR authors since start of year
+# ---------------------------------------------------------------------------
+
+ALL_PR_AUTHORS_QUERY = """
+query($searchQuery: String!, $cursor: String) {
+  search(query: $searchQuery, type: ISSUE, first: 100, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      ... on PullRequest {
+        author { login }
+      }
+    }
+  }
+}
+"""
+
+
+def fetch_pr_authors_since(since: str) -> set[str]:
+    """
+    Return the set of all PR author logins since the given date
+    (ISO date string like '2026-01-01').
+    """
+    search_query = (
+        f"repo:{REPO_OWNER}/{REPO_NAME} is:pr created:>={since}"
+    )
+    variables = {"searchQuery": search_query}
+    nodes = paginate(ALL_PR_AUTHORS_QUERY, ["search"], variables)
+    logins: set[str] = set()
+    for node in nodes:
+        author = (node.get("author") or {}).get("login")
+        if author:
+            logins.add(author)
+    return logins
+
+
 def build_contributor_rows(
-    prs: list[dict], issues: list[dict]
+    prs: list[dict], issues: list[dict], all_pr_authors: set[str]
 ) -> list[list[str]]:
     """Build the rows for the Contributor Activity sheet."""
     header = [
-        "Contributor", "Open PRs", "Merged PRs", "Closed PRs",
-        "Assigned Open Issues", "Last Activity",
+        "Contributor", "Name", "Open PRs", "Merged PRs", "Closed PRs",
+        "Assigned Open Issues", "Oldest Open PR", "Last Activity",
     ]
 
     activity: dict[str, dict] = defaultdict(
-        lambda: {"open_prs": 0, "assigned_issues": 0, "last_activity": ""}
+        lambda: {
+            "open_prs": 0, "assigned_issues": 0,
+            "last_activity": "", "oldest_open_pr": "",
+        }
     )
+
+    # Seed with all PR authors this year so contributors with only
+    # merged/closed PRs still appear in the sheet
+    for login in all_pr_authors:
+        _ = activity[login]  # creates the default entry
 
     for pr in prs:
         login = (pr["author"] or {}).get("login", "ghost")
         activity[login]["open_prs"] += 1
         if pr["updatedAt"] > activity[login]["last_activity"]:
             activity[login]["last_activity"] = pr["updatedAt"]
+        created = pr["createdAt"]
+        if not activity[login]["oldest_open_pr"] or created < activity[login]["oldest_open_pr"]:
+            activity[login]["oldest_open_pr"] = created
 
     for issue in issues:
         for assignee in issue["assignees"]["nodes"]:
@@ -356,8 +435,9 @@ def build_contributor_rows(
             if issue["updatedAt"] > activity[login]["last_activity"]:
                 activity[login]["last_activity"] = issue["updatedAt"]
 
-    # Fetch merged and closed (unmerged) PR counts in batched queries
+    # Fetch profile names, merged counts, and closed counts in batched queries
     all_logins = list(activity.keys())
+    profile_names = fetch_profile_names(all_logins)
     merged_counts = fetch_pr_counts(all_logins, "is:merged")
     closed_counts = fetch_pr_counts(all_logins, "is:closed is:unmerged")
 
@@ -376,10 +456,12 @@ def build_contributor_rows(
         )
         rows.append([
             link_profile(login),
+            profile_names.get(login, ""),
             link_count(open_pr_url, info["open_prs"]),
             link_count(merged_pr_url, merged_counts.get(login, 0)),
             link_count(closed_pr_url, closed_counts.get(login, 0)),
             link_count(issues_url, info["assigned_issues"]),
+            fmt_time(info["oldest_open_pr"]),
             fmt_time(info["last_activity"]),
         ])
 
@@ -443,9 +525,14 @@ def main() -> None:
     issues = fetch_issues()
     print(f"    Found {len(issues)} open issues")
 
+    year_start = datetime.now(timezone.utc).strftime("%Y") + "-01-01"
+    print(f"  Fetching all PR authors since {year_start} ...")
+    all_pr_authors = fetch_pr_authors_since(year_start)
+    print(f"    Found {len(all_pr_authors)} unique PR authors")
+
     pr_rows = build_pr_rows(prs)
     issue_rows = build_issue_rows(issues)
-    contributor_rows = build_contributor_rows(prs, issues)
+    contributor_rows = build_contributor_rows(prs, issues, all_pr_authors)
 
     print(f"Writing to Google Sheet {SHEET_ID} ...")
     gc = get_gspread_client()
