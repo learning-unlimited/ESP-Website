@@ -57,10 +57,15 @@ def myesp_passwd(request):
                         user = authenticate(username=request.user.username,
                                             password=new_data['password'])
 
-                        user.set_password(new_data['newpasswd'])
-                        user.save()
-                        login(request, user)
-                        return render_to_response('users/passwd.html', request, {'Success': True})
+                        if new_data['password'] == new_data['newpasswd']:
+                            form.add_error('newpasswd', "Current password and new password must be different.")
+                        else:
+                            user.set_password(new_data['newpasswd'])
+                            user.save()
+                            login(request, user)
+                            return render_to_response('users/passwd.html', request, {'Success': True})
+
+
         else:
                 form = UserPasswdForm(user=request.user)
 

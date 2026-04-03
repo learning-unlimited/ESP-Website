@@ -16,75 +16,91 @@
   <ul>
     {% for u in accounts %}
     <li>Username: "{{ u.username }}" (
-    <form method="post" action="/myesp/login">
-      <input type="hidden" name="username" value="{{ u.username }}" />
-      <input type="hidden" name="password" value="" />
-      <input type="hidden" name="next" value="/myesp/profile/" />
-      <input type="submit" value="Try logging in" class="btn btn-primary" />
-    </form>
-    <form action="/myesp/passwdrecover/" method="post">
-      <input type="hidden" name="email" value="{{ u.email }}" />
-      <input type="hidden" name="username" value="{{ u.username }}" />
-      <input type="submit" value="I forgot my password!" class="btn btn-default" />
-    </form>
-    )
+      <form method="post" action="/myesp/login">
+        <input type="hidden" name="username" value="{{ u.username }}" />
+        <input type="hidden" name="password" value="" />
+        <input type="hidden" name="next" value="/myesp/profile/" />
+        <input type="submit" value="Try logging in" class="btn btn-primary" />
+      </form>
+      <form action="/myesp/passwdrecover/" method="post">
+        <input type="hidden" name="email" value="{{ u.email }}" />
+        <input type="hidden" name="username" value="{{ u.username }}" />
+        <input type="submit" value="I forgot my password!" class="btn btn-default" />
+      </form>
+      )
     </li>
     {% endfor %}
   </ul>
 </div>
 {% endif %}
 <div>
-<h1>Create a new account</h1><br />
-{% load render_qsd %}
-{% inline_qsd_block "myesp/create_new_account_headertext" %}
-<p>
-  Welcome to {{ settings.ORGANIZATION_SHORT_NAME }}!
-  To do almost anything with us, you first need to register
-  an account with us. After you register an account, you will be allowed to register
-  for programs, sign up for classes, among other things.
-  By creating an account, you agree to the <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
-  set forth by Learning Unlimited, the umbrella organization of which we are a member.
-</p>
-{% if settings.USE_MAILMAN %}
-<p>
-  If you just want to receive email announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists.
-  (The latter gets emails about longer-term {{ settings.ORGANIZATION_SHORT_NAME }} programs, targeted at people in the local area,
-  while the former gets emails about programs that might be worth travelling for.)
-  If you create an account, you will be automatically subscribed to our main announcements.
-</p>
-{% endif %}
-{% end_inline_qsd_block %}
+  <h1>Create a new account</h1><br />
+  {% load render_qsd %}
+  {% inline_qsd_block "myesp/create_new_account_headertext" %}
+  <p>
+    Welcome to {{ settings.ORGANIZATION_SHORT_NAME }}!
+    To do almost anything with us, you first need to register
+    an account with us. After you register an account, you will be allowed to register
+    for programs, sign up for classes, among other things.
+    By creating an account, you agree to the <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy
+      Policy</a>
+    set forth by Learning Unlimited, the umbrella organization of which we are a member.
+  </p>
+  {% if settings.USE_MAILMAN %}
+  <p>
+    If you just want to receive email announcements about our programs, you can register for our <a
+      href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a
+      href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists.
+    (The latter gets emails about longer-term {{ settings.ORGANIZATION_SHORT_NAME }} programs, targeted at people in the
+    local area,
+    while the former gets emails about programs that might be worth travelling for.)
+    If you create an account, you will be automatically subscribed to our main announcements.
+  </p>
+  {% endif %}
+  {% end_inline_qsd_block %}
 </div>
 <div>
-<form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well">
-  <fieldset>
-    <h3>User Account Creation Form</h3>
+  <form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well">
+    <fieldset>
+      <h3>User Account Creation Form</h3>
 
-    {% if form.errors %}
+      {% if form.errors %}
 
-    <div class="errors">
-      <p>There
-      {% if form.errors|length_is:1 %}is an error{% else %}
-      are errors{% endif %} in the below form. Please fix and resubmit.<p>
-    </div>
+      <div class="errors">
+        <p>There
+          {% if form.errors|length_is:1 %}is an error{% else %}
+          are errors{% endif %} in the below form. Please fix and resubmit.
+        <p>
+      </div>
 
 
-    {% endif %}
+      {% endif %}
 
-    {% include "themes/bs_form.html" %}
-    {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
+      {% include "themes/bs_form.html" %}
+      {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 
-    <div class="form-actions">
-    <input type="submit" value="{% if accounts %}Confirm: Create another account for this email{% else %}Create account{% endif %}" name="submit_btn" class="btn btn-primary" />
-    </div>
-  </fieldset>
-</form>
+      <label><b>Your password must contain:</b></label>
+      <ul>
+        <li>At least 8 characters</li>
+        <li>At least 1 number (0–9)</li>
+        <li>At least 1 lowercase letter</li>
+        <li>At least 1 uppercase letter</li>
+        <li>At least 1 of these special characters: @, #, !, %, $</li>
+      </ul>
+
+      <div class="form-actions">
+        <input type="submit"
+          value="{% if accounts %}Confirm: Create another account for this email{% else %}Create account{% endif %}"
+          name="submit_btn" class="btn btn-primary" />
+      </div>
+    </fieldset>
+  </form>
 </div>
 
 <script type="text/javascript">
-<!--
-  document.getElementById('id_first_name').focus();
-//-->
+  <!--
+    document.getElementById('id_first_name').focus();
+  //-->
 </script>
 
 {% endblock %}

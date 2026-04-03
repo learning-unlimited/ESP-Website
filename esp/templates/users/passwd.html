@@ -7,54 +7,99 @@
 {% if Success %}
 
 <h2>Congratulations!<h2>
-<br />
-<br />
-<p>
-Your password has been successfully changed.
-</p>
-{% else %}
-<br />
-<p>Welcome to the change password page. To change your password, please fill out the following form:
-</p>
+    <br />
+    <br />
+    <p>
+      Your password has been successfully changed.
+    </p>
+    {% else %}
 
-<br />
+    {% if form.non_field_errors %}
+    <div class="form_error_alert">
+      {% for error in form.non_field_errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
 
-<form action="{{request.path}}" name="changepwform" method="post">
-<input type='hidden' name='op' value='register'>
-<table width='65%' cellpadding='2' align='center' border='0'>
-<tr>
- <td><label for="username"><strong>Username:</strong></label></td>
- <td>{{ request.user.username }}
- </td>
-</tr>
+    <br />
+    <div>
+      <p>Welcome to the change password page. To change your password, please fill out the following form:</p>
 
-<tr>
- <td><label for="password"><strong>Current Password:</strong></label></td>
- <td>{{ form.password }} {% if form.password.errors %}
-   <br /><span class="form_error">{{ form.password.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+    </div>
 
-<tr>
- <td><label for="newpasswd"><strong>New Password:</strong></label></td>
- <td>{{ form.newpasswd }} {% if form.newpasswd.errors %}
-   <br /><span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+    <br />
 
-<tr>
- <td><label for="newpasswdconfirm"><strong>New password confirm:</strong></label></td>
- <td>{{ form.newpasswdconfirm }} {% if form.newpasswdconfirm.errors %}
-   <br /><span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+    <form action="{{request.path}}" name="changepwform" method="post">
+      <input type='hidden' name='op' value='register'>
+      <table width='65%' cellpadding='2' align='center' border='0'>
+        <tr>
+          <td><label for="username"><strong>Username:</strong></label></td>
+          <td>{{ request.user.username }}
+          </td>
+        </tr>
 
-</table>
+        <tr>
+          <td><label for="password"><strong>Current Password:</strong></label></td>
+          <td>{{ form.password }}
+            <i class="eye fa-solid fa-eye" id="togglePassword"></i>
+            {% if form.password.errors %}
+            <br /><span class="form_error">{{ form.password.errors|join:", " }}</span>
+            {% endif %}
+          </td>
+        </tr>
 
-<p style="text-align: center"><input type='submit' value='-  Change My Password  -' class='btn btn-primary'></p>
-</form>
-{% endif %}
-{% endblock %}
+        <tr>
+          <td><label for="newpasswd"><strong>New Password:</strong></label></td>
+          <td>{{ form.newpasswd }}
+            <i class="eye fa-solid fa-eye" id="togglePassword"></i>
+            {% if form.newpasswd.errors %}
+            <br /><span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
+            {% endif %}
+          </td>
+        </tr>
+
+        <tr>
+          <td><label for="newpasswdconfirm"><strong>New password confirm:</strong></label></td>
+          <td>{{ form.newpasswdconfirm }}
+            <i class="eye fa-solid fa-eye" id="togglePassword"></i>
+            {% if form.newpasswdconfirm.errors %}
+            <br /><span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
+            {% endif %}
+          </td>
+        </tr>
+
+      </table>
+      <label><b>Your password must contain:</b></label>
+      <ul>
+        <li>At least 8 characters</li>
+        <li>At least one number (e.g., 0-9)</li>
+        <li>At least one lowercase letter</li>
+        <li>At least one uppercase letter</li>
+        <li>At least one of the following special characters: (@, #, !, %, $, ...)</li>
+      </ul>
+
+      <p style="text-align: center"><input type='submit' value='-  Change My Password  -' class='btn btn-primary'></p>
+    </form>
+
+    <script>
+      let fields = document.querySelectorAll(".required");
+      let buttons = document.querySelectorAll(".fa-eye");
+      buttons.forEach((btn, index) => {
+        btn.addEventListener("click", () => {
+          if (fields[index].type === "password") {
+            fields[index].type = "text";
+            buttons[index].classList.replace("fa-eye", "fa-eye-slash");
+          } else {
+            fields[index].type = "password";
+            buttons[index].classList.replace("fa-eye-slash", "fa-eye");
+          }
+        });
+      });
+
+
+
+    </script>
+
+    {% endif %}
+    {% endblock %}
