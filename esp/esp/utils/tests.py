@@ -26,6 +26,7 @@ from esp.middleware import ESPError_Log
 from esp.users.models import ESPUser
 from esp import utils
 from esp.utils import query_builder
+from esp.utils.formats import format_lazy
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
 
@@ -384,15 +385,7 @@ class QueryBuilderTest(DjangoTestCase):
                          {'reactClass': 'SelectInput',
                           'options': [{'name': i,
                                        'title': f'option {i}'}
-                                      # use options.keys() to get the
-                                      # sort order the same as the dict sort
-                                      # order.  It doesn't matter in reality,
-                                      # but just making it the same is easier
-                                      # than writing a thing to compare
-                                      # correctly.
                                       for i in options.keys()]})
-        # Q objects don't have an __eq__, so they don't compare as equal.  But
-        # comparing their str()s seems to work reasonably well.
         self.assertEqual(str(select_input.as_q('5')), str(Q(a_db_field='5')))
         with self.assertRaises(ESPError_Log):
             select_input.as_q('10000')
@@ -524,6 +517,20 @@ class StripBase64ImagesTest(DjangoTestCase):
         self.assertEqual(count, 0)
 
 
+class FormatLazyTest(DjangoTestCase):
+    def test_basic_substitution(self):
+        result = format_lazy("Hello %s", "world")
+        self.assertEqual(str(result), "Hello world")
+
+    def test_returns_lazy_proxy(self):
+        result = format_lazy("Hello %s", "world")
+        self.assertNotIsInstance(result, str)
+
+    def test_integer_substitution(self):
+        result = format_lazy("Value: %d", 42)
+        self.assertEqual(str(result), "Value: 42")
+
+
 def suite():
     """Choose tests to expose to the Django tester."""
     s = unittest.TestSuite()
@@ -532,5 +539,3 @@ def suite():
     # Add doctests from esp.utils.__init__.py
     s.addTest(doctest.DocTestSuite(utils))
     return s
-
-
