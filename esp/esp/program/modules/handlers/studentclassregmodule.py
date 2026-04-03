@@ -41,6 +41,7 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
 from django.http import HttpResponse, Http404
+from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
