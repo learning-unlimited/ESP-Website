@@ -53,6 +53,13 @@ function Matrix(
         return (a.text).toLowerCase().search(this.filter.roomName.val)>-1
     }.bind(this);
 
+    
+    $j("#room-filter-threshold").on("input", function() {
+        var val = parseInt($j(this).val());
+        var label = val === 0 ? "0% (show all)" : val + "%";
+        $j("#room-filter-threshold-label").text(label);
+        $j("body").trigger("room-filters-changed");
+    });
     $j.each(this.filter, function(filterName, filterObject) {
         filterObject.el.on("change", function() {
             filterObject.val = filterObject.el.val().trim();
@@ -77,42 +84,75 @@ function Matrix(
     /**
      * Get the rooms satisfying the search criteria.
      */
-    this.filteredRooms = function(){
-        var returnedRooms = [];
-        $j.each(this.rooms, function(index, room) {
-            var roomValid;
-            // check every criterion in the room filter tab, short-circuiting if possible
-            roomValid = true;
-            for (var filterName in this.filter) {
-                if (this.filter.hasOwnProperty(filterName)) {
-                    var filterObject = this.filter[filterName];
-                    // this loops over properties in this.filter
-                    if (filterObject.active && !filterObject.valid(room)) {
-                        roomValid = false;
-                        break;
-                    }
-                }
+    this.roomMatchScore = function(room) {
+        var totalWeight = 0;
+        var totalPenalty = 0;
+        if (this.filter.roomCapacityMin.active) {
+            totalWeight += 1;
+            if (room.num_students < this.filter.roomCapacityMin.val) {
+                var dist = (this.filter.roomCapacityMin.val - room.num_students) / this.filter.roomCapacityMin.val;
+                totalPenalty += dist * dist;
             }
-            if (roomValid) {
-                returnedRooms.push(room);
+        }
+        if (this.filter.roomCapacityMax.active) {
+            totalWeight += 1;
+            if (room.num_students > this.filter.roomCapacityMax.val) {
+                var dist = (room.num_students - this.filter.roomCapacityMax.val) / this.filter.roomCapacityMax.val;
+                totalPenalty += dist * dist;
+            }
+        }
+        if (this.filter.roomResource.active) {
+            totalWeight += 1;
+            if (!this.filter.roomResource.valid(room)) { totalPenalty += 1; }
+        }
+        if (this.filter.roomName.active) {
+            totalWeight += 1;
+            if (!this.filter.roomName.valid(room)) { totalPenalty += 1; }
+        }
+        if (totalWeight === 0) return 1.0;
+        return Math.max(0, Math.min(1, 1.0 - (totalPenalty / totalWeight)));
+    };
+    this.filteredRooms = function(){
+        var threshold = parseFloat($j("#room-filter-threshold").val()) / 100 || 0;
+        var scoredRooms = [];
+        $j.each(this.rooms, function(index, room) {
+            var score = this.roomMatchScore(room);
+            if (score >= threshold) {
+                scoredRooms.push({room: room, score: score});
             }
         }.bind(this));
-        return returnedRooms;
+        scoredRooms.sort(function(a, b) { return b.score - a.score; });
+        return scoredRooms.map(function(item) { return item.room; });
     };
-    
     this.updateRooms = function(){
-        var filtRooms = this.filteredRooms()
+        var anyFilterActive = false;
+        $j.each(this.filter, function(filterName, filterObject) {
+            if (filterObject.active) anyFilterActive = true;
+        });
+        var filtRooms = this.filteredRooms();
         $j.each(this.rooms, function(index, room) {
-            // get rows to show or hide
             var rows = $j(".room[data-id='" + room.id + "']").parent();
+            var score = this.roomMatchScore(room);
             if (filtRooms.includes(room)) {
                 rows.css("display", "table-row");
+                if (anyFilterActive) {
+                    var pct = Math.round(score * 100);
+                    var color = score === 1.0 ? "#28a745" : score >= 0.6 ? "#ffc107" : "#dc3545";
+                    var badge = $j(".room[data-id='" + room.id + "'] .room-match-badge");
+                    if (badge.length === 0) {
+                        $j(".room[data-id='" + room.id + "']").append("<span class='room-match-badge' style='font-size:10px;padding:1px 4px;border-radius:3px;color:#fff;margin-left:4px;background:" + color + "'>" + pct + "%</span>");
+                    } else {
+                        badge.css("background", color).text(pct + "%");
+                    }
+                } else {
+                    $j(".room[data-id='" + room.id + "'] .room-match-badge").remove();
+                }
             } else {
                 rows.css("display", "none");
+                $j(".room[data-id='" + room.id + "'] .room-match-badge").remove();
             }
         }.bind(this));
     };
-
     this.sections = sections;
     this.sections.bindMatrix(this);
     this.moderatorDirectory = moderatorDirectory;
