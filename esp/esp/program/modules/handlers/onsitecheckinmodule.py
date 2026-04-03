@@ -367,9 +367,13 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         else:
                             self.delete_record(key)
                     if "undocheckin" in request.POST:
-                        Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")[0].delete()
+                        record = Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time").first()
+                        if record:
+                            record.delete()
                     if "undocheckout" in request.POST:
-                        Record.objects.filter(event__name="checked_out", program=self.program, user=self.student).order_by("-time")[0].delete()
+                        record = Record.objects.filter(event__name="checked_out", program=self.program, user=self.student).order_by("-time").first()
+                        if record:
+                            record.delete()
                 message = "Check-in updated for " + user.username
             else:
                 error = True
