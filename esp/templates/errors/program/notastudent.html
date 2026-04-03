@@ -16,7 +16,7 @@ The user account is not a student.
 Please note: <em>Each</em> child should create a separate account for themself. This allows us to accurately determine which students are in which classes.
 <br />
 <br />
-{% url 'student_register' as student_register_url %}
+{% url 'esp.users.views.user_registration_phase1' as student_register_url %}
 <a href="{% url 'signout' %}?redirect={{ student_register_url|urlencode }}&role=Student" title="Create a student account!">Click here to create a new {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }} student account!</a>
 
 </p>
