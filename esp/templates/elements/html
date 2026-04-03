@@ -3,24 +3,24 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 {% if theme %}<!-- Theme: {{ theme.theme_name }} -->{% endif %}
   <head>
-    <title>{% block fulltitle %}{% endblock %}</title>
+    <title>{% block fulltitle %}{% block meta_title %}{% if theme and theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock meta_title %}{% endblock fulltitle %}</title>
     <meta name="csrf-cookie-name" content="{{ settings.CSRF_COOKIE_NAME|escape }}">
 
   {% block meta %}
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="description" content="{% block description %}{% endblock %}" />
+    <meta name="description" content="{% block description %}{% block meta_description %}{% if theme and theme.full_group_name %}Learn more about {{ theme.full_group_name }} at {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% else %}Learn more about {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% endif %}{% endblock meta_description %}{% endblock description %}" />
     <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
     <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="{% block fulltitle %}{% endblock %}" />
-    <meta property="og:description" content="{% block description %}{% endblock %}" />
+    <meta property="og:title" content="{% block fulltitle %}{% block meta_title %}{% if theme and theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock meta_title %}{% endblock fulltitle %}" />
+    <meta property="og:description" content="{% block description %}{% block meta_description %}{% if theme and theme.full_group_name %}Learn more about {{ theme.full_group_name }} at {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% else %}Learn more about {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% endif %}{% endblock meta_description %}{% endblock description %}" />
     <meta property="og:url" content="{{ request.build_absolute_uri }}" />
     <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png?v={{ current_logo_version }}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{% block fulltitle %}{% endblock %}" />
-    <meta name="twitter:description" content="{% block description %}{% endblock %}" />
+    <meta name="twitter:title" content="{% block fulltitle %}{% block meta_title %}{% if theme and theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock meta_title %}{% endblock fulltitle %}" />
+    <meta name="twitter:description" content="{% block description %}{% block meta_description %}{% if theme and theme.full_group_name %}Learn more about {{ theme.full_group_name }} at {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% else %}Learn more about {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% endif %}{% endblock meta_description %}{% endblock description %}" />
     <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png?v={{ current_logo_version }}" />
   {% endblock meta %}
 
