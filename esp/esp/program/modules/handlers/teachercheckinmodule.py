@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.forms.onsite import TeacherCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 from esp.program.models import RegistrationProfile
 from esp.program.models.class_ import ClassSubject, ClassSection
@@ -68,6 +69,21 @@ class TeacherCheckinModule(ProgramModuleObj):
             "seq": 10,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Only list the main teacher check-in page; AJAX/aux views (ajaxteachercheckin,
+        # ajaxteachertext, ajaxclassdetail, etc.) are not meant for direct admin navigation.
+        if view_name != "teachercheckin":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="onsite_teachercheckin",
+            url="/onsite/%s/teachercheckin" % base,
+            title="Teacher Check-In",
+            category="Other",
+            keywords=["teacher", "check-in", "onsite", "attendance"],
+        )
 
     def checkIn(self, teacher, prog, when=None):
         """Check teacher into program for the rest of the day (given by 'when').
@@ -143,11 +159,19 @@ class TeacherCheckinModule(ProgramModuleObj):
                               "%m/%d/%Y %H:%M".
         """
         json_data = {'message': 'User not found'}
+        # print("POST DATA:", request.POST)
         teachers = []
-        if 'teacher' in request.POST:
-            teachers = ESPUser.objects.filter(username=request.POST['teacher'])
-        elif 'teacherid' in request.POST:
-            teachers = ESPUser.objects.filter(id=request.POST['teacherid'])
+        teacher_query = request.POST.get('teacherid') or request.POST.get('teacher')
+        if teacher_query:
+            teacher_query = teacher_query.strip()
+
+            if teacher_query.isdigit():
+                # print("Looking up teacher by ID:", teacher_query)
+                teachers = ESPUser.objects.filter(id=int(teacher_query))
+            else:
+                # print("Looking up teacher by username:", teacher_query)
+                teachers = ESPUser.objects.filter(username__iexact=teacher_query)
+
         if teachers and teachers.exists():
             json_data['name'] = teachers[0].name()
             json_data['username'] = teachers[0].username
@@ -155,7 +179,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             if 'when' in request.POST:
                 try:
                     when = datetime.strptime(request.POST['when'], "%m/%d/%Y %H:%M")
-                except:
+                except ValueError:
                     pass
             if 'undo' in request.POST and request.POST['undo'].lower() == 'true':
                 json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
@@ -220,7 +244,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         #   return default
 
         # Only Postgres supports the following fancy database operation! See
-        # http://stackoverflow.com/a/20129229/3243497 .
+        # https://stackoverflow.com/a/20129229/3243497 .
 
         profiles = (RegistrationProfile.objects
                 .filter(user__in=users)
@@ -267,12 +291,16 @@ class TeacherCheckinModule(ProgramModuleObj):
         and is used to filter the set of checked-in Records, so that the view
         shows who is not checked in yet for the day.
 
-        Returns the 2-tuple (sections, arrived):
+        Returns the 3-tuple (sections, arrived, previously_checked_in):
             sections: A list of all sections starting at the given time or on
                       the given date which do not have all teachers checked in,
                       with those with no teachers checked in first.
             arrived:  A dict of id -> teacher for all teachers who have already
                       checked in.
+            previously_checked_in: A set of user ids for teachers who checked
+                      in on the previous program day (but have not yet checked
+                      in today).  Useful for prioritising which missing
+                      teachers to call first.
         """
         if when is None:
             when = datetime.now()
@@ -390,7 +418,36 @@ class TeacherCheckinModule(ProgramModuleObj):
             if section.all_arrived
         ]
 
-        return sections, arrived
+        # Find teachers who checked in on the previous program day but have
+        # not yet checked in today.  This helps admins prioritise which
+        # missing teachers to contact first — a teacher who was present
+        # yesterday likely just needs a quick reminder.
+        previously_checked_in = set()
+        check_date = when.date() if date is None else date
+        prog_dates = sorted(prog.dates())
+        if check_date in prog_dates:
+            idx = prog_dates.index(check_date)
+            if idx > 0:
+                prev_date = prog_dates[idx - 1]
+                prev_ids = set(Record.objects.filter(
+                    program=prog,
+                    event__name='teacher_checked_in',
+                    time__year=prev_date.year,
+                    time__month=prev_date.month,
+                    time__day=prev_date.day,
+                ).values_list('user_id', flat=True))
+                # Exclude teachers who have already checked in today.
+                today_ids = set(Record.objects.filter(
+                    program=prog,
+                    event__name='teacher_checked_in',
+                    time__year=check_date.year,
+                    time__month=check_date.month,
+                    time__day=check_date.day,
+                    time__lte=when,
+                ).values_list('user_id', flat=True))
+                previously_checked_in = prev_ids - today_ids
+
+        return sections, arrived, previously_checked_in
 
     def getMissingResources(self, prog, date=None, starttime=None, default_phone = '(missing contact info)'):
         """Return a list of class sections that have ended but have not returned their floating resources.
@@ -486,7 +543,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             when = form.cleaned_data['when']
             if when is not None:
                 context['when'] = when
-                context['url_when'] = request.GET['when']
+                context['url_when'] = when.strftime('%m/%d/%Y %H:%M')
         else:
             when = None
 
@@ -494,10 +551,11 @@ class TeacherCheckinModule(ProgramModuleObj):
         if when is None and date is not None and date != date_type.today():
             when = datetime.combine(date, time.min)
             context['when'] = when
+            context['url_when'] = when.strftime('%m/%d/%Y %H:%M')
 
         show_flags = self.program.program_modules.filter(handler='ClassFlagModule').exists()
         context['date'] = date
-        context['sections'], context['arrived'] = self.getMissingTeachers(
+        context['sections'], context['arrived'], context['previously_checked_in'] = self.getMissingTeachers(
             prog, date, starttime, when, show_flags, default_phone)
         context['missing_resources'] = self.getMissingResources(prog, date, getattr(starttime, "start", None))
         if show_flags:
