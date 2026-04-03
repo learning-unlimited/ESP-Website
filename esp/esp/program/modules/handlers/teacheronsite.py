@@ -34,6 +34,7 @@ from esp.utils.web import render_to_response
 from esp.users.models    import Record
 from esp.survey.views   import survey_view, survey_review
 from esp.tagdict.models  import Tag
+from django.conf import settings
 from datetime import datetime
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 from django.db.models import Count
@@ -106,7 +107,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['webapp_page'] = 'map'
         context['center'] = Tag.getProgramTag('program_center', program = prog)
         context['zoom'] = Tag.getProgramTag('program_center_zoom', program = prog)
-        context['API_key'] = Tag.getTag('google_cloud_api_key')
+        context['API_key'] = settings.GOOGLE_MAPS_EMBED_KEY
 
         return render_to_response(self.baseDir()+'map.html', request, context)
 
@@ -187,7 +188,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
-        context['map_tab'] = bool(Tag.getTag('google_cloud_api_key').strip())
+        context['map_tab'] = bool(settings.GOOGLE_MAPS_EMBED_KEY)
         return context
 
     def isStep(self):
