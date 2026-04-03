@@ -1595,15 +1595,16 @@ class RegistrationProfile(models.Model):
                                'student_info', 'teacher_info', 'guardian_info',
                                'educator_info').order_by('-last_ts', '-id')[:1])
         if len(regProfList) < 1:
-            regProf = RegistrationProfile.getLastProfile(user)
+            regProf = copy.copy(RegistrationProfile.getLastProfile(user))
             regProf.program = program
             if regProf.id is not None:
                 regProf.id = None
         else:
             regProf = regProfList[0]
         return regProf
-    # Thanks to our attempts to be smart and steal profiles from other programs,
-    # the cache can't depend only on profiles with the same (user, program).
+    # We can fall back to the user's latest profile from another program when a
+    # program-specific profile does not exist, so cache invalidation must depend
+    # on any profile for the user (not just the exact (user, program) pair).
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
     getLastForProgram.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastForProgram = staticmethod(getLastForProgram)

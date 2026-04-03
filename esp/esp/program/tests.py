@@ -807,9 +807,6 @@ class ProgramFrameworkTest(TestCase):
 
 class RegistrationProfileTest(ProgramFrameworkTest):
 
-    def setUp(self):
-        super(RegistrationProfileTest, self).setUp()
-
     def test_getLastForProgram_does_not_auto_save(self):
         student = ESPUser.objects.create_user(
             first_name='Test',
@@ -851,6 +848,23 @@ class RegistrationProfileTest(ProgramFrameworkTest):
         retrieved = RegistrationProfile.getLastForProgram(student, self.program)
         self.assertEqual(retrieved.id, original_id)
         self.assertEqual(retrieved.program, self.program)
+
+    def test_getLastForProgram_does_not_mutate_cached_last_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test3',
+            last_name='Student',
+            username='teststudent1450c',
+            email='teststudent1450c@example.com',
+        )
+
+        last_profile = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile.program)
+
+        profile_for_program = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(profile_for_program.program, self.program)
+
+        last_profile_again = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile_again.program)
 
 class ProgramCapTest(ProgramFrameworkTest):
     """Test various forms of program cap."""

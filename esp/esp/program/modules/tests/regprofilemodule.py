@@ -73,7 +73,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         prof.save()
         self.assertTrue( self.students[0].registrationprofile_set.count() >= 1, "Profile failed to save." )
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.assertFalse( self.moduleobj.isCompleted(), "Profile should not be complete until explicitly saved with program." )
+        self.assertFalse( self.moduleobj.isCompleted(self.students[0]), "Profile should not be complete until explicitly saved with program." )
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
 
         # Second student: Test non-auto-saving of sufficiently old profiles
