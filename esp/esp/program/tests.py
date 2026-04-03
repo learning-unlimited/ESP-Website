@@ -143,7 +143,8 @@ class ViewUserInfoTest(TestCase):
 
         # Try searching by ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=%s" % self.admin.username)
 
     def testUserIDSearchMultipleResults(self):
         c = Client()
