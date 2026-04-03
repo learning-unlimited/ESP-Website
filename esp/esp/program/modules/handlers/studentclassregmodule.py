@@ -42,11 +42,11 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
 from django.http import HttpResponse, Http404
-from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth, render_deadline_for_tl
+from esp.program.modules.admin_search import AdminSearchEntry
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
@@ -137,6 +137,19 @@ class StudentClassRegModule(ProgramModuleObj):
             "required": True,
             "choosable": 1
             }]
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if tl != "learn" or view_name != "catalog":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="learn_catalog",
+            url="/learn/%s/catalog" % base,
+            title="Student Catalog",
+            category="Quick Links",
+            keywords=["catalog", "classes", "student view"],
+        )
 
     @property
     def scrmi(self):
@@ -420,7 +433,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_cap
     def ajax_addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class and return an updated inline schedule """
-        if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.addclass(request, tl, one, two, module, extra, prog)
         try:
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
@@ -441,7 +454,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise AjaxError(inst)
 
     @staticmethod
-    def sort_categories(classes, prog):
+    def sort_categories(classes, prog, force_sort=False):
         categories = {}
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'symbol':cls.category.symbol}
@@ -455,10 +468,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         catalog_sort_split = catalog_sort.split('__')
         if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
-            categories_sort = sorted(list(categories.values()), key = lambda cat: cat[catalog_sort_split[1]])
+            sort_field = catalog_sort_split[1]
+        elif force_sort:
+            # Separate catalog pages always need a category list, even when class sorting
+            # is not category-based.
+            sort_field = 'symbol'
         else:
-            categories_sort = None
-        return categories_sort
+            return None
+        return sorted(list(categories.values()), key = lambda cat: cat[sort_field])
 
     @aux_call
     @needs_student_in_grade
@@ -506,13 +523,40 @@ class StudentClassRegModule(ProgramModuleObj):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
-
-        categories_sort = self.sort_categories(classes, self.program)
+        separate_catalog = Tag.getBooleanTag('separate_catalog_pages', prog)
+        is_category_page = separate_catalog and bool(extra)
+        categories_sort = self.sort_categories(classes, self.program, force_sort=separate_catalog)
 
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
-        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories_sort, 'collapse_full': collapse_full}
+
+        selected_category = None
+        if separate_catalog:
+            if is_category_page:
+                try:
+                    category_id = int(extra)
+                    category_qs = ClassSubject.objects.filter(category_id=category_id)
+                    classes = ClassSubject.objects.catalog(self.program, initial_queryset=category_qs)
+                    for cat in categories_sort:
+                        if cat['id'] == category_id:
+                            selected_category = cat
+                            break
+                except ValueError:
+                    classes = []
+            else:
+                classes = []
+
+        context = {
+            'classes': classes,
+            'one': one,
+            'two': two,
+            'categories': categories_sort,
+            'collapse_full': collapse_full,
+            'separate_catalog': separate_catalog,
+            'selected_category': selected_category,
+            'category_page': is_category_page,
+        }
 
         scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
@@ -520,6 +564,10 @@ class StudentClassRegModule(ProgramModuleObj):
         prog_color = prog.getColor()
         collapse_full_classes = Tag.getBooleanTag('collapse_full_classes', prog)
         class_blobs = []
+
+        category_list_href = "#top"
+        if separate_catalog:
+            category_list_href = "/learn/%s/catalog" % prog.getUrlBase()
 
         category_header_str = """
     <div class="cat_wrapper" data-category="%d">
@@ -529,7 +577,7 @@ class StudentClassRegModule(ProgramModuleObj):
            %s
         </p>
         <p class="linktop">
-           <a href="#top">[ Return to Category List ]</a>
+           <a href="%s">[ Return to Category List ]</a>
         </p>
 """
 
@@ -539,7 +587,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 class_category_id = cls.category.id
                 if (class_category_id != None):
                     class_blobs.append('</div>')
-                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category))
+                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category, category_list_href))
             class_blobs.append(render_class_direct(cls))
             class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)
@@ -570,8 +618,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
-        # Check Student/Catalog deadline if one exists.
-        # are not served to clients.
+        # If a Student/Catalog deadline exists and is closed, return a non-cacheable error.
         if self._catalog_deadline_closed(prog):
             response = HttpResponse(json.dumps({'error': 'Catalog is closed'}),
                                     content_type='application/json', status=403)
@@ -613,27 +660,33 @@ class StudentClassRegModule(ProgramModuleObj):
     @disable_csrf_cookie_update
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         if self._catalog_deadline_closed(prog):
-            return render_deadline_for_tl('learn', request,
+            response = render_deadline_for_tl('learn', request,
                     {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
-        return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
+            response['Cache-Control'] = 'no-store'
+            return response
+        response = self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
+        response['Cache-Control'] = 'public, max-age=120'
+        return response
 
     @disable_csrf_cookie_update
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         if self._catalog_deadline_closed(prog):
-            return render_deadline_for_tl('learn', request,
+            response = render_deadline_for_tl('learn', request,
                     {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
+            response['Cache-Control'] = 'no-store'
+            return response
         #   Get the ProgramPrintables module for the program
         from esp.program.modules.handlers.programprintables import ProgramPrintables
         for module in prog.getModules():
             if isinstance(module, ProgramPrintables):
                 #   Use it to generate a PDF catalog with the default settings
-                return module.coursecatalog(request, tl, one, two, module, extra, prog)
+                response = module.coursecatalog(request, tl, one, two, module, extra, prog)
+                response['Cache-Control'] = 'public, max-age=120'
+                return response
         raise ESPError('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.', log=False)
 
     @aux_call
@@ -691,7 +744,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_any_deadline(['/Classes', '/Removal'])
     def ajax_clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
-        if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.clearslot(request, tl, one, two, module, extra, prog)
 
         cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
