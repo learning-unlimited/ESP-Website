@@ -574,104 +574,85 @@ class StripBase64ImagesTest(DjangoTestCase):
 class DiffTemplateOverrideViewTest(DjangoTestCase):
 
     def setUp(self):
+        import tempfile
+        from django.test.utils import override_settings
+
         self.client = Client()
 
         # Create users
         self.admin = ESPUser.objects.create_user(username="admin", password="pass")
         self.admin.makeAdmin()
-
         self.user = ESPUser.objects.create_user(username="user", password="pass")
 
-        # Create template directory + file
-        self.template_dir = os.path.join(settings.PROJECT_ROOT, "templates")
-        os.makedirs(self.template_dir, exist_ok=True)
+        # Use a fully isolated temporary directory — never touches the real templates/
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self._override = override_settings(PROJECT_ROOT=self._tmpdir.name)
+        self._override.enable()
 
-        self.template_path = os.path.join(self.template_dir, "test_template.html")
+        # Write the original template file inside the temp dir
+        template_dir = os.path.join(self._tmpdir.name, 'templates')
+        os.makedirs(template_dir)
+        self.template_path = os.path.join(template_dir, 'test_diff_template.html')
+        with open(self.template_path, 'w') as f:
+            f.write('Original Content')
 
-        with open(self.template_path, "w") as f:
-            f.write("Original Content")
-
-        # Create TemplateOverride object
+        # Create TemplateOverride pointing at the same unique name
         self.override = TemplateOverride.objects.create(
-            name="test_template.html",
-            content="Hello Override",
-            version=1
+            name='test_diff_template.html',
+            content='Hello Override',
+            version=1,
         )
 
     def tearDown(self):
-        if os.path.exists(self.template_path):
-            os.remove(self.template_path)
+        self._override.disable()
+        self._tmpdir.cleanup()
 
-    # 1️. Admin access
+    # 1. Admin access
     def test_admin_can_access_diff(self):
-        self.client.login(username="admin", password="pass")
-
-        response = self.client.get(
-            f"/manage/templateoverride/{self.override.id}"
-        )
-
+        self.client.login(username='admin', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
         self.assertEqual(response.status_code, 200)
 
-    # 2️. Non-admin → 403
+    # 2. Non-admin → 403
     def test_non_admin_forbidden(self):
-        self.client.login(username="user", password="pass")
-
-        response = self.client.get(
-            f"/manage/templateoverride/{self.override.id}"
-        )
-
+        self.client.login(username='user', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
         self.assertEqual(response.status_code, 403)
 
-    # 3️. Invalid ID → 404
+    # 3. Invalid ID → 404
     def test_invalid_template_id(self):
-        self.client.login(username="admin", password="pass")
-
-        response = self.client.get("/manage/templateoverride/9999")
-
+        self.client.login(username='admin', password='pass')
+        response = self.client.get('/manage/templateoverride/9999')
         self.assertEqual(response.status_code, 404)
 
-    # 4️. Diff rendering validation (🔥 MAIN TEST)
+    # 4. Diff rendering
     def test_diff_output_contains_expected_content(self):
-        self.client.login(username="admin", password="pass")
-
-        response = self.client.get(
-            f"/manage/templateoverride/{self.override.id}"
-        )
-
+        self.client.login(username='admin', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
         content = response.content.decode()
+        self.assertIn('diff', content)
+        self.assertIn('Original', content)
+        self.assertIn('Override', content)
 
-        self.assertIn("diff", content)
-        self.assertIn("Original", content)
-        self.assertIn("Override", content)
-
-    # 5️. Same content edge case
+    # 5. Same content edge case
     def test_same_content_diff(self):
-        self.client.login(username="admin", password="pass")
-
-        self.override.content = "Original Content"
+        self.client.login(username='admin', password='pass')
+        self.override.content = 'Original Content'
         self.override.save()
-
-        response = self.client.get(
-            f"/manage/templateoverride/{self.override.id}"
-        )
-
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
         self.assertEqual(response.status_code, 200)
 
-    # 6️. Template file exists (no crash)
+    # 6. No crash when file exists
     def test_template_file_exists_handling(self):
-        self.client.login(username="admin", password="pass")
-
-        response = self.client.get(
-            f"/manage/templateoverride/{self.override.id}"
-        )
-
+        self.client.login(username='admin', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
         self.assertNotEqual(response.status_code, 500)
 
-    # 7. Missing original file → 404, not 500
+    # 7. Missing original file → 404, not 500 (regression test for FileNotFoundError bug)
     def test_missing_original_file_returns_404(self):
-        self.client.login(username="admin", password="pass")
+        self.client.login(username='admin', password='pass')
         os.remove(self.template_path)
-        response = self.client.get(f"/manage/templateoverride/{self.override.id}")
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
         self.assertEqual(response.status_code, 404)
 
 def suite():
