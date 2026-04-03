@@ -5,6 +5,7 @@ Test cases for Django-ESP utilities
 
 import datetime
 import doctest
+import json
 try:
     import pylibmc as memcache
 except ImportError:
@@ -94,15 +95,17 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("form_utils")     #Used to create better forms.
         self.assertFalse(self._failed_import)
 
-        # Make sure that we're actually using pylibmc.
-        # Note that this requires a patch to Django (or Django version 1.3 or later).
-        # Patch can be found at:  <https://code.djangoproject.com/ticket/11675>
-        from pylibmc import Client
-        from django.core.cache import cache
-        if hasattr(cache, "_cache"):
-            self.assertTrue(isinstance(cache._cache, Client))
-        elif hasattr(cache, "_wrapped_cache") and hasattr(cache._wrapped_cache, "_cache"):
-            self.assertTrue(isinstance(cache._wrapped_cache._cache, Client))
+        # Make sure production uses pylibmc when default cache is memcached.
+        # test_settings (and similar) use LocMemCache/DummyCache — skip then.
+        from django.conf import settings
+        default_backend = settings.CACHES.get('default', {}).get('BACKEND', '')
+        if 'locmem' not in default_backend.lower() and 'dummy' not in default_backend.lower():
+            from pylibmc import Client
+            from django.core.cache import cache
+            if hasattr(cache, "_cache"):
+                self.assertTrue(isinstance(cache._cache, Client))
+            elif hasattr(cache, "_wrapped_cache") and hasattr(cache._wrapped_cache, "_cache"):
+                self.assertTrue(isinstance(cache._wrapped_cache._cache, Client))
 
         self.tryExecutable("latex")  # Used for a whole pile of program printables, as well as inline LaTeX
         self.tryExecutable("dvips")  # Used to convert LaTeX output (.dvi) to .ps files
@@ -189,6 +192,50 @@ class TemplateOverrideTest(DjangoTestCase):
         #   Delete the original template override and make sure you see nothing
         TemplateOverride.objects.filter(name='BLAARG.TEMPLATEOVERRIDE').delete()
         self.expect_template_error('BLAARG.TEMPLATEOVERRIDE')
+
+
+class DefaultTemplateContentViewTest(DjangoTestCase):
+    """Tests for the get_default_template_content admin view (issue #2879)."""
+
+    URL = '/manage/templateoverride/default_content/'
+    # A template that is guaranteed to exist on disk
+    KNOWN_TEMPLATE = 'utils/diff_templateoverride.html'
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='test_admin_dtcv')
+        self.admin.set_password('password')
+        self.admin.makeAdmin()
+        self.admin.save()
+
+    def test_unauthenticated_redirected(self):
+        r = self.client.get(self.URL, {'name': self.KNOWN_TEMPLATE})
+        self.assertEqual(r.status_code, 302)
+
+    def test_no_name_returns_400(self):
+        self.client.login(username='test_admin_dtcv', password='password')
+        r = self.client.get(self.URL)
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('error', json.loads(r.content))
+
+    def test_valid_template_returns_content(self):
+        self.client.login(username='test_admin_dtcv', password='password')
+        r = self.client.get(self.URL, {'name': self.KNOWN_TEMPLATE})
+        self.assertEqual(r.status_code, 200)
+        data = json.loads(r.content)
+        self.assertIn('content', data)
+        self.assertTrue(len(data['content']) > 0)
+
+    def test_missing_template_returns_404(self):
+        self.client.login(username='test_admin_dtcv', password='password')
+        r = self.client.get(self.URL, {'name': 'nonexistent/template_xyz.html'})
+        self.assertEqual(r.status_code, 404)
+        self.assertIn('error', json.loads(r.content))
+
+    def test_path_traversal_blocked(self):
+        self.client.login(username='test_admin_dtcv', password='password')
+        r = self.client.get(self.URL, {'name': '../../etc/passwd'})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('error', json.loads(r.content))
 
 
 class QueryBuilderTest(DjangoTestCase):
