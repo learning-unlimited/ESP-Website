@@ -222,6 +222,6 @@ class SectionListTest(ProgramFrameworkTest):
 
         mock_create.assert_called_once_with(expected_list_name, 'mod@example.com')
 
-        apply_calls = [call[0][1] for call in mock_apply.call_args_list]
+        apply_calls = [args[1] for args, _ in mock_apply.call_args_list]
         self.assertTrue(any('default_member_moderation' in settings for settings in apply_calls))
         self.assertTrue(any('generic_nonmember_action' in settings for settings in apply_calls))
