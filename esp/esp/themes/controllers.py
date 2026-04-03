@@ -321,7 +321,7 @@ class ThemeController(object):
 
         # Save current parameters and palette before they are cleared
         current_vars = self.get_current_params()
-        current_palette = self.get_palette()['custom']
+        current_palette = json.loads(Tag.getTag('current_theme_palette', default='[]'))
 
         backup_info = self.clear_theme(keep_files=keep_files)
         self.load_theme(theme_name, backup_info=backup_info)
@@ -332,17 +332,11 @@ class ThemeController(object):
 
         if customization_name is not None and customization_name != "None":
             try:
-                (loaded_vars, loaded_palette) = self.load_customizations(customization_name)
-                # Merge the loaded file back with the user's active database customizations
-                merged_vars = dict(loaded_vars)
-                merged_vars.update(current_vars)
-                vars = merged_vars
-
-                merged_palette = list(set(current_palette) | set(loaded_palette))
-                palette = merged_palette
+                (vars, palette) = self.load_customizations(customization_name)
             except FileNotFoundError:
-                logger.warning("Customization file for %s missing. Using parameters from database.", customization_name)
-                self.unset_current_customization()
+                logger.warning("Customization file for %s missing. Initializing with parameters from database.", customization_name)
+                self.save_customizations(customization_name, theme_name=theme_name, vars=current_vars, palette=current_palette)
+                (vars, palette) = self.load_customizations(customization_name)
 
         if vars:
             self.customize_theme(vars)
