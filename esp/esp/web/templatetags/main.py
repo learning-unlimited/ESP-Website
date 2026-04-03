@@ -1,4 +1,4 @@
-from esp.themes.controllers import ThemeController
+﻿from esp.themes.controllers import ThemeController
 
 from django import template
 
@@ -13,21 +13,21 @@ def count_matching_chars(url, link):
     """
     if not url or not link:
         return 0
-        
+
     match_len = 0
     for i in range(min(len(url), len(link))):
         if url[i] == link[i]:
             match_len += 1
         else:
             break
-            
+
     boundaries = ('/', '?', '#')
-    
+
     # Check if the match stops in the middle of a path segment.
     # This happens if either string has more characters and the next character is NOT a boundary.
     url_bad = (match_len < len(url) and url[match_len] not in boundaries)
     link_bad = (match_len < len(link) and link[match_len] not in boundaries)
-    
+
     if match_len > 0 and (url_bad or link_bad):
         # The match ended inside a word (e.g., 'ideas' vs 'ideas.html', or 'index' vs 'ideas').
         # Backtrack to the last slash to ensure we only match full directories.
@@ -36,7 +36,7 @@ def count_matching_chars(url, link):
             match_len = last_slash + 1
         else:
             match_len = 0
-                
+
     return match_len
 
 @register.filter

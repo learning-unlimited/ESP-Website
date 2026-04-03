@@ -1,4 +1,4 @@
-from io import open
+﻿from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -320,7 +320,7 @@ class TabMatchingTest(TestCase):
     """
     def test_extract_theme(self):
         from esp.web.templatetags.main import extract_theme
-        
+
         # Mock settings dictionary with a structure similar to what ThemeController returns
         settings_dict = {
             'nav_structure': [
@@ -343,25 +343,25 @@ class TabMatchingTest(TestCase):
                 }
             ]
         }
-        
+
         # Patch ThemeController to return our fixed settings_dict
         from unittest.mock import patch
         with patch('esp.themes.controllers.ThemeController.get_template_settings', return_value=settings_dict):
             # Test 1: Identical URL for header and sublink. The exact sublink should win (tab_1)
             self.assertEqual(extract_theme('/teach/splash.html'), 'tabcolor1')
-            
+
             # Test 2: Substring mismatch test. /teach/index.html shares the prefix '/teach/i' with
             # /teach/ideas.html. Ensure we don't partial-match on that substring and mistakenly pick
             # the ideas sublink; instead, we should fall back to the longest common '/teach/' prefix,
             # which corresponds to the teach header tab (tab_0).
             self.assertEqual(extract_theme('/teach/index.html'), 'tabcolor0')
-            
+
             # Test 3: Normal sublink should match
             self.assertEqual(extract_theme('/teach/classes.html'), 'tabcolor2')
-            
+
             # Test 4: Another category base
             self.assertEqual(extract_theme('/learn/index.html'), 'tabcolor0')
-            
+
             # Test 5: Exact match for ideas.html should map to its own tab (third sublink).
             self.assertEqual(extract_theme('/teach/ideas.html'), 'tabcolor3')
 
@@ -394,7 +394,7 @@ class ProfileEditorCapitalizationTest(TestCase):
             email='teststudentrep@test.com'
         )
 
-        # Assign ONLY the CamelCase group — no standard role
+        # Assign ONLY the CamelCase group â€” no standard role
         self.user.groups.add(self.group)
         self.user.save()
 
@@ -409,5 +409,5 @@ class ProfileEditorCapitalizationTest(TestCase):
         self.assertTrue(logged_in, "Could not log in test user 'teststudentrep'")
         response = c.get('/myesp/profile/')
 
-        # Should load fine — not crash with ValueError
+        # Should load fine â€” not crash with ValueError
         self.assertEqual(response.status_code, 200)
