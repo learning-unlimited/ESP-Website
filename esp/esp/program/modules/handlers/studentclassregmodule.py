@@ -616,8 +616,8 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return resp"""
 
-    @no_auth
     @aux_call
+    @no_auth
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # If a Student/Catalog deadline exists and is closed, return a non-cacheable error.
