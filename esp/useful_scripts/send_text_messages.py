@@ -13,8 +13,10 @@ account_sid = args.account_sid
 auth_token = args.auth_token
 ourNumbers = [x.strip() for x in open(args.senders_file, "r").readlines() if x.strip()]
 if not ourNumbers:
-    parser.error("No sender numbers provided in '{}'".format(args.senders_file))
-recipients = [x.strip() for x in open(args.recipients_file, "r").readlines() if x.strip()]
+with open(args.senders_file, "r") as f:
+    ourNumbers = [x.strip() for x in f.readlines() if x.strip()]
+with open(args.recipients_file, "r") as f:
+    recipients = [x.strip() for x in f.readlines() if x.strip()]
 body = args.message
 
 numberIndex = 0
