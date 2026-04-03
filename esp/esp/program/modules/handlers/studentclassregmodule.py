@@ -41,7 +41,6 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
 from django.http import HttpResponse, Http404
-from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
@@ -619,8 +618,6 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @no_auth
     @aux_call
-    @no_auth
-    @cache_control(public=True, max_age=3600)
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # If a Student/Catalog deadline exists and is closed, return a non-cacheable error.
@@ -665,7 +662,6 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         if self._catalog_deadline_closed(prog):
             response = render_deadline_for_tl('learn', request,
@@ -679,7 +675,6 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         if self._catalog_deadline_closed(prog):
             response = render_deadline_for_tl('learn', request,
