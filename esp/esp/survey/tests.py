@@ -226,6 +226,16 @@ class LongAnswerQuestionValidationTest(TestCase):
         with self.assertRaises(ValidationError):
             q.full_clean()
 
+    def test_full_clean_rejects_whitespace_only_rows(self):
+        q = self._question('   ')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_float_string_rows(self):
+        q = self._question('3.5')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
 
 class AnswerTest(TestCase):
     def setUp(self):
