@@ -1448,38 +1448,48 @@ def update_email(**kwargs):
 
 
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
+                   dispatch_uid='cache_old_active_state_on_user_presave')
+def cache_old_active_state_on_user_presave(**kwargs):
+    """Cache previous is_active state only when a deactivation might occur."""
+    new_user = kwargs['instance']
+
+    if new_user.id is None or new_user.is_active:
+        return
+
+    new_user._old_is_active = ESPUser.objects.filter(id=new_user.id).values_list('is_active', flat=True).first()
+
+
+@dispatch.receiver(signals.post_save, sender=ESPUser,
                    dispatch_uid='expire_upcoming_records_on_deactivation')
 def expire_upcoming_records_on_deactivation(**kwargs):
     """Expire registrations/permissions for upcoming programs when user is deactivated."""
     new_user = kwargs['instance']
+    created = kwargs.get('created', False)
 
-    if new_user.id is None:
+    if created or new_user.is_active:
         return
 
-    old_user = ESPUser.objects.get(id=new_user.id)
-    if old_user.is_active and not new_user.is_active:
-        expire_user_records_for_upcoming_programs(new_user)
+    old_is_active = getattr(new_user, '_old_is_active', None)
+    if old_is_active is False:
+        return
+
+    update_fields = kwargs.get('update_fields')
+    if old_is_active is None and update_fields is not None and 'is_active' not in update_fields:
+        return
+
+    expire_user_records_for_upcoming_programs(new_user)
 
 
-def expire_user_records_for_upcoming_programs(user):
-    """Expire a user's registrations and permissions for programs that haven't ended yet."""
-    from esp.program.models import (
-        Program, StudentRegistration, StudentSubjectInterest, VolunteerOffer, Event
-    )
+def _get_upcoming_program_ids(now):
+    """Return IDs for programs whose records should be treated as upcoming."""
+    from esp.program.models import Program, Event
     from django.db.models import Max
     from itertools import chain
 
-    now = datetime.now()
-
-    # Determine upcoming programs using DB-side aggregation over Events:
-    # - Programs with at least one "Class Time Block" Event whose latest end >= now
-    # - Programs with no "Class Time Block" Events at all (matches previous datetime_range() None behavior)
     class_time_events = Event.objects.filter(event_type__description="Class Time Block")
 
-    # Programs that have any "Class Time Block" events
     program_ids_with_class_times = class_time_events.values_list("program_id", flat=True).distinct()
 
-    # Among those, keep programs whose latest class-time end is in the future or now
     upcoming_with_events = (
         class_time_events
         .values("program_id")
@@ -1488,12 +1498,21 @@ def expire_user_records_for_upcoming_programs(user):
         .values_list("program_id", flat=True)
     )
 
-    # Programs with no "Class Time Block" events at all are treated as upcoming
     programs_without_events = Program.objects.exclude(
         id__in=program_ids_with_class_times
     ).values_list("id", flat=True)
 
-    upcoming_program_ids = list(chain(upcoming_with_events, programs_without_events))
+    return list(chain(upcoming_with_events, programs_without_events))
+
+
+def expire_user_records_for_upcoming_programs(user):
+    """Expire a user's registrations and permissions for programs that haven't ended yet."""
+    from esp.program.models import (
+        StudentRegistration, StudentSubjectInterest, VolunteerOffer
+    )
+
+    now = datetime.now()
+    upcoming_program_ids = _get_upcoming_program_ids(now)
 
     if not upcoming_program_ids:
         return
@@ -1520,8 +1539,7 @@ def expire_user_records_for_upcoming_programs(user):
         request__program_id__in=upcoming_program_ids,
         user=user
     )
-    vol_count = vol_qs.count()
-    vol_qs.delete()
+    vol_count, _ = vol_qs.delete()
 
     if sr_count or ssi_count or perm_count or vol_count:
         logger.info(
@@ -1539,8 +1557,43 @@ def expire_user_records_for_upcoming_programs_for_queryset(user_qs):
     This is intended for use after bulk deactivation operations performed via
     QuerySet.update(...), which do not trigger model save signals.
     """
-    for user in user_qs:
-        expire_user_records_for_upcoming_programs(user)
+    from esp.program.models import StudentRegistration, StudentSubjectInterest, VolunteerOffer
+
+    now = datetime.now()
+    upcoming_program_ids = _get_upcoming_program_ids(now)
+
+    if not upcoming_program_ids:
+        return
+
+    user_ids = user_qs.values_list('id', flat=True)
+
+    sr_count = StudentRegistration.valid_objects(now).filter(
+        section__parent_class__parent_program_id__in=upcoming_program_ids,
+        user_id__in=user_ids,
+    ).update(end_date=now)
+
+    ssi_count = StudentSubjectInterest.valid_objects(now).filter(
+        subject__parent_program_id__in=upcoming_program_ids,
+        user_id__in=user_ids,
+    ).update(end_date=now)
+
+    perm_count = Permission.valid_objects(now).filter(
+        program_id__in=upcoming_program_ids,
+        user_id__in=user_ids,
+    ).update(end_date=now)
+
+    vol_count, _ = VolunteerOffer.objects.filter(
+        request__program_id__in=upcoming_program_ids,
+        user_id__in=user_ids,
+    ).delete()
+
+    if sr_count or ssi_count or perm_count or vol_count:
+        logger.info(
+            "Expired records for deactivated queryset of users: "
+            "%d StudentRegistrations, %d StudentSubjectInterests, "
+            "%d Permissions, %d VolunteerOffers",
+            sr_count, ssi_count, perm_count, vol_count,
+        )
 
 
 class StudentInfo(models.Model):
