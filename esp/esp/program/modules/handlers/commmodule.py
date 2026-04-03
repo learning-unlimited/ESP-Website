@@ -497,8 +497,10 @@ class CommModule(ProgramModuleObj):
                 user=request.user,
             )
             return JsonResponse({'success': True, 'email': request.user.email})
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('Failed to send test email')
+            return JsonResponse({'success': False, 'error': 'Failed to send test email. Please check the server logs.'}, status=500)
 
     def isStep(self):
         return False
