@@ -32,6 +32,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import os
+
 ################################################################################
 #                                                                              #
 #                    Edit this file to override settings in                    #
@@ -77,6 +79,6 @@ MIDDLEWARE_LOCAL = []
 ################
 
 # Set DB name for this site
-DATABASE_NAME = 'test_django'
-DATABASE_USER = 'testuser'
-DATABASE_PASSWORD = 'testpassword'
+DATABASE_NAME = os.environ.get('DATABASE_NAME', 'test_django')
+DATABASE_USER = os.environ.get('DATABASE_USER', 'testuser')
+DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD', 'testpassword')
