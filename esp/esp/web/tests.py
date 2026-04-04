@@ -45,6 +45,7 @@ from esp.web.admin import NavBarCategoryAdmin
 from esp.admin import admin_site
 from django.contrib.auth.models import Group
 from esp.web.storage import LowercaseExtensionStorage
+from django.core.files.base import ContentFile
 
 import difflib
 import logging
@@ -379,3 +380,10 @@ class LowercaseExtensionStorageTest(TestCase):
     def test_already_lowercase_extension_unchanged(self):
         result = self.storage._normalize_filename('photo.jpg')
         self.assertEqual(result, 'photo.jpg')
+
+    def test_save_lowercases_extension(self):
+        storage = LowercaseExtensionStorage(location=tempfile.mkdtemp())
+        name = storage.save('test.JPG', ContentFile(b'test content'))
+        self.assertTrue(name.endswith('.jpg'))
+        storage.delete(name)
+        
