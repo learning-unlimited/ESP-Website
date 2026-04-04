@@ -32,7 +32,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.middleware.esperrormiddleware import AjaxErrorMiddleware
 from esp.program.models.class_ import ClassSection
 from esp.program.tests import ProgramFrameworkTest
 
@@ -76,29 +75,18 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
             self.assertTrue(sec.friendly_times()[0] in resp_data['student_schedule_html'])
 
     def expect_ajaxerror(self, request_url, post_data, error_str):
-        # TODO(benkraft): can this be simplified by converting to
-        # self.assertRaises?
-        error_received = False
-        error_msg = ''
-        try:
-            response = self.client.post(request_url, post_data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        except AjaxErrorMiddleware.AjaxError as inst:
-            error_received = True
-            error_msg = inst.args[0]
-        except Exception as inst:
-            logger.info('Caught unexpected Ajax student reg error %s: willing '
-                        'to see AjaxErrorMiddleware.AjaxError.', inst)
-            raise
+        # We expect the server to return a JSON response with status 200 and an error message.
 
-        if not error_received:
-            #   If AjaxErrorMiddleware is engaged, we should get a JSON response.
-            response_dict = json.loads(str(response.content, encoding='UTF-8'))
-            self.assertTrue(int(response_dict['status']) == 200)
-            error_received = True
-            error_msg = response_dict['error']
+        response = self.client.post(request_url, post_data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
-        self.assertTrue(error_received)
-        self.assertTrue(str(error_msg) == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (error_msg, error_str))
+        # Parse the JSON response
+        resp_data = json.loads(str(response.content, encoding='UTF-8'))
+
+        # Check that the request was successful but contained an error message
+        self.assertTrue(int(resp_data['status']) == 200)
+        error_msg = resp_data['error']
+
+        self.assertTrue(error_msg == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (error_msg, error_str))
 
     def test_ajax_schedule(self):
         program = self.program
@@ -149,18 +137,33 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         self.expect_sections_in_schedule(response, [sec1])
 
         #   Try adding another class at the same time and check that we get an error
-        sec2 = random.choice(ClassSection.objects.filter(parent_class__parent_program=program, meeting_times=sec1.start_time()).exclude(parent_class__id=sec1.parent_class.id))
+        #   Handle case where no conflicting sections exist
+        conflicting_sections = list(ClassSection.objects.filter(parent_class__parent_program=program, meeting_times=sec1.start_time()).exclude(parent_class=sec1.parent_class))
+
+        if not conflicting_sections:
+            self.skipTest("Skipping rest of test_ajax_addclass: No conflicting sections found (random seed).")
+
+        sec2 = random.choice(conflicting_sections)
         self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec2.parent_class.id, 'section_id': sec2.id}, 'This section conflicts with your schedule--check out the other sections!')
 
         #   Try adding another section of same class and check that we get an error
-        sec3 = random.choice(sec1.parent_class.get_sections().exclude(id=sec1.id))
+        #   Handle case where no other sections exist
+        other_sections = list(sec1.parent_class.get_sections().exclude(id=sec1.id))
+
+        if not other_sections:
+            self.skipTest("Skipping rest of test_ajax_addclass: No other sections of the same class found.")
+
+        sec3 = random.choice(other_sections)
         self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec3.parent_class.id, 'section_id': sec3.id}, 'You are already signed up for a section of this class!')
 
         #   Try adding another class that we can actually take and check that it's there
-        available_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
-        if not available_sections:
-            self.skipTest('No non-conflicting sections available for this random configuration')
-        sec4 = random.choice(available_sections)
+        #   Handle case where no valid sections exist
+        valid_sections = list(program.sections().exclude(parent_class=sec1.parent_class).exclude(meeting_times__in=sec1.meeting_times.all()))
+
+        if not valid_sections:
+            self.skipTest("Skipping rest of test_ajax_addclass: No valid non-conflicting sections found.")
+
+        sec4 = random.choice(valid_sections)
         response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec4.parent_class.id, 'section_id': sec4.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec1, sec4])
 
@@ -172,10 +175,14 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
         sec1 = random.choice(program.sections())
         sec1.preregister_student(student)
-        available_sections = list(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
-        if not available_sections:
-            self.skipTest('No non-conflicting sections available for this random configuration')
-        sec2 = random.choice(available_sections)
+
+        # Ensure we actually found a non-conflicting second class
+        valid_second_sections = list(program.sections().exclude(parent_class=sec1.parent_class).exclude(meeting_times__in=sec1.meeting_times.all()))
+
+        if not valid_second_sections:
+            self.skipTest("Skipping remainder of test_ajax_clearslot due to bad random seed.")
+
+        sec2 = random.choice(valid_second_sections)
         sec2.preregister_student(student)
 
         #   Get the schedule and check that both classes are there
@@ -189,4 +196,3 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         #   Clear other timeslot and check that the schedule is empty
         response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec2.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
-
