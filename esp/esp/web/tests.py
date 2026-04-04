@@ -125,6 +125,38 @@ class NavbarTest(TestCase):
         self.assertTrue(self.get_navbar_titles('/') == ['NavBar2', 'NavBar1A'], f'Altered navbar order not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar2", "NavBar1A"]}')
 
 
+class TeacherBioURLTest(TestCase):
+    """Regression tests for canonical and deprecated teacher-bio routes."""
+
+    def setUp(self):
+        from esp.users.models import ESPUser
+
+        self.user = ESPUser.objects.create_user(
+            username='teacherbio_test_user',
+            password='password',
+            email='teacherbio_test_user@example.com',
+        )
+        self.user.makeRole('Teacher')
+
+    def test_canonical_teacher_bio_url_works(self):
+        response = self.client.get('/teach/teachers/teacherbio_test_user/bio.html')
+        self.assertEqual(response.status_code, 200)
+
+    def test_deprecated_learn_teacher_bio_url_rejected(self):
+        response = self.client.get('/learn/teachers/teacherbio_test_user/bio.html')
+        self.assertEqual(response.status_code, 404)
+
+    def test_canonical_teacher_bio_edit_url_works(self):
+        self.client.login(username='teacherbio_test_user', password='password')
+        response = self.client.get('/teach/teachers/teacherbio_test_user/bio.edit.html')
+        self.assertEqual(response.status_code, 200)
+
+    def test_teacher_bio_edit_extra_path_rejected(self):
+        self.client.login(username='teacherbio_test_user', password='password')
+        response = self.client.get('/teach/teachers/teacherbio_test_user/bio.edit.html/trailing')
+        self.assertEqual(response.status_code, 404)
+
+
 class NavBarAdminDeletionTest(TestCase):
 
     def setUp(self):
