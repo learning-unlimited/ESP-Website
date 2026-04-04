@@ -55,7 +55,7 @@ function Matrix(
 
     
     $j("#room-filter-threshold").on("input", function() {
-        var val = parseInt($j(this).val());
+        var val = parseInt($j(this).val(), 10);
         var label = val === 0 ? "0% (show all)" : val + "%";
         $j("#room-filter-threshold-label").text(label);
         $j("body").trigger("room-filters-changed");
@@ -90,15 +90,23 @@ function Matrix(
         if (this.filter.roomCapacityMin.active) {
             totalWeight += 1;
             if (room.num_students < this.filter.roomCapacityMin.val) {
-                var dist = (this.filter.roomCapacityMin.val - room.num_students) / this.filter.roomCapacityMin.val;
-                totalPenalty += dist * dist;
+                if (this.filter.roomCapacityMin.val > 0) {
+                    var dist = (this.filter.roomCapacityMin.val - room.num_students) / this.filter.roomCapacityMin.val;
+                    totalPenalty += dist * dist;
+                } else {
+                    totalPenalty += 1;
+                }
             }
         }
         if (this.filter.roomCapacityMax.active) {
             totalWeight += 1;
             if (room.num_students > this.filter.roomCapacityMax.val) {
-                var dist = (room.num_students - this.filter.roomCapacityMax.val) / this.filter.roomCapacityMax.val;
-                totalPenalty += dist * dist;
+                if (this.filter.roomCapacityMax.val > 0) {
+                    var dist = (room.num_students - this.filter.roomCapacityMax.val) / this.filter.roomCapacityMax.val;
+                    totalPenalty += dist * dist;
+                } else {
+                    totalPenalty += 1;
+                }
             }
         }
         if (this.filter.roomResource.active) {
@@ -130,26 +138,37 @@ function Matrix(
             if (filterObject.active) anyFilterActive = true;
         });
         var filtRooms = this.filteredRooms();
+        // Build a Set of visible room ids for O(1) lookup
+        var filtRoomIds = {};
+        $j.each(filtRooms, function(index, room) {
+            filtRoomIds[room.id] = true;
+        });
+        // Hide rooms not in filtered set
         $j.each(this.rooms, function(index, room) {
-            var rows = $j(".room[data-id='" + room.id + "']").parent();
+            if (!filtRoomIds[room.id]) {
+                $j(".room[data-id='" + room.id + "']").parent().css("display", "none");
+                $j(".room[data-id='" + room.id + "'] .room-match-badge").remove();
+            }
+        }.bind(this));
+        // Show and reorder rooms by score, appending in sorted order
+        $j.each(filtRooms, function(index, room) {
+            var roomEl = $j(".room[data-id='" + room.id + "']");
+            var rows = roomEl.parent();
             var score = this.roomMatchScore(room);
-            if (filtRooms.includes(room)) {
-                rows.css("display", "table-row");
-                if (anyFilterActive) {
-                    var pct = Math.round(score * 100);
-                    var color = score === 1.0 ? "#28a745" : score >= 0.6 ? "#ffc107" : "#dc3545";
-                    var badge = $j(".room[data-id='" + room.id + "'] .room-match-badge");
-                    if (badge.length === 0) {
-                        $j(".room[data-id='" + room.id + "']").append("<span class='room-match-badge' style='font-size:10px;padding:1px 4px;border-radius:3px;color:#fff;margin-left:4px;background:" + color + "'>" + pct + "%</span>");
-                    } else {
-                        badge.css("background", color).text(pct + "%");
-                    }
+            rows.css("display", "table-row");
+            rows.parent().append(rows);
+            if (anyFilterActive) {
+                var pct = Math.round(score * 100);
+                var color = score === 1.0 ? "#28a745" : score >= 0.6 ? "#ffc107" : "#dc3545";
+                var textColor = (score >= 0.6 && score < 1.0) ? "#212529" : "#fff";
+                var badge = roomEl.find(".room-match-badge");
+                if (badge.length === 0) {
+                    roomEl.append("<span class='room-match-badge' style='font-size:10px;padding:1px 4px;border-radius:3px;color:" + textColor + ";margin-left:4px;background:" + color + "'>" + pct + "%</span>");
                 } else {
-                    $j(".room[data-id='" + room.id + "'] .room-match-badge").remove();
+                    badge.css({"background": color, "color": textColor}).text(pct + "%");
                 }
             } else {
-                rows.css("display", "none");
-                $j(".room[data-id='" + room.id + "'] .room-match-badge").remove();
+                roomEl.find(".room-match-badge").remove();
             }
         }.bind(this));
     };
