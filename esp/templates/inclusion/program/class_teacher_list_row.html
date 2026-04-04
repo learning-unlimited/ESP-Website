@@ -152,7 +152,7 @@
   </td>
   <td class="clsmiddle" valign="top" colspan="3">
     {{ sec.num_students }} / {{ sec.capacity }} students
-    {% if user in cls.teachers.all %}
+    {% if user in cls.teachers.all or is_admin %}
         &nbsp; <a href="/teach/{{ program.getUrlBase }}/editcapacity/{{ cls.id }}" style="font-size: 90%;">(edit capacity)</a>
     {% endif %}
     <br />
