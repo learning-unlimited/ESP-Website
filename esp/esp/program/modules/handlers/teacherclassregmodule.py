@@ -865,7 +865,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                         pass
             saved = True
 
-        return render_to_response(self.baseDir()+'editcapacity.html', request, {'cls': cls, 'saved': saved})
+        return render_to_response(self.baseDir()+'editcapacity.html', request, {'module': self, 'cls': cls, 'saved': saved})
 
     @main_call
     @needs_teacher
