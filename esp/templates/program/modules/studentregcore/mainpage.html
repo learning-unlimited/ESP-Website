@@ -21,9 +21,10 @@
       function toggle_paper_schedule_optout(checkbox) {
          // Toggle paper schedule opt-out preference via AJAX
          var opt_out = checkbox.checked;
+         refresh_csrf_cookie();
          $j.post(
             '/learn/{{one}}/{{two}}/optout_paper_schedule',
-            { opt_out: opt_out, csrfmiddlewaretoken: '{{ csrf_token }}' },
+            { opt_out: opt_out, csrfmiddlewaretoken: csrf_token() },
             function(data) {
                var label = $j('#paper-schedule-optout-label');
                if (data.opted_out) {
@@ -31,6 +32,9 @@
                } else {
                   label.text('I do not need a paper schedule printed for me.');
                }
+               // Reload so server-rendered conditional content (for example, the barcode block)
+               // stays in sync with the saved preference.
+               window.location.reload();
             },
             'json'
          ).fail(function() {
@@ -73,12 +77,12 @@
     <big><b>Parents:</b> You should not be at this page! Please let your kids fill out the registration forms.</big>
 </div>
 
-{% ifequal scrmi.progress_mode 1 %}
-{% include "program/modules/checkboxes.html" %}
-{% endifequal %}
-{% ifequal scrmi.progress_mode 2 %}
-{% include "program/modules/progressbar.html" %}
-{% endifequal %}
+{% if scrmi.progress_mode == 1 %}
+    {% include "program/modules/checkboxes.html" %}
+{% endif %}
+{% if scrmi.progress_mode == 2 %}
+    {% include "program/modules/progressbar.html" %}
+{% endif %}
 
 {% if records %}
 {% render_inline_program_qsd program record_steps %}

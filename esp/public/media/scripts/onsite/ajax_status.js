@@ -531,7 +531,7 @@ function unlock_schedule() {
 function add_student(student_id, section_id, size_override)
 {
     if (!lock_schedule()) {
-        console.log("Warning: schedule locked, refusing to add section " + section_id);
+        console.warn("Warning: schedule locked, refusing to add section " + section_id);
         return;
     }
     disable_checkboxes();
@@ -569,7 +569,7 @@ function add_student(student_id, section_id, size_override)
 function remove_student(student_id, section_id)
 {
     if (!lock_schedule()) {
-        console.log("Warning: schedule locked, refusing to remove section " + section_id);
+        console.warn("Warning: schedule locked, refusing to remove section " + section_id);
         return;
     }
     disable_checkboxes();
@@ -1307,7 +1307,7 @@ function populate_counts()
 
         //  If we have a conflict, assume the larger number of students are enrolled.
         if (!data.sections[sec_id])
-            console.log("Could not find section " + sec_id);
+            console.warn("Could not find section " + sec_id);
         else {
             data.sections[sec_id].num_students_attending = num_students_attending;
             if (data.sections[sec_id].num_students_enrolled != num_students)
@@ -1329,7 +1329,7 @@ function populate_full()
         var full = data.full[i][1];
 
         if (!data.sections[sec_id])
-            console.log("Could not find section " + sec_id);
+            console.warn("Could not find section " + sec_id);
         else {
             data.sections[sec_id].full = full;
         }
