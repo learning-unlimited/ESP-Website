@@ -55,6 +55,20 @@ class TeacherPreviewModule(ProgramModuleObj):
             "choosable": 1,
             }
 
+    def _get_preview_teacher(self, request):
+        if not (request.user.isAdmin() and 'user' in request.GET):
+            return request.user
+
+        try:
+            user_id = int(request.GET['user'])
+        except (TypeError, ValueError):
+            raise ESPError('Invalid user override parameter. Please provide a valid user ID.', log=False)
+
+        teacher = ESPUser.objects.filter(id=user_id).first()
+        if teacher is None:
+            raise ESPError('No user found for the requested override ID.', log=False)
+        return teacher
+
     def teacherhandout(self, request, tl, one, two, module, extra, prog, template_file='teacherschedule.html'):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
@@ -62,10 +76,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
-            if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
-            else:
-                teacher = request.user
+            teacher = self._get_preview_teacher(request)
             scheditems = []
             classes = sorted([cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
                     if cls.meeting_times.all().exists()
@@ -95,10 +106,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
-            if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
-            else:
-                teacher = request.user
+            teacher = self._get_preview_teacher(request)
             scheditems = []
             classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
                     if cls.meeting_times.all().exists()
@@ -133,10 +141,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
-            if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
-            else:
-                teacher = request.user
+            teacher = self._get_preview_teacher(request)
             scheditems = []
             classes = sorted([cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
                     if cls.meeting_times.all().exists()
