@@ -37,9 +37,10 @@ Now your printer will now automatically print from Firefox. Test this by printin
 <br /><br />
 <a href="{{request.path}}?sure">I am ready to go print schedules automatically!</a>
 <br /><br />
-I want to print schedules for:
+<a href="{{request.path}}?sure">I am ready to check in students and print!</a>
+I want to check in students and print schedules for:
 {% for printer in printers %}
-<a href="{{ request.path }}/{{ printer }}?sure">{{ printer }}</a>
+    <a href="{{ request.path }}/{{ printer }}?sure">{{ printer }}</a>
 {% endfor %}
 </p>
 
