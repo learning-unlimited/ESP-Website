@@ -167,7 +167,7 @@ table .openclasslist td {
     </tr>
 {% endcomment %}
     {% for class in classes %}
-        {% ifequal class.start_time current_time %}
+        {% if class.start_time == current_time %}
         {% if not class.isFull %}
         {% if not class.already_passed %}
     <tr>
@@ -176,7 +176,7 @@ table .openclasslist td {
     </tr>
         {% endif %}
         {% endif %}
-        {% endifequal %}
+        {% endif %}
     {% endfor %}
 </table>
 </td>

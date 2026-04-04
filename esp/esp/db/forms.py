@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 import re
 
-get_id_re = re.compile('.*\((\d+)\)$')
+get_id_re = re.compile(r'.*\((\d+)\)$')
 
 class AjaxForeignKeyFieldBase:
 
@@ -23,10 +23,10 @@ class AjaxForeignKeyFieldBase:
             if objects.count() == 1:
                 obj = objects[0]
                 if hasattr(obj, 'ajax_str'):
-                    init_val = obj.ajax_str() + " (%s)" % data
+                    init_val = obj.ajax_str() + f" ({data})"
                     old_init_val = str(obj)
                 else:
-                    old_init_val = init_val = str(obj) + " (%s)" % data
+                    old_init_val = init_val = str(obj) + f" ({data})"
         elif isinstance(data, str):
             pass
         else:
@@ -109,7 +109,7 @@ $j(function () {
         html = """
 <div class="raw_id_admin" style="display: none;">
   <a href="../" class="related-lookup" id="lookup_%(fn)s" onclick="return showRelatedObjectLookupPopup(this);">
-  <img src="/static/admin/img/selector-search.gif" border="0" width="16" height="16" alt="Lookup" /></a>
+  <img src="/static/admin/img/search.svg" border="0" width="16" height="16" alt="Lookup" /></a>
    &nbsp;<strong>%(old_init_val)s</strong>
 </div>
 <input type="text" id="id_%(fn)s" name="%(fn)s_raw" value="%(data)s" class="span6" />
@@ -118,7 +118,7 @@ $j(function () {
 
         #   Add HTML for shadow field if desired
         if self.shadow_field:
-            html += '<input type="hidden" id="id_%s" name="%s" value="%s"/>' % (self.shadow_field, self.shadow_field, old_init_val)
+            html += f'<input type="hidden" id="id_{self.shadow_field}" name="{self.shadow_field}" value="{old_init_val}"/>'
 
         return mark_safe(javascript + html)
 

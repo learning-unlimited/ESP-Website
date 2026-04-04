@@ -70,7 +70,6 @@
         background-color: #fdfdfd;
 
         &:focus {
-            outline: none;
             -webkit-box-shadow: none;
             -moz-box-shadow: none;
             box-shadow: none;
@@ -180,7 +179,7 @@ ul.nav-collapse {
 }
 
 @media (max-width: 767px) {
-    .btn {
+    #main .btn {
         width: 100%;
         display: block;
         margin-bottom: 5px;
@@ -379,4 +378,17 @@ textarea:not([class*="span"]),
 
 select {
     width: auto;
+}
+
+body #shortcuts-box {
+    top: 60px;
+    z-index: 1000;
+}
+
+@media (max-width: @navbarCollapseWidth) {
+    body #shortcuts-box {
+        top: auto;
+        bottom: 60px;
+        right: 10px;
+    }
 }
