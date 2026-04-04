@@ -3,35 +3,50 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 {% if theme %}<!-- Theme: {{ theme.theme_name }} -->{% endif %}
   <head>
-    <title>{% block fulltitle %}{% block meta_title %}{% if theme and theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock meta_title %}{% endblock fulltitle %}</title>
-    <meta name="csrf-cookie-name" content="{{ settings.CSRF_COOKIE_NAME|escape }}">
-
+    <title>{% block fulltitle %}{% endblock %}</title>
   {% block meta %}
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="description" content="{% block description %}{% block meta_description %}{% if theme and theme.full_group_name %}Learn more about {{ theme.full_group_name }} at {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% else %}Learn more about {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% endif %}{% endblock meta_description %}{% endblock description %}" />
-    <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
+    <meta name="csrf-cookie-name" content="{{ settings.CSRF_COOKIE_NAME|escape }}">
+    <meta name="description" content="{% block description %}{% endblock %}" />
+    <meta name="keywords" content="{% block keywords %}{% endblock %}" />
     <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="{% block og_title %}{% block fulltitle %}{% endblock fulltitle %}{% endblock og_title %}" />
-    <meta property="og:description" content="{% block og_description %}{% block description %}{% endblock description %}{% endblock og_description %}" />
+    <meta property="og:title" content="{% block fulltitle %}{% endblock %}" />
+    <meta property="og:description" content="{% block description %}{% endblock %}" />
     <meta property="og:url" content="{{ request.build_absolute_uri }}" />
     <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png?v={{ current_logo_version }}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{% block twitter_title %}{% block fulltitle %}{% endblock fulltitle %}{% endblock twitter_title %}" />
-    <meta name="twitter:description" content="{% block twitter_description %}{% block description %}{% endblock description %}{% endblock twitter_description %}" />
+    <meta name="twitter:title" content="{% block fulltitle %}{% endblock %}" />
+    <meta name="twitter:description" content="{% block description %}{% endblock %}" />
     <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png?v={{ current_logo_version }}" />
   {% endblock meta %}
 
 
     {% block stylesheets %}
     <link rel="shortcut icon" href="/media/images/favicon.ico?v={{ current_favicon_version }}">
-    {% comment %}PNG/manifest URLs: 404 until theme favicon upload generates them (Pillow/favicons follow-up). Kept here so upload flow can update cache-busting.{% endcomment %}
     <link rel="icon" type="image/png" sizes="32x32" href="/media/images/favicon-32x32.png?v={{ current_favicon_version }}">
     <link rel="icon" type="image/png" sizes="16x16" href="/media/images/favicon-16x16.png?v={{ current_favicon_version }}">
     <link rel="apple-touch-icon" sizes="180x180" href="/media/images/apple-touch-icon.png?v={{ current_favicon_version }}">
     <link rel="manifest" href="/media/images/site.webmanifest?v={{ current_favicon_version }}">
+    <style>
+      .skip-nav {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: #000;
+        color: #fff;
+        padding: 8px;
+        text-decoration: none;
+        z-index: 100;
+      }
+
+      .skip-nav:focus,
+      .skip-nav:focus-visible {
+        top: 0;
+      }
+    </style>
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
@@ -128,7 +143,7 @@
               submitted = true;
             }
           }
-          <!-- if we didn't end up submitting the form, re-enable the submit button -->
+          <!-- if we didn't end up submitting the form, reenable the submit button -->
           if(!submitted) {
             $j(this).prop('disabled', false);
           }
@@ -175,3 +190,4 @@
     {% endblock %}
   </body>
 </html>
+
