@@ -16,6 +16,15 @@ if [ "$CI_JOB" = "test" ]; then
         -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U "${DATABASE_USER:-postgres}" || true
     PGPASSWORD="${DATABASE_PASSWORD:-testpassword}" psql -h "${DATABASE_HOST:-localhost}" \
         -c "CREATE DATABASE test_django OWNER testuser;" -U "${DATABASE_USER:-postgres}" || true
+
+    # the postgres service in Github Actions sets up the database for us
+    if [ "$GITHUB_ACTIONS" != true ]; then
+        psql -c "DROP DATABASE IF EXISTS test_test_django;" -U postgres
+        psql -c "DROP DATABASE IF EXISTS test_django;" -U postgres
+        psql -c "DROP ROLE IF EXISTS testuser;" -U postgres
+        psql -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U postgres
+        psql -c "CREATE DATABASE test_django OWNER testuser;" -U postgres
+    fi
 elif [ "$CI_JOB" = "lint" ]; then
     :
 else
