@@ -1,8 +1,8 @@
-npm
 build-essential
 texlive
 texlive-latex-extra
 imagemagick
+ghostscript
 dvipng
 python3.7
 postgresql
@@ -18,9 +18,6 @@ libpq-dev
 libcurl4-openssl-dev
 libssl-dev
 libjpeg-dev
-javascript-common
-libc-ares2
-libev4
 git
 libfreetype6-dev
 python3.7-distutils
