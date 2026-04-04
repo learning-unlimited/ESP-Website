@@ -111,21 +111,28 @@ class VolunteerManage(ProgramModuleObj):
             if request.GET['op'] == 'edit':
                 form = VolunteerRequestForm(program=prog)
                 form.load(VolunteerRequest.objects.get(id=request.GET['id']))
+              
             # NOTICE: We deleted the 'elif op == delete' from here!
-            
-        elif request.method == 'POST':
-            # Check for deletion here (The SECURE way)
+            elif request.method == 'POST':
+            # Handle volunteer deletion via POST to ensure CSRF protection
             if request.POST.get('op') == 'delete':
-                VolunteerRequest.objects.get(id=request.POST['id']).delete()
-                form = VolunteerRequestForm(program=prog)
+                vr_id = request.POST.get('id')
+                try:
+                    # Security: Ensure the volunteer belongs to the current program
+                    volunteer = VolunteerRequest.objects.get(id=vr_id, program=prog)
+                    volunteer.delete()
+                    message_good = "Volunteer request deleted successfully."
+                except VolunteerRequest.DoesNotExist:
+                    message_bad = "Error: Volunteer request not found or access denied."
+            
             else:
-                # This is the existing saving logic
                 form = VolunteerRequestForm(request.POST, program=prog)
                 if form.is_valid():
-                    if form.cleaned_data['vr_id']:
+                    if form.cleaned_data.get('vr_id'):
                         form.save(VolunteerRequest.objects.get(id=form.cleaned_data['vr_id']))
                     else:
                         form.save()
+       
                     form = VolunteerRequestForm(program=prog)
         else:
             form = VolunteerRequestForm(program=prog)
