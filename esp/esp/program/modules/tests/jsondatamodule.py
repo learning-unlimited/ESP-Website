@@ -50,47 +50,18 @@ class JSONDataModuleTest(ProgramFrameworkTest):
     ## at the moment it just assumes that they are correct.
     ## It also also needs to test all the other queries on this page.
 
-    @classmethod
-    def setUpTestData(cls):
-        """Run all heavy DB setup once at the class level.
-
-        Django wraps this in a transaction savepoint that is shared by every
-        test method in the class and rolled back when the class finishes.
-        This avoids repeating the expensive program-framework scaffolding
-        (user creation, class scheduling, student registration) on every
-        individual test method.
-        """
-        super().setUpTestData()
-        # Bootstrap the program framework at the class level.  We invoke each
-        # instance method explicitly with `cls` as the receiver so that Python
-        # binds the class object as `self`.  ProgramFrameworkTest.setUp only
-        # performs DB writes (no HTTP client usage), so this is safe.
-        ProgramFrameworkTest.setUp(cls)
-        ProgramFrameworkTest.schedule_randomly(cls)
-        ProgramFrameworkTest.add_user_profiles(cls)
-        ProgramFrameworkTest.classreg_students(cls)
-        # Store program URL so setUp() can re-fetch it from DB per test method.
-        cls._program_url = cls.program.url
     def setUp(self):
-        # We deliberately do NOT call super().setUp() here.  ProgramFrameworkTest
-        # mixes two concerns in its setUp: (a) expensive one-time DB scaffolding
-        # (program creation, user creation, etc.) which was already done once at
-        # the class level in setUpTestData, and (b) lightweight per-test state
-        # resets.  Calling super().setUp() per-test would re-run the full program
-        # creation form, which fails because the program already exists.
-        #
-        # We therefore replicate only the per-test isolation steps from
-        # ProgramFrameworkTest.setUp explicitly:
-        #   1. Reset the in-memory ResourceType cache so stale entries from one
-        #      test can't pollute the next (ProgramFrameworkTest.setUp line ~527).
-        #   2. No other shared mutable state is mutated by ProgramFrameworkTest.setUp.
-        #
-        # This preserves test isolation without the O(N) per-test DB overhead.
+        ## This test is very incomplete.
+        ## It needs more data, more interesting state in the program in question.
+        ## It also needs all of the queries in self.program.students() and
+        ## self.program.teachers() to have their own tests for correctness;
+        ## at the moment it just assumes that they are correct.
+        ## It also also needs to test all the other queries on this page.
+        super().setUp()
+        self.schedule_randomly()
+        self.add_user_profiles()
+        self.classreg_students()
         ResourceType._get_or_create_cache = {}
-        # Re-fetch program from DB since Django's setUpTestData deep-copies
-        # class attributes and the ORM object may not survive the copy cleanly.
-        from esp.program.models import Program
-        self.program = Program.objects.get(url=self.__class__._program_url)
         self.pm = ProgramModule.objects.get(handler='AdminCore')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.pm)
         self.moduleobj.user = self.students[0]
@@ -136,7 +107,6 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                    self.classes_response.status_code,
                    self.classes_response.content[:200])
             )
-
     def testStudentStats(self):
         ## Student statistics
         student_labels_dict = {}
