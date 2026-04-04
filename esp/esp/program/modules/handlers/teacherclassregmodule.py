@@ -848,7 +848,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         classes = ClassSubject.objects.filter(id=extra)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
-        
+
         cls = classes[0]
         saved = False
 
@@ -857,15 +857,29 @@ class TeacherClassRegModule(ProgramModuleObj):
                 key = 'capacity_%d' % sec.id
                 if key in request.POST:
                     try:
-                        new_cap = int(request.POST[key])
-                        if new_cap >= 0:
-                            sec.max_class_capacity = new_cap
-                            sec.save()
+                        new_cap_str = request.POST[key].strip()
+                        if not new_cap_str:
+                            sec.max_class_capacity = None
+                        else:
+                            new_cap = int(new_cap_str)
+                            if new_cap >= 0:
+                                sec.max_class_capacity = new_cap
+                        sec.save()
                     except ValueError:
                         pass
             saved = True
 
-        return render_to_response(self.baseDir()+'editcapacity.html', request, {'module': self, 'cls': cls, 'saved': saved})
+        context = {
+            'cls': cls,
+            'saved': saved,
+            'one': one,
+            'two': two,
+            'module': self,
+            'program': self.program,
+        }
+
+        return render_to_response(self.baseDir()+'editcapacity.html', request, context)
+
 
     @main_call
     @needs_teacher

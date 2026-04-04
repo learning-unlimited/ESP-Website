@@ -11,7 +11,7 @@
 </div>
 {% endif %}
 
-<p>Use the form below to update the maximum capacity for your class sections. Please make sure the capacity is greater than or equal to the number of current enrolled students.</p>
+<p>Use the form below to update the maximum capacity for your class sections. Please make sure the capacity is greater than or equal to the number of current enrolled students. <strong>Leave a field blank to revert to the default calculated capacity (e.g., room capacity).</strong></p>
 
 <form method="POST" action="">
     {% csrf_token %}
@@ -29,9 +29,10 @@
                 <td style="padding: 8px; border-bottom: 1px solid #ddd;">Section {{ sec.index }}</td>
                 <td style="padding: 8px; border-bottom: 1px solid #ddd;">{{ sec.num_students }}</td>
                 <td style="padding: 8px; border-bottom: 1px solid #ddd;">
-                    <input type="number" name="capacity_{{ sec.id }}" value="{{ sec.capacity }}" min="0" style="width: 80px; padding: 4px;" required>
+                    <input type="number" name="capacity_{{ sec.id }}" value="{{ sec.max_class_capacity|default_if_none:'' }}" placeholder="{{ sec.capacity }}" min="0" style="width: 80px; padding: 4px;">
                 </td>
             </tr>
+
             {% endfor %}
         </tbody>
     </table>
