@@ -12,8 +12,12 @@ $j.ajax({
 });
 };
 
-$j(function() {
-        $j(document).on('wheel mousewheel DOMMouseScroll', 'input[type=number]:focus', function() {
+$(document).on('focusin', 'input[type=number]', function() {
+        $(this).on('wheel mousewheel DOMMouseScroll.numberInputBlur', function() {
                 this.blur();
         });
+});
+
+$(document).on('focusout', 'input[type=number]', function() {
+        $(this).off('wheel.numberInputBlur mousewheel.numberInputBlur DOMMouseScroll.numberInputBlur');
 });
