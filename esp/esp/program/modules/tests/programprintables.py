@@ -125,15 +125,29 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         cls.class_info = 'Description with unicode: caf\u00e9, pi\u00f1ata, and \u03c0!'
         cls.save()
 
-        request = self.factory.get(
+        tex_request = self.factory.get(
+            '/learn/%s/catalog/tex' % self.program.getUrlBase(),
+            {'sort_name_list': 'timeblock'},
+        )
+        tex_request.user = self.admins[0]
+        tex_request.session = self.client.session
+        tex_response = self.moduleobj.coursecatalog(tex_request, None, None, None, self.moduleobj, 'tex', self.program)
+        self.assertEqual(tex_response.status_code, 200)
+
+        tex_content = tex_response.content.decode('utf-8')
+        self.assertIn('caf\u00e9', tex_content)
+        self.assertIn('pi\u00f1ata', tex_content)
+        self.assertIn('\u03c0', tex_content)
+
+        pdf_request = self.factory.get(
             '/learn/%s/catalog/pdf' % self.program.getUrlBase(),
             {'sort_name_list': 'timeblock'},
         )
-        request.user = self.admins[0]
-        request.session = self.client.session
-        response = self.moduleobj.coursecatalog(request, None, None, None, self.moduleobj, 'pdf', self.program)
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response['Content-Type'].startswith('application/pdf'))
+        pdf_request.user = self.admins[0]
+        pdf_request.session = self.client.session
+        pdf_response = self.moduleobj.coursecatalog(pdf_request, None, None, None, self.moduleobj, 'pdf', self.program)
+        self.assertEqual(pdf_response.status_code, 200)
+        self.assertTrue(pdf_response['Content-Type'].startswith('application/pdf'))
 
     def test_all_classes_spreadsheet_loads(self):
         """
