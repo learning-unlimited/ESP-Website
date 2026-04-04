@@ -379,8 +379,7 @@ class TeacherBioUrlTest(ProgramFrameworkTest):
     def test_deprecated_learn_prefix_returns_404(self):
         """Deprecated /learn/teachers/<username>/bio.html should return 404."""
         response = self.client.get('/learn/teachers/%s/bio.html' % self.teacher.username)
-        self.assertNotEqual(response.status_code, 200)
-        self.assertNotEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 404)
 
     def test_deprecated_name_based_url_returns_404(self):
         """Deprecated /teach/teachers/<last>/<first>/bio.html should return 404."""
