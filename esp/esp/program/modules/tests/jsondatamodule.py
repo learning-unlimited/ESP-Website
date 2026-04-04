@@ -69,7 +69,8 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         ProgramFrameworkTest.schedule_randomly(cls)
         ProgramFrameworkTest.add_user_profiles(cls)
         ProgramFrameworkTest.classreg_students(cls)
-
+        # Store program URL so setUp() can re-fetch it from DB per test method.
+        cls._program_url = cls.program.url
     def setUp(self):
         # We deliberately do NOT call super().setUp() here.  ProgramFrameworkTest
         # mixes two concerns in its setUp: (a) expensive one-time DB scaffolding
@@ -86,7 +87,10 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         #
         # This preserves test isolation without the O(N) per-test DB overhead.
         ResourceType._get_or_create_cache = {}
-        self.program = self.__class__.program
+        # Re-fetch program from DB since Django's setUpTestData deep-copies
+        # class attributes and the ORM object may not survive the copy cleanly.
+        from esp.program.models import Program
+        self.program = Program.objects.get(url=self.__class__._program_url)
         self.pm = ProgramModule.objects.get(handler='AdminCore')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.pm)
         self.moduleobj.user = self.students[0]
