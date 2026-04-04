@@ -140,15 +140,15 @@ class UserSearchController(object):
 
             for field in ['username', 'last_name', 'first_name', 'email']:
                 if criteria.get(field, '').strip():
-                    #   Check that it's a valid regular expression
-                    try:
-                        rc = re.compile(criteria[field])
-                    except re.error:
-                        raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
                     if field == 'username':
-            		filter_dict = {'username__iexact': criteria[field].strip()}
-        	    else:
-            		filter_dict = {'%s__iregex' % field: criteria[field]}
+                        filter_dict = {'username__iexact': criteria[field].strip()}
+                    else:
+                        #   Check that it's a valid regular expression
+                        try:
+                            rc = re.compile(criteria[field])
+                        except re.error:
+                            raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
+                        filter_dict = {'%s__iregex' % field: criteria[field]}
                     if '%s__not' % field in criteria:
                         Q_exclude |= Q(**filter_dict)
                     else:
@@ -493,5 +493,4 @@ class UserSearchController(object):
         for k, v in data.items():
             if k.startswith('checkbox_'):
                 selected.append(str(k.split('checkbox_')[1]))
-
         return str(', '.join(selected))
