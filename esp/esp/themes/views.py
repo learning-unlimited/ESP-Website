@@ -158,12 +158,6 @@ def _safe_backup_path(filename, backups_dir):
     return resolved
 
 
-def _safe_backup_path(filename, backups_dir):
-    resolved = os.path.realpath(os.path.join(backups_dir, filename))
-    if not resolved.startswith(os.path.realpath(backups_dir) + os.sep):
-        raise ESPError("Invalid file selection.", log=True)
-    return resolved
-
 THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
                      "If you want to switch to one of the standard themes, " + \
                      "please contact the web team."
