@@ -86,6 +86,7 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         #
         # This preserves test isolation without the O(N) per-test DB overhead.
         ResourceType._get_or_create_cache = {}
+        self.program = self.__class__.program
         self.pm = ProgramModule.objects.get(handler='AdminCore')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.pm)
         self.moduleobj.user = self.students[0]
