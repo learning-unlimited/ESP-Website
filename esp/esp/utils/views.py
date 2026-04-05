@@ -85,8 +85,11 @@ def diff_templateoverride(request, template_id):
     override_lines = override_obj.content.split('\n')
 
     original_path = os.path.join(template_dir, override_obj.name)
-    with open(original_path) as original_file:
-        original_lines = list(original_file)
+    try:
+        with open(original_path) as original_file:
+            original_lines = list(original_file)
+    except FileNotFoundError:
+        raise Http404
 
     context = {}
     context['name'] = override_obj.name
