@@ -51,17 +51,10 @@ class JSONDataModuleTest(ProgramFrameworkTest):
     ## It also also needs to test all the other queries on this page.
 
     def setUp(self):
-        ## This test is very incomplete.
-        ## It needs more data, more interesting state in the program in question.
-        ## It also needs all of the queries in self.program.students() and
-        ## self.program.teachers() to have their own tests for correctness;
-        ## at the moment it just assumes that they are correct.
-        ## It also also needs to test all the other queries on this page.
         super().setUp()
         self.schedule_randomly()
         self.add_user_profiles()
         self.classreg_students()
-        ResourceType._get_or_create_cache = {}
         self.pm = ProgramModule.objects.get(handler='AdminCore')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.pm)
         self.moduleobj.user = self.students[0]

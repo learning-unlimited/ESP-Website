@@ -60,10 +60,11 @@ class TestDataCleanupController(object):
         ctrl.execute()               # permanent deletion
     """
 
+    __test__ = False
+
     def __init__(self, program, user):
         self.program = program
         self.user = user
-
     # ------------------------------------------------------------------
     # Querysets — each scoped strictly to (program, user)
     # ------------------------------------------------------------------
