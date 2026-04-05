@@ -94,7 +94,10 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 </tr>
 <tr>
   <td colspan="2">
-    <div id="email-live-feedback" class="help-block" aria-live="polite"></div>
+    <div id="email-live-feedback" class="help-block" aria-live="polite">
+      <span id="email-live-feedback-icon" aria-hidden="true"></span>
+      <span id="email-live-feedback-text"></span>
+    </div>
   </td>
 </tr>
 </tbody>
@@ -108,17 +111,29 @@ are errors{% endif %} in the below form. Please fix and resubmit.
     var emailInput = document.getElementById('id_email');
     var roleInput = document.getElementById('id_initial_role');
     var feedback = document.getElementById('email-live-feedback');
+    var feedbackIcon = document.getElementById('email-live-feedback-icon');
+    var feedbackText = document.getElementById('email-live-feedback-text');
     var checkTimer = null;
     var requestCounter = 0;
 
     function setFeedback(text, cssClass, symbol) {
       feedback.className = 'help-block ' + cssClass;
-      feedback.innerHTML = (symbol ? symbol + ' ' : '') + text;
+      if (feedbackIcon) {
+        feedbackIcon.textContent = symbol ? symbol + ' ' : '';
+      }
+      if (feedbackText) {
+        feedbackText.textContent = text || '';
+      }
     }
 
     function clearFeedback() {
       feedback.className = 'help-block';
-      feedback.innerHTML = '';
+      if (feedbackIcon) {
+        feedbackIcon.textContent = '';
+      }
+      if (feedbackText) {
+        feedbackText.textContent = '';
+      }
     }
 
     function runCheck() {
@@ -141,23 +156,23 @@ are errors{% endif %} in the below form. Please fix and resubmit.
         }
 
         if (xhr.status !== 200) {
-          setFeedback('Could not validate email right now.', 'text-warning', '&#9888;');
+          setFeedback('Could not validate email right now.', 'text-warning', '⚠');
           return;
         }
 
         try {
           var result = JSON.parse(xhr.responseText);
           if (!result.valid) {
-            setFeedback(result.message, 'text-danger', '&#10007;');
+            setFeedback(result.message, 'text-danger', '✗');
           } else if (result.available === false) {
-            setFeedback(result.message, 'text-danger', '&#10007;');
+            setFeedback(result.message, 'text-danger', '✗');
           } else if (result.available === true) {
-            setFeedback(result.message, 'text-success', '&#10003;');
+            setFeedback(result.message, 'text-success', '✓');
           } else {
-            setFeedback(result.message, 'text-info', '&#9432;');
+            setFeedback(result.message, 'text-info', 'ℹ');
           }
         } catch (e) {
-          setFeedback('Could not validate email right now.', 'text-warning', '&#9888;');
+          setFeedback('Could not validate email right now.', 'text-warning', '⚠');
         }
       };
       xhr.send();

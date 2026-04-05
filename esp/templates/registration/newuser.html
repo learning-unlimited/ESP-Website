@@ -101,12 +101,12 @@
 
     function setFeedback(text, cssClass, symbol) {
       feedback.className = 'help-block ' + cssClass;
-      feedback.innerHTML = (symbol ? symbol + ' ' : '') + text;
+      feedback.textContent = (symbol ? symbol + ' ' : '') + (text || '');
     }
 
     function clearFeedback() {
       feedback.className = 'help-block';
-      feedback.innerHTML = '';
+      feedback.textContent = '';
     }
 
     function runCheck() {
@@ -126,23 +126,23 @@
         }
 
         if (xhr.status !== 200) {
-          setFeedback('Could not validate username right now.', 'text-warning', '&#9888;');
+          setFeedback('Could not validate username right now.', 'text-warning', '⚠');
           return;
         }
 
         try {
           var result = JSON.parse(xhr.responseText);
           if (!result.valid) {
-            setFeedback(result.message, 'text-danger', '&#10007;');
+            setFeedback(result.message, 'text-danger', '✗');
           } else if (result.available === false) {
-            setFeedback(result.message, 'text-danger', '&#10007;');
+            setFeedback(result.message, 'text-danger', '✗');
           } else if (result.available === true) {
-            setFeedback(result.message, 'text-success', '&#10003;');
+            setFeedback(result.message, 'text-success', '✓');
           } else {
-            setFeedback(result.message, 'text-info', '&#9432;');
+            setFeedback(result.message, 'text-info', 'ℹ');
           }
         } catch (e) {
-          setFeedback('Could not validate username right now.', 'text-warning', '&#9888;');
+          setFeedback('Could not validate username right now.', 'text-warning', '⚠');
         }
       };
       xhr.send();

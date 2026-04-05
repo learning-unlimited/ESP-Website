@@ -18,6 +18,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.template import loader
 from django.utils.datastructures import MultiValueDictKeyError
 from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_GET
 
 from vanilla import CreateView
 
@@ -63,7 +64,7 @@ def _username_live_validation(username):
             'message': 'Username may only contain letters and numbers.',
         }
 
-    awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
+    awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
     exists = ESPUser.objects.filter(username__iexact=data).exclude(
         password='emailuser'
     ).exclude(awaiting_activation).exists()
@@ -80,6 +81,7 @@ def _username_live_validation(username):
         'message': 'Username is available.',
     }
 
+@require_GET
 def registration_live_username_check(request):
     """AJAX endpoint for phase-2 username availability/rules feedback."""
     username = request.GET.get('username', '')
@@ -131,11 +133,10 @@ def _email_live_validation(email, initial_role):
         email=candidate_email,
     ).filter(
         is_active=False,
-        password__regex='\$(.*)_',
+        password__regex=r'\$(.*)_',
     ).exclude(password='emailuser')
 
-    duplicate_count = len(existing_accounts) + len(awaiting_activation_accounts)
-    if duplicate_count:
+    if existing_accounts.exists() or awaiting_activation_accounts.exists():
         return {
             'valid': True,
             'available': False,
@@ -148,6 +149,7 @@ def _email_live_validation(email, initial_role):
         'message': 'Email address is available.',
     }
 
+@require_GET
 def registration_live_email_check(request):
     """AJAX endpoint for phase-1 email validity/availability feedback."""
     email = request.GET.get('email', '')
