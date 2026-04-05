@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,6 +36,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import sys
+from datetime import datetime
 
 from django.conf import settings
 from django.db.models.base import ObjectDoesNotExist
@@ -78,8 +78,8 @@ def ESPError(message=None, log=True):
     if isinstance(message, bool):
         # trying to pass a bool argument: assume they meant log rather than message
         # this should become deprecated -lua 2013-02-15
-        message = None
         log = message
+        message = None
 
     if log:
         cls = ESPError_Log
@@ -92,69 +92,6 @@ def ESPError(message=None, log=True):
     else:
         return cls(message)
 
-""" Adapted from http://www.djangosnippets.org/snippets/802/ """
-class AjaxErrorMiddleware(MiddlewareMixin):
-    '''Return AJAX errors to the browser in a sensible way.
-
-    Includes some code from http://www.djangosnippets.org/snippets/650/
-    '''
-
-    # Some useful errors that this middleware will catch.
-    class AjaxError(Exception):
-        def __init__(self, message):
-            self.message = message
-            super(AjaxErrorMiddleware.AjaxError, self).__init__(message)
-
-    class AjaxParameterMissingError(AjaxError):
-        def __init__(self, param):
-            super(AjaxErrorMiddleware.AjaxParameterMissingError, self).__init__(
-                _('Required parameter missing: %s') % param)
-
-
-    def process_exception(self, request, exception):
-        #   This line has been commented out for debugging so that requests
-        #   can be made using a normal browser like Firefox with UrlParams.
-        if not request.is_ajax(): return
-
-        if isinstance(exception, (ObjectDoesNotExist, Http404)):
-            return self.not_found(request, exception)
-
-        if isinstance(exception, AjaxErrorMiddleware.AjaxError):
-            return self.bad_request(request, exception)
-
-        return None
-
-
-    def serialize_error(self, status, message):
-        return HttpResponse(json.dumps({
-                    'status': status,
-                    'error': message}),
-                            status=status)
-
-
-    def not_found(self, request, exception):
-        return self.serialize_error(404, str(exception))
-
-
-    def bad_request(self, request, exception):
-        return self.serialize_error(200, exception.message)
-
-
-    def server_error(self, request, exception):
-        if settings.DEBUG:
-            import sys, traceback
-            (exc_type, exc_info, tb) = sys.exc_info()
-            message = "%s\n" % exc_type.__name__
-            message += "%s\n\n" % exc_info
-            message += "TRACEBACK:\n"
-            for tb in traceback.format_tb(tb):
-                message += "%s\n" % tb
-            return self.serialize_error(500, message)
-        else:
-            return self.serialize_error(500, _('Internal error'))
-
-AjaxError = AjaxErrorMiddleware.AjaxError
-
 
 class ESPErrorMiddleware(MiddlewareMixin):
     """ This middleware handles errors appropriately.
@@ -162,6 +99,25 @@ class ESPErrorMiddleware(MiddlewareMixin):
     (and emails the admin). This, of course, is only true if DEBUG is
     False in the settings.py. Otherwise, it doesn't do any of that.
     """
+
+    # Maps exception type name -> (friendly title, friendly description)
+    _ERROR_MESSAGES = {
+        'ESPError_Log': (
+            'Something went wrong',
+            'The website encountered an error and our team has been notified. '
+            'Please try again or contact us if the problem persists.',
+        ),
+        'ESPError_NoLog': (
+            "We couldn't complete that request",
+            'Your request could not be processed. Please check what you '
+            'submitted and try again.',
+        ),
+        'Http403': (
+            'Access Denied',
+            'You do not have permission to view this page. '
+            'Try logging in with an account that has the required access.',
+        ),
+    }
 
     def process_exception(self, request, exception):
         from esp.utils.web import render_to_response
@@ -176,6 +132,7 @@ class ESPErrorMiddleware(MiddlewareMixin):
             log_level = logging.ERROR
             template = 'error.html'
             status = 500
+            error_type = 'ESPError_Log'
         elif (isinstance(exception, ESPError_NoLog) or
               exception == ESPError_NoLog):
             log_level = logging.INFO
@@ -183,16 +140,36 @@ class ESPErrorMiddleware(MiddlewareMixin):
             # TODO(benkraft): this should probably be a 4xx, since if we're not
             # bothering to log it we probably don't think it was our fault.
             status = 500
+            error_type = 'ESPError_NoLog'
         elif isinstance(exception, Http403):
             log_level = logging.INFO
             template = '403.html'
             status = 403
+            error_type = 'Http403'
         else:
             return None
 
         exc_info = sys.exc_info()
         logger.log(log_level, exc_info[1], exc_info=exc_info)
-        context = {'error': exc_info[1]}
+
+        error_title, error_description = self._ERROR_MESSAGES.get(
+            error_type, ('An error has occurred', 'Please try again.')
+        )
+
+        # Safely retrieve the Sentry event ID if available
+        error_id = None
+        if hasattr(request, 'sentry') and isinstance(request.sentry, dict):
+            error_id = request.sentry.get('id')
+
+        context = {
+            'error': exc_info[1],
+            'error_type': error_type,
+            'error_title': error_title,
+            'error_description': error_description,
+            'error_id': error_id,
+            'error_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'error_url': request.build_absolute_uri(),
+        }
         try:
             # attempt to set up variables the template needs
             # - actually, some things will fail to be set up due to our
@@ -201,16 +178,15 @@ class ESPErrorMiddleware(MiddlewareMixin):
             # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
             #   TEMPLATE in main?
             context = RequestContext(request, context).flatten()
-        except:
+        except BaseException:
             # well, we couldn't, but at least display something
             # (actually it will immediately fail on main because someone
-            # removed the safe version of the template and
-            # miniblog_for_user doesn't silently fail but best not to put
+            # removed the safe version of the template but best not to put
             # in ugly hacks and make random variables just happen to work.)
             pass
-        # TODO(benkraft): merge our various error templates (403, 500, error).
-        # They're all slightly different, but should probably be more similar
-        # and share code.
+        # All error templates now extend error_base.html, which provides
+        # a consistent layout with two-tier information (user vs admin)
+        # and a pre-filled report button. This resolves the TODO above.
         response = render_to_response(template, request, context)
         response.status_code = status
         return response
