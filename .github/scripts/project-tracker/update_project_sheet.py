@@ -266,7 +266,7 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
     """Build the rows for the Issues sheet."""
     header = [
         "Issue #", "Title", "Author", "Opened", "Assignee(s)",
-        "Assigned Date", "Last Updated", "Linked PRs",
+        "Assigned Date", "Last Updated", "Linked PRs", "Labels",
     ]
     rows = [header]
 
@@ -297,6 +297,7 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
             earliest_assign = fmt_time(min(assign_dates.values()))
 
         author = (issue["author"] or {}).get("login", "ghost")
+        labels = [l["name"] for l in issue["labels"]["nodes"]]
 
         rows.append([
             link_issue(issue["number"]),
@@ -307,6 +308,7 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
             earliest_assign,
             fmt_time(issue["updatedAt"]),
             ", ".join(linked_prs),
+            ", ".join(labels),
         ])
 
     return rows
