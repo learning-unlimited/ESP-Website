@@ -17,8 +17,10 @@ class DropdownOtherWidget(forms.MultiWidget):
     A widget that presents a dropdown list of choices, as well as an 'Other...' textbox
     """
     def __init__(self, choices, use_textarea = False, attrs=None):
+        text_attrs = dict(attrs or {})
+        text_attrs['style'] = text_attrs.get('style', '') + 'margin-left: 10px;'
         widgets = (forms.Select(attrs=attrs, choices=choices),
-                   forms.Textarea(attrs=attrs) if use_textarea else forms.TextInput(attrs=attrs))
+                   forms.Textarea(attrs=text_attrs) if use_textarea else forms.TextInput(attrs=text_attrs))
         super().__init__(widgets, attrs)
 
     def decompress(self, value):
@@ -164,7 +166,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
     pronoun = forms.CharField(max_length=50, required=False)
-    graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7, 13)])
+    graduation_year = forms.ChoiceField(choices=[])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
     school = forms.CharField(max_length=128, required=False)
@@ -270,7 +272,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy
@@ -424,6 +426,24 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
                 del self.fields[field_name]
             if field_name == 'phone_cell' and 'receive_txt_message' in self.fields:
                 del self.fields['receive_txt_message']
+    def clean(self):
+        cleaned_data = super(StudentProfileForm, self).clean()
+
+        student_email = cleaned_data.get('e_mail', '').lower()
+        emerg_email = cleaned_data.get('emerg_e_mail', '').lower()
+        guard_email = cleaned_data.get('guard_e_mail', '').lower()
+
+        if student_email and emerg_email and student_email == emerg_email:
+            raise forms.ValidationError(
+                "Your emergency contact email address cannot be the same as your own email address."
+            )
+
+        if student_email and guard_email and student_email == guard_email:
+            raise forms.ValidationError(
+                "Your parent/guardian email address cannot be the same as your own email address."
+            )
+
+        return cleaned_data
 
 # A list of teacher fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_teachers = []
@@ -487,7 +507,7 @@ class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy
@@ -501,7 +521,7 @@ class AlumProfileForm(MinimalUserInfo, FormWithTagInitialValues):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy
