@@ -200,7 +200,7 @@ This function is overloaded to handle either one or two phase reg"""
                                     password=form.cleaned_data['password'])
 
             login(request, user)
-            return HttpResponseRedirect('/myesp/profile/')
+            return HttpResponseRedirect(reverse('myesp_profile'))
         else:
             send_activation_email(user, userkey)
             return render_to_response('registration/account_created_activation_required.html', request,
@@ -223,7 +223,7 @@ When there are already accounts with this email address (depending on some tags)
         if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts'):
             accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(form.cleaned_data['initial_role'], True))
             existing_accounts = accounts_role.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
-            awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex='\$(.*)_').exclude(password='emailuser')
+            awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex=r'\$(.*)_').exclude(password='emailuser')
             if len(existing_accounts)+len(awaiting_activation_accounts) != 0:
                 #they have accounts. go back to the same page, but ask them
                 #if they want to try to log in
@@ -304,7 +304,7 @@ def activate_account(request):
     u.is_active = True
     u.save()
 
-    return HttpResponseRedirect('/myesp/profile/')
+    return HttpResponseRedirect(reverse('myesp_profile'))
 
 def send_activation_email(user, userkey):
     t = loader.get_template('registration/activation_email.txt')

@@ -145,13 +145,19 @@ class PasswordRecoveryTest(TestCase):
     Tokens are computed via HMAC from user data and are never stored in the
     database.
     """
+    @classmethod
+    def setUpTestData(cls):
+        cls.user, _ = ESPUser.objects.get_or_create(username='forgetful')
+        cls.user.set_password('forgotten_pw')
+        cls.user.save()
+        cls.other, _ = ESPUser.objects.get_or_create(username='innocent')
+        cls.other.set_password('remembered_pw')
+        cls.other.save()
+
     def setUp(self):
-        self.user, created = ESPUser.objects.get_or_create(username='forgetful')
-        self.user.set_password('forgotten_pw')
-        self.user.save()
-        self.other, created = ESPUser.objects.get_or_create(username='innocent')
-        self.other.set_password('remembered_pw')
-        self.other.save()
+        # Refresh so tests that modify user/other don't affect the shared instances
+        self.user.refresh_from_db()
+        self.other.refresh_from_db()
 
     def test_run(self):
         from django.contrib.auth.tokens import default_token_generator
@@ -468,8 +474,7 @@ class AccountCreationTest(TestCase):
                                   first_name="first",
                                   last_name="last",
                                   email="tsutton125@gmail.com")
-        except ESPUser.DoesNotExist as xxx_todo_changeme:
-            ESPUser.MultipleObjectsReturned = xxx_todo_changeme
+        except (ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned):
             self.fail("User not created correctly or created multiple times")
 
         if not Tag.getBooleanTag('require_email_validation'):
@@ -852,6 +857,82 @@ class PermissionTestCase(TestCase):
         implications = ['Teacher/Classes/Create/OpenClass']
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
+
+class AjaxAutocompleteViewTest(TestCase):
+    def setUp(self):
+        user_role_setup()
+        self.client = Client()
+
+        self.staff_user, _ = ESPUser.objects.get_or_create(username='staff_autocomplete')
+        self.staff_user.set_password('password')
+        self.staff_user.is_staff = True
+        self.staff_user.is_superuser = True
+        self.staff_user.save()
+
+        self.nonstaff_user, _ = ESPUser.objects.get_or_create(username='student_autocomplete')
+        self.nonstaff_user.set_password('password')
+        self.nonstaff_user.save()
+        self.nonstaff_user.makeRole('Student')
+
+        from esp.users.models import K12School
+        self.school = K12School.objects.create(name='Springfield Academy')
+        self.target_user = ESPUser.objects.create(
+            username='target_autocomplete',
+            first_name='Alice',
+            last_name='Target',
+            email='target@example.com',
+        )
+
+    def _call(self, **kwargs):
+        params = {
+            'model_module': 'esp.users.models',
+            'model_name': 'K12School',
+            'ajax_data': 'Spring',
+            'prog': '',
+        }
+        params.update(kwargs)
+        return self.client.get('/admin/ajax_autocomplete/', params)
+
+    def test_requires_login(self):
+        response = self._call()
+        self.assertEqual(response.status_code, 302)
+
+    def test_returns_bad_request_on_malformed_input(self):
+        self.assertTrue(self.client.login(username='staff_autocomplete', password='password'))
+        response = self.client.get('/admin/ajax_autocomplete/', {'model_name': 'K12School'})
+        self.assertEqual(response.status_code, 400)
+
+    def test_nonstaff_can_autocomplete_allowed_model(self):
+        self.assertTrue(self.client.login(username='student_autocomplete', password='password'))
+        response = self._call()
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(payload['result']), 1)
+        self.assertEqual(payload['result'][0]['id'], self.school.id)
+        self.assertIn('Springfield Academy', payload['result'][0]['ajax_str'])
+
+    def test_nonstaff_cannot_autocomplete_restricted_model(self):
+        self.assertTrue(self.client.login(username='student_autocomplete', password='password'))
+        response = self._call(
+            model_name='ESPUser',
+            ajax_func='ajax_autocomplete',
+            ajax_data='target',
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(payload['result'], [])
+
+    def test_staff_can_autocomplete_restricted_model(self):
+        self.assertTrue(self.client.login(username='staff_autocomplete', password='password'))
+        response = self._call(
+            model_name='ESPUser',
+            ajax_func='ajax_autocomplete',
+            ajax_data='target_autocomplete',
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(payload['result']), 1)
+        self.assertEqual(payload['result'][0]['id'], self.target_user.id)
 
 class StudentInfoFormGradeTest(TestCase):
     """Registration Profile grade validation.
