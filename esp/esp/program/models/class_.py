@@ -98,6 +98,18 @@ STATUS_CHOICES = (
 
 STATUS_CHOICES_DICT = dict(STATUS_CHOICES)
 
+EXTENDED_BUDGET_STATUS_NONE = 0
+EXTENDED_BUDGET_STATUS_PENDING = 10
+EXTENDED_BUDGET_STATUS_APPROVED = 20
+EXTENDED_BUDGET_STATUS_REJECTED = 30
+
+EXTENDED_BUDGET_STATUS_CHOICES = (
+        (EXTENDED_BUDGET_STATUS_NONE, "Not requested"),
+        (EXTENDED_BUDGET_STATUS_PENDING, "Pending"),
+        (EXTENDED_BUDGET_STATUS_APPROVED, "Approved"),
+        (EXTENDED_BUDGET_STATUS_REJECTED, "Rejected"),
+        )
+
 OPEN = 0
 CLOSED = 10
 
@@ -1461,6 +1473,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     session_count = models.IntegerField(default=1)
 
     purchase_requests = models.TextField(blank=True, null=True)
+    extended_budget_status = models.IntegerField(
+        choices=EXTENDED_BUDGET_STATUS_CHOICES,
+        default=EXTENDED_BUDGET_STATUS_NONE,
+        db_index=True,
+    )
     custom_form_data = JSONField(blank=True, null=True)
 
     documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
@@ -1489,6 +1506,18 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def getDocuments(self):
         return self.documents.all()
+
+    def has_extended_budget_request(self):
+        return self.extended_budget_status != EXTENDED_BUDGET_STATUS_NONE
+
+    def is_extended_budget_pending(self):
+        return self.extended_budget_status == EXTENDED_BUDGET_STATUS_PENDING
+
+    def is_extended_budget_approved(self):
+        return self.extended_budget_status == EXTENDED_BUDGET_STATUS_APPROVED
+
+    def is_extended_budget_rejected(self):
+        return self.extended_budget_status == EXTENDED_BUDGET_STATUS_REJECTED
 
     def get_absolute_url(self):
         return "/manage/"+self.parent_program.url+"/manageclass/"+str(self.id)

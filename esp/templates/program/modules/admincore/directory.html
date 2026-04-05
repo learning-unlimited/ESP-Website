@@ -276,6 +276,14 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             </button></a>
         </div class="module_button">
         {% endif %}
+        {% if manage_extendedbudget %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/extendedbudget"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-usd"></i> Extended Budgets</div>
+                <div class="module_link_caption">review budget requests</div>
+            </button></a>
+        </div>
+        {% endif %}
         {% if manage_volunteering %}
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large">

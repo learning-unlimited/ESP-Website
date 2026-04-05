@@ -1,5 +1,14 @@
 from esp.mailman import add_list_member
-from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
+from esp.program.models import (
+    Program,
+    ClassSubject,
+    ClassSection,
+    ClassCategories,
+    ClassSizeRange,
+    EXTENDED_BUDGET_STATUS_NONE,
+    EXTENDED_BUDGET_STATUS_PENDING,
+    EXTENDED_BUDGET_STATUS_REJECTED,
+)
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.resources.forms import ResourceRequestFormSet
@@ -118,8 +127,18 @@ class ClassCreationController(object):
         for k, v in reg_form.cleaned_data.items():
             if k in custom_fields:
                 custom_data[k] = v
-            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] is not 'section_':
+            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title', 'extended_budget_requested') and k[:8] is not 'section_':
                 cls.__dict__[k] = v
+
+        extended_budget_requested = reg_form.cleaned_data.get('extended_budget_requested', False)
+        if extended_budget_requested:
+            if cls.extended_budget_status in (EXTENDED_BUDGET_STATUS_NONE, EXTENDED_BUDGET_STATUS_REJECTED):
+                cls.extended_budget_status = EXTENDED_BUDGET_STATUS_PENDING
+        else:
+            # Only allow teachers to withdraw a pending request.
+            # Approved/rejected decisions should not be silently cleared.
+            if cls.extended_budget_status == EXTENDED_BUDGET_STATUS_PENDING:
+                cls.extended_budget_status = EXTENDED_BUDGET_STATUS_NONE
 
         cls.custom_form_data = custom_data
 
