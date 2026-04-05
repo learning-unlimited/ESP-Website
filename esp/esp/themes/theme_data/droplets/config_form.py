@@ -12,7 +12,7 @@ class ConfigForm(ThemeConfigurationForm):
     show_logo_header = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the logo be shown in the <b>header banner</b>?'))
     show_header_home = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the header banner be shown on the <b>homepage</b>?'))
     show_header_other = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the header banner be shown on <b>non-homepage pages</b>?'))
-# NOTE: Field names use camelCase to match LESS variable names directly.
+# NOTE:- Field names use camelCase to match LESS variable names directly.
 # ThemeController maps form field names to @variableName in compile_css().
 # Renaming to snake_case would break the LESS variable substitution.
     jumbotronFallbackColor = forms.CharField(
