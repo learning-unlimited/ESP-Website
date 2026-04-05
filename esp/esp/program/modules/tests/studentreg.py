@@ -535,6 +535,14 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('deadline', response.content.decode('utf-8').lower())
         self.assertEqual(response['Cache-Control'], 'no-store')
 
+        # Future deadline (configured but not yet started) - should also be closed
+        perm.start_date = timezone.now() + timedelta(hours=1)
+        perm.end_date = timezone.now() + timedelta(days=1)
+        perm.save()
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
 
     def test_catalog_json_open(self):
         """catalog_json returns 200 with JSON when catalog is open."""

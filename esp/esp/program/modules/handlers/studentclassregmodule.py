@@ -239,9 +239,17 @@ class StudentClassRegModule(ProgramModuleObj):
 
     def _catalog_deadline_closed(self, prog):
         """Return True if a Student/Catalog deadline exists and is currently closed."""
-        if Permission.objects.filter(permission_type='Student/Catalog', program=prog, user__isnull=True).exists():
-            return not Permission.null_user_has_perm('Student/Catalog', prog)
-        return False
+        deadline_qs = Permission.objects.filter(
+            permission_type='Student/Catalog',
+            program=prog,
+            user__isnull=True,
+        )
+        # If no deadline is configured, keep catalog endpoints open.
+        if not deadline_qs.exists():
+            return False
+        # If at least one deadline is configured, catalog is open only when
+        # at least one matching permission is currently valid.
+        return not deadline_qs.filter(Permission.is_valid_qobject()).exists()
 
     def prepare(self, context={}):
         user = get_current_request().user
