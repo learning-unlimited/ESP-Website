@@ -232,3 +232,27 @@ class ThemesTest(TestCase):
 
         #   We're done.  Log out.
         self.client.logout()
+    def testFooterVariables(self):
+        """ Check that Droplets footer variables compile correctly into CSS. """
+
+        self.client.login(username=self.admin.username, password='password')
+
+        tc = ThemeController()
+        tc.clear_theme()
+        tc.load_theme('droplets')
+
+        # Apply a known footer background color
+        test_color = '#123456'
+        config_dict = {'apply': True, 'footerBackground': test_color}
+        response = self.client.post('/themes/customize/', config_dict)
+        self.assertEqual(response.status_code, 200)
+
+        # Verify it compiled into the CSS output
+        css_filename = os.path.join(
+            settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE
+        )
+        with open(css_filename) as f:
+            css_content = f.read()
+        self.assertIn(test_color.lower(), css_content.lower())
+
+        self.client.logout()

@@ -12,10 +12,36 @@ class ConfigForm(ThemeConfigurationForm):
     show_logo_header = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the logo be shown in the <b>header banner</b>?'))
     show_header_home = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the header banner be shown on the <b>homepage</b>?'))
     show_header_other = forms.BooleanField(initial = True, required = False, help_text=mark_safe('Should the header banner be shown on <b>non-homepage pages</b>?'))
-    jumbotronFallbackColor = forms.CharField(label='Hero Fallback Color (shows when no image is uploaded)', required=False)
-    footerBackground = forms.CharField(label='Footer Background Color', required=False)
-    footerText = forms.CharField(label='Footer Text Color', required=False)
-    footerLinkColor = forms.CharField(label='Footer Link Color', required=False)
+# NOTE: Field names use camelCase to match LESS variable names directly.
+# ThemeController maps form field names to @variableName in compile_css().
+# Renaming to snake_case would break the LESS variable substitution.
+    jumbotronFallbackColor = forms.CharField(
+        label='Hero Fallback Color (shows when no image is uploaded)',
+        required=False,
+        help_text='Enter a valid CSS color e.g. #336699 or rgb(0, 120, 255)',
+        widget=forms.TextInput(attrs={'placeholder': '#4F87BB'}),
+    )
+
+    footerBackground = forms.CharField(
+        label='Footer Background Color',
+        required=False,
+        help_text='Enter a valid CSS color e.g. #111111 or rgb(0, 0, 0)',
+        widget=forms.TextInput(attrs={'placeholder': '#111111'}),
+    )
+
+    footerText = forms.CharField(
+        label='Footer Text Color',
+        required=False,
+        help_text='Enter a valid CSS color e.g. #999999 or rgb(153, 153, 153)',
+        widget=forms.TextInput(attrs={'placeholder': '#999999'}),
+    )
+
+    footerLinkColor = forms.CharField(
+        label='Footer Link Color',
+        required=False,
+        help_text='Enter a valid CSS color e.g. #ffffff or rgb(255, 255, 255)',
+        widget=forms.TextInput(attrs={'placeholder': '#ffffff'}),
+    )
     contact_info = forms.CharField(required = False, widget=forms.Textarea,
                                    help_text='Generic text to include in the "About Us" dropdown in the navigation bar. Leave blank to omit this field.')
     show_email = forms.BooleanField(required = False, help_text='Should the group email address be shown in the "About Us" dropdown in the navigation bar?')
