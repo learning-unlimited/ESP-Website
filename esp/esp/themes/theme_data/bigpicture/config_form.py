@@ -1,5 +1,5 @@
 from django import forms
-from django.utils.safestring import mark_safe
+
 
 from esp.themes.forms import ThemeConfigurationForm
 from esp.utils.widgets import NavStructureWidgetWithIcons, ContactFieldsWidget
@@ -22,27 +22,27 @@ class ConfigForm(ThemeConfigurationForm):
     show_footer_textbox = forms.BooleanField(initial = False, required = False, help_text='Should there be an editable text field in the footer?')
 
     # Colors
-    accent1 = forms.CharField(label='Primary Accent Color')
-    accent2 = forms.CharField(label='Secondary Accent Color')
-    navbarBackground = forms.CharField(label='Navbar Background')
-    navbarText = forms.CharField(label='Navbar Text Color')
-    navbarLinkColor = forms.CharField(label='Navbar Link Color')
-    headingColor = forms.CharField(label='Heading Color')
-    footerBackground = forms.CharField(label='Footer Background')
-    footerText = forms.CharField(label='Footer Text Color')
-    footerLinkColor = forms.CharField(label='Footer Link Color')
-    linkColor = forms.CharField(label='Body Link Color')
-    linkColorHover = forms.CharField(label='Body Link Hover Color')
+    accent1 = forms.CharField(label='Primary Accent Color',required=False)
+    accent2 = forms.CharField(label='Secondary Accent Color',required=False)
+    navbarBackground = forms.CharField(label='Navbar Background',required=False)
+    navbarText = forms.CharField(label='Navbar Text Color',required=False)
+    navbarLinkColor = forms.CharField(label='Navbar Link Color',required=False)
+    headingColor = forms.CharField(label='Heading Color',required=False)
+    footerBackground = forms.CharField(label='Footer Background',required=False)
+    footerText = forms.CharField(label='Footer Text Color',required=False)
+    footerLinkColor = forms.CharField(label='Footer Link Color',required=False)
+    linkColor = forms.CharField(label='Body Link Color',required=False)
+    linkColorHover = forms.CharField(label='Body Link Hover Color',required=False)
 
     # Typography
-    h1FontSize = forms.CharField(label='Heading 1 Size (e.g. 42px)')
-    h2FontSize = forms.CharField(label='Heading 2 Size (e.g. 32px)')
-    h3FontSize = forms.CharField(label='Heading 3 Size (e.g. 24px)')
+    h1FontSize = forms.CharField(label='Heading 1 Size (e.g. 42px)',required=False)
+    h2FontSize = forms.CharField(label='Heading 2 Size (e.g. 32px)',required=False)
+    h3FontSize = forms.CharField(label='Heading 3 Size (e.g. 24px)',required=False)
 
     # Jumbotron
-    jumbotronPaddingV = forms.CharField(label='Hero Padding Top/Bottom (e.g. 50px)')
-    jumbotronPaddingH = forms.CharField(label='Hero Padding Left/Right (e.g. 80px)')
-    jumbotronFontSize = forms.CharField(label='Hero Text Size (e.g. 20px)')
+    jumbotronPaddingV = forms.CharField(label='Hero Padding Top/Bottom (e.g. 50px)',required=False)
+    jumbotronPaddingH = forms.CharField(label='Hero Padding Left/Right (e.g. 80px)',required=False)
+    jumbotronFontSize = forms.CharField(label='Hero Text Size (e.g. 20px)',required=False)
 
     # Logo
-    logoMarginRight = forms.CharField(label='Logo Right Margin (e.g. 80px)')
+    logoMarginRight = forms.CharField(label='Logo Right Margin (e.g. 80px)',required=False)

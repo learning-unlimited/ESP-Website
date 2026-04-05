@@ -12,6 +12,9 @@
     font-weight: normal;
     margin-bottom: 0.3em;
 }
+    h3 {
+    font-size: @h3FontSize;
+}
     a {
         color: @accent2;
         text-decoration: underline;
@@ -248,7 +251,7 @@ div.nav-collapse.collapse {
 .jumbotron {
     margin-bottom: 30px;
     position: relative;
-     padding: @jumbotronPaddingV @jumbotronPaddingH;
+    padding: @jumbotronPaddingV @jumbotronPaddingH;
     color: #fff;
     text-shadow: 0 1px 3px rgba(0,0,0,.7), 0 0 30px rgba(0,0,0,.075);
     background-size: cover;
@@ -258,12 +261,14 @@ div.nav-collapse.collapse {
             box-shadow: inset 0 3px 7px rgba(0,0,0,.2), inset 0 -3px 7px rgba(0,0,0,.2);
 }
 .jumbotron-announcements {
-    font-size: @jumbotronFontSize;
+    font-size: inherit;
+
 
     p {
         margin: 0 0 0.5em;
         font-family: inherit;
-        font-size: @jumbotronFontSize;
+        font-size: inherit;
+
         line-height: normal;
     }
 }
