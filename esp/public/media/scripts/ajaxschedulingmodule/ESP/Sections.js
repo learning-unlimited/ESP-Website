@@ -5,16 +5,31 @@
  *
  * @params sections_data: The raw section data
  * @params section_details_data: The AJAX section detail data
+ * @params categories_data: The raw category data for sections
  * @params teacher_data: The raw teacher data for populating the sections
+ * @params moderator_data: The raw moderator data for populating the sections
  * @params scheduleAssignments: The schedule assignments
  * @params apiClient: The object that can communicate with the server
+ * @params historyPanel: Optional HistoryPanel instance for recording actions (may be null)
  */
 function Sections(sections_data, section_details_data, categories_data, teacher_data, moderator_data, scheduleAssignments, apiClient, historyPanel) {
+    // Backwards compatibility: older call sites (e.g. tests) passed only 5 args:
+    // (sections_data, section_details_data, teacher_data, scheduleAssignments, apiClient)
+    // before categories_data, moderator_data, and historyPanel were added.
+    if (arguments.length <= 5) {
+        historyPanel      = null;
+        apiClient         = moderator_data;    // 5th arg was apiClient
+        scheduleAssignments = teacher_data;    // 4th arg was scheduleAssignments
+        teacher_data      = categories_data;   // 3rd arg was teacher_data
+        categories_data   = null;
+        moderator_data    = null;
+    }
     this.sections_data = sections_data;
-    this.categories_data = categories_data;
-    this.teacher_data = teacher_data;
-    this.scheduleAssignments = scheduleAssignments;
-    this.apiClient = apiClient;
+    this.categories_data = categories_data || null;
+    this.teacher_data = teacher_data || null;
+    this.moderator_data = moderator_data || null;
+    this.scheduleAssignments = scheduleAssignments || null;
+    this.apiClient = apiClient || null;
     this.historyPanel = historyPanel || null;
 
     // The section that is currently selected
@@ -189,7 +204,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             }.bind(this),
             function(msg) {
                 this.swapSectionsLocal(revert1, revert2);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
                 if (endUndo) endUndo();
             }.bind(this)
@@ -501,7 +516,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
         // Make sure section not locked
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", "red");
             this.unselectSection();
             if (onComplete) onComplete();
             return;
@@ -540,7 +555,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 this.scheduleSectionLocal(section,
                     prevSnap.room_id,
                     prevSnap.timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red")
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red")
                 console.log(msg);
                 if (onComplete) onComplete();
             }.bind(this)
@@ -634,7 +649,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         if (callback === undefined) callback = function(){};
         // Make sure section not locked
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", "red");
             this.unselectSection();
             if (onComplete) onComplete();
             return;
@@ -669,7 +684,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             // If the server returns an error, put the class back in its original spot
             function(msg){
                 this.scheduleSectionLocal(section, old_room_id, old_schedule_timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
                 if (onComplete) onComplete();
             }.bind(this)
@@ -802,7 +817,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                         var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, ignore_sections);
                         if(!valid.valid){
                             console.log(valid.reason);
-                            this.matrix.messagePanel.addMessage(valid.reason, color = "red");
+                            this.matrix.messagePanel.addMessage(valid.reason, "red");
                             this.unselectSection();
                             return;
                         }
@@ -846,7 +861,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             // If there's an error, locally reschedule the sections in their old locations
             function(msg) {
                 this.swapSectionsLocal(old_assignments1, old_assignments2);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
             }.bind(this)
         );
@@ -934,7 +949,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 // if unsuccessful, revert the comment locked status and show an error
                 section.schedulingComment = old_comment;
                 section.schedulingLocked = old_locked;
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
                 this.unselectSection();
                 if (doneCallback) doneCallback();

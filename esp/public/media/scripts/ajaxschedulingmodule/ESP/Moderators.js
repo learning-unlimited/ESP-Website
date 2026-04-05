@@ -300,7 +300,7 @@ function ModeratorDirectory(el, moderators, historyPanel) {
                 }
             }.bind(this),
             function(msg) {
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 this.matrix.messagePanel.show();
                 console.log(msg);
             }.bind(this)
@@ -321,7 +321,7 @@ function ModeratorDirectory(el, moderators, historyPanel) {
             section.moderator_data.push(moderator);
             $j("body").trigger("schedule-changed");
             if (showMessage) {
-                this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was assigned to " + section.emailcode, color = "blue");
+                this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was assigned to " + section.emailcode, "blue");
             }
             this.matrix.updateCells();
         }
@@ -337,7 +337,7 @@ function ModeratorDirectory(el, moderators, historyPanel) {
                 if (endUndo) endUndo();
             }.bind(this),
             function(msg) {
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 this.matrix.messagePanel.show();
                 console.log(msg);
                 if (endUndo) endUndo();
@@ -354,7 +354,7 @@ function ModeratorDirectory(el, moderators, historyPanel) {
                 if (endUndo) endUndo();
             }.bind(this),
             function(msg) {
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 this.matrix.messagePanel.show();
                 console.log(msg);
                 if (endUndo) endUndo();
@@ -384,7 +384,7 @@ function ModeratorDirectory(el, moderators, historyPanel) {
                 }
             }.bind(this),
             function(msg) {
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red")
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red")
                 console.log(msg);
             }.bind(this)
         );
@@ -396,7 +396,7 @@ function ModeratorDirectory(el, moderators, historyPanel) {
         this.unselectModerator();
         if (section.moderators.includes(moderator.id)) {
             this.unassignModeratorLocalForModerator(section, moderator);
-            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was unassigned from " + section.emailcode, color = "blue");
+            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was unassigned from " + section.emailcode, "blue");
         }
     };
 

@@ -72,9 +72,8 @@
     <td class="no-border">
       <div id="side-panel-wrapper" class="ui-widget">
 		<div class="scheduler-admin-bar">
-			<a href="ajax_clear_change_log">
-				<button type="button" id="clear_change_log" class="scheduler-danger-btn">Clear change log (all users)</button>
-			</a>
+			<a href="ajax_clear_change_log" id="clear_change_log" class="scheduler-danger-btn"
+			   onclick="return confirm('Clear the change log for all users? This will delete any unsynchronized progress.');">Clear change log (all users, deletes unsynchronized progress)</a>
 		</div>
         <div id="info-panel">
           <div id="section-info-and-message-wrapper">
