@@ -45,8 +45,6 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         kwargs.update({
             'num_students': 20,
-            'grade_min': 7,
-            'grade_max': 12,
         })
         super().setUp(*args, **kwargs)
 
