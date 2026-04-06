@@ -99,6 +99,7 @@ users to whom you are sending this email.
 <input type="hidden" name="selected" value="{{selected}}" />
 <input type="submit" value="Edit Your Email" id="submitform" class="btn btn-default" />
 </form>
+<button id="send-test-email-btn" class="btn btn-warning">Send Test Email to Me</button>
 <form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="mainfinal">
 <input type="hidden" name="filterid" value="{{filterid}}" />
 <input type="hidden" name="sendto_fn_name" value="{{sendto_fn_name}}" />
@@ -115,8 +116,6 @@ users to whom you are sending this email.
 {% endif %}
 <input type="submit" value="{% if confirm_send_required %}Send anyway{% else %}Send Message!{% endif %}" id="submitform" class="btn btn-primary" />
 </form>
-
-<button id="send-test-email-btn" class="btn btn-warning" style="margin-top: 8px;">Send Test Email to Me</button>
 <span id="send-test-email-status" style="margin-left: 10px;"></span>
 
 <script>
