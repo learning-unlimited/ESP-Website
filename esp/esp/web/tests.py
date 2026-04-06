@@ -315,7 +315,6 @@ class JavascriptSyntaxTest(TestCase):
 
 
 class ExtractThemeTest(TestCase):
-    """Regression test for fruitsalad issue #2165: first tab color not applied."""
 
     NAV = {
         'nav_structure': [
