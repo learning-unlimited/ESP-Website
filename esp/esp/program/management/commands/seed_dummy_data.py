@@ -322,14 +322,31 @@ class Command(BaseCommand):
 
     def _create_programs(self):
         all_module_handlers = [
+            # Core
             'StudentRegCore', 'TeacherRegCore', 'AdminCore',
-            'OnsiteCore', 'VolunteerSignup',
-            'RegProfileModule',
-            'StudentClassRegModule', 'TeacherClassRegModule',
-            'AvailabilityModule', 'TeacherBioModule',
-            'ResourceModule', 'VolunteerManage',
-            'SurveyManagement', 'ProgramPrintables',
-            'AdminVitals', 'JSONDataModule',
+            'OnsiteCore', 'VolunteerSignup', 'VolunteerManage',
+            'RegProfileModule', 'JSONDataModule',
+            # Student registration
+            'StudentClassRegModule', 'StudentRegConfirm',
+            'StudentAcknowledgementModule', 'StudentSurveyModule',
+            'LotteryStudentRegModule', 'LotteryFrontendModule',
+            'FinancialAidAppModule', 'StudentExtracosts', 'DonationModule',
+            'CreditCardModule_Stripe', 'StudentOnsite',
+            # Teacher registration
+            'TeacherClassRegModule', 'TeacherBioModule',
+            'AvailabilityModule', 'TeacherSurveyModule',
+            'TeacherAcknowledgementModule', 'TeacherPreviewModule',
+            'TeacherOnsite', 'TeacherEventsModule',
+            # Admin
+            'AdminClass', 'AdminVitals', 'AdminMaterials',
+            'ResourceModule', 'SchedulingCheckModule',
+            'ProgramPrintables', 'SurveyManagement',
+            'CommModule', 'NameTagModule',
+            'BigBoardModule', 'TeacherBigBoardModule', 'BatchClassRegModule',
+            'OnSiteCheckinModule', 'OnSiteCheckoutModule',
+            'OnSiteClassList', 'OnSiteAttendance',
+            'UnenrollModule', 'ClassSearchModule',
+            'TeacherCheckinModule', 'FinAidApproveModule',
         ]
         programs = []
         for spec in [
@@ -345,10 +362,23 @@ class Command(BaseCommand):
                     director_cc_email='', director_confidential_email='',
                     program_size_max=200, program_allow_waitlist=True,
                 ))
+            modules_qs = ProgramModule.objects.filter(handler__in=all_module_handlers)
+
             if created:
                 program.class_categories.set(ClassCategories.objects.all())
-                program.program_modules.set(
-                    ProgramModule.objects.filter(handler__in=all_module_handlers))
+                program.program_modules.set(modules_qs)
+
+                # Seed ProgramModuleObj instances so the program has active modules
+                for pm in ProgramModule.objects.filter(handler__in=all_module_handlers):
+                    ProgramModuleObj.objects.get_or_create(
+                        program=program,
+                        module=pm,
+                        defaults=dict(
+                            seq=pm.seq,
+                            required=pm.required,
+                            required_label='',
+                        )
+                    )
 
                 StudentClassRegModuleInfo.objects.get_or_create(
                     program=program, defaults=dict(
@@ -366,6 +396,19 @@ class Command(BaseCommand):
                         num_teacher_questions=1, allowed_sections='1,2',
                         session_counts='1',
                     ))
+
+            # Backfill ProgramModuleObj rows unconditionally so re-runs fix missing rows
+            for pm in modules_qs:
+                ProgramModuleObj.objects.get_or_create(
+                    program=program,
+                    module=pm,
+                    defaults=dict(
+                        seq=pm.seq,
+                        required=pm.required,
+                        required_label='',
+                    )
+                )
+
             programs.append(program)
         return programs
 
