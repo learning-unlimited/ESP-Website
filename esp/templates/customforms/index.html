@@ -39,15 +39,15 @@
     <div id="form_toolbox">
         <h3 id="header_information"><a href='#'>Form information</a></h3>
         <div id="form_information">
-            <label for="input_form_title">Form Title</label> <input type='text' id='input_form_title' size='30' value='Form Title'/>
-            <label for="input_form_description">Description</label>
+            <p><label for="input_form_title">Form Title</label></p> <input type='text' id='input_form_title' size='30' value='Form Title'/>
+            <p><label for="input_form_description">Description</label></p>
             <textarea rows='3' cols='30' id='input_form_description'></textarea>
-            <label for="input_form_sucmsg">Message on Success</label>
+            <p><label for="input_form_sucmsg">Message on Success</label></p>
             <textarea rows='3' cols='30' id='input_form_sucmsg'></textarea>
-            <label for="input_suc_url">Redirect URL for successful completion</label>
+            <p><label for="input_suc_url">Redirect URL for successful completion</label></p>
             <input type="text" id="input_suc_url" size="30"/>
             <p><label for="id_anonymous">Anonymous Form</label> <input type='checkbox' id='id_anonymous'/></p>
-            <label for="base_form" id="create_text">Create from existing form:</label>
+            <p id="create_text"><label for="base_form">Create from existing form:</label></p>
             <select id="base_form">
                 <option value="-1">None</option>
                 {% for form in form_list %}
@@ -93,13 +93,13 @@
                     <p>These fields will modify existing values in the database, or create new ones. Please select how you want
                         this to happen.
                     </p>
-                    <label for="main_cat_spec">Modification method:</label>
+                    <p><label for="main_cat_spec">Modification method:</label></p>
                     <select id="main_cat_spec">
                         <option value="automatic">Automatic</option>
                         <option value="particular">Choose particular instance to modify</option>
                     </select>
                     <br/>
-                    <label for="cat_instance_sel">Instance:</label>
+                    <p><label for="cat_instance_sel">Instance:</label></p>
                     <select id="cat_instance_sel">
                     </select>
                     <br/>
@@ -132,7 +132,7 @@
                 <option value="Student">Students</option>
             </select></p>
             <p><input type="checkbox" id="id_prog_belong" /><label for="id_prog_belong"> Belonging to program</label></p>
-            <label for="id_perm_program">Program:</label>
+            <p><label for="id_perm_program">Program:</label></p>
             <select id="id_perm_program">
                 <option value="-1">None</option>
                 {% for prog in prog_list %}
@@ -141,7 +141,7 @@
             </select>
             <br/>
             <div>
-                <label for="id_sub_perm">Filter</label>
+                <p><label for="id_sub_perm">Filter</label></p>
                 <select id="id_sub_perm">
                 </select>
             </div>
