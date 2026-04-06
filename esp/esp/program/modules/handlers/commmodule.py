@@ -58,7 +58,7 @@ _PROGRAM_URL_PATTERN = re.compile(
 
 
 def _make_image_urls_absolute(body, request):
-    """Convert root-relative src URLs in img tags to absolute URLs.
+    """Convert root-relative src URLs in any element with a root-relative src attribute to absolute URLs.
 
     Email clients cannot resolve relative URLs, so images inserted via the
     WYSIWYG editor (which stores paths like /media/uploaded/qsd_images/...)
@@ -485,6 +485,7 @@ class CommModule(ProgramModuleObj):
 
         body = request.POST.get('body', '')
         body, _ = strip_base64_images(body)
+        body = _make_image_urls_absolute(body, request)
         subject = request.POST.get('subject', '')
         fromemail = request.POST.get('from', '')
         replytoemail = request.POST.get('replyto', fromemail)
