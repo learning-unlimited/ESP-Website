@@ -78,7 +78,10 @@ def extract_theme(url):
         num_chars_matched = count_matching_chars(url, category['header_link'])
         if num_chars_matched > max_chars_matched:
             max_chars_matched = num_chars_matched
-            tab_index = 0
+            if category['header_link'] and num_chars_matched >= len(category['header_link']) and category['links']:
+                tab_index = 1
+            else:
+                tab_index = 0
         i = 1
         for item in category['links']:
             num_chars_matched = count_matching_chars(url, item['link'])
