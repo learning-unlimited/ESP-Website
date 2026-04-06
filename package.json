@@ -1,12 +1,13 @@
 {
   "name": "esp-website",
   "version": "1.0.0",
+  "private": true,
   "description": "Learning Unlimited's Educational Splash Portal",
   "main": "esp/manage.py",
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage --coverageDirectory=node_modules/.cache/jest-coverage"
   },
   "keywords": [],
   "author": "Learning Unlimited",
