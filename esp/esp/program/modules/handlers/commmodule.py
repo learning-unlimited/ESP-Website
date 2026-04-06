@@ -65,7 +65,7 @@ def _make_image_urls_absolute(body, request):
     must be made absolute before the body is rendered into an email.
     """
     return re.sub(
-        r"src=(['\"])(/[^'\"]*)\1",
+        r"src=(['\"])(/(?!/)[^'\"]*)\1",
         lambda m: 'src={}{}{}'.format(m.group(1), request.build_absolute_uri(m.group(2)), m.group(1)),
         body,
     )

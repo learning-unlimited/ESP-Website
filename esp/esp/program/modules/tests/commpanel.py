@@ -32,6 +32,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from unittest.mock import MagicMock
+
 from esp.program.tests import ProgramFrameworkTest
 from esp.dbmail.models import ActionHandler, MessageRequest
 from esp.dbmail.cronmail import process_messages, send_email_requests
@@ -170,3 +172,26 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertIn(expected_first_day, rendered, 'program.date should render as first program day')
         self.assertIn(expected_date_range, rendered, 'program.date_range should render as program date range')
         self.assertIn(expected_teacher_reg_deadline, rendered, 'program.teacher_reg_deadline should render as Teacher/Classes/Create end_date')
+
+
+import unittest
+
+class MakeImageUrlsAbsoluteTest(unittest.TestCase):
+    """Unit tests for commmodule._make_image_urls_absolute (no DB required)."""
+
+    def _make_request(self):
+        request = MagicMock()
+        request.build_absolute_uri.side_effect = lambda p: 'https://example.com' + p
+        return request
+
+    def test_rewrites_relative_img_src(self):
+        from esp.program.modules.handlers.commmodule import _make_image_urls_absolute
+        body = '<img src="/media/uploaded/foo.png">'
+        result = _make_image_urls_absolute(body, self._make_request())
+        self.assertEqual(result, '<img src="https://example.com/media/uploaded/foo.png">')
+
+    def test_leaves_protocol_relative_url_unchanged(self):
+        from esp.program.modules.handlers.commmodule import _make_image_urls_absolute
+        body = '<img src="//cdn.example.com/img.png">'
+        result = _make_image_urls_absolute(body, self._make_request())
+        self.assertEqual(result, body)
