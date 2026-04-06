@@ -473,6 +473,51 @@ class CommModule(ProgramModuleObj):
                                                'body': body,
                                                'public_view': public_view})
 
+    @aux_call
+    @needs_admin
+    def send_test_email(self, request, tl, one, two, module, extra, prog):
+        """Send a test email to the logged-in admin using the current compose form data."""
+        from django.http import JsonResponse
+        from esp.dbmail.models import send_mail
+
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+        body = request.POST.get('body', '')
+        body, _ = strip_base64_images(body)
+        subject = request.POST.get('subject', '')
+        fromemail = request.POST.get('from', '')
+        replytoemail = request.POST.get('replyto', fromemail)
+        template = request.POST.get('template', 'default')
+
+        if '<html>' not in body:
+            body = '<html>' + body + '</html>'
+
+        rendered_text = render_to_string('email/{}_email.html'.format(template), {'msgbody': body})
+
+        contextdict = {
+            'user': ActionHandler(request.user, request.user),
+            'program': ActionHandler(self.program, request.user),
+            'request': ActionHandler(MessageRequest(), request.user),
+        }
+        rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
+
+        try:
+            send_mail(
+                subject='[TEST] ' + subject,
+                message=rendered_text,
+                from_email=fromemail,
+                recipient_list=[request.user.email],
+                fail_silently=False,
+                extra_headers={'Reply-To': replytoemail},
+                user=request.user,
+            )
+            return JsonResponse({'success': True, 'email': request.user.email})
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('Failed to send test email')
+            return JsonResponse({'success': False, 'error': 'Failed to send test email. Please check the server logs.'}, status=500)
+
     def isStep(self):
         return False
 
