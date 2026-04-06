@@ -73,6 +73,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             "choosable": 1,
             } ]
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # All views are JSON endpoints (e.g. for autoscheduler); do not list in admin search.
+        return None
+
     """ Warning: for performance reasons, these views are not abstracted away from
         the models.  If the schema is changed this code will need to be updated.
     """
@@ -617,9 +622,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'sections': sections}
 
     @aux_call
+    @no_auth
     @cache_control(public=True, max_age=300)
     @json_response()
-    @no_auth
     @cached_module_view
     def class_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
@@ -679,9 +684,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     class_info.cached_function.depend_on_model(ClassSection)
 
     @aux_call
+    @no_auth
     @cache_control(public=True, max_age=300)
     @json_response()
-    @no_auth
     def class_size_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
         if 'return_key' in request.GET:
