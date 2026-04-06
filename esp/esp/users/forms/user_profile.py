@@ -46,8 +46,8 @@ class DropdownOtherField(forms.MultiValueField):
 class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     """ Base for contact form """
 
-    first_name = StrippedCharField(length=25, max_length=64)
-    last_name = StrippedCharField(length=30, max_length=64)
+    first_name = StrippedCharField(length=25, max_length=ESPUser._meta.get_field('first_name').max_length)
+    last_name = StrippedCharField(length=30, max_length=ESPUser._meta.get_field('last_name').max_length)
     e_mail = forms.EmailField()
     phone_day = PhoneNumberField(required=False)
     phone_cell = PhoneNumberField(required=False)
@@ -164,7 +164,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
     pronoun = forms.CharField(max_length=50, required=False)
-    graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7, 13)])
+    graduation_year = forms.ChoiceField(choices=[])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
     school = forms.CharField(max_length=128, required=False)
@@ -267,12 +267,20 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         self.studentrep_error = False
 
     def clean_graduation_year(self):
-        gy = self.cleaned_data['graduation_year'].strip()
+        gy = self.cleaned_data.get('graduation_year', '').strip()
+        if not gy:
+            # Only enforce "required" when the field is actually required.
+            # When grade changes are disabled, __init__ sets required=False and
+            # the widget is HTML-disabled; clean() will backfill the old value
+            # from orig_prof.student_info, so we must not raise here.
+            if self.fields['graduation_year'].required:
+                raise forms.ValidationError("Grade / Graduation Year is required.")
+            return gy
         try:
             gy = str(abs(int(gy)))
-        except:
+        except ValueError:
             if gy != 'G':
-                gy = 'N/A'
+                raise forms.ValidationError("Invalid grade value.")
         return gy
 
     def clean_heard_about(self):
@@ -424,6 +432,24 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
                 del self.fields[field_name]
             if field_name == 'phone_cell' and 'receive_txt_message' in self.fields:
                 del self.fields['receive_txt_message']
+    def clean(self):
+        cleaned_data = super(StudentProfileForm, self).clean()
+
+        student_email = cleaned_data.get('e_mail', '').lower()
+        emerg_email = cleaned_data.get('emerg_e_mail', '').lower()
+        guard_email = cleaned_data.get('guard_e_mail', '').lower()
+
+        if student_email and emerg_email and student_email == emerg_email:
+            raise forms.ValidationError(
+                "Your emergency contact email address cannot be the same as your own email address."
+            )
+
+        if student_email and guard_email and student_email == guard_email:
+            raise forms.ValidationError(
+                "Your parent/guardian email address cannot be the same as your own email address."
+            )
+
+        return cleaned_data
 
 # A list of teacher fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_teachers = []
@@ -487,7 +513,7 @@ class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy
@@ -501,7 +527,7 @@ class AlumProfileForm(MinimalUserInfo, FormWithTagInitialValues):
         gy = self.cleaned_data['graduation_year'].strip()
         try:
             gy = str(abs(int(gy)))
-        except:
+        except (ValueError, TypeError):
             if gy != 'G':
                 gy = 'N/A'
         return gy

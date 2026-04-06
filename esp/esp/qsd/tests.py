@@ -37,8 +37,15 @@ from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 
+from django.core.cache import cache
 from django.template import Template, Context
+from esp.qsd.models import qsd_cache_key
 from django.urls import reverse
+from reversion import revisions as reversion
+from reversion.models import Version
+import json
+
+from esp.qsd.seltests import TestQsdCachePurging  # Run Selenium tests with regular tests
 
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
@@ -47,7 +54,7 @@ class QSDCorrectnessTest(TestCase):
         #   Determine URL for QSD page to be tested
         section = 'learn'
         pagename = 'foo'
-        self.url = '/%s/%s.html' % (section, pagename)
+        self.url = f'/{section}/{pagename}.html'
 
         #   Create user to function as QSD author
         new_admin, created = ESPUser.objects.get_or_create(username='qsd_admin')
@@ -141,6 +148,687 @@ class QSDCorrectnessTest(TestCase):
 
             #   Delete the new QSD so we can start again.
             qsd_rec_new.delete()
+
+    def testUnauthorizedAccess(self):
+        # Create QSD with desired URL
+        qsd_rec_new = QuasiStaticData()
+        qsd_rec_new.url = 'learn/foo'
+        qsd_rec_new.name = "learn:foo"
+        qsd_rec_new.author = self.author
+        qsd_rec_new.nav_category = default_navbarcategory()
+        qsd_rec_new.content = "Testing 123"
+        qsd_rec_new.title = "Test QSD page"
+        qsd_rec_new.description = ""
+        qsd_rec_new.keywords = ""
+        qsd_rec_new.save()
+
+        edit_url = '/learn/foo.edit.html'
+
+        # Array of users without edit permission: unauthenticated (None) and student
+        unauthorized_users = [None, self.users[2]]
+
+        for user in unauthorized_users:
+            self.client.logout()
+            if user is not None:
+                self.client.login(username=user[0], password=user[1])
+
+            # Test GET to *.edit.html
+            response = self.client.get(edit_url, follow=True)
+            self.assertRedirects(response, '/learn/foo.html')
+
+            messages = list(response.context['messages'])
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(str(messages[0]), "You don't have permission to edit this page.")
+
+            # Test POST to *.edit.html
+            response = self.client.post(edit_url, {
+                'post_edit': '1',
+                'content': 'hacked',
+                'nav_category': qsd_rec_new.nav_category.id,
+                'title': 'Hacked',
+                'description': '',
+                'keywords': ''
+            }, follow=True)
+            self.assertRedirects(response, '/learn/foo.html')
+
+            messages = list(response.context['messages'])
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(str(messages[0]), "Sorry, you do not have permission to edit this page.")
+
+        qsd_rec_new.delete()
+
+    def testUnauthorizedEditNonexistentPage(self):
+        """Editing a nonexistent QSD page without permission returns 404."""
+        edit_url = '/learn/nonexistent_page.edit.html'
+
+        # Verify the page truly doesn't exist
+        self.client.logout()
+        response = self.client.get('/learn/nonexistent_page.html')
+        self.assertEqual(response.status_code, 404)
+
+        # Users without edit permission: unauthenticated (None) and student
+        unauthorized_users = [None, self.users[2]]
+
+        for user in unauthorized_users:
+            self.client.logout()
+            if user is not None:
+                self.client.login(username=user[0], password=user[1])
+
+            # Attempting to edit a nonexistent page should give 404, not 500
+            response = self.client.get(edit_url)
+            self.assertEqual(response.status_code, 404)
+
+
+class QSDDefaultContentTest(TestCase):
+    """ Tests for default QSD content loading in the .edit page (issue #3791). """
+
+    def setUp(self):
+        self.admin, created = ESPUser.objects.get_or_create(username='qsd_default_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+    def test_edit_shows_placeholder_when_no_default(self):
+        """For a URL with no template default, edit should show the placeholder."""
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/learn/nonexistent_page.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('Please insert your text here', content)
+
+    def test_edit_shows_cached_default(self):
+        """When default content is cached, edit should show it instead of placeholder."""
+        cache.set(qsd_cache_key('contact'), {
+            'content': '<p>Default contact content from template</p>',
+            'title': 'Contact Us',
+        }, timeout=3600)
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/contact.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('Default contact content from template', content)
+        self.assertNotIn('Please insert your text here', content)
+
+    def test_cache_populated_by_inline_qsd_block(self):
+        """Rendering a template with inline_qsd_block should populate the cache."""
+        cache.delete(qsd_cache_key('test/defaultblock'))
+        template_data = """
+            {% load render_qsd %}
+            {% inline_qsd_block "test/defaultblock" %}
+            <p>This is the default block content</p>
+            {% end_inline_qsd_block %}
+        """
+        template = Template(template_data)
+        template.render(Context({}))
+        cached = cache.get(qsd_cache_key('test/defaultblock'))
+        self.assertIsNotNone(cached)
+        self.assertIn('This is the default block content', cached['content'])
+
+    def test_edit_loads_default_via_internal_render(self):
+        """Visiting /contact.edit.html should load defaults even without prior cache."""
+        cache.delete(qsd_cache_key('contact'))
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/contact.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        # Should contain the contact page default content, not the placeholder
+        self.assertNotIn('Please insert your text here', content)
+        self.assertIn('Before contacting us', content)
+
+
+class QSDVersionHistoryTest(TestCase):
+    """ Tests for QSD version history endpoints. """
+
+    def setUp(self):
+        self.admin, created = ESPUser.objects.get_or_create(username='qsd_history_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, created = ESPUser.objects.get_or_create(username='qsd_history_student')
+        self.student.set_password('password')
+        self.student.save()
+
+        # Create a QSD with two revisions
+        with reversion.create_revision():
+            self.qsd = QuasiStaticData()
+            self.qsd.url = 'learn/historytest'
+            self.qsd.name = ''
+            self.qsd.author = self.admin
+            self.qsd.nav_category = default_navbarcategory()
+            self.qsd.content = 'Version One Content'
+            self.qsd.title = 'History Test'
+            self.qsd.description = ''
+            self.qsd.keywords = ''
+            self.qsd.save()
+            reversion.set_user(self.admin)
+
+        with reversion.create_revision():
+            self.qsd.content = 'Version Two Content'
+            self.qsd.save()
+            reversion.set_user(self.admin)
+
+    def test_history_requires_permission(self):
+        """ Non-editors cannot see version history. """
+        self.client.login(username='qsd_history_student', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        self.assertEqual(response.status_code, 403)
+
+    def test_history_returns_versions(self):
+        """ Admins can see version list in correct order. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertGreaterEqual(len(data['versions']), 2)
+        # Most recent first
+        self.assertIn('Version Two', data['versions'][0]['snippet'])
+
+    def test_history_empty_for_nonexistent(self):
+        """ Returns empty list for QSD URL with no history. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/doesnotexist'})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(len(data['versions']), 0)
+
+    def test_version_preview(self):
+        """ Can preview a specific version's content. """
+        self.client.login(username='qsd_history_admin', password='password')
+        # Get version list to find version_id
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        versions = json.loads(response.content)['versions']
+        old_version_id = versions[-1]['version_id']
+
+        response = self.client.get('/admin/ajax_qsd_version_preview', {'version_id': old_version_id})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertIn('Version One', data['content_raw'])
+        self.assertIn('Version One', data['content_html'])
+
+    def test_version_preview_requires_permission(self):
+        """ Non-editors cannot preview versions. """
+        self.client.login(username='qsd_history_student', password='password')
+        # Get a valid version_id using admin first
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        versions = json.loads(response.content)['versions']
+        version_id = versions[0]['version_id']
+
+        self.client.login(username='qsd_history_student', password='password')
+        response = self.client.get('/admin/ajax_qsd_version_preview', {'version_id': version_id})
+        self.assertEqual(response.status_code, 403)
+
+    def test_restore_version(self):
+        """ Restoring a version creates a new revision with old content. """
+        self.client.login(username='qsd_history_admin', password='password')
+        # Get version list
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        versions = json.loads(response.content)['versions']
+        old_version_id = versions[-1]['version_id']
+
+        # Current content should be Version Two
+        current = QuasiStaticData.objects.get_by_url('learn/historytest')
+        self.assertIn('Version Two', current.content)
+
+        # Restore to old version
+        response = self.client.post('/admin/ajax_qsd_restore', {'version_id': old_version_id})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['status'], 1)
+
+        # Verify content reverted
+        updated = QuasiStaticData.objects.get_by_url('learn/historytest')
+        self.assertIn('Version One', updated.content)
+
+        # Verify a new revision was created (now 3 total)
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(QuasiStaticData)
+        version_count = Version.objects.filter(
+            content_type=ct,
+            object_id=str(self.qsd.pk),
+        ).count()
+        self.assertGreaterEqual(version_count, 3)
+
+    def test_restore_requires_post(self):
+        """ Restore endpoint rejects GET. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_restore', {'version_id': 1})
+        self.assertEqual(response.status_code, 405)
+
+    def test_restore_requires_permission(self):
+        """ Non-editors cannot restore versions. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        versions = json.loads(response.content)['versions']
+        version_id = versions[0]['version_id']
+
+        self.client.login(username='qsd_history_student', password='password')
+        response = self.client.post('/admin/ajax_qsd_restore', {'version_id': version_id})
+        self.assertEqual(response.status_code, 403)
+
+    def test_history_includes_author(self):
+        """ Version entries include the author username. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        data = json.loads(response.content)
+        self.assertEqual(data['versions'][0]['author'], 'qsd_history_admin')
+
+    def test_invalid_version_id_returns_400(self):
+        """ Non-integer version_id returns 400, not a database error. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_version_preview', {'version_id': 'abc'})
+        self.assertEqual(response.status_code, 400)
+        response = self.client.post('/admin/ajax_qsd_restore', {'version_id': 'abc'})
+        self.assertEqual(response.status_code, 400)
+
+    def test_restore_sanitizes_class_qsd_content(self):
+        """ Restoring a class QSD applies HTML sanitization to its content. """
+        self.client.login(username='qsd_history_admin', password='password')
+        # Create a class QSD (url_parts[3] == 'Classes') with malicious content
+        with reversion.create_revision():
+            class_qsd = QuasiStaticData()
+            class_qsd.url = 'learn/Splash/2024/Classes/malicious'
+            class_qsd.name = ''
+            class_qsd.author = self.admin
+            class_qsd.nav_category = default_navbarcategory()
+            class_qsd.content = '<script>alert("xss")</script> Malicious content'
+            class_qsd.title = 'Class QSD Sanitization Test'
+            class_qsd.description = ''
+            class_qsd.keywords = ''
+            class_qsd.save()
+            reversion.set_user(self.admin)
+
+        # Get the version_id for the malicious revision
+        response = self.client.get('/admin/ajax_qsd_history', {'url': class_qsd.url})
+        self.assertEqual(response.status_code, 200)
+        versions = json.loads(response.content)['versions']
+        self.assertTrue(len(versions) >= 1)
+        version_id = versions[0]['version_id']
+
+        # Create a second revision so we can restore back to the malicious one
+        with reversion.create_revision():
+            class_qsd.content = 'Clean content'
+            class_qsd.save()
+            reversion.set_user(self.admin)
+
+        # Restore to the malicious version
+        response = self.client.post('/admin/ajax_qsd_restore', {'version_id': version_id})
+        self.assertEqual(response.status_code, 200)
+
+        # Verify script tag was stripped
+        class_qsd.refresh_from_db()
+        self.assertNotIn('<script', class_qsd.content)
+        self.assertIn('Malicious content', class_qsd.content)
+
+        # Cleanup
+        class_qsd.delete()
+
+    def tearDown(self):
+        QuasiStaticData.objects.filter(url='learn/historytest').delete()
+
+
+class QSDImageUploadTest(TestCase):
+    """Tests for the ajax_qsd_image_upload endpoint (#2679)."""
+
+    UPLOAD_URL = '/admin/ajax_qsd_image_upload/'
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='upload_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='upload_student')
+        self.student.set_password('password')
+        self.student.save()
+
+        # Track files created during tests for cleanup
+        self._created_files = []
+
+    def tearDown(self):
+        import os
+        for path in self._created_files:
+            if os.path.exists(path):
+                os.remove(path)
+
+    def _make_image_file(self, name='test.png', size=100, content_type='image/png'):
+        """Create a minimal in-memory image file for upload testing."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        # Minimal valid 1x1 PNG (67 bytes)
+        png_header = (
+            b'\x89PNG\r\n\x1a\n'  # PNG signature
+            b'\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01'
+            b'\x08\x02\x00\x00\x00\x90wS\xde'
+            b'\x00\x00\x00\x0cIDATx'
+            b'\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05'
+            b'\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82'
+        )
+        content = png_header
+        if size > len(png_header):
+            # Pad to desired size (file won't be valid PNG but extension check is what matters)
+            content = png_header + b'\x00' * (size - len(png_header))
+        return SimpleUploadedFile(name, content, content_type=content_type)
+
+    def _track_response_files(self, response):
+        """Extract file paths from successful upload response for cleanup."""
+        import json
+        import os
+        from django.conf import settings
+        if response.status_code == 200:
+            data = json.loads(response.content)
+            if data.get('success') and data.get('data', {}).get('files'):
+                for url in data['data']['files']:
+                    # Convert URL to filesystem path
+                    rel_path = url.lstrip('/')
+                    if rel_path.startswith('media/'):
+                        rel_path = rel_path[len('media/'):]
+                    full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+                    self._created_files.append(full_path)
+
+    def test_upload_requires_authentication(self):
+        """Anonymous users get 401."""
+        self.client.logout()
+        f = self._make_image_file()
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 401)
+
+    def test_upload_requires_admin(self):
+        """Non-admin users get 403."""
+        self.client.login(username='upload_student', password='password')
+        f = self._make_image_file()
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 403)
+
+    def test_upload_rejects_get(self):
+        """GET requests get 405."""
+        self.client.login(username='upload_admin', password='password')
+        response = self.client.get(self.UPLOAD_URL)
+        self.assertEqual(response.status_code, 405)
+
+    def test_upload_rejects_no_files(self):
+        """POST with no files gets 400."""
+        self.client.login(username='upload_admin', password='password')
+        response = self.client.post(self.UPLOAD_URL, {})
+        self.assertEqual(response.status_code, 400)
+
+    def test_upload_rejects_invalid_extension(self):
+        """Files with disallowed extensions are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='malicious.exe', content_type='application/x-executable')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('Invalid file type', data['data']['messages'][0])
+
+    def test_upload_rejects_non_image_content_type(self):
+        """Files with non-image content type are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='script.png', content_type='text/html')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('does not appear to be an image', data['data']['messages'][0])
+
+    def test_upload_rejects_oversized_file(self):
+        """A single file exceeding 25MB per-file limit is rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(size=26 * 1024 * 1024)  # 26 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('per-file size limit', data['data']['messages'][0])
+
+    def test_upload_allows_multiple_files_under_per_file_limit(self):
+        """Multiple files each under 25MB are accepted (no combined limit)."""
+        self.client.login(username='upload_admin', password='password')
+        f1 = self._make_image_file(name='test1.png', size=15 * 1024 * 1024)  # 15 MB
+        f2 = self._make_image_file(name='test2.png', size=15 * 1024 * 1024)  # 15 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f1, 'files[1]': f2})
+        self._track_response_files(response)
+        self.assertEqual(response.status_code, 200)
+        import json
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['data']['files']), 2)
+
+    def test_upload_rejects_oversized_in_multi_file_batch(self):
+        """If any file in a batch exceeds 25MB, the entire batch is rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f1 = self._make_image_file(name='small.png', size=1024)  # 1 KB
+        f2 = self._make_image_file(name='huge.png', size=26 * 1024 * 1024)  # 26 MB
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f1, 'files[1]': f2})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('huge.png', data['data']['messages'][0])
+        self.assertIn('per-file size limit', data['data']['messages'][0])
+
+    def test_oversized_error_escapes_filename(self):
+        """Filenames in size-limit errors are HTML-escaped to prevent XSS."""
+        self.client.login(username='upload_admin', password='password')
+        xss_name = '<img src=x onerror=alert(1)>.png'
+        f = self._make_image_file(name=xss_name, size=26 * 1024 * 1024)
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        msg = data['data']['messages'][0]
+        self.assertNotIn('<img', msg)
+        self.assertIn('&lt;img', msg)
+
+    def test_upload_valid_png(self):
+        """A valid PNG upload succeeds and returns correct JSON."""
+        import json
+        import os
+        from django.conf import settings
+
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='photo.png')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['data']['files']), 1)
+        self.assertEqual(data['data']['isImages'], [True])
+
+        # Verify the URL looks correct
+        image_url = data['data']['files'][0]
+        self.assertTrue(image_url.startswith('/media/uploaded/qsd_images/'))
+        self.assertTrue(image_url.endswith('.png'))
+
+        # Verify file actually exists on disk
+        rel_path = image_url.lstrip('/')[len('media/'):]  # strip /media/
+        full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+        self.assertTrue(os.path.exists(full_path))
+
+    def test_upload_valid_jpg(self):
+        """A valid JPG upload succeeds."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='photo.jpg', content_type='image/jpeg')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['data']['files'][0].endswith('.jpg'))
+
+    def test_upload_valid_gif(self):
+        """A valid GIF upload succeeds."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='animated.gif', content_type='image/gif')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['data']['files'][0].endswith('.gif'))
+
+    def test_upload_valid_webp(self):
+        """A valid WebP upload succeeds."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='modern.webp', content_type='image/webp')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['data']['files'][0].endswith('.webp'))
+
+    def test_upload_generates_uuid_filename(self):
+        """Uploaded files get UUID filenames, not the original name."""
+        import json
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='../../etc/passwd.png')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self._track_response_files(response)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        image_url = data['data']['files'][0]
+        filename = image_url.split('/')[-1]
+        # UUID hex is 32 chars + .png = should not contain original name
+        self.assertNotIn('passwd', filename)
+        self.assertNotIn('..', filename)
+        self.assertEqual(len(filename), 32 + 4)  # uuid hex + .png
+
+    def test_upload_rejects_no_extension(self):
+        """Files without extensions are rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='noextension')
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+
+    def test_upload_handles_missing_filename(self):
+        """Files with no filename (None) are handled safely and rejected."""
+        self.client.login(username='upload_admin', password='password')
+        f = self._make_image_file(name='temp.png')
+        f.name = None  # Simulate missing filename
+        response = self.client.post(self.UPLOAD_URL, {'files[0]': f})
+        self.assertEqual(response.status_code, 400)
+        import json
+        data = json.loads(response.content)
+        self.assertFalse(data['success'])
+        self.assertIn('Invalid file type', data['data']['messages'][0])
+
+    def test_multi_file_bad_second_no_orphan(self):
+        """When one file in a batch fails validation, no files are saved.
+
+        Uses non-'files[0]' keys to trigger the fallback collection path
+        that gathers files from all request.FILES keys.
+        """
+        import os
+        from django.conf import settings
+
+        upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploaded/qsd_images')
+        # Snapshot existing files before the request
+        before = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
+
+        self.client.login(username='upload_admin', password='password')
+        good = self._make_image_file(name='valid.png')
+        bad = self._make_image_file(name='evil.exe', content_type='application/x-executable')
+        # Use keys other than 'files[0]' so the fallback loop collects both
+        response = self.client.post(self.UPLOAD_URL, {
+            'upload_a': good,
+            'upload_b': bad,
+        })
+        self.assertEqual(response.status_code, 400)
+
+        # Verify no NEW files were created on disk
+        after = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
+        new_files = after - before
+        self.assertEqual(new_files, set(), f"Orphaned files found after failed batch upload: {new_files}")
+
+
+class QSDBase64StrippingTest(TestCase):
+    """Tests that base64 images are stripped when saving QSD content (#3612)."""
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='strip_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+    def _create_qsd(self, url_path, name):
+        """Helper to create a QSD page for testing."""
+        from esp.web.models import default_navbarcategory
+        qsd_rec = QuasiStaticData()
+        qsd_rec.url = url_path
+        qsd_rec.name = name
+        qsd_rec.author = self.admin
+        qsd_rec.nav_category = default_navbarcategory()
+        qsd_rec.content = 'Original content'
+        qsd_rec.title = 'Test Page'
+        qsd_rec.description = ''
+        qsd_rec.keywords = ''
+        qsd_rec.save()
+        return qsd_rec
+
+    def test_qsd_edit_strips_base64(self):
+        """Full-page QSD edit strips base64 images from content."""
+        qsd_rec = self._create_qsd('learn/teststrip', 'learn:teststrip')
+        self.client.login(username='strip_admin', password='password')
+
+        self.client.post('/learn/teststrip.edit.html', {
+            'post_edit': '1',
+            'nav_category': qsd_rec.nav_category.id,
+            'content': '<p>Hello</p><img src="data:image/png;base64,iVBORw0KGgo"/><p>World</p>',
+            'title': 'Test Page',
+            'description': '',
+            'keywords': '',
+        })
+        qsd_rec.refresh_from_db()
+        self.assertNotIn('data:image', qsd_rec.content)
+        self.assertIn('Hello', qsd_rec.content)
+        self.assertIn('World', qsd_rec.content)
+
+    def test_ajax_qsd_strips_base64(self):
+        """Inline AJAX QSD edit strips base64 images."""
+        qsd_rec = self._create_qsd('learn/testajaxstrip', 'learn:testajaxstrip')
+        self.client.login(username='strip_admin', password='password')
+
+        response = self.client.post('/admin/ajax_qsd', {
+            'cmd': 'update',
+            'url': 'learn/testajaxstrip',
+            'data': '<p>Text</p><img src="data:image/png;base64,HUGE_BLOB"/>',
+        }, HTTP_REFERER='http://testserver/learn/index.html')
+
+        self.assertEqual(response.status_code, 200)
+        qsd_rec.refresh_from_db()
+        self.assertNotIn('data:image', qsd_rec.content)
+        self.assertIn('Text', qsd_rec.content)
+
+    def test_qsd_edit_preserves_normal_images(self):
+        """Normal image URLs are not stripped by the base64 filter."""
+        qsd_rec = self._create_qsd('learn/testpreserve', 'learn:testpreserve')
+        self.client.login(username='strip_admin', password='password')
+
+        self.client.post('/learn/testpreserve.edit.html', {
+            'post_edit': '1',
+            'nav_category': qsd_rec.nav_category.id,
+            'content': '<p>Photo:</p><img src="/media/uploaded/qsd_images/abc123.png"/>',
+            'title': 'Test Page',
+            'description': '',
+            'keywords': '',
+        })
+        qsd_rec.refresh_from_db()
+        self.assertIn('/media/uploaded/qsd_images/abc123.png', qsd_rec.content)
+
 
 class QSDAdminAuthorTest(TestCase):
 

@@ -112,7 +112,7 @@ function populate_get()
     var items = location.search.substr(1).split("&").filter(Boolean);
     for (var index = 0; index < items.length; index++) {
         var key_val = items[index].split("=");
-        var field = $j("#tabs [name=" + key_val[0] + "]");
+        var field = $j("#tabs [name='" + key_val[0] + "']");
         if(field.length >= 1){
             switch (field[0].type) {
                 case 'checkbox':
@@ -259,27 +259,26 @@ function initialize()
 
     for (var i = 0; i < list_names.length; i++)
     {
-        with ({list_name: list_names[i]})
-        {
+        (function (list_name) {
             //  Make the ANDs turn off the ORs and vice versa
-            $j("input[name=checkbox_and_" + list_name + "]").on('change', function () {
-                if ($j("input[name=checkbox_and_" + list_name + "]").prop("checked")
-                    && $j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
-                    $j("input[name=checkbox_or_" + list_name + "]").click();
+            $j("input[name='checkbox_and_" + list_name + "']").on('change', function () {
+                if ($j("input[name='checkbox_and_" + list_name + "']").prop("checked")
+                    && $j("input[name='checkbox_or_" + list_name + "']").prop("checked"))
+                    $j("input[name='checkbox_or_" + list_name + "']").click();
             });
-            $j("input[name=checkbox_or_" + list_name + "]").on('change', function () {
-                if ($j("input[name=checkbox_and_" + list_name + "]").prop("checked")
-                    && $j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
-                    $j("input[name=checkbox_and_" + list_name + "]").click();
+            $j("input[name='checkbox_or_" + list_name + "']").on('change', function () {
+                if ($j("input[name='checkbox_and_" + list_name + "']").prop("checked")
+                    && $j("input[name='checkbox_or_" + list_name + "']").prop("checked"))
+                    $j("input[name='checkbox_and_" + list_name + "']").click();
             });
             //  NOT can't be selected by itself
-            $j("input[name=checkbox_not_" + list_name + "]").on('change', function () {
-                if ($j("input[name=checkbox_not_" + list_name + "]").prop("checked")
-                    && !$j("input[name=checkbox_and_" + list_name + "]").prop("checked")
-                    && !$j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
-                    $j("input[name=checkbox_and_" + list_name + "]").click();
+            $j("input[name='checkbox_not_" + list_name + "']").on('change', function () {
+                if ($j("input[name='checkbox_not_" + list_name + "']").prop("checked")
+                    && !$j("input[name='checkbox_and_" + list_name + "']").prop("checked")
+                    && !$j("input[name='checkbox_or_" + list_name + "']").prop("checked"))
+                    $j("input[name='checkbox_and_" + list_name + "']").click();
             });
-        }
+        })(list_names[i]);
     }
 
     //  Handle step transitions
@@ -362,5 +361,3 @@ function initialize()
 }
 
 $j(document).ready(initialize);
-
-console.log("Loaded comm panel JS");
