@@ -2151,23 +2151,58 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
 #in future this code can be modify to deleate old class if we want 
 #for now it change old class list to deactivate email from getting spamed
+    # @classmethod
+    # def deactivate_old_class_lists(cls):
+    #     cutoff = timezone.now() - timedelta(days=1825)
+    #     old_classes = cls.objects.filter(meeting_times__start__lt=cutoff).exclude(meeting_times__start__gte=cutoff).select_related('category').distinct()
+    #     if not old_classes.exists():
+    #         return 0
+    #     query = Q()
+    #     for obj in old_classes:
+    #         code = obj.emailcode()  # e.g., "H9876"
+    #         # We match the code at the start of the regex or in the description
+    #         query |= Q(regex__regex=r'\b' + re.escape(code) + r'\b') | Q(description__icontains=code)
+
+    #     target_lists = EmailList.objects.filter(query).exclude(admin_hold=True)
+    #     count = target_lists.count()
+    #     target_lists.update(admin_hold=True)
+                
+    #     return count
+
     @classmethod
     def deactivate_old_class_lists(cls):
         cutoff = timezone.now() - timedelta(days=1825)
-        old_classes = cls.objects.filter(meeting_times__start__lt=cutoff).exclude(meeting_times__start__gte=cutoff).select_related('category').distinct()
-        if not old_classes.exists():
-            return 0
-        query = Q()
-        for obj in old_classes:
-            code = obj.emailcode()  # e.g., "H9876"
-            # We match the code at the start of the regex or in the description
-            query |= Q(regex__contains=code) | Q(description__contains=code)
+        
+        # 1. Use .iterator() to save memory
+        old_classes = cls.objects.filter(meeting_times__start__lt=cutoff)\
+                                 .exclude(meeting_times__start__gte=cutoff)\
+                                 .distinct().iterator()
 
-        target_lists = EmailList.objects.filter(query).exclude(admin_hold=True)
-        count = target_lists.count()
-        target_lists.update(admin_hold=True)
+        total_count = 0
+        batch_size = 500  # Process 500 classes at a time
+        current_query = Q()
+        processed_in_batch = 0
+
+        for obj in old_classes:
+            code = obj.emailcode()
+            # 2. Build your specific regex/description query
+            current_query |= Q(regex__regex=r'\b' + re.escape(code) + r'\b') | \
+                             Q(description__icontains=code)
+            processed_in_batch += 1
+
+            # 3. Every 500 classes, hit the DB and reset
+            if processed_in_batch >= batch_size:
+                target_lists = EmailList.objects.filter(current_query).exclude(admin_hold=True)
+                total_count += target_lists.update(admin_hold=True)
+                current_query = Q()
+                processed_in_batch = 0
+
+        # 4. Final update for any remaining classes
+        if processed_in_batch > 0:
+            target_lists = EmailList.objects.filter(current_query).exclude(admin_hold=True)
+            total_count += target_lists.update(admin_hold=True)
                 
-        return count
+        return total_count
 
     class Meta:
         db_table = 'program_class'
