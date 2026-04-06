@@ -1584,12 +1584,17 @@ class SeedDummyDataTest(TestCase):
                 Program.objects.filter(url=url).exists(),
                 f'Program {url} should exist after seeding',
             )
-
         # Users
         for username in ['admin', 'teacher1', 'student1', 'volunteer1']:
             self.assertTrue(
                 ESPUser.objects.filter(username=username).exists(),
                 f'User {username} should exist after seeding',
+            )
+        # ProgramModuleObj
+        for program in Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']):
+            self.assertGreater(
+                ProgramModuleObj.objects.filter(program=program).count(), 0,
+                f'Program {program.url} should have ProgramModuleObj instances after seeding',
             )
 
     def test_seed_dummy_data_idempotent(self):
