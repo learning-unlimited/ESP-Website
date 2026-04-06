@@ -59,7 +59,10 @@ class UserRecordsModule(ProgramModuleObj):
         if request.method != 'POST' or 'filterid' not in request.GET:
             raise ESPError()('User filter has not been properly set')
 
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        except PersistentQueryFilter.DoesNotExist:
+            raise ESPError()('The specified filter no longer exists. Please restart the user records management process.')
         users = filterObj.getList(ESPUser)
         try:
             users = users.distinct()
