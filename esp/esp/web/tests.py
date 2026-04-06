@@ -382,8 +382,12 @@ class LowercaseExtensionStorageTest(TestCase):
         self.assertEqual(result, 'photo.jpg')
 
     def test_save_lowercases_extension(self):
-        storage = LowercaseExtensionStorage(location=tempfile.mkdtemp())
-        name = storage.save('test.JPG', ContentFile(b'test content'))
-        self.assertTrue(name.endswith('.jpg'))
-        storage.delete(name)
-        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            storage = LowercaseExtensionStorage(location=temp_dir)
+            name = None
+            try:
+                name = storage.save('test.JPG', ContentFile(b'test content'))
+                self.assertTrue(name.endswith('.jpg'))
+            finally:
+                if name is not None:
+                    storage.delete(name)
