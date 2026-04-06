@@ -4,19 +4,19 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'docs/**'
-      - '*.md'
-      - 'LICENSE'
-      - '.gitattributes'
-      - '.gitignore'
+      - "docs/**"
+      - "*.md"
+      - "LICENSE"
+      - ".gitattributes"
+      - ".gitignore"
   pull_request:
     branches: [main]
     paths-ignore:
-      - 'docs/**'
-      - '*.md'
-      - 'LICENSE'
-      - '.gitattributes'
-      - '.gitignore'
+      - "docs/**"
+      - "*.md"
+      - "LICENSE"
+      - ".gitattributes"
+      - ".gitignore"
   workflow_dispatch:
 
 concurrency:
@@ -26,8 +26,24 @@ concurrency:
 permissions:
   contents: read
 
-
 jobs:
+  js-tests:
+    name: Test (JavaScript Scheduler)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install JavaScript Dependencies
+        run: npm ci
+      - name: Run JavaScript Unit Tests
+        run: npm test
+
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
@@ -55,51 +71,51 @@ jobs:
       DJANGO_SETTINGS_MODULE: esp.settings
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: deadsnakes/action@v3.2.0
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Cache pip packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.python-version }}-
-          ${{ runner.os }}-pip-
-    - name: Get apt packages list
-      id: apt-action
-      run: |
-        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
-        echo "packages=$PKGS" >> $GITHUB_OUTPUT
-    - name: Cache apt packages
-      uses: Eeems-Org/apt-cache-action@v1
-      with:
-        packages: ${{ steps.apt-action.outputs.packages }}
-    - name: Prepare for Installing Dependencies
-      run: deploy/ci/before_install
-      env:
-        PYTHON_VERSION: ${{ matrix.python-version }}
-    - name: Install Dependencies
-      env:
-        CI_JOB: test
-        PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/ci/install
-    - name: Prepare for Test
-      env:
-        CI_JOB: test
-        PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/ci/before_script
-    - name: Run Tests
-      env:
-        CI_JOB: test
-        PYTHON_VERSION: ${{ matrix.python-version }}
-      run: deploy/ci/script
-    - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v5
-      with:
-        fail_ci_if_error: true
-        verbose: true
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: deadsnakes/action@v3.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('esp/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-
+      - name: Get apt packages list
+        id: apt-action
+        run: |
+          PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+          echo "packages=$PKGS" >> $GITHUB_OUTPUT
+      - name: Cache apt packages
+        uses: Eeems-Org/apt-cache-action@v1
+        with:
+          packages: ${{ steps.apt-action.outputs.packages }}
+      - name: Prepare for Installing Dependencies
+        run: deploy/ci/before_install
+        env:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+      - name: Install Dependencies
+        env:
+          CI_JOB: test
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: deploy/ci/install
+      - name: Prepare for Test
+        env:
+          CI_JOB: test
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: deploy/ci/before_script
+      - name: Run Tests
+        env:
+          CI_JOB: test
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: deploy/ci/script
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

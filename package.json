@@ -1,0 +1,19 @@
+{
+  "name": "esp-website",
+  "version": "1.0.0",
+  "description": "Learning Unlimited's Educational Splash Portal",
+  "main": "esp/manage.py",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [],
+  "author": "Learning Unlimited",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jquery": "^3.7.1"
+  }
+}
