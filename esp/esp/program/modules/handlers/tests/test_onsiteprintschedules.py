@@ -14,8 +14,6 @@ class OnsitePrintSchedulesTest(TestCase):
         # Users
         self.student = ESPUser.objects.create(username='student_1')
         self.staff = ESPUser.objects.create(username='staff_1', is_staff=True)
-
-        
         self.staff.isOnsite = lambda prog: True
         self.staff.isAdmin = lambda prog: True
 
@@ -58,8 +56,6 @@ class OnsitePrintSchedulesTest(TestCase):
         """
         End-to-end test: pending request → attendance record created
         """
-
-        
         mock_print.return_value = type("obj", (), {"content": b"fake_image"})
 
         PrintRequest.objects.create(

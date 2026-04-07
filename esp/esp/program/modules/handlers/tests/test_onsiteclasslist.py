@@ -69,4 +69,3 @@ class PrintScheduleStatusTests(SimpleTestCase):
         with patch.object(ESPUser.objects, "get", side_effect=ESPUser.DoesNotExist):
             resp = self._call({"user": "9999"})
         self._assert_user_not_found(resp)
-        
