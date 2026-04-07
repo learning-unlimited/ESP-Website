@@ -29,6 +29,8 @@ from esp import utils
 from esp.utils import query_builder
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
+from unittest.mock import Mock, MagicMock
+from esp.utils.apps import run_install
 
 # Code from <https://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
@@ -569,6 +571,42 @@ class StripBase64ImagesTest(DjangoTestCase):
         result, count = self.strip(html)
         self.assertEqual(result, html)
         self.assertEqual(count, 0)
+
+class RunInstallTestCase(unittest.TestCase):
+    """Regression tests for the run_install post_migrate signal handler."""
+
+    def test_sender_with_no_models_module(self):
+        """run_install should not raise when sender.models_module is None."""
+        sender = Mock(spec=[])
+        sender.models_module = None
+        # Should not raise
+        run_install(sender)
+
+    def test_sender_with_models_module_missing_install(self):
+        """run_install should not raise when models_module lacks install()."""
+        models_module = Mock(spec=[])  # no 'install' attribute
+        sender = Mock()
+        sender.models_module = models_module
+        # Should not raise
+        run_install(sender)
+
+    def test_sender_with_callable_install(self):
+        """run_install should call install() when it exists and is callable."""
+        models_module = Mock()
+        models_module.install = MagicMock()
+        sender = Mock()
+        sender.models_module = models_module
+        run_install(sender)
+        models_module.install.assert_called_once()
+
+    def test_sender_with_non_callable_install(self):
+        """run_install should not call install if it's not callable."""
+        models_module = Mock(spec=[])
+        models_module.install = None  # exists but not callable
+        sender = Mock()
+        sender.models_module = models_module
+        # Should not raise
+        run_install(sender)
 
 
 def suite():
