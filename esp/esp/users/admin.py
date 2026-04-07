@@ -144,12 +144,12 @@ class EducatorInfoAdmin(UserInfoAdmin):
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
 class K12SchoolAdmin(admin.ModelAdmin):
-    list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']
+    list_display = ['name', 'city', 'state', 'grades', 'contact_title', 'contact_name', 'school_type']
     formfield_overrides = {
         models.TextField: {'widget': forms.TextInput(attrs={'size': '50',}),},
     }
-    search_fields = ['name', 'contact__first_name', 'contact__last_name'] #no, using default_user_search does not work.
-    list_filter = ['school_type']
+    search_fields = ['name', 'city', 'state', 'contact__first_name', 'contact__last_name']
+    list_filter = ['school_type', 'state']
     def contact_name(self, obj):
         if obj.contact:
             return "%s %s" % (obj.contact.first_name, obj.contact.last_name)
