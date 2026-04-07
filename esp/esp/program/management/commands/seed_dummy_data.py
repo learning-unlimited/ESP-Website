@@ -695,8 +695,7 @@ class Command(BaseCommand):
              f'- [{program_name}](/learn/{program_name.replace(" ", "")}/2026/studentreg)\n'),
 
             ('teach/index', 'index', 'Teach with Us',
-             'Want to share your knowledge? Click below to get started.\n\n'
-             '[Register for Classes](/teach/register/)\n'),
+             'Want to share your knowledge? Click below to get started.\n'),
 
             ('volunteer/index', 'index', 'Volunteer',
              '## Volunteer Opportunities\n\n'
