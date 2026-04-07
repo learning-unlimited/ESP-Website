@@ -81,11 +81,34 @@ _PROGRAM_TLS = frozenset(['manage', 'learn', 'teach', 'onsite', 'volunteer'])
 _CACHEABLE_SUFFIXES = ('catalog', 'index.html')
 
 
+def _filter_active_tags(accessed_keys, get_all_fn):
+    """
+    Given the request-scoped set of consulted tag keys (or None if tracking
+    wasn't initialized) and a callable that returns all non-default tags,
+    return the list of tags that should appear in the banner.
+
+    Returns [] if nothing should be shown so the caller can skip the DB hit
+    in the empty-tracking case.
+    """
+    if accessed_keys is not None and not accessed_keys:
+        # Tracking is active but the view consulted no tags — skip the DB
+        # query entirely; nothing will be shown.
+        return []
+    all_nondefault = get_all_fn()
+    if not all_nondefault:
+        return []
+    if accessed_keys is None:
+        # Fallback: tracking wasn't initialized, show all non-default tags.
+        return all_nondefault
+    return [t for t in all_nondefault if t['key'] in accessed_keys]
+
+
 def _inject_active_program_tags(request, context):
     """
     For admin users viewing a program page, inject ``active_program_tags``
-    (list of tag info dicts) and ``active_program_tags_url`` into *context*
-    so the base template can show a banner listing non-default program tags.
+    and ``active_global_tags`` (lists of tag info dicts) plus their
+    corresponding settings URLs into *context* so the base template can
+    show banners listing non-default tags actually consulted on this page.
     """
     try:
         path = request.path.rstrip('/')
@@ -106,24 +129,26 @@ def _inject_active_program_tags(request, context):
             return
         if not request.user.isAdministrator(program=program):
             return
-        accessed_keys = getattr(request, '_active_program_tag_keys', None)
-        if accessed_keys is not None and not accessed_keys:
-            # Tracking is active but the view consulted no program tags — skip
-            # the DB query entirely; nothing will be shown.
-            return
-        all_nondefault = Tag.get_nondefault_program_tags(program)
-        if not all_nondefault:
-            return
-        if accessed_keys is not None:
-            # Page-specific: only show tags that were actually consulted
-            # by the view logic while handling this request.
-            active_tags = [t for t in all_nondefault if t['key'] in accessed_keys]
-        else:
-            # Fallback: tracking wasn't initialized, show all non-default tags.
-            active_tags = all_nondefault
-        if active_tags:
-            context['active_program_tags'] = active_tags
+
+        # Program-specific tags consulted while rendering this page.
+        program_tags = _filter_active_tags(
+            getattr(request, '_active_program_tag_keys', None),
+            lambda: Tag.get_nondefault_program_tags(program),
+        )
+        if program_tags:
+            context['active_program_tags'] = program_tags
             context['active_program_tags_url'] = program.get_manage_url() + 'tags'
+
+        # Global tags consulted while rendering this page. Global tags affect
+        # the whole site, so they're worth flagging in the same banner area
+        # whenever an admin is on a program page that touched one.
+        global_tags = _filter_active_tags(
+            getattr(request, '_active_global_tag_keys', None),
+            Tag.get_nondefault_global_tags,
+        )
+        if global_tags:
+            context['active_global_tags'] = global_tags
+            context['active_global_tags_url'] = '/manage/tags/'
     except Exception:
         pass  # Never let banner logic break page rendering
 
