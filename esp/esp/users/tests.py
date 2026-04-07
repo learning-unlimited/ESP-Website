@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from django import forms
 from django.core import mail
@@ -15,6 +16,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
+from esp.users.forms.user_profile import StudentProfileForm
 from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
 
 class ESPUserTest(TestCase):
@@ -143,15 +145,21 @@ class PasswordRecoveryTest(TestCase):
     Tokens are computed via HMAC from user data and are never stored in the
     database.
     """
-    def setUp(self):
-        self.user, created = ESPUser.objects.get_or_create(username='forgetful')
-        self.user.set_password('forgotten_pw')
-        self.user.save()
-        self.other, created = ESPUser.objects.get_or_create(username='innocent')
-        self.other.set_password('remembered_pw')
-        self.other.save()
+    @classmethod
+    def setUpTestData(cls):
+        cls.user, _ = ESPUser.objects.get_or_create(username='forgetful')
+        cls.user.set_password('forgotten_pw')
+        cls.user.save()
+        cls.other, _ = ESPUser.objects.get_or_create(username='innocent')
+        cls.other.set_password('remembered_pw')
+        cls.other.save()
 
-    def runTest(self):
+    def setUp(self):
+        # Refresh so tests that modify user/other don't affect the shared instances
+        self.user.refresh_from_db()
+        self.other.refresh_from_db()
+
+    def test_run(self):
         from django.contrib.auth.tokens import default_token_generator
         from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
         from django.utils.encoding import force_bytes
@@ -224,7 +232,7 @@ class TeacherInfo__validationtest(TestCase):
             try:
                 int(i)
                 return True
-            except:
+            except (ValueError, TypeError):
                 return False
 
         # There's some data-cleaning going on here, so
@@ -295,7 +303,7 @@ class UserForwarderTest(TestCase):
         self.ub, created = ESPUser.objects.get_or_create(username='forward_b')
         self.uc, created = ESPUser.objects.get_or_create(username='forward_c')
         self.users = [self.ua, self.ub, self.uc]
-    def runTest(self):
+    def test_run(self):
         def fwd_info(user):
             return '%s forwards by: %s' % (user.username, user.forwarders_out.all())
         # Ensure that users have no forwarders by default
@@ -330,7 +338,7 @@ class MakeAdminTest(TestCase):
         self.target_user.is_superuser = False
         user_role_setup()
 
-    def runTest(self):
+    def test_run(self):
         # Make sure user starts off with no administrator privileges
         self.assertFalse(self.user.is_staff)
         self.assertFalse(self.user.is_superuser)
@@ -372,7 +380,7 @@ class AjaxExistenceChecker(TestCase):
     """ Check that an Ajax view is there by trying to retrieve it and checking for the desired keys
         in the response.
     """
-    def runTest(self):
+    def test_run(self):
         #   Quit if path and keys are not provided.  This ensures nothing will
         #   break if this is invoked without those attributes.
         if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
@@ -383,12 +391,12 @@ class AjaxExistenceChecker(TestCase):
             self.assertContains(response, key, msg_prefix="Key %s missing from Ajax response to %s" % (key, self.path), status_code=200)
 
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
-    def runTest(self):
+    def test_run(self):
         self.path = '/learn/%s/ajax_schedule' % self.program.getUrlBase()
         self.keys = ['student_schedule_html']
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
-        super().runTest()
+        super().test_run()
 
 class AccountCreationTest(TestCase):
 
@@ -466,8 +474,7 @@ class AccountCreationTest(TestCase):
                                   first_name="first",
                                   last_name="last",
                                   email="tsutton125@gmail.com")
-        except ESPUser.DoesNotExist as xxx_todo_changeme:
-            ESPUser.MultipleObjectsReturned = xxx_todo_changeme
+        except (ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned):
             self.fail("User not created correctly or created multiple times")
 
         if not Tag.getBooleanTag('require_email_validation'):
@@ -591,7 +598,7 @@ class RecordTest(TestCase):
         self.program1.delete()
         self.program2.delete()
 
-    def runTest(self):
+    def test_run(self):
         # Run the tests for Records with two different programs, and without
         # a specific program.
         # If all iterations run successfully, this means that the Record
@@ -791,6 +798,81 @@ class PermissionTestCase(TestCase):
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
 
+class AjaxAutocompleteViewTest(TestCase):
+    def setUp(self):
+        user_role_setup()
+        self.client = Client()
+
+        self.staff_user, _ = ESPUser.objects.get_or_create(username='staff_autocomplete')
+        self.staff_user.set_password('password')
+        self.staff_user.is_staff = True
+        self.staff_user.is_superuser = True
+        self.staff_user.save()
+
+        self.nonstaff_user, _ = ESPUser.objects.get_or_create(username='student_autocomplete')
+        self.nonstaff_user.set_password('password')
+        self.nonstaff_user.save()
+        self.nonstaff_user.makeRole('Student')
+
+        from esp.users.models import K12School
+        self.school = K12School.objects.create(name='Springfield Academy')
+        self.target_user = ESPUser.objects.create(
+            username='target_autocomplete',
+            first_name='Alice',
+            last_name='Target',
+            email='target@example.com',
+        )
+
+    def _call(self, **kwargs):
+        params = {
+            'model_module': 'esp.users.models',
+            'model_name': 'K12School',
+            'ajax_data': 'Spring',
+            'prog': '',
+        }
+        params.update(kwargs)
+        return self.client.get('/admin/ajax_autocomplete/', params)
+
+    def test_requires_login(self):
+        response = self._call()
+        self.assertEqual(response.status_code, 302)
+
+    def test_returns_bad_request_on_malformed_input(self):
+        self.assertTrue(self.client.login(username='staff_autocomplete', password='password'))
+        response = self.client.get('/admin/ajax_autocomplete/', {'model_name': 'K12School'})
+        self.assertEqual(response.status_code, 400)
+
+    def test_nonstaff_can_autocomplete_allowed_model(self):
+        self.assertTrue(self.client.login(username='student_autocomplete', password='password'))
+        response = self._call()
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(payload['result']), 1)
+        self.assertEqual(payload['result'][0]['id'], self.school.id)
+        self.assertIn('Springfield Academy', payload['result'][0]['ajax_str'])
+
+    def test_nonstaff_cannot_autocomplete_restricted_model(self):
+        self.assertTrue(self.client.login(username='student_autocomplete', password='password'))
+        response = self._call(
+            model_name='ESPUser',
+            ajax_func='ajax_autocomplete',
+            ajax_data='target',
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(payload['result'], [])
+
+    def test_staff_can_autocomplete_restricted_model(self):
+        self.assertTrue(self.client.login(username='staff_autocomplete', password='password'))
+        response = self._call(
+            model_name='ESPUser',
+            ajax_func='ajax_autocomplete',
+            ajax_data='target_autocomplete',
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(payload['result']), 1)
+        self.assertEqual(payload['result'][0]['id'], self.target_user.id)
 
 class StudentInfoFormGradeTest(TestCase):
     """Registration Profile grade validation.
@@ -902,3 +984,124 @@ class StudentInfoFormGradeTest(TestCase):
             initial_si_count,
             "StudentInfo must NOT be saved when graduation_year is missing.",
         )
+
+class StudentProfileForm__emailvalidationtest(TestCase):
+    """Tests for StudentProfileForm email validation.
+
+    Verifies that a student's own email cannot match the emergency
+    contact or parent/guardian email address.
+    """
+    def setUp(self):
+        user_role_setup()
+        # Tags required by StudentInfoForm.__init__ (call .split() on the value)
+        Tag.setTag('student_shirt_sizes', value='S, M, L')
+        Tag.setTag('shirt_types', value='Straight cut')
+        Tag.setTag('food_choices', value='No preference')
+        Tag.setTag('student_profile_hide_fields', value='')
+        # Disable optional-field requirements to keep test data minimal
+        Tag.setTag('allow_change_grade_level', value='True')
+        Tag.setTag('require_school_field', value='False')
+
+        self.user, created = ESPUser.objects.get_or_create(username='emailtest_student')
+        self.user.makeRole('Student')
+
+    def _base_data(self, student_email='student@example.com',
+                   emerg_email='parent@example.com',
+                   guard_email='guardian@example.com'):
+        """Return a minimal valid data dict for StudentProfileForm."""
+        return {
+            # UserContactForm
+            'first_name': 'Test',
+            'last_name': 'Student',
+            'e_mail': student_email,
+            'phone_day': '+12015550100',
+            'phone_cell': '+12015550100',
+            'address_street': '84 Massachusetts Ave',
+            'address_city': 'Cambridge',
+            'address_state': 'MA',
+            'address_zip': '02139',
+            # EmergContactForm
+            'emerg_first_name': 'Emergency',
+            'emerg_last_name': 'Contact',
+            'emerg_e_mail': emerg_email,
+            'emerg_phone_day': '+12015550101',
+            'emerg_address_street': '84 Massachusetts Ave',
+            'emerg_address_city': 'Cambridge',
+            'emerg_address_state': 'MA',
+            'emerg_address_zip': '02139',
+            # GuardContactForm
+            'guard_first_name': 'Parent',
+            'guard_last_name': 'Guardian',
+            'guard_e_mail': guard_email,
+            'guard_phone_day': '+12015550102',
+            # StudentInfoForm
+            'graduation_year': str(ESPUser.YOGFromGrade(12)),
+            'dob': '2008-01-01',
+        }
+
+    def testDistinctEmails(self):
+        """All three emails different: form should be valid."""
+        form = StudentProfileForm(user=self.user, data=self._base_data())
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def testStudentMatchesEmergency(self):
+        """Student email == emergency contact email: form should be invalid."""
+        data = self._base_data(student_email='same@example.com',
+                               emerg_email='same@example.com')
+        form = StudentProfileForm(user=self.user, data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Your emergency contact email address cannot be the same as your own email address.",
+            form.non_field_errors()
+        )
+
+    def testStudentMatchesGuardian(self):
+        """Student email == guardian email: form should be invalid."""
+        data = self._base_data(student_email='same@example.com',
+                               guard_email='same@example.com')
+        form = StudentProfileForm(user=self.user, data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Your parent/guardian email address cannot be the same as your own email address.",
+            form.non_field_errors()
+        )
+
+    def testCaseInsensitiveEmergency(self):
+        """Email comparison should be case-insensitive (emergency)."""
+        data = self._base_data(student_email='Test@Example.COM',
+                               emerg_email='test@example.com')
+        form = StudentProfileForm(user=self.user, data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Your emergency contact email address cannot be the same as your own email address.",
+            form.non_field_errors()
+        )
+
+    def testCaseInsensitiveGuardian(self):
+        """Email comparison should be case-insensitive (guardian)."""
+        data = self._base_data(student_email='Test@Example.COM',
+                               guard_email='test@example.com')
+        form = StudentProfileForm(user=self.user, data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Your parent/guardian email address cannot be the same as your own email address.",
+            form.non_field_errors()
+        )
+
+    def testEmptyEmergencyEmail(self):
+        """Empty emergency email should not trigger the validation error."""
+        data = self._base_data(emerg_email='')
+        form = StudentProfileForm(user=self.user, data=data)
+        # emerg_e_mail is optional; no email-match error should appear
+        email_errors = [e for e in form.non_field_errors()
+                        if 'email' in e.lower()]
+        self.assertEqual(email_errors, [])
+
+    def testEmptyGuardianEmail(self):
+        """Empty guardian email should not trigger the validation error."""
+        data = self._base_data(guard_email='')
+        form = StudentProfileForm(user=self.user, data=data)
+        # guard_e_mail is optional; no email-match error should appear
+        email_errors = [e for e in form.non_field_errors()
+                        if 'email' in e.lower()]
+        self.assertEqual(email_errors, [])
