@@ -61,8 +61,8 @@ class UserRecordsModule(ProgramModuleObj):
 
         try:
             filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
-        except PersistentQueryFilter.DoesNotExist:
-            raise ESPError()('The specified filter no longer exists. Please restart the user records management process.')
+        except (PersistentQueryFilter.DoesNotExist, ValueError):
+            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the user records management process.')
         users = filterObj.getList(ESPUser)
         try:
             users = users.distinct()
