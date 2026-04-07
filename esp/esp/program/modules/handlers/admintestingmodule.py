@@ -3,7 +3,7 @@ import logging
 from django.http import HttpResponseRedirect
 
 from esp.middleware import ESPError
-from esp.program.controllers.testingutils import TestDataCleanupController
+from esp.program.controllers.testingutils import DataCleanupController
 from esp.program.modules.base import ProgramModuleObj, aux_call, main_call, needs_admin
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
@@ -74,10 +74,10 @@ class AdminTestingModule(ProgramModuleObj):
     def _wipe_test_data(self, user):
         """Delete all registration data created by *user* in this program.
 
-        Delegates to the TestDataCleanupController introduced in #4116 so
+        Delegates to the DataCleanupController introduced in #4116 so
         that cleanup logic is not duplicated.
         """
-        ctrl = TestDataCleanupController(self.program, user)
+        ctrl = DataCleanupController(self.program, user)
         ctrl.execute()
         logger.info('Wiped test data for user pk=%d in program %s',
                     user.pk, self.program)
