@@ -145,13 +145,19 @@ class PasswordRecoveryTest(TestCase):
     Tokens are computed via HMAC from user data and are never stored in the
     database.
     """
+    @classmethod
+    def setUpTestData(cls):
+        cls.user, _ = ESPUser.objects.get_or_create(username='forgetful')
+        cls.user.set_password('forgotten_pw')
+        cls.user.save()
+        cls.other, _ = ESPUser.objects.get_or_create(username='innocent')
+        cls.other.set_password('remembered_pw')
+        cls.other.save()
+
     def setUp(self):
-        self.user, created = ESPUser.objects.get_or_create(username='forgetful')
-        self.user.set_password('forgotten_pw')
-        self.user.save()
-        self.other, created = ESPUser.objects.get_or_create(username='innocent')
-        self.other.set_password('remembered_pw')
-        self.other.save()
+        # Refresh so tests that modify user/other don't affect the shared instances
+        self.user.refresh_from_db()
+        self.other.refresh_from_db()
 
     def test_run(self):
         from django.contrib.auth.tokens import default_token_generator
@@ -468,8 +474,7 @@ class AccountCreationTest(TestCase):
                                   first_name="first",
                                   last_name="last",
                                   email="tsutton125@gmail.com")
-        except ESPUser.DoesNotExist as xxx_todo_changeme:
-            ESPUser.MultipleObjectsReturned = xxx_todo_changeme
+        except (ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned):
             self.fail("User not created correctly or created multiple times")
 
         if not Tag.getBooleanTag('require_email_validation'):

@@ -2003,9 +2003,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     address_city = models.CharField('City', max_length=50, blank=True, null=True)
     address_state = models.CharField('State', max_length=32, blank=True, null=True)
     address_zip = models.CharField('Zip code', max_length=5, blank=True, null=True)
-    address_postal = models.TextField(blank=True, null=True)
     address_country = models.CharField('Country', max_length=2, choices=sorted(list(country_names.items()), key = lambda x: x[1]), default='US')
-    undeliverable = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'users'
@@ -2073,24 +2071,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             if val not in [None, ''] and key != 'id':
                 form_data[prepend+key] = val
         return form_data
-
-    def save(self, *args, **kwargs):
-        if self.id is not None:
-            try:
-                old_self = ContactInfo.objects.get(id = self.id)
-                if old_self.address_zip != self.address_zip or \
-                        old_self.address_street != self.address_street or \
-                        old_self.address_city != self.address_city or \
-                        old_self.address_state != self.address_state:
-                    self.address_postal = None
-                    self.undeliverable = False
-            except ContactInfo.DoesNotExist:
-                pass
-        if self.address_postal is not None:
-            self.address_postal = str(self.address_postal)
-
-        super().save(*args, **kwargs)
-
 
     def __str__(self):
         username = ""
@@ -2199,6 +2179,9 @@ class PersistentQueryFilter(models.Model):
 
         #   Do not include users if they have disabled their account.
         if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
+            # Ensure QObj is a Q object before combining
+            if not isinstance(QObj, Q):
+                QObj = Q(pk__in=[])
             QObj = QObj & Q(is_active=True)
 
         return QObj
@@ -2796,7 +2779,7 @@ class Permission(ExpirableModel):
                 #not actually a program
                 return False
             if user.isAdmin(prog): return True
-            m2 = re.match("Classes/(.)(\d+)/(.*)", rest)
+            m2 = re.match(r"Classes/(.)(\d+)/(.*)", rest)
             if m2:
                 (code, cls_id, basename) = m2.groups()
                 try:
