@@ -28,8 +28,6 @@ import django
 django.setup()
 from django.utils import timezone
 from esp.program.models import ClassSubject
-  
-
 from esp.dbmail.cronmail import process_messages, send_email_requests
 
 # This import must be after the evaluation of the Django settings, because
@@ -69,5 +67,3 @@ finally:
     lock_file_handle.close()
 
 logger.info('dbmail_cron: done.')
-
-
