@@ -23,6 +23,8 @@ Example stylesheet inclusion tag:
 
 {% block body %}
 
+<a href="#main" class="skip-nav">Skip to main content</a>
+
 {% block navbar %}
 {% include "navbar.html" %}
 {% endblock navbar%}
@@ -42,7 +44,7 @@ Example stylesheet inclusion tag:
     </div>
     {% endblock %}
 
-    <div id="main" class="span12 resizable">
+    <main id="main" class="span12 resizable" tabindex="-1">
       {% if request.COOKIES.esp_testing_role %}
       <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
         <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
@@ -97,7 +99,7 @@ Example stylesheet inclusion tag:
       {% endif %}
       {% block content %}
       {% endblock %}
-    </div>
+    </main>
   </div>
 </div>
 </div>

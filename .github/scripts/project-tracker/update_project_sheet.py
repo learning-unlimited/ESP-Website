@@ -362,8 +362,44 @@ def link_count(url: str, count: int) -> str:
     return f'=HYPERLINK("{url}", {count})'
 
 
+# ---------------------------------------------------------------------------
+# Fetch all PR authors since start of year
+# ---------------------------------------------------------------------------
+
+ALL_PR_AUTHORS_QUERY = """
+query($searchQuery: String!, $cursor: String) {
+  search(query: $searchQuery, type: ISSUE, first: 100, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      ... on PullRequest {
+        author { login }
+      }
+    }
+  }
+}
+"""
+
+
+def fetch_pr_authors_since(since: str) -> set[str]:
+    """
+    Return the set of all PR author logins since the given date
+    (ISO date string like '2026-01-01').
+    """
+    search_query = (
+        f"repo:{REPO_OWNER}/{REPO_NAME} is:pr created:>={since}"
+    )
+    variables = {"searchQuery": search_query}
+    nodes = paginate(ALL_PR_AUTHORS_QUERY, ["search"], variables)
+    logins: set[str] = set()
+    for node in nodes:
+        author = (node.get("author") or {}).get("login")
+        if author:
+            logins.add(author)
+    return logins
+
+
 def build_contributor_rows(
-    prs: list[dict], issues: list[dict]
+    prs: list[dict], issues: list[dict], all_pr_authors: set[str]
 ) -> list[list[str]]:
     """Build the rows for the Contributor Activity sheet."""
     header = [
@@ -377,6 +413,11 @@ def build_contributor_rows(
             "last_activity": "", "oldest_open_pr": "",
         }
     )
+
+    # Seed with all PR authors this year so contributors with only
+    # merged/closed PRs still appear in the sheet
+    for login in all_pr_authors:
+        _ = activity[login]  # creates the default entry
 
     for pr in prs:
         login = (pr["author"] or {}).get("login", "ghost")
@@ -484,9 +525,14 @@ def main() -> None:
     issues = fetch_issues()
     print(f"    Found {len(issues)} open issues")
 
+    year_start = datetime.now(timezone.utc).strftime("%Y") + "-01-01"
+    print(f"  Fetching all PR authors since {year_start} ...")
+    all_pr_authors = fetch_pr_authors_since(year_start)
+    print(f"    Found {len(all_pr_authors)} unique PR authors")
+
     pr_rows = build_pr_rows(prs)
     issue_rows = build_issue_rows(issues)
-    contributor_rows = build_contributor_rows(prs, issues)
+    contributor_rows = build_contributor_rows(prs, issues, all_pr_authors)
 
     print(f"Writing to Google Sheet {SHEET_ID} ...")
     gc = get_gspread_client()

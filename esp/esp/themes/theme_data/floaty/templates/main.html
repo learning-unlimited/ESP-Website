@@ -9,6 +9,8 @@
 
 {% block body %}
 
+<a href="#content_area" class="skip-nav">Skip to main content</a>
+
 {% block main %}
 <div id="page" style="margin:0 auto; width:920px;">
 <div id="top_area">
@@ -99,7 +101,7 @@
 
 </div>
 
-<div id="content_area">
+<main id="content_area" tabindex="-1">
     {% if request.COOKIES.esp_testing_role %}
     <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
       <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
@@ -185,7 +187,7 @@
         </span>
         {% endif %}
     </div>
-</div>
+</main>
 
 </div>
 </div>
