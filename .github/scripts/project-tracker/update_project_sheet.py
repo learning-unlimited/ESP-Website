@@ -126,6 +126,14 @@ query($owner: String!, $repo: String!, $cursor: String) {
         closingIssuesReferences(first: 20) {
           nodes { number }
         }
+        commits(last: 5) {
+          nodes {
+            commit {
+              committedDate
+              author { user { login } }
+            }
+          }
+        }
       }
     }
   }
@@ -258,7 +266,7 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
     """Build the rows for the Issues sheet."""
     header = [
         "Issue #", "Title", "Author", "Opened", "Assignee(s)",
-        "Assigned Date", "Last Updated", "Linked PRs",
+        "Assigned Date", "Last Updated", "Linked PRs", "Labels",
     ]
     rows = [header]
 
@@ -289,6 +297,7 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
             earliest_assign = fmt_time(min(assign_dates.values()))
 
         author = (issue["author"] or {}).get("login", "ghost")
+        labels = [l["name"] for l in issue["labels"]["nodes"]]
 
         rows.append([
             link_issue(issue["number"]),
@@ -299,6 +308,7 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
             earliest_assign,
             fmt_time(issue["updatedAt"]),
             ", ".join(linked_prs),
+            ", ".join(labels),
         ])
 
     return rows
@@ -362,8 +372,112 @@ def link_count(url: str, count: int) -> str:
     return f'=HYPERLINK("{url}", {count})'
 
 
+# ---------------------------------------------------------------------------
+# Fetch all PR authors since start of year
+# ---------------------------------------------------------------------------
+
+ALL_PR_AUTHORS_QUERY = """
+query($searchQuery: String!, $cursor: String) {
+  search(query: $searchQuery, type: ISSUE, first: 100, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      ... on PullRequest {
+        author { login }
+      }
+    }
+  }
+}
+"""
+
+
+def fetch_pr_authors_since(since: str) -> set[str]:
+    """
+    Return the set of all PR author logins since the given date
+    (ISO date string like '2026-01-01').
+    """
+    search_query = (
+        f"repo:{REPO_OWNER}/{REPO_NAME} is:pr created:>={since}"
+    )
+    variables = {"searchQuery": search_query}
+    nodes = paginate(ALL_PR_AUTHORS_QUERY, ["search"], variables)
+    logins: set[str] = set()
+    for node in nodes:
+        author = (node.get("author") or {}).get("login")
+        if author:
+            logins.add(author)
+    return logins
+
+
+def fetch_last_activity_dates(logins: list[str]) -> dict[str, str]:
+    """
+    Fetch each contributor's most recent activity (authored item or comment)
+    using batched GraphQL queries.  Uses two aliased searches per contributor:
+
+    1. Most recently *created* PR or issue they authored.
+    2. Most recently updated item they *commented on*, with the last 20
+       comments returned so we can find their actual comment timestamp.
+
+    Returns a dict of login → ISO-8601 timestamp (or empty string).
+    """
+    dates: dict[str, str] = {}
+    # Smaller batches — each login produces two search aliases with nested
+    # comment data, so the response is heavier than a simple count query.
+    batch_size = 10
+
+    for i in range(0, len(logins), batch_size):
+        batch = logins[i : i + batch_size]
+        fragments = []
+        for j, login in enumerate(batch):
+            authored_q = (
+                f"repo:{REPO_OWNER}/{REPO_NAME} "
+                f"author:{login} sort:created-desc"
+            )
+            comment_q = (
+                f"repo:{REPO_OWNER}/{REPO_NAME} "
+                f"commenter:{login} sort:updated-desc"
+            )
+            fragments.append(
+                f'authored_{j}: search(query: "{authored_q}", type: ISSUE, first: 1) {{\n'
+                f"  nodes {{\n"
+                f"    ... on PullRequest {{ createdAt }}\n"
+                f"    ... on Issue {{ createdAt }}\n"
+                f"  }}\n"
+                f"}}\n"
+                f'commented_{j}: search(query: "{comment_q}", type: ISSUE, first: 3) {{\n'
+                f"  nodes {{\n"
+                f"    ... on PullRequest {{ comments(last: 20) {{ nodes {{ createdAt author {{ login }} }} }} }}\n"
+                f"    ... on Issue {{ comments(last: 20) {{ nodes {{ createdAt author {{ login }} }} }} }}\n"
+                f"  }}\n"
+                f"}}"
+            )
+        query = "query {\n" + "\n".join(fragments) + "\n}"
+        data = graphql(query)
+
+        for j, login in enumerate(batch):
+            latest = ""
+
+            # Check most recent authored item
+            authored_nodes = data.get(f"authored_{j}", {}).get("nodes", [])
+            if authored_nodes:
+                created = authored_nodes[0].get("createdAt", "")
+                if created > latest:
+                    latest = created
+
+            # Scan comments on recently-commented items to find their latest
+            commented_nodes = data.get(f"commented_{j}", {}).get("nodes", [])
+            for node in commented_nodes:
+                for comment in (node.get("comments") or {}).get("nodes", []):
+                    author = (comment.get("author") or {}).get("login")
+                    if author == login and comment["createdAt"] > latest:
+                        latest = comment["createdAt"]
+
+            dates[login] = latest
+
+    return dates
+
+
 def build_contributor_rows(
-    prs: list[dict], issues: list[dict]
+    prs: list[dict], issues: list[dict], all_pr_authors: set[str]
 ) -> list[list[str]]:
     """Build the rows for the Contributor Activity sheet."""
     header = [
@@ -373,32 +487,51 @@ def build_contributor_rows(
 
     activity: dict[str, dict] = defaultdict(
         lambda: {
-            "open_prs": 0, "assigned_issues": 0,
-            "last_activity": "", "oldest_open_pr": "",
+            "open_prs": 0, "assigned_issues": 0, "oldest_open_pr": "",
         }
     )
+
+    # Seed with all PR authors this year so contributors with only
+    # merged/closed PRs still appear in the sheet
+    for login in all_pr_authors:
+        _ = activity[login]  # creates the default entry
 
     for pr in prs:
         login = (pr["author"] or {}).get("login", "ghost")
         activity[login]["open_prs"] += 1
-        if pr["updatedAt"] > activity[login]["last_activity"]:
-            activity[login]["last_activity"] = pr["updatedAt"]
         created = pr["createdAt"]
         if not activity[login]["oldest_open_pr"] or created < activity[login]["oldest_open_pr"]:
             activity[login]["oldest_open_pr"] = created
+
+    # Track the most recent commit per contributor from open PRs
+    latest_commit: dict[str, str] = {}
+    for pr in prs:
+        for commit_node in (pr.get("commits") or {}).get("nodes", []):
+            commit = commit_node.get("commit") or {}
+            commit_login = (
+                (commit.get("author") or {}).get("user") or {}
+            ).get("login")
+            if commit_login:
+                committed = commit.get("committedDate", "")
+                if committed > latest_commit.get(commit_login, ""):
+                    latest_commit[commit_login] = committed
 
     for issue in issues:
         for assignee in issue["assignees"]["nodes"]:
             login = assignee["login"]
             activity[login]["assigned_issues"] += 1
-            if issue["updatedAt"] > activity[login]["last_activity"]:
-                activity[login]["last_activity"] = issue["updatedAt"]
 
-    # Fetch profile names, merged counts, and closed counts in batched queries
+    # Fetch profile names, merged/closed counts, and last activity dates
     all_logins = list(activity.keys())
     profile_names = fetch_profile_names(all_logins)
     merged_counts = fetch_pr_counts(all_logins, "is:merged")
     closed_counts = fetch_pr_counts(all_logins, "is:closed is:unmerged")
+    last_activity = fetch_last_activity_dates(all_logins)
+
+    # Merge commit dates into last_activity (take the most recent)
+    for login, committed in latest_commit.items():
+        if committed > last_activity.get(login, ""):
+            last_activity[login] = committed
 
     rows = [header]
     for login in sorted(activity, key=lambda k: activity[k]["open_prs"], reverse=True):
@@ -421,7 +554,7 @@ def build_contributor_rows(
             link_count(closed_pr_url, closed_counts.get(login, 0)),
             link_count(issues_url, info["assigned_issues"]),
             fmt_time(info["oldest_open_pr"]),
-            fmt_time(info["last_activity"]),
+            fmt_time(last_activity.get(login, "")),
         ])
 
     return rows
@@ -484,9 +617,14 @@ def main() -> None:
     issues = fetch_issues()
     print(f"    Found {len(issues)} open issues")
 
+    year_start = datetime.now(timezone.utc).strftime("%Y") + "-01-01"
+    print(f"  Fetching all PR authors since {year_start} ...")
+    all_pr_authors = fetch_pr_authors_since(year_start)
+    print(f"    Found {len(all_pr_authors)} unique PR authors")
+
     pr_rows = build_pr_rows(prs)
     issue_rows = build_issue_rows(issues)
-    contributor_rows = build_contributor_rows(prs, issues)
+    contributor_rows = build_contributor_rows(prs, issues, all_pr_authors)
 
     print(f"Writing to Google Sheet {SHEET_ID} ...")
     gc = get_gspread_client()
