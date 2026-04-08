@@ -103,7 +103,7 @@ def paginate(query: str, path: list[str], variables: dict | None = None) -> list
 PR_QUERY = """
 query($owner: String!, $repo: String!, $cursor: String) {
   repository(owner: $owner, name: $repo) {
-    pullRequests(states: OPEN, first: 100, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
+    pullRequests(states: OPEN, first: 50, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
         number
@@ -129,7 +129,7 @@ query($owner: String!, $repo: String!, $cursor: String) {
         closingIssuesReferences(first: 20) {
           nodes { number }
         }
-        commits(last: 5) {
+        commits(last: 1) {
           nodes {
             commit {
               committedDate
