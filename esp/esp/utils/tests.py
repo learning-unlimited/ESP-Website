@@ -576,9 +576,8 @@ class RunInstallTestCase(unittest.TestCase):
     """Regression tests for the run_install post_migrate signal handler."""
 
     def test_sender_with_no_models_module(self):
-        """run_install should not raise when sender.models_module is None."""
-        sender = Mock(spec=[])
-        sender.models_module = None
+        """run_install should not raise when sender has no models_module attribute."""
+        sender = Mock(spec_set=[])
         # Should not raise
         run_install(sender)
 
