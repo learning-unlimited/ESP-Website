@@ -73,25 +73,36 @@ class VolunteerManageTest(ProgramFrameworkTest):
         initial_count = VolunteerRequest.objects.filter(
             program=self.program
         ).count()
-
-        timeslot = Event.objects.filter(
-            program=self.program
-        ).first()
+        initial_event_ids = set(
+            Event.objects.filter(program=self.program).values_list('id', flat=True)
+        )
 
         response = self.client.post(
             self.base_url,
             {
-                'start_time': '2020-01-01 10:00',
-                'end_time': '2020-01-01 11:00',
+                'start_time': '01/01/2020 10:00',
+                'end_time': '01/01/2020 11:00',
                 'description': 'Test volunteer request',
                 'num_volunteers': 5,
             }
         )
+        self.assertEqual(response.status_code, 200)
+
         new_count = VolunteerRequest.objects.filter(
             program=self.program
         ).count()
-        self.assertGreaterEqual(new_count, initial_count)
+        self.assertEqual(new_count, initial_count + 1)
 
+        volunteer_request = VolunteerRequest.objects.filter(
+            program=self.program
+        ).exclude(
+            timeslot__id__in=initial_event_ids
+        ).get()
+        self.assertIsNotNone(volunteer_request.timeslot)
+        self.assertNotIn(volunteer_request.timeslot.id, initial_event_ids)
+        self.assertTrue(
+            Event.objects.filter(id=volunteer_request.timeslot.id).exists()
+        )
     def test_delete_volunteer_request(self):
         """Test that a volunteer request can be deleted."""
         self.assertTrue(
