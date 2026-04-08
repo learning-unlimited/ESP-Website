@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 {% load render_qsd %}
 {% load users %}
 
@@ -47,9 +47,9 @@ td {
 {% endblock %}
 
 {% block xtrajs %}
-  <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
-  <script type="text/javascript" src="//code.highcharts.com/highcharts-more.js"></script>
-  <script type="text/javascript" src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+  <script type="text/javascript" src="https://cdn.learningu.org/highcharts/highcharts.js"></script>
+  <script type="text/javascript" src="https://cdn.learningu.org/highcharts/highcharts-more.js"></script>
+  <script type="text/javascript" src="https://cdn.learningu.org/highcharts/no-data-to-display.js"></script>
   <script type="text/javascript">base_url = "{{ program.getUrlBase }}"</script>
   <script type="text/javascript">prog_id = "{{ program.id }}"</script>
   <script type="text/javascript" src="/media/scripts/program/modules/studentregphasezero.js"></script>
@@ -61,7 +61,7 @@ td {
   </script>
 {% endblock xtrajs %}
 
-{% block content %}
+{% block module_content %}
 <h1>Manage Program Lottery for {{program.niceName}}</h1>
 
 <center>
