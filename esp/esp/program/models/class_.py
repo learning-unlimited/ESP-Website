@@ -2160,14 +2160,10 @@ class ClassCategories(models.Model):
     category = models.TextField(blank=False, help_text='The name of the category')
     symbol = models.CharField(max_length=1, default='Z', blank=False, help_text='A single letter to represent the category', validators = [RegexValidator(r'^[A-Za-z]{1}', 'Must be a single letter.')])
     seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
+    is_lunch = models.BooleanField(default=False, help_text='True if this category represents Lunch')
 
     def used_by_classes(self):
         return ClassSubject.objects.filter(category=self).exists()
-
-    @property
-    def is_lunch(self):
-        """Return True if this category represents Lunch (case-insensitive)."""
-        return self.category is not None and self.category.lower() == 'lunch'
 
     class Meta:
         verbose_name_plural = 'Class categories'

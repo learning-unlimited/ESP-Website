@@ -325,7 +325,7 @@ class SubjectAdmin(admin.ModelAdmin):
 admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):
-     list_display = ('category', 'symbol', 'seq', )
+    list_display = ('category', 'symbol', 'seq', 'is_lunch')
 
      def get_readonly_fields(self, request, obj=None):
          if obj:  # Editing an existing object
