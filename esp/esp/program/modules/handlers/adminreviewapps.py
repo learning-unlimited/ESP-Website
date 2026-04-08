@@ -179,7 +179,6 @@ class AdminReviewApps(ProgramModuleObj):
             student.app = student.studentapplication_set.get(program = self.program)
         except StudentApplication.DoesNotExist:
             student.app = None
-            assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
 
         return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student, 'program': prog})
