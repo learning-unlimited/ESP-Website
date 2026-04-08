@@ -851,27 +851,67 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         cls = classes[0]
         saved = False
+        # Track validation errors per section: {section_id: error_message}
+        errors = {}
 
         if request.method == 'POST':
+            # Track if any errors occurred during processing
+            any_errors = False
+
             for sec in cls.sections.all():
                 key = 'capacity_%d' % sec.id
                 if key in request.POST:
                     try:
                         new_cap_str = request.POST[key].strip()
+
+                        # Handle empty string: revert to default calculated capacity
                         if not new_cap_str:
                             sec.max_class_capacity = None
+                            sec.save()
                         else:
-                            new_cap = int(new_cap_str)
-                            if new_cap >= 0:
-                                sec.max_class_capacity = new_cap
-                        sec.save()
-                    except ValueError:
-                        pass
-            saved = True
+                            # Attempt to parse the input as an integer
+                            try:
+                                new_cap = int(new_cap_str)
+                            except ValueError:
+                                # Invalid input (non-integer): record error and skip this section
+                                errors[sec.id] = "Capacity must be a whole number (e.g., 20, not '20.5' or 'abc')."
+                                any_errors = True
+                                continue  # Move to next section without saving
+
+                            # Validate that capacity is not negative
+                            if new_cap < 0:
+                                # Reject negative values
+                                errors[sec.id] = "Capacity cannot be negative."
+                                any_errors = True
+                                continue  # Skip save for this section
+
+                            # Validate that capacity is not below current enrollment
+                            current_enrolled = sec.count_enrolled_students()
+                            if new_cap < current_enrolled:
+                                # Capacity would be below current enrollment: block the save
+                                errors[sec.id] = (
+                                    f"Capacity cannot be less than the {current_enrolled} "
+                                    "currently enrolled students in this section."
+                                )
+                                any_errors = True
+                                continue  # Skip save for this section
+
+                            # Validation passed: update and save the section
+                            sec.max_class_capacity = new_cap
+                            sec.save()
+
+                    except Exception as e:
+                        # Catch any unexpected errors to prevent a 500 error
+                        errors[sec.id] = f"An unexpected error occurred: {str(e)}"
+                        any_errors = True
+
+            # Only set saved=True if NO sections had errors
+            saved = not any_errors and len(errors) == 0
 
         context = {
             'cls': cls,
             'saved': saved,
+            'errors': errors,  # Pass error dict so template can display per-section errors
             'one': one,
             'two': two,
             'module': self,
