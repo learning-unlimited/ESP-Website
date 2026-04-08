@@ -482,3 +482,225 @@ class FormBuilderViewTest(TestCase):
         self.client.login(username='builder_student', password='password')
         response = self.client.get('/customforms/create')
         self.assertRedirects(response, '/accounts/login/?next=/customforms/create')
+
+class EmptyFormTitleValidationTest(TestCase):
+    """Tests for validating that form title cannot be empty."""
+
+    def setUp(self):
+        """Create a test admin account."""
+        self.admin, _ = ESPUser.objects.get_or_create(username='validation_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+
+    def test_create_form_with_empty_title(self):
+        """Test that creating a form with an empty title is rejected."""
+        self.client.login(username=self.admin.username, password='password')
+
+        # Form data with empty title
+        form_data = {
+            'title': '',
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Test', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Test'
+        }
+
+        response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        response_data = json.loads(response.content.decode('UTF-8'))
+        self.assertIn('message', response_data)
+        self.assertIn('required', response_data['message'].lower())
+
+        # Verify no form was created
+        self.assertEqual(Form.objects.filter(title='').count(), 0)
+
+    def test_create_form_with_whitespace_only_title(self):
+        """Test that creating a form with whitespace-only title is rejected."""
+        self.client.login(username=self.admin.username, password='password')
+
+        # Form data with whitespace-only title
+        form_data = {
+            'title': '   ',
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Test', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Test'
+        }
+
+        response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        response_data = json.loads(response.content.decode('UTF-8'))
+        self.assertIn('message', response_data)
+        self.assertIn('required', response_data['message'].lower())
+
+    def test_create_form_with_missing_or_null_title(self):
+        """Test that missing/null title values are rejected with a clear validation error."""
+        self.client.login(username=self.admin.username, password='password')
+
+        base_form_data = {
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Test', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Test'
+        }
+
+        form_data_missing = dict(base_form_data)
+        response_missing = self.client.post("/customforms/submit/", json.dumps(form_data_missing), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response_missing.status_code, 400)
+        response_missing_data = json.loads(response_missing.content.decode('UTF-8'))
+        self.assertIn('message', response_missing_data)
+        self.assertIn('required', response_missing_data['message'].lower())
+
+        form_data_null = dict(base_form_data)
+        form_data_null['title'] = None
+        response_null = self.client.post("/customforms/submit/", json.dumps(form_data_null), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response_null.status_code, 400)
+        response_null_data = json.loads(response_null.content.decode('UTF-8'))
+        self.assertIn('message', response_null_data)
+        self.assertIn('required', response_null_data['message'].lower())
+
+    def test_modify_form_with_empty_title(self):
+        """Test that modifying a form to have an empty title is rejected."""
+        self.client.login(username=self.admin.username, password='password')
+
+        # First create a valid form
+        existing_form = Form.objects.create(
+            title='Valid Form', description='Test', created_by=self.admin,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+
+        # Try to modify it with an empty title
+        modify_data = {
+            'form_id': existing_form.id,
+            'title': '',
+            'desc': 'Modified description',
+            'perms': '',
+            'success_message': 'OK',
+            'success_url': '/',
+            'link_type': '-1',
+            'link_id': -1,
+            'pages': []
+        }
+
+        response = self.client.post("/customforms/modify/", json.dumps(modify_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        response_data = json.loads(response.content.decode('UTF-8'))
+        self.assertIn('message', response_data)
+        self.assertIn('required', response_data['message'].lower())
+
+        # Verify the form title wasn't changed
+        existing_form.refresh_from_db()
+        self.assertEqual(existing_form.title, 'Valid Form')
+
+    def test_create_form_with_valid_title(self):
+        """Test that creating a form with a valid title succeeds."""
+        self.client.login(username=self.admin.username, password='password')
+
+        # Form data with valid title
+        form_data = {
+            'title': 'Valid Form Title',
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Test', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Test'
+        }
+
+        response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(str(response.content, encoding='UTF-8'), "OK")
+
+        # Verify form was created with correct title
+        forms = Form.objects.filter(title='Valid Form Title')
+        self.assertTrue(forms.exists())
+        self.assertEqual(forms.count(), 1)
+
+    def test_modify_form_truncates_and_strips_title(self):
+        """Test that modifying a form normalizes title by trimming and truncating to max length."""
+        self.client.login(username=self.admin.username, password='password')
+
+        existing_form = Form.objects.create(
+            title='Valid Form', description='Test', created_by=self.admin,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+
+        max_len = Form._meta.get_field('title').max_length
+        long_title = '  ' + ('A' * (max_len + 10)) + '  '
+
+        modify_data = {
+            'form_id': existing_form.id,
+            'title': long_title,
+            'desc': 'Modified description',
+            'perms': '',
+            'success_message': 'OK',
+            'success_url': '/',
+            'link_type': '-1',
+            'link_id': -1,
+            'pages': []
+        }
+
+        response = self.client.post("/customforms/modify/", json.dumps(modify_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(str(response.content, encoding='UTF-8'), 'OK')
+
+        existing_form.refresh_from_db()
+        self.assertEqual(existing_form.title, 'A' * max_len)
