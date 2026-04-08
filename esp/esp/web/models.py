@@ -39,39 +39,44 @@ from django.db import models
 from django.db.models.query import Q
 
 from esp.db.fields import AjaxForeignKey
-from argcache import cache_function
+
 
 class NavBarCategory(models.Model):
     include_auto_links = models.BooleanField(default=False)
     name = models.CharField(max_length=64)
-    path = models.CharField(max_length=64, default='', help_text='Matches the beginning of the URL (without the /).  Example: learn/splash')
+    path = models.CharField(
+        max_length=64,
+        default='',
+        help_text='Matches the beginning of the URL (without the /).  Example: learn/splash'
+    )
     long_explanation = models.TextField()
 
     def get_navbars(self):
         return self.navbarentry_set.all().select_related('category').order_by('sort_rank')
 
-    @cache_function
     def from_request(section, path):
         """ A function to guess the appropriate navigation category when one
             is not provided in the context. """
 
         if path:
-            #   See if there's a category whose path matches the desired URL.
-            categories = NavBarCategory.objects.extra(select={'length':'Length(path)'}).order_by('-length')
+            # See if there's a category whose path matches the desired URL.
+            categories = NavBarCategory.objects.extra(
+                select={'length': 'Length(path)'}
+            ).order_by('-length')
+
             for cat in categories:
                 if cat.path and path.lower().startswith(cat.path.lower()):
                     return cat
 
         if section:
-            #   See if there's a category whose name matches the desired section.
+            # See if there's a category whose name matches the desired section.
             categories = NavBarCategory.objects.filter(name=section)
             if categories.count() > 0:
                 return categories[0]
 
-        #   If all else fails, make something up.
+        # If all else fails, return default
         return default_navbarcategory()
 
-    from_request.depend_on_model('web.NavBarCategory')
     from_request = staticmethod(from_request)
 
     def __str__(self):
@@ -80,15 +85,15 @@ class NavBarCategory(models.Model):
     class Meta:
         verbose_name_plural = 'Nav bar categories'
 
+
 def default_navbarcategory():
     """ Default navigation category. """
     if not hasattr(NavBarCategory, '_default'):
         if not NavBarCategory.objects.exists():
-            # We shouldn't need this before we've had a chance to run install()
-            # But Django was trying to call it anyway
             return None
         NavBarCategory._default = NavBarCategory.objects.filter(name='default')[0]
     return NavBarCategory._default
+
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
@@ -98,7 +103,11 @@ class NavBarEntry(models.Model):
     text = models.CharField(max_length=64)
     indent = models.BooleanField(default=False)
 
-    category = models.ForeignKey(NavBarCategory, default=default_navbarcategory, on_delete=models.CASCADE)
+    category = models.ForeignKey(
+        NavBarCategory,
+        default=default_navbarcategory,
+        on_delete=models.CASCADE
+    )
 
     def can_edit(self, user):
         return user.isAdmin()
@@ -118,9 +127,11 @@ class NavBarEntry(models.Model):
     class Meta:
         verbose_name_plural = 'Nav bar entries'
 
+
 def install():
     # Add a default nav bar category, to let QSD editing work.
     logger.info("Installing esp.web initial data...")
+
     if not NavBarCategory.objects.filter(name='default').exists():
         NavBarCategory.objects.create(
             name='default',
