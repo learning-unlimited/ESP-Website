@@ -1478,6 +1478,8 @@ $j(document).ready(function () {
     setup_search();
     fetch_all();
     
-    //  Update enrollment counts and list of students once per minute.
-    setInterval(refresh_counts, 300000);
+    //  Update enrollment counts periodically (default: every 30 seconds).
+    //  The interval can be configured via the 'onsite_refresh_interval' program Tag.
+    var refresh_interval = typeof onsite_refresh_ms !== 'undefined' ? onsite_refresh_ms : 30000;
+    setInterval(refresh_counts, refresh_interval);
 });
