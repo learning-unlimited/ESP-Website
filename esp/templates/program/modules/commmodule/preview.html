@@ -82,6 +82,8 @@ users to whom you are sending this email.
 <br />
 </p>
 
+<p><strong>Scheduled send:</strong> {% if scheduled_send_at %}{{ scheduled_send_at }}{% else %}Now{% endif %}</p>
+
 <br />
 <br />
 <form action="/manage/{{program.getUrlBase}}/maincomm2" method="post" name="mainback">
@@ -117,6 +119,8 @@ users to whom you are sending this email.
 <input type="submit" value="{% if confirm_send_required %}Send anyway{% else %}Send Message!{% endif %}" id="submitform" class="btn btn-primary" />
 </form>
 <span id="send-test-email-status" style="margin-left: 10px;"></span>
+
+<input type="hidden" name="scheduled_send_at" value="{{ scheduled_send_at|default:'' }}" />
 
 <script>
 $j(function() {
