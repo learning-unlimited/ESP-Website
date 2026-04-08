@@ -1,29 +1,40 @@
-<ul class="nav nav-list sidebar" id="nav_sidebar">
+{# Collapsible sidebar navigation - ReadTheDocs style #}
+<ul class="nav nav-list sidebar sidebar-collapsible" id="nav_sidebar">
     {% for section in theme.nav_structure %}
-    {% if section.header %}
-    <li class="nav-header">
-        {# links on headers are optional #}
-        {% if section.header_link %}
-        <a href="{{section.header_link}}">
-        {% endif %}
-            {{section.header}}
-        {% if section.header_link %}
-        </a>
-        {% endif %}
-    </li>
-    {% endif %}
-
-    {% for item in section.links %}
-    {# TODO(benkraft): allow adding classes to items so we can do logged-in only #}
-    <li>
-        <a href="{{item.link}}">
-            {% if item.icon %}
-            <i class="glyphicon glyphicon-{{item.icon}}"></i>
+    <li class="sidebar-section" data-section-index="{{ forloop.counter0 }}">
+        {% if section.header %}
+        <div class="sidebar-section-header">
+            {% if section.header_link %}
+            <a href="{{section.header_link}}" class="sidebar-header-link">
+                {{section.header}}
+            </a>
+            {% else %}
+            <span class="sidebar-header-text">{{section.header}}</span>
             {% endif %}
-            {{item.text}}
-        </a>
+            {% if section.links %}
+            <span class="sidebar-toggle" role="button" aria-expanded="false"
+                aria-label="Toggle {{section.header}} section">
+                <i class="glyphicon glyphicon-chevron-right sidebar-chevron"></i>
+            </span>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if section.links %}
+        <ul class="sidebar-children" style="display: none;">
+            {% for item in section.links %}
+            <li class="sidebar-child-item">
+                <a href="{{item.link}}">
+                    {% if item.icon %}
+                    <i class="glyphicon glyphicon-{{item.icon}}"></i>
+                    {% endif %}
+                    {{item.text}}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
     </li>
-    {% endfor %}
     {% endfor %}
 </ul>
 
@@ -35,33 +46,43 @@
             </a>
         </div>
         <div id="collapseOne" class="accordion-body collapse">
-            <ul class="nav nav-list sidebar">
-            {% for section in theme.nav_structure %}
-            {% if section.header %}
-            <li class="nav-header">
-                {# links on headers are optional #}
-                {% if section.header_link %}
-                <a href="{{section.header_link}}">
-                {% endif %}
-                    {{section.header}}
-                {% if section.header_link %}
-                </a>
-                {% endif %}
-            </li>
-            {% endif %}
-
-            {% for item in section.links %}
-            {# TODO(benkraft): allow adding classes to items so we can do logged-in only #}
-            <li>
-                <a href="{{item.link}}">
-                    {% if item.icon %}
-                    <i class="glyphicon glyphicon-{{item.icon}}"></i>
+            <ul class="nav nav-list sidebar sidebar-collapsible">
+                {% for section in theme.nav_structure %}
+                <li class="sidebar-section" data-section-index="{{ forloop.counter0 }}">
+                    {% if section.header %}
+                    <div class="sidebar-section-header">
+                        {% if section.header_link %}
+                        <a href="{{section.header_link}}" class="sidebar-header-link">
+                            {{section.header}}
+                        </a>
+                        {% else %}
+                        <span class="sidebar-header-text">{{section.header}}</span>
+                        {% endif %}
+                        {% if section.links %}
+                        <span class="sidebar-toggle" role="button" aria-expanded="false"
+                            aria-label="Toggle {{section.header}} section">
+                            <i class="glyphicon glyphicon-chevron-right sidebar-chevron"></i>
+                        </span>
+                        {% endif %}
+                    </div>
                     {% endif %}
-                    {{item.text}}
-                </a>
-            </li>
-            {% endfor %}
-            {% endfor %}
+
+                    {% if section.links %}
+                    <ul class="sidebar-children" style="display: none;">
+                        {% for item in section.links %}
+                        <li class="sidebar-child-item">
+                            <a href="{{item.link}}">
+                                {% if item.icon %}
+                                <i class="glyphicon glyphicon-{{item.icon}}"></i>
+                                {% endif %}
+                                {{item.text}}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </li>
+                {% endfor %}
             </ul>
         </div>
     </div>

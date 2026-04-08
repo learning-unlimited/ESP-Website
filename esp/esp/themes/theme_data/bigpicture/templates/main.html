@@ -12,6 +12,11 @@
 </style>
 {% endblock stylesheets %}
 
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/theme/sidebar.js"></script>
+{% endblock javascript %}
+
 {% block body %}
 
 <a href="#main" class="skip-nav">Skip to main content</a>
