@@ -184,7 +184,7 @@ class AutoschedulerController(object):
 
             def format_row(row):
                 scorer, weight, delta = row
-                return f"{scorer} (wt {weight}): chg {delta:.3f} -> {weight * delta // total_wt:.3f}"
+                return f"{scorer} (wt {weight}): chg {delta:.3f} -> {weight * delta / total_wt:.3f}"
             new_row = []
             if len(diffs) > 6:
                 new_row += [format_row(r) for r in diffs[:3]]

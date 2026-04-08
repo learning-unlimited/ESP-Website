@@ -317,7 +317,7 @@ def ensure_section_not_moved(section, as_section):
 def unschedule_section(
         section, ajax_change_log, unscheduled_sections_log=None):
     """Unschedules a ClassSection and records it as needed."""
-    logger.info(f"Unscheduling {section.emailcode()}")
+    logger.info("Unscheduling %s", section.emailcode())
     section.clear_meeting_times()
     section.clearRooms()
     if unscheduled_sections_log is not None:
