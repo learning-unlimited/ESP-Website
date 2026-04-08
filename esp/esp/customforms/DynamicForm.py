@@ -17,7 +17,9 @@ from esp.utils.forms import DummyField
 from esp.users.models import ContactInfo, ESPUser
 from argcache import cache_function
 from esp.program.models import Program
-
+import logging
+from django.db import transaction
+logger = logging.getLogger(__name__)
 from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
@@ -393,34 +395,34 @@ class ComboForm(SessionWizardView):
 
         # Create/update instances corresponding to link fields
         # Also, populate 'data' with foreign-keys that need to be inserted into the response table
-        for k, v in link_models_cache.items():
-            if v['instance'] is not None:
-                # TODO-> the following update won't work for fk fields.
-                v['instance'].__dict__.update(v['data'])
-                v['instance'].save()
-                curr_instance = v['instance']
-            else:
-                try:
-                    new_instance = v['model'].objects.create(**v['data'])
-                except Exception:
-                    # show some error message
-                    pass
-            if v['instance'] is not None:
-                data[f'link_{v["model"].__name__}'] = v['instance']
+        with transaction.atomic():
+            for k, v in link_models_cache.items():
+                if v['instance'] is not None:
+                    v['instance'].__dict__.update(v['data'])
+                    v['instance'].save()
+                else:
+                    try:
+                        new_instance = v['model'].objects.create(**v['data'])
+                        v['instance'] = new_instance
+                    except Exception as e:
+                        logger.error(f"Failed to create instance for {v['model'].__name__}: {e}")
+                        raise
 
-        # Saving response
-        initial_keys = list(data.keys())
-        for key in initial_keys:
-            #   Check that we didn't already handle this value as a linked field
-            if key.split('_')[0] in cf_cache.link_fields:
-                del data[key]
-            #   Check that this value didn't come from a dummy field
-            if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]]['typeMap'] == DummyField:
-                del data[key]
-        # Delete old response(s) if not anonymous (we only want one response per user)
-        if not self.form.anonymous:
-            dynModel.objects.filter(user=self.curr_request.user).delete()
-        dynModel.objects.create(**data)
+                if v['instance'] is not None:
+                    data[f'link_{v["model"].__name__}'] = v['instance']
+
+            initial_keys = list(data.keys())
+            for key in initial_keys:
+                if key.split('_')[0] in cf_cache.link_fields:
+                    del data[key]
+                if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]][
+                    'typeMap'] == DummyField:
+                    del data[key]
+
+            if not self.form.anonymous:
+                dynModel.objects.filter(user=self.curr_request.user).delete()
+
+            dynModel.objects.create(**data)
         return HttpResponseRedirect(kwargs.get('redirect_url', f'/customforms/success/{self.form.id}/'))
 
     def render_to_response(self, context):
