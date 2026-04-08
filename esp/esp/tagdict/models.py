@@ -35,7 +35,13 @@ class Tag(models.Model):
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
 
     def __str__(self):
-        return f"{self.key}: {self.value} ({self.target})"
+        key = self.key or ""
+        val = self.value or ""
+
+        if len(val) > 50:
+            val = val[:50] + "..."
+
+        return f"{key}: {val}"
 
     EMPTY_TAG = " "
 
