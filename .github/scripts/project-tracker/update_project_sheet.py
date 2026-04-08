@@ -111,6 +111,9 @@ query($owner: String!, $repo: String!, $cursor: String) {
         author { login }
         createdAt
         updatedAt
+        changedFiles
+        additions
+        deletions
         labels(first: 50) { nodes { name } }
         reviewRequests(first: 20) {
           nodes {
@@ -223,6 +226,7 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
     """Build the rows for the Pull Requests sheet."""
     header = [
         "PR #", "Title", "Author", "Opened", "Last Updated",
+        "Files Changed", "Lines Changed",
         "Reviewers", "Linked Issues", "Labels",
     ]
     rows = [header]
@@ -254,6 +258,8 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
             link_profile(author),
             fmt_time(pr["createdAt"]),
             fmt_time(pr["updatedAt"]),
+            pr.get("changedFiles", 0),
+            f"+{pr.get('additions', 0)} / -{pr.get('deletions', 0)}",
             ", ".join(sorted(reviewers)),
             ", ".join(linked_issues),
             ", ".join(labels),
