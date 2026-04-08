@@ -6,7 +6,7 @@ SITE_INFO = (1, 'devsite.learningu.org', 'LU Dev Site')
 CACHE_PREFIX = "ludev"
 PROJECT_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 USE_MAILMAN = False
-DEBUG = True
+DEBUG = False
 SHOW_TEMPLATE_ERRORS = DEBUG
 CACHE_DEBUG = False
 
