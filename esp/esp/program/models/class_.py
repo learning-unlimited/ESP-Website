@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 import random
 import re
+import copy
 
 # django Util
 from django.conf import settings
@@ -163,6 +164,9 @@ class ClassManager(Manager):
 
     @cache_function
     def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None, order_args_override=None):
+
+        catalog_cached.depend_on_model('program.ClassSubject')
+        catalog_cached.depend_on_m2m('program.ClassSubject', 'secondary_categories')
         """ Return a queryset of classes for view in the catalog.
 
         In addition to just giving you the classes, it also
@@ -181,7 +185,7 @@ class ClassManager(Manager):
         if not force_all:
             classes = classes.filter(self.approved(return_q_obj=True))
 
-        classes = classes.select_related('category')
+        classes = classes.select_related('category').prefetch_related('secondary_categories')
 
         if program is not None:
             classes = classes.filter(parent_program = program)
@@ -224,6 +228,21 @@ class ClassManager(Manager):
         classes = classes.distinct()
         classes = list(classes)
 
+        if initial_queryset is None:
+            expanded_classes = []
+  
+            for cls in classes:
+                # original category
+                expanded_classes.append(cls)
+  
+                # secondary categories
+                for sec_cat in cls.secondary_categories.all():
+                    clone = copy.copy(cls)
+                    clone.category = sec_cat
+                    expanded_classes.append(clone)
+  
+            classes = expanded_classes
+
         #   Filter out duplicates by ID.  This is necessary because Django's ORM
         #   adds the related fields (e.g. sections__meeting_times) to the SQL
         #   SELECT statement and doesn't include them in the result.
@@ -231,17 +250,21 @@ class ClassManager(Manager):
         counter = 0
         index = 0
         max_count = len(classes)
-        id_list = []
-        while counter < max_count:
-            cls = classes[index]
-            cls._temp_index = counter
-            if cls.id not in id_list:
-                id_list.append(cls.id)
-                index += 1
-            else:
-                classes.remove(cls)
-            counter += 1
+        seen_keys = set()
 
+        while counter < max_count:
+          cls = classes[index]
+          cls._temp_index = counter
+
+          key = (cls.id, getattr(cls.category, "id", None))
+
+          if key not in seen_keys:
+            seen_keys.add(key)
+            index += 1
+          else:
+            classes.remove(cls)
+
+          counter += 1
         # All class ID's; used by later query ugliness:
         class_ids = [x.id for x in classes]
 
@@ -1435,11 +1458,30 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     """ An ESP course.  The course includes one or more ClassSections. """
 
     #customforms info
-    form_link_name='Course'
+    form_link_name = 'Course'
 
     title = models.TextField()
-    parent_program = models.ForeignKey(Program, on_delete=models.CASCADE)
-    category = models.ForeignKey('ClassCategories', related_name = 'cls', on_delete=models.CASCADE)
+
+    parent_program = models.ForeignKey(
+        Program,
+        on_delete=models.CASCADE
+    )
+
+    # Primary category
+    category = models.ForeignKey(
+        'ClassCategories',
+        related_name='cls',
+        on_delete=models.CASCADE
+    )
+
+    # Secondary categories
+    secondary_categories = models.ManyToManyField(
+        'ClassCategories',
+        blank=True,
+        related_name='secondary_classsubjects',
+        help_text='Additional categories this class can appear under'
+    )
+
     class_info = models.TextField(blank=True)
     teachers = models.ManyToManyField(ESPUser)
     allow_lateness = models.BooleanField(default=False)
@@ -1646,7 +1688,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return self._teachers
 
         return self.teachers.all().order_by('last_name')
-    get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
 
     def students_dict(self):
         result = PropertyDict({})
@@ -1823,7 +1864,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return scrmi.temporarily_full_text
 
         if user.getGrade(self.parent_program) < self.grade_min or \
-               user.getGrade(self.parent_program) > self.grade_max:
+                user.getGrade(self.parent_program) > self.grade_max:
             if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
                 return 'You are not in the requested grade range for this class.'
 
@@ -2171,7 +2212,6 @@ class ClassCategories(models.Model):
 
     def __str__(self):
         return f'{self.category} ({self.symbol})'
-
 
 @cache_function
 def sections_in_program_by_id(prog):
