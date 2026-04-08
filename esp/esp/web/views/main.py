@@ -146,7 +146,7 @@ def teach_register(request):
     if not request.user.is_authenticated:
         return HttpResponseRedirect(
             '%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME,
-                          quote(request.get_full_path())))
+                          quote('/teach/register/')))
     # isAdministrator() with no program arg checks for global admin role,
     # allowing all site admins through regardless of program context.
     if request.user.isTeacher() or request.user.isAdministrator():
