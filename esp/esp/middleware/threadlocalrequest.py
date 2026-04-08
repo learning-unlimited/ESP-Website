@@ -1,4 +1,4 @@
-## Code from <http://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
+## Code from <https://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
 ## Modified to not use (process-)global variables
 
 import logging
@@ -51,3 +51,5 @@ class ThreadLocals(MiddlewareMixin):
     """
     def process_request(self, request):
         _threading_local.request = request
+        request._active_program_tag_keys = set()
+        request._active_global_tag_keys = set()

@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from esp.accounting.models import LineItemType, LineItemOptions
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.forms.lineitems import OptionFormset, LineItemForm, LineItemImportForm, exclude_line_items
 from esp.utils.web import render_to_response
 
@@ -50,6 +51,19 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             "seq": -9999,
             "choosable": 0,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "lineitems":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_lineitems",
+            url="/manage/%s/lineitems" % base,
+            title="Line Items Management",
+            category="Configure",
+            keywords=["line items", "extra costs", "fees", "payments", "accounting"],
+        )
 
     @main_call
     @needs_admin

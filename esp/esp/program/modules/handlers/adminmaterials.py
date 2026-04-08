@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject
 
@@ -51,6 +52,19 @@ class AdminMaterials(ProgramModuleObj):
             "seq": -9999,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "get_materials":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_get_materials",
+            url="/manage/%s/get_materials" % base,
+            title="Documents",
+            category="Logistics",
+            keywords=["documents", "files", "upload", "download", "materials"],
+        )
 
     @main_call
     @needs_admin
