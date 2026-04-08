@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from collections import defaultdict
+from collections.abc import Hashable
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.middleware import ESPError
@@ -45,7 +46,6 @@ from django.db.models import Count
 from django.db.models.query import Q
 from django.contrib.auth.models import Group
 
-import collections
 import re
 
 class UserSearchController(object):
@@ -378,7 +378,7 @@ class UserSearchController(object):
         clauses_hashable = []
         clauses_unhashable = []
         for clause in qobject.children:
-            if isinstance(clause, Q) or (isinstance(clause, tuple) and isinstance(clause[1], collections.Hashable)):
+            if isinstance(clause, Q) or (isinstance(clause, tuple) and isinstance(clause[1], Hashable)):
                 clauses_hashable.append(clause)
             else:
                 clauses_unhashable.append(clause)
