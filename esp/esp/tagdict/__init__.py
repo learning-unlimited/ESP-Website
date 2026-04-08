@@ -1025,7 +1025,7 @@ all_program_tags = {
     'moderator_title': {
         'is_boolean': False,
         'help_text': 'The name used to refer to a section moderator throughout the website.',
-        'default': 'Moderator',
+        'default': 'Observer',
         'category': 'teach',
         'is_setting': True,
     },

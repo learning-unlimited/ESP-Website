@@ -11,10 +11,8 @@ def set_my_defaults(apps, schema_editor):
         for pm in old_pms:
             if pm.module_type == "teach":
                 pm.handler = "TeacherCustomFormModule"
-                pm.link_title = "Additional Teacher Information"
             else:
                 pm.handler = "StudentCustomFormModule"
-                pm.link_title = "Additional Student Information"
             pm.save()
 
 def reverse_func(apps, schema_editor):
