@@ -49,6 +49,8 @@ class StudentProgramAppTest(TestCase):
         result = self.app.waitlisted_to_class()
         self.assertEqual(len(result), 0)
 
+# Tests for StudentClassApp focusing on admission status transitions
+# and ensuring correct behavior under repeated and edge-case operations
 
 class StudentClassAppTest(TestCase):
     def setUp(self):
@@ -82,10 +84,10 @@ class StudentClassAppTest(TestCase):
             student_preference=1,
         )
 
-    def test_str(self):
+    def test_str_contains_student(self):
         result = str(self.class_app)
-        self.assertIsNotNone(result)
-
+        self.assertIn('classstudent', result)
+   
     def test_admit(self):
         self.class_app.admit()
         self.assertEqual(self.class_app.admission_status, StudentClassApp.ADMITTED)
@@ -98,3 +100,16 @@ class StudentClassAppTest(TestCase):
     def test_waitlist(self):
         self.class_app.waitlist()
         self.assertEqual(self.class_app.admission_status, StudentClassApp.WAITLIST)
+
+    def test_admit_idempotent(self):
+        self.class_app.admit()
+        self.class_app.admit()
+        self.assertEqual(self.class_app.admission_status, StudentClassApp.ADMITTED)
+        
+    def test_default_status_unassigned(self):
+        self.assertEqual(self.class_app.admission_status, StudentClassApp.UNASSIGNED)
+        
+    def test_waitlist_then_unadmit(self):
+        self.class_app.waitlist()
+        self.class_app.unadmit()
+        self.assertEqual(self.class_app.admission_status, StudentClassApp.UNASSIGNED)
