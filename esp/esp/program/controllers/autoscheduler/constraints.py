@@ -105,7 +105,7 @@ class CompositeConstraint(BaseConstraint):
         else:
             constraints_to_use = set(constraint_names + required_constraints)
         for constraint in constraints_to_use:
-            logger.info(f"Using constraint {constraint}")
+            logger.info("Using constraint %s", constraint)
             self.constraints.append(
                 available_constraints[constraint](**kwargs))
 

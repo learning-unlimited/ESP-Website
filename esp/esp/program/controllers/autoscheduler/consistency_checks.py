@@ -225,7 +225,7 @@ class ConsistencyChecker:
             for teacher in section.teachers:
                 if section.id not in teacher.taught_sections:
                     raise ConsistencyError(
-                        f"Teacher{teacher.id} is teaching section {section.id} but didn't know it")
+                        f"Teacher {teacher.id} is teaching section {section.id} but didn't know it")
 
     def check_timeslot_consistency(self, schedule):
         """Checks that timeslots are sorted and non-overlapping."""
