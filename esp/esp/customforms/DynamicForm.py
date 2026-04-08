@@ -20,10 +20,14 @@ from esp.program.models import Program
 
 from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, FieldDoesNotExist
+from django.db.models.query import QuerySet
 from esp.middleware import ESPError
 
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class BaseCustomForm(BetterForm):
     """
@@ -394,17 +398,53 @@ class ComboForm(SessionWizardView):
         # Create/update instances corresponding to link fields
         # Also, populate 'data' with foreign-keys that need to be inserted into the response table
         for k, v in link_models_cache.items():
+            m2m_data = {}
+            clean_data = {}
+            model_meta = v['model']._meta
+
+            # Separate M2M fields from standard/FK fields
+            for field_name, value in v['data'].items():
+                try:
+                    field_obj = model_meta.get_field(field_name)
+                    if field_obj.many_to_many:
+                        m2m_data[field_name] = value
+                    else:
+                        clean_data[field_name] = value
+                except FieldDoesNotExist:
+                    logger.warning(
+                        "Skipping unknown linked field '%s' on model %s",
+                        field_name,
+                        v['model'].__name__,
+                    )
+                    continue
+
             if v['instance'] is not None:
-                # TODO-> the following update won't work for fk fields.
-                v['instance'].__dict__.update(v['data'])
+                # Update attributes using setattr to correctly trigger Django field
+                # descriptors (like FK caching), which __dict__ silently breaks.
+                for field_name, value in clean_data.items():
+                    setattr(v['instance'], field_name, value)
                 v['instance'].save()
-                curr_instance = v['instance']
             else:
                 try:
-                    new_instance = v['model'].objects.create(**v['data'])
+                    v['instance'] = v['model'].objects.create(**clean_data)
                 except Exception:
-                    # show some error message
-                    pass
+                    logger.exception(
+                        "Failed to create linked model %s",
+                        v['model'].__name__,
+                    )
+                    continue
+
+            for field_name, value in m2m_data.items():
+                if value is None:
+                    normalized_value = []
+                elif isinstance(value, QuerySet):
+                    normalized_value = value
+                elif isinstance(value, (list, tuple, set)):
+                    normalized_value = list(value)
+                else:
+                    normalized_value = [value]
+                getattr(v['instance'], field_name).set(normalized_value)
+
             if v['instance'] is not None:
                 data[f'link_{v["model"].__name__}'] = v['instance']
 
@@ -565,15 +605,20 @@ class FormHandler:
                         else:
                             # Get the instance from the model method that should have been defined
                             link_models_cache[v['model'].__name__] = getattr(v['model'], 'cf_link_instance')(self.request)
-                        if link_models_cache[v['model'].__name__] is not None:
-                            link_models_cache[v['model'].__name__] = link_models_cache[v['model'].__name__].__dict__
-                    if link_models_cache[v['model'].__name__] is not None:
+                    instance = link_models_cache[v['model'].__name__]
+                    if instance is not None:
                         if not isinstance(v['model_field'], list):
                             # Simple field
-                            initial_data[handler.seq].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
+                            try:
+                                value = getattr(instance, v['model_field'])
+                            except AttributeError:
+                                value = getattr(instance, f"{v['model_field']}_id", None)
+                            initial_data[handler.seq].update({k: value})
                         else:
                             # Compound field. Needs to be passed a list of values.
-                            initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
+                            initial_data[handler.seq].update({
+                                k: [getattr(instance, val) for val in v['model_field']]
+                            })
         return initial_data
 
     def get_initial_data(self, initial_data=None):
