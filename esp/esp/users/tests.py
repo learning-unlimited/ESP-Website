@@ -16,8 +16,17 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
+from esp.users.models import (
+    User,
+    ESPUser,
+    UserForwarder,
+    StudentInfo,
+    Permission,
+    Record,
+    RecordType,
+    PersistentQueryFilter,
+)
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -797,6 +806,44 @@ class PermissionTestCase(TestCase):
         implications = ['Teacher/Classes/Create/OpenClass']
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
+
+    def testFilterPermissionAppliesToMatchingUsers(self):
+        perm_name = 'Student/MainPage'
+        # Create a filter that matches self.user only
+        from django.db.models import Q
+        filter_q = Q(id=self.user.pk)
+        pqf = PersistentQueryFilter.getFilterFromQ(filter_q, ESPUser, description='Only self.user')
+
+        Permission.objects.create(
+            permission_type=perm_name,
+            program=self.program,
+            user_filter=pqf,
+        )
+
+        other_user = ESPUser.objects.create(username='other_for_filter')
+        self.assertTrue(self.user_has_perm_for_program(perm_name))
+        self.assertFalse(Permission.user_has_perm(other_user, perm_name, program=self.program))
+
+    def testFilterPermissionControlsDeadline(self):
+        perm_name = 'Student/MainPage'
+        from django.db.models import Q
+        filter_q = Q(id=self.user.pk)
+        pqf = PersistentQueryFilter.getFilterFromQ(filter_q, ESPUser, description='Only self.user')
+
+        start = datetime.datetime.now() - datetime.timedelta(days=1)
+        end = datetime.datetime.now() + datetime.timedelta(days=1)
+        Permission.objects.create(
+            permission_type=perm_name,
+            program=self.program,
+            user_filter=pqf,
+            start_date=start,
+            end_date=end,
+        )
+
+        self.assertEqual(
+            Permission.user_deadline_when(self.user, perm_name, program=self.program),
+            end,
+        )
 
 class AjaxAutocompleteViewTest(TestCase):
     def setUp(self):
