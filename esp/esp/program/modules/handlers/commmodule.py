@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest, PlainRedirect
@@ -45,6 +46,7 @@ from django.template import Template
 from django.template import Context as DjangoContext
 from django.template.loader import render_to_string
 from esp.middleware import ESPError
+from esp.utils.sanitize import strip_base64_images
 
 import re
 
@@ -89,6 +91,59 @@ class CommModule(ProgramModuleObj):
             "choosable": 1,
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "commpanel":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_commpanel",
+            url="/manage/%s/commpanel" % base,
+            title="Email (Communications Panel)",
+            category="Coordinate",
+            keywords=["email", "communications", "commpanel", "messages"],
+        )
+
+    @staticmethod
+    def get_mailer_warnings(listcount, filterid, sendto_fn_name):
+        from esp.users.models import ESPUser, PersistentQueryFilter
+        from esp.dbmail.models import MessageRequest
+        mailer_warnings = []
+
+        # a. Warn if massive mailer (over 2000 recipients)
+        try:
+            listcount_int = int(listcount)
+        except (TypeError, ValueError):
+            listcount_int = 0
+
+        if listcount_int >= 2000:
+            mailer_warnings.append(f"Caution: You are about to send a massive mailer to {listcount_int} recipients.")
+
+        # b. Warn if no grade range filter is used
+        filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        filter_name = getattr(filter_obj, 'useful_name', '') or ''
+
+        if filter_name and 'grade' not in filter_name.lower():
+            mailer_warnings.append("Warning: You haven't selected a grade range filter.")
+
+        # c. Warn if parent/emergency contact emails are included
+        guardian_or_emergency_sentto_values = set()
+
+        for attr_name in dir(MessageRequest):
+            if not attr_name.startswith('SEND_TO_'):
+                continue
+            value = getattr(MessageRequest, attr_name)
+            if not isinstance(value, str):
+                continue
+            lower_value = value.lower()
+            if 'guardian' in lower_value or 'emergency' in lower_value:
+                guardian_or_emergency_sentto_values.add(value)
+
+        if sendto_fn_name in guardian_or_emergency_sentto_values:
+            mailer_warnings.append("Note: This mailer includes parent and/or emergency contact emails.")
+
+        return mailer_warnings
+
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
@@ -99,6 +154,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['listcount'],
                                               request.POST['subject'],
                                               request.POST['body']    ]
+        body, _ = strip_base64_images(body)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
@@ -106,7 +162,7 @@ class CommModule(ProgramModuleObj):
         # Set From address
         if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
-            if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')), fromemail):
+            if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', r'\.')), fromemail):
                 raise ESPError("Invalid 'From' email address. The 'From' email address must " +
                                "end in @" + settings.SITE_INFO[1] + " (your website), " +
                                "@learningu.org, or a valid subdomain of learningu.org " +
@@ -127,7 +183,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             filterid = int(filterid)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Corrupted POST data!  Please contact us at" +
             "websupport@learningu.org and tell us how you got this error," +
             "and we'll look into it.")
@@ -136,7 +192,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             firstuser = userlist[0]
-        except:
+        except IndexError:
             raise ESPError("You seem to be trying to email 0 people!  " +
             "Please go back, edit your search, and try again.")
 
@@ -213,6 +269,7 @@ class CommModule(ProgramModuleObj):
                                     request.POST['replyto'],
                                     request.POST['subject'],
                                     request.POST['body']    ]
+        body, _ = strip_base64_images(body)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
         template = request.POST.get('template', 'default')
@@ -250,7 +307,7 @@ class CommModule(ProgramModuleObj):
 
         try:
             filterid = int(filterid)
-        except:
+        except (ValueError, TypeError):
             raise ESPError("Corrupted POST data!  Please contact us at " +
             "websupport@learningu and tell us how you got this error, " +
             "and we'll look into it.")
@@ -301,6 +358,7 @@ class CommModule(ProgramModuleObj):
 
         context['listcount'] = self.approx_num_of_recipients(filterObj, context['sendto_fn'])
         context['filterid'] = filterObj.id
+        context['mailer_warnings'] = self.get_mailer_warnings(context['listcount'], context['filterid'], context['sendto_fn_name'])
 
         # Use the info redirect (make one for the default email address if it doesn't exist)
         prs = PlainRedirect.objects.filter(original = "info")
@@ -341,6 +399,7 @@ class CommModule(ProgramModuleObj):
                 context['filterid'] = filterObj.id
                 context['sendto_fn_name'] = sendto_fn_name
                 context['listcount'] = self.approx_num_of_recipients(filterObj, sendto_fn)
+                context['mailer_warnings'] = self.get_mailer_warnings(context['listcount'], context['filterid'], context['sendto_fn_name'])
                 context['selected'] = selected
                 # Use the info redirect (make one for the default email address if it doesn't exist)
                 prs = PlainRedirect.objects.filter(original = "info")
@@ -356,6 +415,7 @@ class CommModule(ProgramModuleObj):
                 context['sendto_fn_name'] = msgreq.sendto_fn_name
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(msgreq.sendto_fn_name)
                 context['listcount'] = self.approx_num_of_recipients(msgreq.recipients, sendto_fn)
+                context['mailer_warnings'] = self.get_mailer_warnings(context['listcount'], context['filterid'], context['sendto_fn_name'])
                 context['from'] = msgreq.sender
                 context['subject'] = msgreq.subject
                 context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
@@ -390,11 +450,57 @@ class CommModule(ProgramModuleObj):
                                                'selected': selected,
                                                'filterid': filterid,
                                                'sendto_fn_name': sendto_fn_name,
+                                               'mailer_warnings': self.get_mailer_warnings(listcount, filterid, sendto_fn_name),
                                                'from': fromemail,
                                                'replyto': replytoemail,
                                                'subject': subject,
                                                'body': body,
                                                'public_view': public_view})
+
+    @aux_call
+    @needs_admin
+    def send_test_email(self, request, tl, one, two, module, extra, prog):
+        """Send a test email to the logged-in admin using the current compose form data."""
+        from django.http import JsonResponse
+        from esp.dbmail.models import send_mail
+
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+        body = request.POST.get('body', '')
+        body, _ = strip_base64_images(body)
+        subject = request.POST.get('subject', '')
+        fromemail = request.POST.get('from', '')
+        replytoemail = request.POST.get('replyto', fromemail)
+        template = request.POST.get('template', 'default')
+
+        if '<html>' not in body:
+            body = '<html>' + body + '</html>'
+
+        rendered_text = render_to_string('email/{}_email.html'.format(template), {'msgbody': body})
+
+        contextdict = {
+            'user': ActionHandler(request.user, request.user),
+            'program': ActionHandler(self.program, request.user),
+            'request': ActionHandler(MessageRequest(), request.user),
+        }
+        rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
+
+        try:
+            send_mail(
+                subject='[TEST] ' + subject,
+                message=rendered_text,
+                from_email=fromemail,
+                recipient_list=[request.user.email],
+                fail_silently=False,
+                extra_headers={'Reply-To': replytoemail},
+                user=request.user,
+            )
+            return JsonResponse({'success': True, 'email': request.user.email})
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('Failed to send test email')
+            return JsonResponse({'success': False, 'error': 'Failed to send test email. Please check the server logs.'}, status=500)
 
     def isStep(self):
         return False
