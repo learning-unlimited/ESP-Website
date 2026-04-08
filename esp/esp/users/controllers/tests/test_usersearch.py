@@ -65,3 +65,17 @@ class TestUserSearchController(ProgramFrameworkTest):
         result = query.getList(ESPUser)
         self.assertEqual(result.model, ESPUser)
         self.assertGreater(result.count(), 0)
+
+    def test_username_exact_match(self):
+        """Username search should use iexact (not substring) matching."""
+        User.objects.create_user(username='john', password='x')
+        User.objects.create_user(username='johnny', password='x')
+
+        query = UserSearchController().query_from_criteria(
+            'any', {'username': 'john'}
+        )
+        results = User.objects.filter(query)
+        usernames = list(results.values_list('username', flat=True))
+        self.assertIn('john', usernames)
+        self.assertNotIn('johnny', usernames)
+
