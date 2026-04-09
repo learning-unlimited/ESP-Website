@@ -11,3 +11,13 @@ $j.ajax({
         cache: true
 });
 };
+
+$(document).on('focusin', 'input[type=number]', function() {
+        $(this).on('wheel mousewheel DOMMouseScroll.numberInputBlur', function() {
+                this.blur();
+        });
+});
+
+$(document).on('focusout', 'input[type=number]', function() {
+        $(this).off('wheel.numberInputBlur mousewheel.numberInputBlur DOMMouseScroll.numberInputBlur');
+});
