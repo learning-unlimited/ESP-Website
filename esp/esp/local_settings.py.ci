@@ -79,11 +79,11 @@ MIDDLEWARE_LOCAL = []
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'test_django',
+        'NAME': '',
         'HOST': 'localhost',
         'PORT': '5432',
-        'USER': 'testuser',
-        'PASSWORD': 'testpassword',
+        'USER': '',
+        'PASSWORD': '',
     }
 }
 
