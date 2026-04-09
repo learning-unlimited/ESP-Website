@@ -133,25 +133,38 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
 
-    def ajax_schedule_assignreg(self, prog, cls, timeslot_ids, classroom_ids, user=None, override=False):
+    def ajax_schedule_assignreg(self, prog, cls, timeslot_ids, classroom_ids, user=None, override=False, change_log=None):
+        """
+        Assign a class section to a room and timeslots.
+
+        Raises Exception with a descriptive message on any scheduling failure
+        (invalid input, teacher conflict, room conflict, etc.) so that callers
+        can decide how to handle the error — either wrapping in try/except for
+        a single-section response, or letting it propagate to roll back a
+        transaction.atomic() block in bulk operations.
+
+        The optional `change_log` parameter allows callers that schedule many
+        sections in a loop to pass a pre-fetched AJAXChangeLog object, avoiding
+        a repeated DB query per section.  If omitted, the log is fetched here.
+        """
         if len(timeslot_ids) < 1:
-            return self.makeret(prog, ret=False, msg="No times specified!, can't assign to a timeblock")
+            raise Exception("No times specified!, can't assign to a timeblock")
 
         if len(classroom_ids) < 1:
-            return self.makeret(prog, ret=False, msg="No classrooms specified!, can't assign to a timeblock")
+            raise Exception("No classrooms specified!, can't assign to a timeblock")
 
         basic_cls = classroom_ids[0]
         for c in classroom_ids:
             if c != basic_cls:
-                return self.makeret(prog, ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
+                raise Exception("Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
 
         times = Event.objects.filter(id__in=timeslot_ids).order_by('start')
         if len(times) < 1:
-            return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
+            raise Exception("Specified Events not found in the database")
 
         classrooms = Resource.objects.filter(id=basic_cls, res_type__name="Classroom")
         if len(classrooms) < 1:
-            return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
+            raise Exception("Specified Classrooms not found in the database")
 
         classroom = classrooms[0]
 
@@ -159,19 +172,19 @@ class AJAXSchedulingModule(ProgramModuleObj):
         if not override:
             cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
         if cannot_schedule:
-            return self.makeret(prog, ret=False, msg=cannot_schedule)
+            raise Exception(cannot_schedule)
 
         cls.assign_meeting_times(times)
         status, errors = cls.assign_room(classroom, clear_others=True)
 
         if not status: # If we failed any of the scheduling-constraints checks in assign_room()
             cls.clear_meeting_times()
-            return self.makeret(prog, ret=False, msg=" | ".join(errors))
+            raise Exception(" | ".join(errors))
 
         #add things to the change log here
-        self.get_change_log(prog).appendScheduling([int(t.id) for t in times], classroom_ids[0], int(cls.id), user)
-
-        return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
+        if change_log is None:
+            change_log = self.get_change_log(prog)
+        change_log.appendScheduling([int(t.id) for t in times], classroom_ids[0], int(cls.id), user)
 
     def ajax_schedule_swap(self, prog, assignments, user=None, override=False):
         # assignments: the list of new assignments for the section(s) in json format
@@ -186,7 +199,12 @@ class AJAXSchedulingModule(ProgramModuleObj):
         for asmt in assignments:
             if asmt['room_id']:
                 cls = ClassSection.objects.get(id=asmt['section'])
-                retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
+                try:
+                    self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
+                    retval = self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
+                except Exception as e:
+                    retval = self.makeret(prog, ret=False, msg=str(e))
+
                 if not json.loads(retval.content)['ret']:
                     return retval
 
@@ -253,9 +271,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         if action == 'deletereg':
             cls_id = request.POST['cls']
             cls = ClassSection.objects.get(id=cls_id)
-            times = []
-            classrooms = [ None ]
-            retval =  self.ajax_schedule_deletereg(prog, cls, request.user)
+            retval = self.ajax_schedule_deletereg(prog, cls, request.user)
         elif action == 'assignreg':
             cls_id = request.POST['cls']
             cls = ClassSection.objects.get(id=cls_id)
@@ -267,7 +283,11 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 times.append(timeslot)
                 classrooms.append(classroom)
             override = request.POST['override'] == "true"
-            retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user, override)
+            try:
+                self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user, override)
+                retval = self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
+            except Exception as e:
+                retval = self.makeret(prog, ret=False, msg=str(e))
         elif action == 'swap':
             assignments = json.loads(request.POST['assignments'])
             override = request.POST['override'] == "true"
