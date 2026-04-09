@@ -51,3 +51,5 @@ class ThreadLocals(MiddlewareMixin):
     """
     def process_request(self, request):
         _threading_local.request = request
+        request._active_program_tag_keys = set()
+        request._active_global_tag_keys = set()
