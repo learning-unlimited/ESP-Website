@@ -11,10 +11,7 @@ Remove ``--global`` if you don't want it to apply to other git repos on your com
   git config --global user.name "Your Name"
   git config --global user.email you@something.edu
 
-Set up pre-commit hooks to automatically lint staged files before each commit: ::
 
-  pip install pre-commit
-  pre-commit install
 
 Other git config you might find useful: ::
 
@@ -36,9 +33,16 @@ From the directory ``/esp``: ::
 
   git checkout main  # for historical reasons we use 'main' instead of 'master'
   git pull
-  ./update_deps.sh # if using Docker: docker compose up --build; no need to bother if deps haven’t changed
-  ./manage.py update # if using Docker: docker compose exec web python esp/manage.py update
+  docker compose up -d 
+  docker compose exec web python esp/manage.py update
   git checkout -b new-branch-name
+
+For routine development, ``docker compose up`` is usually sufficient.
+If you've changed dependencies (for example, ``requirements.txt``)
+or modified the Dockerfile, rebuild first::
+
+  docker compose down
+  docker compose up --build   
 
 Write some code!
 Test your code!
@@ -108,7 +112,7 @@ This project uses Django's built-in test framework. Tests generally live in thei
 Running Tests
 ~~~~~~~~~~~~~
 
-**Using Docker (recommended):**
+Docker is the supported development environment.
 
 To run all tests::
 
@@ -118,12 +122,6 @@ To run tests for a specific module (e.g. ``accounting``)::
 
   docker compose exec web python esp/manage.py test esp.accounting.tests
 
-**Without Docker:**
-
-If you are running the server natively without Docker::
-
-  cd esp
-  python manage.py test --settings=esp.settings
 
 Test Suite Reference
 ~~~~~~~~~~~~~~~~~~~~
