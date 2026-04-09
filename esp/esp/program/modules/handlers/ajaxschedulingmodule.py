@@ -38,6 +38,7 @@ from esp.program.modules         import module_ext
 from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
 from django.http                 import HttpResponse
+from django.db                   import transaction
 from esp.cal.models              import Event
 from esp.users.models            import ESPUser
 from esp.middleware              import ESPError
@@ -292,6 +293,47 @@ class AJAXSchedulingModule(ProgramModuleObj):
             assignments = json.loads(request.POST['assignments'])
             override = request.POST['override'] == "true"
             retval = self.ajax_schedule_swap(prog, assignments, request.user, override)
+        else:
+            return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
+
+        return retval
+
+    @aux_call
+    @needs_admin
+    def ajax_schedule_class_bulk(self, request, tl, one, two, module, extra, prog):
+        if 'action' not in request.POST:
+            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
+
+        action = request.POST['action']
+
+        if action == 'assignreg':
+            sections_data = json.loads(request.POST['classes'])
+            override = request.POST['override'] == "true"
+            try:
+                with transaction.atomic():
+                    # fetch all sections up front to avoid N+1 DB queries
+                    cls_sections = ClassSection.objects.filter(id__in=[section_data['cls'] for section_data in sections_data])
+                    # index by id for O(1) lookup inside the loop
+                    cls_id_to_section = {cls_section.id: cls_section for cls_section in cls_sections}
+                    # fetch the change log once and pass it through to avoid N+1 queries
+                    change_log = self.get_change_log(prog)
+                    class_sections_emailcodes = []
+
+                    for section_data in sections_data:
+                        cls = cls_id_to_section[section_data['cls']]
+                        blockrooms = section_data['block_room_assignments'].split("\n")
+                        times = []
+                        classrooms = []
+                        for br in blockrooms:
+                            timeslot, classroom = br.split(",", 1)
+                            times.append(timeslot)
+                            classrooms.append(classroom)
+                        self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user, override, change_log=change_log)
+                        class_sections_emailcodes.append(cls.emailcode())
+
+                    retval = self.makeret(prog, ret=True, msg="Bulk scheduled %d class sections successfully" % len(class_sections_emailcodes))
+            except Exception as e:
+                retval = self.makeret(prog, ret=False, msg=str(e))
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
