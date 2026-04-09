@@ -332,7 +332,9 @@ class ClassSection(models.Model):
 
     @classmethod
     def prefetch_catalog_data(cls, queryset):
-        """ Take a queryset of a set of ClassSubject's, and annotate each class in it with the 'event_ids' fields (used internally when available by many functions to save on queries later) """
+        """Take a queryset of ClassSections, prefetch their meeting_times,
+        and cache the resulting Event objects on each section in a sorted
+        internal ``_events`` list for later reuse."""
         sections = queryset.prefetch_related('meeting_times')
         sections = list(sections)
 
