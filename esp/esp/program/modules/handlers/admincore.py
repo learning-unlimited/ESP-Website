@@ -45,7 +45,7 @@ from django.utils import timezone  # add timezone from local_settings.py in labe
 from esp.accounting.controllers import ProgramAccountingController
 from esp.cal.models import Event
 from esp.db.forms import AjaxForeignKeyNewformField
-from esp.program.controllers.testingutils import TestDataCleanupController
+from esp.program.controllers.testingutils import DataCleanupController
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.admin_search import AdminSearchEntry, serialize_admin_search_entries
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
@@ -727,7 +727,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         Step 1 (GET or POST without confirmation): enter a username and preview
         every object that will be deleted.
-        Step 2 (POST with confirmed=1): delegate to TestDataCleanupController.
+        Step 2 (POST with confirmed=1): delegate to DataCleanupController.
         """
         context = {
             'one': one,
@@ -745,7 +745,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 context['error'] = 'No user found with username "%s".' % username
                 return render_to_response(self.baseDir() + 'wipe_test_data.html', request, context)
 
-            ctrl = TestDataCleanupController(prog, target_user)
+            ctrl = DataCleanupController(prog, target_user)
             counts = ctrl.get_counts()
             total = sum(counts.values())
 
