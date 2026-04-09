@@ -10,6 +10,7 @@ from django.http import HttpRequest
 from django.conf import settings
 from django.utils.functional import SimpleLazyObject
 
+from django.db.models import Q
 from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program
 from esp.program.tests import ProgramFrameworkTest
@@ -17,7 +18,7 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
+from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType, DBList
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -203,6 +204,53 @@ class PasswordRecoveryTest(TestCase):
         # Other user's password is unaffected
         self.assertTrue(self.client.login(username='innocent', password='remembered_pw'),
                         "User innocent's old password no longer works")
+
+class DBListCountCacheTest(TestCase):
+    """Test that DBList count cache is properly invalidated on user operations."""
+    
+    def test_count_cache_invalidation_on_delete(self):
+        # Test that DBList count cache is invalidated on user delete
+        q = Q(username__startswith='testdblist')
+        dblist = DBList(key='test_list', QObject=q)
+        
+        # Get baseline count (before creating test user)
+        count_before = dblist.count()
+        
+        # Create a user that matches the filter
+        user = ESPUser.objects.create(username='testdblist1', email='test@example.com')
+        count_after_create = dblist.count()
+        self.assertEqual(count_after_create, count_before + 1,
+                        "Count should increase by 1 after user creation")
+        
+        # Delete the user
+        user.delete()
+        count_after_delete = dblist.count()
+        self.assertEqual(count_after_delete, count_before,
+                        "Count should return to baseline after user deletion")
+    
+    def test_count_cache_invalidation_on_update(self):
+        # Test that DBList count cache is invalidated on user update
+        q = Q(username__startswith='updatetest')
+        dblist = DBList(key='update_test_list', QObject=q)
+        
+        # Get baseline count
+        count_before = dblist.count()
+        
+        # Create a user that doesn't match the filter
+        user = ESPUser.objects.create(username='nomatch', email='nomatch@example.com')
+        count_no_match = dblist.count()
+        self.assertEqual(count_no_match, count_before,
+                        "Count should not change when creating non-matching user")
+        
+        # Update user to match the filter
+        user.username = 'updatetest_user'
+        user.save()
+        count_after_update = dblist.count()
+        self.assertEqual(count_after_update, count_before + 1,
+                        "Count should increase by 1 when user is updated to match filter")
+        
+        # Cleanup
+        user.delete()
 
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
