@@ -866,6 +866,19 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                         # Handle empty string: revert to default calculated capacity
                         if not new_cap_str:
+                            old_cap = sec.max_class_capacity
+                            sec.max_class_capacity = None
+                            fallback_capacity = sec.capacity
+                            current_enrolled = sec.count_enrolled_students()
+                            if fallback_capacity < current_enrolled:
+                                sec.max_class_capacity = old_cap
+                                errors[sec.id] = (
+                                    f"Default capacity would be less than the {current_enrolled} "
+                                    "currently enrolled students in this section."
+                                )
+                                any_errors = True
+                                continue
+                            sec.save()
                             sec.max_class_capacity = None
                             sec.save()
                         else:
