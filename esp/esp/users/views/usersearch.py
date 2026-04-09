@@ -268,7 +268,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False, add_
     if not usc.updated:
         users = None
     else:
-        users = [ user for user in QSUsers ]
+        users = list(QSUsers)
 
     if users is not None and len(users) == 0:
         error = True
