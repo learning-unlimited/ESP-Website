@@ -577,6 +577,9 @@ def user_passes_test(test_func, error_message=None, error_template=None,
                 context.update(extra_context_func(moduleObj, request))
             if error_template is not None:
                 return render_to_response(error_template, request, context)
+            # The deadline templates expect the message under 'extension'.
+            if error_message is not None and 'extension' not in context:
+                context['extension'] = error_message
             return render_deadline_for_tl(tl, request, context)
         _check.has_auth_check = True
         _check.method = view_method

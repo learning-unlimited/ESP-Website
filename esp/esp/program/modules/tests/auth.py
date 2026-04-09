@@ -36,15 +36,13 @@ import ast
 from pathlib import Path
 import warnings
 from unittest.mock import MagicMock, patch
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 
-from esp.program.modules.base import (
-    user_passes_test, render_deadline_for_tl,
-)
+from esp.program.modules.base import user_passes_test
 from esp.program.tests import ProgramFrameworkTest
 
 
-class UserPassesTestDecoratorTest(TestCase):
+class UserPassesTestDecoratorTest(SimpleTestCase):
     """Unit tests for the enhanced user_passes_test() decorator factory."""
 
     def _make_view(self, **decorator_kwargs):
@@ -186,7 +184,7 @@ class UserPassesTestDecoratorTest(TestCase):
         self.assertEqual(context['program'], 'Splash')
 
 
-class NeedsStudentInGradeCompositionTest(TestCase):
+class NeedsStudentInGradeCompositionTest(SimpleTestCase):
     """Test needs_student_in_grade composes needs_student + meets_grade correctly."""
 
     def _make_request(self, authenticated=True, is_student=True, is_admin=False):
