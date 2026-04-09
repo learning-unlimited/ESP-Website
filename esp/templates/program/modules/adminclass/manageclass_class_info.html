@@ -77,6 +77,18 @@
     </td>
 </tr>
 <tr>
+    <th class="smaller">Additional information specified by teacher: </th>
+    <td>
+        <ul>
+        {% for key, value in class.custom_form_data.items %}
+            {% if value %}
+            <li style="color: black;"><i>{{ key|as_form_label }}</i>: {{ value }}</li>
+            {% endif %}
+        {% endfor %}
+        </ul>
+    </td>
+</tr>
+<tr>
     <th class="smaller">Resource Requests:</th>
         <td>
 	    {% for r in class.sections.all.0.resourcerequest_set.all %}
