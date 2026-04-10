@@ -236,10 +236,12 @@ def secure_required(view_fn):
         return view_fn(request, *args, **kwargs)
     return _wrapped_view
 
-def zip_download(files = [], zipname = 'files'):
+def zip_download(files = None, zipname = 'files'):
     """
     Zips a list of files together and returns it as a download
     """
+    if files is None:
+        files = []
     file_like = StringIO()
     zf = zipfile.ZipFile(file_like, 'w')
     for file in files:
