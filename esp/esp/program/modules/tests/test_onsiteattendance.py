@@ -64,7 +64,7 @@ class _OnSiteAttendanceBase(ProgramFrameworkTest):
             room_capacity=30,
             num_categories=1,
             num_teachers=1,
-            classes_per_teacher=1,
+            classes_per_teacher=2,  # 2 sections so unscheduled-section test has a spare
             sections_per_class=1,
             num_students=3,
             num_admins=1,
@@ -277,6 +277,10 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
 
         result = self.module.times_attending_class(self.program)
         self.assertNoDuplicatesInBuckets(result)
+        # Student must still appear — dedup must not silently drop them.
+        self.assertUserInBuckets(student, self._expected_buckets(
+            datetime.datetime(2026, 3, 20, 9, 10, 0)
+        ), result)
 
     def test_deduplicates_same_student_across_different_hours(self):
         """Two SRs in different hours → carry-forward, but still once per bucket."""
@@ -286,12 +290,23 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
 
         result = self.module.times_attending_class(self.program)
         self.assertNoDuplicatesInBuckets(result)
+        # Student must appear from their earliest SR onward.
+        self.assertUserInBuckets(student, self._expected_buckets(
+            datetime.datetime(2026, 3, 20, 9, 5, 0)
+        ), result)
 
     def test_excludes_sr_for_unscheduled_section(self):
         """SR whose section has no meeting_times must not appear (meeting_times__isnull=False filter)."""
+        # Use a section that is explicitly different from self.section.
         unscheduled = (
             ClassSection.objects.filter(parent_class__parent_program=self.program)
-            .order_by("id").last()
+            .order_by("id")
+            .exclude(pk=self.section.pk)
+            .first()
+        )
+        self.assertIsNotNone(
+            unscheduled,
+            "Need at least 2 sections; check classes_per_teacher in setUp.",
         )
         unscheduled.clear_meeting_times()
 
@@ -348,7 +363,9 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         )
         night_section = (
             ClassSection.objects.filter(parent_class__parent_program=self.program)
-            .order_by("id").last()
+            .order_by("id")
+            .exclude(pk=self.section.pk)
+            .first()
         )
         night_section.assign_meeting_times([late_slot])
 
@@ -364,54 +381,24 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
             datetime.datetime(2026, 3, 21, 1, 0, 0),
         ], result)
 
-    def test_guard_clause_skips_record_when_end_before_start_after_day_shift(self):
+    def test_normal_same_day_sr_produces_correct_buckets(self):
         """
-        Regression for the final guard clause in times_attending_class():
-            if end_time < start_time: continue   # after day-shift attempt
+        Confirms the handler's main while-loop path is stable for a normal
+        same-day SR (section 09:00–11:00, SR at 09:30).
 
-        The guard fires when:
-          1. end_time < start_time  (section end-of-day < SR start-of-day)
-          2. section_end_dt.time() < start_time.time()  → day-shift applied
-          3. end_time is STILL < start_time after the shift
-
-        Case 3 is only reachable if the SR's start_date is more than 24 h
-        after the section's end datetime — i.e. a multi-week program where
-        the attendance SR was recorded on a day far beyond the section's
-        scheduled end.
-
-        Setup:
-          - Section slot: 2026-03-20 23:00 – 2026-03-21 01:00
-            (section_end_dt = 2026-03-21 01:00)
-          - SR start_date: 2026-03-22 23:30  (two days later)
-
-        Handler computation:
-          start_time = 2026-03-22 23:00
-          end_time   = section_end_dt replaced to SR's date
-                     = 2026-03-22 01:00
-          end_time (01:00) < start_time (23:00) → enter outer if
-          section_end_dt.time() (01:00) < start_time.time() (23:00) → day-shift
-          end_time becomes 2026-03-23 01:00
-          end_time (2026-03-23 01:00) < start_time (2026-03-22 23:00)? NO
-          → day-shift resolves it; record is NOT skipped.
-
-        To actually hit the skip we need section_end_dt.time() >= start_time.time()
-        so the day-shift branch is NOT taken, yet end_time < start_time.
-        That requires section end-of-day > SR start-of-day (no shift) but
-        the date-replace still yields end < start — impossible since both
-        use the same date.
-
-        Conclusion: the guard clause is defensive dead-code for the current
-        date-replace logic.  We verify the handler does NOT crash and returns
-        a correct result for a normal same-day SR, confirming the while-loop
-        path is stable.
+        Note: the handler contains a defensive guard clause
+            if end_time < start_time: continue
+        that is unreachable under the current date-replace logic (both
+        start_time and end_time use the SR's own date, so end_time can only
+        be < start_time when the cross-midnight day-shift applies, and that
+        shift always resolves the inequality). This test documents the normal
+        path and confirms no crash occurs.
         """
-        # Normal SR on self.section (09:00–11:00): start 09:30, end bucket 11:00.
         student = self.students[0]
         self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 30, 0))
 
         result = self.module.times_attending_class(self.program)
 
-        # Handler must not crash; student appears in 09:00, 10:00, 11:00.
         self.assertUserInBuckets(student, [
             datetime.datetime(2026, 3, 20, 9, 0, 0),
             datetime.datetime(2026, 3, 20, 10, 0, 0),
