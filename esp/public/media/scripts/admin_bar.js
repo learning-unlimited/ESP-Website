@@ -91,7 +91,7 @@ if (currentPrograms && currentPrograms.forEach) {
                     '<a href="/manage/docs/">Website Documentation</a>';
 
     // Append extra links configured in theme settings (never replaces defaults)
-    if (Array.isArray(toolbarLinks) && toolbarLinks.length > 0) {
+   if (Array.isArray(toolbarLinks) && toolbarLinks.length > 0) {
         toolbarLinks.forEach(function(link) {
             // Only allow relative URLs and http/https to prevent javascript:/data: XSS
             var url = link.link;
