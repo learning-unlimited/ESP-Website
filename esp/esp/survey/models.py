@@ -37,6 +37,7 @@ Learning Unlimited, Inc.
 
 import datetime
 import json
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.template import loader
 from django.contrib.contenttypes.models import ContentType
@@ -164,6 +165,9 @@ class QuestionType(models.Model):
         - Free Response long
     """
 
+    # Canonical name for the Long Answer row in migrations / DB (template path derives from name).
+    LONG_ANSWER_NAME = 'Long Answer'
+
     name = models.CharField(max_length=255)
     _param_names = models.TextField("Parameter names", blank=True,
                                     help_text="A pipe (|) delimited list of parameter names.")
@@ -201,6 +205,48 @@ class Question(models.Model):
         params['list'] = b[min_length:]
 
         return params
+
+    def clean(self):
+        super().clean()
+        self._validate_long_answer_params()
+
+    def _is_long_answer_question_type(self):
+        """True if this question uses the Long Answer type, without an extra query when FK is cached."""
+        if not self.question_type_id:
+            return False
+        cached = self.__dict__.get('question_type')
+        if cached is not None:
+            return cached.name == QuestionType.LONG_ANSWER_NAME
+        return QuestionType.objects.filter(
+            pk=self.question_type_id,
+            name=QuestionType.LONG_ANSWER_NAME,
+        ).exists()
+
+    def _validate_long_answer_params(self):
+        """Ensure Long Answer questions have a valid textarea row count (>= 1)."""
+        if not self._is_long_answer_question_type():
+            return
+        vals = self.param_values
+        if not vals or not str(vals[0]).strip():
+            raise ValidationError({
+                '_param_values': (
+                    f'{QuestionType.LONG_ANSWER_NAME} questions require a Rows value of at least 1.'
+                ),
+            })
+        try:
+            rows = int(str(vals[0]).strip())
+        except (ValueError, TypeError):
+            raise ValidationError({
+                '_param_values': 'Rows must be a whole number.',
+            })
+        if rows < 1:
+            raise ValidationError({
+                '_param_values': 'Rows must be at least 1.',
+            })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.survey.name}, {self.seq}: "{self.name}" ({self.question_type.name})'
