@@ -16,6 +16,12 @@ You need to log in before you can access <tt>{{ next }}</tt>.
 {% endif %}
 </div>
 {% endif %}
+{% if inactive_account %}
+<div class="alert alert-warning span10">
+    Your account has not been activated yet. Please check your email for an activation link and click it to activate your account before logging in.
+    If you did not receive an activation email, please check your spam folder.
+</div>
+{% endif %}
 
 <div class="alert span10">
 Both the username and password are <b>case-sensitive</b>: capitalization matters!
@@ -48,6 +54,8 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
         <ul class="errorlist">
             {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
         </ul>
+    {% elif inactive_account %}
+        {# Message already shown above as an alert — no inline error needed #}
     {% elif wrong_pw %}
         <ul class="errorlist">
             The password you entered is not valid.
