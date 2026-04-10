@@ -42,6 +42,6 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         if not Site.objects.filter(id=1).exists():
             self.stdout.write(self.style.WARNING('No Site with id=1 found. Creating a default localhost Site with id=1.'))
-            Site.objects.create(id=1, domain='localhost', name='localhost')
-        Site.objects.filter(id=1).update(domain='localhost', name='localhost')
+            Site.objects.create(id=1, domain='localhost:8000', name='localhost')
+        Site.objects.filter(id=1).update(domain='localhost:8000', name='localhost')
         self.stdout.write(self.style.SUCCESS("Successfully updated Site domain and name to 'localhost'."))
