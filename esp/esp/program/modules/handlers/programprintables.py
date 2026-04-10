@@ -1175,7 +1175,15 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
         if onsite:
-            students = [ESPUser.objects.get(id=request.GET['userid'])]
+            try:
+                user_id = request.GET.get('userid')
+                if not user_id:
+                    return ESPError("Missing userid parameter").as_html_response()
+                students = [ESPUser.objects.get(id=user_id)]
+            except ESPUser.DoesNotExist:
+                return ESPError("User not found with the provided userid").as_html_response()
+            except ValueError:
+                return ESPError("Invalid userid format").as_html_response()
         else:
             filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Student Financial Spreadsheet'})
 
@@ -1226,7 +1234,15 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'module': self }
 
         if onsite:
-            students = [ESPUser.objects.get(id=request.GET['userid'])]
+            try:
+                user_id = request.GET.get('userid')
+                if not user_id:
+                    return ESPError("Missing userid parameter").as_html_response()
+                students = [ESPUser.objects.get(id=user_id)]
+            except ESPUser.DoesNotExist:
+                return ESPError("User not found with the provided userid").as_html_response()
+            except ValueError:
+                return ESPError("Invalid userid format").as_html_response()
         else:
             if extra:
                 file_type = extra.strip()
