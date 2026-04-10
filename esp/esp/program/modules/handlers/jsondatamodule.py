@@ -289,7 +289,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @no_auth
     @cached_module_view
     def lunch_timeslots(prog):
-        lunch_timeslots = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values('id'))
+        lunch_timeslots = list(Event.objects.filter(meeting_times__parent_class__category__is_lunch=True, meeting_times__parent_class__parent_program=prog).values('id'))
         for i in range(len(lunch_timeslots)):
             lunch_timeslots[i]['is_lunch'] = True
         return {'timeslots': lunch_timeslots}
@@ -836,11 +836,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Classes Scheduled", classes.filter(sections__meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Class Sections", sections.distinct().count()))
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))
-        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category="Lunch", status=ClassStatus.ACCEPTED).distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=ClassStatus.UNREVIEWED).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=ClassStatus.ACCEPTED, sections__status=ClassStatus.ACCEPTED).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=ClassStatus.REJECTED).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=ClassStatus.CANCELLED).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__is_lunch=True, status=ClassStatus.ACCEPTED).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=ClassStatus.UNREVIEWED).exclude(category__is_lunch=True).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=ClassStatus.ACCEPTED, sections__status=ClassStatus.ACCEPTED).exclude(category__is_lunch=True).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=ClassStatus.REJECTED).exclude(category__is_lunch=True).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=ClassStatus.CANCELLED).exclude(category__is_lunch=True).distinct().count()))
         return class_num_list
     class_nums.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
@@ -1028,15 +1028,15 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        reg_classes = prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
+        reg_classes = prog.classes().exclude(category__is_lunch=True).annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
         for cls in reg_classes:
             cls.subject_checked_in_students = sum([sec.count_ever_checked_in_students() for sec in cls.get_sections()])
         reg_hours = JSONDataModule.calc_hours([{'num_sections': cls.num_sections, 'subject_duration': cls.subject_duration, 'subject_students': cls.subject_students, 'subject_checked_in_students': cls.subject_checked_in_students, 'class_size_max': cls.class_size_max} for cls in reg_classes])
-        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
+        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__is_lunch=True).annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
         for cls in app_classes:
             cls.subject_checked_in_students = sum([sec.count_ever_checked_in_students() for sec in cls.get_sections()])
         app_hours = JSONDataModule.calc_hours([{'num_sections': cls.num_sections, 'subject_duration': cls.subject_duration, 'subject_students': cls.subject_students, 'subject_checked_in_students': cls.subject_checked_in_students, 'class_size_max': cls.class_size_max} for cls in app_classes])
-        sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__category='Lunch').values('duration', 'enrolled_students', 'id')
+        sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__is_lunch=True).values('duration', 'enrolled_students', 'id')
         sched_hours = JSONDataModule.calc_section_hours(sched_sections)
         hour_num_list = []
         hour_num_list.append(("Total # of Class-Hours (registered)", round(reg_hours["class-hours"], 2)))

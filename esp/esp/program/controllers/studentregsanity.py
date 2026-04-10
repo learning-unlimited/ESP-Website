@@ -107,7 +107,7 @@ class StudentRegSanityController(object):
         if csvlog and not fake:
             csvwriter.writerow(['Sanitizing Lunch Blocks'])
             csvwriter.writerow(['Lunch Block', 'Student', 'Enrollment Type:'])
-        category_lunch = ClassCategories.objects.get(category="Lunch")
+        category_lunch = ClassCategories.objects.get(is_lunch=True)
         lunchblocks = self.program.classes().filter(category=category_lunch)
         report = []
         for l in lunchblocks:

@@ -110,11 +110,11 @@ class LunchConstraintGenerator(object):
         return expression
 
     def get_lunch_category(self):
-        qs = ClassCategories.objects.filter(category='Lunch', symbol='L').order_by('-id')
+        qs = ClassCategories.objects.filter(is_lunch=True, symbol='L').order_by('-id')
         if qs.exists():
             lunch_category = qs[0]
         else:
-            lunch_category, created = ClassCategories.objects.get_or_create(category='Lunch', symbol='L')
+            lunch_category, created = ClassCategories.objects.get_or_create(is_lunch=True, symbol='L')
         self.program.class_categories.add(lunch_category)
         return lunch_category
 
@@ -188,7 +188,7 @@ if len(time_options) == 0:
     return (schedule_map, 'Unable to autoschedule lunch.')
 else:
     dest_sec = None
-    dest_qs = ClassSection.objects.filter(meeting_times__id__in=time_options, parent_class__category__category='Lunch')
+    dest_qs = ClassSection.objects.filter(meeting_times__id__in=time_options, parent_class__category__is_lunch=True)
     if dest_qs.count() == 0:
         return (schedule_map, 'Unable to autoschedule lunch.')
     elif dest_qs.count() == 1:

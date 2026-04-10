@@ -423,7 +423,7 @@ class ClassChangeController(object):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
         self.lunch_schedule = numpy.zeros((self.num_timeslots,))
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__is_lunch=True).order_by('start').distinct()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.timeslots:
