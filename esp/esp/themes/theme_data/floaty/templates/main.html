@@ -9,6 +9,8 @@
 
 {% block body %}
 
+<a href="#content_area" class="skip-nav">Skip to main content</a>
+
 {% block main %}
 <div id="page" style="margin:0 auto; width:920px;">
 <div id="top_area">
@@ -99,7 +101,7 @@
 
 </div>
 
-<div id="content_area">
+<main id="content_area" tabindex="-1">
     {% if request.COOKIES.esp_testing_role %}
     <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
       <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
@@ -134,6 +136,17 @@
         <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
       {% endfor %}
       &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
+    </div>
+    {% endif %}
+    {% if active_global_tags %}
+    <div class="alert alert-info alert-dismissible" role="alert">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <strong>Admin notice:</strong>
+      This site has {{ active_global_tags|length }} custom global tag{{ active_global_tags|length|pluralize }} configured that may be modifying page behavior:
+      {% for tag in active_global_tags %}
+        <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+      {% endfor %}
+      &mdash; <a href="{{ active_global_tags_url }}" class="alert-link">View tag settings</a>
     </div>
     {% endif %}
     {% if messages %}
@@ -174,7 +187,7 @@
         </span>
         {% endif %}
     </div>
-</div>
+</main>
 
 </div>
 </div>
