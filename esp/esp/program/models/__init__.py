@@ -980,9 +980,16 @@ class Program(models.Model, CustomFormsLinkModel):
             return list(self.getTimeSlots())
     getTimeSlotList.depend_on_model('cal.Event')
 
-    def total_duration(self):
-        """ Returns the total length of the events in this program, as a timedelta object. """
-        ts_list = Event.collapse(list(self.getTimeSlots()), tol=timedelta(minutes=15))
+    def total_duration(self, types=None):
+        """Return the total length of the events in this program as a timedelta.
+
+        By default only "Class Time Block" events are counted (preserving the
+        historic behaviour).  Pass an explicit list of event-type descriptions
+        via `types` to include additional slot types — e.g.
+        ``types=['Class Time Block', 'Open Class Time Block']`` — without
+        duplicating the collapse/sum logic at the call site.
+        """
+        ts_list = Event.collapse(list(self.getTimeSlots(types=types)), tol=timedelta(minutes=15))
         time_sum = timedelta()
         for t in ts_list:
             time_sum = time_sum + t.duration()
