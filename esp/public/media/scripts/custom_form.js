@@ -487,14 +487,17 @@ var onChangeProgBelong=function(){
 };
 
 var onChangePermProg=function(){
-	var prog=$j('#id_perm_program');
+	var prog=$j('#id_perm_program').val();
 	if(prog!="-1"){
 		setPerms();
 		$j('#id_sub_perm').parent().show();
 	}
-	else
+	else {
+		$j('#id_sub_perm').empty();
 		$j('#id_sub_perm').parent().hide();
+	}
 };
+
 
 var onChangeMainCatSpec=function() {
 	//Fetches instances from the server, populates values etc.
