@@ -1147,6 +1147,11 @@ function populate_classes()
     data.categories = {}
     
     //  Fill in categories
+    var hidden_categories_list = [];
+    if (hide_categories) {
+        hidden_categories_list = hide_categories.split(',').map(function(id) { return parseInt(id); });
+    }
+
     for (var i in data.catalog.categories)
     {
         var new_category = data.catalog.categories[i];
@@ -1154,8 +1159,13 @@ function populate_classes()
         data.categories[new_category.id] = new_category;
         if (settings.categories_to_display[new_category.id] === undefined)
         {
-            settings.categories_to_display[new_category.id] = true;
+            settings.categories_to_display[new_category.id] = (hidden_categories_list.indexOf(new_category.id) === -1);
         }
+    }
+
+    if (settings.categories_to_display[open_class_category.id] === undefined)
+    {
+        settings.categories_to_display[open_class_category.id] = (hidden_categories_list.indexOf(open_class_category.id) === -1);
     }
 
     //  Fill in timeslots (we need these)
