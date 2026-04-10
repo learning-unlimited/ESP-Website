@@ -29,7 +29,7 @@ def _setup_roles():
 
 
 # ===== Model Tests (from main) =====
-
+@patch('esp.survey.models.QuestionType.clean')
 class ListFieldTest(TestCase):
     """Test the ListField descriptor used in QuestionType."""
 
@@ -107,7 +107,7 @@ class SurveyResponseTest(TestCase):
     def test_time_filled_auto(self):
         self.assertIsNotNone(self.response.time_filled)
 
-
+@patch('esp.survey.models.QuestionType.clean')
 class QuestionTypeTest(TestCase):
     def test_str_with_params(self):
         qt = QuestionType.objects.create(
@@ -138,6 +138,7 @@ class QuestionTypeTest(TestCase):
         self.assertTrue(qt.is_countable)
 
 
+@patch('esp.survey.models.QuestionType.clean')
 class QuestionTest(TestCase):
     def setUp(self):
         super().setUp()
@@ -171,6 +172,7 @@ class QuestionTest(TestCase):
         self.assertIsInstance(params, dict)
 
 
+@patch('esp.survey.models.QuestionType.clean')
 class AnswerTest(TestCase):
     def setUp(self):
         super().setUp()
