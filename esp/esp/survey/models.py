@@ -181,7 +181,7 @@ class QuestionType(models.Model):
             return f'{self.name}: includes {self._param_names.replace("|", ", ")}'
         else:
             return str(self.name)
-    
+
     def clean(self):
         try:
             loader.get_template(self.template_file)
