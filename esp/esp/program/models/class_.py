@@ -558,7 +558,7 @@ class ClassSection(models.Model):
         classroom = self.initial_rooms().first()
         if classroom:
             res = classroom.associated_resources().filter(res_type__name='Lat/Long')
-            if res.count() == 1 and re.match(r"^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$", res[0].attribute_value):
+            if res.count() == 1 and re.match("^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$", res[0].attribute_value):
                 return res[0].attribute_value
         return None
 
@@ -1647,7 +1647,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         return self.teachers.all().order_by('last_name')
     get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
-    get_teachers.depend_on_row('users.ESPUser', lambda user: [{'self': cls} for cls in user.classsubject_set.all()])
 
     def students_dict(self):
         result = PropertyDict({})

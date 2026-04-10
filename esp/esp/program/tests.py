@@ -2195,8 +2195,5 @@ class ClassSubjectCacheTest(ProgramFrameworkTest):
                 break
 
         self.assertIsNotNone(updated_teacher)
+        self.assertNotEqual(updated_teacher.email, original_email)
         self.assertEqual(updated_teacher.email, new_email)
-
-        # Cleanup
-        teacher.email = original_email
-        teacher.save()
