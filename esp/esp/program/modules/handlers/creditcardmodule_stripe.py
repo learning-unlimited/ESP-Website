@@ -64,6 +64,10 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             }
 
     def apply_settings(self):
+        if hasattr(self, '_settings_cache'):
+            self.settings = self._settings_cache
+            return self._settings_cache
+
         #   Rather than using a model in module_ext.*, configure the module
         #   from a Tag (which can be per-program or global), combining the
         #   Tag's specifications with defaults in the code.
@@ -77,7 +81,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
-        return self.settings
+        self._settings_cache = self.settings
+        return self._settings_cache
 
     def get_setting(self, name, default=None):
         return self.apply_settings().get(name, default)
