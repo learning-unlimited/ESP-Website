@@ -1,7 +1,5 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core import serializers
-from django.http import HttpResponse
-import json
+from django.http import JsonResponse
 
 """ Removed the staff-only restriction and instead pass a flag to ajax_autocomplete if the user
     is not a staff member.  The staff bit is checked at the per-function level, so that students
@@ -37,9 +35,8 @@ def ajax_autocomplete(request):
         last_name_range = request.GET.get('last_name_range')
     except (KeyError, ValueError):
         # bad request
-        response = HttpResponse('Malformed Input')
-        response.status_code = 400
-        return response
+        return JsonResponse({'error': 'Malformed Input'}, status=400)
+
 
     # import the model
     Model = getattr(__import__(model_module, (), (), [str(model_name)]), model_name)
@@ -62,7 +59,4 @@ def ajax_autocomplete(request):
     for item in output:
         output2.append({'id': item['id'], 'ajax_str': f'{item["ajax_str"]} ({item["id"]})'})
 
-    content = json.dumps({'result': output2})
-
-    return HttpResponse(content,
-                        content_type='javascript/javascript')
+    return JsonResponse({'result': output2})
