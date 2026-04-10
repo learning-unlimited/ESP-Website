@@ -33,17 +33,12 @@ Learning Unlimited, Inc.
 """
 
 import random
-from django.test.client import Client, RequestFactory
-from django.test import TestCase
-from django.http import HttpRequest
+from django.test.client import RequestFactory
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
-from esp.program.models import ClassSubject
 from esp.middleware import ESPError
-from esp.users.models import ESPUser
 from esp.resources.models import ResourceType, ResourceRequest
-
 
 class TeacherPreviewModuleTest(ProgramFrameworkTest):
     """
@@ -56,8 +51,6 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
     """
 
     def setUp(self, *args, **kwargs):
-        from esp.program.modules.base import ProgramModule, ProgramModuleObj
-
         # Set up a program with students, teachers, and resources
         kwargs.update({'num_students': 3, 'num_teachers': 3})
         super().setUp(*args, **kwargs)
