@@ -34,32 +34,26 @@ Learning Unlimited, Inc.
 
 import datetime
 
+from esp.cal.models import Event, EventType
 from esp.program.models import ClassSection, RegistrationType, StudentRegistration
 from esp.program.modules.handlers.onsiteattendance import OnSiteAttendance
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import Record, RecordType
 
 
-class OnSiteAttendanceTest(ProgramFrameworkTest):
+class _OnSiteAttendanceBase(ProgramFrameworkTest):
     """
-    Regression tests for OnSiteAttendance.times_attending_class() and
-    OnSiteAttendance.times_checked_in().
+    Shared fixtures for OnSiteAttendance regression tests.
 
-    Setup uses hour-aligned, zero-gap timeslots starting at 09:00 so that the
-    handler's hour-bucket truncation (replace(minute=0, ...)) produces
-    deterministic, easy-to-reason-about boundaries.
-
-    Section layout (2 timeslots assigned in setUp):
+    Timeslot layout (hour-aligned, zero-gap, starting 09:00):
         slot 0: 09:00 – 10:00
-        slot 1: 10:00 – 11:00   <-- section end_time().end == 11:00
+        slot 1: 10:00 – 11:00  ← self.section end_time().end
+        slot 2: 11:00 – 12:00
+        slot 3: 12:00 – 13:00
 
-    This means times_attending_class() will count a student in every bucket
-    from their sr.start_date hour up to and including the 11:00 bucket.
+    self.section spans slots 0–1, so times_attending_class() counts a student
+    in every bucket from their sr.start_date hour up to and including 11:00.
     """
-
-    # ------------------------------------------------------------------ #
-    # setUp / tearDown                                                     #
-    # ------------------------------------------------------------------ #
 
     def setUp(self):
         super().setUp(
@@ -81,14 +75,11 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
         )
 
         self.module = OnSiteAttendance()
-
         self.attended_sr_type = RegistrationType.get_cached(
             name="Attended", category="student"
         )
         self.attended_record_type = RecordType.objects.get(name="attended")
 
-        # Pick the first section and give it two consecutive hour-aligned slots
-        # so section.end_time().end == 11:00 on 2026-03-20.
         self.section = (
             ClassSection.objects.filter(parent_class__parent_program=self.program)
             .order_by("id")
@@ -99,7 +90,7 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
             "ProgramFrameworkTest must create at least one section.",
         )
         time_slots = list(self.program.getTimeSlots().order_by("start"))
-        self.section.assign_meeting_times(time_slots[:2])  # slots 0 & 1
+        self.section.assign_meeting_times(time_slots[:2])  # 09:00–11:00
 
     def tearDown(self):
         StudentRegistration.objects.filter(
@@ -112,7 +103,7 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
         super().tearDown()
 
     # ------------------------------------------------------------------ #
-    # Private helpers                                                      #
+    # Fixture helpers                                                      #
     # ------------------------------------------------------------------ #
 
     def _make_sr(self, student, when, section=None):
@@ -133,195 +124,14 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
             time=when,
         )
 
-    def _bucket(self, dt):
-        """Mirror the handler's hour-truncation logic."""
-        return dt.replace(minute=0, second=0, microsecond=0)
-
-    def _section_end_bucket(self, section=None):
-        s = section or self.section
-        return self._bucket(s.end_time().end)
-
-    def _expected_buckets_for_sr(self, start_dt, section=None):
-        """
-        Return the list of hour buckets the handler will emit for a single SR
-        whose start_date is start_dt, attending `section`.
-        """
-        start_bucket = self._bucket(start_dt)
-        end_bucket = self._section_end_bucket(section)
-        buckets = []
-        t = start_bucket
-        while t <= end_bucket:
-            buckets.append(t)
-            t += datetime.timedelta(hours=1)
-        return buckets
-
-    # ------------------------------------------------------------------ #
-    # times_attending_class – basic correctness                           #
-    # ------------------------------------------------------------------ #
-
-    def test_empty_program_returns_empty_dict(self):
-        """With no attendance SRs the result is an empty dict (not None, not [])."""
-        result = self.module.times_attending_class(self.program)
-        self.assertIsInstance(result, dict)
-        self.assertEqual(result, {})
-
-    def test_single_student_single_hour_bucket(self):
-        """
-        A student marked at 09:15 in a section ending at 11:00 appears in
-        buckets 09:00, 10:00, and 11:00 – one entry per bucket, no extras.
-        """
-        student = self.students[0]
-        when = datetime.datetime(2026, 3, 20, 9, 15, 0)
-        self._make_sr(student, when)
-
-        result = self.module.times_attending_class(self.program)
-
-        expected = self._expected_buckets_for_sr(when)
-        self.assertEqual(sorted(result.keys()), expected)
-        for bucket in expected:
-            self.assertEqual(
-                result[bucket],
-                [student],
-                f"Expected exactly [student] in bucket {bucket!r}.",
-            )
-
-    def test_result_keys_are_chronologically_ordered(self):
-        """
-        The dict returned by times_attending_class() must have keys in
-        ascending chronological order (the graph rendering depends on this).
-        """
-        s0, s1, s2 = self.students
-        self._make_sr(s0, datetime.datetime(2026, 3, 20, 9, 5, 0))
-        self._make_sr(s1, datetime.datetime(2026, 3, 20, 10, 5, 0))
-        self._make_sr(s2, datetime.datetime(2026, 3, 20, 11, 5, 0))
-
-        result = self.module.times_attending_class(self.program)
-        keys = list(result.keys())
-        self.assertEqual(keys, sorted(keys), "Result keys must be in ascending order.")
-
-    def test_students_in_different_hour_buckets_are_grouped_correctly(self):
-        """
-        s0 marked at 09:15, s1 at 09:45, s2 at 10:05.
-        Section ends at 11:00.
-
-        Expected per bucket:
-            09:00 → {s0, s1}
-            10:00 → {s0, s1, s2}   (s0 & s1 carry forward each hour)
-            11:00 → {s0, s1, s2}
-        """
-        s0, s1, s2 = self.students
-        self._make_sr(s0, datetime.datetime(2026, 3, 20, 9, 15, 0))
-        self._make_sr(s1, datetime.datetime(2026, 3, 20, 9, 45, 0))
-        self._make_sr(s2, datetime.datetime(2026, 3, 20, 10, 5, 0))
-
-        result = self.module.times_attending_class(self.program)
-
-        b9  = datetime.datetime(2026, 3, 20, 9, 0, 0)
-        b10 = datetime.datetime(2026, 3, 20, 10, 0, 0)
-        b11 = datetime.datetime(2026, 3, 20, 11, 0, 0)
-
-        self.assertIn(b9,  result)
-        self.assertIn(b10, result)
-        self.assertIn(b11, result)
-
-        self.assertEqual({u.id for u in result[b9]},  {s0.id, s1.id})
-        self.assertEqual({u.id for u in result[b10]}, {s0.id, s1.id, s2.id})
-        self.assertEqual({u.id for u in result[b11]}, {s0.id, s1.id, s2.id})
-
-    # ------------------------------------------------------------------ #
-    # times_attending_class – duplicate-prevention                        #
-    # ------------------------------------------------------------------ #
-
-    def test_same_student_marked_twice_in_same_hour_counted_once(self):
-        """
-        Two SRs for the same student within the same hour bucket must not
-        inflate the count for that bucket.  This is the core deduplication
-        invariant of the handler.
-        """
-        student = self.students[0]
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 10, 0))
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 55, 0))
-
-        result = self.module.times_attending_class(self.program)
-
-        for bucket, users in result.items():
-            user_ids = [u.id for u in users]
-            self.assertEqual(
-                len(user_ids),
-                len(set(user_ids)),
-                f"Duplicate user detected in bucket {bucket!r}: {user_ids}",
-            )
-            self.assertLessEqual(
-                user_ids.count(student.id),
-                1,
-                f"Student appears more than once in bucket {bucket!r}.",
-            )
-
-    def test_same_student_marked_in_different_hours_no_cross_bucket_duplication(self):
-        """
-        Two SRs for the same student in *different* hour buckets: the student
-        should appear in every bucket from the earlier SR onward (carry-forward
-        logic), but still only once per bucket.
-        """
-        student = self.students[0]
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 5, 0))
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 10, 5, 0))
-
-        result = self.module.times_attending_class(self.program)
-
-        for bucket, users in result.items():
-            user_ids = [u.id for u in users]
-            self.assertEqual(
-                len(user_ids),
-                len(set(user_ids)),
-                f"Duplicate user in bucket {bucket!r}.",
-            )
-
-    # ------------------------------------------------------------------ #
-    # times_attending_class – section without meeting times is excluded   #
-    # ------------------------------------------------------------------ #
-
-    def test_sr_for_unscheduled_section_is_excluded(self):
-        """
-        The handler filters section__meeting_times__isnull=False.
-        An SR whose section has no meeting times must not appear in the result.
-        """
-        # Create a second section and strip its meeting times.
-        unscheduled_section = (
-            ClassSection.objects.filter(parent_class__parent_program=self.program)
-            .order_by("id")
-            .last()
-        )
-        unscheduled_section.clear_meeting_times()
-
-        student = self.students[0]
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 0, 0),
-                      section=unscheduled_section)
-
-        result = self.module.times_attending_class(self.program)
-
-        # The student should not appear in any bucket.
-        for bucket, users in result.items():
-            self.assertNotIn(
-                student,
-                users,
-                f"Student from unscheduled section appeared in bucket {bucket!r}.",
-            )
-
-    # ------------------------------------------------------------------ #
-    # times_attending_class – program isolation                           #
-    # ------------------------------------------------------------------ #
-
-    def test_sr_from_different_program_is_excluded(self):
-        """
-        SRs belonging to a different program must never bleed into the result
-        for self.program.
-        """
-        # Spin up a second minimal program.
-        from esp.program.tests import ProgramFrameworkTest as PFT
-        other = PFT()
+    def _make_other_program(self, program_type="OtherProgram",
+                            instance_name="2222_Fall",
+                            instance_label="Fall 2222",
+                            num_timeslots=2):
+        """Spin up a minimal second program and return it."""
+        other = ProgramFrameworkTest()
         other.setUp(
-            num_timeslots=2,
+            num_timeslots=num_timeslots,
             timeslot_length=60,
             timeslot_gap=0,
             num_rooms=1,
@@ -332,62 +142,202 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
             sections_per_class=1,
             num_students=1,
             num_admins=1,
-            program_type="OtherProgram",
-            program_instance_name="2222_Fall",
-            program_instance_label="Fall 2222",
+            program_type=program_type,
+            program_instance_name=instance_name,
+            program_instance_label=instance_label,
             start_time=datetime.datetime(2026, 3, 20, 9, 0, 0),
         )
-        other_section = (
-            ClassSection.objects.filter(
-                parent_class__parent_program=other.program
-            )
-            .order_by("id")
-            .first()
-        )
-        other_ts = list(other.program.getTimeSlots().order_by("start"))
-        other_section.assign_meeting_times(other_ts[:2])
+        return other
 
-        # Register one of *our* students in the other program's section.
-        shared_student = self.students[0]
+    # ------------------------------------------------------------------ #
+    # Assertion helpers                                                    #
+    # ------------------------------------------------------------------ #
+
+    def _bucket(self, dt):
+        """Mirror the handler's hour-truncation: replace(minute=0, second=0, microsecond=0)."""
+        return dt.replace(minute=0, second=0, microsecond=0)
+
+    def _expected_buckets(self, start_dt, section=None):
+        """
+        Return the ordered list of hour buckets the handler emits for one SR
+        with start_date=start_dt attending `section` (defaults to self.section).
+        """
+        s = section or self.section
+        start_bucket = self._bucket(start_dt)
+        end_bucket = self._bucket(s.end_time().end)
+        buckets, t = [], start_bucket
+        while t <= end_bucket:
+            buckets.append(t)
+            t += datetime.timedelta(hours=1)
+        return buckets
+
+    def assertBucketsOrdered(self, result):
+        """Assert that result dict keys are in ascending chronological order."""
+        keys = list(result.keys())
+        self.assertEqual(keys, sorted(keys), "Bucket keys must be chronologically ordered.")
+
+    def assertNoDuplicatesInBuckets(self, result):
+        """Assert that no user appears more than once in any single bucket."""
+        for bucket, users in result.items():
+            user_ids = [u.id for u in users]
+            self.assertEqual(
+                len(user_ids), len(set(user_ids)),
+                f"Duplicate user in bucket {bucket!r}: {user_ids}",
+            )
+
+    def assertUserInBuckets(self, user, buckets, result):
+        """Assert that `user` appears in every listed bucket of `result`."""
+        for b in buckets:
+            self.assertIn(b, result, f"Expected bucket {b!r} missing from result.")
+            self.assertIn(user, result[b], f"User missing from bucket {b!r}.")
+
+    def assertUserNotInResult(self, user, result):
+        """Assert that `user` does not appear in any bucket of `result`."""
+        for bucket, users in result.items():
+            self.assertNotIn(
+                user, users,
+                f"User unexpectedly present in bucket {bucket!r}.",
+            )
+
+
+class TestTimesAttendingClass(_OnSiteAttendanceBase):
+    """
+    Regression tests for OnSiteAttendance.times_attending_class().
+
+    Invariants under test:
+      - Returns dict; empty when no SRs exist.
+      - Keys are chronologically ordered (graph rendering depends on this).
+      - Each student is counted in every bucket from their attendance hour
+        through the section's end-time bucket (carry-forward logic).
+      - A student is counted at most once per bucket (deduplication).
+      - SRs for unscheduled sections (no meeting_times) are excluded.
+      - SRs from a different program are excluded.
+      - Cross-midnight sections: end_time is shifted +1 day when
+        section_end_dt.time() < sr.start_date.time().
+      - Records with end_time < start_time after adjustment are skipped.
+    """
+
+    def test_no_registrations_returns_empty_dict(self):
+        """Empty program → empty dict (not None, not [])."""
+        result = self.module.times_attending_class(self.program)
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result, {})
+
+    def test_single_student_appears_in_all_buckets_until_section_end(self):
+        """Student marked at 09:15 appears in 09:00, 10:00, 11:00 (section ends 11:00)."""
+        student = self.students[0]
+        when = datetime.datetime(2026, 3, 20, 9, 15, 0)
+        self._make_sr(student, when)
+
+        result = self.module.times_attending_class(self.program)
+
+        expected = self._expected_buckets(when)
+        self.assertEqual(sorted(result.keys()), expected)
+        for b in expected:
+            self.assertEqual(result[b], [student])
+
+    def test_result_keys_are_chronologically_ordered(self):
+        """Dict keys must be ascending — the BigBoard graph depends on this."""
+        s0, s1, s2 = self.students
+        self._make_sr(s0, datetime.datetime(2026, 3, 20, 9, 5, 0))
+        self._make_sr(s1, datetime.datetime(2026, 3, 20, 10, 5, 0))
+        self._make_sr(s2, datetime.datetime(2026, 3, 20, 11, 5, 0))
+
+        self.assertBucketsOrdered(self.module.times_attending_class(self.program))
+
+    def test_students_grouped_into_correct_buckets(self):
+        """
+        s0 @ 09:15, s1 @ 09:45, s2 @ 10:05; section ends 11:00.
+
+        09:00 → {s0, s1}
+        10:00 → {s0, s1, s2}   (carry-forward)
+        11:00 → {s0, s1, s2}
+        """
+        s0, s1, s2 = self.students
+        self._make_sr(s0, datetime.datetime(2026, 3, 20, 9, 15, 0))
+        self._make_sr(s1, datetime.datetime(2026, 3, 20, 9, 45, 0))
+        self._make_sr(s2, datetime.datetime(2026, 3, 20, 10, 5, 0))
+
+        result = self.module.times_attending_class(self.program)
+        self.assertBucketsOrdered(result)
+
+        b9  = datetime.datetime(2026, 3, 20, 9, 0, 0)
+        b10 = datetime.datetime(2026, 3, 20, 10, 0, 0)
+        b11 = datetime.datetime(2026, 3, 20, 11, 0, 0)
+
+        self.assertEqual({u.id for u in result[b9]},  {s0.id, s1.id})
+        self.assertEqual({u.id for u in result[b10]}, {s0.id, s1.id, s2.id})
+        self.assertEqual({u.id for u in result[b11]}, {s0.id, s1.id, s2.id})
+
+    def test_deduplicates_same_student_same_hour(self):
+        """Two SRs for the same student within one hour → counted once per bucket."""
+        student = self.students[0]
+        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 10, 0))
+        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 55, 0))
+
+        result = self.module.times_attending_class(self.program)
+        self.assertNoDuplicatesInBuckets(result)
+
+    def test_deduplicates_same_student_across_different_hours(self):
+        """Two SRs in different hours → carry-forward, but still once per bucket."""
+        student = self.students[0]
+        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 5, 0))
+        self._make_sr(student, datetime.datetime(2026, 3, 20, 10, 5, 0))
+
+        result = self.module.times_attending_class(self.program)
+        self.assertNoDuplicatesInBuckets(result)
+
+    def test_excludes_sr_for_unscheduled_section(self):
+        """SR whose section has no meeting_times must not appear (meeting_times__isnull=False filter)."""
+        unscheduled = (
+            ClassSection.objects.filter(parent_class__parent_program=self.program)
+            .order_by("id").last()
+        )
+        unscheduled.clear_meeting_times()
+
+        student = self.students[0]
+        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 0, 0),
+                      section=unscheduled)
+
+        self.assertUserNotInResult(
+            student, self.module.times_attending_class(self.program)
+        )
+
+    def test_excludes_sr_from_different_program(self):
+        """SR belonging to another program must not bleed into self.program's result."""
+        other = self._make_other_program()
+        other_section = (
+            ClassSection.objects.filter(parent_class__parent_program=other.program)
+            .order_by("id").first()
+        )
+        other_section.assign_meeting_times(
+            list(other.program.getTimeSlots().order_by("start"))[:2]
+        )
+
         StudentRegistration.objects.create(
-            user=shared_student,
+            user=self.students[0],
             section=other_section,
             relationship=self.attended_sr_type,
             start_date=datetime.datetime(2026, 3, 20, 9, 0, 0),
         )
 
-        result = self.module.times_attending_class(self.program)
-
-        # self.program has no SRs → result must be empty.
+        # self.program has no SRs of its own → must be empty.
         self.assertEqual(
-            result,
-            {},
+            self.module.times_attending_class(self.program), {},
             "SR from a different program leaked into times_attending_class().",
         )
 
-    # ------------------------------------------------------------------ #
-    # times_attending_class – cross-midnight edge case                    #
-    # ------------------------------------------------------------------ #
-
-    def test_cross_midnight_class_end_time_shifted_forward_one_day(self):
+    def test_cross_midnight_section_shifts_end_time_forward_one_day(self):
         """
-        Regression for the cross-midnight branch in times_attending_class():
-
+        Regression for the cross-midnight branch:
             if section_end_dt.time() < start_time.time():
                 end_time += timedelta(days=1)
 
-        A section whose end time-of-day is earlier than the student's
-        attendance start time-of-day (e.g. class runs 23:00–01:00 and the
-        student is marked at 23:30) must have its end_time shifted forward
-        by one day so the while-loop terminates correctly.
-
-        We simulate this by giving the section a timeslot that ends at 01:00
-        and creating an SR with start_date at 23:30 on the previous day.
+        Section 23:00–01:00, SR at 23:30 → buckets 23:00, 00:00, 01:00.
+        Without the day-shift, end_time would be before start_time and the
+        record would be incorrectly skipped.
         """
-        from esp.cal.models import Event, EventType
-
         event_type = EventType.get_from_desc("Class Time Block")
-        # Slot: 2026-03-20 23:00 – 2026-03-21 01:00
         late_slot, _ = Event.objects.get_or_create(
             program=self.program,
             event_type=event_type,
@@ -396,56 +346,34 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
             short_description="Late Slot",
             description="23:00 03/20/2026",
         )
-
-        # Use a fresh section so we don't disturb the main setUp section.
         night_section = (
             ClassSection.objects.filter(parent_class__parent_program=self.program)
-            .order_by("id")
-            .last()
+            .order_by("id").last()
         )
         night_section.assign_meeting_times([late_slot])
 
         student = self.students[0]
-        # SR at 23:30 on 2026-03-20; section ends at 01:00 on 2026-03-21.
-        sr_time = datetime.datetime(2026, 3, 20, 23, 30, 0)
-        self._make_sr(student, sr_time, section=night_section)
+        self._make_sr(student, datetime.datetime(2026, 3, 20, 23, 30, 0),
+                      section=night_section)
 
         result = self.module.times_attending_class(self.program)
 
-        # Expected buckets: 23:00 on 3/20 and 00:00 on 3/21 and 01:00 on 3/21.
-        b_2300 = datetime.datetime(2026, 3, 20, 23, 0, 0)
-        b_0000 = datetime.datetime(2026, 3, 21, 0, 0, 0)
-        b_0100 = datetime.datetime(2026, 3, 21, 1, 0, 0)
+        self.assertUserInBuckets(student, [
+            datetime.datetime(2026, 3, 20, 23, 0, 0),
+            datetime.datetime(2026, 3, 21, 0, 0, 0),
+            datetime.datetime(2026, 3, 21, 1, 0, 0),
+        ], result)
 
-        self.assertIn(b_2300, result, "Missing 23:00 bucket for cross-midnight class.")
-        self.assertIn(b_0000, result, "Missing 00:00 bucket for cross-midnight class.")
-        self.assertIn(b_0100, result, "Missing 01:00 bucket for cross-midnight class.")
-        self.assertIn(student, result[b_2300])
-        self.assertIn(student, result[b_0000])
-        self.assertIn(student, result[b_0100])
-
-    def test_invalid_end_time_after_adjustment_skips_record(self):
+    def test_skips_record_when_end_time_before_start_after_adjustment(self):
         """
-        Regression for the guard clause:
+        Regression for the guard clause after the cross-midnight shift:
+            if end_time < start_time: continue
 
-            if end_time < start_time:   # after the cross-midnight shift attempt
-                continue
-
-        If the section's end time-of-day equals the start time-of-day (a
-        zero-duration edge case after truncation), the record must be silently
-        skipped rather than causing an infinite loop or error.
-
-        We test this by creating an SR whose start_date hour exactly equals
-        the section's end_time hour on the same day, but the section end is
-        strictly before the SR start (i.e. end_time < start_time and
-        section_end_dt.time() >= start_time.time() so no day-shift occurs).
+        Section ends 08:00; SR at 09:00 → end_time (08:00) < start_time (09:00)
+        and section_end_dt.time() (08:00) is NOT < start_time.time() (09:00),
+        so no day-shift occurs → record must be silently skipped, no crash.
         """
-        from esp.cal.models import Event, EventType
-
         event_type = EventType.get_from_desc("Class Time Block")
-        # Section ends at 08:00; SR is at 09:00 → end_time < start_time,
-        # and section_end_dt.time() (08:00) is NOT < start_time.time() (09:00),
-        # so no day-shift → the record must be skipped.
         early_slot, _ = Event.objects.get_or_create(
             program=self.program,
             event_type=event_type,
@@ -456,50 +384,45 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
         )
         early_section = (
             ClassSection.objects.filter(parent_class__parent_program=self.program)
-            .order_by("id")
-            .last()
+            .order_by("id").last()
         )
         early_section.assign_meeting_times([early_slot])
 
         student = self.students[0]
-        # SR at 09:00 – section already ended at 08:00.
         self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 0, 0),
                       section=early_section)
 
-        # Should not raise; the record must be silently skipped.
+        # Must not raise; student must not appear anywhere.
         result = self.module.times_attending_class(self.program)
+        self.assertUserNotInResult(student, result)
 
-        for bucket, users in result.items():
-            self.assertNotIn(
-                student,
-                users,
-                f"Skipped record unexpectedly appeared in bucket {bucket!r}.",
-            )
 
-    # ------------------------------------------------------------------ #
-    # times_checked_in – basic correctness                                #
-    # ------------------------------------------------------------------ #
+class TestTimesCheckedIn(_OnSiteAttendanceBase):
+    """
+    Regression tests for OnSiteAttendance.times_checked_in().
 
-    def test_times_checked_in_empty_returns_empty_list(self):
-        """With no Records the result is an empty list (not None, not {})."""
+    Invariants under test:
+      - Returns list; empty when no Records exist.
+      - One entry per user (their minimum/earliest check-in time).
+      - Result is sorted in ascending chronological order.
+      - Records from a different program are excluded.
+    """
+
+    def test_no_records_returns_empty_list(self):
+        """Empty program → empty list (not None, not {})."""
         result = self.module.times_checked_in(self.program)
         self.assertIsInstance(result, list)
         self.assertEqual(result, [])
 
-    def test_times_checked_in_single_student_single_record(self):
-        """A single check-in record returns a list with exactly that timestamp."""
-        student = self.students[0]
+    def test_single_record_returns_that_timestamp(self):
+        """One check-in record → list containing exactly that timestamp."""
         when = datetime.datetime(2026, 3, 20, 9, 5, 0)
-        self._make_record(student, when)
+        self._make_record(self.students[0], when)
 
-        result = self.module.times_checked_in(self.program)
-        self.assertEqual(result, [when])
+        self.assertEqual(self.module.times_checked_in(self.program), [when])
 
-    def test_times_checked_in_returns_min_time_per_user(self):
-        """
-        When a student checks in multiple times, only their *earliest* check-in
-        time is included in the result (one entry per user).
-        """
+    def test_uses_earliest_checkin_per_user(self):
+        """Multiple records for one user → only the minimum time is kept."""
         student = self.students[0]
         earlier = datetime.datetime(2026, 3, 20, 9, 5, 0)
         later   = datetime.datetime(2026, 3, 20, 9, 30, 0)
@@ -507,31 +430,22 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
         self._make_record(student, earlier)
 
         result = self.module.times_checked_in(self.program)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], earlier)
 
-        self.assertEqual(len(result), 1, "Expected exactly one entry per user.")
-        self.assertEqual(result[0], earlier, "Expected the earliest check-in time.")
-
-    def test_times_checked_in_result_is_sorted_ascending(self):
-        """
-        The list returned by times_checked_in() must be in ascending
-        chronological order regardless of insertion order.
-        """
+    def test_result_is_sorted_ascending(self):
+        """Result must be chronologically sorted regardless of insertion order."""
         s0, s1, s2 = self.students
         self._make_record(s2, datetime.datetime(2026, 3, 20, 11, 0, 0))
         self._make_record(s0, datetime.datetime(2026, 3, 20, 9, 5, 0))
         self._make_record(s1, datetime.datetime(2026, 3, 20, 10, 0, 5))
 
         result = self.module.times_checked_in(self.program)
+        self.assertEqual(result, sorted(result))
 
-        self.assertEqual(result, sorted(result), "Result must be chronologically sorted.")
-
-    def test_times_checked_in_one_entry_per_user(self):
-        """
-        Even with multiple records per user, the result length equals the
-        number of distinct users who checked in.
-        """
+    def test_one_entry_per_user_regardless_of_record_count(self):
+        """s0×2, s1×1, s2×3 records → exactly 3 entries in result."""
         s0, s1, s2 = self.students
-        # s0: two records; s1: one record; s2: three records
         for t in [datetime.datetime(2026, 3, 20, 9, 5, 0),
                   datetime.datetime(2026, 3, 20, 9, 20, 0)]:
             self._make_record(s0, t)
@@ -541,17 +455,11 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
                   datetime.datetime(2026, 3, 20, 11, 0, 0)]:
             self._make_record(s2, t)
 
-        result = self.module.times_checked_in(self.program)
+        self.assertEqual(len(self.module.times_checked_in(self.program)), 3)
 
-        self.assertEqual(len(result), 3, "Expected one entry per distinct user.")
-
-    def test_times_checked_in_correct_min_times_for_multiple_users(self):
-        """
-        End-to-end: three students with multiple records each.
-        Result must contain each student's minimum check-in time, sorted.
-        """
+    def test_returns_correct_min_times_for_multiple_users(self):
+        """End-to-end: each user's minimum time, sorted ascending."""
         s0, s1, s2 = self.students
-
         records = {
             s0: [datetime.datetime(2026, 3, 20, 9, 12, 30),
                  datetime.datetime(2026, 3, 20, 9, 5, 10)],
@@ -563,52 +471,20 @@ class OnSiteAttendanceTest(ProgramFrameworkTest):
             for t in times:
                 self._make_record(user, t)
 
-        result = self.module.times_checked_in(self.program)
-
         expected = sorted(min(ts) for ts in records.values())
-        self.assertEqual(result, expected)
+        self.assertEqual(self.module.times_checked_in(self.program), expected)
 
-    # ------------------------------------------------------------------ #
-    # times_checked_in – program isolation                                #
-    # ------------------------------------------------------------------ #
-
-    def test_times_checked_in_excludes_records_from_other_program(self):
-        """
-        Records belonging to a different program must not appear in the result
-        for self.program.
-        """
-        from esp.program.tests import ProgramFrameworkTest as PFT
-        other = PFT()
-        other.setUp(
-            num_timeslots=1,
-            timeslot_length=60,
-            timeslot_gap=0,
-            num_rooms=1,
-            room_capacity=10,
-            num_categories=1,
-            num_teachers=1,
-            classes_per_teacher=1,
-            sections_per_class=1,
-            num_students=1,
-            num_admins=1,
-            program_type="OtherProgram",
-            program_instance_name="2222_Fall",
-            program_instance_label="Fall 2222",
-            start_time=datetime.datetime(2026, 3, 20, 9, 0, 0),
-        )
-
-        shared_student = self.students[0]
+    def test_excludes_records_from_different_program(self):
+        """Records for another program must not appear in self.program's result."""
+        other = self._make_other_program(num_timeslots=1)
         Record.objects.create(
             event=self.attended_record_type,
             program=other.program,
-            user=shared_student,
+            user=self.students[0],
             time=datetime.datetime(2026, 3, 20, 9, 0, 0),
         )
 
-        result = self.module.times_checked_in(self.program)
-
         self.assertEqual(
-            result,
-            [],
+            self.module.times_checked_in(self.program), [],
             "Record from a different program leaked into times_checked_in().",
         )
