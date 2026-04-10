@@ -33,7 +33,7 @@ def _setup_roles():
 class ListFieldTest(TestCase):
     """Test the ListField descriptor used in QuestionType."""
 
-    def test_get_returns_tuple(self):
+    def test_get_returns_tuple(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Test Type',
             _param_names='a|b|c',
@@ -42,7 +42,7 @@ class ListFieldTest(TestCase):
         )
         self.assertEqual(qt.param_names, ('a', 'b', 'c'))
 
-    def test_get_empty_string(self):
+    def test_get_empty_string(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Empty Params',
             _param_names='',
@@ -52,7 +52,7 @@ class ListFieldTest(TestCase):
         result = qt.param_names
         self.assertIsInstance(result, tuple)
 
-    def test_set(self):
+    def test_set(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Settable',
             _param_names='',
@@ -109,7 +109,7 @@ class SurveyResponseTest(TestCase):
 
 @patch('esp.survey.models.QuestionType.clean')
 class QuestionTypeTest(TestCase):
-    def test_str_with_params(self):
+    def test_str_with_params(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Rating',
             _param_names='min|max|step',
@@ -119,7 +119,7 @@ class QuestionTypeTest(TestCase):
         result = str(qt)
         self.assertIn('Rating', result)
 
-    def test_is_numeric(self):
+    def test_is_numeric(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Numeric',
             _param_names='',
@@ -128,7 +128,7 @@ class QuestionTypeTest(TestCase):
         )
         self.assertTrue(qt.is_numeric)
 
-    def test_is_countable(self):
+    def test_is_countable(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Countable',
             _param_names='',
@@ -140,7 +140,7 @@ class QuestionTypeTest(TestCase):
 
 @patch('esp.survey.models.QuestionType.clean')
 class QuestionTest(TestCase):
-    def setUp(self):
+    def setUp(self, mock_clean):
         super().setUp()
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
@@ -163,18 +163,18 @@ class QuestionTest(TestCase):
             seq=1,
         )
 
-    def test_str(self):
+    def test_str(self, mock_clean):
         result = str(self.question)
         self.assertIn('Do you like it?', result)
 
-    def test_get_params(self):
+    def test_get_params(self, mock_clean):
         params = self.question.get_params()
         self.assertIsInstance(params, dict)
 
 
 @patch('esp.survey.models.QuestionType.clean')
 class AnswerTest(TestCase):
-    def setUp(self):
+    def setUp(self, mock_clean):
         super().setUp()
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
@@ -203,11 +203,11 @@ class AnswerTest(TestCase):
             value='test answer',
         )
 
-    def test_str(self):
+    def test_str(self, mock_clean):
         result = str(self.answer)
         self.assertIsNotNone(result)
 
-    def test_answer_property_setter_and_getter(self):
+    def test_answer_property_setter_and_getter(self, mock_clean):
         self.answer.answer = 'New answer'
         self.answer.save()
         self.answer.refresh_from_db()
