@@ -19,7 +19,11 @@
 </div>
 {% endif %}
 
+
 <form action="{{ request.path }}" method="post">
+    {% csrf_token %}
+    
+
 
 <div id="program_form">
     <table width="550">
