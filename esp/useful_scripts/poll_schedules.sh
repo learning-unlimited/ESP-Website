@@ -1,13 +1,13 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-    echo "Usage: $0 <program_name>"
-    echo "Example: $0 Spark"
+    echo "Usage: $0 <program_name> [instance]"
+    echo "Example: $0 Spark 2015"
     exit 1
 fi
 
 PROGRAM="$1"
-INSTANCE="2015"
+INSTANCE="${2:-2015}"
 
 echo "What printer do you want to print to? (lpr printer name)"
 read PRINTERNAME
