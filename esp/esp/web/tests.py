@@ -52,6 +52,12 @@ import re
 import os
 import subprocess
 import tempfile
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from django.http import HttpResponse
+
+from esp.web.views.csrf import csrf_failure
 
 # Make sure that we can actually download the homepage
 class PageTest(TestCase):
@@ -311,6 +317,24 @@ class JavascriptSyntaxTest(TestCase):
                 logger.info(line)
 
             self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
+
+
+class CsrfFailureLoggingTest(TestCase):
+    def test_logs_exception_and_falls_back_to_django_default(self):
+        factory = RequestFactory()
+        request = factory.get('/csrf-failure-test')
+        request.user = SimpleNamespace(isAdministrator=lambda: False)
+
+        fallback_response = HttpResponse('fallback', status=403)
+
+        with patch('esp.utils.web.render_to_response', side_effect=RuntimeError('template failure')):
+            with patch('esp.web.views.csrf.django_csrf_failure', return_value=fallback_response) as fallback_mock:
+                with patch('esp.web.views.csrf.logger.exception') as log_mock:
+                    response = csrf_failure(request, reason='test-reason')
+
+        self.assertIs(response, fallback_response)
+        fallback_mock.assert_called_once_with(request, reason='test-reason')
+        log_mock.assert_called_once()
 
 
 class ProfileEditorCapitalizationTest(TestCase):

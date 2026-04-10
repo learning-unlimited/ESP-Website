@@ -1,9 +1,12 @@
 import re
+import logging
 
 from django.http import HttpResponseForbidden
 from django.template import Context, Template
 from django.conf import settings
 from django.views.csrf import csrf_failure as django_csrf_failure
+
+logger = logging.getLogger(__name__)
 
 def csrf_failure(request, reason=""):
     """
@@ -39,6 +42,11 @@ def csrf_failure(request, reason=""):
                                          content_type=response['Content-Type'])
 
     except Exception:
+        logger.exception(
+            'Custom CSRF failure view failed; falling back to Django default. path=%s reason=%r',
+            request.path,
+            reason,
+        )
         response = django_csrf_failure(request, reason=reason)
 
     return response
