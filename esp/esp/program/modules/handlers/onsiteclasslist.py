@@ -42,6 +42,7 @@ from django.db.models.query import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
+from django.db import transaction
 
 from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.models import RegistrationProfile
@@ -180,12 +181,13 @@ class OnSiteClassList(ProgramModuleObj):
         success = registration_profile.student_info is not None
 
         if success:
-            registration_profile.save()
+            with transaction.atomic():
+                registration_profile.save()
 
-            for extension in ['attended', 'med', 'liab', 'onsite']:
-                Record.createBit(extension, program, student)
+                for extension in ['attended', 'med', 'liab', 'onsite']:
+                    Record.createBit(extension, program, student)
 
-            IndividualAccountingController.updatePaid(self.program, student, paid=True)
+                IndividualAccountingController.updatePaid(self.program, student, paid=True)
 
         json.dump({'status':success}, resp)
         return resp
