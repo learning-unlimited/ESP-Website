@@ -4,13 +4,7 @@ from django.db import migrations, models
 
 def forwards_func(apps, schema_editor):
     ClassCategories = apps.get_model("program", "ClassCategories")
-    for category in ClassCategories.objects.all():
-        if category.category and category.category.lower() == 'lunch':
-            category.is_lunch = True
-            category.save()
-
-def backwards_func(apps, schema_editor):
-    pass
+    ClassCategories.objects.filter(category__iexact='lunch').update(is_lunch=True)
 
 class Migration(migrations.Migration):
 
@@ -24,5 +18,5 @@ class Migration(migrations.Migration):
             name='is_lunch',
             field=models.BooleanField(default=False, help_text='True if this category represents Lunch'),
         ),
-        migrations.RunPython(forwards_func, backwards_func),
+        migrations.RunPython(forwards_func, migrations.RunPython.noop),
     ]
