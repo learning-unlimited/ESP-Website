@@ -62,6 +62,14 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
         pm = ProgramModule.objects.get(handler='TeacherPreviewModule', module_type='teach')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
 
+        # Ensure exactly one printables module object exists for this program.
+        ProgramModuleObj.objects.filter(
+            program=self.program,
+            module__handler__icontains='printables'
+        ).delete()
+        pm_printables = ProgramModule.objects.get(handler='ProgramPrintables', module_type='manage')
+        ProgramModuleObj.getFromProgModule(self.program, pm_printables)
+
         # Pick a teacher and get their classes
         self.teacher = random.choice(self.teachers)
         self.teacher_classes = self.teacher.getTaughtClasses()
@@ -88,7 +96,7 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
             'Could not log in test user %s' % user.username
         )
         response = self.client.get(
-            '/learn/%s/%s' % (self.program.getUrlBase(), endpoint),
+            '/teach/%s/%s' % (self.program.getUrlBase(), endpoint),
             query_params or {}
         )
         self.client.logout()
@@ -99,12 +107,9 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
         Test that teacher schedule is generated correctly when a printables module exists.
         Acceptance: Teacher schedule context contains expected class data
         """
-        # Ensure printables module is registered
-        pmos = ProgramModuleObj.objects.filter(
-            program=self.program,
-            module__handler__icontains='printables'
-        )
-        self.assertEqual(pmos.count(), 1, 'Printables module not found')
+        # Ensure printables module is registered.
+        pmos = ProgramModuleObj.objects.filter(program=self.program, module__handler='ProgramPrintables')
+        self.assertEqual(pmos.count(), 1, 'Expected one ProgramPrintables module for this program')
 
         # Get classes that should appear in the schedule
         # (have meeting times, resources, and active status)
@@ -265,25 +270,33 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
         """
         Test that ESPError is raised when multiple printables modules exist (ambiguous).
         """
-        # Get the existing printables module
-        existing_pmo = ProgramModuleObj.objects.filter(
+        # Create a second printables-like module object for this program.
+        # This avoids violating the (program, module) uniqueness constraint.
+        second_printables_module = ProgramModule.objects.create(
+            link_title='Extra Printables',
+            admin_title='Extra Printables',
+            inline_template='',
+            module_type='manage',
+            handler='ProgramPrintablesExtra',
+            seq=9999,
+            required=False,
+            choosable=0,
+        )
+        test_pmo = ProgramModuleObj.objects.create(
             program=self.program,
-            module__handler__icontains='printables'
-        ).first()
+            module=second_printables_module,
+            seq=9999,
+            required=False,
+            required_label='',
+            link_title='',
+        )
 
-        if existing_pmo:
-            # Create a duplicate by duplicating the module object
-            # (This tests the pmos.count() == 1 check)
-            test_pmo = ProgramModuleObj()
-            test_pmo.program = self.program
-            test_pmo.module = existing_pmo.module
-            test_pmo.save()
-
+        try:
             response = self._get_schedule_response(self.teacher, 'teacherschedule')
             self.assertEqual(response.status_code, 500)
-
-            # Cleanup
+        finally:
             test_pmo.delete()
+            second_printables_module.delete()
 
     def test_filters_out_unscheduled_classes(self):
         """
