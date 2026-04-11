@@ -26,7 +26,7 @@ if (typeof question_types != 'undefined') {
         if (["Multiple Choice", "Checkboxes"].includes(quest_type)) {
             var num_choices = (par_values.length > 1)? par_values.length : 5;
             //Add field for user to specify number of choices
-            $td.append("<span class='param_extra_field'>Number of choices: <input type='text' id='num_choices' value='" + num_choices + "'><br/></span>");
+            $td.append("<span class='param_extra_field'>Number of choices: <input type='number' id='num_choices' min='1' value='" + num_choices + "'><br/></span>");
             //We want to prevent people from submitting the form by pressing enter
             $td.append("<button class='param_extra_field' type='submit' disabled hidden></button>");
             //Add fields for choices
@@ -36,7 +36,9 @@ if (typeof question_types != 'undefined') {
             }
             updateVals();
             $j("#num_choices").change(function() {
-                num_choices = $j(this).val();
+                num_choices = parseInt($j(this).val(), 10);
+                if (isNaN(num_choices) || num_choices < 1) { num_choices = 1; }
+                $j(this).val(num_choices);
                 var $fields = $j(".param_field");
                 //Add extra fields if necessary
                 for (let i = 0; i < num_choices; i++) {
@@ -52,7 +54,7 @@ if (typeof question_types != 'undefined') {
         } else if (quest_type == "Labeled Numeric Rating") {
             var num_ratings = (par_values.length > 1)? par_values.length - 1 : 5;
             //Add field for user to specify number of ratings
-            $td.append("<span class='param_extra_field'>Number of ratings: <input type='text' id='num_ratings' name='param_val' value='" + num_ratings + "'><br/></span>");
+            $td.append("<span class='param_extra_field'>Number of ratings: <input type='number' id='num_ratings' min='2' name='param_val' value='" + num_ratings + "'><br/></span>");
             //We want to prevent people from submitting the form by pressing enter
             $td.append("<button class='param_extra_field' type='submit' disabled hidden></button>");
             //Add fields for rating labels
@@ -63,7 +65,9 @@ if (typeof question_types != 'undefined') {
             updateVals();
             //Update number of fields if requested
             $j("#num_ratings").change(function() {
-                num_ratings = $j(this).val();
+                num_ratings = parseInt($j(this).val(), 10);
+                if (isNaN(num_ratings) || num_ratings < 2) { num_ratings = 2; }
+                $j(this).val(num_ratings);
                 var $fields = $j(".param_field");
                 //Add extra fields if necessary
                 for (let i = 0; i < num_ratings; i++) {
@@ -82,9 +86,20 @@ if (typeof question_types != 'undefined') {
             if (params && params.length > 0) {
                 for (let i = 0; i < params.length; i++) {
                     var par_value = (i in par_values)? par_values[i] : "";
-                    $td.append("<span class='param_field'>" + params[i] + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
+                    if (params[i] === "Number of ratings") {
+                        if (!par_value || isNaN(parseInt(par_value, 10))) { par_value = 5; }
+                        $td.append("<span class='param_field'>" + params[i] + ": <input type='number' min='2' class='num_ratings_input' name='param_val' value='" + par_value + "'><br/></span>");
+                    } else {
+                        $td.append("<span class='param_field'>" + params[i] + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
+                    }
                 }
                 $td.parents("tr").show();
+                $j(".num_ratings_input").change(function() {
+                    var val = parseInt($j(this).val(), 10);
+                    if (isNaN(val) || val < 2) { val = 2; }
+                    $j(this).val(val);
+                    updateTextArea();
+                });
             } else {
                 //If there aren't any parameters, hide the whole row
                 $td.parents("tr").hide();
