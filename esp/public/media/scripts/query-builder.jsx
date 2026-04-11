@@ -624,6 +624,149 @@ var TextInput = React.createClass({
 });
 
 /**
+ * An input backed by an AJAX user autocomplete.
+ *
+ * Expects props.input.endpoint (URL) and displayField (field to show).
+ * 
+ * Output JSON is {id, username}.
+ */
+var AjaxUserInput = React.createClass({
+  propTypes: {
+    input: React.PropTypes.shape({
+      reactClass: React.PropTypes.string.isRequired,
+      endpoint: React.PropTypes.string.isRequired,
+      displayField: React.PropTypes.string,
+    }).isRequired,
+    onSubmit: React.PropTypes.func,
+  },
+
+  getInitialState: function () {
+    return {
+      text: '',
+      selected: null,
+      error: null,
+      ajaxError: null,
+    };
+  },
+
+  componentDidMount: function () {
+    this.setupAutocomplete();
+  },
+
+  componentDidUpdate: function () {
+    this.setupAutocomplete();
+  },
+
+  setupAutocomplete: function () {
+    var $ = window.$j || window.jQuery;
+    if (!$) { return; }
+    var self = this;
+    var $input = $(React.findDOMNode(this.refs.input));
+    if ($input.data('ui-autocomplete')) {
+      $input.autocomplete('destroy');
+    }
+    $input.autocomplete({
+      minLength: 2,
+      source: function (request, response) {
+        self.setState({ ajaxError: null });
+        $.getJSON(self.props.input.endpoint, { term: request.term })
+          .done(function (data) {
+            response($.map(data, function (item) {
+              return {
+                label: item[self.props.input.displayField || 'username'],
+                value: item[self.props.input.displayField || 'username'],
+                id: item.id,
+                raw: item,
+              };
+            }));
+          })
+          .fail(function () {
+            self.setState({ ajaxError: "Could not load suggestions" });
+            response([]);
+          });
+      },
+      select: function (event, ui) {
+        self.setState({
+          text: ui.item.value,
+          selected: { id: ui.item.id, username: ui.item.value },
+          error: null,
+        });
+        if (self.props.onSubmit && event.keyCode === 13) {
+          self.props.onSubmit();
+        }
+      },
+      change: function (event, ui) {
+        if (!ui.item) {
+          // User typed something but didn't pick a suggestion.
+          self.setState({ selected: null });
+        }
+      },
+    });
+  },
+
+  asJSON: function () {
+    if (this.state.ajaxError) {
+      this.setState({ error: this.state.ajaxError });
+      throw new BuildQueryError();
+    }
+    if (!this.state.selected) {
+      this.setState({ error: "Select a user from suggestions" });
+      throw new BuildQueryError();
+    }
+    this.setState({ error: null });
+    return this.state.selected;
+  },
+
+  fromJSON: function (data) {
+    if (data && data.username && data.id !== undefined) {
+      this.setState({
+        text: data.username,
+        selected: { id: data.id, username: data.username },
+        error: null,
+      });
+    }
+  },
+
+  handleInputChange: function (event) {
+    this.setState({ text: event.target.value, selected: null });
+  },
+
+  handleKeyDown: function (event) {
+    if (event.keyCode === 13 && this.props.onSubmit) {
+      event.preventDefault();
+      this.props.onSubmit();
+    }
+  },
+
+  clearSelection: function () {
+    this.setState({ text: '', selected: null, error: null, ajaxError: null });
+    React.findDOMNode(this.refs.input).focus();
+  },
+
+  render: function () {
+    var error = this.state.error || this.state.ajaxError;
+    return <span>
+      <span className="error">{error}</span>
+      <input
+        type="text"
+        aria-label="flag creator username"
+        ref="input"
+        className="qb-input"
+        value={this.state.text}
+        onChange={this.handleInputChange}
+        onKeyDown={this.handleKeyDown}
+        placeholder="username" />
+      <button
+        type="button"
+        className="qb-input btn btn-default"
+        onClick={this.clearSelection}>
+        Clear
+      </button>
+    </span>;
+  },
+});
+
+/**
  * A boolean operation.
  *
  * In addition to the filter specification to be passed around, BooleanOp takes
