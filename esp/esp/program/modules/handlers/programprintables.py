@@ -1174,6 +1174,7 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
+        onsite = onsite or (tl == 'onsite')
         if onsite:
             try:
                 user_id = request.GET.get('userid')
@@ -1232,6 +1233,7 @@ class ProgramPrintables(ProgramModuleObj):
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
 
         context = {'module': self }
+        onsite = onsite or (tl == 'onsite')
 
         if onsite:
             try:
