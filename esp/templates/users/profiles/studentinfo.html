@@ -1,8 +1,5 @@
 <!-- Begin Student Info Portion -->
 <h3>Additional Student Information</h3>
-
-{{ form.errors }}
-
 {% if not user.getGrade or form.allow_change_grade_level %}
 <div class="alert">
 <button type="button" class="close" data-dismiss="alert">x</button>
@@ -99,7 +96,7 @@ Your grade level will update automatically every August.
 
 {% if form.heard_about %}
 <div class="control-group">
-    <label for="id_heardofesp" class="control-label">How did you hear of this program?
+    <label for="id_heardofesp" class="control-label">How did you hear of this program? <font color="red">*</font>
     </label>
     <div class="controls controls-row">
     <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
