@@ -143,10 +143,6 @@ class QuestionTest(TestCase):
         super().setUp()
         self.patcher = patch('esp.survey.models.QuestionType.clean')
         self.patcher.start()
-
-    def tearDown(self):
-        self.patcher.stop()
-        super().tearDown()
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(
@@ -168,6 +164,10 @@ class QuestionTest(TestCase):
             seq=1,
         )
 
+    def tearDown(self):
+        self.patcher.stop()
+        super().tearDown()
+
     def test_str(self):
         result = str(self.question)
         self.assertIn('Do you like it?', result)
@@ -182,10 +182,6 @@ class AnswerTest(TestCase):
         super().setUp()
         self.patcher = patch('esp.survey.models.QuestionType.clean')
         self.patcher.start()
-
-    def tearDown(self):
-        self.patcher.stop()
-        super().tearDown()
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(
@@ -212,6 +208,10 @@ class AnswerTest(TestCase):
             question=self.question,
             value='test answer',
         )
+
+    def tearDown(self):
+        self.patcher.stop()
+        super().tearDown()
 
     def test_str(self):
         result = str(self.answer)
