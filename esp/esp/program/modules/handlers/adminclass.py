@@ -178,7 +178,7 @@ class AdminClass(ProgramModuleObj):
         sec_id = request.POST.get('sec_id') or request.GET.get('sec_id')
 
         if not sec_id:
-            raise ESPError("Missing section ID")
+            raise ESPError("Missing section ID", log=False)
 
         cls = self.getClass(request, extra)
 
