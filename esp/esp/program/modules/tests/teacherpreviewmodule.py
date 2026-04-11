@@ -33,9 +33,11 @@ Learning Unlimited, Inc.
 """
 
 import random
+from types import SimpleNamespace
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.middleware.esperrormiddleware import ESPError_NoLog
 from esp.resources.models import ResourceType, ResourceRequest
 
 class TeacherPreviewModuleTest(ProgramFrameworkTest):
@@ -73,6 +75,7 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
         # Pick a teacher and get their classes
         self.teacher = random.choice(self.teachers)
         self.teacher_classes = self.teacher.getTaughtClasses()
+        self.teacher_sections = self.teacher.getTaughtSectionsFromProgram(self.program)
 
     def _assign_resources_to_classes(self, classes):
         """Helper to assign basic resources to classes for tests."""
@@ -114,11 +117,11 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
         # Get classes that should appear in the schedule
         # (have meeting times, resources, and active status)
         self._assign_resources_to_classes(self.teacher_classes)
-        scheduled_classes = [
-            cls for cls in self.teacher_classes
-            if cls.meeting_times.all().exists()
-            and cls.resourceassignment_set.all().exists()
-            and cls.status > 0
+        scheduled_sections = [
+            sec for sec in self.teacher_sections
+            if sec.meeting_times.all().exists()
+            and sec.resourceassignment_set.all().exists()
+            and sec.status > 0
         ]
 
         response = self._get_schedule_response(self.teacher, 'teacherschedule')
@@ -133,8 +136,8 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
         # Verify the number of items matches the scheduled classes
         self.assertEqual(
             len(scheditems),
-            len(scheduled_classes),
-            f'Expected {len(scheduled_classes)} schedule items, got {len(scheditems)}'
+            len(scheduled_sections),
+            f'Expected {len(scheduled_sections)} schedule items, got {len(scheditems)}'
         )
 
         # Verify each scheditem has required keys
@@ -263,8 +266,25 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
             module__handler__icontains='printables'
         ).delete()
 
-        response = self._get_schedule_response(self.teacher, 'teacherschedule')
-        self.assertEqual(response.status_code, 500)
+        request = SimpleNamespace(
+            user=self.teacher,
+            GET={},
+            build_absolute_uri=lambda: '/teach/%s/teacherschedule' % self.program.getUrlBase(),
+        )
+
+        with self.assertRaises(ESPError_NoLog) as context:
+            self.moduleobj.teacherhandout(
+                request,
+                'teach',
+                None,
+                None,
+                self.moduleobj,
+                None,
+                self.program,
+                template_file='teacherschedule.html'
+            )
+
+        self.assertIn('No printables module resolved', str(context.exception))
 
     def test_error_when_multiple_printables_modules_exist(self):
         """
