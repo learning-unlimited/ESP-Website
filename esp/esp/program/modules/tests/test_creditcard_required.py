@@ -3,14 +3,18 @@ Tests for conditionally requiring the Credit Card module (#161)
 and the self-blocking fix (#3501).
 """
 from decimal import Decimal
+import json
+from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser, Group
+from django.test import RequestFactory
 
 from esp.accounting.controllers import (
     GlobalAccountingController,
     IndividualAccountingController,
     ProgramAccountingController,
 )
+from esp.middleware.threadlocalrequest import set_current_request
 from esp.accounting.models import Account, LineItemType, Transfer
 from esp.program.models import Program, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
@@ -332,3 +336,32 @@ class CreditCardSelfBlockingTest(TestCase):
 
         self.assertFalse(completedAll,
             "Other incomplete required modules should block payment")
+
+
+class CreditCardStripeSettingsCacheTest(TestCase):
+    """Tests request-scoped caching of Stripe module settings."""
+
+    def setUp(self):
+        super().setUp()
+        self.program = Program.objects.create(
+            url='cccache', name='CC Cache Program', grade_min=7, grade_max=12)
+        self.cc_module = _get_cc_module(self.program, 'CreditCardModule_Stripe')
+        self.factory = RequestFactory()
+
+    def test_apply_settings_cached_per_request(self):
+        first = json.dumps({'publishable_key': 'pk_test_old'})
+        second = json.dumps({'publishable_key': 'pk_test_new'})
+
+        request_one = self.factory.get('/')
+        request_two = self.factory.get('/')
+
+        with patch('esp.program.modules.handlers.creditcardmodule_stripe.Tag.getProgramTag',
+                   side_effect=[first, second]) as get_tag:
+            set_current_request(request_one)
+            self.assertEqual(self.cc_module.get_setting('publishable_key'), 'pk_test_old')
+            self.assertEqual(self.cc_module.get_setting('publishable_key'), 'pk_test_old')
+
+            set_current_request(request_two)
+            self.assertEqual(self.cc_module.get_setting('publishable_key'), 'pk_test_new')
+
+            self.assertEqual(get_tag.call_count, 2)
