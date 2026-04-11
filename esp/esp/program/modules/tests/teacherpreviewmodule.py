@@ -325,21 +325,21 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
         """
         self._assign_resources_to_classes(self.teacher_classes)
 
-        # Get a class and remove its meeting times
-        unscheduled_class = self.teacher_classes[0]
-        unscheduled_class.meeting_times.clear()
+        # Get a taught section and remove its meeting times.
+        unscheduled_section = self.teacher.getTaughtSectionsFromProgram(self.program)[0]
+        unscheduled_section.meeting_times.clear()
 
         # Ensure it has no meeting times
-        self.assertEqual(unscheduled_class.meeting_times.count(), 0)
+        self.assertEqual(unscheduled_section.meeting_times.count(), 0)
 
         response = self._get_schedule_response(self.teacher, 'teacherschedule')
 
         scheditems = response.context['scheditems']
 
-        # The unscheduled class should not appear
+        # The unscheduled section should not appear.
         schedule_class_ids = [item['cls'].id for item in scheditems]
         self.assertNotIn(
-            unscheduled_class.id,
+            unscheduled_section.id,
             schedule_class_ids,
             'Unscheduled class should be filtered out'
         )
@@ -373,19 +373,19 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
         """
         self._assign_resources_to_classes(self.teacher_classes)
 
-        # Set one class to inactive (status <= 0)
-        inactive_class = self.teacher_classes[0]
-        inactive_class.status = -1  # Rejected status
-        inactive_class.save()
+        # Set one taught section to inactive (status <= 0).
+        inactive_section = self.teacher.getTaughtSectionsFromProgram(self.program)[0]
+        inactive_section.status = -1  # Rejected status
+        inactive_section.save()
 
         response = self._get_schedule_response(self.teacher, 'teacherschedule')
 
         scheditems = response.context['scheditems']
 
-        # The inactive class should not appear
+        # The inactive section should not appear.
         schedule_class_ids = [item['cls'].id for item in scheditems]
         self.assertNotIn(
-            inactive_class.id,
+            inactive_section.id,
             schedule_class_ids,
             'Inactive class should be filtered out'
         )
@@ -406,13 +406,13 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
             returned_class_ids = [item['cls'].id for item in scheditems]
 
             # Get the expected sorted order
-            valid_classes = sorted([
-                cls for cls in self.teacher_classes
-                if cls.meeting_times.all().exists()
-                and cls.resourceassignment_set.all().exists()
-                and cls.status > 0
+            valid_sections = sorted([
+                sec for sec in self.teacher.getTaughtSectionsFromProgram(self.program)
+                if sec.meeting_times.all().exists()
+                and sec.resourceassignment_set.all().exists()
+                and sec.status > 0
             ])
-            expected_class_ids = [cls.id for cls in valid_classes]
+            expected_class_ids = [sec.id for sec in valid_sections]
 
             self.assertEqual(returned_class_ids, expected_class_ids)
 

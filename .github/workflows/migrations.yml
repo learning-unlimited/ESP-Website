@@ -65,7 +65,7 @@ jobs:
     - name: Get apt packages list
       id: apt-action-migrations
       run: |
-        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^.*pip' | tr '\n' ' ')
         echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
       uses: Eeems-Org/apt-cache-action@v1
@@ -79,6 +79,7 @@ jobs:
       env:
         CI_JOB: test
         PYTHON_VERSION: "3.7"
+        PIP_NO_BINARY: "psycopg2"
       run: deploy/ci/install
     - name: Prepare for Migration Check
       env:
