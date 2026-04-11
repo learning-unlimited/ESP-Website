@@ -138,10 +138,15 @@ class QuestionTypeTest(TestCase):
         self.assertTrue(qt.is_countable)
 
 
-@patch('esp.survey.models.QuestionType.clean')
 class QuestionTest(TestCase):
-    def setUp(self, mock_clean):
+    def setUp(self):
         super().setUp()
+        self.patcher = patch('esp.survey.models.QuestionType.clean')
+        self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+        super().tearDown()
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(
@@ -163,19 +168,24 @@ class QuestionTest(TestCase):
             seq=1,
         )
 
-    def test_str(self, mock_clean):
+    def test_str(self):
         result = str(self.question)
         self.assertIn('Do you like it?', result)
 
-    def test_get_params(self, mock_clean):
+    def test_get_params(self):
         params = self.question.get_params()
         self.assertIsInstance(params, dict)
 
 
-@patch('esp.survey.models.QuestionType.clean')
 class AnswerTest(TestCase):
-    def setUp(self, mock_clean):
+    def setUp(self):
         super().setUp()
+        self.patcher = patch('esp.survey.models.QuestionType.clean')
+        self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
+        super().tearDown()
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(
@@ -203,11 +213,11 @@ class AnswerTest(TestCase):
             value='test answer',
         )
 
-    def test_str(self, mock_clean):
+    def test_str(self):
         result = str(self.answer)
         self.assertIsNotNone(result)
 
-    def test_answer_property_setter_and_getter(self, mock_clean):
+    def test_answer_property_setter_and_getter(self):
         self.answer.answer = 'New answer'
         self.answer.save()
         self.answer.refresh_from_db()
