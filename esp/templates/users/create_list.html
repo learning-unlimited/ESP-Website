@@ -74,6 +74,22 @@ function switchnot(not, title) {
    generateSentence();
 }
 
+/* NEW FEATURE: wrap existing query */
+function wrapSentence() {
+   var operator = document.getElementById('wrap_operator').value;
+   var current = document.getElementById('finalsent').value;
+
+   if (!operator || current === 'Nobody.') return;
+
+   var extra = prompt("Enter additional condition:");
+   if (!extra) return;
+
+   var newSentence = '(' + current + ') ' + operator.toUpperCase() + ' (' + extra + ')';
+
+   document.getElementById('finalsentence').innerHTML = newSentence;
+   document.getElementById('finalsent').value = newSentence;
+}
+
 /* check to make sure the base list is not null. */
 function checkForNobody() {
    if (document.getElementById('base_list').value == '') {
@@ -82,42 +98,6 @@ function checkForNobody() {
        return false;
    }
    return true;
-}
-
-/*  NEW FUNCTION ADDED */
-function wrapSentence() {
-    var operator = document.getElementById('wrap_operator').value;
-    if (!operator) return;
-
-    var current = document.getElementById('finalsent').value;
-
-    if (!current || current === "Nobody.") {
-        alert("Please build a base query first.");
-        return;
-    }
-
-    var addition = prompt("Enter new condition (e.g. Premium users):");
-
-    if (!addition) return;
-
-    // Remove last period
-    current = current.replace(/\.$/, '');
-
-    var newSentence = "(" + current + ") ";
-
-    if (operator === 'and') {
-        newSentence += "AND ";
-    } else {
-        newSentence += "OR ";
-    }
-
-    newSentence += "(" + addition + ").";
-
-    document.getElementById('finalsentence').innerHTML = newSentence;
-    document.getElementById('finalsent').value = newSentence;
-
-    // reset dropdown
-    document.getElementById('wrap_operator').value = "";
 }
 
 //-->
@@ -145,11 +125,12 @@ Please generate a list of users from the options below.
 <form action="{{request.path}}?{{ request.GET.urlencode }}" onsubmit="return checkForNobody();" method="post" name="comm">
 <p>
 <em>(If you feel there's a list omitted from this list or this interface is too hard to use, please email <tt>{{ DEFAULT_EMAIL_ADDRESSES.support }}</tt> with questions!)</em>
+<br /><br />
+
+To build this list, it is sufficient to build a sentence.<br />
+Please start the sentence here:
 <br />
 
-<br />
-To build this list, it is sufficient to build a sentence.
-<br />
 <select name="base_list" id="base_list" onchange="generateSentence();">
    <option value="">Select start of sentence...</option>
 {% for dblist in lists %}
@@ -157,7 +138,10 @@ To build this list, it is sufficient to build a sentence.
 {% endfor %}
 </select><br /><br />
 
-<table border="0" class="fullwidth listtable" cellspacing="0" >
+And continue adding to the sentence below:
+</p>
+
+<table border="0" class="fullwidth listtable" cellspacing="0">
 <tr>
   <th rowspan="2">Action</th>
   <th colspan="2">Are/Are Not</th>
@@ -176,30 +160,30 @@ To build this list, it is sufficient to build a sentence.
  </td>
 
  <td onclick="switchnot(false,'{{dblist.id}}');">
-   <input type="radio" name="not_{{dblist.id}}" id="are_{{dblist.id}}" checked disabled />
+   <input type="radio" id="are_{{dblist.id}}" checked disabled />
  </td>
 
  <td onclick="switchnot(true,'{{dblist.id}}');">
-  <input type="radio" name="not_{{dblist.id}}" id="arenot_{{dblist.id}}" disabled />
+   <input type="radio" id="arenot_{{dblist.id}}" disabled />
  </td>
 
  <td>{{ dblist.description }}</td>
  <td>{{ dblist.count }}</td>
-
 </tr>
 {% endfor %}
 </table>
 
-<br /><br />
+<br />
 
 Final Sentence:<br />
 <div id="finalsentence">Nobody.</div>
 
-<!--  NEW UI -->
 <br />
-<label>Add condition at top:</label>
-<select id="wrap_operator" onchange="wrapSentence()">
-  <option value="">-- Select --</option>
+
+<!-- NEW UI -->
+Wrap existing query with:
+<select id="wrap_operator" onchange="wrapSentence();">
+  <option value="">--None--</option>
   <option value="and">AND</option>
   <option value="or">OR</option>
 </select>
@@ -208,7 +192,14 @@ Final Sentence:<br />
 
 <input type="hidden" name="finalsent" id="finalsent" value="Nobody." />
 
+<!-- IMPORTANT: kept existing buttons -->
 <input type="submit" value="I have my list, go on!" name="submitform" />
+<input type="submit" value="I want to search within this list" name="submitform" />
+<input type="submit" value="I want a subset of this list" name="submitform" />
+
+<!-- IMPORTANT: kept hidden fields -->
+<input type="hidden" name="submit_user_list" value="true" />
+<input type="hidden" name="keys" value="{{lists|join:',,'|addslashes}}" />
 
 </form>
 {% endblock %}
