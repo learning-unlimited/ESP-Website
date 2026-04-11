@@ -39,6 +39,7 @@
 
 {# Notification shown when a cross-list drop is rejected (required <-> not-required). #}
 <div id="module-constraint-msg" class="alert alert-warning" role="alert" style="display:none; position:absolute; z-index:9999; max-width:320px; box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>
+<div id="module-reorder-announce" aria-live="assertive" aria-atomic="true" class="visually-hidden"></div>
 
 <div class="module-constraint-legend">
   <strong>Icon legend:</strong>
@@ -61,9 +62,9 @@
                 <h3>
                     Required
                 </h3>
-                <ol id="sortable1" class="connectedSortable">
+                <ol id="sortable1" class="connectedSortable" role="list" aria-label="Student Required Modules">
                 {% for mod in learn_modules.required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                    <li id='{{ mod.id }}' role="listitem" tabindex="0" aria-label="{{ mod.module.admin_title }}{% if mod.id in position_locked_ids %} (position fixed){% endif %}{% if mod.id in required_locked_ids %} (must be required){% endif %}{% if mod.id in not_required_locked_ids %} (cannot be required){% endif %}" class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="glyphicon glyphicon-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="glyphicon glyphicon-ban-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
@@ -73,9 +74,9 @@
                 <h3>
                     Not Required
                 </h3>
-                <ol id="sortable2" class="connectedSortable">
+                <ol id="sortable2" class="connectedSortable" role="list" aria-label="Student Not Required Modules">
                 {% for mod in learn_modules.not_required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                    <li id='{{ mod.id }}' role="listitem" tabindex="0" aria-label="{{ mod.module.admin_title }}{% if mod.id in position_locked_ids %} (position fixed){% endif %}{% if mod.id in required_locked_ids %} (must be required){% endif %}{% if mod.id in not_required_locked_ids %} (cannot be required){% endif %}" class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="glyphicon glyphicon-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="glyphicon glyphicon-ban-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
@@ -92,9 +93,9 @@
                 <h3>
                     Required
                 </h3>
-                <ol id="sortable3" class="connectedSortable">
+                <ol id="sortable3" class="connectedSortable" role="list" aria-label="Teacher Required Modules">
                 {% for mod in teach_modules.required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                    <li id='{{ mod.id }}' role="listitem" tabindex="0" aria-label="{{ mod.module.admin_title }}{% if mod.id in position_locked_ids %} (position fixed){% endif %}{% if mod.id in required_locked_ids %} (must be required){% endif %}{% if mod.id in not_required_locked_ids %} (cannot be required){% endif %}" class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="glyphicon glyphicon-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="glyphicon glyphicon-ban-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
@@ -104,9 +105,9 @@
                 <h3>
                     Not Required
                 </h3>
-                <ol id="sortable4" class="connectedSortable">
+                <ol id="sortable4" class="connectedSortable" role="list" aria-label="Teacher Not Required Modules">
                 {% for mod in teach_modules.not_required %}
-                    <li id='{{ mod.id }}' class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
+                    <li id='{{ mod.id }}' role="listitem" tabindex="0" aria-label="{{ mod.module.admin_title }}{% if mod.id in position_locked_ids %} (position fixed){% endif %}{% if mod.id in required_locked_ids %} (must be required){% endif %}{% if mod.id in not_required_locked_ids %} (cannot be required){% endif %}" class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
                         {% if mod.id in position_locked_ids %}<span class="glyphicon glyphicon-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="glyphicon glyphicon-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="glyphicon glyphicon-ban-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
                         <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
                         <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
