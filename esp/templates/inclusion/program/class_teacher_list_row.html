@@ -151,7 +151,13 @@
     Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}<br />
   </td>
   <td class="clsmiddle" valign="top" colspan="3">
-    {{ sec.num_students }} / {{ sec.capacity }} students <br />
+    {{ sec.num_students }} / {{ sec.capacity }} students
+    {% if user in cls.teachers.all or user.isAdministrator %}
+
+        &nbsp; <a href="/teach/{{ program.getUrlBase }}/editcapacity/{{ cls.id }}" style="font-size: 90%;">(edit capacity)</a>
+    {% endif %}
+
+    <br />
     {% if sec.get_moderators %}{{ program.getModeratorTitle }}s: {% for m in sec.get_moderators %}<a href="mailto:{{ m.email }}">{{ m.first_name }} {{ m.last_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
   </td>
 </tr>
