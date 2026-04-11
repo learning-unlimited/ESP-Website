@@ -1178,12 +1178,12 @@ class ProgramPrintables(ProgramModuleObj):
             try:
                 user_id = request.GET.get('userid')
                 if not user_id:
-                    return ESPError("Missing userid parameter").as_html_response()
-                students = [ESPUser.objects.get(id=user_id)]
+                    raise ESPError("Missing userid parameter")
+                students = [ESPUser.objects.get(id=int(user_id))]
             except ESPUser.DoesNotExist:
-                return ESPError("User not found with the provided userid").as_html_response()
-            except ValueError:
-                return ESPError("Invalid userid format").as_html_response()
+                raise ESPError("User not found with the provided userid")
+            except (ValueError, TypeError):
+                raise ESPError("Invalid userid format")
         else:
             filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Student Financial Spreadsheet'})
 
@@ -1237,12 +1237,12 @@ class ProgramPrintables(ProgramModuleObj):
             try:
                 user_id = request.GET.get('userid')
                 if not user_id:
-                    return ESPError("Missing userid parameter").as_html_response()
-                students = [ESPUser.objects.get(id=user_id)]
+                    raise ESPError("Missing userid parameter")
+                students = [ESPUser.objects.get(id=int(user_id))]
             except ESPUser.DoesNotExist:
-                return ESPError("User not found with the provided userid").as_html_response()
-            except ValueError:
-                return ESPError("Invalid userid format").as_html_response()
+                raise ESPError("User not found with the provided userid")
+            except (ValueError, TypeError):
+                raise ESPError("Invalid userid format")
         else:
             if extra:
                 file_type = extra.strip()
