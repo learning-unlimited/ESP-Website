@@ -3,7 +3,8 @@
 import os
 
 SITE_INFO = (1, 'devsite.learningu.org', 'LU Dev Site')
-CACHE_PREFIX = "ludev"
+# CACHE_PREFIX removed - replaced by KEY_PREFIX inside CACHES
+# See: https://github.com/learning-unlimited/ESP-Website/issues/1306
 PROJECT_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 USE_MAILMAN = False
 DEBUG = True
@@ -21,12 +22,12 @@ DATABASES = {'default':
                 }
             }
 
-# Memcached — connects to the 'memcached' Docker Compose service
 CACHES = {
     'default': {
-        'BACKEND': 'esp.utils.memcached_multikey.CacheClass',
+        'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
         'LOCATION': 'memcached:11211',
         'TIMEOUT': 0,
+        'KEY_PREFIX': 'ludev',  # replaces CACHE_PREFIX = "ludev"
     }
 }
 

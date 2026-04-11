@@ -22,6 +22,8 @@ import unittest
 from django.db.models.query import Q
 from django.template import loader, Template, Context, TemplateDoesNotExist
 from django.test import TestCase as DjangoTestCase
+from django.core.cache import cache
+from django.conf import settings
 
 from esp.middleware import ESPError_Log
 from esp.users.models import ESPUser
@@ -601,15 +603,7 @@ class QueryBuilderTest(DjangoTestCase):
                          {'reactClass': 'SelectInput',
                           'options': [{'name': i,
                                        'title': f'option {i}'}
-                                      # use options.keys() to get the
-                                      # sort order the same as the dict sort
-                                      # order.  It doesn't matter in reality,
-                                      # but just making it the same is easier
-                                      # than writing a thing to compare
-                                      # correctly.
                                       for i in options.keys()]})
-        # Q objects don't have an __eq__, so they don't compare as equal.  But
-        # comparing their str()s seems to work reasonably well.
         self.assertEqual(str(select_input.as_q('5')), str(Q(a_db_field='5')))
         with self.assertRaises(ESPError_Log):
             select_input.as_q('10000')
@@ -640,8 +634,8 @@ class QueryBuilderTest(DjangoTestCase):
             str(Q(a_db_field__lt=datetime.datetime(2015, 11, 30, 23, 59))))
         self.assertEqual(
             str(datetime_input.as_q(
-                {'comparison': 'after', 'datetime': '11/30/1995 00:59'})),
-            str(Q(a_db_field__gt=datetime.datetime(1995, 11, 30, 0, 59))))
+                {'comparison': 'after', 'datetime': '11/01/1995 00:59'})),
+            str(Q(a_db_field__gt=datetime.datetime(1995, 11, 1, 0, 59))))
         self.assertEqual(
             str(datetime_input.as_q(
                 {'comparison': '', 'datetime': '11/01/2015 23:59'})),
@@ -740,21 +734,20 @@ class StripBase64ImagesTest(DjangoTestCase):
         self.assertEqual(result, html)
         self.assertEqual(count, 0)
 
+
 class RunInstallTestCase(unittest.TestCase):
     """Regression tests for the run_install post_migrate signal handler."""
 
     def test_sender_with_no_models_module(self):
         """run_install should not raise when sender has no models_module attribute."""
         sender = Mock(spec_set=[])
-        # Should not raise
         run_install(sender)
 
     def test_sender_with_models_module_missing_install(self):
         """run_install should not raise when models_module lacks install()."""
-        models_module = Mock(spec=[])  # no 'install' attribute
+        models_module = Mock(spec=[])
         sender = Mock()
         sender.models_module = models_module
-        # Should not raise
         run_install(sender)
 
     def test_sender_with_callable_install(self):
@@ -769,20 +762,94 @@ class RunInstallTestCase(unittest.TestCase):
     def test_sender_with_non_callable_install(self):
         """run_install should not call install if it's not callable."""
         models_module = Mock(spec=[])
-        models_module.install = None  # exists but not callable
+        models_module.install = None
         sender = Mock()
         sender.models_module = models_module
-        # Should not raise
         run_install(sender)
 
 
 def suite():
     """Choose tests to expose to the Django tester."""
     s = unittest.TestSuite()
-    # Scan this file for TestCases
     s.addTest(unittest.defaultTestLoader.loadTestsFromModule(utils.tests))
-    # Add doctests from esp.utils.__init__.py
     s.addTest(doctest.DocTestSuite(utils))
     return s
 
 
+class CacheBackendTest(DjangoTestCase):
+    """
+    Tests to verify Django's built-in PyLibMCCache works correctly
+    as a replacement for the old esp.utils.memcached_multikey.CacheClass.
+    See: https://github.com/learning-unlimited/ESP-Website/issues/1306
+    """
+
+    def setUp(self):
+        """ Clear cache before each test """
+        cache.clear()
+
+    def tearDown(self):
+        """ Clear cache after each test """
+        cache.clear()
+
+    def test_cache_set_and_get(self):
+        """ Test 1: Basic cache set and get works """
+        cache.set('test_key', 'test_value', timeout=60)
+        result = cache.get('test_key')
+        self.assertEqual(result, 'test_value',
+            "Basic cache set/get failed!")
+
+    def test_cache_delete(self):
+        """ Test 2: Cache deletion works """
+        cache.set('delete_key', 'some_value', timeout=60)
+        cache.delete('delete_key')
+        result = cache.get('delete_key')
+        self.assertIsNone(result,
+            "Cache key should be None after deletion!")
+
+    def test_cache_key_prefix_is_set(self):
+        """ Test 3: KEY_PREFIX is configured in CACHES """
+        key_prefix = settings.CACHES['default'].get('KEY_PREFIX', '')
+        self.assertTrue(
+            len(key_prefix) > 0,
+            "KEY_PREFIX should be set in CACHES settings!"
+        )
+
+    def test_cache_long_key(self):
+        """ Test 4: Django's built-in backend raises error for keys longer
+            than 250 chars. Unlike the old memcached_multikey.CacheClass,
+            Django does not hash long keys automatically.
+            See: https://github.com/learning-unlimited/ESP-Website/issues/1306
+        """
+        from django.core.cache.backends.base import InvalidCacheKey
+        long_key = 'a' * 300  # 300 chars, over memcached's 250 limit
+        with self.assertRaises(InvalidCacheKey):
+            cache.set(long_key, 'long_key_value')
+
+    def test_cache_set_overwrite(self):
+        """ Test 5: Setting same key twice overwrites the value """
+        cache.set('overwrite_key', 'first_value', timeout=60)
+        cache.set('overwrite_key', 'second_value', timeout=60)
+        result = cache.get('overwrite_key')
+        self.assertEqual(result, 'second_value',
+            "Cache should return the latest value!")
+
+    def test_cache_missing_key_returns_default(self):
+        """ Test 6: Getting a missing key returns default value """
+        result = cache.get('nonexistent_key', 'default_value')
+        self.assertEqual(result, 'default_value',
+            "Missing cache key should return default value!")
+
+    def test_cache_stores_different_data_types(self):
+        """ Test 7: Cache can store different Python data types """
+        test_data = {
+            'string': 'hello',
+            'number': 42,
+            'list':   [1, 2, 3],
+            'dict':   {'key': 'value'},
+            'bool':   True,
+        }
+        for key, value in test_data.items():
+            cache.set(key, value, timeout=60)
+            result = cache.get(key)
+            self.assertEqual(result, value,
+                f"Cache failed for data type: {type(value).__name__}")

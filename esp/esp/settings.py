@@ -239,13 +239,16 @@ for (key, value) in CONTACTFORM_EMAIL_CHOICES:
     if (key in ('esp', 'general', 'esp-web', 'relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
         CONTACTFORM_EMAIL_ADDRESSES[key] = DEFAULT_EMAIL_ADDRESSES[{'esp':'default','general':'default','esp-web':'support','relations':'default'}[key]]
 
-
+# If local_settings.py did not define CACHES, fall back to Django's built-in
+# memcached backend. Replaces esp.utils.memcached_multikey.CacheClass.
+# See: https://github.com/learning-unlimited/ESP-Website/issues/1306
 if 'CACHES' not in locals():
     CACHES = {
         'default': {
-            'BACKEND': 'esp.utils.memcached_multikey.CacheClass',
+            'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
             'LOCATION': '127.0.0.1:11211',
             'TIMEOUT': DEFAULT_CACHE_TIMEOUT,
+            'KEY_PREFIX': CACHE_PREFIX,  # reuses CACHE_PREFIX from django_settings.py
         }
     }
 
@@ -256,6 +259,7 @@ MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LO
 # developer running tests) each get their own directory.  This prevents the
 # [Errno 13] Permission denied failures described in issue #234 that occurred
 # when runserver (owned by www-data) created the shared tempdir first.
+# CACHE_PREFIX is kept in django_settings.py solely for this purpose
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
     tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(os.getuid()))
     os.makedirs(tempdir, mode=0o700, exist_ok=True)

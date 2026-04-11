@@ -49,7 +49,7 @@ import os
 SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
 
 # Must be unique for every site hosted
-CACHE_PREFIX="ESP"
+CACHE_PREFIX = "ESP"  # Deprecated: only kept for temp directory naming in settings.py
 
 # Auto-populated in settings.py
 # Can also be overridden in local_settings.py
