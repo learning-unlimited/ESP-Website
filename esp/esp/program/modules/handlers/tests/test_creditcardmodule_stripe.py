@@ -59,3 +59,15 @@ class CreditCardStripeChargePaymentTests(SimpleTestCase):
 
         self.assertEqual(response, 'failure-response')
         self.module.send_error_email.assert_called_once()
+
+    def test_zero_totalcost_cents_returns_failure(self):
+        response = self._call({'ponumber': 'PO-1', 'stripeToken': 'tok_test_123', 'totalcost_cents': '0'})
+
+        self.assertEqual(response, 'failure-response')
+        self.module.send_error_email.assert_called_once()
+
+    def test_invalid_totalcost_cents_returns_failure(self):
+        response = self._call({'ponumber': 'PO-1', 'stripeToken': 'tok_test_123', 'totalcost_cents': 'abc'})
+
+        self.assertEqual(response, 'failure-response')
+        self.module.send_error_email.assert_called_once()

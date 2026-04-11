@@ -305,6 +305,10 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                 context['error_type'] = 'invalid_amount'
                 context['error_info'] = {'totalcost_cents': raw_totalcost_cents}
 
+        if 'error_type' not in context and amount_cents_post <= 0:
+            context['error_type'] = 'invalid_amount'
+            context['error_info'] = {'totalcost_cents': raw_totalcost_cents}
+
         #   Set Stripe key based on settings.  Also require the API version
         #   which our code is designed for.
         stripe.api_key = self.settings['secret_key']
