@@ -191,7 +191,9 @@ class AdminClass(ProgramModuleObj):
         if request.method == 'POST':
             if request.POST.get('sure') == 'True':
                 section.delete()
-                return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
+
+            # Always redirect on POST (handles cancel case too)
+            return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
 
         context = {'sec': section, 'module': self}
         return render_to_response(self.baseDir()+'delete_confirm.html', request, context)
