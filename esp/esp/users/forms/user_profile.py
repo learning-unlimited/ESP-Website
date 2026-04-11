@@ -171,7 +171,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     dob = forms.DateField(widget=SplitDateWidget(min_year=datetime.now().year-20))
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
-    heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=list(zip(HEARD_ABOUT_ESP_CHOICES, HEARD_ABOUT_ESP_CHOICES))))#forms.CharField(required=False)
+    heard_about = DropdownOtherField(required=True, widget=DropdownOtherWidget(choices=list(zip(HEARD_ABOUT_ESP_CHOICES, HEARD_ABOUT_ESP_CHOICES))))#forms.CharField(required=False)
     shirt_size = forms.ChoiceField(choices=[], required=False)
     shirt_type = forms.ChoiceField(choices=[], required=False)
     food_preference = forms.ChoiceField(choices=[], required=False)
