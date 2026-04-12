@@ -250,7 +250,7 @@ class AutoschedulerController(object):
             resources))
         cls = ClassSection.objects.get(id=section.id).parent_class
         info.append("<b>Class Flags: </b>{}".format(", ".join(
-            cls.flags.values_list(
+            cls.flags.filter(resolved=False).values_list(
                 'flag_type__name', flat=True))))
         return info
 
