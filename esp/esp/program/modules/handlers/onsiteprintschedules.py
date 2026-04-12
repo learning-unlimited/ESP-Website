@@ -39,6 +39,7 @@ from esp.program.modules.handlers.programprintables import ProgramPrintables
 from datetime         import datetime
 from esp.utils.web    import render_to_response
 from esp.utils.models import Printer, PrintRequest
+from esp.users.models    import Record, RecordType
 
 class OnsitePrintSchedules(ProgramModuleObj):
     doc = """Automatically print student schedules at onsite registration."""
@@ -75,6 +76,11 @@ class OnsitePrintSchedules(ProgramModuleObj):
             req = requests[0]
             req.time_executed = datetime.now()
             req.save()
+            rt = RecordType.objects.get(name="attended")
+            if not prog.isCheckedIn(req.user):
+                Record(user=req.user,
+                       event=rt,
+                       program=prog).save()
             response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)
             if request.GET['gen_img'] == 'json':
                 import base64
