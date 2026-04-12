@@ -362,6 +362,11 @@ class StudentClassRegModule(ProgramModuleObj):
                 if section in request.user.getEnrolledSections(self.program):
                     button_context['label'] = 'Registered!'
                     button_context['disabled'] = True
+                elif StudentRegistration.valid_objects().filter(
+                        user=request.user, section=section,
+                        relationship__name='Waitlisted').exists():
+                    button_context['label'] = 'On Waitlist (#%d)' % section.get_waitlist_position(request.user)
+                    button_context['waitlisted'] = True
                 addbutton_str1 = render_to_string(self.baseDir()+'addbutton_fillslot.html', button_context)
                 addbutton_str2 = render_to_string(self.baseDir()+'addbutton_catalog.html', button_context)
                 json_data['addbutton_fillslot_sec%d_html' % sec_id] = addbutton_str1
@@ -395,6 +400,14 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
         section = ClassSection.objects.get(id=sectionid)
+        # Waitlist removal uses the same endpoint to avoid adding additional
+        # forms and JS registration logic.
+        if request.POST.get('waitlist_action') == 'leave':
+            result = section.remove_from_waitlist(request.user)
+            if result is True:
+                return True
+            raise ESPError(result, log=False)
+        
         if not scrmi.use_priority:
             error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
         if scrmi.use_priority or not error:
@@ -405,6 +418,17 @@ class StudentClassRegModule(ProgramModuleObj):
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
         else:
             priority = 1
+
+        if error == 'WAITLIST_AVAILABLE' and not request.user.onsite_local:
+            # The class is full but waitlisting is available.
+            can_waitlist = request.user.isOnsite(prog) or request.user.isAdministrator(prog) or \
+                Permission.user_has_perm(request.user, "Student/Classes/Waitlist", prog)
+            if not can_waitlist:
+                raise ESPError('Waitlisting is currently closed.', log=False)
+            result = section.add_to_waitlist(request.user)
+            if result is True:
+                return True
+            raise ESPError(result, log=False)
 
         if error and not request.user.onsite_local:
             raise ESPError(error, log=False)
