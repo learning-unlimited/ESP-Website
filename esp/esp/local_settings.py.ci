@@ -76,7 +76,14 @@ MIDDLEWARE_LOCAL = []
 # Database     #
 ################
 
-# Set DB name for this site
-DATABASE_NAME = 'test_django'
-DATABASE_USER = 'testuser'
-DATABASE_PASSWORD = 'testpassword'
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': '',
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'USER': '',
+        'PASSWORD': '',
+    }
+}
+
