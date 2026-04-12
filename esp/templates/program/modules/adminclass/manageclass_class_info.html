@@ -71,6 +71,22 @@
     </td>
 </tr>
 <tr>
+    <th class="smaller">Extended Budget Request:</th>
+    <td>
+        {% if class.has_extended_budget_request %}
+            {% if class.is_extended_budget_pending %}
+            <span style="font-weight: bold; color: #00C;">Pending</span>
+            {% elif class.is_extended_budget_approved %}
+            <span style="font-weight: bold; color: #0C0;">Approved</span>
+            {% else %}
+            <span style="font-weight: bold; color: #C00;">Rejected</span>
+            {% endif %}
+        {% else %}
+            Not requested
+        {% endif %}
+    </td>
+</tr>
+<tr>
     <th class="smaller">Comments for Directors:</th>
     <td>
         {{ class.message_for_directors }}

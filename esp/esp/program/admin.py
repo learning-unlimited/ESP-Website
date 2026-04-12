@@ -305,7 +305,8 @@ class SubjectAdmin(admin.ModelAdmin):
         (None, {
             'fields': ('title', 'parent_program', 'timestamp', 'category',
                        'class_info', 'message_for_directors',
-                       'directors_notes', 'purchase_requests')
+                       'directors_notes', 'purchase_requests',
+                       'extended_budget_status')
         }),
         ('Registration Info', {
             'classes': ('collapse',),

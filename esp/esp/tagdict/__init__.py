@@ -737,6 +737,13 @@ all_program_tags = {
         'category': 'class',
         'is_setting': True,
     },
+    'teacherreg_help_text_extended_budget_requested': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the help text for the class registration extended budget request field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
     'teacherreg_help_text_message_for_directors': {
         'is_boolean': False,
         'help_text': 'If set, overrides the help text for the class registration message for directors field',
@@ -881,6 +888,13 @@ all_program_tags = {
     'teacherreg_label_purchase_requests': {
         'is_boolean': False,
         'help_text': 'If set, overrides the label for the class registration purchase requests field',
+        'default': None,
+        'category': 'class',
+        'is_setting': True,
+    },
+    'teacherreg_label_extended_budget_requested': {
+        'is_boolean': False,
+        'help_text': 'If set, overrides the label for the class registration extended budget request field',
         'default': None,
         'category': 'class',
         'is_setting': True,
