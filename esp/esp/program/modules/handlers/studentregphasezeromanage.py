@@ -78,6 +78,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     newcounts = copy.copy(counts)
                     for j in sibs:
                         grade = j.getGrade(prog)
+                        # Find which grade range this student belongs to
                         grade_keys = [key for key in grade_caps if grade in key]
                         if len(grade_keys) == 1:
                             newcounts[grade_keys[0]] += 1

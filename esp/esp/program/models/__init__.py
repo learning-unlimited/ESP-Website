@@ -1323,6 +1323,8 @@ class Program(models.Model, CustomFormsLinkModel):
         return retVal
     getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.program})
 
+
+
     def visibleEnrollments(self):
         """
         Returns whether class enrollments should show up in the catalog.
