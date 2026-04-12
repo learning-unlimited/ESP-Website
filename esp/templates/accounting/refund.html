@@ -24,9 +24,9 @@
 
 <hr />
 
-<h2>Search for Transactions</h2>
+<h2 id="search-heading">Search for Transactions</h2>
 
-<form method="post" action="{% url 'accounting_refund' %}">{% csrf_token %}
+<form method="post" action="{% url 'accounting_refund' %}" aria-labelledby="search-heading">{% csrf_token %}
     <input type="hidden" name="search" value="1" />
     <table>
         <tr>
@@ -39,7 +39,7 @@
         </tr>
     </table>
     <br />
-    <button type="submit" id="search-transactions-btn" class="btn btn-primary">Search Transactions</button>
+    <button type="submit" id="search-transactions-btn" class="btn btn-primary" aria-label="Search transactions for selected program and student">Search Transactions</button>
 </form>
 
 <script>
@@ -71,10 +71,10 @@
 
 {% if selected_program %}
 <hr />
-<h2>Transactions for {{ selected_program.niceName }}</h2>
+<h2 id="transactions-heading">Transactions for {{ selected_program.niceName }}</h2>
 
 {% if has_transactions %}
-<form method="post" action="{% url 'accounting_refund_process' %}">{% csrf_token %}
+<form method="post" action="{% url 'accounting_refund_process' %}" aria-labelledby="transactions-heading">{% csrf_token %}
     <input type="hidden" name="program_id" value="{{ selected_program.id }}" />
 
     <table class="table table-bordered table-striped" style="width: 100%; border-collapse: collapse;">
@@ -104,7 +104,8 @@
                 <td>
                     {% if row.amount_remaining > 0 %}
                     <input type="number" name="refund_amount_{{ row.transfer.id }}" value="{{ row.amount_remaining }}"
-                        min="0" max="{{ row.amount_remaining }}" step="0.01" style="width: 100px;" />
+                        min="0" max="{{ row.amount_remaining }}" step="0.01" style="width: 100px;"
+    aria-label="Refund amount for {{ row.full_name }}" />
                     {% else %}
                     <em>Fully refunded</em>
                     {% endif %}
@@ -120,7 +121,7 @@
         Set the refund amount to 0 (or clear it) for any transaction you do NOT want to refund.
     </div>
 
-    <button type="submit" id="process-refunds-btn" class="btn btn-danger" style="margin-top: 10px;" disabled
+    <button type="submit" id="process-refunds-btn" class="btn btn-danger" style="margin-top: 10px;" disabled aria-label="Process selected refunds - this cannot be undone"
         onclick="return confirm('Are you sure you want to process these refunds? This action cannot be undone.');">
         Process Refunds
     </button>

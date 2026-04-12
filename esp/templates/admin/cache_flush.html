@@ -1,7 +1,7 @@
 {% extends "main.html" %}
 
 {% block title %}Flush the Memcached Cache{% endblock %}
-{% block content_title %}Flush the Memcached Cache{% endblock %}
+{% block content_title %}<span id="cache-flush-heading">Flush the Memcached Cache</span>{% endblock %}
 
 {% block keywords %}{% endblock %}
 {% block description %}{% endblock %}
@@ -23,22 +23,22 @@ Flushing the cache may patch the bug for now, but it'll very likely come up
 later, possibly in a more annoying way.)</p>
 
 {% if error %}
-    <div class="alert alert-danger">
+    <div class="alert alert-danger" role="alert" aria-live="assertive">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         {{ error }}
     </div>
 {% endif %}
 {% if success %}
-    <div class="alert alert-success">
+    <div class="alert alert-success" role="status" aria-live="polite">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         {{ success }}
     </div>
 {% endif %}
-<p>
-<form action="/manage/flushcache/" method="POST">
-<textarea name="reason" placeholder="Reason for flushing cache"></textarea>
-<input type="submit" value="Flush Cache" class="btn btn-danger" required />
+<form action="/manage/flushcache/" method="POST" aria-labelledby="cache-flush-heading">
+<label for="reason">Reason for flushing cache</label>
+<textarea name="reason" id="reason" placeholder="Reason for flushing cache" required aria-describedby="reason-hint"></textarea>
+<span id="reason-hint">Please explain why you are flushing the cache so issues can be tracked and fixed.</span>
+<input type="submit" value="Flush Cache" class="btn btn-danger" aria-label="Flush the Memcached cache" />
 </form>
-</p>
 
 {% endblock %}
