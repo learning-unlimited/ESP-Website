@@ -925,14 +925,12 @@ class ClassSection(models.Model):
                 continue
 
             if hasattr(sec, '_timeslot_ids'):
-                timeslot_ids = sec._timeslot_ids
+                timeslot_ids = set(sec._timeslot_ids)
             else:
-                timeslot_ids = sec.timeslot_ids()
+                timeslot_ids = set(sec.timeslot_ids())
 
-            for tid in timeslot_ids:
-                if tid in my_timeslots:
-                    conflicts.append(sec)
-                    break
+            if my_timeslots.intersection(timeslot_ids):
+                conflicts.append(sec)
         return conflicts
 
     def conflicts(self, teacher, meeting_times=None):
