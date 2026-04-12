@@ -45,7 +45,7 @@ from django.db.models.query import Q
 from django.contrib.sites.models import Site
 from django.template.loader import render_to_string
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import stripe
 import json
 import re
@@ -265,6 +265,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context = {'postdata': request.POST.copy()}
 
         group_name = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+        stripe_token = request.POST.get('stripeToken')
+        raw_totalcost_cents = request.POST.get('totalcost_cents')
 
         iac = IndividualAccountingController(self.program, request.user)
 
@@ -285,6 +287,28 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                 if form.amount:
                     iac.set_preference('Donation to Learning Unlimited', 1, amount=form.amount)
 
+        if not stripe_token or raw_totalcost_cents in (None, ''):
+            context['error_type'] = 'missing_post_data'
+            context['error_info'] = {
+                'missing_fields': [
+                    field for field, value in (
+                        ('stripeToken', stripe_token),
+                        ('totalcost_cents', raw_totalcost_cents),
+                    ) if not value
+                ],
+            }
+
+        if 'error_type' not in context:
+            try:
+                amount_cents_post = Decimal(raw_totalcost_cents)
+            except (TypeError, InvalidOperation):
+                context['error_type'] = 'invalid_amount'
+                context['error_info'] = {'totalcost_cents': raw_totalcost_cents}
+
+        if 'error_type' not in context and amount_cents_post <= 0:
+            context['error_type'] = 'invalid_amount'
+            context['error_info'] = {'totalcost_cents': raw_totalcost_cents}
+
         #   Set Stripe key based on settings.  Also require the API version
         #   which our code is designed for.
         stripe.api_key = self.settings['secret_key']
@@ -292,7 +316,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         # v1.12.2.
         stripe.api_version = '2014-03-13'
 
-        if request.POST.get('ponumber', '') != iac.get_id():
+        if 'error_type' not in context and request.POST.get('ponumber', '') != iac.get_id():
             #   If we received a payment for the wrong PO:
             #   This is not a Python exception, but an error nonetheless.
             context['error_type'] = 'inconsistent_po'
@@ -301,7 +325,6 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         if 'error_type' not in context:
             #   Check the amount in the POST against the amount in our records.
             #   If they don't match, raise an error.
-            amount_cents_post = Decimal(request.POST['totalcost_cents'])
             amount_cents_iac = Decimal(iac.amount_due()) * 100
             if amount_cents_post != amount_cents_iac:
                 context['error_type'] = 'inconsistent_amount'
@@ -322,7 +345,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     # Thus, we will never be in a state where the card has been
                     # charged without a record being created on the site, nor
                     # vice-versa.
-                    totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
+                    totalcost_dollars = amount_cents_post / 100
 
                     #   Create a record of the transfer without the transaction ID.
                     transfer = iac.submit_payment(totalcost_dollars, 'TBD')
@@ -332,11 +355,11 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     charge = stripe.Charge.create(
                         amount=amount_cents_post,
                         currency="usd",
-                        card=request.POST['stripeToken'],
+                        card=stripe_token,
                         description="Payment for %s %s - %s" % (group_name, prog.niceName(), request.user.name()),
                         statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
                         metadata={
-                            'ponumber': request.POST['ponumber'],
+                            'ponumber': request.POST.get('ponumber', ''),
                         },
                     )
 
