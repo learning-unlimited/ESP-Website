@@ -952,7 +952,6 @@ class ClassSection(models.Model):
                 timeslot_ids = set(sec._timeslot_ids)
             else:
                 timeslot_ids = set(sec.timeslot_ids())
-
             if my_timeslots.intersection(timeslot_ids):
                 conflicts.append(sec)
         return conflicts

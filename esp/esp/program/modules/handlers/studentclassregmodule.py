@@ -454,7 +454,7 @@ class StudentClassRegModule(ProgramModuleObj):
                         transaction.set_rollback(True)
             else:
                 success = self.addclass_logic(request, tl, one, two, module, extra, prog)
-            
+
             if 'no_schedule' in request.POST:
                 resp = HttpResponse(content_type='application/json')
                 json.dump({'status': success}, resp)
@@ -501,7 +501,6 @@ class StudentClassRegModule(ProgramModuleObj):
                             return resp
                     except (ClassSection.DoesNotExist, ValueError):
                         pass
-
             error_message = inst.args[0] if inst.args else "An error occurred."
             return HttpResponse(json.dumps({'status' : 200, 'error': str(error_message)}), content_type='application/json')
 
