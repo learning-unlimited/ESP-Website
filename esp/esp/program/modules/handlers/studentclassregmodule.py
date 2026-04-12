@@ -414,20 +414,31 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_cap
     def ajax_addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class and return an updated inline schedule """
-        if not request.is_ajax():
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.addclass(request, tl, one, two, module, extra, prog)
         try:
-            # Handle force replace
+            from django.db import transaction
+            # Handle force replace atomically so conflicting classes are only dropped
+            # if the replacement registration succeeds.
             if request.POST.get('force_replace') == 'true':
-                sectionid = request.POST.get('section_id')
-                if sectionid:
-                    section = ClassSection.objects.get(id=sectionid)
-                    conflicts = section.get_conflicts(request.user)
-                    verbs = RTC.getVisibleRegistrationTypeNames(prog)
-                    for conflict in conflicts:
-                        conflict.unpreregister_student(request.user, verbs)
-
-            success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+                with transaction.atomic():
+                    sectionid = request.POST.get('section_id')
+                    if sectionid:
+                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        if section:
+                            conflicts = section.get_conflicts(request.user)
+                            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            for conflict in conflicts:
+                                error = conflict.cannotRemove(request.user)
+                                if error and not getattr(request.user, "onsite_local", False):
+                                    raise ESPError(error, log=False)
+                                conflict.unpreregister_student(request.user, verbs)
+                    success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+                    if not success:
+                        transaction.set_rollback(True)
+            else:
+                success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+            
             if 'no_schedule' in request.POST:
                 resp = HttpResponse(content_type='application/json')
                 json.dump({'status': success}, resp)
@@ -447,28 +458,32 @@ class StudentClassRegModule(ProgramModuleObj):
                 sectionid = request.POST.get('section_id')
                 if sectionid:
                     try:
-                        section = ClassSection.objects.get(id=sectionid)
+                        section = ClassSection.objects.get(id=sectionid, parent_class__parent_program=prog)
                         conflicts = section.get_conflicts(request.user)
                         if conflicts:
                             conflict_titles = ", ".join([str(c.title()) for c in conflicts])
                             confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
 
-                            # Return JS confirming and then re-submitting with force_replace=true
-                            form_id = "prereg_%s" % sectionid
+                            form_selector = '#prereg_%s' % sectionid
+                            force_replace_input = '<input type="hidden" name="force_replace" value="true">'
                             js_script = (
-                                "if (confirm('%s')) {"
-                                "  var form = $j('#%s');"
-                                "  if (form.length > 0) {"
-                                "    form.append('<input type=\"hidden\" name=\"force_replace\" value=\"true\">');"
-                                "    form.submit();"
-                                "    form.find('input[name=\"force_replace\"]').remove();"
-                                "  }"
-                                "}"
-                            ) % (confirm_msg, form_id)
+                                'if (confirm(%s)) {'
+                                '  var form = $j(%s);'
+                                '  if (form.length > 0) {'
+                                '    form.append(%s);'
+                                '    form.submit();'
+                                '    form.find(\'input[name="force_replace"]\').remove();'
+                                '  }'
+                                '}'
+                            ) % (
+                                json.dumps(confirm_msg),
+                                json.dumps(form_selector),
+                                json.dumps(force_replace_input),
+                            )
                             resp = HttpResponse(content_type='application/json')
                             resp.content = json.dumps({'script': js_script})
                             return resp
-                    except:
+                    except (ClassSection.DoesNotExist, ValueError):
                         pass
 
             # TODO(benkraft): we shouldn't need to do this.  find a better way.

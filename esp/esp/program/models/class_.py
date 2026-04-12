@@ -917,7 +917,7 @@ class ClassSection(models.Model):
     def get_conflicts(self, user):
         """ Return a list of sections that conflict with this one for the given user. """
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
-        my_timeslots = self.timeslot_ids()
+        my_timeslots = set(self.timeslot_ids())
         conflicts = []
         for sec in section_list:
             if sec.parent_class == self.parent_class:

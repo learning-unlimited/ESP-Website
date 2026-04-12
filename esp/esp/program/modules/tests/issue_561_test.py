@@ -1,5 +1,5 @@
 from esp.program.tests import ProgramFrameworkTest
-from esp.program.models import ClassSubject, ClassSection, StudentRegistration, RegistrationType
+
 import json
 
 class Issue561Test(ProgramFrameworkTest):
