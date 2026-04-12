@@ -132,6 +132,8 @@ urlpatterns += [
 urlpatterns += [
     re_path(r'^(faq|faq\.html)$', main.FAQView.as_view(), name='FAQ'),
     re_path(r'^(contact|contact\.html)$', main.ContactUsView.as_view(), name='Contact Us'),
+    re_path(r'^teach/index\.html$', main.TeachIndexView.as_view(), name='teach_index'),
+    re_path(r'^teach/register/?$', main.teach_register, name='teach_register'),
 ]
 
 urlpatterns += [

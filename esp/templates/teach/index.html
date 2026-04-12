@@ -1,0 +1,18 @@
+{% extends "main.html" %}
+
+{% block title %}Teach{% endblock %}
+{% block content_title %}Teach{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+
+{% inline_qsd_block "teach/index" %}
+<p>Want to share your knowledge? Click below to get started.</p>
+{% end_inline_qsd_block %}
+
+<p>
+  <a href="/teach/register/" class="btn btn-primary btn-lg">Register to Teach!</a>
+</p>
+
+{% endblock %}
