@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from argcache            import cache_function
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.tagdict.models import Tag
@@ -341,12 +341,47 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         iac = IndividualAccountingController(prog, request.user)
         context['has_external_payment'] = iac.get_transfers().exclude(transaction_id='').exists()
 
+        # Pass the invoice ID and paper schedule opt-out status for the barcode and toggle
+        context['invoice_id'] = iac.get_id()
+        context['opt_out_paper_schedule'] = Record.user_completed(request.user, 'opt_out_paper_schedule', prog)
+
         if context['scrmi'] and context['scrmi'].use_priority:
             context['no_confirm'] = True
         else:
             context['no_confirm'] = False
 
         return render_to_response(self.baseDir()+'mainpage.html', request, context)
+
+    @aux_call
+    @needs_student_in_grade
+    def optout_paper_schedule(self, request, tl, one, two, module, extra, prog):
+        """AJAX handler to toggle a student's paper schedule opt-out preference.
+
+        A POST with opt_out=true creates an opt_out_paper_schedule Record for
+        the student in this program; a POST with opt_out=false removes it.
+        Returns JSON: { "opted_out": <bool> }
+        """
+        import json as _json
+        if request.method != 'POST':
+            return HttpResponse(status=405)
+
+        opt_out_str = request.POST.get('opt_out', 'false').lower()
+        opt_out = opt_out_str in ('true', '1', 'yes')
+
+        if opt_out:
+            rt, _ = RecordType.objects.get_or_create(
+                name='opt_out_paper_schedule',
+                defaults={'description': 'Opted out of paper schedule printing'}
+            )
+            Record.objects.get_or_create(user=request.user, event=rt, program=prog)
+        else:
+            Record.objects.filter(
+                user=request.user,
+                event__name='opt_out_paper_schedule',
+                program=prog
+            ).delete()
+
+        return HttpResponse(_json.dumps({'opted_out': opt_out}), content_type='application/json')
 
     def isStep(self):
         return False
