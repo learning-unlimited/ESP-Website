@@ -121,3 +121,314 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         for line in lines[i:i+j]:
             found_default = found_default or ('<option value="" selected></option>' in line)
         self.assertTrue(found_default)
+
+
+class RegistrationProfileFlowTest(ProgramFrameworkTest):
+    """
+    Comprehensive tests for the RegistrationProfile workflow (issue #225).
+
+    Covers:
+      - First-time profile creation for students and teachers
+      - Editing / updating an existing profile
+      - Invalid POST data (missing required fields)
+      - Default grade behaviour from PR #193 (empty option must be pre-selected,
+        not the smallest grade)
+      - Grade remains null / produces an error when omitted from POST
+    """
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({'num_students': 3, 'num_teachers': 2})
+        super().setUp(*args, **kwargs)
+        self.student_profile_url = '%sprofile' % self.program.get_learn_url()
+        self.teacher_profile_url = '%sprofile' % self.program.get_teach_url()
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _valid_student_post(self, grade=9):
+        """Return a minimal valid POST dict for StudentProfileForm."""
+        from esp.users.models import ESPUser
+        yog = str(ESPUser.YOGFromGrade(grade))
+        return {
+            'profile_page':       '',
+            # UserContactForm
+            'first_name':         'Test',
+            'last_name':          'Student',
+            'e_mail':             'teststudent@example.com',
+            # phone_cell satisfies the require_student_phonenum check when enabled
+            'phone_cell':         '+16175559999',
+            'address_street':     '123 Test St',
+            'address_city':       'Cambridge',
+            'address_state':      'MA',
+            'address_zip':        '02139',
+            # StudentInfoForm
+            'graduation_year':    yog,
+            'dob_0':              '5',     # month (SplitDateWidget: 0=month)
+            'dob_1':              '15',    # day
+            'dob_2':              '2010',  # year
+            # EmergContactForm
+            'emerg_first_name':   'Emerg',
+            'emerg_last_name':    'Contact',
+            'emerg_phone_day':    '+16175551234',
+            'emerg_address_street': '123 Test St',
+            'emerg_address_city': 'Cambridge',
+            'emerg_address_state': 'MA',
+            'emerg_address_zip':  '02139',
+            # GuardContactForm
+            'guard_first_name':   'Guard',
+            'guard_last_name':    'Ian',
+            'guard_phone_day':    '+16175555678',
+        }
+
+    def _valid_teacher_post(self):
+        """Return a minimal valid POST dict for TeacherProfileForm."""
+        return {
+            'profile_page':   '',
+            # UserContactForm (address fields are optional for teachers)
+            'first_name':     'Test',
+            'last_name':      'Teacher',
+            'e_mail':         'testteacher@example.com',
+            # Teachers always require at least one phone (isTeacher() branch in clean())
+            'phone_cell':     '+16175558888',
+            # TeacherInfoForm – affiliation is a DropdownOtherField (MultiWidget)
+            'affiliation_0':  'Undergrad',
+            'affiliation_1':  '',
+        }
+
+    # ------------------------------------------------------------------
+    # 1. Unauthenticated access
+    # ------------------------------------------------------------------
+
+    def test_unauthenticated_redirect(self):
+        """GET /learn/<prog>/profile without login must redirect (302)."""
+        self.client.logout()
+        response = self.client.get(self.student_profile_url)
+        self.assertEqual(response.status_code, 302)
+
+    # ------------------------------------------------------------------
+    # 2. GET profile page – student
+    # ------------------------------------------------------------------
+
+    def test_get_profile_page_student(self):
+        """A logged-in student can load the profile page and sees the grade field."""
+        self.client.login(username=self.students[0].username, password='password')
+        response = self.client.get(self.student_profile_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="id_graduation_year"')
+
+    # ------------------------------------------------------------------
+    # 3. First-time student profile creation
+    # ------------------------------------------------------------------
+
+    def test_first_time_student_profile_creation(self):
+        """POSTing valid student data creates a RegistrationProfile with correct grade."""
+        from esp.program.models import RegistrationProfile
+        from esp.users.models import ESPUser
+
+        student = self.students[0]
+        RegistrationProfile.objects.filter(user=student).delete()
+
+        self.client.login(username=student.username, password='password')
+        response = self.client.post(self.student_profile_url, self._valid_student_post(grade=9))
+
+        # Redirect on success (or 200 if the module re-renders)
+        self.assertIn(response.status_code, (200, 302),
+                      "Expected 200 or 302 after valid profile POST")
+
+        # A profile with student_info must now exist
+        profiles = RegistrationProfile.objects.filter(user=student, student_info__isnull=False)
+        self.assertTrue(profiles.exists(),
+                        "A RegistrationProfile with student_info should be created")
+
+        # grade must match the submitted value, not be forced to the smallest grade
+        expected_yog = ESPUser.YOGFromGrade(9)
+        prof = profiles.order_by('-last_ts').first()
+        self.assertIsNotNone(prof.student_info.graduation_year)
+        self.assertEqual(int(prof.student_info.graduation_year), expected_yog,
+                         "graduation_year should equal the POSTed value, not the smallest grade")
+
+    # ------------------------------------------------------------------
+    # 4. Invalid data – graduation_year omitted
+    # ------------------------------------------------------------------
+
+    def test_student_profile_invalid_data(self):
+        """POSTing with an empty graduation_year must fail validation (200 + error)."""
+        from esp.program.models import RegistrationProfile
+
+        student = self.students[1]
+        RegistrationProfile.objects.filter(user=student).delete()
+
+        self.client.login(username=student.username, password='password')
+        response = self.client.post(self.student_profile_url,
+                                    {'graduation_year': '', 'profile_page': ''})
+
+        # Form must be re-rendered with an error, not redirected
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'This field is required.')
+
+        # No completed profile should have been written
+        self.assertFalse(
+            RegistrationProfile.objects.filter(user=student, student_info__isnull=False).exists(),
+            "No profile with student_info should be created when graduation_year is missing",
+        )
+
+    # ------------------------------------------------------------------
+    # 5. Editing an existing student profile
+    # ------------------------------------------------------------------
+
+    def test_edit_existing_student_profile(self):
+        """Posting updated contact data on an existing profile updates user info."""
+        from esp.program.models import RegistrationProfile
+
+        student = self.students[2]
+        RegistrationProfile.objects.filter(user=student).delete()
+
+        self.client.login(username=student.username, password='password')
+
+        # Create the initial profile
+        initial = self._valid_student_post(grade=9)
+        initial.update({'first_name': 'Original', 'address_city': 'Boston'})
+        self.client.post(self.student_profile_url, initial)
+
+        # Edit: change first_name and city (grade unchanged – allow_change_grade_level is False)
+        updated = self._valid_student_post(grade=9)
+        updated.update({'first_name': 'Updated', 'address_city': 'Somerville'})
+        response = self.client.post(self.student_profile_url, updated)
+
+        self.assertIn(response.status_code, (200, 302))
+
+        # User's first_name should reflect the edited submission
+        student.refresh_from_db()
+        self.assertEqual(student.first_name, 'Updated',
+                         "User first_name should be updated after editing the profile")
+
+        # Profile count should remain bounded (no runaway duplicates)
+        profile_count = RegistrationProfile.objects.filter(user=student).count()
+        self.assertLessEqual(profile_count, 3,
+                             "Editing a profile must not create unbounded duplicates")
+
+    # ------------------------------------------------------------------
+    # 6. GET profile page – teacher
+    # ------------------------------------------------------------------
+
+    def test_get_profile_page_teacher(self):
+        """A logged-in teacher can load the teacher profile page (200)."""
+        self.client.login(username=self.teachers[0].username, password='password')
+        response = self.client.get(self.teacher_profile_url)
+        self.assertEqual(response.status_code, 200)
+
+    # ------------------------------------------------------------------
+    # 7. First-time teacher profile creation
+    # ------------------------------------------------------------------
+
+    def test_first_time_teacher_profile_creation(self):
+        """POSTing valid teacher data creates a RegistrationProfile with teacher_info."""
+        from esp.program.models import RegistrationProfile
+
+        teacher = self.teachers[1]
+        RegistrationProfile.objects.filter(user=teacher).delete()
+
+        self.client.login(username=teacher.username, password='password')
+        response = self.client.post(self.teacher_profile_url, self._valid_teacher_post())
+
+        self.assertIn(response.status_code, (200, 302))
+        self.assertTrue(
+            RegistrationProfile.objects.filter(user=teacher, teacher_info__isnull=False).exists(),
+            "A RegistrationProfile with teacher_info should be created after valid teacher POST",
+        )
+
+    # ------------------------------------------------------------------
+    # 8. Default grade NOT auto-selected (PR #193)
+    # ------------------------------------------------------------------
+
+    def test_default_grade_not_auto_selected(self):
+        """
+        On a fresh profile page the graduation_year <select> must have the empty
+        option pre-selected, never the smallest available grade (PR #193).
+        """
+        from esp.program.models import RegistrationProfile
+        from esp.users.models import ESPUser
+
+        student = self.students[0]
+        RegistrationProfile.objects.filter(user=student).delete()
+
+        self.client.login(username=student.username, password='password')
+        response = self.client.get(self.student_profile_url)
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content.decode('utf-8')
+        lines = content.split('\n')
+
+        # Locate the graduation_year <select>
+        start_idx = None
+        for i, line in enumerate(lines):
+            if 'id="id_graduation_year"' in line:
+                start_idx = i
+                break
+        self.assertIsNotNone(start_idx,
+                             "graduation_year select not found in profile page HTML")
+
+        # Locate its closing </select>
+        end_offset = None
+        for j, line in enumerate(lines[start_idx:]):
+            if '</select>' in line:
+                end_offset = j
+                break
+        self.assertIsNotNone(end_offset,
+                             "Closing </select> for graduation_year not found")
+
+        select_html = '\n'.join(lines[start_idx: start_idx + end_offset + 1])
+
+        # The empty/blank option must be the selected one
+        self.assertTrue(
+            '<option value="" selected>' in select_html or
+            '<option value="" selected></option>' in select_html,
+            "The empty option must be pre-selected for graduation_year on a new profile (PR #193)",
+        )
+
+        # The smallest grade option must NOT be shown as selected
+        smallest_grade = min(ESPUser.grade_options())
+        smallest_yog   = str(ESPUser.YOGFromGrade(smallest_grade))
+        self.assertNotIn(
+            'value="%s" selected' % smallest_yog,
+            select_html,
+            "The smallest grade must NOT be auto-selected on the profile page (PR #193)",
+        )
+
+    # ------------------------------------------------------------------
+    # 9. Grade null / error when omitted from POST (PR #193)
+    # ------------------------------------------------------------------
+
+    def test_grade_null_when_omitted(self):
+        """
+        Omitting graduation_year from a student profile POST must either:
+          (a) produce a validation error and leave the profile uncreated, or
+          (b) leave graduation_year as None/N/A – never defaulting to smallest grade.
+        """
+        from esp.program.models import RegistrationProfile
+        from esp.users.models import ESPUser
+
+        student = self.students[1]
+        RegistrationProfile.objects.filter(user=student).delete()
+
+        self.client.login(username=student.username, password='password')
+        response = self.client.post(self.student_profile_url,
+                                    {'graduation_year': '', 'profile_page': ''})
+
+        if response.status_code in (301, 302):
+            # If a redirect happened, the grade stored must NOT be the smallest grade
+            smallest_yog = ESPUser.YOGFromGrade(min(ESPUser.grade_options()))
+            prof = RegistrationProfile.objects.filter(
+                user=student, student_info__isnull=False
+            ).order_by('-last_ts').first()
+            if prof is not None:
+                self.assertNotEqual(
+                    prof.student_info.graduation_year,
+                    smallest_yog,
+                    "graduation_year must not auto-default to the smallest grade (PR #193)",
+                )
+        else:
+            # Expected path: 200 with a form error, nothing persisted
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, 'This field is required.')
