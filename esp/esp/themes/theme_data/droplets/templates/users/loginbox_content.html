@@ -10,13 +10,13 @@
         </a>
         <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>
         <ul class="dropdown-menu pull-right">
-          <li><a href="/myesp/accountmanage/">Manage Account</a></li>
+          <li><a href="{% url 'myesp_accountmanage' %}">Manage Account</a></li>
         </ul>
       </li>
   </li>
   <li>
-    <form class="navbar-form form-inline" action="/myesp/signout">
-      <a href="/myesp/signout"><button class="btn btn-inverse" style="margin-right:0px;">Logout</button></a>
+    <form class="navbar-form form-inline" action="{% url 'signout' %}">
+      <a href="{% url 'signout' %}"><button class="btn btn-inverse" style="margin-right:0px;">Logout</button></a>
     </form>
   </li>
 </ul>

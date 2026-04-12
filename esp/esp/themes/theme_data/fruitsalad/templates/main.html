@@ -106,8 +106,8 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
       <li id="tab_{{ forloop.counter }}" class="tabcolor{{ forloop.counter }}" ><span class="accent">&nbsp;</span><a href="{{ item.link }}">{{ item.text.upper }}</a></li>
       {% endfor %}
       {% endwith %}
-      <li class="admin hidden tabcolor9" ><span class="accent">&nbsp;</span><a href="/manage/programs/">MANAGE</a></li>
-      <li class="unmorph hidden tabcolor9" ><span class="accent">&nbsp;</span><a href="/myesp/switchback/">UNMORPH</a><div id="unmorph_text" style="font-size: 0.7em; margin-left: 16px"></div></li>
+      <li class="admin hidden tabcolor9" ><span class="accent">&nbsp;</span><a href="{% url 'manage_programs' %}">MANAGE</a></li>
+      <li class="unmorph hidden tabcolor9" ><span class="accent">&nbsp;</span><a href="{% url 'myesp_switchback' %}">UNMORPH</a><div id="unmorph_text" style="font-size: 0.7em; margin-left: 16px"></div></li>
     </ul>
   </div>
   <div id="body">
@@ -177,7 +177,7 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
         </div>
         <div class="logged_in hidden">
           {% include "users/loginbox_userinfo.html" %}
-  <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage">Manage Account</a></span>
+  <span class="accentcolor"><a href="{% url 'signout' %}">Logout</a> | <a href="/myesp/accountmanage">Manage Account</a></span>
         </div>
 
       </div>
@@ -203,7 +203,7 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
           <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
             <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
             You are logged in as a test account.
-            <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
+            <a href="{% url 'myesp_stop_testing' %}" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
           </div>
           {% endif %}
           {% if request.mod_required %}
