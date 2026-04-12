@@ -1174,8 +1174,17 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
+        onsite = onsite or (tl == 'onsite')
         if onsite:
-            students = [ESPUser.objects.get(id=request.GET['userid'])]
+            try:
+                user_id = request.GET.get('userid')
+                if not user_id:
+                    raise ESPError("Missing userid parameter")
+                students = [ESPUser.objects.get(id=int(user_id))]
+            except ESPUser.DoesNotExist:
+                raise ESPError("User not found with the provided userid")
+            except (ValueError, TypeError):
+                raise ESPError("Invalid userid format")
         else:
             filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Student Financial Spreadsheet'})
 
@@ -1224,9 +1233,18 @@ class ProgramPrintables(ProgramModuleObj):
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
 
         context = {'module': self }
+        onsite = onsite or (tl == 'onsite')
 
         if onsite:
-            students = [ESPUser.objects.get(id=request.GET['userid'])]
+            try:
+                user_id = request.GET.get('userid')
+                if not user_id:
+                    raise ESPError("Missing userid parameter")
+                students = [ESPUser.objects.get(id=int(user_id))]
+            except ESPUser.DoesNotExist:
+                raise ESPError("User not found with the provided userid")
+            except (ValueError, TypeError):
+                raise ESPError("Invalid userid format")
         else:
             if extra:
                 file_type = extra.strip()

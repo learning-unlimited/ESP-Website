@@ -228,4 +228,3 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
 
         for t in class_subject.prettyrooms():
             self.assertIn(t, formatted_rooms)
-
