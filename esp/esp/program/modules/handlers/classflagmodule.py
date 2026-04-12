@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 from django.db.models.query import Q
 from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
+from django.utils.timezone import now
 
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, needs_admin
 from esp.utils.web import render_to_response
@@ -72,6 +73,7 @@ class ClassFlagModule(ProgramModuleObj):
         t = {}
         for flag_type in fts:
             q = Q(classsubject__flags__flag_type=flag_type.id,
+                  classsubject__flags__resolved=False,
                   classsubject__parent_program=self.program)
             if QObject:
                 t['flag_%s' % flag_type.id] = q
@@ -98,14 +100,17 @@ class ClassFlagModule(ProgramModuleObj):
         '''Given a post request, take extra as the id of the flag, update its comment using the post data, and return its new detail display.'''
         if not extra or request.method != 'POST' or 'comment' not in request.POST:
             return HttpResponseBadRequest('')
-        results = ClassFlag.objects.filter(id=extra)
+        results = ClassFlag.objects.filter(id=extra, subject__parent_program=prog)
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
         flag = results[0]
         flag.comment = request.POST['comment']
-        flag.save()
+        flag.save(update_fields=['comment', 'modified_by', 'modified_time'])
         context = { 'flag' : flag }
-        return render_to_response(self.baseDir()+'flag_detail.html', request, context)
+        response = json.dumps({
+            'flag_detail': render_to_string(self.baseDir()+'flag_detail.html', context=context, request=request),
+        })
+        return HttpResponse(response, content_type='application/json')
 
     @aux_call
     @needs_admin
@@ -115,6 +120,12 @@ class ClassFlagModule(ProgramModuleObj):
             return HttpResponseBadRequest('')
         form = ClassFlagForm(request.POST)
         if form.is_valid():
+            # IDOR protection: ensure subject belongs to this program
+            if form.cleaned_data['subject'].parent_program != prog:
+                return HttpResponseBadRequest('')
+            # IDOR protection: ensure flag_type is associated with this program
+            if not prog.flag_types.filter(pk=form.cleaned_data['flag_type'].pk).exists():
+                return HttpResponseBadRequest('')
             flag = form.save()
             email_warning = None
             if flag.flag_type.notify_teacher_by_email:
@@ -143,9 +154,44 @@ class ClassFlagModule(ProgramModuleObj):
         '''Given a post request with the ID, delete the flag.'''
         if request.method != 'POST' or 'id' not in request.POST:
             return HttpResponseBadRequest('')
-        results = ClassFlag.objects.filter(id=request.POST['id'])
+        results = ClassFlag.objects.filter(id=request.POST['id'], subject__parent_program=prog)
         if not len(results): #Use len() since we will evaluate it anyway
             return HttpResponseBadRequest('')
         flag = results[0]
         flag.delete()
         return HttpResponse('')
+
+    @aux_call
+    @needs_admin
+    def resolveflag(self, request, tl, one, two, module, extra, prog):
+        '''Set the resolved status of a flag. Extra is the flag ID.
+        POST parameter 'action' must be 'resolve' or 'unresolve' for idempotent behavior.'''
+        if not extra or request.method != 'POST':
+            return HttpResponseBadRequest('')
+        action = request.POST.get('action', '')
+        if action not in ('resolve', 'unresolve'):
+            return HttpResponseBadRequest('')
+        results = ClassFlag.objects.filter(id=extra, subject__parent_program=prog)
+        if not len(results):
+            return HttpResponseBadRequest('')
+        flag = results[0]
+        want_resolved = (action == 'resolve')
+        if want_resolved and not flag.resolved:
+            flag.resolved = True
+            flag.resolved_by = request.user
+            flag.resolved_time = now()
+            flag.save(update_fields=['resolved', 'resolved_by', 'resolved_time',
+                                     'modified_by', 'modified_time'])
+        elif not want_resolved and flag.resolved:
+            flag.resolved = False
+            flag.resolved_by = None
+            flag.resolved_time = None
+            flag.save(update_fields=['resolved', 'resolved_by', 'resolved_time',
+                                     'modified_by', 'modified_time'])
+        # If already in desired state, no-op (idempotent)
+        context = { 'flag' : flag }
+        response = json.dumps({
+            'flag_name': render_to_string(self.baseDir()+'flag_name.html', context=context, request=request),
+            'flag_detail': render_to_string(self.baseDir()+'flag_detail.html', context=context, request=request),
+        })
+        return HttpResponse(response, content_type='application/json')
