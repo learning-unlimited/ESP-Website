@@ -2392,11 +2392,8 @@ class Record(models.Model):
         if cls.user_completed(user, extension.lower(), program):
             return False
         else:
-            cls.objects.create(
-                user = user,
-                event = extension.lower(),
-                program = program
-            )
+            event_obj = RecordType.objects.get(name=extension.lower())
+            cls.objects.create(user=user, event=event_obj, program=program)
             return True
 
     def __str__(self):
