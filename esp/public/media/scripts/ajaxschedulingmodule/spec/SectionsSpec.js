@@ -2,8 +2,8 @@ describe("SectionsSpec", function() {
     var sections, matrix;
 
     beforeEach(function() {
-        sections = new Sections(section_fixture(), {}, teacher_fixture(),
-            schedule_assignment_fixture(), new FakeApiClient());
+        sections = new Sections(section_fixture(), {}, {}, teacher_fixture(),
+            {}, schedule_assignment_fixture(), new FakeApiClient());
         matrix = generateFakeMatrix();
         sections.bindMatrix(matrix);
     });
@@ -107,7 +107,6 @@ describe("SectionsSpec", function() {
 
     });
 
-
     describe("scheduleSection", function(){
         describe("when validations return true", function(){
             it("calls out to the api", function() {
@@ -154,7 +153,7 @@ describe("SectionsSpec", function() {
             sections.scheduleSectionLocal(sections.getById(2), "room-2", [5]);
             expect(cell1.addSection).toHaveBeenCalledWith(sections.getById(2));
             expect(cell2.addSection).not.toHaveBeenCalledWith(sections.getById(2));
-            expect(sections.scheduleAssignments[2]).toEqual({room_name: "room-2", timeslots: [5], id: 2});
+            expect(sections.scheduleAssignments[2]).toEqual({room_id: "room-2", timeslots: [5], id: 2});
         });
 
         it("unschedules the class from the old location", function(){
@@ -162,7 +161,7 @@ describe("SectionsSpec", function() {
             spyOn(cell, 'removeSection');
             sections.scheduleSectionLocal(sections.getById(1), "room-2", [5]);
             expect(cell.removeSection).toHaveBeenCalled();
-            expect(sections.scheduleAssignments[1]).toEqual({room_name: "room-2", timeslots: [5], id: 1});
+            expect(sections.scheduleAssignments[1]).toEqual({room_id: "room-2", timeslots: [5], id: 1});
         });
 
         describe("when the class is already scheduled in the same spot", function(){
@@ -206,9 +205,9 @@ describe("SectionsSpec", function() {
         });
 
         it("modifies the schedule_assignments data structure", function(){
-            expect(sections.scheduleAssignments[1]).toEqual({room_name: "room-1", timeslots: [3], id: 1});
+            expect(sections.scheduleAssignments[1]).toEqual({room_id: "room-1", timeslots: [3], id: 1});
             sections.unscheduleSectionLocal(sections.getById(1));
-            expect(sections.scheduleAssignments[1]).toEqual({room_name: null, timeslots: [], id: 1});
+            expect(sections.scheduleAssignments[1]).toEqual({room_id: null, timeslots: [], id: 1});
         });
     });
 
@@ -232,5 +231,73 @@ describe("SectionsSpec", function() {
             sections.scheduleAsGhost("room-3", 11);
             sections.unscheduleAsGhost();
         });
+    });
+});
+
+describe("getSameRoomSections", function() {
+    var sections;
+
+    beforeEach(function() {
+        sections = new Sections(section_fixture(), {}, {}, teacher_fixture(),
+            {}, schedule_assignment_fixture(), new FakeApiClient());
+    });
+
+    it("returns empty array for an unscheduled section", function() {
+        // section 2 has room_id: null in the fixture
+        expect(sections.getSameRoomSections(sections.getById(2))).toEqual([]);
+    });
+
+    it("returns empty array when no other section shares the room", function() {
+        // section 1 is in room-1; no other section is in room-1
+        expect(sections.getSameRoomSections(sections.getById(1))).toEqual([]);
+    });
+
+    it("returns other sections scheduled in the same room", function() {
+        // Put section 2 in room-2 alongside section 3
+        sections.scheduleAssignments[2] = { room_id: "room-2", id: 2, timeslots: [3] };
+        var result = sections.getSameRoomSections(sections.getById(3));
+        expect(result.length).toEqual(1);
+        expect(result[0].id).toEqual(2);
+    });
+
+    it("does not include the section itself", function() {
+        var result = sections.getSameRoomSections(sections.getById(3));
+        var ids = result.map(function(s) { return s.id; });
+        expect(ids).not.toContain(3);
+    });
+});
+
+describe("getSameRoomSections swap eligibility (with matrix)", function() {
+    // Uses generateFakeMatrix() so sections.matrix is bound, enabling the
+    // teacher-availability filter in getSameRoomSections.
+    //
+    // Fixture recap (from TestFixtures.js header):
+    //   Section 1 (S11s1): teachers 1 (avail [3,5,7,11]) + 2 (avail [3,5]),
+    //                       scheduled at room-1, timeslot [3]
+    //   Section 4 (S33s1): teacher 1 (avail [3,5,7,11]), unscheduled
+    //   Section 5 (A44s1): teacher 3 (avail [7,11,13]),  unscheduled
+    var matrix;
+
+    beforeEach(function() {
+        matrix = generateFakeMatrix();
+    });
+
+    it("includes a same-room section whose teachers are mutually available", function() {
+        // Place section 4 (teacher 1, avail [3,5,7,11]) in room-1 at timeslot [5].
+        // Section 1's teachers (1 avail at 5 ✓, 2 avail at 5 ✓) can go to [5].
+        // Section 4's teacher (1 avail at 3 ✓) can go to [3].
+        matrix.sections.scheduleAssignments[4] = { room_id: "room-1", id: 4, timeslots: [5] };
+        var result = matrix.sections.getSameRoomSections(matrix.sections.getById(1));
+        var ids = result.map(function(s) { return s.id; });
+        expect(ids).toContain(4);
+    });
+
+    it("excludes a same-room section when a teacher cannot cover the swapped timeslot", function() {
+        // Place section 5 (teacher 3, avail [7,11,13]) in room-1 at timeslot [7].
+        // Section 1's teacher 2 has avail [3,5] — cannot go to [7], so not swappable.
+        matrix.sections.scheduleAssignments[5] = { room_id: "room-1", id: 5, timeslots: [7] };
+        var result = matrix.sections.getSameRoomSections(matrix.sections.getById(1));
+        var ids = result.map(function(s) { return s.id; });
+        expect(ids).not.toContain(5);
     });
 });
