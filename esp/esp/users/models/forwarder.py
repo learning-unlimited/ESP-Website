@@ -1,5 +1,4 @@
 # django dependencies
-from django.utils.encoding import python_2_unicode_compatible
 from django.db import models, transaction
 
 # esp dependencies
@@ -8,7 +7,6 @@ from esp.users.models import ESPUser
 
 MAX_DEPTH = 5
 
-@python_2_unicode_compatible
 class UserForwarder(models.Model):
     """
     Links source user to target user, to make all login sessions under target.
@@ -110,4 +108,4 @@ class UserForwarder(models.Model):
             return (user, False)
 
     def __str__(self):
-        return '%s to %s' % (str(self.source), str(self.target))
+        return f'{self.source} to {self.target}'

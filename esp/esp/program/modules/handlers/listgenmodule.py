@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
@@ -263,13 +264,13 @@ class UserAttributeGetter(object):
     def get_class_application_2(self):
         responses = self.user.listAppResponses(self.program)
         if len(responses) > 1:
-            return str(responses[1].question.subject) + ':  ' + str(responses[0])
+            return str(responses[1].question.subject) + ':  ' + str(responses[1])
         else:
             return None
     def get_class_application_3(self):
         responses = self.user.listAppResponses(self.program)
         if len(responses) > 2:
-            return str(responses[2].question.subject) + ':  ' + str(responses[0])
+            return str(responses[2].question.subject) + ':  ' + str(responses[2])
         else:
             return None
 
@@ -303,6 +304,19 @@ class ListGenModule(ProgramModuleObj):
             "seq": 500,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "selectList":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_selectList",
+            url="/manage/%s/selectList" % base,
+            title="Arbitrary User List",
+            category="Coordinate",
+            keywords=["user list", "search users", "export", "mailing list"],
+        )
 
     @aux_call
     @needs_admin
@@ -351,21 +365,24 @@ class ListGenModule(ProgramModuleObj):
                     lists.append({'users': users})
 
                 if output_type == 'csv':
-                    # properly speaking, this should be text/csv, but that
-                    # causes Chrome to open in an external editor, which is
-                    # annoying
-                    mimetype = 'text/plain'
+                    mimetype = 'text/csv'
                 elif output_type == 'html':
                     mimetype = 'text/html'
                 else:
                     # WTF?
                     mimetype = 'text/html'
-                return render_to_response(
+
+                response = render_to_response(
                     self.baseDir()+('list_%s.html' % output_type),
                     request,
                     {'users': users, 'lists': lists, 'fields': fields, 'listdesc': filterObj.useful_name},
                     content_type=mimetype,
                 )
+
+                if output_type == 'csv':
+                    response['Content-Disposition'] = 'attachment; filename="user_list.csv"'
+
+                return response
             else:
                 context = {
                     'form': form,
