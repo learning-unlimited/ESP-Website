@@ -86,7 +86,18 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 from esp.customforms.linkfields import CustomFormsLinkModel
 
-__all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'ClassSizeRange']
+__all__ = [
+    'ClassSection',
+    'ClassSubject',
+    'ClassManager',
+    'ClassCategories',
+    'ClassSizeRange',
+    'EXTENDED_BUDGET_STATUS_NONE',
+    'EXTENDED_BUDGET_STATUS_PENDING',
+    'EXTENDED_BUDGET_STATUS_APPROVED',
+    'EXTENDED_BUDGET_STATUS_REJECTED',
+    'EXTENDED_BUDGET_STATUS_CHOICES',
+]
 
 STATUS_CHOICES = (
         (ClassStatus.CANCELLED, "cancelled"),
