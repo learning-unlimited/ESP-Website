@@ -152,7 +152,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
         priority_classids = set()
         uniquified_flags = []
-        priority_flags = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog, relationship__name='Priority/1')
+        priority_flags = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog, relationship__name__startswith='Priority')
         for flag in priority_flags:
             if flag.section.id not in priority_classids:
                 priority_classids.add(flag.section.id)
