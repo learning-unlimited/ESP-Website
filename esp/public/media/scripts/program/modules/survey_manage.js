@@ -41,10 +41,8 @@ if (typeof question_types != 'undefined') {
                 $j(this).val(num_choices);
                 var $fields = $j(".param_field");
                 //Add extra fields if necessary
-                for (let i = 0; i < num_choices; i++) {
-                    if ($fields[i] === undefined){
-                        $td.append("<span class='param_field'>Choice " + (i + 1) + ": <input type='text' name='param_val'><br/></span>");
-                    }
+                for (let i = $fields.length; i < num_choices; i++) {
+                    $td.append("<span class='param_field'>Choice " + (i + 1) + ": <input type='text' name='param_val'><br/></span>");
                 }
                 //Remove extra fields if necessary
                 $fields.slice(num_choices).remove();
@@ -70,10 +68,8 @@ if (typeof question_types != 'undefined') {
                 $j(this).val(num_ratings);
                 var $fields = $j(".param_field");
                 //Add extra fields if necessary
-                for (let i = 0; i < num_ratings; i++) {
-                    if ($fields[i] === undefined){
-                        $td.append("<span class='param_field'>Rating " + (i + 1) + ": <input type='text' name='param_val'><br/></span>");
-                    }
+                for (let i = $fields.length; i < num_ratings; i++) {
+                    $td.append("<span class='param_field'>Rating " + (i + 1) + ": <input type='text' name='param_val'><br/></span>");
                 }
                 //Remove extra fields if necessary
                 $fields.slice(num_ratings).remove();
