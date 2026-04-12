@@ -57,6 +57,20 @@ _PROGRAM_URL_PATTERN = re.compile(
 )
 
 
+def _make_image_urls_absolute(body, request):
+    """Convert root-relative src URLs in any element with a root-relative src attribute to absolute URLs.
+
+    Email clients cannot resolve relative URLs, so images inserted via the
+    WYSIWYG editor (which stores paths like /media/uploaded/qsd_images/...)
+    must be made absolute before the body is rendered into an email.
+    """
+    return re.sub(
+        r"src=(['\"])(/(?!/)[^'\"]*)\1",
+        lambda m: 'src={}{}{}'.format(m.group(1), request.build_absolute_uri(m.group(2)), m.group(1)),
+        body,
+    )
+
+
 def _program_urls_in_text(text, current_program_url):
     """
     Find program URLs in text (e.g. /learn/Splash/2024_Winter/...) that refer to
@@ -155,6 +169,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['subject'],
                                               request.POST['body']    ]
         body, _ = strip_base64_images(body)
+        body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
@@ -270,6 +285,7 @@ class CommModule(ProgramModuleObj):
                                     request.POST['subject'],
                                     request.POST['body']    ]
         body, _ = strip_base64_images(body)
+        body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
         template = request.POST.get('template', 'default')
@@ -469,6 +485,7 @@ class CommModule(ProgramModuleObj):
 
         body = request.POST.get('body', '')
         body, _ = strip_base64_images(body)
+        body = _make_image_urls_absolute(body, request)
         subject = request.POST.get('subject', '')
         fromemail = request.POST.get('from', '')
         replytoemail = request.POST.get('replyto', fromemail)

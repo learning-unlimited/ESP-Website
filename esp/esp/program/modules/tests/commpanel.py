@@ -32,6 +32,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import unittest
+from unittest.mock import MagicMock
+
+from esp.program.modules.handlers.commmodule import _make_image_urls_absolute
 from esp.program.tests import ProgramFrameworkTest
 from esp.dbmail.models import ActionHandler, MessageRequest
 from esp.dbmail.cronmail import process_messages, send_email_requests
@@ -170,3 +174,32 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertIn(expected_first_day, rendered, 'program.date should render as first program day')
         self.assertIn(expected_date_range, rendered, 'program.date_range should render as program date range')
         self.assertIn(expected_teacher_reg_deadline, rendered, 'program.teacher_reg_deadline should render as Teacher/Classes/Create end_date')
+
+    def _make_image_urls_absolute_request(self):
+        request = MagicMock()
+        request.build_absolute_uri.side_effect = lambda p: 'https://example.com' + p
+        return request
+
+    def test_rewrites_relative_img_src(self):
+        result = _make_image_urls_absolute('<img src="/media/uploaded/foo.png">', self._make_image_urls_absolute_request())
+        self.assertEqual(result, '<img src="https://example.com/media/uploaded/foo.png">')
+
+    def test_rewrites_single_quoted_src(self):
+        result = _make_image_urls_absolute("<img src='/media/uploaded/foo.png'>", self._make_image_urls_absolute_request())
+        self.assertEqual(result, "<img src='https://example.com/media/uploaded/foo.png'>")
+
+    def test_leaves_protocol_relative_url_unchanged(self):
+        body = '<img src="//cdn.example.com/img.png">'
+        self.assertEqual(_make_image_urls_absolute(body, self._make_image_urls_absolute_request()), body)
+
+    def test_leaves_absolute_url_unchanged(self):
+        body = '<img src="https://other.example.com/img.png">'
+        self.assertEqual(_make_image_urls_absolute(body, self._make_image_urls_absolute_request()), body)
+
+    def test_rewrites_multiple_images(self):
+        body = '<img src="/a.png"> text <img src="/b.png">'
+        result = _make_image_urls_absolute(body, self._make_image_urls_absolute_request())
+        self.assertEqual(result, '<img src="https://example.com/a.png"> text <img src="https://example.com/b.png">')
+
+    def test_empty_body(self):
+        self.assertEqual(_make_image_urls_absolute('', self._make_image_urls_absolute_request()), '')
