@@ -2,34 +2,103 @@
 
 {% block title %}Teacher Preparation Events for {{ prog.niceName }}{% endblock %}
 
-{% block module_content %}
-
+{% block stylesheets %}
+{{ block.super }}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<style>
+    #calendar {
+        max-width: 900px;
+        margin: 20px auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .fc-event { cursor: pointer; }
+    .status-mine { background-color: #28a745 !important; border-color: #28a745 !important; }
+    .status-full { background-color: #dc3545 !important; border-color: #dc3545 !important; opacity: 0.6; pointer-events: none; }
+    .status-past { background-color: #6c757d !important; border-color: #6c757d !important; opacity: 0.5; pointer-events: none; }
+    .fc-event-title { font-weight: bold; }
+</style>
+{% endblock %}
 
+{% block xtrajs %}
+{{ block.super }}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'timeGridWeek,timeGridDay'
+            },
+            // Use absolute URL path to avoid fragile relative resolution
+            events: '/teach/{{ prog.getUrlBase }}calendar_data',
+            eventClassNames: function(arg) {
+                return ['status-' + arg.event.extendedProps.status];
+            },
+            eventClick: function(info) {
+                const event = info.event;
+                const props = event.extendedProps;
+
+                if (props.status === 'past' || props.status === 'full') {
+                    return;
+                }
+
+                // Logic to toggle selection in the (hidden) Django form
+                const selectEl = document.getElementById('id_event_type_' + props.event_type_id);
+                
+                if (selectEl) {
+                    selectEl.value = event.id;
+                    document.getElementById('submit-btn').disabled = false;
+                    
+                    // Visual feedback: clear others in same category and mark this one
+                    const category = props.category;
+                    calendar.getEvents().forEach(e => {
+                        if (e.extendedProps.category === category && e.extendedProps.status === 'mine') {
+                            e.setExtendedProp('status', 'available');
+                            e.setProp('color', '#3788d8');
+                        }
+                    });
+                    event.setExtendedProp('status', 'mine');
+                    event.setProp('color', '#28a745');
+                }
+            }
+        });
+        calendar.render();
+    });
+</script>
+{% endblock %}
+
+{% block module_content %}
 <h1>Teacher Preparation Events for {{ prog.niceName }}</h1>
 
 <div id="program_form">
+    {% render_inline_program_qsd prog "teach:eventsignupheader" %}
+    <p>Please select your preferred timeslots from the calendar below.</p>
 
-<p>
-Please let us know which events you will attend.
-</p>
+    <div id='calendar'></div>
 
-{% load render_qsd %}
-{% render_inline_program_qsd prog "teach:eventsignupheader" %}
+    {% comment %} Only one form is rendered here. {{ form }} only provides fields, not a <form> tag. {% endcomment %}
+    <form method="post" id="signup-form" action="{{ request.path }}">
+        {% csrf_token %}
+        <table style="display: none;">
+            {{ form }}
+        </table>
+        <div align="center" style="margin-top: 20px;">
+            {% if form.initial %}
+            <input type="submit" id="submit-btn" class="btn btn-primary" value="Confirm Selection" />
+            {% else %}
+            <input type="submit" id="submit-btn" class="btn btn-primary" value="Confirm Selection" disabled />
+            {% endif %}
+        </div>
+    </form>
 
-<form method="post" action="{{ request.path }}">
-<table cellpadding="4" cellspacing="0" align="center" width="300">
-    {{ form }}
-    <tr>
-        <td align="center" colspan="2"><input type="submit" class="btn btn-primary" value="Submit" /></td>
-    </tr>
-</table>
-</form>
-
-<br />
-
-{% include "program/modules/teacherregcore/returnlink.html" %}
-
+    <br />
+    {% include "program/modules/teacherregcore/returnlink.html" %}
 </div>
-
 {% endblock %}
