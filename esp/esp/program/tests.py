@@ -1307,7 +1307,11 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             hours_priority = numpy.sum([len(sec.get_meeting_times()) for sec in sections_priority_and_enrolled])
             student_utility = (hours_interested + 1.5 * hours_priority) ** 0.5
 
-            student_weight = (len(sections_interested) + len(sections_priority)) ** 0.5
+            # Weight is total hours of registered sections, matching student_utility_weights
+            # (interest and priority are summed independently, mirroring the controller's matrix multiply)
+            weight_hours_interested = numpy.sum([len(sec.get_meeting_times()) for sec in sections_interested])
+            weight_hours_priority = numpy.sum([len(sec.get_meeting_times()) for sec in sections_priority])
+            student_weight = (weight_hours_interested + weight_hours_priority) ** 0.5
             student_screwed_val = (1.0 + student_utility) / (1.0 + student_weight)
 
             #   Compare against the value in the stats dict (allow for floating-point error)

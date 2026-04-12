@@ -282,8 +282,7 @@ class LotteryAssignmentController(object):
                 self.ranks[self.student_indices[student_id], self.section_indices[section_id]] = ESPUser.getRankInClass(student_id, self.parent_classes[self.section_indices[section_id]])
 
 
-        #   Set student utility weights. Counts number of classes that students selected. Used only for computing the overall_utility stat
-        self.student_utility_weights = numpy.sum(self.interest.astype(float), 1) + sum([numpy.sum(self.priority[i].astype(float), 1) for i in range(1, self.effective_priority_limit+1)])
+        #   student_utility_weights is set later (after section_lengths is populated)
 
         #   Populate section schedule
         section_times = numpy.array(self.sections.values_list('id', 'meeting_times__id'))
@@ -311,6 +310,9 @@ class LotteryAssignmentController(object):
 
         # Populate section lengths (hours)
         self.section_lengths = numpy.array([x.nonzero()[0].size for x in self.section_schedules])
+
+        #   Set student utility weights as total scheduled timeslots (hours) of classes each student selected; used only for computing the overall utility stat
+        self.student_utility_weights = self.interest.astype(float) @ self.section_lengths + sum([self.priority[i].astype(float) @ self.section_lengths for i in range(1, self.effective_priority_limit+1)])
 
         if self.options['fill_low_priorities']:
             #   Compute who has a priority when.  Includes lower priorities, since this is used for places where we check not clobbering priorities.
