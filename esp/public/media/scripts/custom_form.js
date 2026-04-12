@@ -361,25 +361,8 @@ var onChangeMainLink=function(){
 
 var onChangeLinksSpecify=function(){
 	if($j('#links_id_specify').val()=='particular'){
-		$j.ajax({
-			url:'/customforms/getlinks/',
-			data:{'link_model':$j('#links_id_main').val()},
-			type:'GET',
-			dataType:'json',
-			async:false,
-			success: function(link_objects) {
-				var html_str='';
-				$j.each(link_objects, function(idx, data){
-					html_str+='<option value="'+data.id+'">'+data.name+'</option>';
-				});
-				$j('#links_id_pick').html(html_str);
-				$j('#links_id_pick').trigger("change").parent().show();
-                if($j("#links_id_main").val()=="Program"){
-                    $j('#links_id_tl').parent().show();
-                    $j('#links_id_module').parent().show();
-                }
-			}
-		});
+        // Use two-level selection for courses, original behavior for other models
+        showCourseSelectionUI();
 	}
 	else{
 		$j('#links_id_pick').html('');
@@ -1853,4 +1836,101 @@ var rebuild=function(metadata) {
     }
     //Open the information panel if not already open
     $j("#header_information.ui-accordion-header-collapsed").trigger("click");
+};
+
+// Two-level selection for course links
+var showCourseSelectionUI=function(){
+    if($j('#links_id_main').val()=='ClassSubject' && $j('#links_id_specify').val()=='particular'){
+        $j.ajax({
+            url:'/customforms/getprograms/',
+            success: function(programs) {
+                var html_str='';
+                html_str+='<div style="margin: 10px 0;">';
+                html_str+='<label>Select Program:</label>';
+                html_str+='<select id="course_program_selector" style="margin-left: 10px;">';
+                html_str+='<option value="">Choose a program...</option>';
+                $j.each(programs, function(idx, program){
+                    html_str+='<option value="'+program.id+'">'+program.name+'</option>';
+                });
+                html_str+='</select>';
+                html_str+='</div>';
+                
+                html_str+='<div style="margin: 10px 0;">';
+                html_str+='<label>Search Courses:</label>';
+                html_str+='<input type="text" id="course_search_box" placeholder="Type to search..." style="margin-left: 10px; width: 200px;">';
+                html_str+='</div>';
+                
+                html_str+='<div id="course_results" style="margin: 10px 0;">';
+                html_str+='<p>Please select a program to see courses.</p>';
+                html_str+='</div>';
+                
+                $j('#links_id_pick').html(html_str);
+                $j('#links_id_pick').parent().show();
+                
+                // Bind events
+                $j('#course_program_selector').on('change', loadCourses);
+                $j('#course_search_box').on('keyup', debounce(loadCourses, 300));
+            }
+        });
+    } else {
+        // Use original behavior for non-course models
+        onChangeLinksSpecify();
+    }
+};
+
+var loadCourses=function(){
+    var program_id = $j('#course_program_selector').val();
+    var search_query = $j('#course_search_box').val().trim();
+    
+    if(!program_id && !search_query){
+        $j('#course_results').html('<p>Please select a program or enter a search term.</p>');
+        return;
+    }
+    
+    $j.ajax({
+        url:'/customforms/getlinks/',
+        data: {
+            'link_model': 'ClassSubject',
+            'program_id': program_id,
+            'search': search_query
+        },
+        type:'GET',
+        dataType:'json',
+        success: function(courses) {
+            var html_str='';
+            if(courses.length > 0){
+                html_str+='<label>Select Course:</label>';
+                html_str+='<select id="course_selector" style="margin-left: 10px;">';
+                html_str+='<option value="">Choose a course...</option>';
+                $j.each(courses, function(idx, course){
+                    html_str+='<option value="'+course.id+'">'+course.name+'</option>';
+                });
+                html_str+='</select>';
+            } else {
+                html_str+='<p>No courses found. Try a different search term or program.</p>';
+            }
+            $j('#course_results').html(html_str);
+            
+            // Bind course selection event
+            $j('#course_selector').on('change', function(){
+                var course_id = $j(this).val();
+                if(course_id){
+                    // Update the hidden course selection
+                    $j('#links_id_pick').val(course_id);
+                }
+            });
+        }
+    });
+};
+
+// Debounce function to limit API calls
+var debounce = function(func, wait) {
+    var timeout;
+    return function() {
+        var context = this, args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(function() {
+            func.apply(context, args);
+        }, wait);
+    };
 };
