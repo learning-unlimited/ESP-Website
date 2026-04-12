@@ -16,11 +16,18 @@ from django.utils.safestring import mark_safe
 
 # Can't conflict with the `markdown` filter name.
 import markdown as md
+from esp.utils.sanitize import sanitize_html_comments
 
 register = template.Library()
-
 
 @register.filter(is_safe=True)
 def markdown(value):
     """Runs Markdown over a given value."""
     return mark_safe(md.markdown(force_text(value)))
+
+
+@register.filter(is_safe=True)
+def markdown_safe(value):
+    """Runs Markdown with HTML comment sanitization."""
+    sanitized = sanitize_html_comments(force_text(value))
+    return mark_safe(md.markdown(sanitized))

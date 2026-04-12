@@ -63,7 +63,7 @@ from django.views.decorators.http import require_POST
 
 from reversion import revisions as reversion
 
-from esp.utils.sanitize import strip_base64_images
+from esp.utils.sanitize import strip_base64_images, sanitize_html_comments
 
 import os
 import uuid
@@ -341,7 +341,7 @@ def ajax_qsd(request):
             purge_page(qsd.url+".html")
 
         result['status'] = 1
-        result['content'] = markdown(qsd.content)
+        result['content'] = markdown(sanitize_html_comments(qsd.content))
         result['url'] = qsd.url
 
     return HttpResponse(json.dumps(result))
@@ -361,6 +361,7 @@ def ajax_qsd_preview(request):
     if len(path_parts) > 3 and path_parts[3] == "Classes":
         data = clean(data, strip = True)
     data, _ = strip_base64_images(data)
+    data = sanitize_html_comments(data)
 
     # We don't necessarily need to wrap it in JSON, but this seems more
     # future-proof.
