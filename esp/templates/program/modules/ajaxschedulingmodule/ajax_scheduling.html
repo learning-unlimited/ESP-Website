@@ -57,6 +57,7 @@
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionCommentDialog.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionInfoPanel.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/ChangelogFetcher.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/HistoryPanel.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Scheduler.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Main.js"></script>
 
@@ -66,14 +67,13 @@
 <table class="no-border">
   <tr>
     <td class="no-border">
-      <div id="matrix-div" class="component-div"></div>
+      <div id="matrix-div" class="component-div scheduler-matrix-workspace"></div>
     </td>
     <td class="no-border">
       <div id="side-panel-wrapper" class="ui-widget">
-		<div style =  "width: 100%; text-align: center; min-height: 30px">
-			<a href = "ajax_clear_change_log">
-				<button id = "clear_change_log" style="height: 100%;">Clear Change Log (deletes unsynchronized progress for all users!)</button>
-			</a>
+		<div class="scheduler-admin-bar">
+			<a href="ajax_clear_change_log" id="clear_change_log" class="scheduler-danger-btn"
+			   onclick="return confirm('Clear the change log for all users? This will delete any unsynchronized progress.');">Clear change log (all users, deletes unsynchronized progress)</a>
 		</div>
         <div id="info-panel">
           <div id="section-info-and-message-wrapper">
@@ -90,6 +90,7 @@
             {% if has_moderator_module %}
             <li><a href="#moderators">{{ program.getModeratorTitle }}s</a></li>
             {% endif %}
+            <li><a href="#scheduler-history">History</a></li>
           </ul>
           <div id="side-panel-inner">
                 <div id="classes">
@@ -293,6 +294,13 @@
                     <div id="moderator-directory"></div>
                 </div>
                 {% endif %}
+                <div id="scheduler-history" class="scheduler-history-panel">
+                    <p class="scheduler-history-intro">Tracks this browser session only (up to 20 actions). Only the latest action can be undone. Reloading the page clears the list.</p>
+                    <ul id="history-container" class="scheduler-history-list" aria-live="polite"></ul>
+                    <div class="scheduler-history-footer">
+                        <button type="button" id="clear-history" class="scheduler-history-clear-btn">Clear session history</button>
+                    </div>
+                </div>
           </div>
         </div>
       </div>
