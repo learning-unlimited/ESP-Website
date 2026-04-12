@@ -1,4 +1,5 @@
 from io import open
+from unittest.mock import patch
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -311,6 +312,41 @@ class JavascriptSyntaxTest(TestCase):
                 logger.info(line)
 
             self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
+
+
+class ExtractThemeTest(TestCase):
+
+    NAV = {
+        'nav_structure': [
+            {
+                'header_link': '/learn/',
+                'links': [{'link': '/learn/'}, {'link': '/learn/classes/'}],
+            },
+            {
+                'header_link': '/teach/',
+                'links': [{'link': '/teach/'}, {'link': '/teach/classes/'}],
+            },
+        ]
+    }
+
+    def _extract(self, url, nav=None):
+        with patch('esp.web.templatetags.main.ThemeController') as mock_tc:
+            mock_tc.return_value.get_template_settings.return_value = nav or self.NAV
+            from esp.web.templatetags.main import extract_theme
+            return extract_theme(url)
+
+    def test_first_tab_url_returns_tabcolor1(self):
+        self.assertEqual(self._extract('/learn/'), 'tabcolor1')
+
+    def test_deep_subtab_returns_tabcolor2(self):
+        self.assertEqual(self._extract('/learn/classes/'), 'tabcolor2')
+
+    def test_unmatched_url_returns_tabcolor0(self):
+        self.assertEqual(self._extract('/volunteer/'), 'tabcolor0')
+
+    def test_empty_header_link_does_not_crash(self):
+        nav = {'nav_structure': [{'header_link': '', 'links': [{'link': '/learn/'}]}]}
+        self.assertEqual(self._extract('/learn/', nav=nav), 'tabcolor1')
 
 
 class ProfileEditorCapitalizationTest(TestCase):
