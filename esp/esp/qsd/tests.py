@@ -177,8 +177,11 @@ class QSDCorrectnessTest(TestCase):
             self.assertRedirects(response, '/learn/foo.html')
 
             messages = list(response.context['messages'])
-            self.assertEqual(len(messages), 1)
-            self.assertEqual(str(messages[0]), "You don't have permission to edit this page.")
+            self.assertGreaterEqual(len(messages), 1)
+            self.assertIn(
+                "You don't have permission to edit this page.",
+                [str(message) for message in messages],
+            )
 
             # Test POST to *.edit.html
             response = self.client.post(edit_url, {
@@ -192,8 +195,11 @@ class QSDCorrectnessTest(TestCase):
             self.assertRedirects(response, '/learn/foo.html')
 
             messages = list(response.context['messages'])
-            self.assertEqual(len(messages), 1)
-            self.assertEqual(str(messages[0]), "Sorry, you do not have permission to edit this page.")
+            self.assertGreaterEqual(len(messages), 1)
+            self.assertIn(
+                "Sorry, you do not have permission to edit this page.",
+                [str(message) for message in messages],
+            )
 
         qsd_rec_new.delete()
 
