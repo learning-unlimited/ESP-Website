@@ -8,7 +8,12 @@
 </div>
 <div class="class_content">
     {% autoescape off %}
+    <div class="catalog-entry-description">
+        {% if enable_images and class.picture %}
+            <img src="{{ class.picture.url }}" alt="{{ class.title|escape }}" style="float: left; margin: 0 15px 10px 0; max-width: 100px; border-radius: 4px;">
+        {% endif %}
         {{ class.class_info|escape|linebreaksbr }}
+    </div>
     {% endautoescape %}
 </div>
 {% if class.class_style %}

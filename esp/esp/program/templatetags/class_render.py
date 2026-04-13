@@ -23,9 +23,13 @@ def render_class_core(cls):
     # when the class is full (default: yes)
     collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
 
+    # Allow program toggle for class description images
+    enable_images = Tag.getBooleanTag('enable_class_description_images', prog)
+
     return {'class': cls,
             'collapse_full': collapse_full,
             'colorstring': colorstring,
+            'enable_images': enable_images,
             'show_enrollment': scrmi.visible_enrollments,
             'show_emailcodes': scrmi.show_emailcodes,
             'show_meeting_times': scrmi.visible_meeting_times}

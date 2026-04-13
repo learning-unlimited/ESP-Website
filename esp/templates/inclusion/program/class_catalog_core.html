@@ -29,6 +29,9 @@
     <div id="class_{{ class.id }}_content">
     <br />
     <div class="class_content">
+        {% if enable_images and class.picture %}
+            <img src="{{ class.picture.url }}" alt="{{ class.title|escape }}" style="float: left; margin: 0 15px 10px 0; max-width: 150px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        {% endif %}
         {% autoescape off %}
          {{ class.class_info|escape|linebreaksbr }}<br />
         {% endautoescape %}

@@ -1408,6 +1408,13 @@ all_program_tags = {
         'category': 'manage',
         'is_setting': False,
     },
+    'enable_class_description_images': {
+        'is_boolean': True,
+        'help_text': 'Allow teachers to upload images to their class descriptions and display them in the catalog.',
+        'default': False,
+        'category': 'class',
+        'is_setting': True,
+    },
 }
 
 # Dictionary of categories that tags fall into (for grouping on the tag settings page)

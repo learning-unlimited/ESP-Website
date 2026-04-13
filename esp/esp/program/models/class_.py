@@ -1463,6 +1463,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     purchase_requests = models.TextField(blank=True, null=True)
     custom_form_data = JSONField(blank=True, null=True)
 
+    picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/class_pictures/%y_%m/", blank=True, null=True)
+    picture_height = models.IntegerField(blank=True, null=True)
+    picture_width = models.IntegerField(blank=True, null=True)
+
     documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
     objects = ClassManager()

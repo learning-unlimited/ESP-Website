@@ -39,6 +39,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.safestring import mark_safe
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
+from esp.web.forms import ResizeImageField
 import re
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
 from esp.program.modules.module_ext import ClassRegModuleInfo
@@ -251,6 +252,11 @@ class TeacherClassRegForm(FormWithRequiredCss):
             self.fields['class_style'].required = True
         else:
             hide_field(self.fields['class_style'])
+
+        # Add class description image field if enabled
+        if Tag.getBooleanTag('enable_class_description_images', prog):
+            self.fields['picture'] = ResizeImageField(label='Class Image', required=False, size=(300, 300),
+                                                      help_text='An image to be displayed in the class catalog.')
         # plus subprogram section wizard
 
     def clean(self):
