@@ -94,7 +94,13 @@ class InlineQSDNode(template.Node):
             }, timeout=86400 * 7)
 
         context.update({'qsdrec': qsd_obj, 'inline': True})
-        return template.loader.render_to_string("inclusion/qsd/render_qsd.html", context.flatten())
+        # Convert context to dict - flatten() may not work in Django 3.0+
+        # In Django 3.0+, a Context is dict-like and can be passed directly
+        if hasattr(context, 'flatten'):
+            context_dict = context.flatten()
+        else:
+            context_dict = dict(context)
+        return template.loader.render_to_string("inclusion/qsd/render_qsd.html", context_dict)
 
 @register.tag
 def inline_qsd_block(parser, token):

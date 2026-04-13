@@ -36,7 +36,7 @@ import os
 import re
 import zipfile
 from io import BytesIO as StringIO
-from django.template import Template, loader, RequestContext
+from django.template import Template, loader
 from django.conf import settings
 from django import http
 from django.http import HttpResponse, HttpResponseRedirect
@@ -154,6 +154,24 @@ def _inject_active_program_tags(request, context):
 
 
 def render_to_response(template, request, context, content_type=None, use_request_context=True):
+    """
+    Render a template to an HTTP response, with ESP-specific context.
+
+    This function is a wrapper around django.shortcuts.render() that adds
+    ESP-specific context variables (theme settings, navbar, etc.) and handles
+    RequestContext processing for Django 3.0+ compatibility.
+
+    Args:
+        template: Template name(s) to render (string or list of strings)
+        request: The HTTP request object
+        context: Dictionary of context variables
+        content_type: Optional content type for the response
+        use_request_context: If True (default), apply context processors.
+                           If False, render without context processors.
+
+    Returns:
+        HttpResponse object with rendered template
+    """
     if isinstance(template, str):
         template = [ template ]
 
@@ -171,8 +189,22 @@ def render_to_response(template, request, context, content_type=None, use_reques
         context['navbar_list'] = makeNavBar(section, category, path=request.path[1:])
 
     if use_request_context:
-        context = RequestContext(request, context).flatten()
-    return django.shortcuts.render(request, template, context, content_type=content_type)
+        # django.shortcuts.render() automatically applies context processors
+        return django.shortcuts.render(request, template, context, content_type=content_type)
+    else:
+        # For rendering without context processors, use template rendering directly.
+        # Keep ``messages`` available for legacy templates/tests that expect it.
+        from django.contrib.messages import get_messages
+        from django.template.loader import select_template
+
+        context = context.copy()
+        context['request'] = request
+        if 'messages' not in context:
+            context['messages'] = get_messages(request)
+
+        t = select_template(template)
+        html = t.render(context)
+        return http.HttpResponse(html, content_type=content_type)
 
 """ Override Django error views to provide some context info. """
 def error404(request, exception=None, template_name='404.html'):
@@ -206,12 +238,11 @@ def error500(request, template_name='500.html'):
         response.status_code = 500
         return response
     except Exception:
-        # If possible, we want to render this page with a RequestContext so that
-        # the context processors are run. If this fails for some reason, we still
-        # want to display the original 500 error page, so fall back to using a
-        # normal Context.
+        # If possible, we want to render this page with context processors applied.
+        # If this fails for some reason, we still want to display the original 500
+        # error page, so fall back to using a normal context without processors.
         try:
-            return http.HttpResponseServerError(t.render(RequestContext(request, context).flatten()))
+            return http.HttpResponseServerError(t.render(context, request=request))
         except Exception:
             return http.HttpResponseServerError(t.render(context))
 
