@@ -50,12 +50,15 @@ from django.conf import settings
 from datetime import datetime
 import random
 import string
+import re
 import os.path
 import shutil
 
 THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
                      "If you want to switch to one of the standard themes, " + \
                      "please contact the web team."
+
+customization_name_re = re.compile(r'^[A-Za-z0-9_-]{1,64}$')
 
 @admin_required
 def landing(request):
@@ -287,14 +290,22 @@ def editor(request):
                     theme_name = 'theme-%s-%s' % (datetime.now().strftime('%Y%m%d'), random_slug)
             else:
                 theme_name = request.POST['saveThemeName']
+            if not customization_name_re.match(theme_name):
+                raise ESPError('Invalid customization name', log=False)
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')
             tc.save_customizations(theme_name, vars=vars, palette=palette)
             tc.set_current_customization(theme_name)
         elif 'load' in request.POST:
-            (vars, palette) = tc.load_customizations(request.POST['loadThemeName'])
+            load_theme_name = request.POST['loadThemeName']
+            if not customization_name_re.match(load_theme_name):
+                raise ESPError('Invalid customization name', log=False)
+            (vars, palette) = tc.load_customizations(load_theme_name)
         elif 'delete' in request.POST:
-            tc.delete_customizations(request.POST['loadThemeName'])
+            load_theme_name = request.POST['loadThemeName']
+            if not customization_name_re.match(load_theme_name):
+                raise ESPError('Invalid customization name', log=False)
+            tc.delete_customizations(load_theme_name)
         elif 'apply' in request.POST:
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')
