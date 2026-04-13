@@ -142,6 +142,7 @@ class UserAvailability(models.Model):
 class ESPUserManager(UserManager):
     pass
 
+@functools.total_ordering
 class BaseESPUser(object):
     """ Base class for ESPUser and AnonymousESPUser.
     Pretty much anything from ESPUser that isn't directly related
@@ -335,33 +336,23 @@ class BaseESPUser(object):
         """
         return ESPUser.email_sendto_address(self.email, self.name())
 
-    def __cmp__(self, other):
-        if other is None:
-            return 1
-        # two anonymous users are equal
-        if isinstance(self, AnonymousESPUser) and isinstance(other, AnonymousESPUser):
-            return 0
-        # otherwise, rank the signed-in user higher
-        elif isinstance(other, AnonymousESPUser):
-            return 1
-        elif isinstance(self, AnonymousESPUser):
-            return -1
-        lastname = cmp(self.last_name.upper(), other.last_name.upper())
-        if lastname == 0:
-           return cmp(self.first_name.upper(), other.first_name.upper())
-        return lastname
-    def __lt__(self, other):
-        return self.__cmp__(other) < 0
-    def __gt__(self, other):
-        return self.__cmp__(other) > 0
+    def _get_sort_key(self):
+        not_anon = not isinstance(self, AnonymousESPUser)
+        # safe fallback to empty string if user is anonymous or normal user with last_name or first_name as None
+        last_name = getattr(self, 'last_name', '') or ''
+        first_name = getattr(self, 'first_name', '') or ''
+        return (not_anon, last_name.upper(), first_name.upper())
+
+    # Achieved eq & lt only, rest of the operators are auto-created with total_ordering decorator
     def __eq__(self, other):
-        return self.__cmp__(other) == 0
-    def __le__(self, other):
-        return self.__cmp__(other) <= 0
-    def __ge__(self, other):
-        return self.__cmp__(other) >= 0
-    def __ne__(self, other):
-        return self.__cmp__(other) != 0
+        if not isinstance(other, type(self)) and not isinstance(other, BaseESPUser):
+            return NotImplemented
+        return self._get_sort_key() == other._get_sort_key()
+
+    def __lt__(self, other):
+        if not isinstance(other, type(self)) and not isinstance(other, BaseESPUser):
+            return NotImplemented
+        return self._get_sort_key() < other._get_sort_key()
 
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
