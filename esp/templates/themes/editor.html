@@ -262,6 +262,20 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         </div>
                     </div>
                 </div>
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <h3 class="accordion-toggle" data-toggle="collapse" href="#page_backgrounds_edit_group" data-original-title="PageBackgrounds">Content background</h3>
+                    </div>
+                    <div class="collapse" id="page_backgrounds_edit_group">
+                        <h5>Use this section to control the background color for the main content area. The overall page background is controlled in the Scaffolding section.</h5>
+                        <div class="control-group">
+                            <label class="control-label" for="mainContentBackgroundColor">Main content background:</label>
+                            <div class="controls">
+                                <input type="text" class="color" id="mainContentBackgroundColor" name="mainContentBackgroundColor" value="{{ mainContentBackgroundColor }}" data-default="{{ variable_defaults|index:'mainContentBackgroundColor' }}"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% elif theme_name != "fruitsalad" %}
                 <div class="accordion-group">
                     <div class="accordion-heading">
