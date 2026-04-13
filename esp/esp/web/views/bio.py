@@ -84,7 +84,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
     if old_url:
         # TODO(benkraft): after these URLs have been redirecting for a while,
         # remove them.
-        return HttpResponsePermanentRedirect(lastbio.edit_url())
+        return HttpResponsePermanentRedirect('.')
 
     # if we submitted a newly edited bio...
     from esp.web.forms.bioedit_form import BioEditForm
@@ -112,7 +112,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
             progbio.save()
             if external:
                 return True
-            return HttpResponseRedirect(progbio.url())
+            return HttpResponseRedirect('.')
 
     else:
         formdata = {'hidden': lastbio.hidden, 'slugbio': lastbio.slugbio,
