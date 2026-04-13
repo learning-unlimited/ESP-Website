@@ -44,7 +44,7 @@ from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
 from esp.program.modules.tests.jsondatamodule import JSONDataModuleTest
 from esp.program.modules.tests.existence import ModuleExistenceTest
 from esp.program.modules.tests.programprintables import ProgramPrintablesModuleTest
-from esp.program.modules.tests.commpanel import CommunicationsPanelTest
+from esp.program.modules.tests.commpanel import CommunicationsPanelTest, ProgramUrlsInTextTest, ApproxNumRecipientsTest, CommPanelViewsTest
 from esp.program.modules.tests.resourcemodule import ResourceModuleTest
 from esp.program.modules.tests.admincore import RegistrationTypeManagementTest, ModuleManagementConstraintsTest, ModuleManagementLinkTitleTest
 from esp.program.modules.tests.adminclass import CancelClassTest
