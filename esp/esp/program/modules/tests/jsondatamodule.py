@@ -324,13 +324,13 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                                   "teacher 'sections' should be a list")
 
     def testClassSubjectsCatalogMode(self):
-        """Catalog mode includes extra fields: class_info, prereqs, difficulty."""
+        """Catalog mode includes extra fields: class_info, prereqs, difficulty, difficulty_description."""
         url = '/json/%s/class_subjects/catalog' % self.program.getUrlBase()
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         json_classes = response.json()
         for cls_data in json_classes['classes']:
-            for field in ('class_info', 'prereqs', 'difficulty'):
+            for field in ('class_info', 'prereqs', 'difficulty', 'difficulty_description'):
                 self.assertIn(field, cls_data,
                               "catalog mode class entry missing field '%s'" % field)
 

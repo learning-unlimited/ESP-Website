@@ -10,6 +10,13 @@ from esp.tagdict.models import Tag
 register = template.Library()
 
 
+def _get_difficulty_description(cls):
+    """Look up difficulty description from teacherreg_difficulty_choices tag."""
+    if not getattr(cls, 'hardness_rating', None):
+        return None
+    return Tag.getDifficultyDescription(cls.hardness_rating)
+
+
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html')
 def render_class_core(cls):
     """Render non-user-specific parts of a class for the catalog."""
@@ -23,12 +30,14 @@ def render_class_core(cls):
     # when the class is full (default: yes)
     collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
 
+    difficulty_description = _get_difficulty_description(cls)
     return {'class': cls,
             'collapse_full': collapse_full,
             'colorstring': colorstring,
             'show_enrollment': scrmi.visible_enrollments,
             'show_emailcodes': scrmi.show_emailcodes,
-            'show_meeting_times': scrmi.visible_meeting_times}
+            'show_meeting_times': scrmi.visible_meeting_times,
+            'difficulty_description': difficulty_description}
 render_class_core.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
