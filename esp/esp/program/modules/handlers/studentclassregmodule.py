@@ -502,9 +502,9 @@ class StudentClassRegModule(ProgramModuleObj):
         if is_onsite and not 'filter' in request.GET:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
-            classes = [c for c in list(ClassSubject.objects.catalog(self.program, ts)) if c.grade_min <= user_grade and c.grade_max >= user_grade]
-            if user_grade != 0:
-                classes = [c for c in classes if c.grade_min <=user_grade and c.grade_max >= user_grade]
+            # grade 0 means unknown/unset — treat as any grade and skip the filter
+            classes = [c for c in list(ClassSubject.objects.catalog(self.program, ts))
+                       if ESPUser.grade_in_range(user_grade, c.grade_min, c.grade_max)]
             classes = [c for c in classes if not c.isRegClosed()]
 
         categories_sort = self.sort_categories(classes, self.program)

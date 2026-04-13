@@ -293,12 +293,19 @@ class StudentRegTwoPhase(ProgramModuleObj):
             return HttpResponseBadRequest('JSON data mis-formatted.')
 
         # Determine which of the given class ids are valid
+        student_grade = request.user.getGrade(prog)
+        grade_filter = {}
+        if student_grade != 0:
+            # grade 0 means "unknown / any grade"; skip grade filtering for those students
+            grade_filter = {
+                'grade_min__lte': student_grade,
+                'grade_max__gte': student_grade,
+            }
         valid_classes = ClassSubject.objects.filter(
             pk__in=json_data['interested'],
             parent_program=prog,
             status__gte=0,
-            grade_min__lte=request.user.getGrade(prog),
-            grade_max__gte=request.user.getGrade(prog))
+            **grade_filter)
         # Unexpire any matching SSIs that exist already (to avoid
         # creating duplicate objects).
         to_unexpire = StudentSubjectInterest.objects.filter(
@@ -381,6 +388,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         timeslot = Event.objects.get(pk=timeslot_id)
         priorities = json_data[timeslot_id]
+        student_grade = request.user.getGrade(prog)
         for rel_index, cls_id in priorities.items():
             rel_name = 'Priority/%s' % rel_index
             rel = RegistrationType.objects.get(name=rel_name, category='student')
@@ -416,8 +424,9 @@ class StudentRegTwoPhase(ProgramModuleObj):
             if (not sec.status > 0 or not sec.parent_class.status > 0):
                 logger.warning("Class '%s' was not approved.  Not letting "
                                "user '%s' register.", sec, request.user)
-            if (not sec.parent_class.grade_min <= request.user.getGrade(prog)
-                or not sec.parent_class.grade_max >= request.user.getGrade(prog)):
+            if not ESPUser.grade_in_range(student_grade,
+                                          sec.parent_class.grade_min,
+                                          sec.parent_class.grade_max):
                 logger.warning("User '%s' not in class grade range; not "
                                "letting them register.", request.user)
                 continue

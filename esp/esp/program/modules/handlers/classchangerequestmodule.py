@@ -90,7 +90,14 @@ class ClassChangeRequestModule(ProgramModuleObj):
             context['success'] = False
 
         if request.user.isStudent():
-            sections_by_slot = dict([(timeslot, [(section, 1 == StudentRegistration.valid_objects().filter(user=context['user'], section=section, relationship__name="Request").count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in list(enrollments.values()) and ESPUser.getRankInClass(request.user, section.parent_class) in (5, 10)]) for timeslot in timeslots])
+            student_grade = request.user.getGrade(prog)
+            requested_section_ids = set(StudentRegistration.valid_objects().filter(
+                user=context['user'],
+                section__in=sections,
+                relationship__name="Request"
+            ).values_list('section_id', flat=True))
+            enrolled_class_ids = set([c.id for c in enrollments.values() if c is not None])
+            sections_by_slot = dict([(timeslot, [(section, section.id in requested_section_ids) for section in sections if section.get_meeting_times()[0] == timeslot and ESPUser.grade_in_range(student_grade, section.parent_class.grade_min, section.parent_class.grade_max) and section.parent_class.id not in enrolled_class_ids and ESPUser.getRankInClass(request.user, section.parent_class) in (5, 10)]) for timeslot in timeslots])
         else:
             sections_by_slot = dict([(timeslot, [(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
 

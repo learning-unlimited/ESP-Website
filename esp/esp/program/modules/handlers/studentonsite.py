@@ -39,7 +39,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, n
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
-from esp.users.models    import Record, RecordType, Permission
+from esp.users.models    import Record, RecordType, Permission, ESPUser
 from esp.cal.models import Event
 from esp.middleware   import ESPError
 from esp.survey.views   import survey_view
@@ -134,7 +134,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                 raise ESPError('Please use the links on the schedule page.', log=False)
             context['timeslot'] = ts
             classes = list(ClassSubject.objects.catalog(prog, ts))
-            classes = [c for c in classes if c.grade_min <=user_grade and c.grade_max >= user_grade]
+            # grade_in_range() treats grade 0 as unknown/unset and allows all grades.
+            classes = [c for c in classes if ESPUser.grade_in_range(user_grade, c.grade_min, c.grade_max)]
             context['checked_in'] = Record.objects.filter(program=prog, event__name='attended', user=user).exists()
 
         else:
