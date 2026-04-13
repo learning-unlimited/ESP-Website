@@ -32,30 +32,36 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.users.views import signout
-
 from django.contrib.admin.sites import AdminSite
+from django.contrib.redirects.models import Redirect
+from django.contrib.sites.models import Site
 from django.views.decorators.cache import never_cache
+
+from esp.users.views import signout
 
 #   Override the logout view on the admin site to use our own code
 class ESPAdminSite(AdminSite):
+    """Custom admin site that overrides the logout method to properly clear cookies."""
 
     #   Log out using our view so that cookies are deleted correctly.
     @never_cache
     def logout(self, request, extra_context=None):
+        """Log out using our custom view to ensure cookies are deleted correctly."""
         return signout(request)
+
 
 admin_site = ESPAdminSite()
 
+
 #   A copy of Django's autodiscover function that accepts a site instance.
 def autodiscover(site):
+    """A copy of Django's autodiscover function that accepts a site instance."""
     from django.utils.module_loading import autodiscover_modules
 
     autodiscover_modules('admin', register_to=site)
 
+
 #   Properly add needed contrib modules to the Admin site
-from django.contrib.sites.models import Site
 admin_site.register(Site)
 
-from django.contrib.redirects.models import Redirect
 admin_site.register(Redirect)
