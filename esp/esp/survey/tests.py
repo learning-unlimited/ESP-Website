@@ -29,11 +29,11 @@ def _setup_roles():
 
 
 # ===== Model Tests (from main) =====
-
+@patch('esp.survey.models.QuestionType.clean')
 class ListFieldTest(TestCase):
     """Test the ListField descriptor used in QuestionType."""
 
-    def test_get_returns_tuple(self):
+    def test_get_returns_tuple(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Test Type',
             _param_names='a|b|c',
@@ -42,7 +42,7 @@ class ListFieldTest(TestCase):
         )
         self.assertEqual(qt.param_names, ('a', 'b', 'c'))
 
-    def test_get_empty_string(self):
+    def test_get_empty_string(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Empty Params',
             _param_names='',
@@ -52,7 +52,7 @@ class ListFieldTest(TestCase):
         result = qt.param_names
         self.assertIsInstance(result, tuple)
 
-    def test_set(self):
+    def test_set(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Settable',
             _param_names='',
@@ -107,9 +107,9 @@ class SurveyResponseTest(TestCase):
     def test_time_filled_auto(self):
         self.assertIsNotNone(self.response.time_filled)
 
-
+@patch('esp.survey.models.QuestionType.clean')
 class QuestionTypeTest(TestCase):
-    def test_str_with_params(self):
+    def test_str_with_params(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Rating',
             _param_names='min|max|step',
@@ -119,7 +119,7 @@ class QuestionTypeTest(TestCase):
         result = str(qt)
         self.assertIn('Rating', result)
 
-    def test_is_numeric(self):
+    def test_is_numeric(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Numeric',
             _param_names='',
@@ -128,7 +128,7 @@ class QuestionTypeTest(TestCase):
         )
         self.assertTrue(qt.is_numeric)
 
-    def test_is_countable(self):
+    def test_is_countable(self, mock_clean):
         qt = QuestionType.objects.create(
             name='Countable',
             _param_names='',
@@ -141,6 +141,8 @@ class QuestionTypeTest(TestCase):
 class QuestionTest(TestCase):
     def setUp(self):
         super().setUp()
+        self.patcher = patch('esp.survey.models.QuestionType.clean')
+        self.patcher.start()
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(
@@ -162,6 +164,10 @@ class QuestionTest(TestCase):
             seq=1,
         )
 
+    def tearDown(self):
+        self.patcher.stop()
+        super().tearDown()
+
     def test_str(self):
         result = str(self.question)
         self.assertIn('Do you like it?', result)
@@ -174,6 +180,8 @@ class QuestionTest(TestCase):
 class AnswerTest(TestCase):
     def setUp(self):
         super().setUp()
+        self.patcher = patch('esp.survey.models.QuestionType.clean')
+        self.patcher.start()
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(
@@ -200,6 +208,10 @@ class AnswerTest(TestCase):
             question=self.question,
             value='test answer',
         )
+
+    def tearDown(self):
+        self.patcher.stop()
+        super().tearDown()
 
     def test_str(self):
         result = str(self.answer)
