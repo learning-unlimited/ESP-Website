@@ -52,6 +52,7 @@ import copy
 from urllib.parse import quote, unquote
 
 from django.conf import settings
+from django.core.exceptions import SuspiciousFileOperation
 from django.template.loader import render_to_string
 
 from esp.utils.models import TemplateOverride
@@ -297,7 +298,11 @@ class ThemeController(object):
 
         #   Replace all variable declarations for which we have a value defined
         for (variable_name, variable_value) in variable_data.items():
-            less_data = re.sub(rf'@{variable_name}:(\s*)(.*?);', f'@{variable_name}: {variable_value};', less_data)
+            less_data = re.sub(
+                rf'@{re.escape(variable_name)}:(\s*)(.*?);',
+                lambda match, vn=variable_name, vv=variable_value: f'@{vn}: {vv};',
+                less_data,
+            )
 
         #   Compile to CSS
         css_data = self.compile_less(less_data)
@@ -524,6 +529,17 @@ class ThemeController(object):
 
     ##  Customizations - stored as LESS files with modified variables only; palette is included
 
+    def _safe_customization_path(self, save_name):
+        """Return a validated absolute path for a customization file.
+
+        Raises SuspiciousFileOperation if the resolved path escapes themes_dir.
+        """
+        safe_dir = os.path.realpath(themes_settings.themes_dir)
+        path = os.path.realpath(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe="")}.less'))
+        if not path.startswith(f'{safe_dir}{os.sep}'):
+            raise SuspiciousFileOperation(f'Attempted path traversal in theme save name: {save_name!r}')
+        return path
+
     def save_customizations(self, save_name, theme_name=None, vars=None, palette=None):
         if theme_name is None:
             theme_name = self.get_current_theme()
@@ -544,15 +560,13 @@ class ThemeController(object):
         context['save_name'] = save_name
         context['palette'] = palette
 
-        f = open(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe = "")}.less'), 'w')
-        f.write(render_to_string('themes/custom_vars.less', context))
-        f.close()
+        with open(self._safe_customization_path(save_name), 'w') as f:
+            f.write(render_to_string('themes/custom_vars.less', context))
 
     def load_customizations(self, save_name):
 
-        f = open(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe = "")}.less'), 'r')
-        data = f.read()
-        f.close()
+        with open(self._safe_customization_path(save_name), 'r') as f:
+            data = f.read()
 
         #   Collect LESS variables
         vars = {}
@@ -584,7 +598,7 @@ class ThemeController(object):
         return (vars, palette)
 
     def delete_customizations(self, save_name):
-        os.remove(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe = "")}.less'))
+        os.remove(self._safe_customization_path(save_name))
 
     def get_customization_names(self):
         result = []
