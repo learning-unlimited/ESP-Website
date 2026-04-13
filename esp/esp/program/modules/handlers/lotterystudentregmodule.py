@@ -35,17 +35,41 @@ Learning Unlimited, Inc.
 
 import json
 
-from django.http                 import HttpResponse
+from django.conf                 import settings
+from django.contrib.auth         import REDIRECT_FIELD_NAME
 from django.db.models.query      import Q
+from django.http                 import HttpResponse, HttpResponseRedirect
 from django.views.decorators.cache import cache_control
+from urllib.parse               import quote
 
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
+from esp.program.modules.base    import ProgramModuleObj, _login_redirect, not_logged_in, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
 from esp.program.models          import StudentRegistration
 from esp.program.views           import lsr_submit as lsr_view_submit
 from esp.utils.web               import render_to_response
 from esp.users.models            import ESPUser
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
+
+
+def _lottery_submit_requires_student(method):
+    def _check_student(moduleObj, request, *args, **kwargs):
+        if not_logged_in(request):
+            return _login_redirect(request)
+
+        if request.user.isStudent() or request.user.isAdmin(moduleObj.program):
+            return method(moduleObj, request, *args, **kwargs)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            response = HttpResponse(status=403, content_type='application/json')
+            json.dump({'message': 'The user account is not a student.'}, response)
+            return response
+
+        return render_to_response('errors/program/notastudent.html', request, {})
+
+    _check_student.call_tl = 'learn'
+    _check_student.method = method
+    _check_student.has_auth_check = True
+    return _check_student
 
 
 class LotteryStudentRegModule(ProgramModuleObj):
@@ -115,6 +139,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         return render_to_response('program/modules/lotterystudentregmodule/student_reg_splash.html', request, context)
 
     @aux_call
+    @_lottery_submit_requires_student
     @needs_student_in_grade
     @meets_deadline('/Classes/Lottery')
     def lsr_submit(self, request, tl, one, two, module, extra, prog):
