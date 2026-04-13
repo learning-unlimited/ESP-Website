@@ -549,13 +549,28 @@ class ThemeController(object):
         context['save_name'] = save_name
         context['palette'] = palette
 
-        f = open(self._get_customization_file_path(save_name), 'w')
+        base_dir = os.path.realpath(themes_settings.themes_dir)
+        decoded_name = unquote(save_name or '').strip()
+        if not customization_name_re.match(decoded_name):
+            raise ESPError('Invalid customization name')
+        full_path = os.path.realpath(os.path.join(base_dir, '%s.less' % decoded_name))
+        if os.path.commonpath([base_dir, full_path]) != base_dir:
+            raise ESPError('Invalid customization path')
+
+        f = open(full_path, 'w')
         f.write(render_to_string('themes/custom_vars.less', context))
         f.close()
 
     def load_customizations(self, save_name):
+        base_dir = os.path.realpath(themes_settings.themes_dir)
+        decoded_name = unquote(save_name or '').strip()
+        if not customization_name_re.match(decoded_name):
+            raise ESPError('Invalid customization name')
+        full_path = os.path.realpath(os.path.join(base_dir, '%s.less' % decoded_name))
+        if os.path.commonpath([base_dir, full_path]) != base_dir:
+            raise ESPError('Invalid customization path')
 
-        f = open(self._get_customization_file_path(save_name), 'r')
+        f = open(full_path, 'r')
         data = f.read()
         f.close()
 
@@ -589,7 +604,15 @@ class ThemeController(object):
         return (vars, palette)
 
     def delete_customizations(self, save_name):
-        os.remove(self._get_customization_file_path(save_name))
+        base_dir = os.path.realpath(themes_settings.themes_dir)
+        decoded_name = unquote(save_name or '').strip()
+        if not customization_name_re.match(decoded_name):
+            raise ESPError('Invalid customization name')
+        full_path = os.path.realpath(os.path.join(base_dir, '%s.less' % decoded_name))
+        if os.path.commonpath([base_dir, full_path]) != base_dir:
+            raise ESPError('Invalid customization path')
+
+        os.remove(full_path)
 
     def get_customization_names(self):
         result = []
