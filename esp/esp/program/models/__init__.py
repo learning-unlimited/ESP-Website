@@ -2376,6 +2376,7 @@ def maybe_create_module_ext(handler, ext):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
+from esp.program.models.printable_job import *
 
 def install():
     from esp.program.models.class_ import install as install_class
