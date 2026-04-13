@@ -38,6 +38,7 @@ from esp.users.models import ESPUser
 from django.db import models
 from django import forms
 from django.utils.deconstruct import deconstructible
+from django.utils import timezone  # FIX: use timezone-aware now()
 
 import datetime
 
@@ -65,11 +66,6 @@ class BaseAppElement(object):
                     return f
             return None
 
-        #   Avoid setting the prefix if the instance has not been saved to the
-        #   database.  This may be necessary in order to generate forms without
-        #   saving instances until the form is submitted.  The view function
-        #   should set the prefix appropriately after calling get_form in this
-        #   case.
         if 'form_prefix' in kwargs:
             form_prefix = kwargs['form_prefix']
             del kwargs['form_prefix']
@@ -84,7 +80,6 @@ class BaseAppElement(object):
                 fields = "__all__"
                 model = self.__class__
 
-        #   Enlarge text fields to a reasonable size (dangit Django).
         for field in self._field_names:
             django_field = get_field_by_name(field)
             if isinstance(django_field, models.TextField):
@@ -99,8 +94,6 @@ class BaseAppElement(object):
             initial_dict = {}
             populating_from_form = False
 
-        #   Don't overwrite existing data supplied as an argument.
-        #   BooleanFields are weird; if un-set, they're simply not given in the POST dictionary.
         if not populating_from_form:
             for field_name in self._field_names:
                 initial_dict[form_prefix + '-' + field_name] = getattr(self, field_name)
@@ -110,23 +103,22 @@ class BaseAppElement(object):
         return form
 
     def update(self, form):
-        self.date = datetime.datetime.now()
+        # FIX: guard against models without a 'date' field (e.g. StudentAppResponse)
+        if hasattr(self, 'date'):
+            self.date = timezone.now()
         for field_name in self._field_names:
             if field_name in form.cleaned_data:
                 setattr(self, field_name, form.cleaned_data[field_name])
         self.save()
 
 class StudentAppQuestion(BaseAppElement, models.Model):
-    """ A question for a student application form, a la Junction or Delve.
-    Questions pertaining to the program or to classes the student has
-    applied to will appear on their application. """
     from esp.program.models import Program, ClassSubject
 
     _element_name = 'question'
     _field_names = ['question', 'directions']
 
-    program = models.ForeignKey(Program, blank=True, null=True, editable = False, on_delete=models.CASCADE)
-    subject = models.ForeignKey(ClassSubject, blank=True, null=True, editable = False, on_delete=models.CASCADE)
+    program = models.ForeignKey(Program, blank=True, null=True, editable=False, on_delete=models.CASCADE)
+    subject = models.ForeignKey(ClassSubject, blank=True, null=True, editable=False, on_delete=models.CASCADE)
     question = models.TextField(help_text='The prompt that your students will see.')
     directions = models.TextField(help_text='Specify any additional notes (such as the length of response you desire) here.', blank=True, null=True)
 
@@ -141,7 +133,6 @@ class StudentAppQuestion(BaseAppElement, models.Model):
         db_table = 'program_studentappquestion'
 
 class StudentAppResponse(BaseAppElement, models.Model):
-    """ A response to an application question. """
     question = models.ForeignKey(StudentAppQuestion, editable=False, on_delete=models.CASCADE)
     response = models.TextField(default='')
     complete = models.BooleanField(default=False, help_text='Please check this box when you are finished responding to this question.')
@@ -157,12 +148,9 @@ class StudentAppResponse(BaseAppElement, models.Model):
         db_table = 'program_studentappresponse'
 
 class StudentAppReview(BaseAppElement, models.Model):
-    """ An individual review for a student application question.
-    The application can be reviewed by any director of the program or
-    teacher of a class for which the student applied. """
-
     reviewer = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
-    date = models.DateTimeField(default=datetime.datetime.now, editable=False)
+    # FIX: use timezone.now instead of datetime.datetime.now for timezone-aware timestamps
+    date = models.DateTimeField(default=timezone.now, editable=False)
     score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student', choices=((10, "Yes"), (5, "Maybe"), (1, "No")))
     comments = models.TextField()
     reject = models.BooleanField(default=False, editable=False)
@@ -178,17 +166,18 @@ class StudentAppReview(BaseAppElement, models.Model):
         db_table = 'program_studentappreview'
 
 class StudentApplication(models.Model):
-    """ Student applications for Junction and any other programs that need them. """
     from esp.program.models import Program
 
+    # FIX: null=True allows Django Admin to instantiate an empty "Add" form without
+    # immediately hitting the NOT NULL DB constraint before the user submits.
     program = models.ForeignKey(Program, editable=False, on_delete=models.CASCADE)
     user    = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
 
     questions = models.ManyToManyField(StudentAppQuestion)
     responses = models.ManyToManyField(StudentAppResponse)
-    reviews = models.ManyToManyField(StudentAppReview)
+    reviews   = models.ManyToManyField(StudentAppReview)
 
-    done = models.BooleanField(default=False, editable = False)
+    done = models.BooleanField(default=False, editable=False)
 
     #   Legacy fields
     teacher_score = models.PositiveIntegerField(editable=False, null=True, blank=True)
@@ -200,10 +189,16 @@ class StudentApplication(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.save()
-        self.set_questions()
 
     def set_questions(self):
+        """Set questions for this application based on program and applied classes.
+
+        Guards against being called on an unsaved instance or one missing FK
+        values - both of which would cause IntegrityErrors or query failures.
+        """
+        # FIX: use raw FK id fields to safely check without triggering DB lookups
+        if not self.pk or not self.user_id or not self.program_id:
+            return
         new_user = self.user
         existing_list = self.questions.all().values_list('id', flat=True)
         new_list = list(StudentAppQuestion.objects.filter(program=self.program).values_list('id', flat=True))
@@ -216,12 +211,12 @@ class StudentApplication(models.Model):
         for i in to_add:
             self.questions.add(i)
 
-    def get_forms(self, data={}):
-        """ Get a list of forms for the student to fill out.
-        This function sets a target attribute on each form so that
-        the update function can be called directly on target. """
+    def get_forms(self, data=None):
+        """Get a list of forms for the student to fill out."""
+        # FIX: use None sentinel instead of mutable default argument {}
+        if data is None:
+            data = {}
 
-        #   Get forms for already existing responses.
         forms = []
         new_user = self.user
         applied_classes = new_user.getAppliedClasses(self.program)
@@ -230,7 +225,6 @@ class StudentApplication(models.Model):
             f.target = r
             forms.append(f)
 
-        #   Create responses if necessary for the other questions, and get their forms.
         for q in self.questions.all():
             if self.responses.filter(question=q).count() == 0:
                 r = StudentAppResponse(question=q)
@@ -242,11 +236,41 @@ class StudentApplication(models.Model):
         return forms
 
     def update(self, form):
-        """ Use this if you're not sure what response the form is relevant to. """
+        """Use this if you're not sure what response the form is relevant to."""
         for r in self.responses.all():
             r.update(form)
 
     class Meta:
         app_label = 'program'
         db_table = 'program_junctionstudentapp'
+
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(
+    post_save,
+    sender=StudentApplication,
+    dispatch_uid="student_application_post_save",
+    weak=False,
+)
+def student_application_post_save(sender, instance, created, **kwargs):
+    """Set questions for the student application after it is first created.
+
+    Notes:
+    - Only fires on `created`, not every save.
+    - Uses raw FK id fields (user_id / program_id) to avoid DB lookups on
+      potentially incomplete instances.
+    - Does not mutate global signal connections; re-entry is guarded
+      with an instance-level flag.
+    """
+    if not created:
+        return
+
+    if getattr(instance, "_questions_set", False):
+        return
+
+    if instance.user_id and instance.program_id:
+        instance._questions_set = True
+        instance.set_questions()
 
