@@ -121,3 +121,160 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         for line in lines[i:i+j]:
             found_default = found_default or ('<option value="" selected></option>' in line)
         self.assertTrue(found_default)
+
+
+class RegistrationProfileFlowTest(ProgramFrameworkTest):
+    """Comprehensive tests for RegistrationProfile form flows (issue #225)."""
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({'num_students': 3, 'num_teachers': 2})
+        super().setUp(*args, **kwargs)
+        self.student_profile_url = '%sprofile' % self.program.get_learn_url()
+
+    def _valid_student_post(self, student, grade=9):
+        from esp.users.models import ESPUser
+
+        yog = str(ESPUser.YOGFromGrade(grade))
+        return {
+            'profile_page': '',
+            'first_name': student.first_name,
+            'last_name': student.last_name,
+            'e_mail': student.email,
+            'phone_day': '+16175550101',
+            'phone_cell': '',
+            'receive_txt_message': 'False',
+            'address_street': '123 Main St',
+            'address_city': 'Boston',
+            'address_state': 'MA',
+            'address_zip': '02139',
+            'address_country': '',
+            'emerg_first_name': 'Emergency',
+            'emerg_last_name': 'Contact',
+            'emerg_e_mail': 'emerg@example.com',
+            'emerg_phone_day': '+16175550102',
+            'emerg_phone_cell': '',
+            'emerg_address_street': '456 Side St',
+            'emerg_address_city': 'Cambridge',
+            'emerg_address_state': 'MA',
+            'emerg_address_zip': '02139',
+            'emerg_address_country': '',
+            'guard_first_name': 'Guardian',
+            'guard_last_name': 'Person',
+            'guard_e_mail': 'guardian@example.com',
+            'guard_phone_day': '+16175550103',
+            'guard_phone_cell': '',
+            'graduation_year': yog,
+            'dob_0': '6',
+            'dob_1': '15',
+            'dob_2': '2010',
+            'k12school': '',
+            'school': 'Test High School',
+            'unmatched_school': 'on',
+            'heard_about_0': '',
+            'heard_about_1': '',
+            'transportation_0': '',
+            'transportation_1': '',
+        }
+
+    def test_student_profile_invalid_data(self):
+        """Missing graduation_year must attach a field-specific validation error."""
+        from esp.program.models import RegistrationProfile
+
+        student = self.students[1]
+        self.client.login(username=student.username, password='password')
+
+        before_count = RegistrationProfile.objects.filter(
+            user=student,
+            student_info__isnull=False,
+        ).count()
+
+        invalid = self._valid_student_post(student, grade=9)
+        invalid['graduation_year'] = ''
+        response = self.client.post(self.student_profile_url, invalid)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('form', response.context)
+        self.assertIn('graduation_year', response.context['form'].errors)
+        self.assertIn('This field is required.', response.context['form'].errors['graduation_year'])
+
+        after_count = RegistrationProfile.objects.filter(
+            user=student,
+            student_info__isnull=False,
+        ).count()
+        self.assertEqual(before_count, after_count)
+
+    def test_edit_existing_student_profile(self):
+        """Second valid POST should update existing program profile, not create another."""
+        from esp.program.models import RegistrationProfile
+
+        student = self.students[0]
+        self.client.login(username=student.username, password='password')
+
+        initial = self._valid_student_post(student, grade=9)
+        initial.update({'first_name': 'Original', 'address_city': 'Boston'})
+        initial_response = self.client.post(self.student_profile_url, initial)
+
+        self.assertIn(initial_response.status_code, (200, 302))
+        initial_profiles = RegistrationProfile.objects.filter(
+            user=student,
+            program=self.program,
+            student_info__isnull=False,
+        )
+        self.assertEqual(initial_profiles.count(), 1)
+        initial_profile_id = initial_profiles.get().id
+
+        updated = self._valid_student_post(student, grade=9)
+        updated.update({'first_name': 'Updated', 'address_city': 'Somerville'})
+        response = self.client.post(self.student_profile_url, updated)
+
+        self.assertIn(response.status_code, (200, 302))
+
+        student.refresh_from_db()
+        self.assertEqual(student.first_name, 'Updated')
+
+        profiles_after_edit = RegistrationProfile.objects.filter(
+            user=student,
+            program=self.program,
+            student_info__isnull=False,
+        )
+        self.assertEqual(profiles_after_edit.count(), 1)
+        self.assertEqual(profiles_after_edit.get().id, initial_profile_id)
+
+    def test_grade_null_when_omitted(self):
+        """Omitting graduation_year must not auto-default to the smallest grade."""
+        from esp.program.models import RegistrationProfile
+        from esp.users.models import ESPUser
+
+        student = self.students[2]
+        self.client.login(username=student.username, password='password')
+
+        before_count = RegistrationProfile.objects.filter(
+            user=student,
+            student_info__isnull=False,
+        ).count()
+
+        payload = self._valid_student_post(student, grade=9)
+        del payload['graduation_year']
+        response = self.client.post(self.student_profile_url, payload)
+
+        if response.status_code in (301, 302):
+            smallest_yog = ESPUser.YOGFromGrade(min(ESPUser.grade_options()))
+            prof = RegistrationProfile.objects.filter(
+                user=student,
+                student_info__isnull=False,
+            ).order_by('-last_ts').first()
+
+            self.assertIsNotNone(prof)
+            self.assertNotEqual(prof.student_info.graduation_year, smallest_yog)
+            self.assertIn(prof.student_info.graduation_year, (None, ''))
+        else:
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('form', response.context)
+            self.assertIn('graduation_year', response.context['form'].errors)
+            self.assertIn('This field is required.', response.context['form'].errors['graduation_year'])
+
+            after_count = RegistrationProfile.objects.filter(
+                user=student,
+                student_info__isnull=False,
+            ).count()
+            self.assertEqual(before_count, after_count)
