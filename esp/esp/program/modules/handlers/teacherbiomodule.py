@@ -74,13 +74,10 @@ class TeacherBioModule(ProgramModuleObj):
 
         return self.goToCore(tl)
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         #   TeacherBio.getLastForProgram() returns a new bio if one already exists.
         #   So, mark this step completed if there is an existing (i.e. non-empty) bio.
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         lastBio = TeacherBio.getLastForProgram(user, self.program)
         return ((lastBio.id is not None) and lastBio.bio and lastBio.slugbio)
 
