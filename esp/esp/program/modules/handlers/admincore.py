@@ -139,7 +139,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                           ('TeacherQuizModule', "Set up the teacher logistics quiz", "/customforms/", Tag.getProgramTag('quiz_form_id', self.program)),
                           ('TeacherCustomFormModule', "Set up the teacher custom form", "/customforms/", Tag.getProgramTag('teach_extraform_id', self.program)),
                           ('StudentCustomFormModule', "Set up the student custom form", "/customforms/", Tag.getProgramTag('learn_extraform_id', self.program)),
-                          ('StudentLunchSelection', "Set up multiple lunch periods", '/manage/' + self.program.url + '/lunch_constraints', Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()),
+                          ('StudentLunchSelection', "Set up multiple lunch periods", '/manage/' + self.program.url + '/lunch_constraints', Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__is_lunch=True).exists()),
                          ] # (handler, setup title, setup path, isCompleted)
         extra_steps = [step for step in required_steps if prog.hasModule(step[0])]
         optional_steps = [

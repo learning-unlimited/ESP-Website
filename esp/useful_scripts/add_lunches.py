@@ -37,7 +37,7 @@ sections_by_user_timeblock = {
     for timeblock in sections_by_id[section_id].meeting_times.all()}
 
 lunches = ClassSection.objects.filter(parent_class__parent_program=program,
-                                      parent_class__category__category='Lunch',
+                                      parent_class__category__is_lunch=True,
                                       meeting_times__isnull=False
                                       ).values_list('meeting_times', 'id')
 lunches_by_timeblock = dict(lunches)

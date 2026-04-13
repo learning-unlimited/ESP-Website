@@ -130,7 +130,7 @@ class SchedulingCheckRunner:
     def _getLunchByDay(self):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__is_lunch=True).order_by('start').distinct()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.p.getTimeSlots():
@@ -223,7 +223,7 @@ class SchedulingCheckRunner:
             #filter out unscheduled classes
             qs = qs.exclude(resourceassignment__isnull=True)
             #filter out lunch
-            qs = qs.exclude(parent_class__category__category='Lunch')
+            qs = qs.exclude(parent_class__category__is_lunch=True)
             qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
             qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers', 'moderators')
             if include_walkins:
