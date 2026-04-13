@@ -265,7 +265,7 @@ def repeats(form, programs, students, profiles, result_dict=None):
             user__in=students,
             event__name='reg_confirmed',
         )
-        .values_list('user_id', 'program__program_type')
+        .values_list('user_id', 'program__type')
     )
 
     #   Group by user: count how many programs of each type they confirmed
