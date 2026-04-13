@@ -81,6 +81,20 @@ class ThemeController(object):
     """
     This is a controller for manipulating the currently selected theme.
     """
+
+    def _get_customization_file_path(self, save_name):
+        base_dir = os.path.abspath(themes_settings.themes_dir)
+        decoded_name = unquote(save_name or '')
+        if not decoded_name:
+            raise ESPError('Invalid customization name')
+
+        filename = f'{quote(decoded_name, safe="")}.less'
+        full_path = os.path.abspath(os.path.join(base_dir, filename))
+        if os.path.commonpath([base_dir, full_path]) != base_dir:
+            raise ESPError('Invalid customization path')
+
+        return full_path
+
     def __init__(self, *args, **kwargs):
         self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
 
@@ -532,13 +546,13 @@ class ThemeController(object):
         context['save_name'] = save_name
         context['palette'] = palette
 
-        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")), 'w')
+        f = open(self._get_customization_file_path(save_name), 'w')
         f.write(render_to_string('themes/custom_vars.less', context))
         f.close()
 
     def load_customizations(self, save_name):
 
-        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")), 'r')
+        f = open(self._get_customization_file_path(save_name), 'r')
         data = f.read()
         f.close()
 
@@ -572,7 +586,7 @@ class ThemeController(object):
         return (vars, palette)
 
     def delete_customizations(self, save_name):
-        os.remove(os.path.join(themes_settings.themes_dir, '%s.less' % quote(save_name, safe = "")))
+        os.remove(self._get_customization_file_path(save_name))
 
     def get_customization_names(self):
         result = []
