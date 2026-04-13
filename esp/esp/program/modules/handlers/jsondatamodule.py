@@ -41,6 +41,7 @@ import operator
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
+from esp.tagdict.models import Tag
 from django.http import Http404
 
 from argcache import cache_function
@@ -494,6 +495,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         qs = prog.classes().prefetch_related(
             'category', 'sections', 'teachers')
 
+        enable_images = Tag.getBooleanTag('enable_class_description_images', prog)
         for c in qs:
             class_teachers = c.get_teachers()
             class_moderators = c.moderators()
@@ -513,7 +515,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 cls['class_style'] = c.class_style
                 cls['difficulty'] = c.hardness_rating
                 cls['prereqs'] = c.prereqs
-                if Tag.getBooleanTag('enable_class_description_images', prog):
+                if enable_images:
                     cls['picture_url'] = c.picture.url if c.picture else None
             cls['emailcode'] = c.emailcode()
             if c.duration:
@@ -555,6 +557,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             teacher['availability'] = avail_lookup.get(teacher['id'], [])
 
         return {'classes': classes, 'teachers': teachers, 'moderators': moderators}
+    class_subjects.cached_function.depend_on_model(Tag)
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
 
@@ -680,6 +683,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {return_key: [return_dict]}
     class_info.cached_function.depend_on_model(ClassSubject)
     class_info.cached_function.depend_on_model(ClassSection)
+    class_info.cached_function.depend_on_model(Tag)
 
     @aux_call
     @cache_control(public=True, max_age=300)

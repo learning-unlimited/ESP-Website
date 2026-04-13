@@ -249,18 +249,16 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # Get class_style_choices from tag, otherwise hide the field
         if Tag.getTag('class_style_choices'):
             self.fields['class_style'].choices = json.loads(Tag.getTag('class_style_choices'))
+            self.fields['class_style'].required = True
         else:
-            del self.fields['class_style']
+            hide_field(self.fields['class_style'])
 
         if Tag.getBooleanTag('enable_class_description_images', prog):
             self.fields['picture'] = ResizeImageField(label='Class Description Image',
                                                        help_text='A picture to be displayed with your class description. Max 500x500.',
-                                                       required=False, maxWidth=500, maxHeight=500)
+                                                       required=False, size=(500, 500))
         elif 'picture' in self.fields:
             del self.fields['picture']
-            self.fields['class_style'].required = True
-        else:
-            hide_field(self.fields['class_style'])
         # plus subprogram section wizard
 
     def clean(self):

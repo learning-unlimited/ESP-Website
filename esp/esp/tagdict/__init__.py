@@ -605,8 +605,11 @@ all_program_tags = {
         'is_setting': True,
     },
     'enable_class_description_images': {
-        'default': 'False', 'type': 'bool',
-        'desc': 'Enable teachers to upload a picture for their class description.'
+        'is_boolean': True,
+        'help_text': 'Enable teachers to upload a picture for their class description.',
+        'default': False,
+        'category': 'class',
+        'is_setting': True,
     },
     'teacherreg_help_text_class_info': {
         'is_boolean': False,
