@@ -348,3 +348,556 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             self.assertLessEqual(cls_data['grade_max'], prog_max,
                                  "grade_max above program maximum for class id=%s" % cid)
 
+
+class JSONModuleManagementTest(ProgramFrameworkTest):
+    """Tests for the JSON API endpoints for module management (#4689)."""
+
+    def setUp(self):
+        from esp.users.models import ESPUser
+        modules = []
+        modules.append(ProgramModule.objects.get(handler='AdminCore'))
+        modules.append(ProgramModule.objects.get(handler='JSONDataModule'))
+        modules += list(ProgramModule.objects.filter(handler='RegProfileModule'))
+        modules.append(ProgramModule.objects.get(handler='AvailabilityModule'))
+        modules.append(ProgramModule.objects.get(handler='StudentRegConfirm'))
+
+        super(JSONModuleManagementTest, self).setUp(modules=modules)
+
+        # Force creation of ProgramModuleObj rows for all modules.
+        self.program.getModules()
+
+        self.adminUser, created = ESPUser.objects.get_or_create(username='admin_json_mgmt')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+
+    # -----------------------------------------------------------------------
+    # URL helpers
+    # -----------------------------------------------------------------------
+
+    def _url(self, endpoint):
+        return '/json/%s/%s' % (self.program.url, endpoint)
+
+    # -----------------------------------------------------------------------
+    # modules_list
+    # -----------------------------------------------------------------------
+
+    def test_modules_list_requires_admin(self):
+        """modules_list returns 302 (or 403) when not logged in."""
+        r = self.client.get(self._url('modules_list'))
+        self.assertIn(r.status_code, [302, 403])
+
+    def test_modules_list_returns_200_for_admin(self):
+        """modules_list returns 200 for an admin user."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.get(self._url('modules_list'))
+        self.assertEqual(r.status_code, 200)
+
+    def test_modules_list_returns_json(self):
+        """modules_list response body is valid JSON with a 'modules' key."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.get(self._url('modules_list'))
+        data = json.loads(r.content)
+        self.assertIn('modules', data)
+        self.assertIsInstance(data['modules'], list)
+
+    def test_modules_list_entries_have_expected_keys(self):
+        """Each entry in modules_list has all required keys."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.get(self._url('modules_list'))
+        data = json.loads(r.content)
+        required_keys = {'id', 'module_type', 'handler', 'admin_title',
+                         'link_title', 'seq', 'required'}
+        for entry in data['modules']:
+            for key in required_keys:
+                self.assertIn(key, entry,
+                              'Missing key %r in entry %r' % (key, entry))
+
+    def test_modules_list_only_step_modules(self):
+        """modules_list only returns modules where inModulesList() is True."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.get(self._url('modules_list'))
+        data = json.loads(r.content)
+        step_ids = set()
+        for tl in ('learn', 'teach'):
+            step_ids.update(
+                m.id for m in self.program.getModules(tl=tl) if m.inModulesList()
+            )
+        returned_ids = {entry['id'] for entry in data['modules']}
+        self.assertEqual(returned_ids, step_ids)
+
+    def test_modules_list_constraints_present_for_locked_modules(self):
+        """modules_list includes a 'constraints' dict for constrained modules."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.get(self._url('modules_list'))
+        data = json.loads(r.content)
+        reg_profile_entries = [
+            e for e in data['modules'] if e['handler'] == 'RegProfileModule'
+        ]
+        for entry in reg_profile_entries:
+            self.assertIn('constraints', entry)
+            self.assertTrue(entry['constraints']['required_locked'])
+            self.assertTrue(entry['constraints']['position_locked'])
+
+    # -----------------------------------------------------------------------
+    # module_update
+    # -----------------------------------------------------------------------
+
+    def test_module_update_requires_post(self):
+        """module_update rejects GET requests with 405."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.get(self._url('module_update'))
+        self.assertEqual(r.status_code, 405)
+
+    def test_module_update_requires_admin(self):
+        """module_update returns 302 (or 403) when not logged in."""
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'seq': 20}),
+            content_type='application/json',
+        )
+        self.assertIn(r.status_code, [302, 403])
+
+    def test_module_update_seq(self):
+        """module_update can update seq for a module."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        # Pick a module that is not position-locked so the update sticks.
+        pmo = ProgramModuleObj.objects.filter(
+            program=self.program,
+            module__handler='AvailabilityModule',
+        ).first()
+        if pmo is None:
+            pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        new_seq = pmo.seq + 100
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'seq': new_seq}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        pmo.refresh_from_db()
+        self.assertEqual(pmo.seq, new_seq)
+
+    def test_module_update_required_label(self):
+        """module_update can set required_label."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'required_label': 'Sign up now'}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        pmo.refresh_from_db()
+        self.assertEqual(pmo.required_label, 'Sign up now')
+
+    def test_module_update_link_title(self):
+        """module_update can set link_title."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'link_title': 'My Title'}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        pmo.refresh_from_db()
+        self.assertEqual(pmo.link_title, 'My Title')
+
+    def test_module_update_invalid_id(self):
+        """module_update returns 404 for an ID not in this program."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': 999999, 'seq': 5}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 404)
+
+    def test_module_update_rejects_bool_as_seq(self):
+        """module_update rejects a JSON boolean for seq (bool is a subclass of int)."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'seq': True}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+        data = json.loads(r.content)
+        self.assertIn('error', data)
+
+    def test_module_update_rejects_non_integer_seq(self):
+        """module_update returns 400 when seq is a string."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'seq': 'ten'}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_module_update_rejects_overlong_required_label(self):
+        """module_update returns 400 when required_label exceeds 80 characters."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'required_label': 'x' * 81}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_module_update_rejects_overlong_link_title(self):
+        """module_update returns 400 when link_title exceeds 64 characters."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'link_title': 'y' * 65}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_module_update_enforces_constraints(self):
+        """module_update re-enforces constraints after saving (e.g. RegProfileModule stays seq=0)."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(
+            program=self.program, module__handler='RegProfileModule'
+        ).first()
+        if pmo is None:
+            return  # module not in this program; skip
+        self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'seq': 500}),
+            content_type='application/json',
+        )
+        pmo.refresh_from_db()
+        self.assertEqual(pmo.seq, 0)
+
+    def test_module_update_rejects_invalid_json(self):
+        """module_update returns 400 for a malformed JSON body."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.post(
+            self._url('module_update'),
+            data='not json{{',
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_module_update_rejects_non_integer_id(self):
+        """module_update returns 400 when id is not an integer."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': 'abc', 'seq': 5}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('error', json.loads(r.content))
+
+    def test_module_update_rejects_no_valid_fields(self):
+        """module_update returns 400 when no recognised fields are provided."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'color': 'blue'}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_module_update_rejects_non_boolean_required(self):
+        """module_update returns 400 when required is not a boolean."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'required': 'yes'}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_module_update_rejects_non_string_required_label(self):
+        """module_update returns 400 when required_label is not a string."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'required_label': 5}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_module_update_rejects_non_string_link_title(self):
+        """module_update returns 400 when link_title is not a string."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        r = self.client.post(
+            self._url('module_update'),
+            data=json.dumps({'id': pmo.id, 'link_title': 5}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    # -----------------------------------------------------------------------
+    # modules_reorder
+    # -----------------------------------------------------------------------
+
+    def test_modules_reorder_requires_post(self):
+        """modules_reorder rejects GET requests with 405."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.get(self._url('modules_reorder'))
+        self.assertEqual(r.status_code, 405)
+
+    def test_modules_reorder_requires_admin(self):
+        """modules_reorder returns 302 (or 403) when not logged in."""
+        pmos = list(ProgramModuleObj.objects.filter(program=self.program)[:2])
+        r = self.client.post(
+            self._url('modules_reorder'),
+            data=json.dumps({'module_ids': [p.id for p in pmos]}),
+            content_type='application/json',
+        )
+        self.assertIn(r.status_code, [302, 403])
+
+    def test_modules_reorder_updates_seq(self):
+        """modules_reorder sets increasing seq values in submission order."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmos = list(ProgramModuleObj.objects.filter(program=self.program)
+                    .order_by('seq')[:3])
+        # Submit in reverse to force a real change.
+        ordered_ids = [p.id for p in reversed(pmos)]
+        r = self.client.post(
+            self._url('modules_reorder'),
+            data=json.dumps({'module_ids': ordered_ids}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        data = json.loads(r.content)
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['updated'], len(ordered_ids))
+
+        # seq values must be monotonically increasing in the submitted order
+        # (constraint enforcement may override some, but relative ordering holds
+        # for unconstrained modules).
+        db_pmos = {p.id: p for p in ProgramModuleObj.objects.filter(id__in=ordered_ids)}
+        seqs = [db_pmos[mid].seq for mid in ordered_ids]
+        self.assertEqual(seqs, sorted(seqs), 'seq values should be increasing')
+
+    def test_modules_reorder_starting_seq(self):
+        """modules_reorder starts seq at 12 (room for non-step modules earlier)."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmos = list(ProgramModuleObj.objects.filter(
+            program=self.program,
+            module__handler='AvailabilityModule',
+        ))
+        if not pmos:
+            return
+        r = self.client.post(
+            self._url('modules_reorder'),
+            data=json.dumps({'module_ids': [pmos[0].id]}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        pmos[0].refresh_from_db()
+        # AvailabilityModule is required_locked but not position_locked, so seq >= 12.
+        self.assertGreaterEqual(pmos[0].seq, 12)
+
+    def test_modules_reorder_missing_ids(self):
+        """modules_reorder returns 404 when IDs are not in the program."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.post(
+            self._url('modules_reorder'),
+            data=json.dumps({'module_ids': [999999]}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 404)
+
+    def test_modules_reorder_requires_list_of_integers(self):
+        """modules_reorder returns 400 when module_ids contains non-integers."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.post(
+            self._url('modules_reorder'),
+            data=json.dumps({'module_ids': ['a', 'b']}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_modules_reorder_rejects_non_list_module_ids(self):
+        """modules_reorder returns 400 when module_ids is not a list."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.post(
+            self._url('modules_reorder'),
+            data=json.dumps({'module_ids': 'not-a-list'}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_modules_reorder_rejects_invalid_json(self):
+        """modules_reorder returns 400 for a malformed JSON body."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.post(
+            self._url('modules_reorder'),
+            data='not json{{',
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_modules_reorder_enforces_constraints(self):
+        """modules_reorder enforces constraints: RegProfileModule stays seq=0."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        reg_pmos = list(ProgramModuleObj.objects.filter(
+            program=self.program, module__handler='RegProfileModule'
+        ))
+        if not reg_pmos:
+            return
+        other_pmos = list(ProgramModuleObj.objects.filter(
+            program=self.program
+        ).exclude(module__handler='RegProfileModule')[:2])
+        # Put RegProfileModule last — constraint enforcement must fix it.
+        to_reorder = other_pmos + reg_pmos
+        r = self.client.post(
+            self._url('modules_reorder'),
+            data=json.dumps({'module_ids': [p.id for p in to_reorder]}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        for pmo in reg_pmos:
+            pmo.refresh_from_db()
+            self.assertEqual(pmo.seq, 0)
+
+    # -----------------------------------------------------------------------
+    # modules_reset
+    # -----------------------------------------------------------------------
+
+    def test_modules_reset_requires_post(self):
+        """modules_reset rejects GET requests with 405."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.get(self._url('modules_reset'))
+        self.assertEqual(r.status_code, 405)
+
+    def test_modules_reset_requires_admin(self):
+        """modules_reset returns 302 (or 403) when not logged in."""
+        r = self.client.post(
+            self._url('modules_reset'),
+            data=json.dumps({'seq': True}),
+            content_type='application/json',
+        )
+        self.assertIn(r.status_code, [302, 403])
+
+    def test_modules_reset_seq(self):
+        """modules_reset restores seq to module defaults for all step modules."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        # Dirty seq for all modules.
+        pmos = list(ProgramModuleObj.objects.filter(program=self.program))
+        for pmo in pmos:
+            pmo.seq = 999
+        ProgramModuleObj.objects.bulk_update(pmos, ['seq'])
+
+        r = self.client.post(
+            self._url('modules_reset'),
+            data=json.dumps({'seq': True}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        data = json.loads(r.content)
+        self.assertEqual(data['status'], 'ok')
+
+        # Step modules should have seq == module default (or constraint override).
+        for tl in ('learn', 'teach'):
+            for pmo in self.program.getModules(tl=tl):
+                if not pmo.inModulesList():
+                    continue
+                pmo_db = ProgramModuleObj.objects.get(id=pmo.id)
+                self.assertEqual(pmo_db.seq, pmo.module.seq)
+
+    def test_modules_reset_required_label(self):
+        """modules_reset clears required_label overrides."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        pmo.required_label = 'before reset'
+        pmo.save()
+
+        r = self.client.post(
+            self._url('modules_reset'),
+            data=json.dumps({'required_label': True}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        pmo.refresh_from_db()
+        self.assertEqual(pmo.required_label, '')
+
+    def test_modules_reset_link_title(self):
+        """modules_reset clears link_title overrides."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        pmo.link_title = 'before reset'
+        pmo.save()
+
+        r = self.client.post(
+            self._url('modules_reset'),
+            data=json.dumps({'link_title': True}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        pmo.refresh_from_db()
+        self.assertEqual(pmo.link_title, '')
+
+    def test_modules_reset_rejects_invalid_json(self):
+        """modules_reset returns 400 for a malformed JSON body."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.post(
+            self._url('modules_reset'),
+            data='not json{{',
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_modules_reset_requires_at_least_one_field(self):
+        """modules_reset returns 400 when no fields are specified."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        r = self.client.post(
+            self._url('modules_reset'),
+            data=json.dumps({}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_modules_reset_enforces_constraints(self):
+        """modules_reset enforces hard-coded constraints after resetting seq."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        reg_pmos = list(ProgramModuleObj.objects.filter(
+            program=self.program, module__handler='RegProfileModule'
+        ))
+        if not reg_pmos:
+            return
+        r = self.client.post(
+            self._url('modules_reset'),
+            data=json.dumps({'seq': True}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        for pmo in reg_pmos:
+            pmo.refresh_from_db()
+            # Constraint override: RegProfileModule is always seq=0.
+            self.assertEqual(pmo.seq, 0)
+
+    def test_modules_reset_confirm_stays_not_required(self):
+        """modules_reset + constraint enforcement leaves StudentRegConfirm not required."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        confirm_pmos = list(ProgramModuleObj.objects.filter(
+            program=self.program, module__handler='StudentRegConfirm'
+        ))
+        if not confirm_pmos:
+            return
+        r = self.client.post(
+            self._url('modules_reset'),
+            data=json.dumps({'required': True}),
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        for pmo in confirm_pmos:
+            pmo.refresh_from_db()
+            self.assertFalse(pmo.required)
+
