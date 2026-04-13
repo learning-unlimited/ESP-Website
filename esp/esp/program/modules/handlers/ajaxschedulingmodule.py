@@ -214,6 +214,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         called in production, but it is annoying.
         Clears the change log for this program. """
 
+        if request.method != 'POST':
+            return HttpResponse('Method not allowed. Use POST.', status=405)
+
         self.get_change_log(prog).entries.all().delete()
         context = {}
         return render_to_response(self.baseDir()+'clear_cache_confirmation.html', request, context)
