@@ -31,7 +31,10 @@ if os.environ.get('VIRTUAL_ENV') is None:
 
 import django
 django.setup()
+from django.contrib.sites.models import Site
+
 from esp.dbmail.models import EmailList
+from esp.dbmail.mailgate_utils import sanitize_recipient_headers
 from django.conf import settings
 
 import email.utils
