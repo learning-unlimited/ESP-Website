@@ -301,3 +301,16 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.client.login(username=self.teacher.username, password='password')
         url = '%steacherlookup' % self.program.get_teach_url()
         self.assertEqual(self.client.get(url).status_code, 302)
+
+    def test_makeaclass_no_durations_shows_warning(self):
+        """Assert that duration warning banner is shown when no timeslots/durations exist."""
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Failed to log in")
+        
+        # Delete class timeslots configured in setUp
+        self.program.events.filter(event_type__description='Class Time Block').delete()
+        self.assertEqual(len(self.program.countTimeSlots()), 0)
+        
+        url = '%smakeaclass' % self.program.get_teach_url()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'no valid class meeting timeslots or durations are available')
