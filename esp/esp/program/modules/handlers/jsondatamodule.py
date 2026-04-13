@@ -660,7 +660,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'num_students_interested': sec.num_students(['Interested']),
                 'num_students_enrolled': sec.num_students(['Enrolled']),
                 'time': ', '.join(sec.friendly_times()),
-                'room': ' and '.join(sec.prettyrooms()),
             })
 
         return_dict = {
@@ -675,7 +674,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'sections': section_info,
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
-            'location': ", ".join(cls.prettyrooms()),
             'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades",
         }
 
