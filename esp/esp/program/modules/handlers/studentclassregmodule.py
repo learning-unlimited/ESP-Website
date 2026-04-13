@@ -67,6 +67,7 @@ def json_encode(obj):
                  'parent_program': obj.parent_program_id,
                  'category': obj.category,
                  'class_info': obj.class_info,
+                 'picture_url': obj.picture.url if obj.picture and Tag.getBooleanTag('enable_class_description_images', obj.parent_program) else None,
 #                 'allow_lateness': obj.allow_lateness,
                  'grade_min': obj.grade_min,
                  'grade_max': obj.grade_max,

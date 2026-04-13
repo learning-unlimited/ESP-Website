@@ -51,6 +51,9 @@
     </div>
     {% block class_action %}{% endblock %}
     <div class="catalog-entry-body">
+      <!-- ko if: picture_url -->
+      <img class="class_picture" data-bind="attr: { src: picture_url, alt: title }" />
+      <!-- /ko -->
       <div class="catalog-entry-description" data-bind="text: class_info"></div>
       <dl>
         <dt>Grades</dt> <dd data-bind="text: grade_range"></dd>

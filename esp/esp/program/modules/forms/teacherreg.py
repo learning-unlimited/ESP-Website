@@ -49,6 +49,7 @@ from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
 from datetime import datetime, timedelta
 import json
+from esp.web.forms import ResizeImageField
 
 class TeacherClassRegForm(FormWithRequiredCss):
     location_choices = [    (True, "I will use my own space for this class (e.g. space in my laboratory).  I have explained this in 'Message for Directors' below."),
@@ -248,6 +249,15 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # Get class_style_choices from tag, otherwise hide the field
         if Tag.getTag('class_style_choices'):
             self.fields['class_style'].choices = json.loads(Tag.getTag('class_style_choices'))
+        else:
+            del self.fields['class_style']
+
+        if Tag.getBooleanTag('enable_class_description_images', prog):
+            self.fields['picture'] = ResizeImageField(label='Class Description Image',
+                                                       help_text='A picture to be displayed with your class description. Max 500x500.',
+                                                       required=False, maxWidth=500, maxHeight=500)
+        elif 'picture' in self.fields:
+            del self.fields['picture']
             self.fields['class_style'].required = True
         else:
             hide_field(self.fields['class_style'])

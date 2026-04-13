@@ -7,6 +7,9 @@
     {% endfor %}</i>
 </div>
 <div class="class_content">
+    {% if enable_images and class.picture %}
+        <img src="{{ class.picture.url }}" class="class_picture" alt="{{ class.title }}" />
+    {% endif %}
     {% autoescape off %}
         {{ class.class_info|escape|linebreaksbr }}
     {% endautoescape %}

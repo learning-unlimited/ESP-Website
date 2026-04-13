@@ -513,6 +513,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 cls['class_style'] = c.class_style
                 cls['difficulty'] = c.hardness_rating
                 cls['prereqs'] = c.prereqs
+                if Tag.getBooleanTag('enable_class_description_images', prog):
+                    cls['picture_url'] = c.picture.url if c.picture else None
             cls['emailcode'] = c.emailcode()
             if c.duration:
                 cls['length'] = float(c.duration)
@@ -667,6 +669,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'category': cls.category.category,
             'difficulty': cls.hardness_rating,
             'prereqs': cls.prereqs,
+            'picture_url': cls.picture.url if cls.picture and Tag.getBooleanTag('enable_class_description_images', cls.parent_program) else None,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),

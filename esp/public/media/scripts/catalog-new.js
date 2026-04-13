@@ -14,6 +14,7 @@ var ClassSubject = function (data) {
     self.class_style = data.class_style;
     self.difficulty  = data.difficulty;
     self.prereqs     = data.prereqs;
+    self.picture_url = data.picture_url;
     self.interested  = ko.observable(false);
     self.interested_saved = ko.observable(false);
 

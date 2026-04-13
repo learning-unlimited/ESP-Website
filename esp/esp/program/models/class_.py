@@ -1422,6 +1422,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     parent_program = models.ForeignKey(Program, on_delete=models.CASCADE)
     category = models.ForeignKey('ClassCategories', related_name = 'cls', on_delete=models.CASCADE)
     class_info = models.TextField(blank=True)
+    picture = models.ImageField(upload_to='uploaded/class_pictures/%y_%m/',
+                                height_field='picture_height', width_field='picture_width',
+                                null=True, blank=True)
+    picture_height = models.IntegerField(null=True, blank=True)
+    picture_width = models.IntegerField(null=True, blank=True)
     teachers = models.ManyToManyField(ESPUser)
     allow_lateness = models.BooleanField(default=False)
     message_for_directors = models.TextField(blank=True)

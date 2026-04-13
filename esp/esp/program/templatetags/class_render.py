@@ -122,7 +122,8 @@ def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = F
             'prereg_url': prereg_url,
             'errormsg':   errormsg,
             'temp_full_message': scrmi.temporarily_full_text,
-            'show_class': show_class}
+            'show_class': show_class,
+            'enable_images': Tag.getBooleanTag('enable_class_description_images', cls.parent_program)}
 
 
 # The following two need to be inclusion tags rather than template includes
