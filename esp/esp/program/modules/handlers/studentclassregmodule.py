@@ -351,7 +351,7 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             try:
                 sec_ids = [int(x) for x in extra.split(',')]
-            except (ValueError, TypeError, AttributeError):
+            except:
                 pass
 
         for sec_id in sec_ids:
@@ -443,12 +443,32 @@ class StudentClassRegModule(ProgramModuleObj):
                     #   Rewrite the registration button if possible.  This requires telling
                     #   the ajax_schedule view what section was added/changed.
                     extra = request.POST['section_id']
-                except KeyError:
+                except:
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
             error_message = inst.args[0] if inst.args else "An error occurred."
             return HttpResponse(json.dumps({'status' : 200, 'error': str(error_message)}), content_type='application/json')
+
+    @aux_call
+    @needs_student_in_grade
+    @meets_deadline('/Classes')
+    def ajax_validate_class(self, request, tl, one, two, module, extra, prog):
+        """ Validate whether the current student can add a class without enrolling them.
+            Accepts POST['class_id']. Returns JSON {'error': string_or_null}.
+        """
+        scrmi = prog.studentclassregmoduleinfo
+        class_id = request.POST.get('class_id')
+        if not class_id:
+            raise AjaxError('No class specified.')
+        try:
+            cobj = ClassSubject.objects.get(id=class_id)
+        except ClassSubject.DoesNotExist:
+            raise AjaxError('Class not found.')
+        error = cobj.cannotAdd(request.user, scrmi.enforce_max)
+        resp = HttpResponse(content_type='application/json')
+        json.dump({'error': error or None}, resp)
+        return resp
 
     @staticmethod
     def sort_categories(classes, prog, force_sort=False):
@@ -484,7 +504,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         try:
             extra = int(extra)
-        except (ValueError, TypeError):
+        except:
             raise ESPError('Please use the link at the main registration page.', log=False)
         user = request.user
         ts = Event.objects.filter(id=extra, program=prog)
@@ -782,7 +802,11 @@ class StudentClassRegModule(ProgramModuleObj):
 
         module = prog.getModule('OnSiteClassList')
         if module:
-            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options={}, template_name='allclass_fragment.html')
+            # Pass GET params through so users can filter by timeslot (?start=<id>).
+            # Use an empty dict (not None) so classList_base never redirects to the
+            # internal options form, but still honours any supplied GET parameters.
+            options = request.GET.copy() if request.GET else {}
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options=options, template_name='openclasses.html')
 
         #  Otherwise this will be a 404
         return None
