@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase, RequestFactory
 
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
+from esp.program.models import RegistrationType, StudentRegistration
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 
@@ -204,3 +205,171 @@ class CatalogStatusTests(ProgramFrameworkTest):
         data = json.loads(resp.content)
         class_ids = [c['id'] for c in data['classes']]
         self.assertNotIn(cls.id, class_ids)
+
+
+class EnrollmentStatusTests(ProgramFrameworkTest):
+    """Tests for OnSiteClassList.enrollment_status"""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=2,
+            num_teachers=2,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=2,
+            num_students=3,
+        )
+        self.schedule_randomly()
+        self.add_user_profiles()
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+        # Enrolling students into sections
+        for student in self.students:
+            for section in self.program.sections()[:1]:
+                section.preregister_student(student)
+        self.enrolled_section = self.program.sections()[0]
+
+    def _call(self):
+        request = self.factory.get('/onsite/enrollment_status')
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.enrollment_status, 'method', OnSiteClassList.enrollment_status)
+        module = SimpleNamespace()
+        return fn(module, request, None, None, None, None, None, self.program)
+
+    def test_returns_200(self):
+        """enrollment_status must return 200."""
+        resp = self._call()
+        self.assertEqual(resp.status_code, 200)
+
+    def test_content_type_is_json(self):
+        """Response Content-Type must include application/json."""
+        resp = self._call()
+        self.assertIn('application/json', resp['Content-Type'])
+
+    def test_returns_list(self):
+        """Parsed JSON body must be a list."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        self.assertIsInstance(data, list)
+
+    def test_enrolled_pair_appears(self):
+        """[student.id, section.id] pair for an enrolled student must appear in the result."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        student = self.students[0]
+        expected_pair = [student.id, self.enrolled_section.id]
+        self.assertIn(expected_pair, data)
+
+    def test_only_enrolled_relationship(self):
+        """A non-Enrolled registration must not duplicate the enrolled pair."""
+        # Created a Waitlisted registration for students[0] on the same section
+        waitlisted_rt, _ = RegistrationType.objects.get_or_create(
+            name='Waitlisted', category='student'
+        )
+        StudentRegistration.objects.create(
+            user=self.students[0],
+            section=self.enrolled_section,
+            relationship=waitlisted_rt,
+        )
+        resp = self._call()
+        data = json.loads(resp.content)
+        # The enrolled pair should appear exactly once (waitlisted is excluded)
+        student = self.students[0]
+        expected_pair = [student.id, self.enrolled_section.id]
+        count = data.count(expected_pair)
+        self.assertEqual(count, 1)
+
+    def test_excluded_when_section_status_negative(self):
+        """Students enrolled in a section with status <= 0 must not appear in the result."""
+        original_status = self.enrolled_section.status
+        self.enrolled_section.status = -10
+        self.enrolled_section.save()
+        self.addCleanup(
+            self.enrolled_section.__class__.objects.filter(pk=self.enrolled_section.pk).update,
+            status=original_status,
+        )
+        resp = self._call()
+        data = json.loads(resp.content)
+        user_ids_in_result = [pair[0] for pair in data]
+        self.assertNotIn(self.students[0].id, user_ids_in_result)
+
+
+class CountsStatusTests(ProgramFrameworkTest):
+    """Tests for OnSiteClassList.counts_status"""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=2,
+            num_teachers=2,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=2,
+            num_students=3,
+        )
+        self.schedule_randomly()
+        self.add_user_profiles()
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+        # Enroll students into sections
+        for student in self.students:
+            for section in self.program.sections()[:1]:
+                section.preregister_student(student)
+        self.enrolled_section = self.program.sections()[0]
+
+    def _call(self):
+        request = self.factory.get('/onsite/counts_status')
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.counts_status, 'method', OnSiteClassList.counts_status)
+        module = SimpleNamespace()
+        return fn(module, request, None, None, None, None, None, self.program)
+
+    def test_returns_200(self):
+        """counts_status must return 200."""
+        resp = self._call()
+        self.assertEqual(resp.status_code, 200)
+
+    def test_content_type_is_json(self):
+        """Response Content-Type must include application/json."""
+        resp = self._call()
+        self.assertIn('application/json', resp['Content-Type'])
+
+    def test_returns_list_of_triples(self):
+        """Parsed JSON body must be a list; each entry must have exactly 3 elements."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        self.assertIsInstance(data, list)
+        for entry in data:
+            self.assertEqual(len(entry), 3)
+
+    def test_triple_structure(self):
+        """Each triple must have int section id, int enrolled count, int attending count."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        for entry in data:
+            self.assertIsInstance(entry[0], int)
+            self.assertIsInstance(entry[1], int)
+            self.assertIsInstance(entry[2], int)
+
+    def test_enrolled_count_reflects_registrations(self):
+        """The enrolled count for the enrolled_section must be >= number of students enrolled."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        section_entry = next(
+            (entry for entry in data if entry[0] == self.enrolled_section.id), None
+        )
+        self.assertIsNotNone(section_entry, "enrolled_section not found in counts_status result")
+        self.assertGreaterEqual(section_entry[1], len(self.students))
+
+    def test_status_filter(self):
+        """A section with status <= 0 must not appear in the result."""
+        original_status = self.enrolled_section.status
+        self.enrolled_section.status = -10
+        self.enrolled_section.save()
+        self.addCleanup(
+            self.enrolled_section.__class__.objects.filter(pk=self.enrolled_section.pk).update,
+            status=original_status,
+        )
+        resp = self._call()
+        data = json.loads(resp.content)
+        section_ids = [entry[0] for entry in data]
+        self.assertNotIn(self.enrolled_section.id, section_ids)
