@@ -58,6 +58,8 @@ Do not place a top-level function in this file if you would not like it to
 be supported as a type of query.
 """
 
+EXCLUDED_DEMOGRAPHIC_CATEGORIES = ['Open Class']
+
 def zipcodes(form, programs, students, profiles, result_dict={}):
 
     #   Get zip codes and filter out invalid ones
@@ -85,13 +87,14 @@ def zipcodes(form, programs, students, profiles, result_dict={}):
 
 def demographics(form, programs, students, profiles, result_dict={}):
 
-    #   Get aggregate 'vitals' info via cross-program SQL aggregation.
+    # Get aggregate 'vitals' info via cross-program SQL aggregation.
     agg = (
         ClassSection.objects
         .filter(
             parent_class__parent_program__in=programs,
             status=ClassStatus.ACCEPTED,
         )
+        .exclude(parent_class__category__category__in=EXCLUDED_DEMOGRAPHIC_CATEGORIES)
         .aggregate(
             num_classes=Count('parent_class', distinct=True),
             num_sections=Count('id'),
