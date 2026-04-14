@@ -25,7 +25,7 @@
   border: 1px solid #dde3ea;
   border-radius: 10px;
   padding: 24px 32px;
-  margin-bottom: 28px;
+  margin-bottom: 28px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
   text-align: center;
