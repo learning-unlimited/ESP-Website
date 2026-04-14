@@ -37,6 +37,7 @@ from esp.tagdict.models  import Tag
 from datetime import datetime
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 from django.db.models import Count
+from esp.users.models import TeacherInfo
 
 class TeacherOnsite(ProgramModuleObj, CoreModule):
     doc = """Provides a mobile-friendly interface for common onsite functions for teachers."""
@@ -82,21 +83,39 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         user = request.user
         now = datetime.now()
 
+        teacher = TeacherInfo.cf_link_instance(request)
+
         context = self.onsitecontext(request, tl, one, two, prog)
-
-        classes = sorted([cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program = prog)
-                   if cls.meeting_times.all().exists()
-                   and cls.resourceassignment_set.all().exists()
-                   and cls.status > 0])
-        # now we sort them by time/title
-
-        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog)
         context['webapp_page'] = 'schedule'
-        context['crmi'] = prog.classregmoduleinfo
-        context['classes'] = classes
-        context['checked_in'] = Record.objects.filter(program=prog, event__name='teacher_checked_in', user=user, time__year=now.year, time__month=now.month, time__day=now.day).exists()
 
-        return render_to_response(self.baseDir()+'schedule.html', request, context)
+        context['checked_in'] = Record.objects.filter(
+            program=prog,
+            event__name='teacher_checked_in',
+            user=user,
+            time__year=now.year,
+            time__month=now.month,
+            time__day=now.day
+        ).exists()
+
+        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program=prog)
+        context['crmi'] = prog.classregmoduleinfo
+
+        # If schedule is hidden → early return
+        if teacher and not teacher.can_view_schedule:
+            context['error'] = 'Schedule is temporarily hidden'
+            context['classes'] = []
+            return render_to_response(self.baseDir() + 'schedule.html', request, context)
+
+        classes = sorted([
+            cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program=prog)
+            if cls.meeting_times.all().exists()
+            and cls.resourceassignment_set.all().exists()
+            and cls.status > 0
+        ])
+
+        context['classes'] = classes
+
+        return render_to_response(self.baseDir() + 'schedule.html', request, context)
 
     @aux_call
     @needs_teacher
