@@ -81,7 +81,8 @@ class ClassConstraintsModule(ProgramModuleObj, CoreModule):
                     return HttpResponseRedirect(request.path)
                 # Re-render with validation errors
                 context['form'] = form
-                context['constraints'] = ScheduleConstraint.objects.filter(program=prog)
+                subject_exps = ScheduleTestSubject.objects.values_list('exp_id', flat=True)
+                context['constraints'] = ScheduleConstraint.objects.filter(program=prog, condition_id__in=subject_exps)
                 return render_to_response(self.baseDir() + 'main.html', request, context)
 
             elif 'delete' in request.POST:
@@ -95,7 +96,8 @@ class ClassConstraintsModule(ProgramModuleObj, CoreModule):
                 return HttpResponseRedirect(request.path)
 
         context['form'] = ClassConstraintsForm(prog)
-        context['constraints'] = ScheduleConstraint.objects.filter(program=prog)
+        subject_exps = ScheduleTestSubject.objects.values_list('exp_id', flat=True)
+        context['constraints'] = ScheduleConstraint.objects.filter(program=prog, condition_id__in=subject_exps)
         return render_to_response(self.baseDir() + 'main.html', request, context)
 
     @transaction.atomic
@@ -109,7 +111,8 @@ class ClassConstraintsModule(ProgramModuleObj, CoreModule):
         which could cascade-kill unrelated constraints sharing an expression.
         """
         try:
-            constraint = ScheduleConstraint.objects.get(id=constraint_id, program=prog)
+            subject_exps = ScheduleTestSubject.objects.values_list('exp_id', flat=True)
+            constraint = ScheduleConstraint.objects.get(id=constraint_id, program=prog, condition_id__in=subject_exps)
         except ScheduleConstraint.DoesNotExist:
             return
 
