@@ -69,6 +69,22 @@ import json
 from numpy import array_split
 
 class ProgramPrintables(ProgramModuleObj):
+    @staticmethod
+    def get_onsite_student(request):
+        """
+        Extracts and validates 'userid' from request.GET for onsite printable/export views.
+        Returns the ESPUser object or raises an ESPError.
+        """
+        user_id = request.GET.get('userid')
+        if not user_id:
+            raise ESPError("Missing userid parameter")
+        try:
+            return ESPUser.objects.get(id=int(user_id))
+        except ESPUser.DoesNotExist:
+            raise ESPError("User not found with the provided userid")
+        except (ValueError, TypeError):
+            raise ESPError("Invalid userid format")
+
     doc = """A wide variety of printable documents that are useful for a program."""
 
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -1174,16 +1190,9 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
+        onsite = onsite or (tl == 'onsite')
         if onsite:
-            try:
-                user_id = request.GET.get('userid')
-                if not user_id:
-                    raise ESPError("Missing userid parameter")
-                students = [ESPUser.objects.get(id=int(user_id))]
-            except ESPUser.DoesNotExist:
-                raise ESPError("User not found with the provided userid")
-            except (ValueError, TypeError):
-                raise ESPError("Invalid userid format")
+            students = [ProgramPrintables.get_onsite_student(request)]
         else:
             filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Student Financial Spreadsheet'})
 
@@ -1232,17 +1241,10 @@ class ProgramPrintables(ProgramModuleObj):
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
 
         context = {'module': self }
+        onsite = onsite or (tl == 'onsite')
 
         if onsite:
-            try:
-                user_id = request.GET.get('userid')
-                if not user_id:
-                    raise ESPError("Missing userid parameter")
-                students = [ESPUser.objects.get(id=int(user_id))]
-            except ESPUser.DoesNotExist:
-                raise ESPError("User not found with the provided userid")
-            except (ValueError, TypeError):
-                raise ESPError("Invalid userid format")
+            students = [ProgramPrintables.get_onsite_student(request)]
         else:
             if extra:
                 file_type = extra.strip()

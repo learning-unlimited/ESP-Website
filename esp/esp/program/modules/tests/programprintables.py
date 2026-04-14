@@ -228,3 +228,83 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
 
         for t in class_subject.prettyrooms():
             self.assertIn(t, formatted_rooms)
+
+
+class TestOnsiteUseridValidation(ProgramFrameworkTest):
+    """Test onsite userid validation in ProgramPrintables using /onsite/ URLs"""
+
+    def setUp(self):
+        super().setUp()
+        self.add_student_profiles()
+        self.schedule_randomly()
+        self.classreg_students()
+
+        # Ensure the admin has onsite permissions for this program
+        from esp.users.models import Permission
+        Permission.objects.get_or_create(
+            user=self.admins[0],
+            permission_type='Onsite',
+            program=self.program
+        )
+
+    def _login_admin(self):
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+
+    def test_studentschedules_invalid_userid(self):
+        """Test studentschedules returns error when userid is invalid (non-numeric)"""
+        self._login_admin()
+        response = self.client.get('/onsite/%s/studentschedules?userid=invalid' % self.program.getUrlBase())
+        self.assertIn(b'Invalid userid format', response.content)
+
+    def test_studentschedules_nonexistent_userid(self):
+        """Test studentschedules returns error when userid does not exist"""
+        self._login_admin()
+        response = self.client.get('/onsite/%s/studentschedules?userid=99999' % self.program.getUrlBase())
+        self.assertIn(b'User not found with the provided userid', response.content)
+
+    def test_studentschedules_missing_userid(self):
+        """Test studentschedules returns error when userid is missing"""
+        self._login_admin()
+        response = self.client.get('/onsite/%s/studentschedules' % self.program.getUrlBase())
+        self.assertIn(b'Missing userid parameter', response.content)
+
+    def test_studentschedules_onsite_success(self):
+        """Test studentschedules returns success with valid userid in onsite path"""
+        self._login_admin()
+        user = self.students[0]
+        response = self.client.get('/onsite/%s/studentschedules?userid=%s' % (self.program.getUrlBase(), user.id))
+        self.assertEqual(response.status_code, 200)
+
+    def test_student_financial_spreadsheet_invalid_userid(self):
+        """Test student_financial_spreadsheet returns error when userid is invalid (non-numeric)"""
+        self._login_admin()
+        response = self.client.get('/onsite/%s/student_financial_spreadsheet?userid=invalid' % self.program.getUrlBase())
+        self.assertIn(b'Invalid userid format', response.content)
+
+    def test_student_financial_spreadsheet_nonexistent_userid(self):
+        """Test student_financial_spreadsheet returns error when userid does not exist"""
+        self._login_admin()
+        response = self.client.get('/onsite/%s/student_financial_spreadsheet?userid=99999' % self.program.getUrlBase())
+        self.assertIn(b'User not found with the provided userid', response.content)
+
+    def test_student_financial_spreadsheet_missing_userid(self):
+        """Test student_financial_spreadsheet returns error when userid is missing"""
+        self._login_admin()
+        response = self.client.get('/onsite/%s/student_financial_spreadsheet' % self.program.getUrlBase())
+        self.assertIn(b'Missing userid parameter', response.content)
+
+    def test_student_financial_spreadsheet_onsite_success(self):
+        """Test student_financial_spreadsheet returns success with valid userid in onsite path"""
+        self._login_admin()
+        user = self.students[0]
+        response = self.client.get('/onsite/%s/student_financial_spreadsheet?userid=%s' % (self.program.getUrlBase(), user.id))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+
+    def test_onsiteprintschedules_userid_success(self):
+        """Test OnsitePrintSchedules.printschedules with userid GET parameter"""
+        self._login_admin()
+        user = self.students[0]
+        response = self.client.get('/onsite/%s/printschedules?userid=%s' % (self.program.getUrlBase(), user.id))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/png')
