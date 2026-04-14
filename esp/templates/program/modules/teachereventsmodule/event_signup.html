@@ -56,10 +56,10 @@
                     selectEl.value = event.id;
                     document.getElementById('submit-btn').disabled = false;
                     
-                    // Visual feedback: clear others in same category and mark this one
-                    const category = props.category;
+                    // Visual feedback: clear prior selection for this event type only
+                    const eventTypeId = String(props.event_type_id);
                     calendar.getEvents().forEach(e => {
-                        if (e.extendedProps.category === category && e.extendedProps.status === 'mine') {
+                        if (String(e.extendedProps.event_type_id) === eventTypeId && e.extendedProps.status === 'mine') {
                             e.setExtendedProp('status', 'available');
                             e.setProp('color', '#3788d8');
                         }
@@ -75,6 +75,7 @@
 {% endblock %}
 
 {% block module_content %}
+{% load render_qsd %}
 <h1>Teacher Preparation Events for {{ prog.niceName }}</h1>
 
 <div id="program_form">

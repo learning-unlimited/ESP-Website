@@ -76,6 +76,7 @@ class TeacherEventsModule(ProgramModuleObj):
             event_type__in=relevant_types
         ).order_by('start')
 
+        now = timezone.now()
         for event in all_events:
             entries = UserAvailability.entriesBySlot(event)
             is_mine = entries.filter(user=user).exists()
@@ -86,7 +87,7 @@ class TeacherEventsModule(ProgramModuleObj):
             other_entries = entries.exclude(user=user)
 
             is_full = (category == 'interview' and other_entries.exists())
-            is_past = event.start < timezone.now()
+            is_past = event.start < now
 
             if is_mine:
                 status = 'mine'
