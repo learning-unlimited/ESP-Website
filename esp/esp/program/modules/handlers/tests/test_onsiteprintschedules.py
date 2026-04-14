@@ -35,7 +35,7 @@ class OnsitePrintSchedulesTest(TestCase):
 
         # Module
         self.module = OnsitePrintSchedules()
-        self.module.program = self.program  
+        self.module.program = self.program
 
         self.factory = RequestFactory()
 
@@ -109,3 +109,44 @@ class OnsitePrintSchedulesTest(TestCase):
         req.refresh_from_db()
 
         self.assertIsNotNone(req.time_executed, "PrintRequest was not marked executed")
+
+    @patch("esp.program.modules.handlers.onsiteprintschedules.ProgramPrintables.get_student_schedules")
+    def test_print_failure_rolls_back_attendance_record(self, mock_print):
+        """
+        If schedule generation fails, the attendance record should NOT be created.
+        """
+        # 1. Force the print function to raise an error
+        mock_print.side_effect = Exception("PDF Engine Crash")
+
+        # 2. Create the pending request
+        req = PrintRequest.objects.create(
+            user=self.student,
+            printer=self.printer,
+            time_requested=timezone.now(),
+            time_executed=None
+        )
+
+        request = self._get_request()
+
+        # 3. Call the method (it will return a 500 response due to our try/except)
+        response = self.module.printschedules(
+            request,
+            None, None, None, None,
+            'TestPrinter',
+            self.program
+        )
+
+        # 4. VERIFY ROLLBACK
+        # The record should NOT exist despite being called before the exception
+        record_exists = Record.objects.filter(
+            user=self.student,
+            event__name="attended",
+            program=self.program
+        ).exists()
+
+        # The PrintRequest should still be UNEXECUTED (None)
+        req.refresh_from_db()
+
+        self.assertEqual(response.status_code, 500)
+        self.assertFalse(record_exists, "Database did NOT roll back the attendance record!")
+        self.assertIsNone(req.time_executed, "Database did NOT roll back the PrintRequest status!")
