@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='program',
             name='director_email',
-            field=models.EmailField(default='info@devsite.learningu.org', help_text='The director email address must end in @devsite.learningu.org (your website), @learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). The default is <b>info@devsite.learningu.org</b>, which redirects to the "default" email address from your site\'s settings by default. You can create and manage your email redirects <a href="/manage/redirects/">here</a>.', max_length=75, validators=[esp.program.models.DirectorEmailValidator('(^.+@devsite.learningu.org$)|(^.+@(\\w+\\.)?learningu\\.org$)')]),
+            field=models.EmailField(default='info@learningu.org', help_text='The director email address must end in @learningu.org or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). The default is <b>info@learningu.org</b>, which redirects to the "default" email address from your site\'s settings by default. You can create and manage your email redirects <a href="/manage/redirects/">here</a>.', max_length=75, validators=[esp.program.models.DirectorEmailValidator('(^.+@(\\w+\\.)?learningu\\.org$)')]),
         ),
     ]
