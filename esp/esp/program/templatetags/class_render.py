@@ -28,7 +28,8 @@ def render_class_core(cls):
             'colorstring': colorstring,
             'show_enrollment': scrmi.visible_enrollments,
             'show_emailcodes': scrmi.show_emailcodes,
-            'show_meeting_times': scrmi.visible_meeting_times}
+            'show_meeting_times': scrmi.visible_meeting_times,
+            'enable_images': Tag.getBooleanTag('enable_class_description_images', prog)}
 render_class_core.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
