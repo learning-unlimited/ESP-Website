@@ -81,7 +81,8 @@ from esp.dbmail.models import MessageRequest, TextOfEmail, PlainRedirect
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
-from esp.utils.audit import AuditLogEntry
+from django.contrib.contenttypes.models import ContentType
+from esp.utils.models import AuditLogEntry
 from django.conf import settings
 
 import re
@@ -579,10 +580,13 @@ def userview(request):
             gcr.approved = True
             gcr.acknowledged_by = request.user
             gcr.save()
-            AuditLogEntry.objects.create_log(
+            AuditLogEntry.objects.create(
                 actor=request.user,
                 action=AuditLogEntry.ACTION_UPDATE,
-                obj=gcr,
+                content_type=ContentType.objects.get_for_model(gcr),
+                object_id=gcr.pk,
+                object_repr=str(gcr)[:500],
+                actor_ip=request.META.get('REMOTE_ADDR'),
                 extra='Approved via userview page'
             )
     if 'reject_request' in request.GET:
@@ -592,10 +596,13 @@ def userview(request):
             gcr.approved = False
             gcr.acknowledged_by = request.user
             gcr.save()
-            AuditLogEntry.objects.create_log(
+            AuditLogEntry.objects.create(
                 actor=request.user,
                 action=AuditLogEntry.ACTION_UPDATE,
-                obj=gcr,
+                content_type=ContentType.objects.get_for_model(gcr),
+                object_id=gcr.pk,
+                object_repr=str(gcr)[:500],
+                actor_ip=request.META.get('REMOTE_ADDR'),
                 extra='Rejected via userview page'
             )
 

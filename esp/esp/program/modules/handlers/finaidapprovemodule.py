@@ -36,7 +36,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.program.models import FinancialAidRequest
 from esp.accounting.models import FinancialAidGrant
-from esp.utils.audit import AuditLogEntry
+from django.contrib.contenttypes.models import ContentType
+from esp.utils.models import AuditLogEntry
 
 
 class FinAidApproveModule(ProgramModuleObj):
@@ -104,10 +105,13 @@ class FinAidApproveModule(ProgramModuleObj):
 
                 try:
                     req.approve(dollar_amount = amount_max_dec, discount_percent = percent)
-                    AuditLogEntry.objects.create_log(
+                    AuditLogEntry.objects.create(
                         actor=request.user,
                         action=AuditLogEntry.ACTION_UPDATE,
-                        obj=req,
+                        content_type=ContentType.objects.get_for_model(req),
+                        object_id=req.pk,
+                        object_repr=str(req)[:500],
+                        actor_ip=request.META.get('REMOTE_ADDR'),
                         extra='Approved via finaidapprove page'
                     )
                     users_approved.append(req.user.name())
