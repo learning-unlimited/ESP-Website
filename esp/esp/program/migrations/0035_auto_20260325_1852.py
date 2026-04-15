@@ -10,10 +10,4 @@ class Migration(migrations.Migration):
         ('program', '0034_auto_20260317_2119'),
     ]
 
-    operations = [
-        migrations.AlterField(
-            model_name='program',
-            name='director_email',
-            field=models.EmailField(default='info@learningu.org', help_text='The director email address must end in @learningu.org or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). The default is <b>info@learningu.org</b>, which redirects to the "default" email address from your site\'s settings by default. You can create and manage your email redirects <a href="/manage/redirects/">here</a>.', max_length=75, validators=[esp.program.models.DirectorEmailValidator('(^.+@(\\w+\\.)?learningu\\.org$)')]),
-        ),
-    ]
+    operations = []
