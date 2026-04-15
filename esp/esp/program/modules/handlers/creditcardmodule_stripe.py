@@ -299,11 +299,11 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             }
 
         if 'error_type' not in context:
-            try:
-                amount_cents_post = Decimal(raw_totalcost_cents)
-            except (TypeError, InvalidOperation):
+            if not isinstance(raw_totalcost_cents, basestring) or not raw_totalcost_cents.isdigit():
                 context['error_type'] = 'invalid_amount'
                 context['error_info'] = {'totalcost_cents': raw_totalcost_cents}
+            else:
+                amount_cents_post = int(raw_totalcost_cents)
 
         if 'error_type' not in context and amount_cents_post <= 0:
             context['error_type'] = 'invalid_amount'
@@ -325,7 +325,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         if 'error_type' not in context:
             #   Check the amount in the POST against the amount in our records.
             #   If they don't match, raise an error.
-            amount_cents_iac = Decimal(iac.amount_due()) * 100
+            amount_cents_iac = int(Decimal(iac.amount_due()) * 100)
             if amount_cents_post != amount_cents_iac:
                 context['error_type'] = 'inconsistent_amount'
                 context['error_info'] = {
