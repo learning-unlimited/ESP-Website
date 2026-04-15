@@ -11,6 +11,17 @@
 </div>
 {% endif %}
 
+{% if errors %}
+<div style="padding: 10px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px; margin-bottom: 20px;">
+    <strong>Form Errors:</strong>
+    <ul style="margin: 10px 0 0 20px;">
+        {% for sec_id, error_msg in errors.items %}
+        <li>{{ error_msg }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 <p>Use the form below to update the maximum capacity for your class sections. Please make sure the capacity is greater than or equal to the number of current enrolled students.</p>
 
 <form method="POST" action="">

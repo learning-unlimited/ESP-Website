@@ -851,6 +851,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         
         cls = classes[0]
         saved = False
+        errors = {}
 
         if request.method == 'POST':
             for sec in cls.sections.all():
@@ -859,13 +860,20 @@ class TeacherClassRegModule(ProgramModuleObj):
                     try:
                         new_cap = int(request.POST[key])
                         if new_cap >= 0:
-                            sec.max_class_capacity = new_cap
-                            sec.save()
+                            # Check if new capacity is less than current enrollment
+                            if new_cap < sec.num_students():
+                                errors[sec.id] = 'Capacity cannot be less than current enrollment ({} students)'.format(sec.num_students())
+                            else:
+                                sec.max_class_capacity = new_cap
+                                sec.save()
                     except ValueError:
                         pass
-            saved = True
+            
+            # Only mark as saved if there were no validation errors
+            if not errors:
+                saved = True
 
-        return render_to_response(self.baseDir()+'editcapacity.html', request, {'cls': cls, 'saved': saved})
+        return render_to_response(self.baseDir()+'editcapacity.html', request, {'cls': cls, 'saved': saved, 'errors': errors})
 
     @main_call
     @needs_teacher
