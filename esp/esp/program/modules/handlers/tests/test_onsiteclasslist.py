@@ -373,3 +373,172 @@ class CountsStatusTests(ProgramFrameworkTest):
         data = json.loads(resp.content)
         section_ids = [entry[0] for entry in data]
         self.assertNotIn(self.enrolled_section.id, section_ids)
+
+
+class FullStatusTests(ProgramFrameworkTest):
+    """Tests for OnSiteClassList.full_status"""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=2,
+            num_teachers=2,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=2,
+            num_students=0,
+        )
+        self.schedule_randomly()
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+
+    def _call(self):
+        request = self.factory.get('/onsite/full_status')
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.full_status, 'method', OnSiteClassList.full_status)
+        module = SimpleNamespace()
+        return fn(module, request, None, None, None, None, None, self.program)
+
+    def test_returns_200(self):
+        """full_status must return HTTP 200."""
+        resp = self._call()
+        self.assertEqual(resp.status_code, 200)
+
+    def test_content_type_is_json(self):
+        """Response Content-Type must include application/json."""
+        resp = self._call()
+        self.assertIn('application/json', resp['Content-Type'])
+
+    def test_returns_list_of_pairs(self):
+        """Parsed JSON body must be a list; each entry must have exactly 2 elements."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        self.assertIsInstance(data, list)
+        for entry in data:
+            self.assertEqual(len(entry), 2)
+
+    def test_pair_structure(self):
+        """Each pair must be [int section_id, bool is_full]."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        for entry in data:
+            self.assertIsInstance(entry[0], int)
+            self.assertIsInstance(entry[1], bool)
+
+    def test_not_full_section_returns_false(self):
+        """Sections with 0 enrolled students must not be full (entry[1] == False)."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        section = self.program.sections()[0]
+        entry = next((e for e in data if e[0] == section.id), None)
+        self.assertIsNotNone(entry, "Section not found in full_status result")
+        self.assertEqual(entry[1], False)
+
+    def test_status_filter(self):
+        """A section with status <= 0 must not appear in the result."""
+        section = self.program.sections()[0]
+        original_status = section.status
+        section.status = -10
+        section.save()
+        self.addCleanup(
+            section.__class__.objects.filter(pk=section.pk).update,
+            status=original_status,
+        )
+        resp = self._call()
+        data = json.loads(resp.content)
+        section_ids = [entry[0] for entry in data]
+        self.assertNotIn(section.id, section_ids)
+
+
+class StudentsStatusTests(ProgramFrameworkTest):
+    """Tests for OnSiteClassList.students_status"""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=1,
+            num_teachers=1,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=1,
+            num_students=5,
+        )
+        self.add_user_profiles()
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+
+    def _call(self, params=None):
+        request = self.factory.get('/onsite/students', params or {})
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.students_status, 'method', OnSiteClassList.students_status)
+        module = SimpleNamespace(program=self.program)
+        return fn(module, request, None, None, None, None, None, self.program)
+
+    def test_returns_200(self):
+        """students_status must return HTTP 200."""
+        resp = self._call()
+        self.assertEqual(resp.status_code, 200)
+
+    def test_content_type_is_json(self):
+        """Response Content-Type must include application/json."""
+        resp = self._call()
+        self.assertIn('application/json', resp['Content-Type'])
+
+    def test_returns_list(self):
+        """Parsed JSON body must be a list."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        self.assertIsInstance(data, list)
+
+    def test_entry_structure(self):
+        """Each entry must be a 4-element list: [id, last_name, first_name, has_profile_bool]."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        self.assertGreater(len(data), 0, "Expected at least one student entry")
+        entry = data[0]
+        self.assertEqual(len(entry), 4)
+        self.assertIsInstance(entry[3], bool)
+
+    def test_known_student_appears(self):
+        """self.students[0].id must appear in the result."""
+        resp = self._call()
+        data = json.loads(resp.content)
+        ids = [e[0] for e in data]
+        self.assertIn(self.students[0].id, ids)
+
+    def test_profile_students_sorted_first(self):
+        """Entries with has_profile == True must all come before entries with has_profile == False."""
+        resp = self._call({'q': 'student'})
+        data = json.loads(resp.content)
+        # Find the index of the first False entry
+        false_indices = [i for i, e in enumerate(data) if e[3] is False]
+        true_indices = [i for i, e in enumerate(data) if e[3] is True]
+        if false_indices and true_indices:
+            self.assertLess(
+                max(true_indices),
+                min(false_indices),
+                "All True entries must precede all False entries",
+            )
+
+    def test_search_returns_matching_student(self):
+        """Searching by a student's first name prefix must return that student."""
+        student = self.students[0]
+        query = student.first_name[:4]
+        resp = self._call({'q': query})
+        data = json.loads(resp.content)
+        ids = [e[0] for e in data]
+        self.assertIn(student.id, ids)
+
+    def test_search_limits_to_20_results(self):
+        """Search results must be capped at 20 entries."""
+        resp = self._call({'q': 'student'})
+        data = json.loads(resp.content)
+        self.assertLessEqual(len(data), 20)
+
+    def test_search_has_profile_flag(self):
+        """A student with a profile must have entry[3] == True when found via search."""
+        student = self.students[0]
+        query = student.first_name[:4]
+        resp = self._call({'q': query})
+        data = json.loads(resp.content)
+        entry = next((e for e in data if e[0] == student.id), None)
+        self.assertIsNotNone(entry, "Student not found in search results")
+        self.assertTrue(entry[3])
