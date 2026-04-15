@@ -1188,7 +1188,7 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'studentschedule.html', request, context)
 
     @aux_call
-    @needs_admin
+    @needs_onsite
     def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
         onsite = onsite or (tl == 'onsite')
         if onsite:

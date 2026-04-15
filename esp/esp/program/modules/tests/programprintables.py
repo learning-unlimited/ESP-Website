@@ -239,13 +239,27 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
         self.schedule_randomly()
         self.classreg_students()
 
-        # Ensure the admin has onsite permissions for this program
+        # Ensure the admin has necessary permissions for this program
         from esp.users.models import Permission
+        Permission.objects.get_or_create(
+            user=self.admins[0],
+            permission_type='Administer',
+            program=self.program
+        )
         Permission.objects.get_or_create(
             user=self.admins[0],
             permission_type='Onsite',
             program=self.program
         )
+
+        # Ensure the OnsitePrintSchedules module is enabled for this program
+        from esp.program.models import ProgramModule
+        pm, created = ProgramModule.objects.get_or_create(
+            handler='OnsitePrintSchedules',
+            module_type='onsite',
+            defaults={'link_title': 'Onsite Prints', 'admin_title': 'Onsite Prints'}
+        )
+        self.program.program_modules.add(pm)
 
     def _login_admin(self):
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
@@ -308,3 +322,23 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
         response = self.client.get('/onsite/%s/printschedules?userid=%s' % (self.program.getUrlBase(), user.id))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'image/png')
+
+    def test_onsiteprintschedules_invalid_userid(self):
+        """Test printschedules returns error when userid is invalid (non-numeric)"""
+        self._login_admin()
+        response = self.client.get('/onsite/%s/printschedules?userid=invalid' % self.program.getUrlBase())
+        self.assertIn(b'Invalid userid format', response.content)
+
+    def test_onsiteprintschedules_nonexistent_userid(self):
+        """Test printschedules returns error when userid does not exist"""
+        self._login_admin()
+        response = self.client.get('/onsite/%s/printschedules?userid=99999' % self.program.getUrlBase())
+        self.assertIn(b'User not found with the provided userid', response.content)
+
+    def test_onsiteprintschedules_missing_userid(self):
+        """Test printschedules returns error when userid is missing and not in instruction mode"""
+        self._login_admin()
+        # To trigger the missing userid error in printschedules, we provide a parameter 
+        # that normally expects a userid but omit it.
+        response = self.client.get('/onsite/%s/printschedules?gen_img=1' % self.program.getUrlBase())
+        self.assertIn(b'Missing userid parameter', response.content)
