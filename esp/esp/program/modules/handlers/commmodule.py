@@ -57,18 +57,34 @@ _PROGRAM_URL_PATTERN = re.compile(
 )
 
 
+# Match src attributes that carry a root-relative (but not protocol-relative) path.
+# Handles: quoted (double or single), unquoted, case-insensitive name, whitespace around =.
+# Groups: (1) quote char, (2) quoted path, (3) unquoted path.
+_RELATIVE_SRC_RE = re.compile(
+    r"src\s*=\s*"
+    r"(?:(['\"])(/(?!/)[^'\"]*)\1"   # quoted:   src="..." or src='...'
+    r"|(/(?!/)[^'\"\s>]*))",          # unquoted: src=/path (not src=//)
+    re.IGNORECASE
+)
+
+
 def _make_image_urls_absolute(body, request):
-    """Convert root-relative src URLs in any element with a root-relative src attribute to absolute URLs.
+    """Convert root-relative src URLs to absolute URLs for email delivery.
 
     Email clients cannot resolve relative URLs, so images inserted via the
     WYSIWYG editor (which stores paths like /media/uploaded/qsd_images/...)
     must be made absolute before the body is rendered into an email.
+
+    Handles quoted (double or single), unquoted, case-insensitive attribute
+    names, and whitespace around the = sign. Protocol-relative URLs (//)
+    are left untouched.
     """
-    return re.sub(
-        r"src=(['\"])(/(?!/)[^'\"]*)\1",
-        lambda m: 'src={}{}{}'.format(m.group(1), request.build_absolute_uri(m.group(2)), m.group(1)),
-        body,
-    )
+    def replace_src(m):
+        if m.group(3) is not None:
+            # Unquoted value — wrap in double quotes for safety
+            return 'src="{}"'.format(request.build_absolute_uri(m.group(3)))
+        return 'src={}{}{}'.format(m.group(1), request.build_absolute_uri(m.group(2)), m.group(1))
+    return _RELATIVE_SRC_RE.sub(replace_src, body)
 
 
 def _program_urls_in_text(text, current_program_url):

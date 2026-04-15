@@ -201,5 +201,28 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         result = _make_image_urls_absolute(body, self._make_image_urls_absolute_request())
         self.assertEqual(result, '<img src="https://example.com/a.png"> text <img src="https://example.com/b.png">')
 
+    def test_rewrites_unquoted_src(self):
+        result = _make_image_urls_absolute('<img src=/media/uploaded/foo.png>', self._make_image_urls_absolute_request())
+        self.assertEqual(result, '<img src="https://example.com/media/uploaded/foo.png">')
+
+    def test_rewrites_uppercase_src_attribute(self):
+        result = _make_image_urls_absolute('<img SRC="/media/uploaded/foo.png">', self._make_image_urls_absolute_request())
+        self.assertEqual(result, '<img src="https://example.com/media/uploaded/foo.png">')
+
+    def test_rewrites_src_with_whitespace_around_equals(self):
+        req = self._make_image_urls_absolute_request()
+        self.assertEqual(
+            _make_image_urls_absolute('<img src ="/media/a.png">', req),
+            '<img src="https://example.com/media/a.png">',
+        )
+        self.assertEqual(
+            _make_image_urls_absolute('<img src= "/media/a.png">', req),
+            '<img src="https://example.com/media/a.png">',
+        )
+        self.assertEqual(
+            _make_image_urls_absolute('<img src = "/media/a.png">', req),
+            '<img src="https://example.com/media/a.png">',
+        )
+
     def test_empty_body(self):
         self.assertEqual(_make_image_urls_absolute('', self._make_image_urls_absolute_request()), '')
