@@ -28,10 +28,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         force = options.get('force', False)
-        
-        # Check if email lists already exist
-        existing_count = EmailList.objects.count()
-        
 
         # Check if email lists already exist
         existing_count = EmailList.objects.count()
@@ -44,7 +40,6 @@ class Command(BaseCommand):
                 )
             )
             return
-        
 
         if force and existing_count > 0:
             self.stdout.write(
@@ -53,14 +48,6 @@ class Command(BaseCommand):
                 )
             )
             EmailList.objects.all().delete()
-        
-        # Define default email lists
-        default_lists = [
-            {
-                'regex': r'^([a-zA-Z0-9_]+)s([0-9]+)c([0-9]+)-(students|teachers|class)$',
-                'seq': 10,
-                'handler': 'SectionList',
-                'description': 'Section mailing lists (e.g., S123C1-students)',
 
         # Define default email lists
         default_lists = [
@@ -73,10 +60,6 @@ class Command(BaseCommand):
                 'cc_all': False,
             },
             {
-                'regex': r'^([a-zA-Z0-9_]+)s([0-9]+)-(students|teachers|class)$',
-                'seq': 20,
-                'handler': 'ClassList',
-                'description': 'Class mailing lists (e.g., S123-students)',
                 'regex': r'^\w(\d+)-(class|teachers|students)$',
                 'seq': 20,
                 'handler': 'ClassList',
@@ -85,10 +68,6 @@ class Command(BaseCommand):
                 'cc_all': False,
             },
             {
-                'regex': r'^([a-zA-Z0-9_\.\-]+)$',
-                'seq': 30,
-                'handler': 'PlainList',
-                'description': 'Plain redirect lists (looks up in PlainRedirect table)',
                 'regex': r'^(.*)$',
                 'seq': 30,
                 'handler': 'PlainList',
@@ -97,10 +76,6 @@ class Command(BaseCommand):
                 'cc_all': False,
             },
             {
-                'regex': r'^([a-zA-Z0-9_\.\-]+)$',
-                'seq': 40,
-                'handler': 'UserEmail',
-                'description': 'User email forwarding (forwards to user\'s email address)',
                 'regex': r'^(.*)$',
                 'seq': 40,
                 'handler': 'UserEmail',
@@ -109,7 +84,6 @@ class Command(BaseCommand):
                 'cc_all': False,
             },
         ]
-        
 
         # Create the email lists
         created_count = 0
@@ -122,10 +96,6 @@ class Command(BaseCommand):
                     f'(seq={email_list.seq}, handler={email_list.handler})'
                 )
             )
-        
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'\nSuccessfully created {created_count} default EmailList entries.'
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -135,7 +105,6 @@ class Command(BaseCommand):
         )
         self.stdout.write(
             'Email routing should now work properly. '
-            'You can view and manage these lists at /admin/dbmail/emaillist/'
             'You can view and manage these lists at '
             '/admin/dbmail/emaillist/'
         )
