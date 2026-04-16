@@ -581,11 +581,22 @@ class SchedulingCheckRunner:
                         l_resources.append({ "Section": s, "First Hour": first_hour, "Unfulfilled Request": u, "Classroom": classroom })
             for moderator in self._section_moderators(s):
                 mod_rec = self._moderator_records_by_user.get(moderator.id)
-                if mod_rec is None or s.parent_class.category not in mod_rec.class_categories.all():
+                if mod_rec is None:
+                    needs_entry = True
+                    categories = None
+                else:
+                    # Cache class_categories on the ModeratorRecord instance to avoid
+                    # repeated database queries and use an in-memory collection instead.
+                    categories = getattr(mod_rec, '_class_categories_cache', None)
+                    if categories is None:
+                        categories = list(mod_rec.class_categories.all())
+                        mod_rec._class_categories_cache = categories
+                    needs_entry = s.parent_class.category not in categories
+                if needs_entry:
                     if mod_rec is None:
                         mod_recs_text = "No selection"
                     else:
-                        mod_recs_text = [cat.category for cat in list(mod_rec.class_categories.all())]
+                        mod_recs_text = [cat.category for cat in categories]
                     if not mod_recs_text:
                         mod_recs_text.append("No Selection")
                     mod_recs_list = ", ".join(mod_recs_text)
