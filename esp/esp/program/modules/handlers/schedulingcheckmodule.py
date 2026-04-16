@@ -594,11 +594,11 @@ class SchedulingCheckRunner:
                     needs_entry = s.parent_class.category not in categories
                 if needs_entry:
                     if mod_rec is None:
-                        mod_recs_text = "No selection"
+                        mod_recs_text = []
                     else:
-                        mod_recs_text = [cat.category for cat in categories]
+                        mod_recs_text = [cat.category for cat in list(mod_rec.class_categories.all())]
                     if not mod_recs_text:
-                        mod_recs_text.append("No Selection")
+                        mod_recs_text = ["No selection"]
                     mod_recs_list = ", ".join(mod_recs_text)
                     l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, self.p.getModeratorTitle(): moderator })
         self.l_wrong_classroom_type = l_classrooms
