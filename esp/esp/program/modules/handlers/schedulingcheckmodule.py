@@ -434,7 +434,7 @@ class SchedulingCheckRunner:
                             classes = []
                             break
                         classes.append(matching)
-                    if classes and open_class_cat.id not in [c.category.id for c in classes]:
+                    if classes and (not ignore_open_classes or open_class_cat.id not in [c.category.id for c in classes]):
                         #converts the list of class section objects to a single string
                         str1 = ', '
                         classes = str1.join([str(c) for c in classes])
