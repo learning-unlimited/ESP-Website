@@ -338,7 +338,7 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
     def test_onsiteprintschedules_missing_userid(self):
         """Test printschedules returns error when userid is missing and not in instruction mode"""
         self._login_admin()
-        # To trigger the missing userid error in printschedules, we provide a parameter 
+        # To trigger the missing userid error in printschedules, we provide a parameter
         # that normally expects a userid but omit it.
         response = self.client.get('/onsite/%s/printschedules?gen_img=1' % self.program.getUrlBase())
         self.assertIn(b'Missing userid parameter', response.content)
