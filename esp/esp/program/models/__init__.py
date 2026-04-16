@@ -272,8 +272,25 @@ class DirectorEmailValidator(validators.RegexValidator):
 
 class ProgramEmailField(models.EmailField):
     """EmailField that excludes environment-specific kwargs from migrations."""
-    pass
 
+    def deconstruct(self):
+        """
+        Customize deconstruction so that:
+
+        * The field is represented as a plain EmailField in migrations, and
+        * Environment-specific kwargs (default/help_text/validators derived from
+          settings.SITE_INFO) are omitted to avoid spurious migrations.
+        """
+        name, path, args, kwargs = super().deconstruct()
+
+        # Present as a built-in EmailField in migrations, not as ProgramEmailField.
+        path = 'django.db.models.EmailField'
+
+        # Drop environment-specific kwargs from the migration representation.
+        for key in ('default', 'help_text', 'validators'):
+            kwargs.pop(key, None)
+
+        return name, path, args, kwargs
 class Program(models.Model, CustomFormsLinkModel):
     """An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, etc."""
 
