@@ -17,7 +17,7 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
+from esp.users.models import User, ESPUser, AnonymousESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -138,6 +138,41 @@ class ESPUserTest(TestCase):
                                 f"Token check failed for username: {username}")
             finally:
                 user.delete()
+
+    def test_sort_key_normal_user_greater_than_anon(self):
+        anon_user = AnonymousESPUser()
+        user = ESPUser(username="t", first_name="Smith", last_name="Michael")
+        self.assertGreater(user, anon_user)
+
+    def test_sort_key_alphabetical_order(self):
+        user_m = ESPUser(username="t1", first_name="Smith", last_name="Michael")
+        user_z = ESPUser(username="t2", first_name="Adam", last_name="Zebra")
+        self.assertLess(user_m, user_z)
+
+    def test_sort_key_same_last_name(self):
+        user_s = ESPUser(username="t1", first_name="Smith", last_name="Michael")
+        user_a = ESPUser(username="t2", first_name="Adam", last_name="Michael")
+        self.assertLess(user_a, user_s)
+
+    def test_sort_key_none_name_same_sort_position(self):
+        user1 = ESPUser(username="t1", first_name=None, last_name=None)
+        user2 = ESPUser(username="t2", first_name="", last_name="")
+        self.assertFalse(user1 < user2)
+        self.assertFalse(user2 < user1)
+
+    def test_sort_key_case_insensitive_same_sort_position(self):
+        user_lower = ESPUser(username="t1", first_name="smith", last_name="michael")
+        user_upper = ESPUser(username="t2", first_name="Smith", last_name="Michael")
+        self.assertFalse(user_lower < user_upper)
+        self.assertFalse(user_upper < user_lower)
+
+    def test_sort_key_compare_with_non_user(self):
+        user = ESPUser(username="t", first_name="Smith", last_name="Michael")
+        self.assertFalse(user == "string") # Django Model.__eq__ returns False, does not raise
+        with self.assertRaises(TypeError): # ordering operators raise TypeError for non-BaseESPUser
+            _ = user > "string"
+        with self.assertRaises(TypeError):
+            _ = user < "string"
 
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
