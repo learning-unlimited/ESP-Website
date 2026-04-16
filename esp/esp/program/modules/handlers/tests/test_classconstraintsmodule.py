@@ -211,6 +211,9 @@ class ClassConstraintsModuleTest(CacheFlushTestCase):
         req_a = BooleanExpression.objects.create(label="req_a")
         req_b = BooleanExpression.objects.create(label="req_b")
 
+        # Fix: Now filtering handles only expressions referenced by ScheduleTestSubject
+        ScheduleTestSubject.objects.create(exp=shared_expr, subject=self.class_a)
+
         c1 = ScheduleConstraint.objects.create(
             program=self.program, condition=shared_expr, requirement=req_a, on_failure='return (None, None)'
         )
