@@ -57,7 +57,7 @@ class OnsitePrintSchedules(ProgramPrintables):
     @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
-        if 'userid' in request.GET:
+        if 'userid' in request.GET or ('gen_img' in request.GET and not PrintRequest.objects.filter(time_executed__isnull=True).exists()):
             user = ProgramPrintables.get_onsite_student(request)
             return ProgramPrintables.get_student_schedules(request, [user], prog, onsite=True)
 

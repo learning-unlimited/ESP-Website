@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record, RecordType
@@ -1190,7 +1190,7 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
-        onsite = onsite or (tl == 'onsite')
+        onsite = (tl == 'onsite')
         if onsite:
             students = [ProgramPrintables.get_onsite_student(request)]
         else:
@@ -1241,7 +1241,7 @@ class ProgramPrintables(ProgramModuleObj):
     def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
 
         context = {'module': self }
-        onsite = onsite or (tl == 'onsite')
+        onsite = (tl == 'onsite')
 
         if onsite:
             students = [ProgramPrintables.get_onsite_student(request)]
