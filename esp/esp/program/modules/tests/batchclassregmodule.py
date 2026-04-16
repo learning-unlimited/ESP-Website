@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.db.models import Q
 
+from esp.middleware import ESPError
 from esp.program.models import ClassSection
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -137,3 +138,25 @@ class BatchClassRegModuleTest(ProgramFrameworkTest):
             )
         self.assertEqual(result['fail_count'], 1)
         self.assertEqual(result['results'][0]['status'], 'full')
+
+    def test_batchclassregfinal_invalid_filterid(self):
+        """Passing an invalid or missing filterid to batchclassregfinal raises ESPError cleanly."""
+        section = ClassSection.objects.filter(
+            parent_class__parent_program=self.program,
+            status__gte=10
+        ).first()
+        if section is None:
+            self.skipTest("No accepted sections in test program")
+        self.client.login(username='admin', password='password')
+
+        errorMessage = 'Selected Filter is either invalid or available no more'
+        
+        # testing with a non-existing integer filter ID
+        url = '/manage/' + self.program.url + '/batchclassregfinal?filterid=999999'
+        with self.assertRaisesMessage(ESPError, errorMessage):
+            self.client.post(url, {'section_id': section.id})
+
+        # test with filter ID which is not a number, which triggers ValueError branch
+        url_bad_type = '/manage/' + self.program.url + '/batchclassregfinal?filterid=abc'
+        with self.assertRaisesMessage(ESPError, errorMessage):
+            self.client.post(url_bad_type, {'section_id': section.id})
