@@ -1255,6 +1255,20 @@ class ProgramPrintables(ProgramModuleObj):
             classes_by_student[user_id].sort(
                 key=lambda cls: (cls.start_time_prefetchable(), cls.title()))
 
+        if request.GET.get('sort') == 'first_class':
+            from datetime import datetime
+            def first_class_sort_key(student):
+                student_classes = classes_by_student[student.id]
+                if not student_classes:
+                    return (datetime.max, student.last_name or '', student.first_name or '')
+                start_time = student_classes[0].start_time_prefetchable()
+                # If start_time is somehow None, handle it to avoid TypeError in sorting
+                if start_time is None:
+                    return (datetime.max, student.last_name or '', student.first_name or '')
+                return (start_time, student.last_name or '', student.first_name or '')
+
+            students.sort(key=first_class_sort_key)
+
         times_compulsory = Event.objects.filter(program=prog, event_type__description='Compulsory').order_by('start')
         for t in times_compulsory:
             t.friendly_times = [t.pretty_time()]
