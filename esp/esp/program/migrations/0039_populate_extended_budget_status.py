@@ -5,7 +5,13 @@ from django.db import migrations
 
 def populate_extended_budget_status(apps, schema_editor):
     ClassSubject = apps.get_model('program', 'ClassSubject')
-    for cls in ClassSubject.objects.filter(extended_budget_status=0).exclude(purchase_requests__isnull=True):
+    for cls in (
+        ClassSubject.objects
+        .filter(extended_budget_status=0)
+        .exclude(purchase_requests__isnull=True)
+        .exclude(purchase_requests='')
+        .iterator()
+    ):
         if cls.purchase_requests and cls.purchase_requests.strip():
             cls.extended_budget_status = 10  # Pending
             cls.save(update_fields=['extended_budget_status'])

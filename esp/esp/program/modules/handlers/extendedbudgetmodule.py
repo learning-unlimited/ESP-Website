@@ -119,22 +119,27 @@ class ExtendedBudgetModule(ProgramModuleObj):
                     cls = None
                 if cls:
                     previous_status = cls.extended_budget_status
-                    if action == 'approve':
-                        cls.extended_budget_status = EXTENDED_BUDGET_STATUS_APPROVED
-                        messages.success(
+                    if previous_status != EXTENDED_BUDGET_STATUS_PENDING:
+                        messages.error(
                             request,
-                            "Extended budget request for '%s' approved." % cls.title,
+                            "Extended budget request for '%s' has already been finalized." % cls.title,
                         )
-                        status_label = "Approved"
                     else:
-                        cls.extended_budget_status = EXTENDED_BUDGET_STATUS_REJECTED
-                        messages.success(
-                            request,
-                            "Extended budget request for '%s' rejected." % cls.title,
-                        )
-                        status_label = "Rejected"
-                    cls.save()
-                    if previous_status == EXTENDED_BUDGET_STATUS_PENDING:
+                        if action == 'approve':
+                            cls.extended_budget_status = EXTENDED_BUDGET_STATUS_APPROVED
+                            messages.success(
+                                request,
+                                "Extended budget request for '%s' approved." % cls.title,
+                            )
+                            status_label = "Approved"
+                        else:
+                            cls.extended_budget_status = EXTENDED_BUDGET_STATUS_REJECTED
+                            messages.success(
+                                request,
+                                "Extended budget request for '%s' rejected." % cls.title,
+                            )
+                            status_label = "Rejected"
+                        cls.save()
                         self._send_status_email(cls, status_label)
                 else:
                     messages.error(request, "Unable to find that class for this program.")
