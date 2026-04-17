@@ -62,8 +62,8 @@ class OnSiteCheckoutModule(ProgramModuleObj):
 
         if "checkoutall" in request.POST and "confirm" in request.POST:
             students = prog.currentlyCheckedInStudents()
+            rt = RecordType.objects.get(name="checked_out")
             for student in students:
-                rt = RecordType.objects.get(name="checked_out")
                 Record.objects.create(user=student, event=rt, program=prog)
             context['checkout_all_message'] = "Successfully checked out %s students" % (students.count())
 
@@ -81,10 +81,10 @@ class OnSiteCheckoutModule(ProgramModuleObj):
             if target_id:
                 try:
                     student = ESPUser.objects.get(id=target_id)
-                except:
+                except (ESPUser.DoesNotExist, ValueError):
                     try:
                         student = ESPUser.objects.get(username=target_id)
-                    except:
+                    except ESPUser.DoesNotExist:
                         raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
 
         if student:
