@@ -32,19 +32,21 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import os
 from django.conf import settings
+from django.contrib.auth.models import Group
+from django.core.files.storage import default_storage
+from django.db.models.query import Q
 
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-
-from django.contrib.auth.models import Group
-from django.db.models.query import Q
 
 class NameTagModule(ProgramModuleObj):
     doc = """This module allows you to generate a bunch of IDs for users that match specific criteria."""
@@ -58,6 +60,19 @@ class NameTagModule(ProgramModuleObj):
             "seq": 100,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "selectidoptions":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_selectidoptions",
+            url="/manage/%s/selectidoptions" % base,
+            title="Nametags",
+            category="Printables",
+            keywords=["nametags", "name tags", "ids", "badges"],
+        )
 
     @main_call
     @needs_admin
@@ -79,19 +94,23 @@ class NameTagModule(ProgramModuleObj):
         users_list = [user for user in users_list1 | users_list2 if len(user.first_name + user.last_name)]
 
         if sort_by_time and program:
-            def get_user_first_start(user):
+            user_first_starts = {}
+            for user in users_list:
                 earliest = datetime.datetime.max
-                class_objects = user.getTaughtOrModeratingSectionsFromProgram(program)
-                classes = [cls for cls in class_objects
-                        if cls.meeting_times.all().exists()
-                        and cls.resourceassignment_set.all().exists()
-                        and cls.status > 0]
-                for cls in classes:
-                    cls_earliest = min((mt.start for mt in cls.meeting_times.all()), default=datetime.datetime.max)
+                class_objects = user.getTaughtOrModeratingSectionsFromProgram(program).prefetch_related(
+                    'meeting_times',
+                    'resourceassignment_set',
+                )
+                for cls in class_objects:
+                    meeting_times = list(cls.meeting_times.all())
+                    resource_assignments = list(cls.resourceassignment_set.all())
+                    if not meeting_times or not resource_assignments or cls.status <= 0:
+                        continue
+                    cls_earliest = min((mt.start for mt in meeting_times), default=datetime.datetime.max)
                     if cls_earliest < earliest:
                         earliest = cls_earliest
-                return earliest
-            users_list.sort(key=lambda x: (get_user_first_start(x), x.last_name.lower(), x.first_name.lower()))
+                user_first_starts[user.id] = earliest
+            users_list.sort(key=lambda x: (user_first_starts[x.id], x.last_name.lower(), x.first_name.lower()))
         else:
             users_list = sorted(users_list)
 
@@ -245,6 +264,9 @@ class NameTagModule(ProgramModuleObj):
         context['users_and_backs'] = users_and_backs
         context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['phone_number'] = Tag.getTag('group_phone_number')
+        current_logo_version = Tag.getTag('current_logo_version')
+        context['current_logo_version'] = current_logo_version if current_logo_version is not None else ''
+        context['has_logo'] = default_storage.exists('images/theme/logo.png')
 
         return render_to_response(self.baseDir()+'ids.html', request, context)
 

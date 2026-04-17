@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{ program.niceName }} Student Application{% endblock %}
 
@@ -10,7 +10,7 @@
 {% block xtrajs %}
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <h1>{{ program.niceName }} Student Applications</h1>
 
 <h2>Introduction</h2>
@@ -53,7 +53,7 @@
 {% endfor %}
 <tr>
  <th colspan="2" style="text-align: center;">
-    <input class="fancybutton" type="submit" name="submitform" value="Save Applications" />
+    <input class="btn btn-primary" type="submit" name="submitform" value="Save Applications" />
  </th>
 </tr>
 </table>

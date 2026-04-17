@@ -306,7 +306,7 @@
 
                 <div>
                     <div>Program Days:</div>
-                    <select id="day_type" {% if program.dates|length==0 %} disabled{% endif %}>
+                    <select id="day_type" {% if program.dates|length == 0 %} disabled{% endif %}>
                         <option value="" selected>All Days</option>
                         {% if program.dates|length > 1 %}
                         <option value="secondday">Second Day Only</option>
