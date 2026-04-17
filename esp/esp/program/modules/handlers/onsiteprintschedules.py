@@ -67,7 +67,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
             return render_to_response(self.baseDir()+'studentschedulesrenderer.html',
                             request, {})
 
-        requests = PrintRequest.objects.filter(time_executed__isnull=True)
+        requests = PrintRequest.objects.filter(time_executed__isnull=True).order_by('time_requested', 'id')
         if extra and Printer.objects.filter(name=extra).exists():
             requests = requests.filter(printer__name=extra)
 
