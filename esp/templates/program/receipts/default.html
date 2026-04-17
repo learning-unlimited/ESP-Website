@@ -103,7 +103,7 @@ Payment Information: <br />
         <tr style="background-color: #f9f9f9"><th colspan="3" height="3" style="text-align: center;">Block {{ timeslot.2 }}</th></tr>
     {% endifchanged %}
     <tr>
-    {% ifequal timeslot.0.event_type.description "Compulsory" %}
+    {% if timeslot.0.event_type.description == "Compulsory" %}
         <td width="25%" valign="middle" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
         <td valign="middle" align="center" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
     </tr>
@@ -131,7 +131,7 @@ Payment Information: <br />
             </td>
         {% endif %}
     </tr>
-    {% endifequal %}
+    {% endif %}
 {% endfor %}
 </table>
 
