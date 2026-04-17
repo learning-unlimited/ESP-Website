@@ -1,0 +1,10 @@
+<!-- esp/survey/templates/survey/questions/base.html -->
+{% extends "base.html" %}
+
+{% block title %}Survey Questions{% endblock %}
+
+{% block content %}
+<div class="questions-container">
+    {% block survey_content %}{% endblock %}
+</div>
+{% endblock %}
