@@ -64,7 +64,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         """
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
-    def get_response(self, view_name, user_type, list_name):
+    def get_response(self, view_name, user_type, list_name, allow_redirect=False):
         #   Log in an administrator
         self._login_admin()
 
@@ -79,7 +79,10 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
             'use_checklist': 0,
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), view_name), post_data)
-        self.assertIn(response.status_code, [200, 302])
+        if allow_redirect:
+            self.assertIn(response.status_code, [200, 302])
+        else:
+            self.assertEqual(response.status_code, 200)
         return response
 
     def get_userlist_views(self):
@@ -111,7 +114,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
     def testSchedules(self):
         response = self.get_response('studentschedules/log', 'students', 'enrolled')
         #   Check that our view returns successfully (or redirects to job status for batch PDF)
-        response = self.get_response('studentschedules', 'students', 'enrolled')
+        response = self.get_response('studentschedules', 'students', 'enrolled', allow_redirect=True)
         self.assertIn(response.status_code, [200, 302])
         #   Check that the actual Latex->PDF schedule generation code runs without error
         students = getattr(self, 'students', [])

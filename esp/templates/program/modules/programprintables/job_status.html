@@ -1,45 +1,53 @@
-{% extends "base.html" %}
+{% extends "main.html" %}
+
+{% block meta %}
+    {{ block.super }}
+    {% if job.status == 'PENDING' or job.status == 'PROCESSING' %}
+    <meta http-equiv="refresh" content="5">
+    {% endif %}
+{% endblock meta %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+{% endblock stylesheets %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 col-md-offset-2">
-        <div class="panel panel-default" style="margin-top: 50px;">
-            <div class="panel-heading">
-                <h3 class="panel-title">Generating Printables</h3>
+<div class="row-fluid">
+    <div class="span8 offset2">
+        <div class="well" style="margin-top: 50px; text-align: center;">
+            <h3>Generating Printables</h3>
+            <hr />
+            {% if job.status == 'PENDING' or job.status == 'PROCESSING' %}
+            <i class="fa fa-spinner fa-spin fa-4x" style="margin: 20px 0; color: #3a87ad;"></i>
+            <h4>Your document is currently being generated.</h4>
+            <p class="muted">This process may take up to 15 minutes for large programs. This page will refresh
+                automatically every 5 seconds.</p>
+            <p><strong>Status:</strong> {{ job.status }}</p>
+
+            {% elif job.status == 'COMPLETED' %}
+            <i class="fa fa-check-circle fa-4x" style="margin: 20px 0; color: #468847;"></i>
+            <h4>Success!</h4>
+            <p>Your document has been generated.</p>
+            {% if job.file %}
+            <a href="?download=1" class="btn btn-primary btn-large"><i class="fa fa-download"></i> Download {{
+                job.job_type|title }}</a>
+            {% endif %}
+
+            {% elif job.status == 'FAILED' %}
+            <i class="fa fa-exclamation-triangle fa-4x" style="margin: 20px 0; color: #b94a48;"></i>
+            <h4>An Error Occurred</h4>
+            <p>We encountered a problem while generating your document.</p>
+            <div class="alert alert-error"
+                style="margin-top: 20px; overflow-y: auto; max-height: 200px; text-align: left;">
+                <pre>{{ job.error_message }}</pre>
             </div>
-            <div class="panel-body text-center">
-                {% if job.status == 'PENDING' or job.status == 'PROCESSING' %}
-                <meta http-equiv="refresh" content="5">
-                <i class="fa fa-spinner fa-spin fa-4x text-primary" style="margin: 20px 0;"></i>
-                <h4>Your document is currently being generated.</h4>
-                <p class="text-muted">This process may take up to 15 minutes for large programs. This page will refresh
-                    automatically every 5 seconds.</p>
-                <p><strong>Status:</strong> {{ job.status }}</p>
+            {% endif %}
 
-                {% elif job.status == 'COMPLETED' %}
-                <i class="fa fa-check-circle fa-4x text-success" style="margin: 20px 0;"></i>
-                <h4>Success!</h4>
-                <p>Your document has been generated.</p>
-                {% if job.file %}
-                <a href="{{ job.file.url }}" class="btn btn-primary btn-lg"><i class="fa fa-download"></i> Download {{
-                    job.job_type|title }}</a>
-                {% endif %}
-
-                {% elif job.status == 'FAILED' %}
-                <i class="fa fa-exclamation-triangle fa-4x text-danger" style="margin: 20px 0;"></i>
-                <h4>An Error Occurred</h4>
-                <p>We encountered a problem while generating your document.</p>
-                <div class="alert alert-danger text-left"
-                    style="margin-top: 20px; overflow-y: auto; max-height: 200px;">
-                    <pre>{{ job.error_message }}</pre>
-                </div>
-                {% endif %}
-
-                <div style="margin-top: 30px;">
-                    <a href="/manage/{{ program.url }}/Printables/" class="btn btn-default">Return to Printables</a>
-                </div>
+            <div style="margin-top: 30px;">
+                <a href="/manage/{{ program.url }}/Printables/" class="btn">Return to Printables</a>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
+{% endblock content %}

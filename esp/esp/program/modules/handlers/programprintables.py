@@ -1215,6 +1215,14 @@ class ProgramPrintables(ProgramModuleObj):
             import threading
             from django.http import HttpResponseRedirect
             from django.db import connection
+
+            active_jobs = PrintableJob.objects.filter(
+                program=prog, user=request.user, job_type='studentschedules',
+                status__in=['PENDING', 'PROCESSING']
+            )
+            if active_jobs.exists():
+                return HttpResponseRedirect('/manage/%s/%s/printable_job_status/%s/' % (prog.url, module, active_jobs.first().id))
+
             job = PrintableJob.objects.create(
                 program=prog,
                 user=request.user,
@@ -1229,7 +1237,8 @@ class ProgramPrintables(ProgramModuleObj):
 
                     from esp.program.models import Program
                     prog = Program.objects.get(id=prog_id)
-                    students = list(ESPUser.objects.filter(id__in=student_ids).order_by('id'))
+                    students = list(ESPUser.objects.filter(id__in=student_ids))
+                    students.sort()
                     class DummyRequest:
                         pass
                     dummy_req = DummyRequest()
@@ -1443,15 +1452,26 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def printable_job_status(self, request, tl, one, two, module, extra, prog):
         """ Displays the status of an asynchronous PrintableJob, and downloads it when completed """
+        import mimetypes
+        import os
+        from wsgiref.util import FileWrapper
+        from django.core.exceptions import ValidationError
         from esp.program.models.printable_job import PrintableJob
-        from django.http import HttpResponseRedirect
+        from django.http import HttpResponse, HttpResponseRedirect
         try:
-            job = PrintableJob.objects.get(id=extra)
-        except PrintableJob.DoesNotExist:
+            job = PrintableJob.objects.get(id=extra, program=prog)
+        except (PrintableJob.DoesNotExist, ValueError, ValidationError):
             raise ESPError("Job not found.")
-        if job.status == 'COMPLETED' and job.file:
-            # We redirect to the file URL.  But maybe downloading is better.
-            return HttpResponseRedirect(job.file.url)
+        if job.status == 'COMPLETED' and job.file and request.GET.get('download'):
+            job.file.open('rb')
+            content_type = mimetypes.guess_type(job.file.name)[0] or 'application/octet-stream'
+            response = HttpResponse(FileWrapper(job.file), content_type=content_type)
+            response['Content-Disposition'] = 'attachment; filename="%s"' % os.path.basename(job.file.name)
+            try:
+                response['Content-Length'] = job.file.size
+            except (AttributeError, IOError, OSError):
+                pass
+            return response
         context = {
             'module': self,
             'job': job,
