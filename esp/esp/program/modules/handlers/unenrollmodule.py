@@ -75,48 +75,64 @@ class UnenrollModule(ProgramModuleObj):
             if 'undo' in request.POST:
                 selected_enrollments = request.POST['selected_enrollments']
                 ids = [int(id) for id in selected_enrollments.split(',')]
-                registrations = StudentRegistration.objects.filter(id__in=ids)
-                registrations.update(end_date=None)
+                qs = StudentRegistration.objects.filter(id__in=ids).select_related(
+                    'user', 'section', 'section__parent_class')
+                reg_list = list(qs)
+                qs.update(end_date=None)
                 logger.info("Unexpired student registrations: %s", ids)
-                for reg in registrations:
+                for reg in reg_list:
                     signals.post_save.send(sender=StudentRegistration, instance=reg)
 
-                # Update mailman lists for unexpired registrations
+                # Update mailman lists for unexpired registrations (dedupe list/user pairs)
                 from esp.mailman import add_list_member
-                for reg in registrations:
+
+                program_list = "%s_%s-students" % (prog.program_type, prog.program_instance)
+                mailman_adds = set()
+                for reg in reg_list:
                     user = reg.user
                     section = reg.section
-                    # Add to class and section mailman lists
-                    list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
-                    for list_name in list_names:
-                        add_list_member(list_name, user)
-
-                    # Add to program list
-                    add_list_member("%s_%s-students" % (prog.program_type, prog.program_instance), user)
+                    mailman_adds.add(("%s-%s" % (section.emailcode(), "students"), user.pk))
+                    mailman_adds.add(("%s-%s" % (section.parent_class.emailcode(), "students"), user.pk))
+                    mailman_adds.add((program_list, user.pk))
+                users_by_id = {reg.user_id: reg.user for reg in reg_list}
+                for list_name, user_id in mailman_adds:
+                    add_list_member(list_name, users_by_id[user_id])
 
                 context['undo'] = True
             else:
                 selected_enrollments = request.POST['selected_enrollments']
                 ids = [int(id) for id in selected_enrollments.split(',')]
-                registrations = StudentRegistration.objects.filter(id__in=ids)
-                registrations.update(end_date=datetime.datetime.now())
+                now = datetime.datetime.now()
+                qs = StudentRegistration.objects.filter(id__in=ids).select_related(
+                    'user', 'section', 'section__parent_class')
+                reg_list = list(qs)
+                qs.update(end_date=now)
                 logger.info("Expired student registrations: %s", ids)
-                for reg in registrations:
+                for reg in reg_list:
                     signals.post_save.send(sender=StudentRegistration, instance=reg)
 
                 # Update mailman lists for expired registrations
                 from esp.mailman import remove_list_member
-                for reg in registrations:
-                    user = reg.user
-                    section = reg.section
-                    # Remove from class and section mailman lists
-                    list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
-                    for list_name in list_names:
-                        remove_list_member(list_name, user.email)
 
-                    # If they are no longer enrolled in any sections in the program, remove from program list
-                    if not user.getEnrolledSections(prog):
-                        remove_list_member("%s_%s-students" % (prog.program_type, prog.program_instance), user.email)
+                program_list = "%s_%s-students" % (prog.program_type, prog.program_instance)
+                mailman_removals = set()
+                for reg in reg_list:
+                    section = reg.section
+                    email = reg.user.email
+                    mailman_removals.add(("%s-%s" % (section.emailcode(), "students"), email))
+                    mailman_removals.add(("%s-%s" % (section.parent_class.emailcode(), "students"), email))
+                for list_name, email in mailman_removals:
+                    remove_list_member(list_name, email)
+
+                affected_user_ids = {reg.user_id for reg in reg_list}
+                users_by_id = {reg.user_id: reg.user for reg in reg_list}
+                for user_id in affected_user_ids:
+                    if not StudentRegistration.valid_objects(now).filter(
+                            user_id=user_id,
+                            section__parent_class__parent_program=prog,
+                            relationship__name='Enrolled',
+                    ).exists():
+                        remove_list_member(program_list, users_by_id[user_id].email)
             context['ids'] = ids
             return render_to_response(
                 self.baseDir()+'result.html', request, context)
