@@ -7,6 +7,14 @@ from phonenumber_field.widgets import PhoneNumberInternationalFallbackWidget
 from esp.customforms.forms import NameField, AddressField, CustomFileWidget
 from esp.utils.forms import DummyField
 
+
+def coerce_null_boolean(value):
+    if value in (True, 'True', 'true', '2'):
+        return True
+    if value in (False, 'False', 'false', '3'):
+        return False
+    return None
+
 generic_fields = {
     'textField': {'typeMap': forms.CharField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'size': '30', 'class': ''}},
     'longTextField': {'typeMap': forms.CharField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'size': '60', 'class': ''}},
@@ -27,7 +35,7 @@ generic_fields = {
     'pronoun': {'typeMap': forms.CharField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'size': '50', 'class': 'pronoun '}},
     'radio_yesno': {'typeMap': forms.ChoiceField, 'attrs': {'widget': forms.RadioSelect, 'choices': (('T', 'Yes'), ('F', 'No'))}, 'widget_attrs': {'class': ''}},
     'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs': {'class': ''}},
-    'null_boolean': {'typeMap': forms.NullBooleanField, 'attrs': {'widget': forms.NullBooleanSelect}, 'widget_attrs': {'class': ''}},
+    'null_boolean': {'typeMap': forms.TypedChoiceField, 'attrs': {'widget': forms.NullBooleanSelect, 'choices': (('1', 'Unknown'), ('2', 'Yes'), ('3', 'No')), 'coerce': coerce_null_boolean, 'empty_value': None}, 'widget_attrs': {'class': ''}},
     'instructions': {'typeMap': DummyField, 'attrs': {'widget': None}, 'widget_attrs': {'class': ''}},
 }
 
@@ -81,7 +89,7 @@ class CustomFormsCache:
                             field_instance = all_form_fields[field]
                             generic_field_type = self.getGenericType(field_instance)
                         else:
-                            field_instance = self.getCustomFieldInstance(field, '%s_%s' % (model.form_link_name, field))
+                            field_instance = self.getCustomFieldInstance(field, f'{model.form_link_name}_{field}')
                             generic_field_type = 'custom'
 
                         model_field = field
@@ -141,7 +149,7 @@ class CustomFormsCache:
                 kwargs['name'] = field_name
             return field_class(*args, **kwargs)
         else:
-            raise Exception('Cannot understand field type: %s' % field)
+            raise Exception(f'Cannot understand field type: {field}')
 
     def isLinkField(self, field):
         """
@@ -160,7 +168,7 @@ class CustomFormsCache:
         if hasattr(model, 'link_compound_fields') and field in model.link_compound_fields:
             return model.link_compound_fields[field]
         else:
-            raise Exception('%s is not a compound field on %s' % (field, model))
+            raise Exception(f'{field} is not a compound field on {model}')
 
     def getLinkFieldData(self, field):
         """
