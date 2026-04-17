@@ -273,6 +273,19 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             for sec in sections:
                 sec.unpreregister_student(request.user, verbs)
 
+        # Remove from the program *-students Mailman list only when the student
+        # has no remaining valid Enrolled registrations in this program (covers
+        # cancel_button_dereg=False, where sections are not dropped here).
+        from esp.program.models import StudentRegistration
+        from esp.mailman import remove_list_member
+
+        if not StudentRegistration.valid_objects(datetime.now()).filter(
+                user=request.user,
+                section__parent_class__parent_program=prog,
+                relationship__name='Enrolled',
+        ).exists():
+            remove_list_member("%s_%s-students" % (prog.program_type, prog.program_instance), request.user.email)
+
         #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
         try:
             receipt_text = DBReceipt.objects.get(program=self.program, action='cancel').receipt

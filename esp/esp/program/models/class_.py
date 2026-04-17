@@ -1350,6 +1350,14 @@ class ClassSection(models.Model):
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
+        # If the student is no longer enrolled in any classes in this program, remove from the program mailing list
+        if not StudentRegistration.valid_objects(now).filter(
+                user=user,
+                section__parent_class__parent_program=self.parent_program,
+                relationship__name='Enrolled',
+        ).exists():
+            remove_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user.email)
+
     @transaction.atomic
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
         if prereg_verb is None:
