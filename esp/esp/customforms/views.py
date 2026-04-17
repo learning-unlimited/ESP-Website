@@ -2,11 +2,9 @@ from copy import deepcopy
 import json
 
 from django.db import transaction
-from django.shortcuts import redirect
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
-from django.urls import reverse
+from django.shortcuts import redirect, HttpResponse
+from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.db import connection
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 
 from esp.customforms.models import *
@@ -19,8 +17,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.decorators import user_passes_test, login_required
 
 from esp.users.models import ESPUser
-from esp.middleware import ESPError, Http403
-from esp.utils.web import render_to_response, zip_download, error404
+from esp.middleware import ESPError
+from esp.utils.web import render_to_response, zip_download
 
 def test_func(user):
     return user.is_authenticated and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
@@ -35,10 +33,7 @@ def landing(request):
             if form.link_id == -1:
                 form.link_obj = "User's choice"
             else:
-                try:
-                    form.link_obj = cf_cache.only_fkey_models[form.link_type].objects.get(id=form.link_id)
-                except ObjectDoesNotExist:
-                    form.link_obj = "(deleted)"
+                form.link_obj = cf_cache.only_fkey_models[form.link_type].objects.get(id=form.link_id)
     return render_to_response("customforms/landing.html", request, {'form_list': forms})
 
 @user_passes_test(test_func)
@@ -102,16 +97,11 @@ def onSubmit(request):
                 fields = []
 
                 # truncating field lengths to the character limits specified
-                title = (metadata.get('title') or '').strip()
-                title = title[0:Form._meta.get_field('title').max_length]
+                title = metadata['title'][0:Form._meta.get_field('title').max_length]
                 link_type = metadata['link_type'][0:Form._meta.get_field('link_type').max_length]
                 perms = metadata['perms'][0:Form._meta.get_field('perms').max_length]
                 success_message = metadata['success_message'][0:Form._meta.get_field('success_message').max_length]
                 success_url = metadata['success_url'][0:Form._meta.get_field('success_url').max_length]
-
-                # Validate that title is not empty or missing
-                if not title or not title.strip():
-                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
 
                 # Creating form
                 form = Form.objects.create(title=title,
@@ -205,14 +195,8 @@ def onModify(request):
                 # Populating the old fields list
                 dmh._getModelFieldList()
 
-                # Validate and normalize title (truncate to max_length like onSubmit does)
-                title_raw = (metadata.get('title') or '').strip()
-                title_normalized = title_raw[0:Form._meta.get_field('title').max_length]
-                if not title_normalized or not title_normalized.strip():
-                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
-
                 # NOT updating 'anonymous'
-                form.__dict__.update(title=title_normalized, description=metadata['desc'], perms=metadata['perms'],
+                form.__dict__.update(title=metadata['title'], description=metadata['desc'], perms=metadata['perms'],
                     success_message=metadata['success_message'], success_url=metadata['success_url']
                     )
 
@@ -338,7 +322,7 @@ def viewForm(request, form_id):
         form_id = int(form_id)
         form = Form.objects.get(pk=form_id)
     except (ValueError, Form.DoesNotExist):
-        return error404(request)
+        raise Http404
 
     perm, error_text = hasPerm(request.user, form)
     if not perm:
@@ -354,7 +338,7 @@ def success(request, form_id):
     try:
         form_id = int(form_id)
     except ValueError:
-        return error404(request)
+        raise Http404
 
     form = Form.objects.get(pk=form_id)
     return render_to_response('customforms/success.html', request, {'success_message': form.success_message,
@@ -365,16 +349,15 @@ def viewResponse(request, form_id):
     """
     Viewing response data
     """
-    if not (request.user.isTeacher() or request.user.isAdministrator() or request.user.is_morphed(request)):
-        return HttpResponseRedirect(reverse('home'))
+    # Only teachers and admins can view responses; others are redirected to home
+    if not (request.user.isTeacher() or request.user.isAdministrator()):
+        return HttpResponseRedirect('/')
 
     try:
         form_id = int(form_id)
-        form = Form.objects.get(pk=form_id)
-    except (ValueError, Form.DoesNotExist):
-        return error404(request)
-    if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
-        raise Http403('You do not have permission to view responses for this form.')
+    except ValueError:
+        raise Http404
+    form = Form.objects.get(id=form_id)
     return render_to_response('customforms/view_results.html', request, {'form': form})
 
 @user_passes_test(test_func)
@@ -385,11 +368,10 @@ def getExcelData(request, form_id):
 
     try:
         form_id = int(form_id)
-        form = Form.objects.get(pk=form_id)
-    except (ValueError, Form.DoesNotExist):
-        return error404(request)
-    if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
-        raise Http403('You do not have permission to download responses for this form.')
+    except ValueError:
+        return HttpResponse(status=400)
+
+    form = Form.objects.get(pk=form_id)
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
     response = HttpResponse(wbk.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -405,11 +387,9 @@ def getData(request):
         if request.method == 'GET':
             try:
                 form_id = int(request.GET['form_id'])
-                form = Form.objects.get(pk=form_id)
-            except (KeyError, ValueError, Form.DoesNotExist):
-                return error404(request)
-            if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
-                raise Http403('You do not have permission to view responses for this form.')
+            except ValueError:
+                return HttpResponse(status=400)
+            form = Form.objects.get(pk=form_id)
             fh = FormHandler(form=form, request=request)
             resp_data = json.dumps(fh.getResponseData(form), cls=DjangoJSONEncoder)
             return HttpResponse(resp_data)
@@ -426,12 +406,7 @@ def bulkDownloadFiles(request):
             question_name = request.GET['question_name']
         except (ValueError, KeyError):
             return HttpResponse(status=400)
-        try:
-            form = Form.objects.get(pk=form_id)
-        except Form.DoesNotExist:
-            return error404(request)
-        if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
-            raise Http403('You do not have permission to download files for this form.')
+        form = Form.objects.get(pk=form_id)
         dmh = DMH(form=form)
         dyn = dmh.createDynModel()
         filenames = [resp[question_name] for resp in dyn.objects.all().values()]
