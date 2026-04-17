@@ -88,15 +88,18 @@ class OnsiteClassSchedule(ProgramModuleObj):
         student. """
 
         if request.method == 'POST' and 'student_selected' in request.POST:
+            student_selected = request.POST.get('student_selected', '').strip()
+            if not student_selected:
+                return render_to_response('program/modules/onsiteclassschedule/schedule_students.html', request, {'program': self.program, 'error': 'Please select a student.'})
             try:
-                user = ESPUser.objects.get(id=request.POST['student_selected'])
+                user = ESPUser.getAllOfType('Student', False).get(id=int(student_selected))
                 request.user.switch_to_user(request,
                                          user,
                                          self.getCoreURL(tl),
                                          'OnSite Registration!',
                                          True)
                 return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
-            except ESPUser.DoesNotExist:
+            except (TypeError, ValueError, ESPUser.DoesNotExist):
                 return render_to_response('program/modules/onsiteclassschedule/schedule_students.html', request, {'program': self.program, 'error': 'Invalid student selected.'})
 
         if 'advanced' in request.GET or (request.method == 'POST' and 'base_list' in request.POST):

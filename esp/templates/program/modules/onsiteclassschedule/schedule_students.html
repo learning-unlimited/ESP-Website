@@ -34,6 +34,11 @@
                 $j(this).next(".student_selected").val(ui.item.id);
             }
         });
+
+        // Clear the hidden ID if the user edits the input text manually
+        $j(".student_search").on("input change", function() {
+            $j(this).next(".student_selected").val("");
+        });
     });
 </script>
 {% endblock %}
