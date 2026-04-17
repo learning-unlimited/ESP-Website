@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, main_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
 from esp.program.modules.forms.teacherreg import TeacherEventSignupForm
 from esp.utils.web import render_to_response
 from django.db.models.query import Q
@@ -51,7 +51,7 @@ class TeacherEventsModule(ProgramModuleObj):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    @main_call
+    @aux_call
     @meets_deadline('/Events')
     def calendar_data(self, request, tl, one, two, module, extra, prog):
         """ Provide AJAX-compatible JSON for the calendar view. """
@@ -67,13 +67,15 @@ class TeacherEventsModule(ProgramModuleObj):
 
         data = []
 
-        # Accept all teacher event types dynamically
-        relevant_types = EventType.objects.filter(is_teacher_type=True)
+        # Get exact teacher event type objects to avoid fragile string matching
+        teacher_types = EventType.teacher_event_types()
+        interview_type = teacher_types.get('interview')
+        training_type = teacher_types.get('training')
 
         # Collect teacher events for this program (including past events)
         all_events = Event.objects.filter(
             program=prog,
-            event_type__in=relevant_types
+            event_type__in=[t for t in (interview_type, training_type) if t is not None]
         ).order_by('start')
 
         now = timezone.now()
@@ -81,12 +83,16 @@ class TeacherEventsModule(ProgramModuleObj):
             entries = UserAvailability.entriesBySlot(event)
             is_mine = entries.filter(user=user).exists()
 
-            # Interview slots are single-occupancy; training slots are multi-signup
-            desc = (event.event_type.description or '').lower()
-            category = 'interview' if 'interview' in desc else 'training'
-            other_entries = entries.exclude(user=user)
-
-            is_full = (category == 'interview' and other_entries.exists())
+            # Determine category and full status heavily relying on actual EventType objects
+            if interview_type and event.event_type.id == interview_type.id:
+                category = 'interview'
+                # Interview slots are single-occupancy
+                other_entries = entries.exclude(user=user)
+                is_full = other_entries.exists()
+            else:
+                category = 'training'
+                # Training slots allow multiple signups
+                is_full = False
             is_past = event.start < now
 
             if is_mine:
