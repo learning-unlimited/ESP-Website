@@ -46,6 +46,6 @@ class PaidListInvalidFilterTests(SimpleTestCase):
 
         self.assertEqual(response.status_code, 200)
         render_args, render_kwargs = render_mock.call_args
-        context = render_args[2] if len(render_args) > 2 else render_kwargs["dictionary"]
+        context = render_args[2] if len(render_args) > 2 else render_kwargs["context"]
         self.assertEqual(context["single_select"], False)
         self.assertEqual(len(context["lineitems"]), 1)
