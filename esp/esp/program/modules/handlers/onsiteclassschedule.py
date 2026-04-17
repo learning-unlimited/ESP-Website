@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
+from esp.utils.web import render_to_response
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
@@ -86,17 +87,35 @@ class OnsiteClassSchedule(ProgramModuleObj):
         """ Redirect to student registration, having morphed into the desired
         student. """
 
-        user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
-        if not found:
-            return user
+        if request.method == 'POST' and 'student_selected' in request.POST:
+            student_selected = request.POST.get('student_selected', '').strip()
+            if not student_selected:
+                return render_to_response('program/modules/onsiteclassschedule/schedule_students.html', request, {'program': self.program, 'error': 'Please select a student.'})
+            try:
+                user = ESPUser.getAllOfType('Student', False).get(id=int(student_selected))
+                request.user.switch_to_user(request,
+                                         user,
+                                         self.getCoreURL(tl),
+                                         'OnSite Registration!',
+                                         True)
+                return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
+            except (TypeError, ValueError, ESPUser.DoesNotExist):
+                return render_to_response('program/modules/onsiteclassschedule/schedule_students.html', request, {'program': self.program, 'error': 'Invalid student selected.'})
 
-        request.user.switch_to_user(request,
-                                 user,
-                                 self.getCoreURL(tl),
-                                 'OnSite Registration!',
-                                 True)
+        if 'advanced' in request.GET or (request.method == 'POST' and 'base_list' in request.POST):
+            user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
+            if not found:
+                return user
 
-        return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
+            request.user.switch_to_user(request,
+                                     user,
+                                     self.getCoreURL(tl),
+                                     'OnSite Registration!',
+                                     True)
+
+            return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
+
+        return render_to_response('program/modules/onsiteclassschedule/schedule_students.html', request, {'program': self.program})
 
 
     class Meta:

@@ -1,0 +1,82 @@
+{% extends "main.html" %}
+
+{% block title %}Onsite Scheduling for Students{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript">
+    $j(document).ready(function () {
+        $j(".student_search").autocomplete({
+            source: function (request, response) {
+                $j.ajax({
+                    url: "/admin/ajax_autocomplete/",
+                    dataType: "json",
+                    data: {
+                        model_module: "esp.users.models",
+                        model_name: "ESPUser",
+                        ajax_func: "ajax_autocomplete_student",
+                        ajax_data: request.term,
+                        prog: "",
+                    },
+                    success: function (data) {
+                        var output = $j.map(data.result, function (item) {
+                            return {
+                                label: item.ajax_str,
+                                value: item.ajax_str,
+                                id: item.id
+                            };
+                        });
+                        response(output);
+                    }
+                });
+            },
+            select: function (event, ui) {
+                $j(this).next(".student_selected").val(ui.item.id);
+            }
+        });
+
+        // Clear the hidden ID if the user edits the input text manually
+        $j(".student_search").on("input change", function() {
+            $j(this).next(".student_selected").val("");
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<h1>Onsite Scheduling for Students in {{program.niceName}}</h1>
+
+<div class="alert alert-info">
+    <p>Use the search box below to find a student and access their registration schedule page. For advanced filtering,
+        use the <a href="?advanced=1">Advanced Search</a>.</p>
+</div>
+
+<form action="" method="post" name="schedule_student">
+    <table cellpadding="10" cellspacing="0">
+        <tr>
+            <td><b>Find Student:</b></td>
+            <td>
+                <input type="text" class="student_search" style="width: 300px;"
+                    placeholder="Begin typing username or name..." />
+                <input type="hidden" name="student_selected" class="student_selected" />
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <input type="submit" class="button" value="Manage Student's Schedule" />
+            </td>
+        </tr>
+        {% if error %}
+        <tr>
+            <td colspan="2">
+                <p>
+                    <font color="red">{{ error }}</font>
+                </p>
+            </td>
+        </tr>
+        {% endif %}
+    </table>
+</form>
+
+{% endblock %}
