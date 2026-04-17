@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -29,12 +28,13 @@ MIT Educational Studies Program
   Email: esp-webmasters@mit.edu
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
-  Phone: 617-379-0178
+  Phone: 617-379-0179
   Email: web-team@learningu.org
 """
 
 from esp.themes.controllers import ThemeController
 from esp.tagdict.models import Tag
+from esp.utils.widgets import ContactFieldsWidget
 
 from django import forms
 
@@ -42,7 +42,26 @@ import json
 
 class ThemeConfigurationForm(forms.Form):
     theme = forms.CharField(widget=forms.HiddenInput)
-    just_selected = forms.NullBooleanField(widget=forms.HiddenInput, initial=False)
+    just_selected = forms.BooleanField(widget=forms.HiddenInput, initial=False, required=False)
+
+
+    def __init__(self, *args, **kwargs):
+        super(ThemeConfigurationForm, self).__init__(*args, **kwargs)
+
+        # Move toolbar_links to the end of the form
+        toolbar_links = self.fields.pop('toolbar_links')
+        self.fields['toolbar_links'] = toolbar_links
+
+        # Make toolbar_links tolerant of invalid/missing JSON, given required=False
+        widget = self.fields['toolbar_links'].widget
+        original_vfd = widget.value_from_datadict
+        def safe_value_from_datadict(data, files, name, _orig=original_vfd):
+            try:
+                return _orig(data, files, name)
+            except (TypeError, ValueError, KeyError):
+                # On invalid or missing input, treat as empty list
+                return []
+        widget.value_from_datadict = safe_value_from_datadict
 
     def prepare_for_serialization(self, data):
         return data
@@ -75,3 +94,10 @@ class ThemeConfigurationForm(forms.Form):
         """
         return dict([(k_v[0], k_v[1].initial) for k_v in cls().fields.items()])
 
+    # Extra admin toolbar links — editable from /themes/ for all themes
+    toolbar_links = forms.Field(
+        required=False,
+        widget=ContactFieldsWidget,
+        label='Extra admin toolbar links (use absolute or relative URLs)',
+        initial=[]
+    )

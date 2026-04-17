@@ -45,7 +45,6 @@ from esp.themes.controllers import ThemeController
 from esp.program.models import Program
 from esp.web.views.navBar import makeNavBar
 from esp.tagdict.models import Tag
-from django.conf import settings
 import django.shortcuts
 
 def get_from_id(id, module, strtype = 'object', error = True):
@@ -55,9 +54,9 @@ def get_from_id(id, module, strtype = 'object', error = True):
     try:
         newid    = int(id)
         foundobj = module.objects.get(id = newid)
-    except:
+    except (ValueError, TypeError, module.DoesNotExist):
         if error:
-            raise ESPError('Could not find the %s with id %s.' % (strtype, id), log=False)
+            raise ESPError(f'Could not find the {strtype} with id {id}.', log=False)
         return None
     return foundobj
 
@@ -75,6 +74,85 @@ def esp_context_stuff():
     context['current_programs'] = Program.current_programs()
     return context
 
+_PROGRAM_TLS = frozenset(['manage', 'learn', 'teach', 'onsite', 'volunteer'])
+
+# Paths that must not trigger session/cookie access (NoVaryOnCookieTest).
+# Accessing request.user would add Vary: Cookie; skip injection for these.
+_CACHEABLE_SUFFIXES = ('catalog', 'index.html')
+
+
+def _filter_active_tags(accessed_keys, get_all_fn):
+    """
+    Given the request-scoped set of consulted tag keys (or None if tracking
+    wasn't initialized) and a callable that returns all non-default tags,
+    return the list of tags that should appear in the banner.
+
+    Returns [] if nothing should be shown so the caller can skip the DB hit
+    in the empty-tracking case.
+    """
+    if accessed_keys is not None and not accessed_keys:
+        # Tracking is active but the view consulted no tags — skip the DB
+        # query entirely; nothing will be shown.
+        return []
+    all_nondefault = get_all_fn()
+    if not all_nondefault:
+        return []
+    if accessed_keys is None:
+        # Fallback: tracking wasn't initialized, show all non-default tags.
+        return all_nondefault
+    return [t for t in all_nondefault if t['key'] in accessed_keys]
+
+
+def _inject_active_program_tags(request, context):
+    """
+    For admin users viewing a program page, inject ``active_program_tags``
+    and ``active_global_tags`` (lists of tag info dicts) plus their
+    corresponding settings URLs into *context* so the base template can
+    show banners listing non-default tags actually consulted on this page.
+    """
+    try:
+        path = request.path.rstrip('/')
+        if any(path.endswith(s) for s in _CACHEABLE_SUFFIXES):
+            return  # Avoid request.user access; would add Vary: Cookie
+        if not (hasattr(request, 'user') and request.user.is_authenticated):
+            return
+        parts = request.path.strip('/').split('/')
+        if len(parts) < 3:
+            return
+        tl, one, two = parts[0], parts[1], parts[2]
+        if tl not in _PROGRAM_TLS:
+            return
+        from esp.program.models import Program
+        try:
+            program = Program.objects.get(url='%s/%s' % (one, two))
+        except Program.DoesNotExist:
+            return
+        if not request.user.isAdministrator(program=program):
+            return
+
+        # Program-specific tags consulted while rendering this page.
+        program_tags = _filter_active_tags(
+            getattr(request, '_active_program_tag_keys', None),
+            lambda: Tag.get_nondefault_program_tags(program),
+        )
+        if program_tags:
+            context['active_program_tags'] = program_tags
+            context['active_program_tags_url'] = program.get_manage_url() + 'tags'
+
+        # Global tags consulted while rendering this page. Global tags affect
+        # the whole site, so they're worth flagging in the same banner area
+        # whenever an admin is on a program page that touched one.
+        global_tags = _filter_active_tags(
+            getattr(request, '_active_global_tag_keys', None),
+            Tag.get_nondefault_global_tags,
+        )
+        if global_tags:
+            context['active_global_tags'] = global_tags
+            context['active_global_tags_url'] = '/manage/tags/'
+    except Exception:
+        pass  # Never let banner logic break page rendering
+
+
 def render_to_response(template, request, context, content_type=None, use_request_context=True):
     if isinstance(template, str):
         template = [ template ]
@@ -82,6 +160,8 @@ def render_to_response(template, request, context, content_type=None, use_reques
     section = request.path.split('/')[1]
 
     context.update(esp_context_stuff())
+
+    _inject_active_program_tags(request, context)
 
     # create nav bar list
     if not 'navbar_list' in context:
@@ -109,6 +189,12 @@ def error500(request, template_name='500.html'):
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
     context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER
     context['request'] = request
+    from datetime import datetime
+    context['error_type'] = '500'
+    context['error_title'] = 'Server Error'
+    context['error_description'] = 'An unexpected server error occurred. Please try again in a moment.'
+    context['error_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    context['error_url'] = request.build_absolute_uri()
     t = loader.get_template(template_name) # You need to create a 500.html template.
 
     # If possible, we want to render this page with our custom
@@ -161,5 +247,5 @@ def zip_download(files = [], zipname = 'files'):
             zf.write(file, os.path.basename(os.path.normpath(file)))
     zf.close()
     response = HttpResponse(file_like.getvalue(), content_type='application/zip')
-    response['Content-Disposition']='attachment; filename=%s.zip' % zipname
+    response['Content-Disposition']=f'attachment; filename={zipname}.zip'
     return response
