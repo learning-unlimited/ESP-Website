@@ -643,6 +643,7 @@ class FormHandler:
 
         # Add in the user column if form is not anonymous
         if not form.anonymous:
+            response_data['questions'].append(['user_id', 'User ID', 'fk'])
             response_data['questions'].append(['user_display', 'User', 'textField'])
             response_data['questions'].append(['user_email', 'User email', 'textField'])
             response_data['questions'].append(['username', 'Username', 'textField'])
@@ -682,8 +683,8 @@ class FormHandler:
                 response['user_display'] = user.name()
                 response['user_email'] = user.email
                 response['username'] = user.username
-                # Remove internal _id key to match questions list and avoid duplication
-                del response['user_id']
+                # Keep user_id in response (as string) to match questions list
+                response['user_id'] = str(response['user_id'])
 
             # Add in links
             if only_fkey_model is not None:
@@ -705,10 +706,10 @@ class FormHandler:
                     link_instances_cache[model_name] = data[0].objects.filter(pk=fk_val).first() if fk_val else None
 
                 if cf_cache.isCompoundLinkField(data[0], data[1]):
-                    if link_instances_cache[data[0].__name__] is None:
+                    if link_instances_cache[model_name] is None:
                         response[qname] = []
                     else:
-                        response[qname] = [link_instances_cache[data[0].__name__].__dict__[x] for x in cf_cache.getCompoundLinkFields(data[0], data[1])]
+                        response[qname] = [link_instances_cache[model_name].__dict__[x] for x in cf_cache.getCompoundLinkFields(data[0], data[1])]
                 else:
                     if link_instances_cache[model_name] is None:
                         response[qname] = ''
