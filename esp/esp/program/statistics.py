@@ -58,15 +58,9 @@ Do not place a top-level function in this file if you would not like it to
 be supported as a type of query.
 """
 
-<<<<<<< fix/issue-#2341-routing
-EXCLUDED_DEMOGRAPHIC_CATEGORIES = ['Open Class']
-
-def zipcodes(form, programs, students, profiles, result_dict={}):
-=======
 def zipcodes(form, programs, students, profiles, result_dict=None):
     if result_dict is None:
         result_dict = {}
->>>>>>> main
 
     #   Get zip codes and filter out invalid ones
     zip_dict = {}
@@ -91,9 +85,14 @@ def zipcodes(form, programs, students, profiles, result_dict=None):
         result_dict['zip_data'] = result_dict['zip_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/zip_codes.html', result_dict)
 
-def demographics(form, programs, students, profiles, result_dict=None):
-    if result_dict is None:
-        result_dict = {}
+def demographics(form, programs, students, profiles, result_dict={}):
+
+    # Dynamically find the open class category IDs for the given programs
+    open_class_cat_ids = []
+    for p in programs:
+        cat = p.open_class_category()
+        if cat:
+            open_class_cat_ids.append(cat.id)
 
     # Get aggregate 'vitals' info via cross-program SQL aggregation.
     agg = (
@@ -102,7 +101,8 @@ def demographics(form, programs, students, profiles, result_dict=None):
             parent_class__parent_program__in=programs,
             status=ClassStatus.ACCEPTED,
         )
-        .exclude(parent_class__category__category__in=EXCLUDED_DEMOGRAPHIC_CATEGORIES)
+        # Exclude using the dynamic open class category IDs
+        .exclude(parent_class__category__id__in=open_class_cat_ids)
         .aggregate(
             num_classes=Count('parent_class', distinct=True),
             num_sections=Count('id'),
