@@ -36,7 +36,7 @@
       target.onblur();
     };
 
-    // set behavior on Username, Password, and Search fields
+    // set behavior on the login Username and Password fields
     var loginUser = document.getElementById('login_user_index');
     if (loginUser) {
       wrap(loginUser, 'Username');
@@ -47,7 +47,9 @@
 
   function set_teachlearn(tl) {
     if (document.getElementById('remember').checked) {
-      document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025").toGMTString() + '; path=/';
+      var expires = new Date();
+      expires.setFullYear(expires.getFullYear() + 1);
+      document.cookie = 'teachlearn=' + tl + '; expires=' + expires.toUTCString() + '; path=/';
     }
   }
 </script>
