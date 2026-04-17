@@ -1975,6 +1975,11 @@ class ScheduleMap:
     def __str__(self):
         return '%s' % self.map
 
+# Log at most once per constraint instance (by DB pk or object id) to avoid
+# flooding logs when schedule evaluation retries handle_failure repeatedly.
+_schedule_constraint_on_failure_warned_keys = set()
+
+
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested:
         IF [condition] THEN [requirement]
@@ -2023,20 +2028,19 @@ class ScheduleConstraint(models.Model):
             return True
 
     def handle_failure(self):
-        #   Try the on_failure callback but be very lenient about it (fail silently)
-        try:
-            func_str = """def _f(schedule_map):
-%s""" % ('\n'.join('    %s' % l.rstrip() for l in self.on_failure.strip().split('\n')))
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning("Execution of ScheduleConstraint.on_failure disabled for security reasons.")
-            # exec(func_str)
-            # result = _f(self.schedule_map)
-            # return result
-        except Exception as inst:
-            #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
-            pass
-        #   If we got nothing from the on_failure function, just provide Nones.
+        # on_failure previously executed arbitrary code via exec(); disabled for
+        # security. Kept as a DB field for backwards compatibility.
+        if not self.on_failure or not self.on_failure.strip():
+            return (None, None)
+        key = ('pk', self.pk) if self.pk is not None else ('id', id(self))
+        if key not in _schedule_constraint_on_failure_warned_keys:
+            _schedule_constraint_on_failure_warned_keys.add(key)
+            logger.warning(
+                "Execution of ScheduleConstraint.on_failure disabled for "
+                "security (constraint id=%s, program_id=%s).",
+                self.pk,
+                self.program_id,
+            )
         return (None, None)
 
 class ScheduleTestTimeblock(BooleanToken):

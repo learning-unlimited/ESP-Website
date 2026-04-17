@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 import logging
 
 from django.db.models.query import Q
-from django.template import Variable, Context, VariableDoesNotExist
+from django.template import Variable, Context, VariableDoesNotExist, Template
 
 from esp.application.models import FormstackStudentProgramApp
 from esp.program.modules.base import (
@@ -118,22 +118,45 @@ class FormstackAppModule(ProgramModuleObj):
         context['username'] = request.user.username
         context['app_is_open'] = fsas.app_is_open or request.user.isAdmin(prog)
         context['autopopulated'] = autopopulated = []
-        from django.template import Template, Context
 
         for line in fsas.autopopulated_fields.strip().split('\n'):
             if not line.strip():
                 continue
-
-            field, _, expr = line.partition(':')
-            try:
-                template = Template(expr)
-                context_dict = Context({'user': request.user})
-                value = template.render(context_dict)
-            except Exception as e:
-                logger.exception("Error in FormstackAppSettings: %s", e)
+            if ':' not in line:
                 continue
 
-            autopopulated.append((field.strip(), value))
+            field, _, expr = line.partition(':')
+            field_name = field.strip()
+            expr_stripped = expr.strip()
+            if not field_name or not expr_stripped:
+                continue
+
+            if '{{' in expr_stripped or '{%' in expr_stripped:
+                try:
+                    template = Template(expr_stripped)
+                    template_context = Context({'user': request.user})
+                    value = template.render(template_context)
+                except Exception:
+                    expr_preview = (
+                        expr_stripped
+                        if len(expr_stripped) <= 200
+                        else expr_stripped[:197] + '...'
+                    )
+                    logger.exception(
+                        "Error rendering FormstackAppSettings autopopulated "
+                        "field %r with expr %r",
+                        field_name,
+                        expr_preview,
+                    )
+                    continue
+            else:
+                value = resolve_field_expression(
+                    expr_stripped, {'user': request.user}
+                )
+                if value is None:
+                    continue
+
+            autopopulated.append((field_name, value))
 
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, context)
