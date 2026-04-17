@@ -38,12 +38,11 @@ From the directory ``/esp``: ::
   git pull
   git checkout -b new-branch-name
 
-If you've changed dependencies (for example, ``requirements.txt``)
-or modified the Dockerfile, rebuild first::
+If you've changed dependencies (for example, ``requirements.txt``) or modified the Dockerfile, rebuild first::
 
   docker compose up --build
 
-Otherwise, you don't need to rebuild, just start the server:
+Otherwise, you don't need to rebuild, just start the server::
 
   docker compose up
 
