@@ -4,8 +4,14 @@
 
 {% block content %}
 <style type="text/css">
-.nocheckmark { border: 1px solid black; }
-#recipient_filter_done, #recipient_list_done { display: none }
+    .nocheckmark {
+        border: 1px solid black;
+    }
+
+    #recipient_filter_done,
+    #recipient_list_done {
+        display: none
+    }
 </style>
 <br />
 <br />
@@ -19,8 +25,8 @@
 {% load modules %}
 {% inline_program_qsd_block program "manage:nametags" %}
 <p style="text-align: center">
-Using this tool you can generate nametags for your program.<br />
-Please select from options below.
+    Using this tool you can generate nametags for your program.<br />
+    Please select from options below.
 </p>
 
 <br />
@@ -48,145 +54,150 @@ To have good quality IDs:<br />
 
 <br />
 <form action="./generatetags" method="post">
-<fieldset>
-<strong>ID Type:</strong>
-<br />
-<br />
-<ul>
-  <li><input type="radio" name="type" value="students" id="students" checked="checked" />
-      <label for="students">Students that have registered for a class</label>
-  </li>
-  <li><input type="radio" name="type" value="teacher" id="teachers" />
-      <label for="teachers">Teachers with an approved class</label>
-  </li>
-    {% if program|hasModule:"TeacherModeratorModule" %}
-      <li><input type="radio" name="type" value="teachermoderators" id="teachermoderators" />
-        <label for="teachermoderators">Teachers with an approved class and {{ program.getModeratorTitle|lower }}s assigned to a class</label>
-      </li>
-      <li><input type="radio" name="type" value="moderators" id="moderators" />
-        <label for="moderators">{{ program.getModeratorTitle }}s assigned to a class</label>
-      </li>
-    {% endif %}
-  <li><input type="radio" name="type" value="other" id="other" />
-      <label for="other">Other group</label>&nbsp;&nbsp;&nbsp;
-      <select name="group" id="group" disabled>
-        {% for group in groups %}
-        <option value="{{ group.id }}">{{ group.name }}</option>
-        {% endfor %}
-        <option value="" selected hidden></option>
-      </select>
-  </li>
-  <li><input type="radio" name="type" value="volunteers" id="volunt" />
-      <label for="volunt">Volunteers for the program</label>
-  </li>
-  <li><input type="radio" name="type" value="aul" id="aul" />
-      <label for="aul">Arbitrary user list (select users below)</label>
-  </li>
-  <li><input type="radio" name="type" value="misc" id="misc" />
-      <label for="misc">Miscellaneous (enter info below)</label>
-  </li>
-  <li><input type="radio" name="type" value="blank" id="blank" />
-      <label for="blank">Blank (specify number below)</label>
-  </li>
-</ul>
-<br />
-<div id="aul_wrapper" hidden>
-<label for="aul"><strong>Arbitrary User List:</strong></label>
-<br />
-{% with include_common="True" %}
-{% include "users/usersearch/list_selector.html" %}
-{% endwith %}
-<br />
-<br />
-</div>
-<div id="misc_wrapper" hidden>
-<label for="misc_info"><strong>Miscellaneous:</strong></label>
-<br />
-(&quot;Name, Title&quot; on each line, without quotes.)<br />
-<textarea name="misc_info" id="misc_info" rows="25" cols="40"></textarea>
-<br />
-<br />
-</div>
-<div id="num_wrapper" hidden>
-<label for="number"><strong>Number of IDs:</strong></label>
-<br />
-<input type="text" id="number" name="number" value="20" size="5" />
-<br />
-</div>
-<div id="title_wrapper" hidden>
-<label for="blanktitle"><strong>Title of IDs:</strong></label>
-<br />
-<input type="text" id="blanktitle" name="blanktitle" value="Student" size="15" />
-<br />
-<br />
-</div>
-<label for="programname"><strong>Program Name for IDs:</strong></label>
-<br />
-<input type="text" id="programname" size="40" name="progname" value="{{ program.niceName }}" />
-<br />
-<br />
-<div id="barcode_wrapper">
-<strong>Barcodes:</strong>
-<br />
-<br />
-<input type="checkbox" name="barcodes" id="barcodes" />
-<label for="barcodes"> Display barcodes for user ID numbers{% if self_checkin %} and self checkin codes{% endif %} on back of nametags</label>
-<br />
-<br />
-</div>
+    <fieldset>
+        <strong>ID Type:</strong>
+        <br />
+        <br />
+        <ul>
+            <li><input type="radio" name="type" value="students" id="students" checked="checked" />
+                <label for="students">Students that have registered for a class</label>
+            </li>
+            <li><input type="radio" name="type" value="teacher" id="teachers" />
+                <label for="teachers">Teachers with an approved class</label>
+            </li>
+            {% if program|hasModule:"TeacherModeratorModule" %}
+            <li><input type="radio" name="type" value="teachermoderators" id="teachermoderators" />
+                <label for="teachermoderators">Teachers with an approved class and {{ program.getModeratorTitle|lower
+                    }}s assigned to a class</label>
+            </li>
+            <li><input type="radio" name="type" value="moderators" id="moderators" />
+                <label for="moderators">{{ program.getModeratorTitle }}s assigned to a class</label>
+            </li>
+            {% endif %}
+            <li><input type="radio" name="type" value="other" id="other" />
+                <label for="other">Other group</label>&nbsp;&nbsp;&nbsp;
+                <select name="group" id="group" disabled>
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                    <option value="" selected hidden></option>
+                </select>
+            </li>
+            <li><input type="radio" name="type" value="volunteers" id="volunt" />
+                <label for="volunt">Volunteers for the program</label>
+            </li>
+            <li><input type="radio" name="type" value="aul" id="aul" />
+                <label for="aul">Arbitrary user list (select users below)</label>
+            </li>
+            <li><input type="radio" name="type" value="misc" id="misc" />
+                <label for="misc">Miscellaneous (enter info below)</label>
+            </li>
+            <li><input type="radio" name="type" value="blank" id="blank" />
+                <label for="blank">Blank (specify number below)</label>
+            </li>
+        </ul>
+        <br />
+        <input type="checkbox" name="sort_by_time" id="sort_by_time" value="True" />
+        <label for="sort_by_time"><strong>Sort by First Class Time (for teachers/moderators)</strong></label>
+        <br />
+        <div id="aul_wrapper" hidden>
+            <label for="aul"><strong>Arbitrary User List:</strong></label>
+            <br />
+            {% with include_common="True" %}
+            {% include "users/usersearch/list_selector.html" %}
+            {% endwith %}
+            <br />
+            <br />
+        </div>
+        <div id="misc_wrapper" hidden>
+            <label for="misc_info"><strong>Miscellaneous:</strong></label>
+            <br />
+            (&quot;Name, Title&quot; on each line, without quotes.)<br />
+            <textarea name="misc_info" id="misc_info" rows="25" cols="40"></textarea>
+            <br />
+            <br />
+        </div>
+        <div id="num_wrapper" hidden>
+            <label for="number"><strong>Number of IDs:</strong></label>
+            <br />
+            <input type="text" id="number" name="number" value="20" size="5" />
+            <br />
+        </div>
+        <div id="title_wrapper" hidden>
+            <label for="blanktitle"><strong>Title of IDs:</strong></label>
+            <br />
+            <input type="text" id="blanktitle" name="blanktitle" value="Student" size="15" />
+            <br />
+            <br />
+        </div>
+        <label for="programname"><strong>Program Name for IDs:</strong></label>
+        <br />
+        <input type="text" id="programname" size="40" name="progname" value="{{ program.niceName }}" />
+        <br />
+        <br />
+        <div id="barcode_wrapper">
+            <strong>Barcodes:</strong>
+            <br />
+            <br />
+            <input type="checkbox" name="barcodes" id="barcodes" />
+            <label for="barcodes"> Display barcodes for user ID numbers{% if self_checkin %} and self checkin codes{%
+                endif %} on back of nametags</label>
+            <br />
+            <br />
+        </div>
 
-<input type="submit" value="Generate IDs!" />
-</fieldset>
+        <input type="submit" value="Generate IDs!" />
+    </fieldset>
 </form>
 
 <script type="text/javascript">
-var $old_this = $j('#students');
-$j('input:radio[name="type"]').change( function(e){
-    var option = $j(this).val();
-    if (option == "other") {
-        $j('#group').prop('disabled', function(i, v) { return !v; });
-        $j('#title_wrapper').toggle();
-        // Autofill the title with the selected group name when switching to "other"
-        var selectedGroupName = $j('#group option:selected').text().trim();
-        if (selectedGroupName) {
-            $j('#blanktitle').val(selectedGroupName);
+    var $old_this = $j('#students');
+    $j('input:radio[name="type"]').change(function (e) {
+        var option = $j(this).val();
+        if (option == "other") {
+            $j('#group').prop('disabled', function (i, v) { return !v; });
+            $j('#title_wrapper').toggle();
+            // Autofill the title with the selected group name when switching to "other"
+            var selectedGroupName = $j('#group option:selected').text().trim();
+            if (selectedGroupName) {
+                $j('#blanktitle').val(selectedGroupName);
+            }
+        } else if (option == "aul") {
+            $j('#aul_wrapper').toggle();
+            $j('#title_wrapper').toggle();
+        } else if (option == "blank") {
+            $j('#num_wrapper').toggle();
+            $j('#title_wrapper').toggle();
+            $j('#barcodes').prop("checked", false);
+            $j('#barcode_wrapper').toggle();
+        } else if (option == "misc") {
+            $j('#misc_wrapper').toggle();
+            $j('#barcodes').prop("checked", false);
+            $j('#barcode_wrapper').toggle();
         }
-    } else if (option == "aul") {
-        $j('#aul_wrapper').toggle();
-        $j('#title_wrapper').toggle();
-    } else if (option == "blank") {
-        $j('#num_wrapper').toggle();
-        $j('#title_wrapper').toggle();
-        $j('#barcodes').prop("checked", false);
-        $j('#barcode_wrapper').toggle();
-    } else if (option == "misc") {
-        $j('#misc_wrapper').toggle();
-        $j('#barcodes').prop("checked", false);
-        $j('#barcode_wrapper').toggle();
-    }
 
-    // trigger "change" for the old radio button
-    if (e.hasOwnProperty('originalEvent')) {
-        $old_this.trigger("change");
-        // set current radio button as old
-        $old_this = $j(this);
-    }
-});
-// When the group dropdown changes while "other" is selected, update the title field
-$j('#group').change(function() {
-    if ($j('input:radio[name="type"]:checked').val() === 'other') {
-        var selectedGroupName = $j(this).find('option:selected').text().trim();
-        if (selectedGroupName) {
-            $j('#blanktitle').val(selectedGroupName);
+        // trigger "change" for the old radio button
+        if (e.hasOwnProperty('originalEvent')) {
+            $old_this.trigger("change");
+            // set current radio button as old
+            $old_this = $j(this);
         }
-    }
-});
-$j(function() {
-    var items = location.search.substr(1).split("&").filter(Boolean);
-    if(items.length > 0){
-        $j("#aul").trigger("click");
-    }
-});
+    });
+    // When the group dropdown changes while "other" is selected, update the title field
+    $j('#group').change(function () {
+        if ($j('input:radio[name="type"]:checked').val() === 'other') {
+            var selectedGroupName = $j(this).find('option:selected').text().trim();
+            if (selectedGroupName) {
+                $j('#blanktitle').val(selectedGroupName);
+            }
+        }
+    });
+    $j(function () {
+        var items = location.search.substr(1).split("&").filter(Boolean);
+        if (items.length > 0) {
+            $j("#aul").trigger("click");
+        }
+    });
 </script>
 
 {% endblock %}

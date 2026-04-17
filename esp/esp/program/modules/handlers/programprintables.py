@@ -859,106 +859,120 @@ class ProgramPrintables(ProgramModuleObj):
 
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff, display_name = 'Student Emergency Contact List')
 
-    @aux_call
-    @needs_admin
-    def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
-        """ generate teacher/moderator schedules """
+    def _generate_schedules(self, request, prog, role_teachers=False, role_moderators=False, sort_by='name', title='Schedules'):
+        from esp.users.controllers.usersearch import UserSearchController
+        from esp.users.models import ESPUser
+        import datetime
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Teacher and %s Schedules' % (prog.getModeratorTitle())})
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context={'module': title})
         if not found:
             return filterObj
 
-        context = {'module': self     }
+        context = {'module': self}
         teachers = sorted(filterObj.getList(ESPUser).distinct())
 
         scheditems = []
 
         for teacher in teachers:
             # get list of valid classes
-            classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
+            if role_teachers and role_moderators:
+                class_objects = teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
+            elif role_teachers:
+                class_objects = teacher.getTaughtSectionsFromProgram(self.program)
+            else:
+                class_objects = teacher.getModeratingSectionsFromProgram(self.program)
+
+            classes = sorted([cls for cls in class_objects
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0])
+
             # now we sort them by time/title
             for cls in classes:
-                if teacher in cls.parent_class.get_teachers():
-                    role = 'Teacher'
+                if role_teachers and role_moderators:
+                    if teacher in cls.parent_class.get_teachers():
+                        role = 'Teacher'
+                    else:
+                        role = self.program.getModeratorTitle()
+                    scheditems.append({'name': teacher.name(),
+                                       'teacher': teacher,
+                                       'cls': cls,
+                                       'role': role})
                 else:
-                    role = self.program.getModeratorTitle()
-                scheditems.append({'name': teacher.name(),
-                                   'teacher': teacher,
-                                   'cls': cls,
-                                   'role': role})
+                    scheditems.append({'name': teacher.name(),
+                                       'teacher': teacher,
+                                       'cls': cls})
+
+        if sort_by == 'time':
+            teacher_starts = {}
+            for item in scheditems:
+                teacher = item['teacher']
+                if teacher.id not in teacher_starts:
+                    earliest = datetime.datetime.max
+                    # Look at all this teacher's classes in scheditems
+                    teacher_classes = [i['cls'] for i in scheditems if i['teacher'].id == teacher.id]
+                    for cls in teacher_classes:
+                        cls_earliest = min((mt.start for mt in cls.meeting_times.all()), default=datetime.datetime.max)
+                        if cls_earliest < earliest:
+                            earliest = cls_earliest
+                    teacher_starts[teacher.id] = earliest
+
+            # Sort by teacher's earliest class time, then teacher name, then specific class time
+            scheditems.sort(key=lambda item: (
+                teacher_starts[item['teacher'].id],
+                item['teacher'].last_name.lower(),
+                item['teacher'].first_name.lower(),
+                min((mt.start for mt in item['cls'].meeting_times.all()), default=datetime.datetime.max)
+            ))
 
         context['scheditems'] = scheditems
-        context['moderators'] = True
-        context['teachers'] = True
+        context['moderators'] = role_moderators
+        context['teachers'] = role_teachers
 
-        return render_to_response(self.baseDir()+'teachermoderatorschedule.html', request, context)
+        if role_teachers and role_moderators:
+            template = 'teachermoderatorschedule.html'
+        elif role_teachers:
+            template = 'teacherschedule.html'
+        else:
+            template = 'moderatorschedule.html'
+
+        return render_to_response(self.baseDir() + template, request, context)
+
+    @aux_call
+    @needs_admin
+    def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
+        """ generate teacher/moderator schedules """
+        return self._generate_schedules(request, prog, role_teachers=True, role_moderators=True, sort_by='name', title='Teacher and %s Schedules' % (prog.getModeratorTitle()))
+
+    @aux_call
+    @needs_admin
+    def teachermoderatorschedulesbytime(self, request, tl, one, two, module, extra, prog):
+        """ generate teacher/moderator schedules sorted by first class start time """
+        return self._generate_schedules(request, prog, role_teachers=True, role_moderators=True, sort_by='time', title='Teacher and %s Schedules by Time' % (prog.getModeratorTitle()))
 
     @aux_call
     @needs_admin
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
+        return self._generate_schedules(request, prog, role_teachers=True, role_moderators=False, sort_by='name', title='Teacher Schedules')
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Teacher Schedules'})
-        if not found:
-            return filterObj
-
-        context = {'module': self     }
-        teachers = sorted(filterObj.getList(ESPUser).distinct())
-
-        scheditems = []
-
-        for teacher in teachers:
-            # get list of valid classes
-            classes = sorted([cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-            # now we sort them by time/title
-            for cls in classes:
-                scheditems.append({'name': teacher.name(),
-                                   'teacher': teacher,
-                                   'cls': cls})
-
-        context['scheditems'] = scheditems
-        context['moderators'] = False
-        context['teachers'] = True
-
-        return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
+    @aux_call
+    @needs_admin
+    def teacherschedulesbytime(self, request, tl, one, two, module, extra, prog):
+        """ generate teacher schedules sorted by first class start time """
+        return self._generate_schedules(request, prog, role_teachers=True, role_moderators=False, sort_by='time', title='Teacher Schedules by Time')
 
     @aux_call
     @needs_admin
     def moderatorschedules(self, request, tl, one, two, module, extra, prog):
         """ generate moderator schedules """
+        return self._generate_schedules(request, prog, role_teachers=False, role_moderators=True, sort_by='name', title='%s Schedules' % (prog.getModeratorTitle()))
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': '%s Schedules' % (prog.getModeratorTitle())})
-        if not found:
-            return filterObj
-
-        context = {'module': self     }
-        teachers = sorted(filterObj.getList(ESPUser).distinct())
-
-        scheditems = []
-
-        for teacher in teachers:
-            # get list of valid classes
-            classes = sorted([cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-            # now we sort them by time/title
-            for cls in classes:
-                scheditems.append({'name': teacher.name(),
-                                   'teacher': teacher,
-                                   'cls': cls})
-
-        context['scheditems'] = scheditems
-        context['moderators'] = True
-        context['teachers'] = False
-
-        return render_to_response(self.baseDir()+'moderatorschedule.html', request, context)
+    @aux_call
+    @needs_admin
+    def moderatorschedulesbytime(self, request, tl, one, two, module, extra, prog):
+        """ generate moderator schedules sorted by first class start time """
+        return self._generate_schedules(request, prog, role_teachers=False, role_moderators=True, sort_by='time', title='%s Schedules by Time' % (prog.getModeratorTitle()))
 
     @aux_call
     @needs_admin
