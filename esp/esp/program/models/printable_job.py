@@ -1,4 +1,5 @@
 import uuid
+from django.conf import settings
 from django.db import models
 
 class PrintableJob(models.Model):
@@ -8,7 +9,7 @@ class PrintableJob(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     program = models.ForeignKey('program.Program', on_delete=models.CASCADE)
-    user = models.ForeignKey('users.ESPUser', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     job_type = models.CharField(max_length=64)
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),
