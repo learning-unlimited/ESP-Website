@@ -7,6 +7,7 @@ from esp.program.models import (
     ClassSizeRange,
     EXTENDED_BUDGET_STATUS_NONE,
     EXTENDED_BUDGET_STATUS_PENDING,
+    EXTENDED_BUDGET_STATUS_APPROVED,
     EXTENDED_BUDGET_STATUS_REJECTED,
 )
 from esp.middleware import ESPError
@@ -123,22 +124,34 @@ class ClassCreationController(object):
     def set_class_data(self, cls, reg_form):
         custom_fields = get_custom_fields()
         custom_data = {}
+        has_final_extended_budget_decision = cls.extended_budget_status in (
+            EXTENDED_BUDGET_STATUS_APPROVED,
+            EXTENDED_BUDGET_STATUS_REJECTED,
+        )
+        locked_budget_justification_fields = (
+            'purchase_requests',
+            'message_for_directors',
+        )
 
         for k, v in reg_form.cleaned_data.items():
             if k in custom_fields:
                 custom_data[k] = v
+            elif has_final_extended_budget_decision and k in locked_budget_justification_fields:
+                # Ignore crafted updates after directors have made a final decision.
+                continue
             elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title', 'extended_budget_requested') and not k.startswith('section_'):
                 cls.__dict__[k] = v
 
-        extended_budget_requested = reg_form.cleaned_data.get('extended_budget_requested', False)
-        if extended_budget_requested:
-            if cls.extended_budget_status in (EXTENDED_BUDGET_STATUS_NONE, EXTENDED_BUDGET_STATUS_REJECTED):
-                cls.extended_budget_status = EXTENDED_BUDGET_STATUS_PENDING
-        else:
-            # Only allow teachers to withdraw a pending request.
-            # Approved/rejected decisions should not be silently cleared.
-            if cls.extended_budget_status == EXTENDED_BUDGET_STATUS_PENDING:
-                cls.extended_budget_status = EXTENDED_BUDGET_STATUS_NONE
+        if not has_final_extended_budget_decision:
+            extended_budget_requested = reg_form.cleaned_data.get('extended_budget_requested', False)
+            if extended_budget_requested:
+                if cls.extended_budget_status in (EXTENDED_BUDGET_STATUS_NONE, EXTENDED_BUDGET_STATUS_REJECTED):
+                    cls.extended_budget_status = EXTENDED_BUDGET_STATUS_PENDING
+            else:
+                # Only allow teachers to withdraw a pending request.
+                # Approved/rejected decisions should not be silently cleared.
+                if cls.extended_budget_status == EXTENDED_BUDGET_STATUS_PENDING:
+                    cls.extended_budget_status = EXTENDED_BUDGET_STATUS_NONE
 
         cls.custom_form_data = custom_data
 

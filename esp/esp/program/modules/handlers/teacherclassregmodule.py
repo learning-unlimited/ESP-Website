@@ -1030,13 +1030,19 @@ class TeacherClassRegModule(ProgramModuleObj):
                     if populateonly: reg_form._errors = ErrorDict()
                 if action in ('edit', 'editopenclass'):
                     if newclass.extended_budget_status in (EXTENDED_BUDGET_STATUS_APPROVED, EXTENDED_BUDGET_STATUS_REJECTED):
-                        field = reg_form.fields.get('extended_budget_requested')
-                        if field:
-                            field.disabled = True
-                            field.help_text = (
-                                "Decision made by the program directors. "
-                                "Contact them if you need to request a change."
-                            )
+                        locked_fields = (
+                            'extended_budget_requested',
+                            'purchase_requests',
+                            'message_for_directors',
+                        )
+                        for field_name in locked_fields:
+                            field = reg_form.fields.get(field_name)
+                            if field:
+                                field.disabled = True
+                                field.help_text = (
+                                    "Decision made by the program directors. "
+                                    "Contact them if you need to request a change."
+                                )
 
                 #   Todo...
                 ds = newclass.default_section()
