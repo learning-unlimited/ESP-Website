@@ -39,22 +39,22 @@ class TestUserSearchController(ProgramFrameworkTest):
         post_data = self._get_combination_post_data('Student', 'all_Student')
         # Add 'AND confirmed'
         post_data['checkbox_and_confirmed'] = '1'
-        
+
         # Create a confirmed student
         student = self.user
         rt_confirmed, _ = RecordType.objects.get_or_create(name='reg_confirmed', defaults={'description': 'Registration Confirmed'})
         Record.objects.create(user=student, event=rt_confirmed, program=self.program)
-        
+
         query = self.controller.query_from_postdata(self.program, post_data)
         results = ESPUser.objects.filter(query)
-        
+
         self.assertGreater(results.count(), 0)
         self.assertIn(student, results)
 
     def test_teacher_classroom_tables_query_from_post(self):
         post_data = self._get_combination_post_data('Teacher', 'all_Teacher')
         query = self.controller.query_from_postdata(self.program, post_data)
-        
+
         # Verify it generates a valid query and can execute
         results = ESPUser.objects.filter(query)
         # Should at least be 0 or more without crashing
@@ -75,11 +75,11 @@ class TestUserSearchController(ProgramFrameworkTest):
 
         # Create test user
         test_user = self.user # Use existing test user from ProgramFrameworkTest
-        
+
         # Setup RecordTypes
         rt_attended, _ = RecordType.objects.get_or_create(name='attended', defaults={'description': 'Attended'})
         rt_confirmed, _ = RecordType.objects.get_or_create(name='reg_confirmed', defaults={'description': 'Registration Confirmed'})
-        
+
         # Create records for the same user
         Record.objects.create(user=test_user, event=rt_attended, program=self.program)
         Record.objects.create(user=test_user, event=rt_confirmed, program=self.program)
