@@ -50,7 +50,7 @@ from django.core import validators
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db.models.query import QuerySet
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
@@ -63,44 +63,76 @@ from esp.cal.models import Event, EventType
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
-from esp.middleware import ESPError, AjaxError
+from esp.middleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
+from django.core.exceptions import ValidationError
 
 # Create your models here.
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
     # Title for the link displayed for this Program Module in the Programs form
-    link_title = models.CharField(max_length=64, blank=True, null=True)
+    link_title = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text="Optional title displayed for this module link"
+    )
 
     # Human-readable name for the Program Module
-    admin_title = models.CharField(max_length=128)
+    admin_title = models.CharField(
+        max_length=128,
+        help_text="Title shown in the admin interface"
+    )
 
     #   A module can have an inline template (whose context is filled by prepare())
     #   independently of its main view.
-    inline_template = models.CharField(max_length=32, blank=True, null=True)
+    inline_template = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        help_text="Template used to render this module inline"
+    )
 
     # One of teach/learn/etc.; What is this module typically used for?
-    module_type = models.CharField(max_length=32)
+    # One of teach/learn/etc.; What is this module typically used for?
+    module_type = models.CharField(
+        max_length=32,
+        help_text=mark_safe(
+            'Defines how this module is used (e.g., teach, learn, manage, onsite). '
+            'See <a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst" target="_blank">Program Modules documentation</a> for details.'
+        )
+    )
 
     # self.__name__, stored neatly in the database
-    handler    = models.CharField(max_length=32)
+    handler = models.CharField(
+        max_length=32,
+        help_text="Handler used to process this module"
+    )
 
     # Sequence orderer.  When ProgramModules are listed on a page, order them
     # from smallest to largest 'seq' value
-    seq = models.IntegerField()
+    seq = models.IntegerField(
+        help_text="Order in which this module appears"
+    )
 
     # Must the user supply this ProgramModule with data in order to complete program registration?
-    required = models.BooleanField(default=False)
+    required = models.BooleanField(
+        default=False,
+        help_text="Whether this module is required for completion"
+    )
 
     # When creating a new program, should this module be available for admins to select (0), included by default (1)
     # or excluded by default (2).
-    choosable = models.IntegerField(default=0, validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)])
-
+    choosable = models.IntegerField(
+        default=0,
+        validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)],
+        help_text="Controls whether users can choose this module"
+    )
     class Meta:
         app_label = 'program'
         db_table = 'program_programmodule'
@@ -119,7 +151,7 @@ class ProgramModule(models.Model):
         Raises a ProgramModule.CannotGetClassException() if the class can't be imported.
         """
         try:
-            path = "esp.program.modules.handlers.%s" % (self.handler.lower())
+            path = f"esp.program.modules.handlers.{self.handler.lower()}"
             mod = __import__(path, (), (), [self.handler])
             return getattr(mod, self.handler)
         except ImportError:
@@ -133,7 +165,7 @@ class ProgramModule(models.Model):
             super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
     def __str__(self):
-        return '{}'.format(self.admin_title)
+        return f'{self.admin_title}'
 
 class ArchiveClass(models.Model):
     """ Old classes throughout the years """
@@ -184,7 +216,7 @@ class ArchiveClass(models.Model):
 
     def heading(self):
         if len(self.date) > 1:
-            year_display = self.year + ' (%s)' % self.date
+            year_display = self.year + f' ({self.date})'
         else:
             year_display = self.year
 
@@ -209,15 +241,15 @@ class ArchiveClass(models.Model):
 
     def add_students(self, users):
         if self.student_ids is not None:
-            self.student_ids += '%s|' % '|'.join([str(u.id) for u in users])
+            self.student_ids += f'{"|".join([str(u.id) for u in users])}|'
         else:
-            self.student_ids = '|%s|' % '|'.join([str(u.id) for u in users])
+            self.student_ids = f'|{"|".join([str(u.id) for u in users])}|'
 
     def add_teachers(self, users):
         if self.teacher_ids is not None:
-            self.teacher_ids += '%s|' % '|'.join([str(u.id) for u in users])
+            self.teacher_ids += f'{"|".join([str(u.id) for u in users])}|'
         else:
-            self.teacher_ids = '|%s|' % '|'.join([str(u.id) for u in users])
+            self.teacher_ids = f'|{"|".join([str(u.id) for u in users])}|'
 
     def students(self):
         useridlist = [int(x) for x in self.student_ids.strip('|').split('|')]
@@ -231,8 +263,8 @@ class ArchiveClass(models.Model):
     def getForUser(user):
         """ Get a list of archive classes for a specific user. """
         from django.db.models.query import Q
-        Q_ClassTeacher = Q(teacher_ids__icontains = ('|%s|' % user.id))
-        Q_ClassStudent = Q(student_ids__icontains = ('|%s|' % user.id))
+        Q_ClassTeacher = Q(teacher_ids__icontains = (f'|{user.id}|'))
+        Q_ClassStudent = Q(student_ids__icontains = (f'|{user.id}|'))
         #   We want to only show archive classes for teachers.  At least for now.
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
         return ArchiveClass.objects.filter(Q_Class).order_by('-year', '-date', 'title')
@@ -245,24 +277,48 @@ def _get_type_url(type):
         else:
             self._type_url = {}
 
-        self._type_url[type] = '/%s/%s/' % (type, self.url)
+        self._type_url[type] = f'/{type}/{self.url}/'
 
         return self._type_url[type]
 
     return _really_get_type_url
 
+class ProgramManager(models.Manager):
+    def get_queryset(self):
+        # this explicitly adds the ordering to every query
+        return super().get_queryset().order_by('-id')
+
+class ProgramEmailField(models.EmailField):
+    """EmailField that excludes environment-specific kwargs from migrations.
+
+    default, help_text, and validators all reference settings.SITE_INFO[1],
+    which varies by environment. Stripping them from deconstruct() means
+    migrations are environment-independent while the field still works
+    normally at runtime.
+    """
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs.pop('default', None)
+        kwargs.pop('help_text', None)
+        kwargs.pop('validators', None)
+        # Present as a plain EmailField in migrations
+        path = 'django.db.models.EmailField'
+        return name, path, args, kwargs
+
 class Program(models.Model, CustomFormsLinkModel):
+    objects = ProgramManager()
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
     form_link_name='Program'
 
     url = models.CharField(max_length=80, unique=True)
     name = models.CharField(max_length=80)
-    grade_min = models.IntegerField()
-    grade_max = models.IntegerField()
+    grade_min = models.IntegerField(validators=[validators.MinValueValidator(0)])
+    grade_max = models.IntegerField(validators=[validators.MinValueValidator(0)])
     # director contact email address used for from field and display
-    director_email = models.EmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.')))],
+    director_email = ProgramEmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
+                                       validators=[validators.RegexValidator(r'(^.+@' + re.escape(settings.SITE_INFO[1]) + r'$)|(^.+@(\w+\.)?learningu\.org$)')],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
@@ -270,7 +326,7 @@ class Program(models.Model, CustomFormsLinkModel):
                                                            'You can create and manage your email redirects <a href="/manage/redirects/">here</a>.'))
     director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
     director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
-    program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
+    program_size_max = models.IntegerField(null=True, validators=[validators.MinValueValidator(0)], help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule,
                          help_text='The set of enabled program functionalities. See ' +
@@ -285,11 +341,24 @@ class Program(models.Model, CustomFormsLinkModel):
                     help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/catsflagsrecs/flagtypes">here</a>.')
 
     documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+    def clean(self):
+        super().clean()
 
+        if self.grade_min is not None and self.grade_max is not None:
+            if self.grade_min > self.grade_max:
+                raise ValidationError({
+                    "__all__": "Minimum grade cannot exceed maximum grade."
+                })
     class Meta:
         app_label = 'program'
         db_table = 'program_program'
         ordering = ('-id',)
+        constraints = [
+            models.CheckConstraint(
+                check=Q(grade_min__lte=F('grade_max')),
+                name='program_grade_min_lte_grade_max'
+         ),
+        ]
 
     USER_TYPES_WITH_LIST_FUNCS  = ['Student', 'Teacher', 'Volunteer']   # user types that have ProgramModule user filters
     USER_TYPE_LIST_FUNCS        = [user_type.lower()+'s' for user_type in USER_TYPES_WITH_LIST_FUNCS]   # the names of these filter methods, e.g. students(), teachers(), volunteers()
@@ -375,7 +444,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     users.update(tmpusers)
             return users
         get_users.__name__  = method_name
-        get_users.__doc__   = "Returns a dictionary of different sets of %s for this program, as defined by the enabled ProgramModules" % method_name
+        get_users.__doc__   = f"Returns a dictionary of different sets of {method_name} for this program, as defined by the enabled ProgramModules"
         return get_users
 
     @staticmethod
@@ -389,7 +458,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     labels.update(tmplabels)
             return labels
         get_labels.__name__  = method_name
-        get_labels.__doc__   = "Returns a dictionary of labels for the different sets of %s for this program, as defined by the enabled ProgramModules" % method_name
+        get_labels.__doc__   = f"Returns a dictionary of labels for the different sets of {method_name} for this program, as defined by the enabled ProgramModules"
         return get_labels
 
     @staticmethod
@@ -404,7 +473,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     result_dict[key] = len(value)
             return result_dict
         _get_num.__name__   = "num_" + query_func.__name__
-        _get_num.__doc__    = "Returns a dictionary of the sizes of the various sets of %s that are returned by Program.%s()" % (query_func.__name__, query_func.__name__)
+        _get_num.__doc__    = f"Returns a dictionary of the sizes of the various sets of {query_func.__name__} that are returned by Program.{query_func.__name__}()"
         return _get_num
 
     @cache_function
@@ -1011,11 +1080,11 @@ class Program(models.Model, CustomFormsLinkModel):
                     if d1.day == d2.day:
                         return '%s' % d1.strftime('%b. %d, %Y')
                     else:
-                        return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+                        return f'{d1.strftime("%b. %d")} - {d2.strftime("%d, %Y")}'
                 else:
-                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
+                    return f'{d1.strftime("%b. %d")} - {d2.strftime("%b. %d, %Y")}'
             else:
-                return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
+                return f'{d1.strftime("%b. %d, %Y")} - {d2.strftime("%b. %d, %Y")}'
         else:
             return None
 
@@ -1199,7 +1268,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if user:
             for module in modules:
                 module.user = user
-            modules.sort(key=lambda mod: not mod.isCompleted())
+            modules.sort(key=lambda mod: not mod.isCompleted(user))
         return modules
 
     @cache_function
@@ -1374,7 +1443,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def by_prog_inst(cls, program, instance):
-        prog_inst = Program.objects.select_related().get(url='%s/%s' % (program, instance))
+        prog_inst = Program.objects.select_related().get(url=f'{program}/{instance}')
         return prog_inst
     by_prog_inst.depend_on_row('program.Program', lambda prog: {'program': prog})
     by_prog_inst = classmethod(by_prog_inst)
@@ -1430,16 +1499,16 @@ class SplashInfo(models.Model):
     program = AjaxForeignKey(Program, null=True, on_delete=models.CASCADE)
     lunchsat = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
     lunchsun = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
-    siblingdiscount = models.NullBooleanField(default=False, blank=True)
+    siblingdiscount = models.BooleanField(default=False, blank=True, null=True)
     siblingname = models.CharField(max_length=64, blank=True, null=True)
-    submitted = models.NullBooleanField(default=False, blank=True)
+    submitted = models.BooleanField(default=False, blank=True, null=True)
 
     class Meta:
         app_label = 'program'
         db_table = 'program_splashinfo'
 
     def __str__(self):
-        return 'Lunch/sibling info for %s at %s' % (self.student, self.program)
+        return f'Lunch/sibling info for {self.student} at {self.program}'
 
     @staticmethod
     def hasForUser(user, program=None):
@@ -1493,7 +1562,7 @@ class RegistrationProfile(models.Model):
     last_ts = models.DateTimeField(default=timezone.now)
     most_recent_profile = models.BooleanField(default=False)
 
-    old_text_reminder = models.NullBooleanField(db_column='text_reminder')  ## Kept around for database-migration purposes
+    old_text_reminder = models.BooleanField(null=True, db_column='text_reminder')  ## Kept around for database-migration purposes
 
     ## Oops, I didn't see this field, and I reimplemented its functionality...
     ## Wrap it for backwards compatibility. -- aseering 8/18/2010
@@ -1626,9 +1695,9 @@ class RegistrationProfile(models.Model):
 
     def __str__(self):
         if self.program_id is None:
-            return '<Registration for %s>' % str(self.user)
+            return f'<Registration for {self.user}>'
         if self.user is not None:
-            return '<Registration for %s in %s>' % (str(self.user), str(self.program))
+            return f'<Registration for {self.user} in {self.program}>'
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1686,10 +1755,10 @@ class TeacherBio(models.Model):
         super().save(*args, **kwargs)
 
     def url(self):
-        return '/teach/teachers/%s/bio.html' % self.user.username
+        return f'/teach/teachers/{self.user.username}/bio.html'
 
     def edit_url(self):
-        return '/teach/teachers/%s/bio.edit.html' % self.user.username
+        return f'/teach/teachers/{self.user.username}/bio.edit.html'
 
     @staticmethod
     def getLastForProgram(user, program):
@@ -1765,9 +1834,9 @@ class FinancialAidRequest(models.Model):
                 self.done = True
                 self.save()
                 # send email to student
-                email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+                email_from = f'{self.program.program_type} Registration System <server@{settings.EMAIL_HOST_SENDER}>'
                 email_to = [self.user.get_email_sendto_address()]
-                subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
+                subj = f'Financial Aid Approved for {self.user.name()} for {self.program.niceName()}'
                 email_context = {'student': self.user,
                                  'program': self.program,
                                  'grant': f,
@@ -1822,7 +1891,7 @@ class BooleanToken(models.Model):
     expr = property(get_expr)
 
     def __str__(self):
-        return '[%d] %s' % (self.seq, self.text)
+        return f'[{self.seq}] {self.text}'
 
     @cache_function
     def subclass_instance(self):
@@ -1888,7 +1957,7 @@ class BooleanExpression(models.Model):
     label = models.CharField(max_length=80, help_text='Description of the expression')
 
     def __str__(self):
-        return '(%d tokens) %s' % (len(self.get_stack()), self.label)
+        return f'({len(self.get_stack())} tokens) {self.label}'
 
     def subclass_instance(self):
         return get_subclass_instance(BooleanExpression, self)
@@ -1970,10 +2039,10 @@ class ScheduleMap:
     def __marinade__(self):
         import hashlib
         import pickle
-        return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self)).hexdigest()[:8]
+        return f'ScheduleMap_{hashlib.sha256(pickle.dumps(self)).hexdigest()[:8]}'
 
     def __str__(self):
-        return '%s' % self.map
+        return f'{self.map}'
 
 # Log at most once per constraint instance (by DB pk or object id) to avoid
 # flooding logs when schedule evaluation retries handle_failure repeatedly.
@@ -2005,7 +2074,7 @@ class ScheduleConstraint(models.Model):
         app_label = 'program'
 
     def __str__(self):
-        return '%s: "%s" requires "%s"' % (self.program.niceName(), str(self.condition), str(self.requirement))
+        return f'{self.program.niceName()}: "{self.condition}" requires "{self.requirement}"'
 
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -2020,7 +2089,6 @@ class ScheduleConstraint(models.Model):
                     (fail_result, data) = self.handle_failure()
                     if isinstance(fail_result, ScheduleMap):
                         self.schedule_map = fail_result
-                    #   raise AjaxError('ScheduleConstraint says %s' % data)
                     return self.evaluate(self.schedule_map, recursive=False)
                 else:
                     return False
@@ -2114,7 +2182,7 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
         import operator
         q_list = []
         for section in sections:
-            q_list.append(Q(Q(section_ids='%s' % section.id) | Q(section_ids__startswith='%s,' % section.id) | Q(section_ids__contains=',%s,' % section.id) | Q(section_ids__endswith=',%s' % section.id)))
+            q_list.append(Q(Q(section_ids=f'{section.id}') | Q(section_ids__startswith=f'{section.id},') | Q(section_ids__contains=f',{section.id},') | Q(section_ids__endswith=f',{section.id}')))
 
         return cls.objects.filter( reduce(operator.or_, q_list) )
 
@@ -2133,7 +2201,7 @@ class VolunteerRequest(models.Model):
         return self.volunteeroffer_set.all()
 
     def __str__(self):
-        return '%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
+        return f'{self.timeslot.description} ({self.timeslot.short_time()})'
 
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest, on_delete=models.CASCADE)
@@ -2156,7 +2224,7 @@ class VolunteerOffer(models.Model):
         app_label = 'program'
 
     def __str__(self):
-        return '%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
+        return f'{self.name} ({self.email}, {self.phone}) for {self.request}'
 
 
 """ This class provides the information that was provided by the DataTree
@@ -2261,7 +2329,7 @@ class StudentRegistration(ExpirableModel):
         app_label = 'program'
 
     def __str__(self):
-        return '%s %s in %s' % (self.user, self.relationship, self.section)
+        return f'{self.user} {self.relationship} in {self.section}'
 
 class StudentSubjectInterest(ExpirableModel):
     """
@@ -2274,7 +2342,7 @@ class StudentSubjectInterest(ExpirableModel):
         app_label = 'program'
 
     def __str__(self):
-        return '%s interest in %s' % (self.user, self.subject)
+        return f'{self.user} interest in {self.subject}'
 
 
 # Hooked up in program.modules.signals and formstack.signals
@@ -2293,7 +2361,7 @@ def maybe_create_module_ext(handler, ext):
     TODO(benkraft): Should we just do this on program creation instead?  We'll
     end up with a bunch of unused settings, but maybe that's fine.
     """
-    uid = 'maybe_create_module_ext:%s:%s' % (handler, ext.__name__)
+    uid = f'maybe_create_module_ext:{handler}:{ext.__name__}'
     @receiver(m2m_changed, sender=Program.program_modules.through,
               weak=False, dispatch_uid=uid)
     def signal_handler(sender, **kwargs):

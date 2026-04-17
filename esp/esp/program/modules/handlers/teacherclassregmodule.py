@@ -56,6 +56,7 @@ from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
 
+from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
@@ -76,6 +77,30 @@ class TeacherClassRegModule(ProgramModuleObj):
             "inline_template": "listclasses.html",
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # We only want to surface the main entry point to register a class,
+        # which is the 'makeaclass' or 'copyclasses' view.
+        # Everything else (ajaxstudentattendance, editclass, etc.) should be hidden.
+        if view_name not in ["makeaclass", "copyclasses"]:
+            return None
+
+        base = program.getUrlBase()
+
+        entries = {
+            "makeaclass": ("Register Your Classes (Teacher Lookup)", "Other", ["teacher", "classes", "registration", "lookup", "add"]),
+            "copyclasses": ("Copy Your Classes", "Other", ["teacher", "classes", "registration", "copy"]),
+        }
+
+        title, category, keywords = entries[view_name]
+        return AdminSearchEntry(
+            id="teach_%s" % view_name,
+            url="/teach/%s/%s" % (base, view_name),
+            title=title,
+            category=category,
+            keywords=keywords,
+        )
 
     @property
     def crmi(self):
@@ -98,16 +123,14 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['open_class_category'] = self.program.open_class_category.category
         return context
 
-    def noclasses(self):
+
+    def noclasses(self, user=None):
         """ Returns true of there are no classes in this program """
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return not self.clslist(user).exists()
 
-    def isCompleted(self):
-        return not self.noclasses()
+    def isCompleted(self, user=None):
+        return not self.noclasses(user)
 
     def get_resource_pairs(self):
         items = []
@@ -478,6 +501,9 @@ class TeacherClassRegModule(ProgramModuleObj):
     def class_docs(self, request, tl, one, two, module, extra, prog):
         from esp.web.forms.fileupload_form import FileUploadForm, FileRenameForm
         from esp.qsdmedia.models import Media
+        from django.contrib.contenttypes.models import ContentType
+        import os
+        from django.core.files import File
 
         clsid = 0
         if 'clsid' in request.POST:
@@ -492,6 +518,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         target_class = classes[0]
         context_form = FileUploadForm()
         context_rename_form = FileRenameForm()
+        copy_message = ''
 
         if request.method == 'POST':
             if request.POST['command'] == 'delete':
@@ -522,8 +549,68 @@ class TeacherClassRegModule(ProgramModuleObj):
                     media.save()
                 else:
                     context_rename_form = form
+            elif request.POST['command'] == 'copy_doc':
+                docid = request.POST.get('docid')
+                try:
+                    source_media = Media.objects.get(id=docid)
+                    # Verify the teacher owns the source document's class
+                    taught_ids = request.user.getTaughtClasses().values_list('id', flat=True)
+                    if source_media.owner_id in taught_ids:
+                        source_path = source_media.get_uploaded_filename()
+                        if os.path.isfile(source_path):
+                            with open(source_path, 'rb') as f:
+                                django_file = File(f)
+                                django_file.content_type = source_media.mime_type or 'application/octet-stream'
+                                django_file.size = source_media.size or 0
+                                new_media = Media(friendly_name=source_media.friendly_name, owner=target_class)
+                                original_name = source_media.file_name or 'document'
+                                # Strip old class code prefix if present
+                                parts = original_name.split('_', 1)
+                                base_name = parts[1] if len(parts) > 1 else original_name
+                                desired_filename = '%s_%s' % (target_class.emailcode(), base_name)
+                                new_media.handle_file(django_file, desired_filename)
+                                new_media.format = source_media.format or ''
+                                new_media.save()
+                                copy_message = 'Successfully copied "%s" to this class.' % source_media.friendly_name
+                        else:
+                            copy_message = 'Source file not found on disk.'
+                    else:
+                        copy_message = 'You do not have permission to copy this document.'
+                except Media.DoesNotExist:
+                    copy_message = 'Document not found.'
 
-        context = {'cls': target_class, 'uploadform': context_form, 'module': self, 'renameform': context_rename_form}
+        # Fetch previous documents in a single query (avoids N+1)
+        previous_class_ids = list(
+            request.user.getTaughtClasses()
+            .exclude(id=target_class.id)
+            .values_list('id', flat=True)
+        )
+        classsubject_ct = ContentType.objects.get_for_model(ClassSubject)
+        if previous_class_ids:
+            previous_docs = list(Media.objects.filter(
+                owner_type=classsubject_ct,
+                owner_id__in=previous_class_ids,
+            ).select_related('owner_type').order_by('-id'))
+        else:
+            previous_docs = []
+
+        # Build owner title lookup to avoid N+1 on owner access in template
+        owner_titles = {}
+        if previous_docs:
+            owner_ids = set(doc.owner_id for doc in previous_docs)
+            for cls_obj in ClassSubject.objects.filter(id__in=owner_ids):
+                owner_titles[cls_obj.id] = cls_obj.title
+        for doc in previous_docs:
+            doc.owner_title = owner_titles.get(doc.owner_id, '')
+
+        context = {
+            'cls': target_class,
+            'uploadform': context_form,
+            'module': self,
+            'renameform': context_rename_form,
+            'previous_docs': previous_docs,
+            'copy_message': copy_message,
+        }
 
         return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
@@ -798,7 +885,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_teacher
     @user_passes_test(
-        open_class_reg_is_open,
+        lambda moduleObj, request: moduleObj.open_class_reg_is_open(),
         (
             'the deadline Teacher/Classes/Create/OpenClass '
             'or the setting ClassRegModuleInfo.open_class_registration were'
