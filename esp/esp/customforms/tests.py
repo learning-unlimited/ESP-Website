@@ -574,3 +574,47 @@ class GetResponseDataTest(TestCase):
         question_keys = [q[0] for q in data['questions']]
         self.assertNotIn('user_id', question_keys)
         self.assertNotIn('user_display', question_keys)
+
+    def test_only_fkey_model_in_response_data(self):
+        """Form with link_type=Program should include link_Program in questions and resolve instance."""
+        import json
+        from esp.program.models import Program
+        from esp.customforms.DynamicForm import FormHandler
+
+        # Create a minimal Program
+        prog = Program.objects.create(
+            url='testprog', name='Test Program',
+            grade_min=7, grade_max=12,
+            director_email='test@test.com',
+            program_size_max=100,
+        )
+
+        self.client.login(username='resp_data_admin', password='password')
+        form_data = {
+            'title': 'Program Link Form', 'desc': 'Test',
+            'anonymous': False, 'link_type': 'Program', 'link_id': prog.id,
+            'perms': '', 'success_url': '/', 'success_message': 'OK',
+            'pages': [{'parent_id': -1, 'seq': 0, 'sections': [{'data': {'help_text': '', 'question_text': '', 'seq': 0}, 'fields': [
+                {'data': {'field_type': 'textField', 'question_text': 'Feedback', 'seq': 0, 'required': False, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+            ]}]}]
+        }
+        self.client.post('/customforms/submit/', json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        prog_form = Form.objects.get(title='Program Link Form')
+
+        # Submit a response
+        self.client.login(username='resp_data_student', password='password')
+        field = prog_form.field_set.get(label='Feedback')
+        post_dict = {
+            'combo_form-current_step': '0',
+            f'question_{field.id}': 'Great program!',
+            f'link_Program': prog.id,
+        }
+        self.client.post(f'/customforms/view/{prog_form.id}/', post_dict)
+
+        fh = FormHandler(form=prog_form, request=None, user=self.admin)
+        data = fh.getResponseData(prog_form)
+
+        question_keys = [q[0] for q in data['questions']]
+        # link_Program (without _id) should be in questions
+        self.assertIn('link_Program', question_keys)
+        self.assertNotIn('link_Program_id', question_keys)
