@@ -6,7 +6,6 @@ from django.db import models, transaction, connection
 from django.db.utils import DatabaseError, ProgrammingError
 from django.core.exceptions import ValidationError
 from esp.users.models import ESPUser
-from esp.program.models import Program
 
 class Form(models.Model):
     title = models.CharField(max_length=40, blank=False)
@@ -37,6 +36,9 @@ class Page(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE)
     seq = models.IntegerField(default=-1)
 
+    class Meta:
+        ordering = ["seq"]
+
     def __str__(self):
         return f'Page {self.seq} of {self.form.title}'
 
@@ -45,6 +47,9 @@ class Section(models.Model):
     title = models.CharField(max_length=40)
     description = models.CharField(max_length=140, blank=True)
     seq = models.IntegerField()
+
+    class Meta:
+        ordering = ["seq"]
 
     def __str__(self):
         return f'Sec. {self.seq}: {self.title}'
@@ -57,6 +62,9 @@ class Field(models.Model):
     label = models.CharField(max_length=200)
     help_text = models.TextField(blank=True)
     required = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["seq"]
 
     def __str__(self):
         return f'{self.label}'
