@@ -84,7 +84,7 @@ class FinAidApproveModule(ProgramModuleObj):
             context['POST'] = True
             # ITERATE & APPROVE REQUESTS
             userchecklist = request.POST.getlist("user")
-            approve_blanks = request.POST.get('approve_blanks', False)
+            approve_blanks = bool(request.POST.get('approve_blanks'))
             amount_max_dec = request.POST.get('amount_max_dec', None)
             percent = request.POST.get('percent', None)
 
@@ -96,7 +96,7 @@ class FinAidApproveModule(ProgramModuleObj):
                     continue
 
                 if not approve_blanks:
-                    if is_blank(req.household_income) or is_blank(req.extra_explaination):
+                    if is_blank(req.household_income) and is_blank(req.extra_explaination):
                         continue
 
                 if req.approved:
@@ -105,8 +105,8 @@ class FinAidApproveModule(ProgramModuleObj):
                 try:
                     req.approve(dollar_amount = amount_max_dec, discount_percent = percent)
                     users_approved.append(req.user.name())
-                except (ValueError, TypeError):
-                    users_error.append(req.user.name())
+                except (ValueError, TypeError) as e:
+                    users_error.append(f"{req.user.name()}: {str(e)}")
 
         context["requests"] = reqs
         context["users_approved"] = users_approved
