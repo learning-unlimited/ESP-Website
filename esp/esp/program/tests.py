@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -38,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
-from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList, PhaseZeroRecord
 from esp.qsd.models import QuasiStaticData
 from esp.resources.models import Resource, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
@@ -143,6 +144,7 @@ class ViewUserInfoTest(TestCase):
 
         # Try searching by ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
+        self.assertEqual(response.status_code, 302)
         self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
 
     def testUserIDSearchMultipleResults(self):
@@ -2107,6 +2109,106 @@ class GradeCacheInvalidationTest(TestCase):
             "getLastProfile should return updated graduation_year"
         )
 
+class PhaseZeroRecordTest(ProgramFrameworkTest):
+    """Tests for PhaseZeroRecord model, specifically the program field validation."""
+
+    def test_program_field_is_required_on_model(self):
+        """The program ForeignKey should not allow blank values."""
+        program_field = PhaseZeroRecord._meta.get_field('program')
+        self.assertFalse(
+            program_field.blank,
+            "PhaseZeroRecord.program should not have blank=True"
+        )
+        self.assertFalse(
+            program_field.null,
+            "PhaseZeroRecord.program should not have null=True"
+        )
+
+    def test_create_phasezerorecord_with_program(self):
+        """Creating a PhaseZeroRecord with a valid program should succeed."""
+        record = PhaseZeroRecord.objects.create(program=self.program)
+        record.user.add(self.students[0])
+        self.assertEqual(record.program, self.program)
+        self.assertIn(self.students[0], record.user.all())
+
+    def test_phasezerorecord_without_program_fails_validation(self):
+        """A PhaseZeroRecord without a program should fail full_clean validation."""
+        record = PhaseZeroRecord()
+        with self.assertRaises(ValidationError) as cm:
+            record.full_clean()
+        self.assertIn('program', cm.exception.message_dict)
+        # Check that the error message contains 'required' or 'null' (case-insensitive)
+        error_msg = str(cm.exception.message_dict['program'][0]).lower()
+        self.assertTrue(
+            'required' in error_msg or 'null' in error_msg,
+            "Error message should indicate that program is required or cannot be null, got: %s" % error_msg
+        )
+
+    def test_phasezerorecord_admin_form_requires_program(self):
+        """The admin form for PhaseZeroRecord should require the program field."""
+        from esp.program.admin import PhaseZeroRecordAdminForm
+        # Submit an empty form (no program selected)
+        form = PhaseZeroRecordAdminForm(data={})
+        self.assertFalse(form.is_valid(), "Form should be invalid without a program")
+        self.assertIn('program', form.errors, "Form errors should include 'program'")
+
+    def test_phasezerorecord_admin_form_empty_program_string(self):
+        """The admin form should reject an empty string for program."""
+        from esp.program.admin import PhaseZeroRecordAdminForm
+        form = PhaseZeroRecordAdminForm(data={'program': ''})
+        self.assertFalse(form.is_valid(), "Form should be invalid with empty program string")
+        self.assertIn('program', form.errors)
+
+    def test_phasezerorecord_admin_form_error_message(self):
+        """The admin form should show the custom error for missing program."""
+        from esp.program.admin import PhaseZeroRecordAdminForm
+        form = PhaseZeroRecordAdminForm(data={})
+        form.is_valid()
+        self.assertIn('program', form.errors)
+        error_text = str(form.errors['program'][0])
+        # Looser check for the custom message content
+        self.assertIn("Program is required", error_text)
+        self.assertIn("Please select a program", error_text)
+
+
+    def test_phasezerorecord_admin_form_valid_with_program(self):
+        """The admin form for PhaseZeroRecord should accept a valid program."""
+        from esp.program.admin import PhaseZeroRecordAdminForm
+        form = PhaseZeroRecordAdminForm(data={
+            'program': self.program.id,
+            'user': [self.students[0].id],
+        })
+        self.assertTrue(form.is_valid(), "Form should be valid with a program: %s" % form.errors)
+
+    def test_phasezerorecord_admin_uses_custom_form(self):
+        """The PhaseZeroRecordAdmin should use PhaseZeroRecordAdminForm."""
+        from esp.program.admin import PhaseZeroRecordAdmin, PhaseZeroRecordAdminForm
+        from esp.admin import admin_site
+        admin_instance = PhaseZeroRecordAdmin(PhaseZeroRecord, admin_site)
+        self.assertEqual(admin_instance.form, PhaseZeroRecordAdminForm)
+
+    def test_phasezerorecord_display_user(self):
+        """display_user should return comma-separated usernames."""
+        record = PhaseZeroRecord.objects.create(program=self.program)
+        record.user.add(self.students[0], self.students[1])
+        display = record.display_user()
+        self.assertIn(self.students[0].username, display)
+        self.assertIn(self.students[1].username, display)
+
+    def test_phasezerorecord_str(self):
+        """__str__ should return the record id."""
+        record = PhaseZeroRecord.objects.create(program=self.program)
+        self.assertEqual(str(record), str(record.id))
+
+    def test_phasezerorecord_cascade_delete(self):
+        """Deleting a Program should cascade-delete related PhaseZeroRecords."""
+        record = PhaseZeroRecord.objects.create(program=self.program)
+        record_id = record.id
+        self.program.delete()
+        self.assertFalse(
+            PhaseZeroRecord.objects.filter(id=record_id).exists(),
+            "PhaseZeroRecord should be deleted when its program is deleted"
+        )
 
 class HeardAboutNormalizationTest(TestCase):
     """
@@ -2158,3 +2260,6 @@ class HeardAboutNormalizationTest(TestCase):
     def test_only_punctuation_normalizes_to_empty(self):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
+
+
+

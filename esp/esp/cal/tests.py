@@ -231,3 +231,4 @@ class EventStaticMethodsTest(TestCase):
                    event_type=self.event_type)
         collapsed = Event.collapse([e1, e2])
         self.assertEqual(len(collapsed), 2)
+
