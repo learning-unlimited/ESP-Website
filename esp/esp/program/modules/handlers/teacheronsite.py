@@ -80,7 +80,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def teacheronsite(self, request, tl, one, two, module, extra, prog):
         """ Display the landing page for the teacher onsite webapp """
-        from esp.users.models import RegistrationProfile
+        from esp.program.models import RegistrationProfile
 
         user = request.user
         now = datetime.now()
