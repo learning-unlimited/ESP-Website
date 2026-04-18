@@ -21,7 +21,7 @@ import unittest
 
 from django.db.models.query import Q
 from django.template import loader, Template, Context, TemplateDoesNotExist
-from django.test import TestCase as DjangoTestCase
+from django.test import TestCase as DjangoTestCase, override_settings
 from django.core.cache import cache
 from django.conf import settings
 
@@ -776,12 +776,33 @@ def suite():
     return s
 
 
+@override_settings(CACHES={
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
+        'LOCATION': '127.0.0.1:11211',
+        'KEY_PREFIX': 'esp-tests',
+    }
+})
 class CacheBackendTest(DjangoTestCase):
     """
     Tests to verify Django's built-in PyLibMCCache works correctly
     as a replacement for the old esp.utils.memcached_multikey.CacheClass.
     See: https://github.com/learning-unlimited/ESP-Website/issues/1306
     """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        try:
+            cache.set('cache_backend_test_probe', 'ok', timeout=60)
+            if cache.get('cache_backend_test_probe') != 'ok':
+                raise Exception("Memcached backend probe returned wrong value")
+            cache.delete('cache_backend_test_probe')
+        except Exception as exc:
+            raise unittest.SkipTest(
+                "PyLibMCCache tests require pylibmc and a reachable memcached "
+                "server at 127.0.0.1:11211: %s" % exc
+            )
 
     def setUp(self):
         """ Clear cache before each test """
