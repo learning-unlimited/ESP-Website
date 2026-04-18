@@ -78,7 +78,7 @@ def get_final_recipients(recipients):
     logger.debug("In final recipients")
     resolved = []
     aliases = []
-    for recipient in instance.recipients:
+    for recipient in recipients:
         # If the recipient has an email address that does not end with @anysite.learningu.org, keep them
         # Note we `DOMAIN` instead of the `HOSTNAME` because the latter resolves to `thissite.learningu.org`
         # in settings,  and we want `anysite.learningu.org` while still allowing user@learningu.org because
