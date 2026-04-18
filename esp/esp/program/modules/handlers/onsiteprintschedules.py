@@ -39,6 +39,8 @@ from esp.program.modules.handlers.programprintables import ProgramPrintables
 from datetime         import datetime
 from esp.utils.web    import render_to_response
 from esp.utils.models import Printer, PrintRequest
+from esp.users.models import Record, RecordType
+from django.db        import transaction
 
 class OnsitePrintSchedules(ProgramModuleObj):
     doc = """Automatically print student schedules at onsite registration."""
@@ -73,28 +75,38 @@ class OnsitePrintSchedules(ProgramModuleObj):
 
         if requests.exists():
             req = requests[0]
-            req.time_executed = datetime.now()
-            req.save()
-            response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)
-            if request.GET['gen_img'] == 'json':
-                import base64
-                src = "data:image/png;base64,{}".format(base64.b64encode(response.content))
-                data = {
-                    'src': src,
-                    'id': req.id,
-                    'user': req.user.username,
-                    'time_requested': str(req.time_requested),
-                    'time_executed': str(req.time_executed),
-                }
-                resp = HttpResponse(content_type='application/json')
-                json.dump(data, resp)
-                return resp
-            else:
-                return response
-        else:
-            # No response if no users
-            return HttpResponse('')
+            try:
+                with transaction.atomic():
+                    req.time_executed = datetime.now()
+                    req.save()
+                    rt = RecordType.objects.get(name="attended")
+                    if not prog.isCheckedIn(req.user):
+                        Record(user=req.user, event=rt, program=prog).save()
 
+                    response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)
+
+                    if request.GET.get('gen_img') == 'json':
+                        import base64
+                        # Use .decode('utf-8') here to be safe with JSON
+                        src = "data:image/png;base64,{}".format(base64.b64encode(response.content).decode('utf-8'))
+                        data = {
+                            'src': src,
+                            'id': req.id,
+                            'user': req.user.username,
+                            'time_requested': str(req.time_requested),
+                            'time_executed': str(req.time_executed),
+                        }
+                        resp = HttpResponse(content_type='application/json')
+                        json.dump(data, resp)
+                        return resp
+                    else:
+                        return response
+
+            except Exception as e:
+                return HttpResponse(f"Error generating schedule: {e}", status=500)
+
+        else:
+            return HttpResponse('')
     class Meta:
         proxy = True
         app_label = 'modules'
