@@ -43,7 +43,7 @@
                 {% endif %}
                 <br>
                 {% if cls.initial_lat_long %}
-                    <a class="no-dec" title="Directions" target="_blank"
+                    <a class="no-dec" title="Directions" target="_blank" rel="noopener noreferrer"
                        href="https://www.google.com/maps/dir/?api=1&destination={{ cls.initial_lat_long }}&travelmode=walking">
                 {% endif %}
                 {{ cls.prettyrooms|join:", " }}
