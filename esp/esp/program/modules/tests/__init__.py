@@ -71,3 +71,4 @@ from esp.program.modules.tests.resolve_user import ResolveUserTest
 from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest
 from esp.program.modules.tests.test_enrolled_split import EnrolledSplitViewTest
 from esp.program.modules.tests.schedulingcheckmodule import SchedulingCheckModuleTest
+from esp.program.modules.tests.test_draft_creation import MakeAClassDraftTest
