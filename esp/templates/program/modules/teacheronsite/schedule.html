@@ -39,7 +39,7 @@
             <td class="cls">
                 <b>{{ cls.parent_class.title }}</b>
                 {% if request.user in cls.get_moderators %}
-                    </br>({{ program.getModeratorTitle }})
+                    <br>({{ program.getModeratorTitle }})
                 {% endif %}
                 <br>
                 {% if cls.initial_lat_long %}
