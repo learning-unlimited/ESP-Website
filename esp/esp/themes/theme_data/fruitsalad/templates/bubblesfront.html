@@ -2,15 +2,6 @@
 {% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
 
 {% block stylesheets %}
-{% comment %}
-{% if request.user.is_authenticated %}
-{% if request.user.isTeacher %}
-<meta http-equiv="refresh" content="0; url=http://{{ request.META.HTTP_HOST }}/teach/index.html">
-{% else %}
-<meta http-equiv="refresh" content="0; url=http://{{ request.META.HTTP_HOST }}/learn/index.html">
-{% endif %}
-{% endif %}
-{% endcomment %}
 {% endblock %}
 
 {% block javascript %}
@@ -72,8 +63,8 @@ document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025"
 <div id="login_box_index">
 <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
 <div id="login_div_index">
-{% if not request.user.is_authenticated %}
 <!-- login -->
+<div class="not_logged_in">
 <form name="login_form" id="login_form_index" method="post" action="/myesp/login/">
   <input type="hidden" name="next" value="/" />
   <input type="text" id="login_user_index" name="username"/>
@@ -84,13 +75,14 @@ document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025"
   <a href="/myesp/register" id="login_signup">Sign up</a>
   <a href="/myesp/loginhelp.html" id="login_help_index">need help?</a>
 </form>
-{% else %}
-<!-- logout -->
-<div id="login_greeting_index">
-  Hello, <strong>{{ request.user.first_name }} {{ request.user.last_name }}</strong>!<br />
-  (<a href="/myesp/signout/">Logout</a>{% if request.user.isAdministrator %} | <a href="/manage/programs/">Manage</a>{% endif %})
 </div>
-{% endif %}
+<!-- logout -->
+<div class="logged_in hidden">
+<div id="login_greeting_index">
+  Hello, <strong><span id="user_first_name"></span> <span id="user_last_name"></span></strong>!<br />
+  (<a href="/myesp/signout/">Logout</a><span class="admin hidden"> | <a href="/manage/programs/">Manage</a></span>)
+</div>
+</div>
 
 </div>
 </div>
