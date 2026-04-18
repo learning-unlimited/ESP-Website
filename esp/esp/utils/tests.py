@@ -15,9 +15,11 @@ logger = logging.getLogger(__name__)
 import os
 import subprocess
 import sys
+import types
 from reversion import revisions as reversion
 from reversion.models import Version
 import unittest
+from unittest.mock import patch
 
 from django.db.models.query import Q
 from django.template import loader, Template, Context, TemplateDoesNotExist
@@ -774,6 +776,76 @@ class RunInstallTestCase(unittest.TestCase):
         sender.models_module = models_module
         # Should not raise
         run_install(sender)
+
+
+class ChooseProgramTestCase(unittest.TestCase):
+    def _install_fake_program_module(self, program_class):
+        module = types.ModuleType('esp.program.models')
+        module.Program = program_class
+        return patch.dict(sys.modules, {'esp.program.models': module})
+
+    def test_rejects_multiple_noninteractive_kwargs(self):
+        class Program(object):
+            class DoesNotExist(Exception):
+                pass
+
+            class MultipleObjectsReturned(Exception):
+                pass
+
+        from esp.utils.shell_utils import choose_program
+
+        with self._install_fake_program_module(Program):
+            with self.assertRaises(ValueError):
+                choose_program(program_id=7, program_name='Splash 2014')
+
+    def test_interactive_accepts_prefixed_suggestion_index(self):
+        suggestion_1 = types.SimpleNamespace(id=101, name='Alpha', url='alpha')
+        suggestion_2 = types.SimpleNamespace(id=202, name='Beta', url='beta')
+
+        class Program(object):
+            class DoesNotExist(Exception):
+                pass
+
+            class MultipleObjectsReturned(Exception):
+                pass
+
+            current_programs = staticmethod(lambda: [suggestion_1, suggestion_2])
+            objects = types.SimpleNamespace(get=lambda **kwargs: None)
+
+        from esp.utils.shell_utils import choose_program
+
+        with self._install_fake_program_module(Program):
+            with patch('builtins.input', side_effect=['2', 'i:2']):
+                result = choose_program()
+
+        self.assertIs(result, suggestion_2)
+
+    def test_interactive_accepts_prefixed_program_id(self):
+        selected = types.SimpleNamespace(id=42, name='Chosen', url='chosen')
+
+        class Program(object):
+            class DoesNotExist(Exception):
+                pass
+
+            class MultipleObjectsReturned(Exception):
+                pass
+
+            current_programs = staticmethod(lambda: [])
+
+        def fake_get(**kwargs):
+            if kwargs.get('id') == 42:
+                return selected
+            raise Program.DoesNotExist()
+
+        Program.objects = types.SimpleNamespace(get=fake_get)
+
+        from esp.utils.shell_utils import choose_program
+
+        with self._install_fake_program_module(Program):
+            with patch('builtins.input', side_effect=['id:42']):
+                result = choose_program()
+
+        self.assertIs(result, selected)
 
 
 def suite():
