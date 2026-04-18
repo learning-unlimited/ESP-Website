@@ -64,7 +64,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         """
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
-    def get_response(self, view_name, user_type, list_name):
+    def get_response(self, view_name, user_type, list_name, allow_redirect=False):
         #   Log in an administrator
         self._login_admin()
 
@@ -79,7 +79,10 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
             'use_checklist': 0,
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), view_name), post_data)
-        self.assertEqual(response.status_code, 200)
+        if allow_redirect:
+            self.assertIn(response.status_code, [200, 302])
+        else:
+            self.assertEqual(response.status_code, 200)
         return response
 
     def get_userlist_views(self):
@@ -110,13 +113,19 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
     def testSchedules(self):
         response = self.get_response('studentschedules/log', 'students', 'enrolled')
-        print(response)
-        #   Check that our Latex->PDF schedule generation code runs without error
-        response = self.get_response('studentschedules', 'students', 'enrolled')
-
-        #   Check that the output is an actual PDF file
-        print((response['Content-Type']))
-        self.assertTrue(response['Content-Type'].startswith('application/pdf'))
+        #   Check that our view returns successfully (or redirects to job status for batch PDF)
+        response = self.get_response('studentschedules', 'students', 'enrolled', allow_redirect=True)
+        self.assertIn(response.status_code, [200, 302])
+        #   Check that the actual Latex->PDF schedule generation code runs without error
+        students = getattr(self, 'students', [])
+        if students:
+            from django.test.client import RequestFactory
+            req = RequestFactory().get('/')
+            req.user = self.admins[0]
+            req.session = {}
+            pdf_resp = ProgramPrintables.get_student_schedules(req, students, self.program, 'pdf', False)
+            self.assertEqual(pdf_resp.status_code, 200)
+            self.assertTrue(pdf_resp['Content-Type'].startswith('application/pdf'))
 
     def test_all_classes_spreadsheet_loads(self):
         """
