@@ -59,9 +59,6 @@ from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
-from esp.web.forms.fileupload_form import FileUploadForm, FileRenameForm
-from esp.qsdmedia.models import Media
-
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
 
