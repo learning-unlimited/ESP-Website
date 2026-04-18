@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call
 from esp.program.models import TeacherBio
 from esp.users.models   import ESPUser
-from esp.middleware.threadlocalrequest import get_current_request
 from django.db.models.query   import Q
 
 # reg profile module
@@ -75,11 +74,15 @@ class TeacherBioModule(ProgramModuleObj):
         return self.goToCore(tl)
 
     def isCompleted(self, user=None):
-        #   TeacherBio.getLastForProgram() returns a new bio if one already exists.
-        #   So, mark this step completed if there is an existing (i.e. non-empty) bio.
+        #   TeacherBio.getLastForProgram() returns a new unsaved bio when no record
+        #   exists for the (user, program) pair; otherwise it returns the most recent
+        #   saved bio. So, mark this step completed if there is an existing
+        #   (i.e. non-empty) saved bio.
+        #   We only require `bio` to be non-empty; `slugbio` is optional (required=False
+        #   in BioEditForm) and must not block registration when left blank.
         user = self._resolve_user(user)
         lastBio = TeacherBio.getLastForProgram(user, self.program)
-        return ((lastBio.id is not None) and lastBio.bio and lastBio.slugbio)
+        return (lastBio.id is not None) and bool(lastBio.bio)
 
     class Meta:
         proxy = True
