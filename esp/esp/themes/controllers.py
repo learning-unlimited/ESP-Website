@@ -535,7 +535,14 @@ class ThemeController(object):
         Raises SuspiciousFileOperation if the resolved path escapes themes_dir.
         """
         safe_dir = os.path.realpath(themes_settings.themes_dir)
-        path = os.path.realpath(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe="")}.less'))
+        # Validate the raw name BEFORE quoting — quote() would encode '/' and
+        # '..' into harmless percent-encoded literals, hiding real traversal.
+        raw_path = os.path.realpath(os.path.join(themes_settings.themes_dir, f'{save_name}.less'))
+        if not raw_path.startswith(f'{safe_dir}{os.sep}'):
+            raise SuspiciousFileOperation(f'Attempted path traversal in theme save name: {save_name!r}')
+        # Build the final path with URL-quoted name and validate it too so
+        # that CodeQL's taint analysis sees the returned value as sanitized.
+        path = os.path.realpath(os.path.join(safe_dir, f'{quote(save_name, safe="")}.less'))
         if not path.startswith(f'{safe_dir}{os.sep}'):
             raise SuspiciousFileOperation(f'Attempted path traversal in theme save name: {save_name!r}')
         return path
