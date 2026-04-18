@@ -80,10 +80,13 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def teacheronsite(self, request, tl, one, two, module, extra, prog):
         """ Display the landing page for the teacher onsite webapp """
+        from esp.users.models import RegistrationProfile
+
         user = request.user
         now = datetime.now()
 
-        teacher = TeacherInfo.cf_link_instance(request)
+        teacher_profile = RegistrationProfile.getLastForProgram(user, prog, tl='teach')
+        teacher = teacher_profile.teacher_info if teacher_profile else None
 
         context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'schedule'
