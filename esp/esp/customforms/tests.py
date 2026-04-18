@@ -482,3 +482,95 @@ class FormBuilderViewTest(TestCase):
         self.client.login(username='builder_student', password='password')
         response = self.client.get('/customforms/create')
         self.assertRedirects(response, '/accounts/login/?next=/customforms/create')
+
+
+class GetResponseDataTest(TestCase):
+    """Tests for getResponseData() — covers user_id, link fields, and response structure."""
+
+    def setUp(self):
+        import json
+        self.admin, _ = ESPUser.objects.get_or_create(username='resp_data_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='resp_data_student')
+        self.student.set_password('password')
+        self.student.save()
+        self.student.makeRole('Student')
+
+        # Create form via the API so Page/Section/Field are all set up correctly
+        self.client.login(username='resp_data_admin', password='password')
+        form_data = {
+            'title': 'Response Data Test Form', 'desc': 'Test',
+            'anonymous': False, 'link_type': '-1', 'link_id': -1,
+            'perms': '', 'success_url': '/', 'success_message': 'OK',
+            'pages': [{'parent_id': -1, 'seq': 0, 'sections': [{'data': {'help_text': '', 'question_text': '', 'seq': 0}, 'fields': [
+                {'data': {'field_type': 'textField', 'question_text': 'Name', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+            ]}]}]
+        }
+        self.client.post('/customforms/submit/', json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.form = Form.objects.get(title='Response Data Test Form')
+        self.field = self.form.field_set.get(label='Name')
+
+        # Submit a response as student
+        self.client.login(username='resp_data_student', password='password')
+        post_dict = {'combo_form-current_step': '0', f'question_{self.field.id}': 'TestAnswer'}
+        self.client.post(f'/customforms/view/{self.form.id}/', post_dict)
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+
+    def test_response_data_has_correct_questions(self):
+        """getResponseData should include user_id, user_display, user_email, username + form fields."""
+        from esp.customforms.DynamicForm import FormHandler
+        fh = FormHandler(form=self.form, request=None, user=self.admin)
+        data = fh.getResponseData(self.form)
+
+        question_keys = [q[0] for q in data['questions']]
+        self.assertIn('user_id', question_keys)
+        self.assertIn('user_display', question_keys)
+        self.assertIn('user_email', question_keys)
+        self.assertIn('username', question_keys)
+        self.assertIn(f'question_{self.field.id}', question_keys)
+
+    def test_response_data_has_correct_answers(self):
+        """getResponseData answers should contain user info and field answer."""
+        from esp.customforms.DynamicForm import FormHandler
+        fh = FormHandler(form=self.form, request=None, user=self.admin)
+        data = fh.getResponseData(self.form)
+
+        self.assertEqual(len(data['answers']), 1)
+        answer = data['answers'][0]
+
+        # user_id should be present as string
+        self.assertEqual(int(answer['user_id']), self.student.id)
+        self.assertEqual(answer['user_display'], self.student.name())
+        self.assertEqual(answer['user_email'], self.student.email)
+        self.assertEqual(answer['username'], self.student.username)
+        self.assertEqual(answer[f'question_{self.field.id}'], 'TestAnswer')
+
+    def test_anonymous_form_no_user_fields(self):
+        """Anonymous form should not include user_id in questions."""
+        import json
+        self.client.login(username='resp_data_admin', password='password')
+        form_data = {
+            'title': 'Anon Test Form', 'desc': 'Test',
+            'anonymous': True, 'link_type': '-1', 'link_id': -1,
+            'perms': '', 'success_url': '/', 'success_message': 'OK',
+            'pages': [{'parent_id': -1, 'seq': 0, 'sections': [{'data': {'help_text': '', 'question_text': '', 'seq': 0}, 'fields': [
+                {'data': {'field_type': 'textField', 'question_text': 'Comment', 'seq': 0, 'required': False, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+            ]}]}]
+        }
+        self.client.post('/customforms/submit/', json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        anon_form = Form.objects.get(title='Anon Test Form')
+
+        from esp.customforms.DynamicForm import FormHandler
+        fh = FormHandler(form=anon_form, request=None, user=None)
+        data = fh.getResponseData(anon_form)
+
+        question_keys = [q[0] for q in data['questions']]
+        self.assertNotIn('user_id', question_keys)
+        self.assertNotIn('user_display', question_keys)
