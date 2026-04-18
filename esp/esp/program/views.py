@@ -1,4 +1,3 @@
-
 from functools import lru_cache, reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -82,6 +81,8 @@ from esp.dbmail.models import MessageRequest, TextOfEmail, PlainRedirect
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
+from django.contrib.contenttypes.models import ContentType
+from esp.utils.models import AuditLogEntry
 from django.conf import settings
 
 import re
@@ -579,6 +580,15 @@ def userview(request):
             gcr.approved = True
             gcr.acknowledged_by = request.user
             gcr.save()
+            AuditLogEntry.objects.create(
+                actor=request.user,
+                action=AuditLogEntry.ACTION_UPDATE,
+                content_type=ContentType.objects.get_for_model(gcr),
+                object_id=gcr.pk,
+                object_repr=str(gcr)[:500],
+                actor_ip=request.META.get('REMOTE_ADDR'),
+                extra='Approved via userview page'
+            )
     if 'reject_request' in request.GET:
         gcrs = GradeChangeRequest.objects.filter(id=request.GET['reject_request'])
         if gcrs.count() == 1:
@@ -586,6 +596,15 @@ def userview(request):
             gcr.approved = False
             gcr.acknowledged_by = request.user
             gcr.save()
+            AuditLogEntry.objects.create(
+                actor=request.user,
+                action=AuditLogEntry.ACTION_UPDATE,
+                content_type=ContentType.objects.get_for_model(gcr),
+                object_id=gcr.pk,
+                object_repr=str(gcr)[:500],
+                actor_ip=request.META.get('REMOTE_ADDR'),
+                extra='Rejected via userview page'
+            )
 
     if 'graduation_year' in request.GET:
         user.set_student_grad_year(request.GET['graduation_year'])
