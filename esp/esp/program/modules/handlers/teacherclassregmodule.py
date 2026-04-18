@@ -1005,13 +1005,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                     context['class'] = newclass
 
                 if action=='edit':
-                    reg_form = TeacherClassRegForm(self.crmi, current_data)
-                    # TODO: remove private API use
-                    if populateonly: reg_form._errors = ErrorDict()
+                    reg_form = TeacherClassRegForm(self.crmi, initial=current_data)
                 elif action=='editopenclass':
-                    reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
-                    # TODO: remove private API use
-                    if populateonly: reg_form._errors = ErrorDict()
+                    reg_form = TeacherOpenClassRegForm(self.crmi, initial=current_data)
 
                 #   Todo...
                 ds = newclass.default_section()
