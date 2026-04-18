@@ -282,9 +282,10 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persiste
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 # Keep this readable by JavaScript because existing client-side CSRF handling
-# reads the CSRF cookie to populate form fields / X-CSRFToken headers.
-# Change to True only after JS has been refactored to source the token
-# from a non-HttpOnly mechanism such as a server-rendered DOM value.
+# (csrf_init.js, csrf_check.js, etc.) reads the 'esp_csrftoken' cookie via
+# $.cookie() to populate form fields / X-CSRFToken headers.  Setting HttpOnly
+# would break all AJAX POST requests.  Migrate JS to read the token from a
+# server-rendered DOM element (e.g. {% csrf_token %}) before enabling this.
 CSRF_COOKIE_HTTPONLY = False
 
 # Security: HTTP Strict Transport Security (HSTS)
@@ -295,9 +296,17 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
 # Security: redirect all HTTP requests to HTTPS.
-# Defaults to False because the test suite also runs with DEBUG=False;
-# enable in local_settings.py for real production deployments.
-SECURE_SSL_REDIRECT = False
+# Enabled when DEBUG is False.  Override via the ESP_SECURE_SSL_REDIRECT
+# environment variable (set to "0" to disable, e.g. in CI) or in
+# local_settings.py.
+SECURE_SSL_REDIRECT = os.environ.get('ESP_SECURE_SSL_REDIRECT', '1' if not DEBUG else '0') != '0'
+
+# Security: tell Django to trust the X-Forwarded-Proto header set by a
+# TLS-terminating reverse proxy (e.g. Nginx, AWS ALB).  Without this,
+# request.is_secure() returns False behind such proxies and HSTS / SSL
+# redirect will not activate.  Override in local_settings.py if your
+# proxy uses a different header.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 ATOMIC_REQUESTS = True
 
