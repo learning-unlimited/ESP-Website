@@ -11,6 +11,21 @@
 {% block javascript %}
 {{ block.super }}
 <script src="/media/scripts/program/modules/modulequestions.js"></script>
+<script>
+function submitProgramCreation() {
+    questionsToModules();
+    var submitButton = document.getElementById('make-program-happen');
+    if (!submitButton) {
+        return true;
+    }
+    if (submitButton.disabled) {
+        return false;
+    }
+    submitButton.disabled = true;
+    submitButton.value = 'Creating Program...';
+    return true;
+}
+</script>
 {% endblock %}
 
 {% block content %}
@@ -62,7 +77,7 @@ In addition to importing the settings listed in the form below, using this progr
 {% endif %}
 
 <div id="alumni_form">
-  <form action="{{ request.path }}" method="post">
+  <form action="{{ request.path }}" method="post" onsubmit="return submitProgramCreation();">
   {% autoescape off %}
   {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
 
@@ -114,7 +129,7 @@ In addition to importing the settings listed in the form below, using this progr
     <tr> 
       <td colspan="2" class="submit">
         <br /><br /><br />
-        <center><input class="btn btn-primary" type="submit" value="Make Program Happen!" onclick="questionsToModules();" /></center>
+        <center><input class="btn btn-primary" id="make-program-happen" type="submit" value="Make Program Happen!" /></center>
       </td>
     </tr>
   </table>

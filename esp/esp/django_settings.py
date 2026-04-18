@@ -275,7 +275,9 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persistent storage
 
-ATOMIC_REQUESTS = True
+# Keep request-scoped transactions opt-in. Multi-step workflows that need
+# rollback safety should use explicit transaction.atomic() boundaries close to
+# the write path instead of relying on an implicit global wrapper here.
 
 # Dotted path to callable to be used as view when a request is
 # rejected by the CSRF middleware.

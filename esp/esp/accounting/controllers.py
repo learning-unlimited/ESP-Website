@@ -81,6 +81,10 @@ class ProgramAccountingController(BaseAccountingController):
         self.refund_items = ['Student refund']
         self.admission_items = ["Program admission", "Student payment"]
 
+    def program_account_name(self):
+        program = self.program
+        return f'program-{program.id}-{slugify(program.url)}'
+
     @transaction.atomic
     def clear_all_data(self):
         #   Clear all financial data for the program
@@ -93,8 +97,14 @@ class ProgramAccountingController(BaseAccountingController):
         #   For now, just create a single account for the program.  In the
         #   future we may want finer grained accounting per program.
         program = self.program
-        (account, created) = Account.objects.get_or_create(name=slugify(program.name), description='Main account', program_id=program.id)
-        return account
+        account = Account.objects.filter(program_id=program.id).order_by('id').first()
+        if account is not None:
+            return account
+        return Account.objects.create(
+            name=self.program_account_name(),
+            description='Main account',
+            program_id=program.id,
+        )
 
     def setup_lineitemtypes(self, base_cost, optional_items=None, select_items=None):
         result = []
