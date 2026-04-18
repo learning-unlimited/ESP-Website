@@ -3,6 +3,19 @@ set -euf -o pipefail
 
 if [ "$CI_JOB" = "test" ]; then
     cp esp/esp/local_settings.py.ci esp/esp/local_settings.py
+    ln -f -s `pwd`/esp/public/media/default_images esp/public/media/images
+    ln -f -s `pwd`/esp/public/media/default_styles esp/public/media/styles
+    
+    # Always set up the database, even in GitHub Actions
+    # GitHub Actions postgres service needs explicit setup
+    PGPASSWORD="${DATABASE_PASSWORD:-testpassword}" psql -h "${DATABASE_HOST:-localhost}" \
+        -c "DROP DATABASE IF EXISTS test_test_django;" -U "${DATABASE_USER:-postgres}" || true
+    PGPASSWORD="${DATABASE_PASSWORD:-testpassword}" psql -h "${DATABASE_HOST:-localhost}" \
+        -c "DROP DATABASE IF EXISTS test_django;" -U "${DATABASE_USER:-postgres}" || true
+    PGPASSWORD="${DATABASE_PASSWORD:-testpassword}" psql -h "${DATABASE_HOST:-localhost}" \
+        -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U "${DATABASE_USER:-postgres}" || true
+    PGPASSWORD="${DATABASE_PASSWORD:-testpassword}" psql -h "${DATABASE_HOST:-localhost}" \
+        -c "CREATE DATABASE test_django OWNER testuser;" -U "${DATABASE_USER:-postgres}" || true
 
     # the postgres service in Github Actions sets up the database for us
     if [ "$GITHUB_ACTIONS" != true ]; then
