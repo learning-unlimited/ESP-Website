@@ -2,9 +2,11 @@ from copy import deepcopy
 import json
 
 from django.db import transaction
-from django.shortcuts import redirect, HttpResponse
-from django.http import Http404, HttpResponseRedirect, JsonResponse
+from django.shortcuts import redirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
+from django.urls import reverse
 from django.db import connection
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 
 from esp.customforms.models import *
@@ -33,7 +35,10 @@ def landing(request):
             if form.link_id == -1:
                 form.link_obj = "User's choice"
             else:
-                form.link_obj = cf_cache.only_fkey_models[form.link_type].objects.get(id=form.link_id)
+                try:
+                    form.link_obj = cf_cache.only_fkey_models[form.link_type].objects.get(id=form.link_id)
+                except ObjectDoesNotExist:
+                    form.link_obj = "(deleted)"
     return render_to_response("customforms/landing.html", request, {'form_list': forms})
 
 @user_passes_test(test_func)
@@ -97,11 +102,16 @@ def onSubmit(request):
                 fields = []
 
                 # truncating field lengths to the character limits specified
-                title = metadata['title'][0:Form._meta.get_field('title').max_length]
+                title = (metadata.get('title') or '').strip()
+                title = title[0:Form._meta.get_field('title').max_length]
                 link_type = metadata['link_type'][0:Form._meta.get_field('link_type').max_length]
                 perms = metadata['perms'][0:Form._meta.get_field('perms').max_length]
                 success_message = metadata['success_message'][0:Form._meta.get_field('success_message').max_length]
                 success_url = metadata['success_url'][0:Form._meta.get_field('success_url').max_length]
+
+                # Validate that title is not empty or missing
+                if not title or not title.strip():
+                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
 
                 # Creating form
                 form = Form.objects.create(title=title,
@@ -115,9 +125,9 @@ def onSubmit(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError('No program with ID %i' % (metadata['link_id']))
+                        return ESPError(f'No program with ID {metadata["link_id"]}')
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError('Program does not have %s enabled' % (metadata['link_module']))
+                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -125,7 +135,7 @@ def onSubmit(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
+                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
 
                 # Inserting pages
                 for page in metadata['pages']:
@@ -185,16 +195,24 @@ def onModify(request):
                 metadata = json.loads(request.body)
                 try:
                     form = Form.objects.get(id=int(metadata['form_id']))
+
                 except (Form.DoesNotExist, ValueError):
-                    raise ESPError('Form %s not found' % metadata['form_id'], log=False)
+                    raise ESPError(f'Form {metadata["form_id"]} not found', log=False)
+
                 dmh = DMH(form=form)
                 link_models_list = []     # Stores a cache of link models that should not be removed
 
                 # Populating the old fields list
                 dmh._getModelFieldList()
 
+                # Validate and normalize title (truncate to max_length like onSubmit does)
+                title_raw = (metadata.get('title') or '').strip()
+                title_normalized = title_raw[0:Form._meta.get_field('title').max_length]
+                if not title_normalized or not title_normalized.strip():
+                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
+
                 # NOT updating 'anonymous'
-                form.__dict__.update(title=metadata['title'], description=metadata['desc'], perms=metadata['perms'],
+                form.__dict__.update(title=title_normalized, description=metadata['desc'], perms=metadata['perms'],
                     success_message=metadata['success_message'], success_url=metadata['success_url']
                     )
 
@@ -208,9 +226,9 @@ def onModify(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError('No program with ID %i' % (metadata['link_id']))
+                        return ESPError(f'No program with ID {metadata["link_id"]}')
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError('Program does not have %s enabled' % (metadata['link_module']))
+                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -218,7 +236,7 @@ def onModify(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
+                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
 
                 # Check if only_fkey links have changed
                 if form.link_type != metadata['link_type'] or form.link_id != metadata['link_id']:
@@ -349,7 +367,7 @@ def viewResponse(request, form_id):
     """
     # Only teachers and admins can view responses; others are redirected to home
     if not (request.user.isTeacher() or request.user.isAdministrator()):
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('home'))
 
     try:
         form_id = int(form_id)
@@ -373,7 +391,7 @@ def getExcelData(request, form_id):
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
     response = HttpResponse(wbk.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    response['Content-Disposition']='attachment; filename=%s.xlsx' % form.title
+    response['Content-Disposition']=f'attachment; filename={form.title}.xlsx'
     return response
 
 @user_passes_test(test_func)
