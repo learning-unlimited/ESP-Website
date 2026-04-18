@@ -2158,3 +2158,42 @@ class HeardAboutNormalizationTest(TestCase):
     def test_only_punctuation_normalizes_to_empty(self):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
+
+
+class ClassSubjectCacheTest(ProgramFrameworkTest):
+    def test_get_teachers_cache_invalidation(self):
+        """
+        Regression test for Issue #3836:
+        Verify get_teachers() cache invalidates properly when a teacher's row is updated.
+        """
+        # Assign a teacher to a class
+        teacher = self.teachers[0]
+        test_class = self.program.classes()[0]
+        test_class.makeTeacher(teacher)
+
+        # 1. Call get_teachers() to populate the cache
+        teachers_before = test_class.get_teachers()
+        self.assertIn(teacher, teachers_before)
+
+        # Store original email
+        original_email = teacher.email
+
+        # 2. Update the teacher's email and save the user
+        new_email = "updated_email_xyz123@example.com"
+        teacher.email = new_email
+        teacher.save()
+
+        # 3. Verify subsequent get_teachers() call returns the updated email
+        #    without requiring a manual cache flush.
+        updated_teachers = test_class.get_teachers()
+
+        # Find the updated teacher object among the returned teachers
+        updated_teacher = None
+        for t in updated_teachers:
+            if t.id == teacher.id:
+                updated_teacher = t
+                break
+
+        self.assertIsNotNone(updated_teacher)
+        self.assertNotEqual(updated_teacher.email, original_email)
+        self.assertEqual(updated_teacher.email, new_email)
