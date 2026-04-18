@@ -40,6 +40,7 @@ from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
@@ -388,17 +389,17 @@ class StudentClassRegModule(ProgramModuleObj):
         if not hasattr(request.user, "onsite_local"):
             request.user.onsite_local = False
 
-        if 'class_id' in request.POST:
-            classid = request.POST['class_id']
-            sectionid = request.POST['section_id']
-        else:
+        try:
+            classid = int(request.POST['class_id'])
+            sectionid = int(request.POST['section_id'])
+        except (KeyError, ValueError, TypeError):
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
-        section = ClassSection.objects.get(id=sectionid)
+        section = get_object_or_404(ClassSection, id=sectionid, parent_class__id=classid, parent_class__parent_program=prog)
+        cobj = section.parent_class
         if not scrmi.use_priority:
             error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
         if scrmi.use_priority or not error:
-            cobj = ClassSubject.objects.get(id=classid)
             error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
 
         if scrmi.use_priority:
