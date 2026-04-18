@@ -44,6 +44,8 @@ from esp.utils.models import TemplateOverride
 from esp.web.admin import NavBarCategoryAdmin
 from esp.admin import admin_site
 from django.contrib.auth.models import Group
+from esp.web.storage import LowercaseExtensionStorage
+from django.core.files.base import ContentFile
 
 import difflib
 import logging
@@ -411,3 +413,43 @@ class ProfileEditorCapitalizationTest(TestCase):
 
         # Should load fine â€” not crash with ValueError
         self.assertEqual(response.status_code, 200)
+
+
+class LowercaseExtensionStorageTest(TestCase):
+    def setUp(self):
+        self.storage = LowercaseExtensionStorage()
+
+    def test_uppercase_extension_lowercased(self):
+        result = self.storage._normalize_filename('photo.JPG')
+        self.assertEqual(result, 'photo.jpg')
+
+    def test_mixed_case_extension_lowercased(self):
+        result = self.storage._normalize_filename('photo.Jpg')
+        self.assertEqual(result, 'photo.jpg')
+
+    def test_no_extension_unchanged(self):
+        result = self.storage._normalize_filename('photo')
+        self.assertEqual(result, 'photo')
+
+    def test_empty_string_unchanged(self):
+        result = self.storage._normalize_filename('')
+        self.assertEqual(result, '')
+
+    def test_directory_path_extension_lowercased(self):
+        result = self.storage._normalize_filename('uploads/photos/photo.JPG')
+        self.assertEqual(result, 'uploads/photos/photo.jpg')
+
+    def test_already_lowercase_extension_unchanged(self):
+        result = self.storage._normalize_filename('photo.jpg')
+        self.assertEqual(result, 'photo.jpg')
+
+    def test_save_lowercases_extension(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            storage = LowercaseExtensionStorage(location=temp_dir)
+            name = None
+            try:
+                name = storage.save('test.JPG', ContentFile(b'test content'))
+                self.assertTrue(name.endswith('.jpg'))
+            finally:
+                if name is not None:
+                    storage.delete(name)
