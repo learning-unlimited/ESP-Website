@@ -8,22 +8,22 @@
 {% block title %}{{ form_title }}{% endblock title %}
 
 {% block content %}
-    <h1 class="form_title">{{ form_title }}</h1>
+    <h1 class="form_title" id="form-title">{{ form_title }}</h1>
     <h2 class="form_desc">{{ form_description }}</h2>
     <em class="step_count">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</em>
     <em class="req_text">(Fields in blue are required)</em>
 
-    <form action="." method="post" enctype="multipart/form-data" id="cstform" class="form-stacked">
+    <form action="." method="post" enctype="multipart/form-data" id="cstform" class="form-stacked" aria-labelledby="form-title">
     {% include "customforms/single_form_fragment.html" %}
     
     <br/>
     {% if wizard.steps.prev %}
         {% if wizard.steps.first != wizard.steps.prev %}
-            <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.first }}">First Step</button>
+            <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.first }}" aria-label="Go to first step">First Step</button>
         {% endif %}
-        <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.prev }}">Prev Step</button>
+        <button class="btn primary" name="wizard_goto_step" value="{{ wizard.steps.prev }}" aria-label="Go to previous step">Prev Step</button>
     {% endif %}
-    <input type="submit" class="btn primary"{% if wizard.steps.next %} value="Next Step"{% endif %}>
+    <input type="submit" class="btn primary" value="{% if wizard.steps.next %}Next Step{% else %}Submit form{% endif %}" aria-label="{% if wizard.steps.next %}Go to next step{% else %}Submit form{% endif %}">
     </form>
 {% endblock %}
 
