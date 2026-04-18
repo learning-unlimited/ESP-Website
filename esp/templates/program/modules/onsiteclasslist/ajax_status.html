@@ -18,6 +18,7 @@
 <script type="text/javascript">
     var program_base_url = "/onsite/{{ program.getUrlBase }}/";
     var open_class_category = {{ open_class_category }};
+    var onsite_refresh_ms = {{ refresh_interval }};
     {% if initial_student %}
     set_current_student({{ initial_student }});
     {% endif %}

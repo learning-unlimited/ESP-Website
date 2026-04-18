@@ -372,6 +372,10 @@ class OnSiteClassList(ProgramModuleObj):
         context['initial_student'] = request.GET.get('student_id', '')
         context['check_in_default'] = datetime.today().date() in prog.dates()
 
+        #   Configurable auto-refresh interval (in ms) for the class changes grid.
+        #   Defaults to 30000ms (30 seconds) if the Tag is not set.
+        context['refresh_interval'] = int(Tag.getProgramTag('onsite_refresh_interval', prog) or 30000)
+
         open_class_category = prog.open_class_category
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id', 'symbol', 'category'] ] )
         context['open_class_category'] = mark_safe(json.dumps(open_class_category))
