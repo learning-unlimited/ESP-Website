@@ -2135,7 +2135,7 @@ class PersistentQueryFilter(models.Model):
         to pass the query along to multiple pages and retrieval (et al). """
     item_model   = models.CharField(max_length=256)            # A string representing the model, for instance User or Program
     q_filter     = models.BinaryField()                         # A bytestring representing a query filter
-    sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
+    sha1_hash    = models.CharField(max_length=256)            # A hash of the query filter (SHA-256, column name kept for compatibility)
     create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
     useful_name  = models.CharField(max_length=1024, blank=True, null=True) # A nice name to apply to this filter.
 
@@ -2150,7 +2150,7 @@ class PersistentQueryFilter(models.Model):
         dumped_filter = pickle.dumps(q_filter)
 
         # Deal with multiple instances
-        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha256(dumped_filter).hexdigest())
         pqfs = PersistentQueryFilter.objects.filter(query_q)
         if pqfs.exists():
             foo = pqfs[0]

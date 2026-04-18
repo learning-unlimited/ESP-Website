@@ -301,7 +301,7 @@ def histogram(answer_list, args='format=html'):
     template_file = os.path.join(settings.TEMPLATES[0]['DIRS'][0],
                                  'survey', 'histogram_base.eps')
 
-    context['file_name'] = file_name # This guy depends on the SHA-1
+    context['file_name'] = file_name # This guy depends on the hash
 
     #  No point in SHA-1 caching these guys; they're in /tmp
     file_contents = loader.render_to_string(template_file, context)
