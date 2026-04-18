@@ -938,6 +938,24 @@ class ClassSection(models.Model):
         # this user *can* add this class!
         return False
 
+    def get_conflicts(self, user):
+        """ Return a list of sections that conflict with this one for the given user. """
+        section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
+        my_timeslots = set(self.timeslot_ids())
+        conflicts = []
+        for sec in section_list:
+            if sec.parent_class == self.parent_class:
+                conflicts.append(sec)
+                continue
+
+            if hasattr(sec, '_timeslot_ids'):
+                timeslot_ids = set(sec._timeslot_ids)
+            else:
+                timeslot_ids = set(sec.timeslot_ids())
+            if my_timeslots.intersection(timeslot_ids):
+                conflicts.append(sec)
+        return conflicts
+
     def conflicts(self, teacher, meeting_times=None):
         """Return a scheduling conflict if one exists, or None."""
         user = teacher
