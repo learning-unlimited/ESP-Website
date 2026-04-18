@@ -67,7 +67,8 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = [cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
+            sections_qs = teacher.getTaughtSectionsFromProgram(self.program).prefetch_related('meeting_times')
+            classes = [cls for cls in sections_qs
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0]
@@ -101,7 +102,8 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = [cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
+            sections_qs = teacher.getTaughtOrModeratingSectionsFromProgram(self.program).prefetch_related('meeting_times')
+            classes = [cls for cls in sections_qs
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0]
@@ -140,7 +142,8 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = [cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
+            sections_qs = teacher.getModeratingSectionsFromProgram(self.program).prefetch_related('meeting_times')
+            classes = [cls for cls in sections_qs
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0]

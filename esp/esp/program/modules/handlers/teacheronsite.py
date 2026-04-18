@@ -84,7 +84,8 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
 
         context = self.onsitecontext(request, tl, one, two, prog)
 
-        classes = [cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program = prog)
+        sections_qs = user.getTaughtOrModeratingSectionsFromProgram(program = prog).prefetch_related('meeting_times')
+        classes = [cls for cls in sections_qs
                    if cls.meeting_times.all().exists()
                    and cls.resourceassignment_set.all().exists()
                    and cls.status > 0]

@@ -1200,8 +1200,8 @@ class ClassSection(models.Model):
     def _sort_key(self):
         """Return a sort key tuple that works with prefetched meeting_times."""
         start = self.start_time_prefetchable()
-        # Sort None start times after real ones
-        return (start is None, start or datetime.datetime.min, self.title())
+        # Sort None start times before real ones, matching __cmp__ semantics
+        return (start is not None, start or datetime.datetime.min, self.title())
 
     def isFull(self, ignore_changes=False, webapp=False):
         if len(self.get_meeting_times()) == 0:
@@ -2086,9 +2086,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         Returns the earliest start time across all sections.  If sections
         and their meeting_times have been prefetched, this will not hit the DB.
+
+        Uses sections.all() instead of get_sections() to preserve Django's
+        prefetch cache (get_sections() adds order_by which can bypass it).
         """
         starts = []
-        for section in self.get_sections():
+        for section in self.sections.all():
             st = section.start_time_prefetchable()
             if st is not None:
                 starts.append(st)
@@ -2102,8 +2105,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             sorted(subjects, key=lambda s: s._sort_key())
         """
         start = self.start_time_prefetchable()
-        # Sort None start times after real ones
-        return (start is None, start or datetime.datetime.min, self.title)
+        # Sort None start times before real ones, matching __cmp__ semantics
+        return (start is not None, start or datetime.datetime.min, self.title)
 
     def getArchiveClass(self):
         result = ArchiveClass.objects.filter(original_id=self.id)
