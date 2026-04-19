@@ -734,10 +734,12 @@ class StudentClassRegModule(ProgramModuleObj):
 
         module = prog.getModule('OnSiteClassList')
         if module:
-            # Pass GET params through so users can filter by timeslot (?start=<id>).
-            # Use an empty dict (not None) so classList_base never redirects to the
-            # internal options form, but still honours any supplied GET parameters.
-            options = request.GET.copy() if request.GET else {}
+            # Forward only supported public filtering params to avoid exposing
+            # internal classList options.
+            options = {}
+            for key in ('start', 'end', 'sorting'):
+                if key in request.GET:
+                    options[key] = request.GET.get(key)
             return module.classList_base(request, tl, one, two, module, 'by_time', prog, options=options, template_name='openclasses.html')
 
         #  Otherwise this will be a 404
