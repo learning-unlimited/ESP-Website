@@ -130,7 +130,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
                         lineitem_form = LineItemForm(request.POST, instance=instance)
                     except (LineItemType.DoesNotExist, ValueError, KeyError):
                         raise ESPError("Invalid or missing Line Item ID.")
-                    else:
+                else:
                         lineitem_form = LineItemForm(request.POST)
                         options_formset = OptionFormset(request.POST, prefix='options')
             if lineitem_form.is_valid() and options_formset.is_valid():
