@@ -451,11 +451,21 @@ var CatalogViewModel = function () {
                 data: data,
                 success: function (data) {
                     // update dirty bits
+                    var excluded = [];
+                    if (data && data.excluded_ids && data.excluded_ids.length > 0) {
+                        excluded = data.excluded_ids;
+                    }
+                    var excludedLookup = {};
+                    for (var i = 0; i < excluded.length; i++) {
+                        excludedLookup[excluded[i]] = true;
+                    }
                     var classes = self.classes();
                     ko.utils.arrayForEach(updates.interested,
                         function (cls_id) {
                             var cls = classes[cls_id];
-                            cls.interested_saved(true);
+                            if (!excludedLookup[cls_id]) {
+                                cls.interested_saved(true);
+                            }
                         });
                     ko.utils.arrayForEach(updates.not_interested,
                         function (cls_id) {

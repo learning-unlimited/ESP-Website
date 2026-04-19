@@ -40,7 +40,6 @@ logger = logging.getLogger(__name__)
 from django.conf import settings
 from django.contrib import messages
 from django.db.models import Min, Q
-from django.contrib import messages
 from django.http import HttpResponse, HttpResponseBadRequest, Http404, JsonResponse
 from django.template.loader import render_to_string
 
@@ -311,8 +310,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
         to_unexpire.update(end_date=None)
         # Determine which valid ids haven't had SSIs created yet
         # and bulk create those objects.
-        valid_ids = valid_classes.values_list('pk', flat=True)
-        existing_ids = to_unexpire.values_list('subject__pk', flat=True)
+        valid_ids = list(valid_classes.values_list('pk', flat=True))
+        existing_ids = list(to_unexpire.values_list('subject__pk', flat=True))
         to_create_ids = set(valid_ids) - set(existing_ids)
         StudentSubjectInterest.objects.bulk_create([
             StudentSubjectInterest(
@@ -325,21 +324,30 @@ class StudentRegTwoPhase(ProgramModuleObj):
             subject__pk__in=json_data['not_interested'])
         to_expire.update(end_date=datetime.datetime.now())
 
-        # Report any class IDs that were silently excluded due to grade range
-        excluded_ids = list(set(json_data['interested']) - set(valid_ids))
+        # Report only class IDs excluded for grade-range reasons.
+        eligible_non_grade = ClassSubject.objects.filter(
+            pk__in=json_data['interested'],
+            parent_program=prog,
+            status__gte=0,
+        )
+        excluded_ids = list(eligible_non_grade.exclude(pk__in=valid_ids).values_list('pk', flat=True))
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'excluded_ids': excluded_ids})
         else:
+            excluded_classes = ClassSubject.objects.filter(
+                pk__in=excluded_ids,
+                parent_program=prog,
+                status__gte=0,
+            )
+            excluded_by_id = {cls.pk: cls for cls in excluded_classes}
             for exc_id in excluded_ids:
-                try:
-                    exc_cls = ClassSubject.objects.get(pk=exc_id)
+                exc_cls = excluded_by_id.get(exc_id)
+                if exc_cls is not None:
                     messages.warning(
                         request,
                         'Class "%s" (grades %d\u2013%d) was not starred '
                         'because you are outside its grade range.'
                         % (exc_cls.title, exc_cls.grade_min, exc_cls.grade_max))
-                except ClassSubject.DoesNotExist:
-                    pass
             return self.goToCore(tl)
 
     @aux_call
