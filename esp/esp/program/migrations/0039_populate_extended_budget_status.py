@@ -4,17 +4,11 @@ from django.db import migrations
 
 
 def populate_extended_budget_status(apps, schema_editor):
-    ClassSubject = apps.get_model('program', 'ClassSubject')
-    for cls in (
-        ClassSubject.objects
-        .filter(extended_budget_status=0)
-        .exclude(purchase_requests__isnull=True)
-        .exclude(purchase_requests='')
-        .iterator()
-    ):
-        if cls.purchase_requests and cls.purchase_requests.strip():
-            cls.extended_budget_status = 10  # Pending
-            cls.save(update_fields=['extended_budget_status'])
+    # Intentionally do not backfill from purchase_requests.
+    # That field predates the extended-budget workflow and was used for
+    # general planned/reimbursable supplies, so treating legacy text as an
+    # explicit request would create noisy false-positive pending requests.
+    pass
 
 
 def noop_reverse(apps, schema_editor):
