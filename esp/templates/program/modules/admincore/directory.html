@@ -29,9 +29,9 @@
                 });
             }
         });
-        
+
         // Hide checklist by default to sync with the initial unchecked toggle state (Timeline mode)
-        $j(".task-checklist-widget").hide(); 
+        $j(".task-checklist-widget").hide();
 
         // Filter Logic
         $j("#filter-required-only").on("change", function () {
@@ -163,7 +163,7 @@
     margin-bottom: 8px;
     transition: background-color 0.2s, box-shadow 0.2s;
 }
-.collapsible-btn:hover { 
+.collapsible-btn:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .collapsible-content {
@@ -196,11 +196,11 @@
 
 <div class="dashboard-v2-container">
     <div class="dashboard-main-card">
-        
+
         <div class="search-bar-wrapper" id="admin_search_wrapper" style="float: right; margin-bottom: 20px; position:relative; width: 320px;">
             <input type="text" id="admin_search_input" placeholder="Search modules, pages..." class="dashboard-search-bar" style="width: 100%; padding-left: 35px; border-radius:30px;">
             <i class="glyphicon glyphicon-search search-icon text-muted" style="position: absolute; left: 12px; top: 12px;"></i>
-            
+
             <div id="admin_search_results" style="margin-top: 10px; display: none; position: absolute; right: 0; background: white; border: 1px solid #e0e0e0; width: 100%; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 1000; max-height: 400px; overflow-y: auto;"></div>
             <div id="admin_search_empty" class="text-muted" style="margin-top: 10px; display: none; font-style: italic; position: absolute; right: 0; background: white; padding: 10px; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 1000;">
                 No modules found for that search. Look under <a href="#additional_modules">Additional Modules</a> at the bottom of this page for more options.
@@ -234,7 +234,7 @@
                     <input type="range" min="1" max="100" value="50" class="zoom-slider">
                 </div>
             </div>
-            
+
             <div class="toggle-switch-wrapper well well-sm" style="margin: 0; padding: 10px 15px; border-radius: 30px; display: flex; align-items: center;">
                 <span class="toggle-label text-muted" style="font-weight:600;">Timeline</span>
                 <label class="switch" style="margin:0 10px;">
@@ -248,7 +248,7 @@
         <!-- Horizontal Timeline -->
         <div class="horizontal-timeline-wrapper" style="min-height: 220px; overflow-x: auto; padding-bottom:20px; border: 1px solid #f1f1f1; border-radius: 8px; padding-top:20px; background:#fafbfc;">
             <div class="horizontal-timeline" id="setup_timeline">
-                
+
                 {% for module in modules %}
                     {% if module.isStep %}
                         {% if module.isCompleted %}
@@ -332,7 +332,7 @@
         <div style="margin: 40px 0;"><hr style="border-top: 2px dashed #eaeaea;"></div>
         <h3 style="font-weight:bold; margin-bottom: 20px; font-size:18px;">Program Configuration Modules</h3>
 
-        
+
         <button class="collapsible-btn">Onsite <span class="dropdown-icon text-muted" style="float: right; font-size: 14px;">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
