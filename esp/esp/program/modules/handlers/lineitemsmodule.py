@@ -128,12 +128,13 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
                     try:
                         instance = LineItemType.objects.get(id=request.POST['id_lineitem'])
                         lineitem_form = LineItemForm(request.POST, instance=instance)
+                        options_formset = OptionFormset(request.POST, queryset=instance.lineitemoptions_set.all(), prefix='options')
                     except (LineItemType.DoesNotExist, ValueError, KeyError):
                         raise ESPError("Invalid or missing Line Item ID.")
                 else:
-                        lineitem_form = LineItemForm(request.POST)
-                        options_formset = OptionFormset(request.POST, prefix='options')
-            if lineitem_form.is_valid() and options_formset.is_valid():
+                    lineitem_form = LineItemForm(request.POST)
+                    options_formset = OptionFormset(request.POST, prefix='options')
+                if lineitem_form.is_valid() and options_formset.is_valid():
                     if LineItemType.objects.filter(text = lineitem_form.cleaned_data['text'], program = prog).exists() and 'id_lineitem' not in request.POST:
                         lineitem_form.add_error('text', 'A line item with that name already exists. Please choose another name.')
                         context['lineitem_form'] = lineitem_form
@@ -149,8 +150,8 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
                             option.lineitem_type = lineitem
                             option.save()
             else:
-                    context['lineitem_form'] = lineitem_form
-                    context['option_formset'] = options_formset
+                context['lineitem_form'] = lineitem_form
+                context['option_formset'] = options_formset
         if 'lineitem_form' not in context:
             context['lineitem_form'] = LineItemForm()
         if 'option_formset' not in context:
