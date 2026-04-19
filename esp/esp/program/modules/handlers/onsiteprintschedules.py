@@ -40,7 +40,7 @@ from datetime         import datetime
 from esp.utils.web    import render_to_response
 from esp.utils.models import Printer, PrintRequest
 
-class OnsitePrintSchedules(ProgramPrintables):
+class OnsitePrintSchedules(ProgramModuleObj):
     doc = """Automatically print student schedules at onsite registration."""
 
     @classmethod
