@@ -285,12 +285,12 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
 
     def test_studentschedules_onsite_success(self):
         """Test studentschedules is reachable via /onsite/ with a valid userid (no 404)"""
+        from unittest.mock import patch
         self._login_admin()
         user = self.students[0]
-        response = self.client.get('/onsite/%s/studentschedules?userid=%s' % (self.program.getUrlBase(), user.id))
-        # Should not 404 - the view is reachable and userid validation passed
-        # May return 500 if pdflatex is not installed in the test environment
-        self.assertIn(response.status_code, [200, 500])
+        with patch('esp.utils.latex._gen_latex', return_value=b'%PDF mock'):
+            response = self.client.get('/onsite/%s/studentschedules?userid=%s' % (self.program.getUrlBase(), user.id))
+        self.assertNotEqual(response.status_code, 404)
 
     def test_student_financial_spreadsheet_invalid_userid(self):
         """Test student_financial_spreadsheet returns error when userid is invalid (non-numeric)"""
@@ -320,12 +320,12 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
 
     def test_onsiteprintschedules_userid_success(self):
         """Test OnsitePrintSchedules.printschedules is reachable with a valid userid (no 404)"""
+        from unittest.mock import patch
         self._login_admin()
         user = self.students[0]
-        response = self.client.get('/onsite/%s/printschedules?userid=%s' % (self.program.getUrlBase(), user.id))
-        # Should not 404 - the view is reachable and userid validation passed
-        # May return 500 if pdflatex is not installed in the test environment
-        self.assertIn(response.status_code, [200, 500])
+        with patch('esp.utils.latex._gen_latex', return_value=b'%PDF mock'):
+            response = self.client.get('/onsite/%s/printschedules?userid=%s' % (self.program.getUrlBase(), user.id))
+        self.assertNotEqual(response.status_code, 404)
 
     def test_onsiteprintschedules_invalid_userid(self):
         """Test printschedules returns error when userid is invalid (non-numeric)"""
