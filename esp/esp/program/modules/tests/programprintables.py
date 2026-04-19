@@ -289,7 +289,8 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
         user = self.students[0]
         response = self.client.get('/onsite/%s/studentschedules?userid=%s' % (self.program.getUrlBase(), user.id))
         # Should not 404 - the view is reachable and userid validation passed
-        self.assertNotEqual(response.status_code, 404)
+        # May return 500 if pdflatex is not installed in the test environment
+        self.assertIn(response.status_code, [200, 500])
 
     def test_student_financial_spreadsheet_invalid_userid(self):
         """Test student_financial_spreadsheet returns error when userid is invalid (non-numeric)"""
@@ -323,7 +324,8 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
         user = self.students[0]
         response = self.client.get('/onsite/%s/printschedules?userid=%s' % (self.program.getUrlBase(), user.id))
         # Should not 404 - the view is reachable and userid validation passed
-        self.assertNotEqual(response.status_code, 404)
+        # May return 500 if pdflatex is not installed in the test environment
+        self.assertIn(response.status_code, [200, 500])
 
     def test_onsiteprintschedules_invalid_userid(self):
         """Test printschedules returns error when userid is invalid (non-numeric)"""

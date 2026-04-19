@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 import json
 from django.http      import HttpResponse
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from datetime         import datetime
 from esp.utils.web    import render_to_response
@@ -42,6 +42,16 @@ from esp.utils.models import Printer, PrintRequest
 
 class OnsitePrintSchedules(ProgramModuleObj):
     doc = """Automatically print student schedules at onsite registration."""
+
+    @aux_call
+    @needs_onsite
+    def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog):
+        return ProgramPrintables.student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog)
+
+    @aux_call
+    @needs_onsite_no_switchback
+    def studentschedules(self, request, tl, one, two, module, extra, prog):
+        return ProgramPrintables.studentschedules(self, request, tl, one, two, module, extra, prog)
 
     @classmethod
     def module_properties(cls):
