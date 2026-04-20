@@ -1,3 +1,4 @@
+import django.utils.timezone as _tz
 # -*- coding: utf-8 -*-
 
 from django.db import models, migrations
@@ -42,7 +43,7 @@ class Migration(migrations.Migration):
                 ('special_headers', models.TextField(null=True, blank=True)),
                 ('sendto_fn_name', models.CharField(default='', help_text='The function that specifies, for each recipient of the message, which set of associated email addresses should receive the message.', max_length=128, verbose_name='sendto function', choices=[('', 'send to user'), ('send_to_guardian', 'send to guardian'), ('send_to_emergency', 'send to emergency contact'), ('send_to_self_and_guardian', 'send to user and guardian'), ('send_to_self_and_emergency', 'send to user and emergency contact'), ('send_to_guardian_and_emergency', 'send to guardian and emergency contact'), ('send_to_self_and_guardian_and_emergency', 'send to user and guardian and emergency contact')])),
                 ('sender', models.TextField(null=True, blank=True)),
-                ('created_at', models.DateTimeField(default=datetime.datetime.now, help_text='The time this object was created at. Useful for informational purposes, and also as a safety mechanism for preventing un-sent (because of previous bugs and failures), out-of-date messages from being sent.', editable=False)),
+                ('created_at', models.DateTimeField(default=_tz.now, help_text='The time this object was created at. Useful for informational purposes, and also as a safety mechanism for preventing un-sent (because of previous bugs and failures), out-of-date messages from being sent.', editable=False)),
                 ('processed', models.BooleanField(default=False, db_index=True)),
                 ('processed_by', models.DateTimeField(default=None, null=True, db_index=True)),
                 ('priority_level', models.IntegerField(null=True, blank=True)),
