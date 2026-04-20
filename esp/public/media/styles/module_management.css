@@ -1,0 +1,96 @@
+.connectedSortable {
+    width: 80%;
+    min-height: 20px;
+    list-style-type: none;
+    padding-left: calc(10% - 5px);
+    padding-right: 10%;
+    margin-bottom: 25px;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.connectedSortable li {
+    padding: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    font-size: 1.2em;
+    width: 100%;
+    cursor: pointer;
+}
+
+.connectedSortable li input {
+    font-size: small !important;
+    max-width: 80%;
+}
+
+.connectedSortable li input.link_title_input {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-top: 2px;
+}
+
+.column {
+    width: 100%;
+    text-align: center;
+    border: 1px dashed #aaa;
+    margin-bottom: 10px;
+}
+
+.wrapper {
+    float: left;
+    width: 46%;
+    margin-left: 2%;
+    margin-right: 2%;
+}
+
+.wrapper h2 {
+    text-align: center;
+}
+
+/* Modules whose position is enforced by the system (position_locked).
+   These items are fully frozen: they cannot be dragged at all.
+   Modules that are only required/not_required locked are NOT styled here;
+   they remain draggable within their list and are only blocked from
+   crossing lists (see module_management.js).  Issue #3656. */
+.connectedSortable li.module-locked {
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+
+/* Per-constraint icons shown inline before the module name.  Issue #3656. */
+.constraint-icon-position,
+.constraint-icon-required,
+.constraint-icon-not-required {
+    font-size: 0.75em;
+    margin-right: 2px;
+    vertical-align: middle;
+}
+
+.constraint-icon-position     { color: #555; }
+.constraint-icon-required     { color: #5cb85c; }  /* green — must be required */
+.constraint-icon-not-required { color: #d9534f; }  /* red   — cannot be required */
+
+/* Icon legend shown above the module lists. */
+.module-constraint-legend {
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.module-constraint-legend .legend-item {
+    margin-left: 12px;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

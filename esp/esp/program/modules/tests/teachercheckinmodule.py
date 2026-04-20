@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 import datetime
 import phonenumbers
 
+from esp.cal.models import Event, EventType
 from esp.program.controllers.classreg import ClassCreationController
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -142,3 +143,47 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         response = self.client.get('%smissingteachers' % self.program.get_onsite_url())
         phone = phonenumbers.format_number(self.teacher.getLastProfile().contact_user.phone_cell, phonenumbers.PhoneNumberFormat.NATIONAL)
         self.assertIn(phone, str(response.content, encoding='UTF-8'))
+
+    def test_previously_checked_in_returned(self):
+        """Teachers checked in on the previous program day appear in
+        previously_checked_in (and not those already checked in today)."""
+        # Create a second day of timeslots so prog.dates() returns two dates.
+        day2_start = self.settings['start_time'] + datetime.timedelta(days=1)
+        event_type = EventType.get_from_desc('Class Time Block')
+        Event.objects.get_or_create(
+            program=self.program,
+            event_type=event_type,
+            start=day2_start,
+            end=day2_start + datetime.timedelta(minutes=50),
+            short_description='Day2 Slot',
+            description=day2_start.strftime("%H:%M %m/%d/%Y"),
+        )
+
+        day1 = self.settings['start_time'].date()
+        day2 = day2_start.date()
+        self.assertIn(day1, self.program.dates())
+        self.assertIn(day2, self.program.dates())
+
+        # Check in the teacher on day 1.
+        self.checkIn(when=self.settings['start_time'])
+        self.assertTrue(self.isCheckedIn(when=self.settings['start_time']))
+
+        # Query getMissingTeachers for day 2 (teacher has NOT checked in on
+        # day 2, but did check in on day 1).
+        when_day2 = datetime.datetime.combine(day2, self.settings['start_time'].time())
+        _sections, _arrived, prev = self.module.getMissingTeachers(
+            self.program, date=day2, when=when_day2)
+        self.assertIn(self.teacher.id, prev)
+
+        # Now check in the teacher on day 2 as well — they should no longer
+        # appear in previously_checked_in.
+        self.checkIn(when=when_day2)
+        _sections, _arrived, prev = self.module.getMissingTeachers(
+            self.program, date=day2, when=when_day2)
+        self.assertNotIn(self.teacher.id, prev)
+
+    def test_previously_checked_in_empty_on_first_day(self):
+        """On the first program day, previously_checked_in should be empty."""
+        _sections, _arrived, prev = self.module.getMissingTeachers(
+            self.program, date=self.settings['start_time'].date(), when=self.now)
+        self.assertEqual(prev, set())

@@ -44,16 +44,17 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
-from esp.users.models    import ESPUser, Record
+from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
 
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student_in_grade, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_onsite_no_switchback, needs_student_in_grade, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
 from esp.utils.models import Printer, PrintRequest
+from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
@@ -262,8 +263,9 @@ class OnSiteClassList(ProgramModuleObj):
             desired_sections = None
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
-        if request.GET.get('check_in') == 'true' and not prog.isCheckedIn(user):
-            rec = Record(user=user, program=prog, event='attended')
+        if request.GET.get('check_in') == 'true' and user and not prog.isCheckedIn(user):
+            rt = RecordType.objects.get(name='attended')
+            rec = Record(user=user, program=prog, event=rt)
             rec.save()
 
         if user and desired_sections is not None:
@@ -349,6 +351,18 @@ class OnSiteClassList(ProgramModuleObj):
 
         json.dump(result, resp)
         return resp
+
+    @aux_call
+    @needs_onsite_no_switchback
+    def schedule_pdf(self, request, tl, one, two, module, extra, prog):
+        user_param = request.GET.get('user', None)
+        try:
+            user_id = int(user_param)
+            user_obj = ESPUser.objects.get(id=user_id)
+        except (ValueError, TypeError, ESPUser.DoesNotExist):
+            return HttpResponse("Error: Could not find user.", status=400, content_type="text/plain")
+
+        return ProgramPrintables.get_student_schedules(request, [user_obj], prog, onsite=False)
 
     @aux_call
     @needs_onsite

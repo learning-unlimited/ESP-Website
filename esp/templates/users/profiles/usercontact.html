@@ -88,8 +88,6 @@
 </div>
 {% endif %}
 
-{{ form.address_postal }}
-
 {% if form.phone_day or form.phone_cell %}
 <h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<font color="red">*</font>{% endif %}</h4>
 
