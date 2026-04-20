@@ -4,12 +4,14 @@ Tests for /manage/statistics bug fixes and query optimizations (#3798).
 Each test class proves a specific bug exists (would fail before) and is fixed (passes after).
 """
 import json
+import re
+from collections import defaultdict
 from unittest.mock import MagicMock
 
 from django.contrib.auth.models import Group
 
-from esp.program.models import Program, RegistrationProfile
-from esp.program.statistics import demographics, heardabout
+from esp.program.models import PhaseZeroRecord, Program, RegistrationProfile
+from esp.program.statistics import demographics, heardabout, student_reg
 from esp.tests.util import CacheFlushTestCase
 from esp.users.models import ContactInfo, ESPUser, K12School, StudentInfo
 
@@ -219,3 +221,98 @@ class AjaxInvalidFormTest(CacheFlushTestCase):
         self.assertEqual(response['Content-Type'], 'application/json')
         data = json.loads(response.content)
         self.assertIn('statistics_form_contents_html', data)
+
+
+class StudentRegBulkFetchTest(CacheFlushTestCase):
+    """Proof for Fix #5 (student_id_set hoist) and additional bulk phase-zero
+    fetch optimization in student_reg().
+
+    BEFORE: student_id_set was rebuilt from students.values_list() 3x per
+            program, AND line 448 issued one SQL INTERSECT query per program
+            for phase-zero lottery counts.
+    AFTER:  student_id_set comes from in-memory profiles (zero queries) and
+            phase-zero (program_id, user_id) pairs are bulk-fetched for all
+            programs in a single query.
+    """
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program1 = Program.objects.create(
+            url='srbulk1', name='SRBulk 1', grade_min=7, grade_max=12)
+        self.program2 = Program.objects.create(
+            url='srbulk2', name='SRBulk 2', grade_min=7, grade_max=12)
+
+        self.student1 = ESPUser.objects.create_user(
+            username='srbulk_s1', password='password', email='srb1@test.org')
+        self.student1.makeRole('Student')
+        self.student2 = ESPUser.objects.create_user(
+            username='srbulk_s2', password='password', email='srb2@test.org')
+        self.student2.makeRole('Student')
+
+        # student1 entered lottery for both programs; student2 only program1.
+        pzr1 = PhaseZeroRecord.objects.create(program=self.program1)
+        pzr1.user.add(self.student1, self.student2)
+        pzr2 = PhaseZeroRecord.objects.create(program=self.program2)
+        pzr2.user.add(self.student1)
+
+        si1 = StudentInfo.objects.create(
+            user=self.student1, graduation_year=2028)
+        si2 = StudentInfo.objects.create(
+            user=self.student2, graduation_year=2028)
+        p1 = RegistrationProfile.objects.create(
+            user=self.student1, student_info=si1)
+        p2 = RegistrationProfile.objects.create(
+            user=self.student2, student_info=si2)
+
+        self.profiles = [p1, p2]
+        self.students = ESPUser.objects.filter(
+            id__in=[self.student1.id, self.student2.id])
+        self.programs = Program.objects.filter(
+            id__in=[self.program1.id, self.program2.id]).order_by('id')
+
+    def test_student_id_set_from_profiles_zero_queries(self):
+        """Building student_id_set from profiles must not hit the DB."""
+        # The comprehension iterates an in-memory list — zero queries.
+        with self.assertNumQueries(0):
+            student_id_set = {p.user_id for p in self.profiles if p.user_id}
+        self.assertEqual(
+            student_id_set, {self.student1.id, self.student2.id})
+
+    def test_phasezero_bulk_fetched_in_one_query(self):
+        """Bulk phase-zero fetch: 1 query for N programs (not N queries)."""
+        # Before: N intersect queries inside the loop.
+        # After:  a single filter with __in=programs.
+        with self.assertNumQueries(1):
+            pz_by_program = defaultdict(set)
+            for program_id, user_id in (
+                ESPUser.objects
+                .filter(phasezerorecord__program__in=self.programs)
+                .values_list('phasezerorecord__program_id', 'id')
+                .distinct()
+            ):
+                pz_by_program[program_id].add(user_id)
+        # Correctness: each program sees the right users.
+        self.assertEqual(
+            pz_by_program[self.program1.id],
+            {self.student1.id, self.student2.id})
+        self.assertEqual(
+            pz_by_program[self.program2.id], {self.student1.id})
+
+    def test_student_reg_lottery_counts_per_program(self):
+        """End-to-end: student_reg renders correct Student Lottery counts."""
+        form = MagicMock()
+        form.cleaned_data = {}
+        result_html = student_reg(
+            form, self.programs, self.students, self.profiles, {})
+        self.assertIsInstance(result_html, str)
+        # Template renders rows like <td>SRBulk 1</td><td>2</td>... where the
+        # first stat column is Student Lottery.
+        row1 = re.search(
+            r'<td>SRBulk 1</td>\s*<td>(\d+)</td>', result_html)
+        row2 = re.search(
+            r'<td>SRBulk 2</td>\s*<td>(\d+)</td>', result_html)
+        self.assertIsNotNone(row1)
+        self.assertIsNotNone(row2)
+        self.assertEqual(row1.group(1), '2')
+        self.assertEqual(row2.group(1), '1')

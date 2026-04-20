@@ -442,10 +442,20 @@ def student_reg(form, programs, students, profiles, result_dict={}):
     # ordered dictionary so the legend is in order
     series_data = OrderedDict((stat, []) for stat in stat_names)
     student_id_set = {p.user_id for p in profiles if p.user_id}
+    # Bulk-fetch phase-zero (program_id, user_id) pairs across all programs in
+    # one query, replacing one SQL INTERSECT query per program inside the loop.
+    phasezero_by_program = defaultdict(set)
+    for program_id, user_id in (
+        ESPUser.objects
+        .filter(phasezerorecord__program__in=programs)
+        .values_list('phasezerorecord__program_id', 'id')
+        .distinct()
+    ):
+        phasezero_by_program[program_id].add(user_id)
     for program in programs:
         stats_list = []
         # entered student lottery
-        stud_lott_num = ESPUser.objects.filter(phasezerorecord__program=program).intersection(students).distinct().count()
+        stud_lott_num = len(phasezero_by_program.get(program.id, set()) & student_id_set)
         series_data['Student Lottery'].append([program.name, stud_lott_num])
         stats_list.append(stud_lott_num)
         # set class lottery preferences
