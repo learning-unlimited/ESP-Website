@@ -85,7 +85,10 @@ def zipcodes(form, programs, students, profiles, result_dict=None):
         result_dict['zip_data'] = result_dict['zip_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/zip_codes.html', result_dict)
 
-def demographics(form, programs, students, profiles, result_dict={}):
+def demographics(form, programs, students, profiles, result_dict=None):
+    # Initialize a fresh dictionary per request to prevent cross-request data leakage
+    if result_dict is None:
+        result_dict = {}
 
     # Dynamically find the open class category IDs for the given programs
     open_class_cat_ids = []
