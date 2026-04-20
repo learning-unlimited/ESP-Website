@@ -257,11 +257,19 @@ var CatalogViewModel = function () {
             $j.ajax({
                 type: 'POST',
                 url: url,
+                dataType: 'json',
                 data: {
                     csrfmiddlewaretoken: csrf_token(),
                     class_id: classData.id
                 },
                 success: function (resp) {
+                    if (typeof resp === 'string') {
+                        try {
+                            resp = JSON.parse(resp);
+                        } catch (e) {
+                            resp = {};
+                        }
+                    }
                     classData.validationError(resp.error || null);
                 },
                 error: function (xhr) {

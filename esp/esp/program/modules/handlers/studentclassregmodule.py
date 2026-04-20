@@ -341,7 +341,7 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             try:
                 sec_ids = [int(x) for x in extra.split(',')]
-            except:
+            except (ValueError, TypeError, AttributeError):
                 pass
 
         for sec_id in sec_ids:
@@ -430,7 +430,7 @@ class StudentClassRegModule(ProgramModuleObj):
                     #   Rewrite the registration button if possible.  This requires telling
                     #   the ajax_schedule view what section was added/changed.
                     extra = request.POST['section_id']
-                except:
+                except KeyError:
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
@@ -448,6 +448,12 @@ class StudentClassRegModule(ProgramModuleObj):
         class_id = request.POST.get('class_id')
         if not class_id:
             raise AjaxError('No class specified.')
+
+        try:
+            class_id = int(class_id)
+        except (TypeError, ValueError):
+            raise AjaxError('Class not found.')
+
         try:
             cobj = ClassSubject.objects.get(id=class_id)
         except ClassSubject.DoesNotExist:
@@ -487,7 +493,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         try:
             extra = int(extra)
-        except:
+        except (TypeError, ValueError):
             raise ESPError('Please use the link at the main registration page.', log=False)
         user = request.user
         ts = Event.objects.filter(id=extra, program=prog)
@@ -758,6 +764,15 @@ class StudentClassRegModule(ProgramModuleObj):
             # Use an empty dict (not None) so classList_base never redirects to the
             # internal options form, but still honours any supplied GET parameters.
             options = request.GET.copy() if request.GET else {}
+
+            # classList_base expects integer start/end IDs; drop malformed values.
+            for key in ('start', 'end'):
+                if key in options:
+                    try:
+                        options[key] = str(int(options.get(key)))
+                    except (TypeError, ValueError):
+                        options.pop(key, None)
+
             return module.classList_base(request, tl, one, two, module, 'by_time', prog, options=options, template_name='openclasses.html')
 
         #  Otherwise this will be a 404
