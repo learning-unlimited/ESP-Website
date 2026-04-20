@@ -5,6 +5,7 @@ from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 import datetime
+from django.utils import timezone
 
 from esp.users.forms import _states
 
@@ -507,10 +508,10 @@ all_global_tags = {
     'grade_increment_date': {
         'is_boolean': False,
         'help_text': 'When should students\' grades rollover/increment?',
-        'default': datetime.date(datetime.date.today().year, 7, 31),
+        'default': datetime.date(timezone.localtime(timezone.now()).year, 7, 31),
         'category': 'learn',
         'is_setting': True,
-        'field': forms.DateField(widget=forms.SelectDateWidget(years=[datetime.date.today().year]))
+        'field': forms.DateField(widget=forms.SelectDateWidget(years=[timezone.localtime(timezone.now()).year]))
     },
     'current_theme_version': {
         'is_boolean': False,

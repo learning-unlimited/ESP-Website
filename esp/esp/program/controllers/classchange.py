@@ -692,7 +692,7 @@ class ClassChangeController(object):
             self.changed[student_ind] = True
 
     def unsave_assignments(self):
-        StudentRegistration.objects.filter(end_date__gte=self.now, end_date__lte=datetime(9000, 1, 1)).update(end_date=None)
+        StudentRegistration.objects.filter(end_date__gte=self.now, end_date__lte=timezone.make_aware(datetime(9000, 1, 1))).update(end_date=None)
         StudentRegistration.objects.filter(start_date__gte=self.now).delete()
 
     def send_student_email(self, student_ind, changed = True, for_real = False, f = None):
