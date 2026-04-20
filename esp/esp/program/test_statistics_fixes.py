@@ -64,8 +64,14 @@ class HeardAboutNormalizationTest(CacheFlushTestCase):
             form, self.programs, self.students, self.profiles, {})
         # After fix: both variants collapse to one entry with count=2.
         # Before fix: they'd be two separate entries with count=1 each.
-        # We parse the result to check.
-        self.assertIn('2', result_html)
+        # Exactly one of the two variants should appear as a row label
+        # (whichever was seen first — the other gets merged into it).
+        my_friend_present = 'my friend' in result_html
+        my_hyphen_friend_present = 'my-friend' in result_html
+        self.assertNotEqual(my_friend_present, my_hyphen_friend_present)
+        # The count cell should render as >2< (inside <td>2</td>).
+        # Using >2< avoids false positives from <h2> in the template.
+        self.assertIn('>2<', result_html)
 
 
 class DemographicsNoneGradYearTest(CacheFlushTestCase):
