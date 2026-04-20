@@ -170,7 +170,8 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
 
         # Query getMissingTeachers for day 2 (teacher has NOT checked in on
         # day 2, but did check in on day 1).
-        when_day2 = datetime.datetime.combine(day2, self.settings['start_time'].time())
+        from django.utils import timezone
+        when_day2 = timezone.make_aware(datetime.datetime.combine(day2, self.settings['start_time'].time()))
         _sections, _arrived, prev = self.module.getMissingTeachers(
             self.program, date=day2, when=when_day2)
         self.assertIn(self.teacher.id, prev)
