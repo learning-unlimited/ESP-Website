@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.accounting.models import LineItemType, LineItemOptions
-from esp.error.models import ESPError
+from esp.middleware import ESPError
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call
 from esp.program.modules.admin_search import AdminSearchEntry
