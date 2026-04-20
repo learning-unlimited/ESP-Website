@@ -3,8 +3,7 @@ set -euf -o pipefail
 
 if [ "$CI_JOB" = "test" ]; then
     cp esp/esp/local_settings.py.ci esp/esp/local_settings.py
-    ln -f -s `pwd`/esp/public/media/default_images esp/public/media/images
-    ln -f -s `pwd`/esp/public/media/default_styles esp/public/media/styles
+
     # the postgres service in Github Actions sets up the database for us
     if [ "$GITHUB_ACTIONS" != true ]; then
         psql -c "DROP DATABASE IF EXISTS test_test_django;" -U postgres

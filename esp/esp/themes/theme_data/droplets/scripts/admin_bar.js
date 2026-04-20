@@ -81,14 +81,32 @@ if (currentPrograms && currentPrograms.forEach) {
     });
 }
 
-ESP.registerAdminModule({
-    content_html: '<div class="content">' +
-                  '<a href="/manage/programs/">Manage all programs</a><br/>' +
-                  '<a href="/manage/pages">Manage static pages</a><br />' +
-                  (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
-                  '<a href="/admin/filebrowser/browse/">Manage media files</a><br />' +
-                  '<a href="/themes/">Manage theme settings</a>' +
-                  '</div>',
-    name: 'Other',
-    displayName: 'Other Important Links'
-});
+(function() {
+    // Default hardcoded links -- never removed, only added to
+    var linksHtml = '<a href="/manage/programs/">Manage all programs</a><br/>' +
+                    '<a href="/manage/pages">Manage static pages</a><br />' +
+                    (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
+                    '<a href="/admin/filebrowser/browse/">Manage media files</a><br />' +
+                    '<a href="/themes/">Manage theme settings</a><br />' +
+                    '<a href="/manage/docs/">Website Documentation</a>';
+
+    // Append extra links configured in theme settings (never replaces defaults)
+    if (Array.isArray(toolbarLinks) && toolbarLinks.length > 0) {
+        toolbarLinks.forEach(function(link) {
+            // Only allow relative URLs and http/https to prevent XSS
+            var url = link.link;
+            if (url && (url.indexOf('/') === 0 || url.indexOf('http://') === 0 || url.indexOf('https://') === 0)) {
+                var a = document.createElement('a');
+                a.href = url;
+                a.textContent = link.text;
+                linksHtml += '<br/>' + a.outerHTML;
+            }
+        });
+    }
+
+    ESP.registerAdminModule({
+        content_html: '<div class="content">' + linksHtml + '</div>',
+        name: 'Other',
+        displayName: 'Other Important Links'
+    });
+})();
