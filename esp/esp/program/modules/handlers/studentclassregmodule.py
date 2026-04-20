@@ -450,6 +450,39 @@ class StudentClassRegModule(ProgramModuleObj):
             error_message = inst.args[0] if inst.args else "An error occurred."
             return HttpResponse(json.dumps({'status' : 200, 'error': str(error_message)}), content_type='application/json')
 
+    @aux_call
+    @needs_student_in_grade
+    @meets_deadline('/Classes')
+    def ajax_validate_class(self, request, tl, one, two, module, extra, prog):
+        """ Validate whether the current student can add a class without enrolling them.
+            Accepts POST['class_id']. Returns JSON {'error': string_or_null}.
+        """
+        scrmi = prog.studentclassregmoduleinfo
+
+        def error_response(message):
+            resp = HttpResponse(content_type='application/json')
+            json.dump({'error': message}, resp)
+            return resp
+
+        class_id = request.POST.get('class_id')
+        if not class_id:
+            return error_response('No class specified.')
+
+        try:
+            class_id = int(class_id)
+        except (TypeError, ValueError):
+            return error_response('Class not found.')
+
+        try:
+            cobj = ClassSubject.objects.get(id=class_id)
+        except ClassSubject.DoesNotExist:
+            return error_response('Class not found.')
+
+        error = cobj.cannotAdd(request.user, scrmi.enforce_max)
+        resp = HttpResponse(content_type='application/json')
+        json.dump({'error': error or None}, resp)
+        return resp
+
     @staticmethod
     def sort_categories(classes, prog, force_sort=False):
         categories = {}
@@ -484,7 +517,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         try:
             extra = int(extra)
-        except (ValueError, TypeError):
+        except (TypeError, ValueError):
             raise ESPError('Please use the link at the main registration page.', log=False)
         user = request.user
         ts = Event.objects.filter(id=extra, program=prog)
@@ -781,7 +814,20 @@ class StudentClassRegModule(ProgramModuleObj):
 
         module = prog.getModule('OnSiteClassList')
         if module:
-            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options={}, template_name='allclass_fragment.html')
+            # Pass GET params through so users can filter by timeslot (?start=<id>).
+            # Use an empty dict (not None) so classList_base never redirects to the
+            # internal options form, but still honours any supplied GET parameters.
+            options = request.GET.copy() if request.GET else {}
+
+            # classList_base expects integer start/end IDs; drop malformed values.
+            for key in ('start', 'end'):
+                if key in options:
+                    try:
+                        options[key] = str(int(options.get(key)))
+                    except (TypeError, ValueError):
+                        options.pop(key, None)
+
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options=options, template_name='openclasses.html')
 
         #  Otherwise this will be a 404
         return None
