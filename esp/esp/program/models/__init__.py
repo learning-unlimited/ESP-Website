@@ -334,9 +334,9 @@ class Program(models.Model, CustomFormsLinkModel):
         return retVal
 
     def delete(self, *args, **kwargs):
-        # ResourceType uses PROTECT from Resource/ResourceRequest. Clean up
-        # program-scoped resource links first so deleting a Program from admin
-        # does not require manual resource deletion.
+        # Clean up program-scoped resource links before deleting the Program
+        # so admin-driven deletion does not require separate manual resource
+        # cleanup.
         from esp.resources.models import Resource, ResourceRequest, ResourceType
 
         program_res_type_ids = list(

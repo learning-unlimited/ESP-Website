@@ -908,8 +908,8 @@ class ProgramCapTest(ProgramFrameworkTest):
 
 
 class ProgramDeleteResourceCleanupTest(ProgramFrameworkTest):
-    """Program deletion with program-scoped resources. Fix is via Resource/ResourceRequest
-    res_type FK on_delete=CASCADE (not a Program.delete() override)."""
+    """Program deletion cleans up program-scoped resource data without leaving
+    protected resource relations behind."""
 
     def test_delete_program_with_program_resource_type(self):
         restype = ResourceType.objects.create(
