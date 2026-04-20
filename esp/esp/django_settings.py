@@ -1,5 +1,4 @@
 """ Django settings for ESP website. """
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -233,7 +232,6 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.staticfiles',
     'esp.users.apps.UsersConfig',
-    'esp.miniblog',
     'esp.web.apps.WebConfig',
     'esp.program.apps.ProgramConfig',
     'esp.program.modules.apps.ModulesConfig',
@@ -294,8 +292,6 @@ DEFAULT_REDIRECT = '/myesp/redirect'
 
 USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
-
-SELENIUM_PATH = os.path.join(os.path.dirname(__file__), '../../../dependencies/selenium-server-standalone-2.9.0/selenium-server-standalone-2.9.0.jar')
 
 AUTHENTICATION_BACKENDS = (
     'esp.utils.auth_backend.ESPAuthBackend',
@@ -425,7 +421,7 @@ ADMIN_TOOLS_MENU = 'admintoolsmenu.CustomMenu'
 ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
 ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
-ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
+ADMIN_TOOLS_THEMING_CSS = '/media/styles/admin_theme.css'
 
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']
