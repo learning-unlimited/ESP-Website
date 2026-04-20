@@ -371,7 +371,7 @@ class OnSiteClassList(ProgramModuleObj):
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = Printer.objects.all().values_list('name', flat=True)
         context['initial_student'] = request.GET.get('student_id', '')
-        context['check_in_default'] = datetime.today().date() in prog.dates()
+        context['check_in_default'] = timezone.localtime(timezone.now()).date() in prog.dates()
 
         open_class_category = prog.open_class_category
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id', 'symbol', 'category'] ] )

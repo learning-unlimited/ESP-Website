@@ -1085,7 +1085,7 @@ class BaseESPUser(object):
         NNNN-1 and July NNNN.
         """
         if now is None:
-            now = date.today()
+            now = timezone.localtime(timezone.now()).date()
         curyear = now.year
         try:
             # An error here can cause a good chunk of the site to break,
