@@ -274,7 +274,7 @@ class Command(BaseCommand):
             defaults=dict(admin_title='Teacher Profile Editor',
                           seq=0, required=True, choosable=1))
 
-        for name in ['yes-no response', 'numeric rating', 'long answer', 'multiple choice']:
+        for name in ['Yes-No Response', 'Numeric Rating', 'Long Answer', 'Multiple Choice']:
             QuestionType.objects.get_or_create(name=name)
 
     # ── navbar ────────────────────────────────────────────────────────────────
@@ -619,8 +619,8 @@ class Command(BaseCommand):
             name=f'Dev Survey - {program.name}', program=program,
             defaults=dict(category='learn'))
 
-        rt = QuestionType.objects.get(name='numeric rating')
-        ot = QuestionType.objects.get(name='long answer')
+        rt = QuestionType.objects.get(name='Numeric Rating')
+        ot = QuestionType.objects.get(name='Long Answer')
 
         # Question has: survey, name, question_type (FK), seq, per_class
         # There is no 'question' text field — the name IS the question label.
