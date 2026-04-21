@@ -1240,6 +1240,14 @@ class ClassSection(models.Model):
     def isFullWebapp(self, ignore_changes=False):
         return self.isFull(ignore_changes = ignore_changes, webapp = True)
 
+    def isFullIgnoreChanges(self, webapp=False):
+        """Return section fullness based on unadjusted capacity.
+
+        This is used by views like the onsite open class list, where we want to
+        show physically open classes even if registration multipliers are active.
+        """
+        return self.isFull(ignore_changes=True, webapp=webapp)
+
     def time_blocks(self):
         return self.friendly_times(raw=True)
 
