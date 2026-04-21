@@ -62,8 +62,8 @@ class OnSiteCheckoutModule(ProgramModuleObj):
 
         if "checkoutall" in request.POST and "confirm" in request.POST:
             students = prog.currentlyCheckedInStudents()
+            rt = RecordType.objects.get(name="checked_out")
             for student in students:
-                rt = RecordType.objects.get(name="checked_out")
                 Record.objects.create(user=student, event=rt, program=prog)
             context['checkout_all_message'] = "Successfully checked out %s students" % (students.count())
 

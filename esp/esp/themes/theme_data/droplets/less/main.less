@@ -1,6 +1,6 @@
 :root {
-	/* this is to pass the less-defined navbarCollapseWidth to Javascript */
-	--width-breakpoint: @navbarCollapseWidth;
+    /* this is to pass the less-defined navbarCollapseWidth to Javascript */
+    --width-breakpoint: @navbarCollapseWidth;
 }
 
 #main {
@@ -9,44 +9,80 @@
         font-weight: normal;
         margin-bottom: 0.5em;
     }
+
     h2 {
         font-size: 32px;
         font-weight: normal;
         margin-bottom: 0.3em;
     }
+
     a {
         text-decoration: underline;
     }
+
     .btn {
-		background-image: none;
+        background-image: none;
+        white-space: normal;
+        max-width: 100%;
+
+        &:active,
+        &:focus {
+            outline: none;
+        }
+    }
+
+    .module_link_large {
+
+        &:active,
+        &:focus {
+            outline: none;
+        }
     }
 
     .btn-primary {
-		    text-decoration: none;
+        text-decoration: none;
     }
 
-    .control-group .controls > ul {
+    .control-group .controls>ul {
         list-style: none;
     }
-    input[type="text"], input[type="password"], textarea, select, label {
+
+    input[type="text"],
+    input[type="password"],
+    textarea,
+    select,
+    label {
         margin: 0;
         padding: 0.3em 0.5em;
         font-size: inherit;
         line-height: normal;
         vertical-align: text-bottom;
+        max-width: 100%;
     }
-    input[type="text"], input[type="password"], textarea, select {
+
+    input[type="text"],
+    input[type="password"],
+    textarea,
+    select {
         box-sizing: border-box;
         display: inline-block;
         color: black;
         background-color: #fdfdfd;
+
         &:focus {
             -webkit-box-shadow: none;
-               -moz-box-shadow: none;
-                    box-shadow: none;
+            -moz-box-shadow: none;
+            box-shadow: none;
         }
     }
-    input[type="text"], input[type="password"] {
+
+    textarea {
+        width: 100%;
+        display: block;
+    }
+
+    input[type="text"],
+    input[type="password"] {
         border-width: 1px 0px;
         border-top: 1px solid #eee;
         -webkit-border-radius: 0;
@@ -76,12 +112,17 @@ body {
 }
 
 
-div.qsd_edit_visible textarea, textarea.wide {
+div.qsd_edit_visible textarea,
+textarea.wide {
     font-family: monospace;
     width: 100%;
     box-sizing: border-box;
 }
-input, textarea, select, .uneditable-input {
+
+input,
+textarea,
+select,
+.uneditable-input {
     vertical-align: baseline;
 }
 
@@ -104,7 +145,7 @@ ul.nav-collapse {
     margin: 0;
 }
 
-.navbar-fixed-bottom > .navbar-inner > ul > li > a {
+.navbar-fixed-bottom>.navbar-inner>ul>li>a {
     padding: 0px;
 }
 
@@ -113,48 +154,68 @@ ul.nav-collapse {
 }
 
 @media (min-width: 768px) and (max-width: @navbarCollapseWidth) {
-    .navbar-container, .footer-container {
+
+    .navbar-container,
+    .footer-container {
         width: 100%;
     }
 }
 
 @media (max-width: @navbarCollapseWidth) {
-    .navbar .nav > li.dropdown {
+    .navbar .nav>li.dropdown {
         display: flex;
         justify-content: space-between;
         flex-wrap: wrap;
     }
-    .navbar .nav > li > a.caret-wrapper {
+
+    .navbar .nav>li>a.caret-wrapper {
         text-align: right;
     }
-    .navbar .nav > li > ul.dropdown-menu {
+
+    .navbar .nav>li>ul.dropdown-menu {
         flex-basis: 100%;
+    }
+
+}
+
+@media (max-width: 767px) {
+    #main .btn {
+        width: 100%;
+        display: block;
+        margin-bottom: 5px;
     }
 }
 
 @media (min-width: @navbarCollapseDesktopWidth) {
-    .navbar-fixed-top .navbar-inner, .navbar-fixed-bottom .navbar-inner {
+
+    .navbar-fixed-top .navbar-inner,
+    .navbar-fixed-bottom .navbar-inner {
         padding-left: 1rem;
         padding-right: 1rem;
     }
-        
+
     .dropdown:hover .dropdown-menu {
         display: block;
-        margin-top: 0; /* remove the gap so it doesn't close */
+        margin-top: 0;
+        /* remove the gap so it doesn't close */
     }
+
     .dropdown-toggle.caret-wrapper {
         height: 20px;
     }
-    .navbar .nav > .active > a {
-        webkit-box-shadow: none;
+
+    .navbar .nav>.active>a {
+        -webkit-box-shadow: none;
         box-shadow: none;
     }
-    .navbar .nav > li > a.caret-wrapper {
+
+    .navbar .nav>li>a.caret-wrapper {
         float: left;
         padding-left: 5px;
         cursor: pointer;
     }
-    .navbar .nav > li > a.navbar-header {
+
+    .navbar .nav>li>a.navbar-header {
         float: left;
         clear: left;
         margin-right: -10px;
@@ -162,7 +223,7 @@ ul.nav-collapse {
     }
 }
 
-.navbar .nav > li > a.navbar-header {
+.navbar .nav>li>a.navbar-header {
     font-size: @navbarFontSize;
 }
 
@@ -180,7 +241,8 @@ ul.nav-collapse {
     }
 }
 
-#adminbar_Manage_content, #adminbar_Other_content {
+#adminbar_Manage_content,
+#adminbar_Other_content {
     padding: 0px 2px !important;
 }
 
@@ -189,7 +251,8 @@ ul.nav-collapse {
 }
 
 #adminbar_content a {
-    color: #333333; /* should match the other navbar dropdowns */
+    color: #333333;
+    /* should match the other navbar dropdowns */
 }
 
 @media (max-width: @navbarCollapseWidth) {
@@ -202,7 +265,7 @@ ul.nav-collapse {
     padding: 0px;
 }
 
-.dropdown-menu > li > div {
+.dropdown-menu>li>div {
     display: block;
     padding: 3px 20px;
     clear: both;
@@ -228,13 +291,14 @@ ul.nav-collapse {
     position: relative;
     padding: 50px 20px;
     color: #fff;
-    text-shadow: 0 1px 3px rgba(0,0,0,.7), 0 0 30px rgba(0,0,0,.075);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .7), 0 0 30px rgba(0, 0, 0, .075);
     background-size: cover;
     background-position: center;
-    -webkit-box-shadow: inset 0 3px 7px rgba(0,0,0,.2), inset 0 -3px 7px rgba(0,0,0,.2);
-       -moz-box-shadow: inset 0 3px 7px rgba(0,0,0,.2), inset 0 -3px 7px rgba(0,0,0,.2);
-            box-shadow: inset 0 3px 7px rgba(0,0,0,.2), inset 0 -3px 7px rgba(0,0,0,.2);
+    -webkit-box-shadow: inset 0 3px 7px rgba(0, 0, 0, .2), inset 0 -3px 7px rgba(0, 0, 0, .2);
+    -moz-box-shadow: inset 0 3px 7px rgba(0, 0, 0, .2), inset 0 -3px 7px rgba(0, 0, 0, .2);
+    box-shadow: inset 0 3px 7px rgba(0, 0, 0, .2), inset 0 -3px 7px rgba(0, 0, 0, .2);
 }
+
 .jumbotron-announcements {
     font-size: 20px;
 
@@ -247,49 +311,57 @@ ul.nav-collapse {
 }
 
 .contact-form {
-    th, td {
+
+    th,
+    td {
         padding: 4px 3px;
     }
+
     th {
         vertical-align: top;
         text-align: right;
         white-space: nowrap;
+
         label {
             display: block;
         }
     }
+
     td {
         vertical-align: top;
     }
+
     #id_message {
         width: 100% !important;
         display: block;
     }
+
     #id_subject {
         width: 100% !important;
     }
 }
 
 #user_search_form input {
-  box-sizing: border-box;
-  display: block;
-  height: auto;
-  margin: 0;
-  width: 100%;
+    box-sizing: border-box;
+    display: block;
+    height: auto;
+    margin: 0;
+    width: 100%;
 }
 
 .form_error {
-  color: red;
-  display: inline-block;
+    color: red;
+    display: inline-block;
 }
 
 /* copied from fruitsalad, but with #main instead of #content.
    TODO(benkraft): something less theme-specific for things like this. */
 #main form {
-  display: inline;
-  margin: 0;
-  padding: 0;
+    display: inline;
+    margin: 0;
+    padding: 0;
 }
+
 #reg_types_div {
     font-size: 13px;
 }
