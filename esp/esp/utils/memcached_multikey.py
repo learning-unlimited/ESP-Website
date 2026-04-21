@@ -31,7 +31,7 @@ class CacheClass(BaseCache):
         if len(rawkey) <= real_max_length:
             return rawkey
         else: # We have an oversized key; hash it
-            hashkey = HASH_PREFIX + hashlib.md5(key.encode("UTF-8")).hexdigest()
+            hashkey = HASH_PREFIX + hashlib.sha256(key.encode("UTF-8")).hexdigest()
             return hashkey + '_' + rawkey[ :  real_max_length - len(hashkey) - 1 ]
 
     def _failfast_test(self, key, value):
