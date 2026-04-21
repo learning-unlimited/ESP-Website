@@ -237,8 +237,6 @@ class ProgramPrintablesCatalogFilterTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         super().setUp(num_students=1, num_teachers=1, classes_per_teacher=1, sections_per_class=1, num_rooms=1, num_timeslots=1)
         self.add_student_profiles()
-        self.schedule_randomly()
-        self.classreg_students()
         self.module = ProgramPrintables()
 
     def _make_class_section(self, event):
