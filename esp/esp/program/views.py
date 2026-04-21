@@ -573,16 +573,14 @@ def userview(request):
     from esp.users.forms.user_profile import StudentInfoForm
 
     if 'approve_request' in request.GET:
-        gcrs = GradeChangeRequest.objects.filter(id=request.GET['approve_request'])
-        if gcrs.count() == 1:
-            gcr = gcrs[0]
+        gcr = GradeChangeRequest.objects.filter(id=request.GET['approve_request']).first()
+        if gcr:
             gcr.approved = True
             gcr.acknowledged_by = request.user
             gcr.save()
     if 'reject_request' in request.GET:
-        gcrs = GradeChangeRequest.objects.filter(id=request.GET['reject_request'])
-        if gcrs.count() == 1:
-            gcr = gcrs[0]
+        gcr = GradeChangeRequest.objects.filter(id=request.GET['reject_request']).first()
+        if gcr:
             gcr.approved = False
             gcr.acknowledged_by = request.user
             gcr.save()
@@ -696,11 +694,10 @@ def activate_user(request):
 def unenroll_student(request):
     if request.method != 'POST' or 'user_id' not in request.POST or 'program' not in request.POST:
         return HttpResponseBadRequest('')
-    users = ESPUser.objects.filter(id=request.POST['user_id'])
-    if users.count() != 1:
+    user = ESPUser.objects.filter(id=request.POST['user_id']).first()
+    if not user:
         return HttpResponseBadRequest('')
     else:
-        user = users[0]
         sections = user.getSections(program = request.POST['program'])
         verbs = RTC.getVisibleRegistrationTypeNames(request.POST['program'])
         for sec in sections:
@@ -713,11 +710,10 @@ def activate_or_deactivate_user(request, activate):
     if request.method != 'POST' or 'user_id' not in request.POST:
         return HttpResponseBadRequest('')
     else:
-        users = ESPUser.objects.filter(id=request.POST['user_id'])
-        if users.count() != 1:
+        user = ESPUser.objects.filter(id=request.POST['user_id']).first()
+        if not user:
             return HttpResponseBadRequest('')
         else:
-            user = users[0]
             user.is_active = activate
             user.save()
             return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
