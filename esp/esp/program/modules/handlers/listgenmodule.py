@@ -224,7 +224,7 @@ class UserAttributeGetter(object):
         if self.profile.student_info:
             dob = self.profile.student_info.dob
             if dob:
-                return '{:%Y-%m-%d}'.format(dob)
+                return f'{dob:%Y-%m-%d}'
 
     def get_gender(self):
         if self.profile.student_info:
@@ -264,13 +264,13 @@ class UserAttributeGetter(object):
     def get_class_application_2(self):
         responses = self.user.listAppResponses(self.program)
         if len(responses) > 1:
-            return str(responses[1].question.subject) + ':  ' + str(responses[0])
+            return str(responses[1].question.subject) + ':  ' + str(responses[1])
         else:
             return None
     def get_class_application_3(self):
         responses = self.user.listAppResponses(self.program)
         if len(responses) > 2:
-            return str(responses[2].question.subject) + ':  ' + str(responses[0])
+            return str(responses[2].question.subject) + ':  ' + str(responses[2])
         else:
             return None
 
