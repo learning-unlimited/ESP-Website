@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Cache the class rows and precompute their searchable data once
-    var classRowsNodeList = document.querySelectorAll('.class_row');
+    var classRowsNodeList = document.querySelectorAll('.class_search_data');
     var classRows = [];
     for (var i = 0; i < classRowsNodeList.length; i++) {
         classRows.push(classRowsNodeList[i]);
@@ -29,10 +29,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Precompute searchable data from data attributes (lowercased once)
         var classId = (row.getAttribute('data-class-id') || '').toLowerCase();
         var classTitle = (row.getAttribute('data-class-title') || '').toLowerCase();
+        var classDescription = (row.getAttribute('data-class-description') || '').toLowerCase();
         var classTeacher = (row.getAttribute('data-class-teacher') || '').toLowerCase();
         row._searchData = {
             id: classId,
             title: classTitle,
+            description: classDescription,
             teacher: classTeacher
         };
     }
@@ -50,11 +52,12 @@ document.addEventListener('DOMContentLoaded', function() {
             var matchFound = normalizedTerm === "" ||
                             data.id.indexOf(normalizedTerm) !== -1 ||
                             data.title.indexOf(normalizedTerm) !== -1 ||
+                            data.description.indexOf(normalizedTerm) !== -1 ||
                             data.teacher.indexOf(normalizedTerm) !== -1;
             if (matchFound) {
-                row.style.display = '';
+                row.closest('tr').style.display = '';
             } else {
-                row.style.display = 'none';
+                row.closest('tr').style.display = 'none';
             }
         }
     }
@@ -172,10 +175,7 @@ function scrollFunction() {
                         {% endifchanged %}
                     {% endif %}
 
-                    <tr class="class_row" 
-                        data-class-id="{{ class.emailcode }}" 
-                        data-class-title="{{ class.title }}" 
-                        data-class-teacher="{% for teacher in class.get_teachers %}{{ teacher.name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                    <tr class="class_row">
                         <td colspan="2">
                             {% render_class_webapp class program user request.GET.filter timeslot checked_in %}
                         </td>
