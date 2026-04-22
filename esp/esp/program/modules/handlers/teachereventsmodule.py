@@ -124,7 +124,7 @@ class TeacherEventsModule(ProgramModuleObj):
                 event_types = EventType.objects.filter(is_teacher_type=True)
                 UserAvailability.objects.filter(user=request.user, event__event_type__in=event_types).delete()
                 for event_type in event_types:
-                    field_name = 'event_type_%d' % event_type.id
+                    field_name = f'event_type_{event_type.id}'
                     event = data.get(field_name)
                     if event:
                         ua, created = UserAvailability.objects.get_or_create( user=request.user, event=event, role=self.availability_role())
@@ -132,9 +132,8 @@ class TeacherEventsModule(ProgramModuleObj):
                         if self.program.director_email and created and 'interview' in event_type.description.lower():
                             event_name = event.description
                             send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
-                                  """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
-                                  (request.user.first_name, request.user.last_name, event_name), \
-                                  '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER), \
+                                  f"""Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: {request.user.first_name} {request.user.last_name}\n\nTime: {event_name}\n\n""", \
+                                  f'{self.program.program_type} Registration System <server@{settings.EMAIL_HOST_SENDER}>', \
                                   [self.program.getDirectorCCEmail()], True, extra_headers = {'Reply-To': request.user.get_email_sendto_address()})
                 return self.goToCore(tl)
         else:
@@ -143,7 +142,7 @@ class TeacherEventsModule(ProgramModuleObj):
             for event_type in EventType.objects.filter(is_teacher_type=True):
                 desc = event_type.description
                 if entries[desc].count() > 0:
-                    data['event_type_%d' % event_type.id] = entries[desc][0].event.id
+                    data[f'event_type_{event_type.id}'] = entries[desc][0].event.id
             form = TeacherEventSignupForm(self, initial=data)
         return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
 
