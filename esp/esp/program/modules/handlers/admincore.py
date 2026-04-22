@@ -472,7 +472,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     if num_forms > 0:
                         message_good = 'Deadlines saved.'
                 else:
-                    message_bad = 'Error(s) while saving deadline(s): %s' % edit_formset.errors
+                    msgs = list(dict.fromkeys(
+                        msg for form_errors in edit_formset.errors
+                        for errors in form_errors.values() for msg in errors
+                    ))
+                    message_bad = 'Error(s) while saving deadline(s): ' + '; '.join(msgs) if msgs else 'Error(s) while saving deadline(s).'
             elif request.POST['action'] == 'save_permissions':
                 edit_formset = EditPermissionFormset(request.POST.copy(), prefix='edit_perms')
                 if edit_formset.is_valid():
@@ -488,7 +492,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     if num_forms > 0:
                         message_good = 'Permissions saved.'
                 else:
-                    message_bad = 'Error(s) while saving permission(s): %s' % edit_formset.errors
+                    msgs = list(dict.fromkeys(
+                        msg for form_errors in edit_formset.errors
+                        for errors in form_errors.values() for msg in errors
+                    ))
+                    message_bad = 'Error(s) while saving permission(s): ' + '; '.join(msgs) if msgs else 'Error(s) while saving permission(s).'
 
         #   find all the existing user group permissions for this program
         perms = Permission.objects.filter(program=self.program, user__isnull=True, permission_type__in=Permission.PERMISSION_CHOICES_FLAT).exclude(permission_type="Administer")
