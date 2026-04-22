@@ -32,7 +32,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import unittest
 from unittest.mock import MagicMock
 
 from esp.program.modules.handlers.commmodule import _make_image_urls_absolute

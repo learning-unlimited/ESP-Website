@@ -60,8 +60,10 @@ _PROGRAM_URL_PATTERN = re.compile(
 # Match src attributes that carry a root-relative (but not protocol-relative) path.
 # Handles: quoted (double or single), unquoted, case-insensitive name, whitespace around =.
 # Groups: (1) quote char, (2) quoted path, (3) unquoted path.
+# The negative lookbehind ensures we match an actual `src` attribute name, not
+# the `src` suffix inside another attribute such as `data-src` or `ng-src`.
 _RELATIVE_SRC_RE = re.compile(
-    r"src\s*=\s*"
+    r"(?<![\w-])src\s*=\s*"
     r"(?:(['\"])(/(?!/)[^'\"]*)\1"   # quoted:   src="..." or src='...'
     r"|(/(?!/)[^'\"\s>]*))",          # unquoted: src=/path (not src=//)
     re.IGNORECASE
