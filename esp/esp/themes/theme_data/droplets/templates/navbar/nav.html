@@ -1,7 +1,7 @@
 {% for category in theme.nav_structure reversed %}
-<ul class="nav pull-left">
+<ul class="nav navbar-nav">
   <li class="dropdown{% if request.path|slice:':5' != category.header_link|slice:':5' %} inactive{% else %} active{% endif %}">
-    <a href="{{ category.header_link }}" class="navbar-header">
+    <a href="{{ category.header_link }}" class="navbar-item-label">
       {{ category.header }}
     </a>
     <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>

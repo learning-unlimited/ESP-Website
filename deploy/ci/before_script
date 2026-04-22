@@ -4,6 +4,9 @@ set -euf -o pipefail
 if [ "$CI_JOB" = "test" ]; then
     cp esp/esp/local_settings.py.ci esp/esp/local_settings.py
 
+    # Install Bootstrap 3 and other npm dependencies for theme compilation
+    (cd esp/public/media/theme_editor && npm install)
+
     # the postgres service in Github Actions sets up the database for us
     if [ "$GITHUB_ACTIONS" != true ]; then
         psql -c "DROP DATABASE IF EXISTS test_test_django;" -U postgres

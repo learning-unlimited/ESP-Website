@@ -141,11 +141,11 @@ select,
     visibility: hidden;
 }
 
-ul.nav-collapse {
+div.navbar-collapse {
     margin: 0;
 }
 
-.navbar-fixed-bottom>.navbar-inner>ul>li>a {
+.navbar-fixed-bottom #footer ul>li>a {
     padding: 0px;
 }
 
@@ -188,8 +188,8 @@ ul.nav-collapse {
 
 @media (min-width: @navbarCollapseDesktopWidth) {
 
-    .navbar-fixed-top .navbar-inner,
-    .navbar-fixed-bottom .navbar-inner {
+    #navbar,
+    #footer {
         padding-left: 1rem;
         padding-right: 1rem;
     }
@@ -223,7 +223,7 @@ ul.nav-collapse {
     }
 }
 
-.navbar .nav>li>a.navbar-header {
+.navbar .nav>li>a.navbar-item-label {
     font-size: @navbarFontSize;
 }
 

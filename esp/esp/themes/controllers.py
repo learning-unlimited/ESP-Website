@@ -184,8 +184,14 @@ class ThemeController(object):
         result = []
         if not theme_only:
             result += self.global_less()
-            result.append(os.path.join(themes_settings.less_dir, 'bootstrap.less'))
-            result.append(os.path.join(themes_settings.less_dir, 'responsive.less'))
+            # Bootstrap 3.3.7 is installed via npm; run 'npm install' in
+            # esp/public/media/theme_editor/ before compiling.
+            # Bootstrap 3 has responsive styles built into bootstrap.less —
+            # no separate responsive.less is needed.
+            bootstrap3_less = os.path.join(
+                themes_settings.less_dir, '..', 'node_modules', 'bootstrap', 'less', 'bootstrap.less'
+            )
+            result.append(os.path.normpath(bootstrap3_less))
             result.append(os.path.join(themes_settings.less_dir, 'variables_custom.less'))
             result.append(os.path.join(themes_settings.less_dir, 'main.less'))
 
@@ -236,7 +242,12 @@ class ThemeController(object):
         if os.name == 'nt':
             INCLUDE_PATH_SEP = ';'
 
-        less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
+        # Include Bootstrap 3 LESS from npm so @imports inside bootstrap.less resolve
+        bootstrap3_less_dir = os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'node_modules', 'bootstrap', 'less')
+        less_search_path = INCLUDE_PATH_SEP.join(
+            settings.LESS_SEARCH_PATH +
+            [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less'), bootstrap3_less_dir]
+        )
         logger.debug('LESS search path is "%s"', less_search_path)
 
         #   Compile to CSS

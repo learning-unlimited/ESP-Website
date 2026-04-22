@@ -1,6 +1,16 @@
 // "Base" variables that can be modified using the theme editor
 // ------------------------------------------------------------
 
+// Gray scale (these were in Bootstrap 2's variables.less; kept here for
+// backward compatibility with theme LESS files that reference them)
+@black:                 #000;
+@grayDarker:            #222;
+@grayDark:              #333;
+@gray:                  #555;
+@grayLight:             #999;
+@grayLighter:           #eee;
+@white:                 #fff;
+
 @bodyBackground:            #fff;
 @contentBackground:         #fff;
 @heroUnitBackground:        #eee;
@@ -18,9 +28,8 @@
 @navbarLinkColorHover:      #fff;
 @navbarInverseBackground:                #111111;
 @navbarInverseBackgroundHighlight:       #222222;
-@navbarInverseText:                      @grayLight;
-@navbarInverseLinkColor:                 @grayLight;
-@navbarInverseLinkColorHover:            @white;
+@navbarInverseText:                      #999;
+@navbarInverseLinkColor:                 #999;
 @navbarInverseBrandColor:                @navbarInverseLinkColor;
 @navbarBrandFontSize:       24px;
 @sidebarText:               #999;
@@ -37,6 +46,10 @@
 @btnPrimaryLinkColor:       #fff;
 @btnInverseBackground:      #555;
 @btnInverseLinkColor:       #fff;
-@iconSpritePath:          "/media/theme_editor/img/glyphicons-halflings.png";
-@iconWhiteSpritePath:     "/media/theme_editor/img/glyphicons-halflings-white.png";
 @navbarCollapseWidth:             979px;
+
+// Bootstrap 2 variables that are not in Bootstrap 3 but are used in theme
+// LESS files; defined here so themes continue to compile under Bootstrap 3.
+@navbarCollapseDesktopWidth:      980px;
+@baseLineHeight:                  20px;
+@dropdownLinkColor:               #333;
