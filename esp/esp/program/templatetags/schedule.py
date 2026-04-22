@@ -64,7 +64,7 @@ def classes_by_day(classes):
             # Yield one row per week; collapse same-day events into one time string
             for date in sorted(by_date.keys()):
                 day_events = sorted(by_date[date], key=lambda e: e.start)
-                collapsed = Event.collapse(day_events)
+                collapsed = Event.collapse(day_events, tol=datetime.timedelta(minutes=15))
                 day_time = ', '.join(
                     e.pretty_time(include_date=True) for e in collapsed
                 )
@@ -83,5 +83,5 @@ def classes_by_day(classes):
                 'is_repeating': False,
             })
 
-    rows.sort(key=lambda r: r['event'].start if r['event'] else datetime.datetime.min)
+    rows.sort(key=lambda r: (0, r['event'].start) if r['event'] else (1,))
     return rows
