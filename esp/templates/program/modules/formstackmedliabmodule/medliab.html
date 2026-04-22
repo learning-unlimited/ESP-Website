@@ -1,9 +1,9 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}Medical and Emergency Contact Information for {{program.niceName}}{% endblock %}
 {% block content_title %}{{program.niceName}} Student Registration{% endblock %}
 
-{% block content %}
+{% block module_content %}
 <h1>Medical and Emergency Contact Information for {{ program.niceName }}</h1>
 
 <div class="Administrator hidden"><strong>Admins: to let a student (or yourself) skip the medical form, click <a href="/manage/{{program.url}}/medicalbypass">here</a>.</strong></div>

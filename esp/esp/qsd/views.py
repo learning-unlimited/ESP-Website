@@ -32,7 +32,11 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.qsd.models import QuasiStaticData
+import logging
+
+logger = logging.getLogger(__name__)
+
+from esp.qsd.models import QuasiStaticData, qsd_cache_key
 from esp.users.models import ContactInfo, Permission
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
 from esp.utils.web import render_to_response
@@ -42,6 +46,8 @@ from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
 from django.template.defaultfilters import urlencode
+from django.contrib import messages
+from django.shortcuts import redirect
 from esp.middleware import Http403
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
@@ -50,7 +56,6 @@ from django.views.decorators.cache import cache_control
 from esp.varnish.varnish import purge_page
 from urllib.parse import urlparse
 from bleach import clean
-from django.contrib import messages
 
 from django.conf import settings
 from django.utils.html import escape as html_escape
@@ -60,11 +65,8 @@ from reversion import revisions as reversion
 
 from esp.utils.sanitize import strip_base64_images
 
-import logging
 import os
 import uuid
-
-logger = logging.getLogger(__name__)
 
 # Image upload constraints
 QSD_IMAGE_MAX_SIZE = 25 * 1024 * 1024  # 25 MB
@@ -90,6 +92,38 @@ def _sanitize_image_extension(raw_ext):
         return 'webp'
     return None
 
+
+def _get_qsd_default_content(request, base_url):
+    """Try to load default QSD content from inline_qsd_block cache.
+    If not cached, try rendering the read page to populate the cache."""
+    cache_key = qsd_cache_key(base_url)
+    default = cache.get(cache_key)
+    if default:
+        return default
+
+    # Try rendering the read page internally to trigger inline_qsd_block.
+    # We use django.test.Client because it goes through the full middleware
+    # stack, which is required for the template tags to render properly.
+    try:
+        from django.urls import resolve, Resolver404
+        from django.test import Client as InternalClient
+
+        match = resolve('/' + base_url + '.html')
+        # Only proceed if it's NOT the qsd catch-all (avoid recursion)
+        if match.func is not qsd:
+            client = InternalClient()
+            client.force_login(request.user)
+            try:
+                client.get('/' + base_url + '.html')
+            except Exception:
+                logger.debug('Internal render failed for QSD default: %s', base_url, exc_info=True)
+            default = cache.get(cache_key)
+    except Resolver404:
+        pass
+    except Exception:
+        logger.warning('Unexpected error resolving QSD default: %s', base_url, exc_info=True)
+
+    return default
 
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
@@ -141,11 +175,18 @@ def qsd(request, url):
                 qsd_rec = QuasiStaticData()
                 qsd_rec.url = base_url
                 qsd_rec.nav_category = default_navbarcategory()
-                qsd_rec.title = 'New Page'
-                qsd_rec.content = 'Please insert your text here'
                 qsd_rec.create_date = datetime.now()
                 qsd_rec.keywords = ''
                 qsd_rec.description = ''
+
+                default = _get_qsd_default_content(request, base_url)
+                if default:
+                    qsd_rec.title = default.get('title', 'New Page')
+                    qsd_rec.content = default.get('content', 'Please insert your text here')
+                else:
+                    qsd_rec.title = 'New Page'
+                    qsd_rec.content = 'Please insert your text here'
+
                 action = 'edit'
 
             if (action == 'read'):
@@ -154,10 +195,7 @@ def qsd(request, url):
                 response.status_code = 404 # Make sure we actually 404, so that if there is a redirect the middleware can catch it.
                 return response
         else:
-            if action == 'read':
-                raise Http404('This page does not exist.')
-            else:
-                raise Http403('Sorry, you can not modify <tt>%s</tt>.' % request.path)
+            raise Http404('This page does not exist.')
 
     if action == 'create':
         action = 'edit'
@@ -191,7 +229,8 @@ def qsd(request, url):
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
-            raise Http403("Sorry, you do not have permission to edit this page.")
+            messages.error(request, "Sorry, you do not have permission to edit this page.")
+            return redirect('/' + base_url + '.html')
 
         nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
 
@@ -201,8 +240,8 @@ def qsd(request, url):
         data, n_stripped = strip_base64_images(data)
         if n_stripped > 0:
             messages.warning(request,
-                '%d embedded image(s) were removed. '
-                'Please use the image upload button in the toolbar to add images.' % n_stripped)
+                f'{n_stripped} embedded image(s) were removed. '
+                'Please use the image upload button in the toolbar to add images.')
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
@@ -222,6 +261,7 @@ def qsd(request, url):
 
         if diff_found:
             qsd_rec.load_cur_user_time(request)
+            reversion.set_user(request.user)
             qsd_rec.save()
 
             # We should also purge the cache
@@ -234,7 +274,8 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise Http403("You don't have permission to edit this page.")
+            messages.error(request, "You don't have permission to edit this page.")
+            return redirect('/' + base_url + '.html')
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
@@ -293,6 +334,7 @@ def ajax_qsd(request):
         if qsd.content != data:
             qsd.content = data
             qsd.load_cur_user_time(request, )
+            reversion.set_user(request.user)
             qsd.save()
 
             # We should also purge the cache
@@ -326,6 +368,182 @@ def ajax_qsd_preview(request):
 
     return HttpResponse(json.dumps(result))
 
+
+def ajax_qsd_history(request):
+    """ Return JSON list of versions for a QSD URL. """
+    from reversion.models import Version
+    from django.contrib.contenttypes.models import ContentType
+    from esp.users.models import ESPUser
+
+    qsd_url = request.GET.get('url', '')
+    if not qsd_url:
+        return JsonResponse({'error': 'Missing url parameter'}, status=400)
+
+    if not Permission.user_can_edit_qsd(request.user, qsd_url):
+        return HttpResponse('Permission denied', status=403)
+
+    qsd_objects = QuasiStaticData.objects.filter(url=qsd_url)
+    if not qsd_objects.exists():
+        return JsonResponse({'versions': []})
+
+    ct = ContentType.objects.get_for_model(QuasiStaticData)
+    object_ids = [str(pk) for pk in qsd_objects.values_list('pk', flat=True)]
+    versions = Version.objects.filter(
+        content_type=ct,
+        object_id__in=object_ids,
+    ).select_related('revision').order_by('-revision__date_created')[:50]
+
+    # Bulk-fetch all user IDs we'll need to resolve usernames (avoids N+1)
+    user_ids = set()
+    version_data = []
+    for v in versions:
+        field_dict = v.field_dict
+        rev = v.revision
+        if rev.user_id:
+            user_ids.add(rev.user_id)
+        if 'author' in field_dict:
+            try:
+                user_ids.add(int(field_dict['author']))
+            except (ValueError, TypeError):
+                pass
+        version_data.append((v, field_dict, rev))
+
+    user_map = {}
+    if user_ids:
+        user_map = dict(ESPUser.objects.filter(pk__in=user_ids).values_list('pk', 'username'))
+
+    result = []
+    for v, field_dict, rev in version_data:
+        user_name = ''
+        if rev.user_id:
+            user_name = user_map.get(rev.user_id, 'Unknown')
+        if not user_name and 'author' in field_dict:
+            try:
+                user_name = user_map.get(int(field_dict['author']), 'Unknown')
+            except (ValueError, TypeError):
+                user_name = 'Unknown'
+
+        content = field_dict.get('content', '')
+        snippet = content[:150].replace('\n', ' ').strip()
+        if len(content) > 150:
+            snippet += '...'
+
+        result.append({
+            'version_id': v.pk,
+            'date': rev.date_created.strftime('%b %d, %Y %I:%M %p'),
+            'author': user_name,
+            'title': field_dict.get('title', ''),
+            'snippet': snippet,
+        })
+
+    return JsonResponse({'versions': result})
+
+
+def ajax_qsd_version_preview(request):
+    """ Return rendered content for a specific version. """
+    from reversion.models import Version
+    from django.contrib.contenttypes.models import ContentType
+    from markdown import markdown
+
+    version_id = request.GET.get('version_id', '')
+    if not version_id:
+        return JsonResponse({'error': 'Missing version_id'}, status=400)
+
+    try:
+        version_pk = int(version_id)
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Invalid version_id'}, status=400)
+
+    ct = ContentType.objects.get_for_model(QuasiStaticData)
+    try:
+        version = Version.objects.select_related('revision').get(pk=version_pk, content_type=ct)
+    except Version.DoesNotExist:
+        return HttpResponse('Version not found', status=404)
+
+    field_dict = version.field_dict
+    qsd_url = field_dict.get('url', '')
+
+    if not Permission.user_can_edit_qsd(request.user, qsd_url):
+        return HttpResponse('Permission denied', status=403)
+
+    content = field_dict.get('content', '')
+    # Sanitize class QSD content to prevent XSS (same as ajax_qsd_preview)
+    url_parts = qsd_url.split('/')
+    if len(url_parts) > 3 and url_parts[3] == 'Classes':
+        content = clean(content, strip=True)
+    result = {
+        'content_raw': content,
+        'content_html': markdown(content),
+        'title': field_dict.get('title', ''),
+    }
+    return JsonResponse(result)
+
+
+@require_POST
+@reversion.create_revision()
+def ajax_qsd_restore(request):
+    """ Restore a QSD to a specific historical version. """
+    from reversion.models import Version
+    from django.contrib.contenttypes.models import ContentType
+    from markdown import markdown
+
+    if request.user.id is None:
+        return HttpResponse('Session expired', status=401)
+
+    version_id = request.POST.get('version_id', '')
+    if not version_id:
+        return JsonResponse({'error': 'Missing version_id'}, status=400)
+
+    try:
+        version_pk = int(version_id)
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Invalid version_id'}, status=400)
+
+    ct = ContentType.objects.get_for_model(QuasiStaticData)
+    try:
+        version = Version.objects.select_related('revision').get(pk=version_pk, content_type=ct)
+    except Version.DoesNotExist:
+        return HttpResponse('Version not found', status=404)
+
+    field_dict = version.field_dict
+    qsd_url = field_dict.get('url', '')
+
+    if not Permission.user_can_edit_qsd(request.user, qsd_url):
+        return HttpResponse('Permission denied', status=403)
+
+    qsd_obj = QuasiStaticData.objects.get_by_url(qsd_url)
+    if qsd_obj is None:
+        return HttpResponse('QSD not found', status=404)
+
+    # Sanitize class QSD content on restore (same as normal save path)
+    restored_content = field_dict.get('content', '')
+    url_parts = qsd_url.split('/')
+    if len(url_parts) > 3 and url_parts[3] == 'Classes':
+        restored_content = clean(restored_content, strip=True)
+    qsd_obj.content = restored_content
+    qsd_obj.title = field_dict.get('title', qsd_obj.title)
+    if 'nav_category' in field_dict:
+        nav_cat_id = field_dict['nav_category']
+        if nav_cat_id is not None and NavBarCategory.objects.filter(pk=nav_cat_id).exists():
+            qsd_obj.nav_category_id = nav_cat_id
+    if 'keywords' in field_dict:
+        qsd_obj.keywords = field_dict['keywords']
+    if 'description' in field_dict:
+        qsd_obj.description = field_dict['description']
+
+    qsd_obj.load_cur_user_time(request)
+    reversion.set_user(request.user)
+    reversion.set_comment('Restored from version %s' % version_id)
+    qsd_obj.save()
+
+    purge_page(qsd_obj.url + ".html")
+
+    result = {
+        'status': 1,
+        'content': markdown(qsd_obj.content),
+        'url': qsd_obj.url,
+    }
+    return JsonResponse(result)
 
 @require_POST
 def ajax_qsd_image_upload(request):
@@ -395,8 +613,7 @@ def ajax_qsd_image_upload(request):
             safe_name = html_escape(uploaded_file.name or 'unknown')
             return JsonResponse(
                 {'success': False, 'data': {'messages': [
-                    'File "%s" exceeds the %d MB per-file size limit.'
-                    % (safe_name, QSD_IMAGE_MAX_SIZE // (1024 * 1024))
+                    f'File "{safe_name}" exceeds the {QSD_IMAGE_MAX_SIZE // (1024 * 1024)} MB per-file size limit.'
                 ]}},
                 status=400,
             )
@@ -407,7 +624,7 @@ def ajax_qsd_image_upload(request):
         raw_ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
         safe_ext = _sanitize_image_extension(raw_ext)
         if safe_ext is None:
-            msg = 'Invalid file type. Allowed types: %s' % ', '.join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS))
+            msg = f'Invalid file type. Allowed types: {", ".join(sorted(QSD_IMAGE_ALLOWED_EXTENSIONS))}'
             return JsonResponse(
                 {'success': False, 'data': {'messages': [msg]}},
                 status=400,
@@ -430,7 +647,7 @@ def ajax_qsd_image_upload(request):
     saved_urls = []
     saved_paths = []
     for uploaded_file, ext in validated_files:
-        safe_filename = '%s.%s' % (uuid.uuid4().hex, ext)
+        safe_filename = f'{uuid.uuid4().hex}.{ext}'
         # Normalize the path and verify it stays inside the upload
         # directory (CodeQL barrier-guard for py/path-injection CWE-022).
         file_path = os.path.normpath(os.path.join(upload_dir, safe_filename))
@@ -462,7 +679,7 @@ def ajax_qsd_image_upload(request):
         saved_paths.append(file_path)
 
         # Build the public URL for the saved image
-        image_url = '%s%s/%s' % (settings.MEDIA_URL, QSD_IMAGE_UPLOAD_DIR, safe_filename)
+        image_url = f'{settings.MEDIA_URL}{QSD_IMAGE_UPLOAD_DIR}/{safe_filename}'
         saved_urls.append(image_url)
 
     logger.info("QSD image upload by user %s: %d file(s) saved", request.user.username, len(saved_urls))
