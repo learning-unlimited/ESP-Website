@@ -73,6 +73,14 @@ class EditPermissionForm(forms.Form):
     id = forms.IntegerField(required=True, widget=forms.HiddenInput)
     skip = forms.BooleanField(required=False, widget=forms.HiddenInput)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        if start_date and end_date and end_date <= start_date:
+            raise forms.ValidationError('End date must be after start date.')
+        return cleaned_data
+
 class NewDeadlineForm(forms.Form):
     deadline_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
     role = forms.ChoiceField(choices = [("Student", "Students"), ("Teacher", "Teachers"), ("Volunteer", "Volunteers")])
@@ -84,12 +92,28 @@ class NewDeadlineForm(forms.Form):
         self.fields['role'].choices = self.fields['role'].choices + [(role, role + "s") for role in Group.objects.exclude(name__in=["Student", "Teacher", "Volunteer"]
                                                                                                                           ).order_by('name').values_list('name', flat = True)]
 
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        if start_date and end_date and end_date <= start_date:
+            raise forms.ValidationError('End date must be after start date.')
+        return cleaned_data
+
 class NewPermissionForm(forms.Form):
     permission_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
     user = AjaxForeignKeyNewformField(key_type=ESPUser, field_name='user', label='User',
         help_text='Start typing a username or "Last Name, First Name", then select the user from the dropdown.')
     perm_start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=datetime.now, widget=DateTimeWidget(), required=False)
     perm_end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('perm_start_date')
+        end_date = cleaned_data.get('perm_end_date')
+        if start_date and end_date and end_date <= start_date:
+            raise forms.ValidationError('End date must be after start date.')
+        return cleaned_data
 
 class AdminCore(ProgramModuleObj, CoreModule):
     doc = """Includes the core views for managing a program (e.g. settings, dashboard)."""

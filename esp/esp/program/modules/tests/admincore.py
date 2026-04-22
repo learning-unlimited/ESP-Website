@@ -1,8 +1,11 @@
+from datetime import datetime
+
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, StudentRegistration, RegistrationProfile, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.handlers.admincore import EditPermissionForm, NewDeadlineForm, NewPermissionForm
 
 
 class RegistrationTypeManagementTest(ProgramFrameworkTest):
@@ -350,3 +353,63 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
             pmo = ProgramModuleObj.objects.get(id=mid)
             # seq should be unchanged (not reset) because default_seq was not sent
             self.assertEqual(pmo.seq, 999)
+
+
+class DeadlineDateValidationTest(ProgramFrameworkTest):
+    """Tests that deadline forms reject end dates that are not after start dates."""
+
+    def setUp(self):
+        modules = [ProgramModule.objects.get(handler='AdminCore')]
+        super().setUp(modules=modules)
+
+    def _deadline_data(self, start, end):
+        return {
+            'deadline_type': 'Student/All',
+            'role': 'Student',
+            'start_date': start,
+            'end_date': end,
+        }
+
+    def test_new_deadline_form_end_before_start_invalid(self):
+        data = self._deadline_data('2026-04-20 10:00:00', '2026-04-01 10:00:00')
+        form = NewDeadlineForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+
+    def test_new_deadline_form_end_equal_start_invalid(self):
+        data = self._deadline_data('2026-04-20 10:00:00', '2026-04-20 10:00:00')
+        form = NewDeadlineForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+
+    def test_new_deadline_form_valid_range(self):
+        data = self._deadline_data('2026-04-01 10:00:00', '2026-04-20 10:00:00')
+        form = NewDeadlineForm(data)
+        self.assertTrue(form.is_valid())
+
+    def test_new_deadline_form_no_end_date_valid(self):
+        data = self._deadline_data('2026-04-01 10:00:00', '')
+        form = NewDeadlineForm(data)
+        self.assertTrue(form.is_valid())
+
+    def test_new_deadline_form_no_start_date_valid(self):
+        data = self._deadline_data('', '2026-04-20 10:00:00')
+        form = NewDeadlineForm(data)
+        self.assertTrue(form.is_valid())
+
+    def test_edit_permission_form_end_before_start_invalid(self):
+        form = EditPermissionForm({
+            'start_date': '2026-04-20 10:00:00',
+            'end_date': '2026-04-01 10:00:00',
+            'id': 1,
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+
+    def test_edit_permission_form_valid_range(self):
+        form = EditPermissionForm({
+            'start_date': '2026-04-01 10:00:00',
+            'end_date': '2026-04-20 10:00:00',
+            'id': 1,
+        })
+        self.assertTrue(form.is_valid())
