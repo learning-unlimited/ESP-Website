@@ -46,6 +46,7 @@ from django.core import mail
 from django.template import Context as DjangoContext
 from django.template import Template
 from django.template.loader import render_to_string
+from django.test import SimpleTestCase
 from django.utils.html import strip_tags
 
 from datetime import datetime, timedelta
@@ -174,6 +175,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertIn(expected_date_range, rendered, 'program.date_range should render as program date range')
         self.assertIn(expected_teacher_reg_deadline, rendered, 'program.teacher_reg_deadline should render as Teacher/Classes/Create end_date')
 
+class MakeImageUrlsAbsoluteTest(SimpleTestCase):
     def _make_image_urls_absolute_request(self):
         request = MagicMock()
         request.build_absolute_uri.side_effect = lambda p: 'https://example.com' + p
