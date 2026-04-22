@@ -5,8 +5,9 @@ from unittest.mock import patch
 from django.test import SimpleTestCase, RequestFactory
 
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
-from esp.program.models import RegistrationType, StudentRegistration
+from esp.program.models import Program, RegistrationType, StudentRegistration
 from esp.program.tests import ProgramFrameworkTest
+from esp.tests.util import CacheFlushTestCase, user_role_setup
 from esp.users.models import ESPUser
 
 
@@ -568,3 +569,77 @@ class StudentsStatusTests(ProgramFrameworkTest):
         entry = next((e for e in data if e[0] == student.id), None)
         self.assertIsNotNone(entry, "Student not found in search results")
         self.assertTrue(entry[3])
+
+
+class OnsiteAuthorizationTests(CacheFlushTestCase):
+    """Integration-level tests for the needs_onsite access guard on catalog_status.
+    Uses CacheFlushTestCase directly to allow control over users and permissions.
+    """
+
+    def setUp(self):
+        super().setUp()
+        user_role_setup()
+
+        # create a student (no onsite/admin access)
+        self.student = ESPUser.objects.create_user(
+            username='auth_test_student',
+            password='password',
+            email='auth_student@test.com',
+            first_name='Auth',
+            last_name='Student',
+        )
+        self.student.makeRole('Student')
+
+        # create an admin user.
+        self.admin = ESPUser.objects.create_user(
+            username='auth_test_admin',
+            password='password',
+            email='auth_admin@test.com',
+            first_name='Auth',
+            last_name='Admin',
+        )
+        self.admin.makeRole('Administrator')
+
+        # create a minimal program.
+        self.program = Program.objects.create(
+            name='Auth Test Program',
+            url='authtest/2222',
+            grade_min=7,
+            grade_max=12,
+        )
+
+        self.factory = RequestFactory()
+
+    def _call_catalog_status(self, user):
+        """Call the needs_onsite-wrapped catalog_status with the given user.
+        Returns the HttpResponse produced by the decorator or the view itself.
+        """
+        request = self.factory.get('/onsite/%s/catalog_status' % self.program.url)
+        request.user = user
+        request.session = self.client.session
+        wrapped_fn = OnSiteClassList.catalog_status
+        module = SimpleNamespace(program=self.program)
+        return wrapped_fn(module, request, 'onsite', None, None, None, None, self.program)
+
+    def test_anonymous_user_redirected(self):
+        """An unauthenticated request must be redirected to the login page."""
+        from django.contrib.auth.models import AnonymousUser
+        anonymous = AnonymousUser()
+        resp = self._call_catalog_status(anonymous)
+        self.assertEqual(resp.status_code, 302)
+        location = resp.get('Location', '')
+        self.assertIn('login', location)
+
+    def test_student_denied(self):
+        """A student must not receive a successful JSON response.
+        needs_onsite renders errors/program/notonsite.html when access is denied,
+        so the response is not valid JSON.
+        """
+        resp = self._call_catalog_status(self.student)
+        self.assertNotIn('application/json', resp.get('Content-Type', ''))
+
+    def test_admin_gets_200(self):
+        """A user in the Administrator group must pass the guard and get JSON."""
+        resp = self._call_catalog_status(self.admin)
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('application/json', resp.get('Content-Type', ''))
