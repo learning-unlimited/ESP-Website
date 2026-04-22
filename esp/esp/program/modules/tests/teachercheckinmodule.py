@@ -144,6 +144,43 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         phone = phonenumbers.format_number(self.teacher.getLastProfile().contact_user.phone_cell, phonenumbers.PhoneNumberFormat.NATIONAL)
         self.assertIn(phone, str(response.content, encoding='UTF-8'))
 
+    def test_missingteachers_when_defaults_to_date(self):
+        """Viewing missingteachers for a non-today date should default 'when' to that date."""
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'))
+
+        program_dates = self.program.dates()
+        today = datetime.date.today()
+        test_date = next((d for d in program_dates if d != today), None)
+
+        if test_date is None:
+            # Ensure there is a non-today program date to test against.
+            candidate = self.settings['start_time'] + datetime.timedelta(days=1)
+            if candidate.date() == today:
+                candidate = candidate + datetime.timedelta(days=1)
+            event_type = EventType.get_from_desc('Class Time Block')
+            Event.objects.get_or_create(
+                program=self.program,
+                event_type=event_type,
+                start=candidate,
+                end=candidate + datetime.timedelta(minutes=50),
+                short_description='Missingteachers default test slot',
+                description=candidate.strftime("%H:%M %m/%d/%Y"),
+            )
+            test_date = next((d for d in self.program.dates() if d != today), None)
+
+        self.assertIsNotNone(test_date, 'Expected at least one non-today program date for missingteachers test')
+        date_str = test_date.strftime('%m/%d/%Y')
+        response = self.client.get('%smissingteachers?date=%s' % (
+            self.program.get_onsite_url(), date_str))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('when', response.context)
+        self.assertIn('url_when', response.context)
+        context_when = response.context['when']
+        self.assertEqual(context_when.date(), test_date)
+        self.assertEqual(context_when.hour, 0)
+        self.assertEqual(context_when.minute, 0)
+        self.assertEqual(response.context['url_when'], context_when.strftime('%m/%d/%Y %H:%M'))
+
     def test_previously_checked_in_returned(self):
         """Teachers checked in on the previous program day appear in
         previously_checked_in (and not those already checked in today)."""
