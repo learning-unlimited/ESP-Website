@@ -60,6 +60,7 @@ from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
+from django.utils import timezone
 
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
@@ -115,7 +116,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['can_create_open_class'] = self.open_class_reg_is_open()
         context['can_req_cancel'] = self.deadline_met('/Classes/CancelReq')
         context['survey_results'] = (self.program.getSurveys().filter(category = "learn", questions__per_class=True).exists() and
-                                     self.program.getTimeSlots()[0].start < datetime.datetime.now())
+                                     self.program.getTimeSlots()[0].start < timezone.now())
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['modlist'] = get_current_request().user.getModeratingSectionsFromProgram(self.program)
@@ -277,8 +278,9 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @staticmethod
     def process_attendance(section, request, prog):
-        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
-        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+        today = timezone.localtime(timezone.now()).date()
+        today_min = timezone.make_aware(datetime.datetime.combine(today, datetime.time.min))
+        today_max = timezone.make_aware(datetime.datetime.combine(today, datetime.time.max))
         attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
         enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
@@ -354,8 +356,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                                   Otherwise, unenrolls the student from conflicting sections.
         """
         json_data = {}
-        today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
-        today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+        today = timezone.localtime(timezone.now()).date()
+        today_min = timezone.make_aware(datetime.datetime.combine(today, datetime.time.min))
+        today_max = timezone.make_aware(datetime.datetime.combine(today, datetime.time.max))
         attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
         enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]

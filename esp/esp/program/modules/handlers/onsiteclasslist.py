@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 import json
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Min
@@ -370,7 +371,7 @@ class OnSiteClassList(ProgramModuleObj):
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = Printer.objects.all().values_list('name', flat=True)
         context['initial_student'] = request.GET.get('student_id', '')
-        context['check_in_default'] = datetime.today().date() in prog.dates()
+        context['check_in_default'] = timezone.localtime(timezone.now()).date() in prog.dates()
 
         open_class_category = prog.open_class_category
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id', 'symbol', 'category'] ] )
@@ -408,7 +409,7 @@ class OnSiteClassList(ProgramModuleObj):
             else:
                 context[key_option] = defaults[key_option]
 
-        time_now = datetime.now()
+        time_now = timezone.now()
 
         start_id = int(options.get('start', -1))
         if start_id != -1:

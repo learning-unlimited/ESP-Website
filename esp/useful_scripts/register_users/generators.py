@@ -97,7 +97,8 @@ words = [word for word in open('/usr/share/dict/words').read().split()
 
 
 def get_random_dob(grade):
-    current_year = int(datetime.datetime.now().year)
+    from django.utils import timezone
+    current_year = timezone.localtime(timezone.now()).year
     return datetime.date(current_year - grade - 6, 1, 1) + datetime.timedelta(days=random.randint(-182, 182))
 
 

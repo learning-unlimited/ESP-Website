@@ -2,6 +2,7 @@ import datetime
 import traceback
 
 from django.db.models import Min
+from django.utils import timezone
 
 from esp.cal.models import Event
 import esp.program.controllers.autoscheduler.data_model as data_model
@@ -36,10 +37,10 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
             'program_type': 'TestProgram',
             'program_instance_name': '2222_Summer',
             'program_instance_label': 'Summer 2222',
-            'start_time': datetime.datetime(2222, 7, 7, 7, 5),
+            'start_time': datetime.datetime(2222, 7, 7, 7, 5, tzinfo=datetime.timezone.utc),
         }
         self.extra_settings = {
-            "extra_timeslot_start": datetime.datetime(2222, 7, 8, 7, 5),
+            "extra_timeslot_start": datetime.datetime(2222, 7, 8, 7, 5, tzinfo=datetime.timezone.utc),
             "extra_room_capacity": 151,
             "extra_room_availability": [1, 2, 4, 5],  # Timeslot indices
             "extra_class_teachers": [0, 3],  # Teacher indices

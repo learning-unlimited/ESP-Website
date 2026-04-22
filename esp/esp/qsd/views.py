@@ -43,7 +43,7 @@ from esp.utils.web import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, JsonResponse
 from esp.qsdmedia.models import Media
 from os.path import basename, dirname
-from datetime import datetime
+from django.utils import timezone
 from django.core.cache import cache
 from django.template.defaultfilters import urlencode
 from django.contrib import messages
@@ -175,7 +175,7 @@ def qsd(request, url):
                 qsd_rec = QuasiStaticData()
                 qsd_rec.url = base_url
                 qsd_rec.nav_category = default_navbarcategory()
-                qsd_rec.create_date = datetime.now()
+                qsd_rec.create_date = timezone.now()
                 qsd_rec.keywords = ''
                 qsd_rec.description = ''
 

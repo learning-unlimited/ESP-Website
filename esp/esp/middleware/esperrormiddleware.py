@@ -39,6 +39,7 @@ import sys
 from datetime import datetime
 
 from django.conf import settings
+from django.utils import timezone
 from django.db.models.base import ObjectDoesNotExist
 from django.http import HttpResponse, Http404
 from django.template import RequestContext
@@ -167,7 +168,7 @@ class ESPErrorMiddleware(MiddlewareMixin):
             'error_title': error_title,
             'error_description': error_description,
             'error_id': error_id,
-            'error_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'error_time': timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M:%S'),
             'error_url': request.build_absolute_uri(),
         }
         try:

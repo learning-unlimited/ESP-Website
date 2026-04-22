@@ -90,7 +90,7 @@ class StudentRegTest(ProgramFrameworkTest):
         response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
         self.assertContains(response, sec.title(), status_code=200)
         for ts in sec.meeting_times.all():
-            self.assertContains(response, ts.short_description, status_code=200)
+            self.assertContains(response, ts.short_time(), status_code=200)
 
     def test_catalog(self):
 

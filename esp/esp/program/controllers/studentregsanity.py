@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from datetime import date, datetime
+from django.utils import timezone
 import logging
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,7 @@ class StudentRegSanityController(object):
         if csvlog:
             import csv
             if directory is None: directory = self.options['directory']
-            filefullname = os.path.join(directory, datetime.now().strftime("%Y-%m-%d_") + 'sanitize_log.csv')
+            filefullname = os.path.join(directory, timezone.now().strftime("%Y-%m-%d_") + 'sanitize_log.csv')
             with open(filefullname, 'a', newline='', encoding='utf-8') as csvfile:
                 csvwriter = csv.writer(csvfile)
                 return self._run_sanitize_checks(checks, fake, csvlog, csvwriter)

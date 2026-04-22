@@ -51,13 +51,13 @@ def _setup_student_tags():
 
 def _valid_student_data():
     """Return a minimal dict that makes StudentInfoForm valid."""
-    import datetime
+    from django.utils import timezone
     valid_year = str(ESPUser.YOGFromGrade(9))
     return {
         'graduation_year': valid_year,
         'dob_0': '1',    # month  (SplitDateWidget fields)
         'dob_1': '1',    # day
-        'dob_2': str(datetime.date.today().year - 16),  # year
+        'dob_2': str(timezone.localtime(timezone.now()).year - 16),  # year
         'school': 'Test High School',
         'heard_about_0': '',
         'heard_about_1': '',

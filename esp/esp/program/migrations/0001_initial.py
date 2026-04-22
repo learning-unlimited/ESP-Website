@@ -1,3 +1,4 @@
+import django.utils.timezone as _tz
 # -*- coding: utf-8 -*-
 
 from django.db import models, migrations
@@ -304,7 +305,7 @@ class Migration(migrations.Migration):
             name='StudentAppReview',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('date', models.DateTimeField(default=datetime.datetime.now, editable=False)),
+                ('date', models.DateTimeField(default=_tz.now, editable=False)),
                 ('score', models.PositiveIntegerField(blank=True, help_text='Please rate each student', null=True, choices=[(10, 'Yes'), (5, 'Maybe'), (1, 'No')])),
                 ('comments', models.TextField()),
                 ('reject', models.BooleanField(default=False, editable=False)),
@@ -318,7 +319,7 @@ class Migration(migrations.Migration):
             name='StudentRegistration',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('start_date', models.DateTimeField(default=datetime.datetime.now, help_text='If blank, has always started.', null=True, blank=True)),
+                ('start_date', models.DateTimeField(default=_tz.now, help_text='If blank, has always started.', null=True, blank=True)),
                 ('end_date', models.DateTimeField(default=None, help_text='If blank, never ends.', null=True, blank=True)),
             ],
         ),
@@ -326,7 +327,7 @@ class Migration(migrations.Migration):
             name='StudentSubjectInterest',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('start_date', models.DateTimeField(default=datetime.datetime.now, help_text='If blank, has always started.', null=True, blank=True)),
+                ('start_date', models.DateTimeField(default=_tz.now, help_text='If blank, has always started.', null=True, blank=True)),
                 ('end_date', models.DateTimeField(default=None, help_text='If blank, never ends.', null=True, blank=True)),
             ],
         ),

@@ -1,3 +1,4 @@
+import django.utils.timezone as _tz
 " Survey models for Educational Studies Program. "
 
 __author__    = "$LastChangedBy$"
@@ -84,7 +85,7 @@ class Survey(models.Model):
 
 class SurveyResponse(models.Model):
     """ A single survey taken by a person. """
-    time_filled = models.DateTimeField(default=datetime.datetime.now)
+    time_filled = models.DateTimeField(default=_tz.now)
     survey = models.ForeignKey(Survey, db_index=True, on_delete=models.CASCADE)
 
     def set_answers(self, get_or_post, save=False):

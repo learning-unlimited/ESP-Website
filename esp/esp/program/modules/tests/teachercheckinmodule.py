@@ -51,8 +51,8 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         pm            = ProgramModule.objects.get(handler='TeacherCheckinModule')
         self.module   = ProgramModuleObj.getFromProgModule(self.program, pm)
         self.now      = self.settings['start_time']
-        self.past     = datetime.datetime(1970, 1, 1)
-        self.future   = datetime.datetime.max
+        self.past     = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+        self.future   = datetime.datetime(2999, 1, 1, tzinfo=datetime.timezone.utc)
         self.admin    = self.admins[0]
         self.teacher  = self.teachers[0]
         self.cls      = self.teacher.getTaughtClasses()[0]
@@ -170,7 +170,8 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
 
         # Query getMissingTeachers for day 2 (teacher has NOT checked in on
         # day 2, but did check in on day 1).
-        when_day2 = datetime.datetime.combine(day2, self.settings['start_time'].time())
+        from django.utils import timezone
+        when_day2 = timezone.make_aware(datetime.datetime.combine(day2, self.settings['start_time'].time()))
         _sections, _arrived, prev = self.module.getMissingTeachers(
             self.program, date=day2, when=when_day2)
         self.assertIn(self.teacher.id, prev)

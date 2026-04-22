@@ -1,3 +1,4 @@
+import django.utils.timezone as _tz
 # -*- coding: utf-8 -*-
 
 from django.db import models, migrations
@@ -18,7 +19,7 @@ class Migration(migrations.Migration):
                 ('name', models.SlugField(blank=True)),
                 ('title', models.CharField(max_length=256)),
                 ('content', models.TextField()),
-                ('create_date', models.DateTimeField(default=datetime.datetime.now, verbose_name='last edited', editable=False)),
+                ('create_date', models.DateTimeField(default=_tz.now, verbose_name='last edited', editable=False)),
                 ('disabled', models.BooleanField(default=False)),
                 ('keywords', models.TextField(null=True, blank=True)),
                 ('description', models.TextField(null=True, blank=True)),

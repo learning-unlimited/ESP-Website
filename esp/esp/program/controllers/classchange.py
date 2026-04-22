@@ -43,6 +43,7 @@ import queue
 import random
 
 from datetime import date, datetime
+from django.utils import timezone
 import re
 import os
 import sys
@@ -129,7 +130,7 @@ class ClassChangeController(object):
         print(self.program)
         iscorrect = input("Is this the correct program (y/[n])? ")
         assert (iscorrect.lower() == 'y' or iscorrect.lower() == 'yes')
-        self.now = datetime.now()
+        self.now = timezone.now()
         self.options = ClassChangeController.default_options.copy()
         self.options.update(kwargs)
         self.students_not_checked_in = []
@@ -691,7 +692,7 @@ class ClassChangeController(object):
             self.changed[student_ind] = True
 
     def unsave_assignments(self):
-        StudentRegistration.objects.filter(end_date__gte=self.now, end_date__lte=datetime(9000, 1, 1)).update(end_date=None)
+        StudentRegistration.objects.filter(end_date__gte=self.now, end_date__lte=timezone.make_aware(datetime(9000, 1, 1))).update(end_date=None)
         StudentRegistration.objects.filter(start_date__gte=self.now).delete()
 
     def send_student_email(self, student_ind, changed = True, for_real = False, f = None):
