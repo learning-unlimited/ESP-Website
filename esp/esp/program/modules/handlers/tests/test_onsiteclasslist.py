@@ -462,6 +462,21 @@ class StudentsStatusTests(ProgramFrameworkTest):
             num_students=5,
         )
         self.add_user_profiles()
+
+        # Seed one extra student who has no registration profile
+        # It makes sure that a q='student' search always returns both has_profile=True and
+        # has_profile=False rows so the sort assertion is never skipped.
+        no_profile_student, _ = ESPUser.objects.get_or_create(
+            username='student_noprofile',
+            defaults={
+                'first_name': 'student_noprofile',
+                'last_name': 'student_noprofile',
+                'email': 'student_noprofile@learningu.org',
+            },
+        )
+        no_profile_student.makeRole('Student')
+        self.no_profile_student = no_profile_student
+
         self.factory = RequestFactory()
         self.admin = self.admins[0]
 
