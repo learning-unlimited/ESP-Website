@@ -543,7 +543,18 @@ class StudentsStatusTests(ProgramFrameworkTest):
         self.assertIn(student.id, ids)
 
     def test_search_limits_to_20_results(self):
-        """Search results must be capped at 20 entries."""
+        """Search results must be capped at 20 entries.
+        This test creates 21 extra users with first_name student.
+        """
+        bulk_users = []
+        for i in range(21):
+            bulk_users.append(ESPUser(
+                username=f'student_bulk_{i}',
+                first_name=f'student_bulk_{i}',
+                last_name='Bulk',
+                email=f'student_bulk_{i}@learningu.org',
+            ))
+        ESPUser.objects.bulk_create(bulk_users)
         resp = self._call({'q': 'student'})
         data = json.loads(resp.content)
         self.assertLessEqual(len(data), 20)
