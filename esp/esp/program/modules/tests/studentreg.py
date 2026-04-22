@@ -548,7 +548,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
             new_yog = ESPUser.YOGFromGrade(new_grade)
         self.new_grad_year = new_yog
 
-        self.userview_base = '/manage/userview?username=' + self.student.username
+        self.userview_base = '/manage/userview'
 
     # ------------------------------------------------------------------
     # Test 1: Admin can update a student's grade
@@ -558,8 +558,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """A logged-in admin should be able to change a student's graduation
         year via the graduation_year GET parameter."""
         self.client.login(username=self.admin.username, password='password')
-        url = self.userview_base + '&graduation_year=' + str(self.new_grad_year)
-        response = self.client.get(url)
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
         self.assertEqual(response.status_code, 200)
 
         # Re-fetch from DB to confirm persistence.
@@ -578,8 +580,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """A student is not an administrator, so the view should return 403
         and leave the graduation year unchanged."""
         self.client.login(username=self.student.username, password='password')
-        url = self.userview_base + '&graduation_year=' + str(self.new_grad_year)
-        response = self.client.get(url)
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
         self.assertEqual(
             response.status_code, 403,
             "Expected 403 for non-admin access, got %s" % response.status_code,
@@ -601,8 +605,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         unchanged."""
         teacher = self.teachers[0]
         self.client.login(username=teacher.username, password='password')
-        url = self.userview_base + '&graduation_year=' + str(self.new_grad_year)
-        response = self.client.get(url)
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
         self.assertEqual(
             response.status_code, 403,
             "Expected 403 for teacher access, got %s" % response.status_code,
@@ -623,8 +629,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         the graduation year must remain untouched."""
         # Ensure no session cookie is active.
         self.client.logout()
-        url = self.userview_base + '&graduation_year=' + str(self.new_grad_year)
-        response = self.client.get(url)
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
         self.assertEqual(
             response.status_code, 302,
             "Expected 302 redirect for unauthenticated access, got %s"
@@ -647,8 +655,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         the view returns 200 without crashing, and the graduation year in the
         DB remains unchanged."""
         self.client.login(username=self.admin.username, password='password')
-        url = self.userview_base + '&graduation_year=not_a_number'
-        response = self.client.get(url)
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': 'not_a_number',
+        })
         self.assertEqual(
             response.status_code, 200,
             "Expected 200 for invalid graduation_year input, got %s"
@@ -673,8 +683,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         profile.save()
 
         self.client.login(username=self.admin.username, password='password')
-        url = self.userview_base + '&graduation_year=' + str(self.new_grad_year)
-        response = self.client.get(url)
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
         self.assertEqual(response.status_code, 200)
 
         updated_info = self.student.getLastProfile().student_info
@@ -690,9 +702,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         self.client.login(username=self.admin.username, password='password')
 
         for invalid_year in ('-100', '999999'):
-            response = self.client.get(
-                self.userview_base + '&graduation_year=' + invalid_year
-            )
+            response = self.client.get(self.userview_base, data={
+                'username': self.student.username,
+                'graduation_year': invalid_year,
+            })
             self.assertEqual(response.status_code, 200)
 
             info = self.student.getLastProfile().student_info
@@ -709,9 +722,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         profile.save()
 
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(
-            self.userview_base + '&graduation_year=not_a_number'
-        )
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': 'not_a_number',
+        })
         self.assertEqual(response.status_code, 200)
 
         profile.refresh_from_db()
@@ -729,7 +743,9 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         include 'change_grade_form' in the template context so the UI can
         render the grade-change widget."""
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base)
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+        })
         self.assertEqual(response.status_code, 200)
         self.assertIn(
             'change_grade_form', response.context,

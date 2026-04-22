@@ -1234,12 +1234,6 @@ class BaseESPUser(object):
             if parsed_year not in valid_grad_years:
                 return
 
-            #   Perform a simple sanity check on the graduation year to
-            #   prevent unreasonable values (e.g. very large or negative).
-            current_year = date.today().year
-            if parsed_year < current_year - 20 or parsed_year > current_year + 20:
-                return
-
         #   Retrieve the user's most recent registration profile and create a StudentInfo if needed.
         profile = self.getLastProfile()
         student_info = profile.student_info
