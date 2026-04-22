@@ -73,7 +73,7 @@ class StudentRegTest(ProgramFrameworkTest):
         return [x.name for x in response.templates]
 
     def expect_template(self, response, template):
-        self.assertTrue(template in self.get_template_names(response), 'Wrong template for profile: got %s, expected %s' % (self.get_template_names(response), template))
+        self.assertTrue(template in self.get_template_names(response), f'Wrong template for profile: got {self.get_template_names(response)}, expected {template}')
 
     def test_confirm(self):
         program = self.program
@@ -106,22 +106,22 @@ class StudentRegTest(ProgramFrameworkTest):
 
                 #   Check title
                 title = cls_info['title'].strip()
-                expected_title = '%s: %s' % (cls.emailcode(), cls.title)
-                self.assertTrue(title == expected_title, 'Incorrect class title in catalog: got "%s", expected "%s"' % (title, expected_title))
+                expected_title = f'{cls.emailcode()}: {cls.title}'
+                self.assertTrue(title == expected_title, f'Incorrect class title in catalog: got "{title}", expected "{expected_title}"')
 
                 #   Check description
                 description = cls_info['description'].replace('<br />', '').strip()
-                self.assertTrue(description == cls.class_info.strip(), 'Incorrect class description in catalog: got "%s", expected "%s"' % (description, cls.class_info.strip()))
+                self.assertTrue(description == cls.class_info.strip(), f'Incorrect class description in catalog: got "{description}", expected "{cls.class_info.strip()}"')
 
                 #   Check enrollments
                 enrollments = [x.replace('<br />', '').strip() for x in cls_info['enrollment'].split('Section')[1:]]
                 class_sections = cls.sections.order_by('id')
                 self.assertTrue(len(enrollments) == len(list(class_sections)),
-                                'Recovered {} enrollments from catalog but expecting {}. Listed below\n\tRecovered: {}\n\tExpecting: {}'.format(len(enrollments), len(list(class_sections)), enrollments, list(class_sections)))
+                                f'Recovered {len(enrollments)} enrollments from catalog but expecting {len(list(class_sections))}. Listed below\n\tRecovered: {enrollments}\n\tExpecting: {list(class_sections)}')
                 for sec in class_sections:
                     i = sec.index() - 1
-                    expected_str = '%s: %s (max %s)' % (sec.index(), sec.num_students(), sec.capacity)
-                    self.assertTrue(enrollments[i] == expected_str, 'Incorrect enrollment for %s in catalog: got "%s", expected "%s"' % (sec.emailcode(), enrollments[i], expected_str))
+                    expected_str = f'{sec.index()}: {sec.num_students()} (max {sec.capacity})'
+                    self.assertTrue(enrollments[i] == expected_str, f'Incorrect enrollment for {sec.emailcode()} in catalog: got "{enrollments[i]}", expected "{expected_str}"')
 
         program = self.program
 
