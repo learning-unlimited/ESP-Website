@@ -547,9 +547,9 @@ class TeacherCheckinModule(ProgramModuleObj):
         else:
             when = None
 
-        # Default 'when' to start of date if viewing a non-today date
+        # Default 'when' to end of date if viewing a non-today date
         if when is None and date is not None and date != date_type.today():
-            when = datetime.combine(date, time.min)
+            when = datetime.combine(date, time.max)
             context['when'] = when
             context['url_when'] = when.strftime('%m/%d/%Y %H:%M')
 
