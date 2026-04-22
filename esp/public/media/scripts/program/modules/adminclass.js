@@ -1,6 +1,5 @@
 //  Global variables for storing the class and section data
 var classes_global = {};
-var sections_global = {};
 
 function deleteClass() {
     //if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
@@ -82,31 +81,54 @@ function fill_class_popup(clsid, classes_data) {
     else
         sections_list.append($j('<li>').html('Section ' + (i + 1) + ': not scheduled'));
   }
+  if (class_info.is_scheduled) {
+    var buttons = [
+    {
+      text: "Approve (all sections)",
+      click: function() {
+        update_class($j(this).attr('clsid'), 10);
+      }
+    },
+    {
+      text: "Unreview",
+      click: function() {
+        update_class($j(this).attr('clsid'), 0);
+      }
+    },
+    {
+      text: "Cancel on class management page",
+      click: function() {
+        window.open("/manage/"+base_url+"/manageclass/"+clsid);
+      }
+    }]
+  } else {
+    var buttons = [
+    {
+      text: "Approve (all sections)",
+      click: function() {
+        update_class($j(this).attr('clsid'), 10);
+      }
+    },
+    {
+      text: "Unreview",
+      click: function() {
+        update_class($j(this).attr('clsid'), 0);
+      }
+    },
+    {
+      text: "Reject (all sections)",
+      click: function() {
+        update_class($j(this).attr('clsid'), -10);
+      }
+    }]
+  }
 
   class_desc_popup
     .dialog('option', 'title', class_info.emailcode + ": " +class_info.title)
     .dialog('option', 'width', 600)
     .dialog('option', 'height', 400)
     .dialog('option', 'position', 'center')
-    .dialog('option', 'buttons', [
-      {
-        text: "Approve (all sections)",
-        click: function() {
-          update_class($j(this).attr('clsid'), 10);
-        }
-      },
-      {
-        text: "Unreview",
-        click: function() {
-          update_class($j(this).attr('clsid'), 0);
-        }
-      },
-      {
-        text: "Reject (all sections)",
-        click: function() {
-          update_class($j(this).attr('clsid'), -10);
-        }
-      }])
+    .dialog('option', 'buttons', buttons)
     .html('')
     .append(make_attrib_para("Status", status_string))
     .append(make_attrib_para("Teachers", class_info.teacher_names))
@@ -194,7 +216,6 @@ function update_class(clsid, statusId) {
 function fillClasses(data)
 {
     // First pull out the data
-    var sections = data.sections;
     var classes = data.classes;
 
     // Clear the current classes list (most likely just "Loading...")
@@ -208,7 +229,6 @@ function fillClasses(data)
 
     //  Save the data for later if we need it
     classes_global = classes;
-    sections_global = sections;
 }
 
 function createClassTitleTd(clsObj) {

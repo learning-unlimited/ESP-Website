@@ -1,6 +1,6 @@
 function ApiClient() {
     /**
-     * Fetch the change log from the server
+     * Fetch the change log from the server using ajax calls to the python views
      *
      * @param last_fetched_index: The previous index we retrieved from the server
      * @param callback: If successful, this function will be called. Takes one param
@@ -12,10 +12,10 @@ function ApiClient() {
         $j.getJSON(
             'ajax_change_log',
             { 'last_fetched_index': last_fetched_index })
-            .success(function(ajax_data, status) {
+            .done(function(ajax_data, status) {
                 callback(ajax_data);
             })
-            .error(function(ajax_data, status) {
+            .fail(function(ajax_data, status) {
                 errorReporter("An error occurred fetching the changelog.");
             });
     }
@@ -38,9 +38,9 @@ function ApiClient() {
         if(locked) {
             params['locked'] = 'yes';
         }
-        $j.post('ajax_set_comment', params).success(function() {
+        $j.post('ajax_set_comment', params).done(function() {
             callback();
-        }).error(function() {
+        }).fail(function() {
             errorReporter('An error occurred setting comment.');
         });
     };
@@ -84,6 +84,25 @@ function ApiClient() {
             action: 'deletereg',
             csrfmiddlewaretoken: csrf_token(),
             cls: section_id
+        };
+        this.send_request('ajax_schedule_class', req, callback, errorReporter);
+    };
+
+    /**
+     * Swap two sets of sections on the server.
+     *
+     * @param assignments1: List of new assignments for the section(s) in room 1
+     * @param assignments2: List of new assignments for the section(s) in room 2
+     * @param callback: If successful, this function will be called. Takes no params.
+     * @param errorReporter: If server reports an error, this function will be called.
+     *                       Takes one param msg with an error message.
+     */
+    this.swap_sections = function(assignments1, assignments2, override, callback, errorReporter){
+        var req = {
+            action: 'swap',
+            csrfmiddlewaretoken: csrf_token(),
+            assignments: JSON.stringify(assignments1.concat(assignments2)),
+            override: override
         };
         this.send_request('ajax_schedule_class', req, callback, errorReporter);
     };
@@ -139,7 +158,7 @@ function ApiClient() {
      */
     this.send_request = function(fnc, req, callback, errorReporter){
         $j.post(fnc, req, "json")
-            .success(function(ajax_data, status) {
+            .done(function(ajax_data, status) {
                 if (ajax_data.ret){
                     console.log("success");
                     callback();
@@ -149,7 +168,7 @@ function ApiClient() {
                     errorReporter(ajax_data.msg);
                 }
             })
-            .error(function(ajax_data, status) {
+            .fail(function(ajax_data, status) {
                 console.log("error");
                 errorReporter("An error occurred while attempting the requested change.");
             });

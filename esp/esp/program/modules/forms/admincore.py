@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django import forms
 from django.contrib import admin
+from django.template.loader import select_template
 from django.utils.safestring import mark_safe
 from form_utils.forms import BetterForm, BetterModelForm
 
@@ -8,8 +9,8 @@ from esp.accounting.models import LineItemType
 from esp.cal.models import Event
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
-from esp.program.models import RegistrationType, Program
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
 from esp.tagdict import all_program_tags, tag_categories
 from esp.tagdict.models import Tag
 
@@ -38,7 +39,17 @@ class LunchConstraintsForm(forms.Form):
 
     def load_data(self):
         lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').distinct()
-        self.initial['timeslots'] = lunch_timeslots.values_list('id', flat=True)
+        self.fields['timeslots'].initial = list(lunch_timeslots.values_list('id', flat=True))
+        sched_constraints = ScheduleConstraint.objects.filter(program=self.program)
+        # If there are any schedule constraints for this program, check that box
+        if sched_constraints.exists():
+            self.fields['generate_constraints'].initial = True
+            # If any schedule constraints have an 'on_failure' function, check the autocorrect box
+            if sched_constraints.exclude(on_failure='').exists():
+                self.fields['autocorrect'].initial = True
+            # If any BooleanTokens associated with the schedule cosntraints have text other than '1', check the include_conditions box
+            if BooleanToken.objects.filter(exp__condition_constraint__program=2).exclude(text='1').exists():
+                self.fields['include_conditions'].initial = True
 
     def save_data(self):
         timeslots = Event.objects.filter(id__in=self.cleaned_data['timeslots']).order_by('start')
@@ -47,9 +58,9 @@ class LunchConstraintsForm(forms.Form):
 
     timeslots = forms.MultipleChoiceField(choices=[], required=False, widget=forms.SelectMultiple)
 
-    generate_constraints=forms.BooleanField(initial=True, required=False, help_text="Check this box to generate lunch scheduling constraints. If unchecked, only lunch sections will be generated, and the other two check boxes will have no effect.")
-    autocorrect = forms.BooleanField(initial=True, required=False, help_text="Check this box to attempt automatically adding lunch to a student's schedule so that they are less likely to violate the schedule constraint.")
-    include_conditions = forms.BooleanField(initial=True, required=False, help_text="Check this box to allow students to schedule classes through lunch if they do not have morning or afternoon classes.")
+    generate_constraints=forms.BooleanField(initial=False, required=False, help_text="Check this box to generate lunch scheduling constraints. If unchecked, only lunch sections will be generated, and the other two check boxes will have no effect.")
+    autocorrect = forms.BooleanField(initial=False, required=False, help_text="Check this box to attempt automatically adding lunch to a student's schedule so that they are less likely to violate the schedule constraint.")
+    include_conditions = forms.BooleanField(initial=False, required=False, help_text="Check this box to allow students to schedule classes through lunch if they do not have morning or afternoon classes.")
 
 class ProgramSettingsForm(ProgramCreationForm):
     """ Form for changing program-related settings. """
@@ -104,12 +115,68 @@ class StudentRegSettingsForm(BetterModelForm):
     class Meta:
         fieldsets = [
                      ('Capacity Settings', {'fields': ['enforce_max', 'class_cap_multiplier', 'class_cap_offset', 'apply_multiplier_to_room_cap']}),
-                     ('Priority Registration Settings', {'fields': ['use_priority', 'priority_limit']}),
+                     ('Priority Registration Settings', {'fields': ['priority_limit']}), # use_priority is not included here to prevent confusion; to my knowledge, only HSSP uses this setting - WG
                      ('Enrollment Settings', {'fields': ['use_grade_range_exceptions', 'register_from_catalog', 'visible_enrollments', 'visible_meeting_times', 'show_emailcodes']}),
                      ('Button Settings', {'fields': ['confirm_button_text', 'view_button_text', 'cancel_button_text', 'temporarily_full_text', 'cancel_button_dereg', 'send_confirmation']}),
                      ('Visual Options', {'fields': ['progress_mode','force_show_required_modules']}),
                     ]# Here you can also add description for each fieldset.
         model = StudentClassRegModuleInfo
+
+class ReceiptsForm(BetterForm):
+    confirm = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
+                              help_text = "This receipt is shown on the website when a student clicks the 'confirm registration' button.\
+                                           If no text is supplied, the default text will be used.",
+                              required = False)
+    confirmemail = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
+                              help_text = "This receipt is sent via email when a student clicks the 'confirm registration' button.\
+                                           If no text is supplied, the default text will be used.",
+                              required = False)
+    cancel = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
+                              help_text = "This receipt is shown on the website when a student clicks the 'cancel registration' button.\
+                                           If no text is supplied, the student will be redirected to the main student registration page instead.",
+                              required = False)
+
+    def __init__(self, *args, **kwargs):
+        self.program = kwargs.pop('program')
+        super(ReceiptsForm, self).__init__(*args, **kwargs)
+        for action in ['confirm', 'confirmemail', 'cancel']:
+            receipts = DBReceipt.objects.filter(program=self.program, action=action)
+            if receipts.count() > 0:
+                receipt_text = receipts.latest('id').receipt
+            elif action == "confirm":
+                template = select_template(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
+                receipt_text = open(template.origin.name, 'r').read().encode('UTF-8')
+            elif action == "confirmemail":
+                template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
+                receipt_text = open(template.origin.name, 'r').read().encode('UTF-8')
+            else:
+                receipt_text = "".encode('UTF-8')
+            self.fields[action].initial = receipt_text
+
+    def save(self):
+        for action in ['confirm', 'confirmemail', 'cancel']:
+            receipts = DBReceipt.objects.filter(program=self.program, action=action)
+            cleaned_text = self.cleaned_data[action].replace('\r\n', '\n').strip() # Use unix line endings and strip whitespace just in case
+            if cleaned_text == "":
+                receipts.delete()
+            else:
+                if action == "confirm":
+                    template = select_template(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
+                    default_text = open(template.origin.name, 'r').read().strip()
+                elif action == "confirmemail":
+                    template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
+                    default_text = open(template.origin.name, 'r').read().strip()
+                elif action == "cancel":
+                    default_text = ""
+                if cleaned_text == default_text:
+                    receipts.delete()
+                else:
+                    receipt, created = DBReceipt.objects.get_or_create(program=self.program, action=action)
+                    receipt.receipt = cleaned_text
+                    receipt.save()
+
+    class Meta:
+        fieldsets = [('Student Registration Receipts', {'fields': ['confirm', 'confirmemail', 'cancel']})]
 
 class ProgramTagSettingsForm(BetterForm):
     """ Form for changing tags associated with a program. """
@@ -126,6 +193,9 @@ class ProgramTagSettingsForm(BetterForm):
                 if key == 'teacherreg_hide_fields':
                     from esp.program.modules.forms.teacherreg import TeacherClassRegForm
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[1].label if field[1].label else field[0]) for field in TeacherClassRegForm.declared_fields.items() if not field[1].required])
+                elif key in ['student_reg_records', 'teacher_reg_records']:
+                    from esp.users.models import Record
+                    self.fields[key] = forms.MultipleChoiceField(choices=Record.EVENT_CHOICES)
                 elif field is not None:
                     self.fields[key] = field
                 elif tag_info.get('is_boolean', False):
@@ -133,7 +203,7 @@ class ProgramTagSettingsForm(BetterForm):
                 else:
                     self.fields[key] = forms.CharField()
                 self.fields[key].help_text = tag_info.get('help_text', '')
-                self.fields[key].initial = tag_info.get('default')
+                self.fields[key].initial = self.fields[key].default = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key, program = self.program) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, program = self.program)
                 if set_val != None and set_val != self.fields[key].initial:
@@ -159,4 +229,4 @@ class ProgramTagSettingsForm(BetterForm):
                     Tag.unSetTag(key, prog)
 
     class Meta:
-        fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags[key].get('category') == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags[key].get('category') == cat], 'legend': tag_categories[cat]}) for cat in tag_categories.keys()]

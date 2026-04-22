@@ -124,6 +124,10 @@ class UserAvailability(models.Model):
             self.role = self.user.getUserTypes()[0]
         return super(UserAvailability, self).save(*args, **kwargs)
 
+    @classmethod
+    def entriesBySlot(self, event):
+        return self.objects.filter(event=event)
+
     def get_absolute_url(self):
         return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
 
@@ -234,6 +238,14 @@ class BaseESPUser(object):
             QObject = Q(classsubject__status__gt=0, classsubject__parent_program__id=prog)
         else:
             QObject = Q(classsubject__status__gt=0)
+        return cls.ajax_autocomplete(data, QObject)
+
+    @classmethod
+    def ajax_autocomplete_student_lottery(cls, data, prog = None):
+        if prog:
+            QObject = Q(phasezerorecord__program=prog)
+        else:
+            QObject = Q(phasezerorecord__program__isnull=False)
         return cls.ajax_autocomplete(data, QObject)
 
     def ajax_str(self):
@@ -577,22 +589,23 @@ class BaseESPUser(object):
             return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
-    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False):
+    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False, ignore_sections=[]):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
-        from esp.cal.models import Event
+        from esp.cal.models import Event, EventType
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
         if program.hasModule('AvailabilityModule'):
-            valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
+            et = EventType.get_from_desc('Class Time Block')
+            valid_events = Event.objects.filter(useravailability__user=self, program=program, event_type=et).order_by('start')
         else:
             valid_events = program.getTimeSlots()
 
         if not ignore_classes:
             #   Subtract out the times that they are already teaching.
             other_sections = self.getTaughtSections(program)
-            other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections]
+            other_times = [sec.meeting_times.values_list('id', flat=True) for sec in other_sections if sec not in ignore_sections]
             for lst in other_times:
                 valid_events = valid_events.exclude(id__in=lst)
         if not ignore_moderation:
@@ -2375,7 +2388,7 @@ class Record(models.Model):
     def createBit(cls, extension, program, user):
         from esp.accounting.controllers import IndividualAccountingController
         if extension == 'Paid':
-            IndividualAccountingController.updatePaid(True, program, user)
+            IndividualAccountingController.updatePaid(program, user, True)
 
         if cls.user_completed(user, extension.lower(), program):
             return False
@@ -2773,10 +2786,10 @@ class GradeChangeRequest(TimeStampedModel):
 
     def save(self, **kwargs):
         is_new = self.id is None
-        super(GradeChangeRequest, self).save(**kwargs)
 
         if is_new:
             self.send_request_email()
+            super(GradeChangeRequest, self).save(**kwargs)
             return
 
         if self.approved is not None and not self.acknowledged_time:
@@ -2786,6 +2799,8 @@ class GradeChangeRequest(TimeStampedModel):
         #   Update the student's grade if the request has been approved
         if self.approved is True:
             self.requesting_student.set_grade(self.claimed_grade)
+
+        super(GradeChangeRequest, self).save(**kwargs)
 
     def _request_email_content(self):
         """

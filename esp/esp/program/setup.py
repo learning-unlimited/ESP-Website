@@ -90,6 +90,6 @@ def commit_program(prog, perms, cost=0, sibling_discount=None):
     pac = ProgramAccountingController(prog)
     pac.setup_accounts()
     pac.setup_lineitemtypes(cost)
-    prog.sibling_discount = sibling_discount # property saves Tag, no explicit save needed
+    prog.sibling_discount = sibling_discount # property saves Tag and LineItemType, no explicit save needed
 
     return prog

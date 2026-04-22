@@ -96,6 +96,11 @@ class Media(models.Model):
 
         self.target_file.save(self.hashed_name, file)
 
+    # returns a download path for this file
+    def get_download_path(self):
+        return "/download/" + self.hashed_name + "/" + self.file_name
+    download_path = property(get_download_path)
+
     # returns an absolute path to this file
     def get_uploaded_filename(self):
         return os.path.join(settings.MEDIA_ROOT, "..", self.target_file.url.lstrip('/'))
@@ -111,6 +116,9 @@ class Media(models.Model):
             os.remove(self.get_uploaded_filename())
 
         super(Media, self).delete(*args, **kwargs)
+
+    def rename(self, new_name):
+        self.friendly_name = new_name
 
     def __unicode__(self):
         return unicode(self.friendly_name)

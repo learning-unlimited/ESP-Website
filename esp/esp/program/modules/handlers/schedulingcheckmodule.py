@@ -43,6 +43,9 @@ class SchedulingCheckModule(ProgramModuleObj):
             }
             return render_to_response(self.baseDir() + "output.html", request, context)
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = "modules"

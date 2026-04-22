@@ -7,6 +7,18 @@
   <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 
+{% block javascript %}
+  {{ block.super }}
+  <script>
+    $j(document).ready(function() {
+      $j("#id_sender").attr('required', true);
+      $j("#id_anonymous").change(function() {
+        $j("#id_sender").attr('required', !this.checked);
+      });
+    });
+  </script>
+{% endblock %}
+
 {% block content %}
 {% load render_qsd %}
 

@@ -112,7 +112,8 @@ class CommModule(ProgramModuleObj):
             body = '<html>' + body + '</html>'
 
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
-                       'program': ActionHandler(self.program, firstuser) }
+                       'program': ActionHandler(self.program, firstuser),
+                       'request': ActionHandler(MessageRequest(), firstuser)}
 
         renderedtext = Template(body).render(DjangoContext(contextdict))
 
@@ -308,6 +309,9 @@ class CommModule(ProgramModuleObj):
                                                'subject': subject,
                                                'body': body,
                                                'public_view': public_view})
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

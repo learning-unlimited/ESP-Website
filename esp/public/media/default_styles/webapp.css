@@ -82,6 +82,7 @@
   padding-left: 1vh;
   padding-right: 1vh;
   line-height: 1.2 !important;
+  overflow-wrap: break-word;
 }
 
 .main tr {

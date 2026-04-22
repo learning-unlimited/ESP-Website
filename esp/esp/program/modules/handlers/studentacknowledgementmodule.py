@@ -29,7 +29,11 @@ class StudentAcknowledgementModule(ProgramModuleObj):
         }
 
     def isCompleted(self):
-        return Record.objects.filter(user=get_current_request().user,
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user,
                                      program=self.program,
                                      event="studentacknowledgement").exists()
 

@@ -3,9 +3,9 @@
 <head>
 <title>Live Registration Status</title>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
-<script src="https://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
+<script src="https://code.jquery.com/jquery-migrate-3.3.2.{% if not settings.DEBUG %}min.{% endif %}js"></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
+<script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/common.js"></script>
 <script type="text/javascript">
     $j(document).ready(function() {
@@ -27,7 +27,7 @@
         background-color: #f7d0d0;
     }
 </style>
-<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+<link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/onsite_ajax_status.css" />
 
@@ -49,7 +49,7 @@
 <td>
     <div id="settings_controls">
     <!-- make sure to update onsite/ajax_status.js when changing this -->
-    <div><input type="checkbox" id="hide_full_control" checked="checked"/>Show full classes</div>
+    <div><input type="checkbox" id="hide_full_control" checked/>Show full classes</div>
     <div><input type="checkbox" id="override_control"/>Override size limits</div>
     <div><input type="checkbox" id="grade_limits_control"/>Show classes outside student's grade range</div>
     <div><input type="checkbox" id="show_class_titles"/>Display class titles</div>
@@ -58,6 +58,7 @@
     <div><input type="checkbox" id="show_closed_reg"/>Show sections that are closed to registration</div>
     <div><input type="checkbox" id="hide_past_time_blocks"/>Hide past timeblocks</div>
     <div><input type="checkbox" id="hide_conflicting"/>Show only classes that fit in student's schedule</div>
+    <div><input type="checkbox" id="check_in_student"{% if check_in_default %} checked{% endif %}/>Check-in student when making schedule changes</div>
     </div>
 </td>
 </tr>

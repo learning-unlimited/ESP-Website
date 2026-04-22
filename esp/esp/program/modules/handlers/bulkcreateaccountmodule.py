@@ -87,6 +87,9 @@ class BulkCreateAccountModule(ProgramModuleObj):
         context = {'bulk_account_error_message': message}
         return render_to_response(self.baseDir() + 'bulk_create_error.html', request, context)
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

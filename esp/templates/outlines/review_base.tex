@@ -11,8 +11,11 @@
 \usepackage{subfigure}
 \usepackage{boxedminipage}
 \usepackage{array}
+\usepackage{paracol}
+\usepackage{tcolorbox}
 
 {% block headers %}
+\setlength{\columnseprule}{.5pt}
 \definecolor{esphead}{rgb}{0.773,0.867,0.965}
 \newenvironment{itemize2}{
 \begin{itemize}
@@ -27,12 +30,6 @@
 
 \begin{document}
 
-\vspace{.1in}
-\begin{center}
-\begin{minipage}{7in}
-
-\end{minipage}
-\end{center}
 {% autoescape off %}
 {% block content %}
 

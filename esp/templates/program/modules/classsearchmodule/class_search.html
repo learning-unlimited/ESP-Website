@@ -134,7 +134,7 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
                 <div class="btn-group">
                     <button class="btn btn-approve" onclick="approve({{class.id}});">approve</button>
                     <button class="btn btn-unreview" onclick="unreview({{class.id}});">unreview</button>
-                    <button class="btn btn-reject" onclick="reject({{class.id}});">reject</button>
+                    {% if not class.hasScheduledSections %}<button class="btn btn-reject" id="reject_{{ class.id }}" onclick="reject({{class.id}});">reject</button>{% endif %}
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-danger" onclick='alert("You should \"delete\" a class by marking it as rejected. If you think you need to actually delete the class, and you have talked to webmins and understand the consequences (e.g. permanent loss of data about the class, possibly breaking some databases), then the only way to do so is on the admin panel. DO NOT fully delete a class unless you understand the consequences.");'>delete</button>

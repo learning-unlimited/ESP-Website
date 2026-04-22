@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 from datetime import datetime
 import operator
-import json
 
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
@@ -48,9 +47,8 @@ from argcache import cache_function
 from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
-from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, UserAvailability, StudentInfo, Record
@@ -479,6 +477,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                     continue
                 teacher = {
                     'id': t.id,
+                    'username': t.username,
                     'first_name': t.first_name,
                     'last_name': t.last_name,
                     'sections': list(cls['sections'])
@@ -668,7 +667,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     # This is separate from class_info because students shouldn't see it
     @aux_call
-    @cache_control(public=True, max_age=300)
+    @cache_control(public=True, max_age=30)
     @json_response()
     @needs_admin
     def class_admin_info(self, request, tl, one, two, module, extra, prog):
@@ -721,6 +720,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
             'status': cls.status,
+            'is_scheduled': cls.hasScheduledSections(),
             'emailcode': cls.emailcode(),
             'title': cls.title,
             'class_info': cls.class_info,
@@ -772,7 +772,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10, sections__status=10).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=-10).exclude(category__category='Lunch').distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=-20).exclude(category__category='Lunch').distinct().count()))
         return class_num_list
@@ -853,6 +853,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cache_function
     def teacher_nums(prog):
         teachers = prog.teachers()
+        teachers_qobjects = prog.teachers(QObjects = True)
         list_labels = prog.teacherDesc()
         teacher_num_list = []
 
@@ -860,10 +861,15 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         ## Not much to be done about it, though;
         ## the loop is iterating over a list of independent queries and running each.
         for key in teachers.keys():
-            if key in list_labels:
-                teacher_num_list.append((list_labels[key], teachers[key].filter(is_active = True).distinct().count()))
-            else:
-                teacher_num_list.append((key, teachers[key].filter(is_active = True).distinct().count()))
+            # This is useful for AUL/comm panel, but doesn't need to be on program dashboard
+            if key not in ['taught_before']:
+                if key in list_labels:
+                    teacher_num_list.append((list_labels[key], teachers[key].filter(is_active = True).distinct().count()))
+                else:
+                    teacher_num_list.append((key, teachers[key].filter(is_active = True).distinct().count()))
+                # Hack to insert this combined count in a logical position
+                if key == 'class_submitted':
+                    teacher_num_list.append(("""Teachers who have submitted a class and have not taught for a previous program""", ESPUser.objects.filter(~teachers_qobjects['taught_before'] & teachers_qobjects['class_submitted'] & Q(is_active = True)).distinct().count()))
         return teacher_num_list
     teacher_nums.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     teacher_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
@@ -879,16 +885,22 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cache_function
     def student_nums(prog):
         students = prog.students()
+        students_qobjects = prog.students(QObjects = True)
         list_labels = prog.studentDesc()
         student_num_list = []
 
         ## Ew, another set of queries in a for loop...
         ## Same justification, though.
         for key in students.keys():
-            if key in list_labels:
-                student_num_list.append((list_labels[key], students[key].filter(is_active = True).distinct().count()))
-            else:
-                student_num_list.append((key, students[key].filter(is_active = True).distinct().count()))
+            # These lists are useful for AUL/comm panel, but don't need to be on program dashboard
+            if key not in ['attended_past', 'enrolled_past']:
+                if key in list_labels:
+                    student_num_list.append((list_labels[key], students[key].filter(is_active = True).distinct().count()))
+                else:
+                    student_num_list.append((key, students[key].filter(is_active = True).distinct().count()))
+                # Hack to insert this combined count into a logical position
+                if key == 'enrolled':
+                    student_num_list.append(("""Students who are enrolled and have not enrolled in the past""", ESPUser.objects.filter(~students_qobjects['enrolled_past'] & students_qobjects['enrolled'] & Q(is_active = True)).distinct().count()))
         return student_num_list
     student_nums.depend_on_row(StudentSubjectInterest, lambda ssi: {'prog': ssi.subject.parent_program})
     student_nums.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
@@ -915,30 +927,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return volunteer_num_list
     volunteer_nums.depend_on_row(VolunteerOffer, lambda vo: {'prog': vo.request.program})
     volunteer_nums = staticmethod(volunteer_nums)
-
-    @cache_function
-    def splashinfo_nums(prog):
-        splashinfo_module = prog.getModule('SplashInfoModule')
-        splashinfo_data = {}
-        tag_data = Tag.getProgramTag('splashinfo_choices', prog)
-        if tag_data:
-            splashinfo_choices = json.loads(tag_data)
-        else:
-            splashinfo_choices = {'lunchsat': SplashInfoForm.default_choices, 'lunchsun': SplashInfoForm.default_choices}
-        for key in splashinfo_choices:
-            counts = {}
-            for item in splashinfo_choices[key]:
-                filter_kwargs = {'program': prog}
-                filter_kwargs[key] = item[0]
-                counts[item[1]] = SplashInfo.objects.filter(**filter_kwargs).distinct().count()
-            splashinfo_data[key] = counts
-        splashinfo_data['siblings'] = {
-            'yes': SplashInfo.objects.filter(program=prog, siblingdiscount=True).distinct().count(),
-            'no':  SplashInfo.objects.filter(program=prog).exclude(siblingdiscount=True).distinct().count()
-        }
-        return splashinfo_data
-    splashinfo_nums.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
-    splashinfo_nums = staticmethod(splashinfo_nums)
 
     @staticmethod
     def calc_hours(classes):
@@ -984,14 +972,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__category='Lunch').values('duration', 'enrolled_students', 'id')
         sched_hours = JSONDataModule.calc_section_hours(sched_sections)
         hour_num_list = []
-        hour_num_list.append(("Total # of Class-Hours (registered)", reg_hours["class-hours"]))
-        hour_num_list.append(("Total # of Class-Hours (approved)", app_hours["class-hours"]))
-        hour_num_list.append(("Total # of Class-Hours (scheduled)", sched_hours["class-hours"]))
-        hour_num_list.append(("Total # of Class-Student-Hours (registered)", reg_hours["class-student-hours"]))
-        hour_num_list.append(("Total # of Class-Student-Hours (approved)", app_hours["class-student-hours"]))
-        hour_num_list.append(("Total # of Class-Student-Hours (scheduled)", sched_hours["class-student-hours"]))
-        hour_num_list.append(("Total # of Class-Student-Hours (enrolled)", reg_hours["class-registered-hours"]))
-        hour_num_list.append(("Total # of Class-Student-Hours (attended program)", reg_hours["class-checked-in-hours"]))
+        hour_num_list.append(("Total # of Class-Hours (registered)", round(reg_hours["class-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Hours (approved)", round(app_hours["class-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Hours (scheduled)", round(sched_hours["class-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Student-Hours (registered)", round(reg_hours["class-student-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Student-Hours (approved)", round(app_hours["class-student-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Student-Hours (scheduled)", round(sched_hours["class-student-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Student-Hours (enrolled)", round(reg_hours["class-registered-hours"], 2)))
+        hour_num_list.append(("Total # of Class-Student-Hours (attended program)", round(reg_hours["class-checked-in-hours"], 2)))
         if sched_hours["class-student-hours"]:
             hour_num_list.append(("Class-Student-Hours Utilization", str(round(100 * reg_hours["class-registered-hours"] / sched_hours["class-student-hours"], 2)) + "%"))
         return hour_num_list
@@ -1079,10 +1067,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         ## Calculate the grade data:
         dictOut["stats"].append({"id": "grades", "data": self.grade_nums(prog)})
-
-        #   Add SplashInfo statistics if our program has them
-        if prog.hasModule('SplashInfoModule'):
-            dictOut["stats"].append({"id": "splashinfo", "data": self.splashinfo_nums(prog)})
 
         #   Add accounting stats
         pac = ProgramAccountingController(prog)

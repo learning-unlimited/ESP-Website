@@ -54,7 +54,8 @@ class AdminVitals(ProgramModuleObj):
     def prepare(self, context=None):
         return context
 
-
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

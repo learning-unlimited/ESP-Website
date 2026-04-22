@@ -1,5 +1,6 @@
 /**
  * This is a cell that can have class sections assigned to it.
+ * Used in the matrix and the directory.
  *
  * @param el: The jquery element that this cell should be rendered on.
  * @param section: The section that should be rendered on this cell (may be null).
@@ -30,6 +31,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
     this.disabled = false;
 
     this.section = null;
+    // Ghost sections are created when you are scheduling a class and hover over a cell
     this.ghostSection = false;
     this.selected = false;
 
@@ -135,13 +137,17 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 }
             case "capacity":
                 // Color cell based on how well room capacity matches section capacity
-                if (this.matrix.rooms[this.room_id].num_students < .5 * section.class_size_max) { // Class size is too big, make cell red
-                    return this.cellColors.HSLToRGB(0, 100, 50 + 50 * (this.matrix.rooms[this.room_id].num_students / section.class_size_max));
-                } else if (this.matrix.rooms[this.room_id].num_students > 1.5 * section.class_size_max) { // Class size is too small, make cell red
-                    return this.cellColors.HSLToRGB(0, 100, 50 + 50 * (section.class_size_max / this.matrix.rooms[this.room_id].num_students));
+                if(this.matrix.rooms[this.room_id].num_students < .5 * section.class_size_max) { // Class size is too big, make cell red
+                    return this.cellColors.HSLToRGB(0,100,50 + 50 * (this.matrix.rooms[this.room_id].num_students / section.class_size_max));
+                } else if(this.matrix.rooms[this.room_id].num_students > 1.5 * section.class_size_max) { // Class size is too small, make cell blue
+                    return this.cellColors.HSLToRGB(240,100,50 + 50 * (section.class_size_max / this.matrix.rooms[this.room_id].num_students));
                 } else { // Class size is good, make cell green
                     return this.cellColors.HSLToRGB(120, 100, 100 - 50 * (Math.min(section.class_size_max, this.matrix.rooms[this.room_id].num_students) / Math.max(section.class_size_max, this.matrix.rooms[this.room_id].num_students)));
                 }
+            case "category":
+                // Color cell based on the class category
+                var cat_ind = Object.keys(this.matrix.categories).indexOf(section.category_id.toString());
+                return this.cellColors.hexToRGB(this.cellColors.colors[Math.round(cat_ind / Object.keys(this.matrix.categories).length * 100)]);
             case "lunch":
                 // Check if section overlaps with all lunch timeslots for a single day
                 for (var day in this.matrix.timeslots.lunch_timeslots) {
@@ -321,7 +327,8 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
         }
         tooltip_parts['Category'] = this.matrix.categories[this.section.category_id || this.ghostSection.category_id].name;
         tooltip_parts['Teachers'] = this.matrix.sections.getTeachersString(this.section);
-        if (has_moderator_module === "True") tooltip_parts[moderator_title + 's'] = this.matrix.sections.getModeratorsString(this.section);
+        if(has_moderator_module === "True") tooltip_parts[moderator_title + 's'] = this.matrix.sections.getModeratorsString(this.section);
+        tooltip_parts['Style'] = this.section.class_style;
         tooltip_parts['Class size max'] = this.section.class_size_max;
         var length_str = '';
         if(Math.floor(this.section.length) > 0){
@@ -369,7 +376,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
     };
 
     /**
-     * Add a section as a ghost.
+     * Add a section as a ghost (when scheduling a section and hovering over a cell).
      *
      * @param section: The section to display.
      */

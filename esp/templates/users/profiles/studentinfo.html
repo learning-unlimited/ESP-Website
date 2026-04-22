@@ -65,7 +65,7 @@ Your grade level will update automatically every August.
 <div class="control-group">
     <label for="id_k12school" class="control-label">School:</label>
     <div class="controls controls-row">
-    <span style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school when it comes up.)</span>
+    <p style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school if it comes up, otherwise enter the full school name.)</p>
     {{ form.k12school }} {% if form.k12school.errors %}
     <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
     {% endif %}

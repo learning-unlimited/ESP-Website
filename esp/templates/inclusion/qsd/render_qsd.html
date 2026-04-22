@@ -45,7 +45,9 @@ $j(document).ready(function() {
   }
   
   $j.initialize(".jodit_toolbar_btn-image input[name=url]", function() {
-    $j(this).after("Upload files <a href='/admin/filebrowser/browse/' target='_blank'>here");
+    if ($j(this).next().is("input")) {
+      $j(this).after("Upload files <a href='/admin/filebrowser/browse/' target='_blank'>here");
+    }
   });
 });
 

@@ -4,12 +4,18 @@
     {% if section_surveys or general_survey %}
         <p class="message">
         {% if submitted or completed %}
-        <span style="color: red; font-weight: bold;">
-        {% if submitted %}Your survey responses for {% if section %}{{ section }}{% elif general %}the general program survey{% endif %} have been saved.
-        {% elif completed %}You've already completed the {% if section %}survey for {{ section }}{% elif general %}general program survey{% endif %}.{% endif %}
+        {% if submitted %}
+            <div class="alert alert-success">
+                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                    Your survey responses for {% if section %}{{ section }}{% elif general %}the general program survey{% endif %} have been saved.
+            </div>
+        {% elif completed %}
+            <div class="alert alert-danger">
+                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                    You've already completed the {% if section %}survey for {{ section }}{% elif general %}general program survey{% endif %}.
+            </div>
+        {% endif %}
         Please select another survey component below or come back later.
-        </span>
-        <br /><br />
         {% endif %}
         This survey consists of{% if section_surveys %} a survey component for each class you are registered for{% endif %}{% if section_surveys and general_survey %} and{% endif %}{% if general_survey %} a general program survey component{% endif %}.{% if section_surveys %} You may fill out a class survey once the class has begun.{% endif %}{% if general_survey %} You may fill out the general program survey once your first class has begun.{% endif %} If no survey components are available, please come back later.
         </p>

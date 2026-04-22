@@ -17,4 +17,5 @@ urlpatterns = [
     url(r'^/getmodules/$', views.get_modules),
     url(r'^/builddata/$', views.formBuilderData),
     url(r'^/exceldata/(?P<form_id>\d{1,6})/$', views.getExcelData),
+    url(r'^/bulkdownloadfiles/?', views.bulkDownloadFiles)
 ]

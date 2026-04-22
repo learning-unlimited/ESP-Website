@@ -21,6 +21,29 @@ Please complete the following steps to teach for {{ program.niceName }}.  When e
 {% endifequal %}
 <br />
 
+{% if records %}
+{% render_inline_program_qsd program record_steps %}
+<div class="row-fluid">
+<div class="span10 offset1">
+<table class="table table-condensed" align="center" width="400">
+<tr class="well"><th>Other Registration Requirements</th><th>Done?</th></tr>
+{% for record in records %}
+    <tr>
+        <td>{{ record.full_event }}</td>
+        <td>
+            {% if record.isCompleted %}
+                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+            {% else %}
+                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+            {% endif %}
+        </td>
+    </tr>
+{% endfor %}
+</table>
+</div>
+</div>
+{% endif %}
+
 {% for module in modules %}
 {% if module.useTemplate or module.getTemplate %}
     <a name="module-{{module.id}}"></a>

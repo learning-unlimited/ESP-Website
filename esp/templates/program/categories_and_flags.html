@@ -1,0 +1,173 @@
+{% extends "main.html" %}
+
+{% block title %}
+    Class Category and Flag Type Management
+{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+function deleteCategory() {
+    if (confirm('Are you sure you would like to delete this class category?')) {
+       return true;
+    }
+    return false;
+}
+
+function deleteFlagType() {
+    if (confirm('Are you sure you would like to delete this class flag type?')) {
+       return true;
+    }
+    return false;
+}
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h2>
+    Class Category and Flag Type Management
+</h2>
+
+<div id="program_form">
+
+    {% if open_section == "categories" %}
+    <button class="dsphead active">
+       <b>Class Categories</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont active">
+    {% else %}
+    <button class="dsphead">
+       <b>Class Categories</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont">
+    {% endif %}
+
+    <form method="post">
+    <input type="hidden" name="command" value="{% if cat_form.instance.id %}edit{% else %}add{% endif %}" />
+    {% if cat_form.instance.id %}
+    <input type="hidden" name="id" value="{{ cat_form.instance.id }}" />
+    {% endif %}
+    <input type="hidden" name="object" value="category" />
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2" class="small">Add/Edit Class Categories</th></tr>
+        {{ cat_form }}
+        <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="{% if cat_form.instance.id %}Edit{% else %}Add{% endif %} Class Category" /></td></tr>
+    </table>
+    </form>
+
+    <br />
+
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="4">Class Categories</th></tr>
+        <tr>
+            <td><b>Category</b></td>
+            <td><b>Symbol</b></td>
+            <td><b>Seq</b></td>
+            <td><b>Options</b></td>
+        </tr>
+        {% for cat in categories %}
+        <tr>
+            <td>{{ cat.category }}</td>
+            <td>{{ cat.symbol }}</td>
+            <td>{{ cat.seq }}</td>
+            <td>
+                <center>
+                    <form method="post">
+                        <input type="hidden" name="id" value="{{ cat.id }}" />
+                        <input type="hidden" name="command" value="load" />
+                        <input type="hidden" name="object" value="category" />
+                        <input type="submit" value="Edit" class="btn btn-primary" />
+                    </form>
+                    <form method="post" onsubmit="return deleteCategory()">
+                        <input type="hidden" name="id" value="{{ cat.id }}" />
+                        <input type="hidden" name="command" value="delete" />
+                        <input type="hidden" name="object" value="category" />
+                        <input type="submit" value="Delete" class="btn btn-danger" />
+                    </form>
+                </center>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+
+    {% if open_section == "flagtypes" %}
+    <button class="dsphead active">
+       <b>Class Flag Types</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont active">
+    {% else %}
+    <button class="dsphead">
+       <b>Class Flag Types</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont">
+    {% endif %}
+
+    <form method="post">
+    <input type="hidden" name="command" value="{% if flag_form.instance.id %}edit{% else %}add{% endif %}" />
+    {% if flag_form.instance.id %}
+    <input type="hidden" name="id" value="{{ flag_form.instance.id }}" />
+    {% endif %}
+    <input type="hidden" name="object" value="flag_type" />
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2" class="small">Add/Edit Class Flag Types</th></tr>
+        {{ flag_form }}
+        <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="{% if flag_form.instance.id %}Edit{% else %}Add{% endif %} Class Flag Type" /></td></tr>
+    </table>
+    </form>
+
+    <br />
+
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="6">Class Flag Types</th></tr>
+        <tr>
+            <td><b>Name</b></td>
+            <td><b>Color</b></td>
+            <td><b>Seq</b></td>
+            <td><b>Show in Scheduler?</b></td>
+            <td><b>Show in Dashboard?</b></td>
+            <td><b>Options</b></td>
+        </tr>
+        {% for ft in flag_types %}
+        <tr>
+            <td>{{ ft.name }}</td>
+            <td>{{ ft.color }}</td>
+            <td>{{ ft.seq }}</td>
+            <td>{{ ft.show_in_scheduler }}</td>
+            <td>{{ ft.show_in_dashboard }}</td>
+            <td>
+                <center>
+                    <form method="post">
+                        <input type="hidden" name="id" value="{{ ft.id }}" />
+                        <input type="hidden" name="command" value="load" />
+                        <input type="hidden" name="object" value="flag_type" />
+                        <input type="submit" value="Edit" class="btn btn-primary" />
+                    </form>
+                    <form method="post" onsubmit="return deleteFlagType()">
+                        <input type="hidden" name="id" value="{{ ft.id }}" />
+                        <input type="hidden" name="command" value="delete" />
+                        <input type="hidden" name="object" value="flag_type" />
+                        <input type="submit" value="Delete" class="btn btn-danger" />
+                    </form>
+                </center>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+
+</div>
+
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+
+{% endblock %}

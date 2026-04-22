@@ -222,6 +222,8 @@ class NameTagModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'ids.html', request, context)
 
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

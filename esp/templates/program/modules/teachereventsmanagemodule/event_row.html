@@ -12,12 +12,19 @@
                 <em>(None)</em>
             {% endif %}
         </td>
-        <td style="width:5%">
-            <form method="post" action="teacher_events">
-            <input type="hidden" name="id" value="{{ timeslot.id }}" />
-            <input type="hidden" name="command" value="delete" />
-            <input type="submit" value="Delete" class="btn btn-danger" />
-            </form>
+        <td style="width:10%">
+            <center>
+                <form method="post" action="teacher_events">
+                    <input type="hidden" name="id" value="{{ timeslot.id }}" />
+                    <input type="hidden" name="command" value="load" />
+                    <input type="submit" value="Edit" class="btn btn-primary" />
+                </form>
+                <form method="post" action="teacher_events" onsubmit="return deleteEvent()">
+                    <input type="hidden" name="id" value="{{ timeslot.id }}" />
+                    <input type="hidden" name="command" value="delete" />
+                    <input type="submit" value="Delete" class="btn btn-danger" />
+                </form>
+            </center>
         </td>
     </tr>
 {% endfor %}

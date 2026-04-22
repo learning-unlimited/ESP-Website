@@ -52,11 +52,13 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         }
 
     def isCompleted(self):
-        return Record.objects.filter(
-            user=get_current_request().user,
-            program=self.program,
-            event="teacheracknowledgement",
-        ).exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user,
+                                     program=self.program,
+                                     event="teacheracknowledgement").exists()
 
     @main_call
     @needs_teacher

@@ -50,7 +50,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             var unscheduleButton = $j("<button class='sidetoolbar'>Unschedule Section</button>");
             unscheduleButton
                 .button()
-                .click(function (evt) {
+                .on("click", function(evt) {
                     this.sections.unscheduleSection(section);
                 }.bind(this)
                 );
@@ -63,10 +63,11 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         } else if (section.schedulingComment) {
             commentText = 'Edit Comment';
         }
+        // Add a button that shows the sectionCommentDialog
         var commentButton = $j("<button class='sidetoolbar'>" + commentText + "</button>");
         commentButton
             .button()
-            .click(function (evt) {
+            .on("click", function(evt) {
                 this.sectionCommentDialog.show(section);
             }.bind(this)
             );
@@ -74,7 +75,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
 
         var overrideCheckbox = $j("<input id='schedule-override' type='checkbox'></input>");
         overrideCheckbox.prop('checked', this.override)
-            .change(function (box) {
+            .on("change", function(box) {
                 var override = $j(box.target).prop("checked");
                 // Reload the section to update the availability
                 this.sections.unselectSection(override);
@@ -138,8 +139,8 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         content_parts['Title'] = section.title;
         content_parts['Category'] = this.sections.categories_data[section.category_id].name;
         content_parts['Teachers'] = teacher_links;
-        content_parts['Type'] = section.class_style;
-        if (has_moderator_module === "True") content_parts[moderator_title + 's'] = getModeratorLinks(section);
+        if(has_moderator_module === "True") content_parts[moderator_title + 's'] = getModeratorLinks(section);
+        content_parts['Style'] = section.class_style;
         if (section.class_size_optimal && !section.class_size_max) {
             content_parts['Class size optimal'] = section.class_size_optimal;
         } else {
@@ -171,6 +172,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
             partDiv.append(content_parts[header]);
             contentDiv.append(partDiv);
         }
+        contentDiv.append($j('<br><div><b>Click on another section while holding down "Ctrl"/"Cmd" to swap it with this section</b>'));
 
         return contentDiv;
     }.bind(this);
@@ -199,7 +201,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
 
         var overrideCheckbox = $j("<input id='schedule-override' type='checkbox'></input>");
         overrideCheckbox.prop('checked', this.override)
-            .change(function (box) {
+            .on("change", function(box) {
                 var override = $j(box.target).prop("checked");
                 // Reload the moderator to update the availability
                 this.sections.matrix.moderatorDirectory.unselectModerator(override);

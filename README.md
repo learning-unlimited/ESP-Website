@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.com/learning-unlimited/ESP-Website.svg?branch=main)](https://travis-ci.com/learning-unlimited/ESP-Website)
+[![codecov](https://codecov.io/gh/learning-unlimited/ESP-Website/branch/main/graph/badge.svg?token=eY0C5a1Lju)](https://codecov.io/gh/learning-unlimited/ESP-Website)
 # ESP Website
 A website to help manage the logistics of large short-term educational programs
 

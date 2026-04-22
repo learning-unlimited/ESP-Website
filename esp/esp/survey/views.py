@@ -162,7 +162,7 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         completed_sections = ClassSection.objects.filter(parent_class__parent_program=prog, studentregistration__user=user, studentregistration__relationship__name="SurveyCompleted")
         if tl == 'learn':
             # Get a student's enrolled sections
-            sections = ClassSection.objects.filter(id__in=[sec.id for sec in user.getEnrolledSections(prog)], status__gt=0).annotate(start=Min('meeting_times__start')).order_by('start')
+            sections = ClassSection.objects.filter(id__in=[sec.id for sec in user.getEnrolledSections(prog)], status__gt=0, meeting_times__isnull=False).annotate(start=Min('meeting_times__start')).order_by('start')
         else:
             # Get a teacher's taught sections
             sections = user.getTaughtSections(prog).filter(status__gt=0).annotate(start=Min('meeting_times__start')).order_by('start')

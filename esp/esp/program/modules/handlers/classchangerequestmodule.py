@@ -83,7 +83,11 @@ class ClassChangeRequestModule(ProgramModuleObj):
         app_label = 'modules'
 
     def isCompleted(self):
-        return StudentRegistration.valid_objects().filter(user=get_current_request().user,
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return StudentRegistration.valid_objects().filter(user=user,
                                                           relationship__name__startswith="Request").exists()
 
     @main_call

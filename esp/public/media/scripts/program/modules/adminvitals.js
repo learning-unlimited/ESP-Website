@@ -23,7 +23,6 @@ function fillStats(data)
     categories = stats.categories;
     grades = stats.grades;
     shirtnum = stats.shirtnum;
-    splashinfo = stats.splashinfo;
     accounting = stats.accounting;
 
     // Fill in student num data
@@ -121,37 +120,6 @@ function fillStats(data)
         html_string = html_string.concat("</table><br>");
     }
     $tshirts.html(html_string);
-    
-    //  Fill in the lunch/sibling discount table
-    if (splashinfo)
-    {
-        var $splashinfo = $j("#stats_splashinfo > .module_group_body");
-        $splashinfo.html("<p><ul>    \
-            <li>Saturday Lunch    \
-                <ul id=\"splashinfo_lunchsat_list\">    \
-                </ul>    \
-            </li>    \
-            <li>Sunday Lunch    \
-                <ul id=\"splashinfo_lunchsun_list\">    \
-                </ul>    \
-            </li>    \
-            <li>Sibling Discount    \
-                <ul id=\"splashinfo_siblings_list\">    \
-                </ul>    \
-            </li>    \
-            </ul>    \
-            </p>");
-        var splashinfo_keys = ["lunchsat", "lunchsun", "siblings"];
-        for (var i = 0; i < splashinfo_keys.length; i++)
-        {
-            var ul_top = $j("#splashinfo_" + splashinfo_keys[i] + "_list");
-            for (var key in splashinfo.data[splashinfo_keys[i]])
-            {
-                console.log(splashinfo_keys[i] + ": " + key + " -> " + splashinfo.data[splashinfo_keys[i]][key]);
-                ul_top.append("<li><b>" + key + "</b>: " + splashinfo.data[splashinfo_keys[i]][key]);
-            }
-        }
-    }
     
     //  Fill in the accounting table
     $accounting = $j("#stats_accounting > .module_group_body");

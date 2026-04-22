@@ -291,6 +291,8 @@
         {% for description, series in popular_classes %}
         <div class="popular-classes-chart" id="popular-classes-chart-{{ forloop.counter }}"></div>
         <script type="text/javascript">
+            var categories = [{% for cat in categories %}'{{ cat }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+            var colors = ["#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354", "#2b908f", "#f45b5b", "#91e8e1"];
             $j('#popular-classes-chart-{{ forloop.counter }}').highcharts({
                 // mostly grabbed from https://www.highcharts.com/demo/column-stacked
                 chart: {
@@ -334,7 +336,7 @@
                 },
                 tooltip: {
                     headerFormat: '<b>{point.x}</b><br/>',
-                    pointFormat: '{series.name}: {point.y}<br/>Total: {point.stackTotal}'
+                    pointFormat: '{series.name}: <b>{point.y}</b>'
                 },
                 plotOptions: {
                     column: {
@@ -351,7 +353,8 @@
                     {% for ser in series %}
                     {
                         name: '{{ ser.name|truncatechars:30 }}',
-                        data: [{% for dat in ser.data %}['{{ dat.0 }}', {{ dat.1 }}],{% endfor %}]
+                        data: [{% for dat in ser.data %}['{{ dat.0 }}', {{ dat.1 }}],{% endfor %}],
+                        color: colors[categories.indexOf('{{ ser.name|make_list|first }}') % 10]
                     }{% if not forloop.last %},{% endif %}
                     {% endfor %}
                 ]

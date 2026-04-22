@@ -1,12 +1,13 @@
 /**
- * The grid of cells that displays the schedule.
+ * The grid of cells (Cells) that displays the schedule.
+ * Has pointers to Sections, Timeslots, and the rooms data
  *
  * @param timeslots: A Timeslots object corresponding to times available for classes
  * @param rooms: The rooms that are available for scheduling. Keys are ids values are room data.
  * @param sections: A list of all sections for the program
  * @param el: The element to morph into the matrix
  * @param messsagePanel: The panel that can display messages and errors
- * @param secionInfoPanel: The panel that displays section info
+ * @param sectionInfoPanel: The panel that displays section info
  * @param moderatorDirectory: The interface for moderator scheduling
  */
 function Matrix(
@@ -53,7 +54,7 @@ function Matrix(
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
-        filterObject.el.change(function() {
+        filterObject.el.on("change", function() {
             filterObject.val = filterObject.el.val().trim();
             if(filterObject.type==="number") {
                 filterObject.val = parseInt(filterObject.val);
@@ -117,6 +118,15 @@ function Matrix(
     this.moderatorDirectory = moderatorDirectory;
     if(has_moderator_module === "True") this.moderatorDirectory.bindMatrix(this);
 
+    /**
+     * Bind a scheduler to the matrix to access various functions
+     *
+     * @param scheduler: The scheduler to bind
+     */
+    this.bindScheduler = function(scheduler) {
+        this.scheduler = scheduler;
+    }
+
     // Set up scheduling checks
     this.updateCells = function(){
         $j.each(this.cells, function(index, room) {
@@ -127,7 +137,7 @@ function Matrix(
     };
     
     this.scheduling_check = "";
-    $j('input[type=radio][name=scheduling-checks]').change(function() {
+    $j('input[type=radio][name=scheduling-checks]').on("change", function() {
         this.scheduling_check = event.target.value;
         this.updateCells();
     }.bind(this));
@@ -386,8 +396,9 @@ function Matrix(
      * @param section: The section to validate.
      * @param room_id: The name of the room we want to put the section into.
      * @param schedule_timeslots: The array of timeslots we want to put the section into.
+     * @param ignore_sections: An optional array of sections to ignore
      */
-    this.validateAssignment = function(section, room_id, schedule_timeslots){
+    this.validateAssignment = function(section, room_id, schedule_timeslots, ignore_sections = []){
         var result = {
             valid: true,
             reason: null,
@@ -400,26 +411,26 @@ function Matrix(
             return result;
         }
 
-        var availableTimeslots = this.sections.getAvailableTimeslots(section)[0];
+        var availableTimeslots = this.sections.getAvailableTimeslots(section, ignore_sections)[0];
         var validateIndividualCell = function(index, cell) {
-            return !(cell.disabled || (cell.section && cell.section !== section) ||
-                    availableTimeslots.indexOf(schedule_timeslots[index]) == -1);
-        };
-
-        var firstCell = this.getCell(room_id, schedule_timeslots[0]);
-        if (section.length <= 1 && !validateIndividualCell(0, firstCell)) {
-            result.valid = false;
-            result.reason = "first cell is not valid"
-            return result;
-        }
+            if(cell.disabled){
+                return "Error: " + this.rooms[cell.room_id].text + " is not available during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
+            } else if (cell.section && cell.section !== section && !ignore_sections.includes(cell.section)) {
+                return "Error: There is already a class scheduled in " + this.rooms[cell.room_id].text + " during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
+            } else if (availableTimeslots.indexOf(schedule_timeslots[index]) == -1){
+                return "Error: The teachers of " + section.emailcode + " are not available during timeslot " + (this.timeslots.get_by_id(cell.timeslot_id).order + 1).toString();
+            } else {
+                return true;
+            }
+        }.bind(this);
 
         // Check to make sure all the cells are available
         for(var timeslot_index in schedule_timeslots){
             var cell = this.getCell(room_id, schedule_timeslots[timeslot_index]);
-            if (!validateIndividualCell(timeslot_index, cell)){
+            var valid = validateIndividualCell(timeslot_index, cell);
+            if (valid != true){
                 result.valid = false;
-                result.reason = "Error: timeslot" +  schedule_timeslots[timeslot_index] +
-                    " already has a class in " + room_id + "."
+                result.reason = valid;
                 return result;
             }
         }
@@ -466,7 +477,7 @@ function Matrix(
 
         //Time headers
         var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
-        header_row.append($j("<th/>"));
+        header_row.append($j("<th/>").append($j("<button id = 'print_button'>Print Matrix</button>")));
         $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
             var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
             this.timeslotHeaders[timeslot.id] = timeslotHeader;

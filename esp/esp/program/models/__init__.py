@@ -57,7 +57,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from argcache import cache_function, cache_function_for, wildcard
-from esp.cal.models import Event
+from esp.cal.models import Event, EventType
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
@@ -259,16 +259,11 @@ class Program(models.Model, CustomFormsLinkModel):
                          'the documentation</a> for details.')
     class_categories = models.ManyToManyField('ClassCategories',
                                               blank=True,
-                                              help_text=format_lazy('You can add new categories or modify existing ones from <a href="%s">the admin panel</a>.',
-                                                                    urlresolvers.reverse_lazy('admin:program_classcategories_changelist')))
+                                              help_text='You can add new categories or modify existing ones <a href="/manage/categoriesandflags/categories">here</a>.')
 
     flag_types = models.ManyToManyField('ClassFlagType',
                     blank=True,
-                    help_text=format_lazy(
-                    'The set of flags that can be used ' +
-                    'to tag classes for this program. ' +
-                    'Add flag types in <a href="%s">the admin panel</a>.',
-                    urlresolvers.reverse_lazy('admin:program_classflagtype_changelist')))
+                    help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/categoriesandflags/flagtypes">here</a>.')
 
     documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
@@ -958,6 +953,12 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return None
 
+    def get_teacher_event_times(self, event_type):
+        """event_type should be 'interview' or 'training'"""
+        event_type_obj = EventType.teacher_event_types()[event_type]
+        return Event.objects.filter(
+            program=self, event_type=event_type_obj).order_by('start')
+
     @cache_function
     def getResourceTypes(self, include_classroom=False, include_global=None, include_hidden=True):
         #   Show all resources pertaining to the program (except those of types that are excluded).
@@ -1068,12 +1069,6 @@ class Program(models.Model, CustomFormsLinkModel):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base
 
-        def cmpModules(mod1, mod2):
-            """ comparator function for two modules """
-            try:
-                return cmp(mod1.seq, mod2.seq)
-            except AttributeError:
-                return 0
         if tl:
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
                  for module in self.program_modules.filter(module_type = tl)]
@@ -1081,7 +1076,7 @@ class Program(models.Model, CustomFormsLinkModel):
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
                  for module in self.program_modules.all()]
 
-        modules.sort(cmpModules)
+        modules.sort(key=lambda mod: (not mod.required, mod.seq))
         return modules
     getModules_cached.depend_on_row('program.Program', lambda prog: {'self': prog})
     getModules_cached.depend_on_model('program.ProgramModule')
@@ -1096,11 +1091,8 @@ class Program(models.Model, CustomFormsLinkModel):
         modules = self.getModules_cached(tl, old_prog)
         if user:
             for module in modules:
-                module.setUser(user)
-        #   Populate the view attributes so they can be cached
-        for module in modules:
-            module.get_all_views()
-            module.get_main_view()
+                module.user = user
+            modules.sort(key=lambda mod: not mod.isCompleted())
         return modules
 
     @cache_function
@@ -1127,8 +1119,8 @@ class Program(models.Model, CustomFormsLinkModel):
     getModule.depend_on_cache(hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
 
     @cache_function
-    def getModuleViews(self, main_only=False, tl=None):
-        modules = self.getModules_cached(tl)
+    def getModuleViews(self, main_only=False):
+        modules = self.getModules_cached()
         result = {}
         for mod in modules:
             tl = mod.module.module_type
@@ -1291,14 +1283,23 @@ class Program(models.Model, CustomFormsLinkModel):
         return self._sibling_discount
 
     def _sibling_discount_set(self, value):
+        from esp.accounting.models import LineItemType
         if value is not None:
             self._sibling_discount = Decimal(value)
             Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
+            LineItemType.objects.get_or_create(text='Sibling discount', program=self, amount_dec = self._sibling_discount)
         else:
             self._sibling_discount = Decimal('0.00')
             Tag.objects.filter(key='sibling_discount', object_id=self.id).delete()
+            LineItemType.objects.filter(text='Sibling discount', program=self).delete()
 
     sibling_discount = property(_sibling_discount_get, _sibling_discount_set)
+
+    def base_cost(self):
+        from esp.accounting.controllers import ProgramAccountingController
+        pac = ProgramAccountingController(self)
+        return pac.default_admission_lineitemtype().amount_dec
+    base_cost = property(base_cost)
 
     @property
     def splashinfo_objects(self):
@@ -1323,8 +1324,8 @@ class SplashInfo(models.Model):
     student = AjaxForeignKey(ESPUser)
     #   Program field may be empty for backwards compatibility with Stanford data
     program = AjaxForeignKey(Program, null=True)
-    lunchsat = models.CharField(max_length=32, blank=True, null=True)
-    lunchsun = models.CharField(max_length=32, blank=True, null=True)
+    lunchsat = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
+    lunchsun = models.CharField(max_length=32, blank=True, null=True) # No longer used, kept for backwards compatibility
     siblingdiscount = models.NullBooleanField(default=False, blank=True)
     siblingname = models.CharField(max_length=64, blank=True, null=True)
     submitted = models.NullBooleanField(default=False, blank=True)
@@ -1357,62 +1358,22 @@ class SplashInfo(models.Model):
             n.save()
             return n
 
-    def pretty_version(self, attr_name):
-        #   Look up choices
-        tag_data = Tag.getProgramTag('splashinfo_choices', self.program)
-
-        #   Check for matching item in list of choices
-        if tag_data:
-            tag_struct = json.loads(tag_data)
-            for item in tag_struct[attr_name]:
-                if item[0] == getattr(self, attr_name):
-                    return item[1].decode('utf-8')
-
-        return u'N/A'
-
-    def pretty_satlunch(self):
-        return self.pretty_version('lunchsat')
-
-    def pretty_sunlunch(self):
-        return self.pretty_version('lunchsun')
-
     def execute_sibling_discount(self):
+        from esp.accounting.controllers import IndividualAccountingController
+        from esp.accounting.models import Transfer
+        iac = IndividualAccountingController(self.program, self.student)
+        line_item_type = iac.default_siblingdiscount_lineitemtype()
+        source_account = iac.default_finaid_account()
+        dest_account = iac.default_source_account()
         if self.siblingdiscount:
-            from esp.accounting.controllers import IndividualAccountingController
-            from esp.accounting.models import Transfer
-            iac = IndividualAccountingController(self.program, self.student)
-            source_account = iac.default_finaid_account()
-            dest_account = iac.default_source_account()
-            line_item_type = iac.default_siblingdiscount_lineitemtype()
-            transfer, created = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type, amount_dec=Decimal('20.00'))
+            transfer, created = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type, amount_dec=self.program.sibling_discount)
             return transfer
+        else:
+            Transfer.objects.filter(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type).delete()
 
     def save(self):
-        from esp.accounting.controllers import IndividualAccountingController
-
-        #   We have two things to put in: "Saturday Lunch" and "Sunday Lunch".
-        #   If they are not there, they will be created.  These names are hard coded.
-        from esp.accounting.models import LineItemType
-        LineItemType.objects.get_or_create(program=self.program, text='Saturday Lunch')
-        LineItemType.objects.get_or_create(program=self.program, text='Sunday Lunch')
-
-        #   Figure out how much everything costs
-        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program))
-
-        #   Save accounting information
-        iac = IndividualAccountingController(self.program, self.student)
-
-        if not self.lunchsat or self.lunchsat == 'no':
-            iac.set_preference('Saturday Lunch', 0)
-        elif 'lunchsat' in cost_info:
-            iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
-
-        if not self.lunchsun or self.lunchsun == 'no':
-            iac.set_preference('Sunday Lunch', 0)
-        elif 'lunchsun' in cost_info:
-            iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
-
         super(SplashInfo, self).save()
+        self.execute_sibling_discount()
 
 
 class RegistrationProfile(models.Model):

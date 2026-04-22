@@ -18,12 +18,12 @@ $j(function () {
     $j('#students-list thead').append(
         make_table_header_row()
     );
-    $j('#save-button').prop('disabled', true).click(save_changes);
-    $j('#refresh-button').click(function () {
+    $j('#save-button').prop('disabled', true).on("click", save_changes);
+    $j('#refresh-button').on("click", function () {
         var class_id = $j('#class-dropdown').val();
         load_class(class_id);
     });
-    $j('#class-dropdown').change(function () {
+    $j('#class-dropdown').on("change", function () {
         var class_id = $j(this).val();
         if (load_class(class_id)) {
             $j(this).data('prev', class_id);
@@ -108,7 +108,7 @@ function make_name_cell(app) {
 	$name.prop('target', '_blank');
     }
     else { // open in side pane
-        $name.click(function () {
+        $name.on("click", function () {
             load_app(app.id);
             return false;
         });
@@ -123,8 +123,8 @@ function make_teacher_rating_cell(app, readonly) {
             $j('#teacher-rating-choices').children('option').clone()
         )
         .val(app.teacher_rating || '')
-        .change(sort_table)
-        .change(function () {
+        .on("change", sort_table)
+        .on("change", function () {
             var val = parseInt($j(this).val());
             update(app.id, {'teacher_rating': val});
         })
@@ -139,8 +139,8 @@ function make_teacher_ranking_cell(app, num_apps, readonly) {
         $teacher_ranking.append( $j('<option></option>').text(i) );
     };
     $teacher_ranking.val(app.teacher_ranking || '')
-        .change(sort_table)
-        .change(function () {
+        .on("change", sort_table)
+        .on("change", function () {
             var val = parseInt($j(this).val());
             update(app.id, {'teacher_ranking': val});
         })
@@ -157,7 +157,7 @@ function make_teacher_comments_cell(app, readonly) {
     );
     var $teacher_comments = $j('<div></div>')
         .addClass('teacher_comments')
-        .click(function () {
+        .on("click", function () {
             var text = $teacher_comments.data('comment');
             $teacher_comments_dialog.dialog('open');
             $textarea.val(text).focus();
@@ -204,7 +204,7 @@ function make_admin_status_cell(app) {
             $j('#admin-status-choices').children('option').clone()
         )
         .val(app.admin_status)
-        .change(function () {
+        .on("change", function () {
             var val = parseInt($j(this).val());
             update(app.id, {'admin_status': val});
         });
@@ -222,7 +222,7 @@ function make_admin_comments_cell(app) {
         .data('comment', app.admin_comment || '')
         .text(app.admin_comment || '(click to add comment)')
         .css('color', app.admin_comment ? '' : '#aaa')
-        .click(function () {
+        .on("click", function () {
             var text = $admin_comments.data('comment');
             $admin_comments_dialog.dialog('open');
             $textarea.val(text).focus();
@@ -270,7 +270,7 @@ function make_decision_action_cell(app) {
         .append(
             $j('#decision-action-choices').children('option').clone()
         )
-        .change(function () {
+        .on("change", function () {
             var val = $j(this).val();
             update(app.id, {'decision_action': val});
         });

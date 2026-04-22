@@ -123,9 +123,9 @@ class AdmissionsDashboard(ProgramModuleObj):
         try:
             classapp = StudentClassApp.objects.get(id=extra)
         except StudentClassApp.DoesNotExist:
-            return # XXX: more useful error here
+            return self.goToCore(tl) # XXX: more useful error here
         if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
-            return
+            return self.goToCore(tl)
         content = classapp.get_teacher_view(prog)
         return HttpResponse(content)
 
@@ -166,6 +166,9 @@ class AdmissionsDashboard(ProgramModuleObj):
                 updated.append(app_id)
 
             return {'success': 1, 'updated': updated}
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

@@ -12,7 +12,10 @@
 
 
 {% if form.has_errors %}
-<h2 style="color:red">Please make sure to fill in all the required fields.  Thanks! </h2>
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            Please make sure to fill in all the required fields.  Thanks!
+    </div>
 {% endif %}
 
 <form action='/learn/{{one}}/{{two}}/profile/' method="post">

@@ -18,16 +18,22 @@ from django.contrib.auth.decorators import user_passes_test
 
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
-from esp.utils.web import render_to_response
+from esp.utils.web import render_to_response, zip_download
 
 def test_func(user):
     return user.is_authenticated() and (user.isTeacher() or user.isAdministrator())
 
 @user_passes_test(test_func)
 def landing(request):
-    forms = Form.objects.all().order_by('-id')
+    forms = Form.objects.all().order_by('-link_type', '-link_id', '-id')
     if not request.user.isAdministrator():
         forms = forms.filter(created_by=request.user)
+    for form in forms:
+        if form.link_type in cf_cache.only_fkey_models.keys():
+            if form.link_id == -1:
+                form.link_obj = "User's choice"
+            else:
+                form.link_obj = cf_cache.only_fkey_models[form.link_type].objects.get(id=form.link_id)
     return render_to_response("customforms/landing.html", request, {'form_list': forms})
 
 @user_passes_test(test_func)
@@ -384,6 +390,24 @@ def getData(request):
             fh = FormHandler(form=form, request=request)
             resp_data = json.dumps(fh.getResponseData(form), cls=DjangoJSONEncoder)
             return HttpResponse(resp_data)
+    return HttpResponse(status=400)
+
+@user_passes_test(test_func)
+def bulkDownloadFiles(request):
+    """
+    Returns a download of a zip file containing all of the file responses to a single custom form field
+    """
+    if request.method == 'GET':
+        try:
+            form_id = int(request.GET['form_id'])
+            question_name = request.GET['question_name']
+        except (ValueError, KeyError):
+            return HttpResponse(status=400)
+        form = Form.objects.get(pk=form_id)
+        dmh = DMH(form=form)
+        dyn = dmh.createDynModel()
+        filenames = [resp[question_name] for resp in dyn.objects.all().values()]
+        return zip_download(filenames, 'surveyfiles')
     return HttpResponse(status=400)
 
 @user_passes_test(test_func)

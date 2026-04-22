@@ -72,7 +72,11 @@ class LotteryStudentRegModule(ProgramModuleObj):
         return {'lotteried_students': "Students who have entered the lottery"}
 
     def isCompleted(self):
-        return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=get_current_request().user))
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=user))
 
     @classmethod
     def module_properties(cls):

@@ -1,8 +1,8 @@
 {% load latex %}
 {% autoescape off %}
-\begin{tabular}{ll}
+\noindent \begin{tabularx}{\textwidth}{p{.6\textwidth}|X}
 {\bf Course} & {\bf Teacher[s]} \\ \hline
 {% for cls in classlist %}{{ cls.title|texescape }} & {{cls.parent_class.getTeacherNames|join:", "|texescape }}\\
 {% endfor %}
-\end{tabular}
+\end{tabularx}
 {% endautoescape %}

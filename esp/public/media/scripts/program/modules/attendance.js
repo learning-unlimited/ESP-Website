@@ -37,11 +37,11 @@ $j(function(){
     function markAttendance(username, secid, undo = false, callback, errorCallback){
         refresh_csrf_cookie();
         var data = {student: username, secid: secid, undo: undo, csrfmiddlewaretoken: csrf_token()};
-        $j.post('/teach/' + prog_url + '/ajaxstudentattendance', data, "json").success(callback)
-        .error(errorCallback);
+        $j.post('/teach/' + prog_url + '/ajaxstudentattendance', data, "json").done(callback)
+        .fail(errorCallback);
     }
 
-    $j("[name=attending]").change(function(){
+    $j("[name=attending]").on("change", function(){
         var checked = this.checked;
         var $me = $j(this);
         var username = $me.data("username");

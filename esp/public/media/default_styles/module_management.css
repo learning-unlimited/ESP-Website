@@ -1,0 +1,42 @@
+.connectedSortable {
+    width: 80%;
+    min-height: 20px;
+    list-style-type: none;
+    padding-left: calc(10% - 5px);
+    padding-right: 10%;
+    margin-bottom: 25px;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.connectedSortable li {
+    padding: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    font-size: 1.2em;
+    width: 100%;
+    cursor: pointer;
+}
+
+.connectedSortable li input {
+    font-size: small !important;
+    max-width: 80%;
+}
+
+.column {
+    width: 100%;
+    text-align: center;
+    border: 1px dashed #aaa;
+    margin-bottom: 10px;
+}
+
+.wrapper {
+    float: left;
+    width: 46%;
+    margin-left: 2%;
+    margin-right: 2%;
+}
+
+.wrapper h2 {
+    text-align: center;
+}

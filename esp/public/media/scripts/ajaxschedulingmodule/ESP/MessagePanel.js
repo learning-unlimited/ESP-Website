@@ -8,7 +8,7 @@ function MessagePanel(el, initialMessage) {
     this.el = el;
 
     /**
-     * Initialize the pannel with the initial message
+     * Initialize the panel with the initial message
      */
     this.init = function() {
         if(initialMessage) {

@@ -79,7 +79,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
             'use_checklist': 0,
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), view_name), post_data)
-        self.assertTrue(response.status_code, 200)
+        self.assertEquals(response.status_code, 200)
         return response
 
     def get_userlist_views(self):

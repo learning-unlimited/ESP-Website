@@ -1,0 +1,7 @@
+Dear {{ user.first_name }},
+
+Thank you for registering for {{ program.niceName }}!  This is a preliminary confirmation email for your {{ program.program_type }} registration; you can come back and change your classes until registration closes.  We will contact you via email with further information.
+
+{{ program.niceName }} Directors
+
+

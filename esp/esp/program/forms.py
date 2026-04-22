@@ -37,10 +37,13 @@ import re
 import unicodedata
 
 from esp.users.models import StudentInfo, K12School
-from esp.program.models import Program, ProgramModule, ClassFlag
+from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
+from esp.dbmail.models import PlainRedirect
 from esp.utils.widgets import DateTimeWidget
 from django import forms
 from django.core import validators
+from django.contrib.redirects.models import Redirect
+from django.contrib.sites.models import Site
 from form_utils.forms import BetterModelForm, BetterForm
 from django.utils.safestring import mark_safe
 from esp.tagdict import all_global_tags, tag_categories
@@ -89,6 +92,7 @@ class ProgramCreationForm(BetterModelForm):
                                                         ('Do students have to apply to individual classes?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])]),
                                                         ('If yes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])]),
                                                         ('Will you have moderators or assistants for individual class sections?', [x.id for x in ProgramModule.objects.filter(admin_title='Moderator Signup')]),
+                                                        ('Do you want students to be able to download a completion certificate after the program ends?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Certificate Module')]),
                                                        ])
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
@@ -413,6 +417,29 @@ class ClassFlagForm(forms.ModelForm):
         model = ClassFlag
         fields = ['subject','flag_type','comment']
 
+class FlagTypeForm(forms.ModelForm):
+    class Meta:
+        model = ClassFlagType
+        fields = ['name','color','seq','show_in_scheduler','show_in_dashboard']
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = ClassCategories
+        fields = ['category','symbol','seq']
+
+class RedirectForm(forms.ModelForm):
+    class Meta:
+        model = Redirect
+        fields = ['old_path', 'new_path']
+
+class PlainRedirectForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(PlainRedirectForm, self).__init__(*args, **kwargs)
+        self.fields['original'].help_text = 'A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@%s will be redirected to the destination email address(es).' % Site.objects.get_current().domain
+    class Meta:
+        model = PlainRedirect
+        fields = ['original', 'destination']
+
 class TagSettingsForm(BetterForm):
     """ Form for changing global tags. """
     def __init__(self, *args, **kwargs):
@@ -447,7 +474,7 @@ class TagSettingsForm(BetterForm):
                 else:
                     self.fields[key] = forms.CharField()
                 self.fields[key].help_text = tag_info.get('help_text', '')
-                self.fields[key].initial = tag_info.get('default')
+                self.fields[key].initial = self.fields[key].default = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key) if tag_info.get('is_boolean', False) else Tag.getTag(key)
                 if set_val != None and set_val != self.fields[key].initial:
@@ -471,4 +498,4 @@ class TagSettingsForm(BetterForm):
                     Tag.unSetTag(key)
 
     class Meta:
-        fieldsets = [(cat, {'fields': [key for key in sorted(all_global_tags.keys()) if all_global_tags[key].get('category') == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_global_tags.keys()) if all_global_tags[key].get('category') == cat], 'legend': tag_categories[cat]}) for cat in tag_categories.keys()]

@@ -33,48 +33,25 @@ Learning Unlimited, Inc.
 """
 from collections import defaultdict
 
-from esp.program.modules.base import (
-    ProgramModuleObj,
-    needs_teacher,
-    meets_deadline,
-    main_call,
-    aux_call,
-    user_passes_test,
-)
-from esp.program.modules.forms.teacherreg import (
-    TeacherClassRegForm,
-    TeacherOpenClassRegForm,
-)
-from esp.program.models import (
-    ClassSubject,
-    ClassSection,
-    Program,
-    ProgramModule,
-    StudentRegistration,
-    RegistrationType,
-    ClassFlagType,
-    RegistrationProfile,
-    ScheduleMap,
-)
-from esp.program.controllers.classreg import (
-    ClassCreationController,
-    ClassCreationValidationError,
-    get_custom_fields,
-)
-from esp.resources.models import ResourceRequest
-from esp.tagdict.models import Tag
-from esp.utils.web import render_to_response
-from esp.dbmail.models import send_mail
-from esp.middleware import ESPError
-from django.db.models.query import Q
-from esp.users.models import User, ESPUser, Record, TeacherInfo
-from esp.resources.forms import ResourceRequestFormSet
-from esp.mailman import add_list_members
-from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
-from django.db import models
-from django.forms.utils import ErrorDict
-from django.template.loader import render_to_string
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
+from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
+from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType, RegistrationProfile, ScheduleMap
+from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.resources.models        import ResourceRequest
+from esp.tagdict.models          import Tag
+from esp.utils.web               import render_to_response
+from esp.dbmail.models           import send_mail
+from esp.middleware              import ESPError
+from django.db.models.query      import Q
+from esp.users.models            import User, ESPUser, Record, TeacherInfo
+from esp.resources.forms         import ResourceRequestFormSet
+from esp.mailman                 import add_list_members
+from django.conf                 import settings
+from django.http                 import HttpResponse, HttpResponseRedirect
+from django.db                   import models
+from django.forms.utils          import ErrorDict
+from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
 
 import json
@@ -131,7 +108,11 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def noclasses(self):
         """Returns true of there are no classes in this program"""
-        return not self.clslist(get_current_request().user).exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return not self.clslist(user).exists()
 
     def isCompleted(self):
         return not self.noclasses()
@@ -164,15 +145,9 @@ class TeacherClassRegModule(ProgramModuleObj):
         classes_qs = self.program.classes().defer(*fields_to_defer)
 
         Q_isteacher = Q(classsubject__in=classes_qs)
-        Q_rejected_teacher = (
-            Q(classsubject__in=classes_qs.filter(status__lt=0)) & Q_isteacher
-        )
-        Q_approved_teacher = (
-            Q(classsubject__in=classes_qs.filter(status__gt=0)) & Q_isteacher
-        )
-        Q_proposed_teacher = (
-            Q(classsubject__in=classes_qs.filter(status=0)) & Q_isteacher
-        )
+        Q_rejected_teacher = Q(classsubject__in=classes_qs.filter(status__lt=0)) & Q_isteacher
+        Q_approved_teacher = Q(classsubject__in=classes_qs.filter(status__gt=0, sections__status__gt=0)) & Q_isteacher
+        Q_proposed_teacher = Q(classsubject__in=classes_qs.filter(status=0)) & Q_isteacher
 
         ## is_nearly_full() means at least one section is more than float(ClassSubject.get_capacity_factor()) full
         ## isFull() means that all *scheduled* sections are full
@@ -205,32 +180,23 @@ class TeacherClassRegModule(ProgramModuleObj):
                 & item[2]
             )
 
+        qobjects = {
+                'class_submitted': Q_isteacher,
+                'class_approved': Q_approved_teacher,
+                'class_proposed': Q_proposed_teacher,
+                'class_rejected': Q_rejected_teacher,
+                'class_nearly_full': Q_nearly_full_teacher,
+                'class_full': Q_full_teacher,
+                'taught_before': Q_taught_before,
+        }
+
         if QObject:
-            result = {
-                "class_submitted": Q_isteacher,
-                "class_approved": Q_approved_teacher,
-                "class_proposed": Q_proposed_teacher,
-                "class_rejected": Q_rejected_teacher,
-                "class_nearly_full": Q_nearly_full_teacher,
-                "class_full": Q_full_teacher,
-                "taught_before": Q_taught_before,  #   not exactly correct, see above
-            }
+            result = qobjects
             for key in additional_qs:
                 result[key] = additional_qs[key]
         else:
-            result = {
-                "class_submitted": ESPUser.objects.filter(Q_isteacher).distinct(),
-                "class_approved": ESPUser.objects.filter(Q_approved_teacher).distinct(),
-                "class_proposed": ESPUser.objects.filter(Q_proposed_teacher).distinct(),
-                "class_rejected": ESPUser.objects.filter(Q_rejected_teacher).distinct(),
-                "class_nearly_full": ESPUser.objects.filter(
-                    Q_nearly_full_teacher
-                ).distinct(),
-                "class_full": ESPUser.objects.filter(Q_full_teacher).distinct(),
-                "taught_before": ESPUser.objects.filter(Q_isteacher)
-                .filter(Q_taught_before)
-                .distinct(),
-            }
+            result = {k: ESPUser.objects.filter(v).distinct()
+                      for k, v in qobjects.iteritems()}
             for key in additional_qs:
                 result[key] = ESPUser.objects.filter(additional_qs[key]).distinct()
 
@@ -336,7 +302,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             name="OnSite/AttendedClass", category="student"
         )[0]
         not_found = []
-        if request.POST and "submitted" in request.POST:
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
+        if request.POST and 'submitted' in request.POST:
             # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
             misc_students = filter(
                 None, re.split(r"[;,\s]\s*", request.POST.get("misc_students"))
@@ -368,8 +335,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                             for ts in [ts.id for ts in section.get_meeting_times()]:
                                 if ts in sm.map and len(sm.map[ts]) > 0:
                                     for sm_sec in sm.map[ts]:
-                                        sm_sec.unpreregister_student(student)
-                        if "enroll" in request.POST:
+                                        sm_sec.unpreregister_student(student, verbs)
+                        if 'enroll' in request.POST:
                             for rt in [enrolled, onsite]:
                                 srs = StudentRegistration.objects.filter(
                                     user=student, section=section, relationship=rt
@@ -426,17 +393,12 @@ class TeacherClassRegModule(ProgramModuleObj):
         json_data = {}
         today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
         today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
-        attended = RegistrationType.objects.get_or_create(
-            name="Attended", category="student"
-        )[0]
-        enrolled = RegistrationType.objects.get_or_create(
-            name="Enrolled", category="student"
-        )[0]
-        onsite = RegistrationType.objects.get_or_create(
-            name="OnSite/AttendedClass", category="student"
-        )[0]
-        if "student" in request.POST and "secid" in request.POST:
-            students = ESPUser.objects.filter(username=request.POST["student"])
+        attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
+        enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
+        onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
+        verbs = RTC.getVisibleRegistrationTypeNames(prog)
+        if 'student' in request.POST and 'secid' in request.POST:
+            students = ESPUser.objects.filter(username=request.POST['student'])
             if not students.exists():
                 json_data["error"] = (
                     "User with username %s not found!" % request.POST["student"]
@@ -486,8 +448,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                                 for ts in [ts.id for ts in section.get_meeting_times()]:
                                     if ts in sm.map and len(sm.map[ts]) > 0:
                                         for sm_sec in sm.map[ts]:
-                                            sm_sec.unpreregister_student(student)
-                            if request.POST.get("enroll", "true").lower() == "true":
+                                            sm_sec.unpreregister_student(student, verbs)
+                            if request.POST.get('enroll', 'true').lower() == 'true':
                                 for rt in [enrolled, onsite]:
                                     srs = StudentRegistration.objects.filter(
                                         user=student, section=section, relationship=rt
@@ -651,7 +613,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/MainPage")
     def class_docs(self, request, tl, one, two, module, extra, prog):
-        from esp.web.forms.fileupload_form import FileUploadForm
+        from esp.web.forms.fileupload_form import FileUploadForm, FileRenameForm
         from esp.qsdmedia.models import Media
 
         clsid = 0
@@ -668,6 +630,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         target_class = classes[0]
         context_form = FileUploadForm()
+        context_rename_form = FileRenameForm()
 
         if request.method == "POST":
             if request.POST["command"] == "delete":
@@ -691,8 +654,17 @@ class TeacherClassRegModule(ProgramModuleObj):
                     media.save()
                 else:
                     context_form = form
+            elif request.POST['command'] == 'rename':
+                form = FileRenameForm(request.POST, request.FILES)
+                if form.is_valid():
+                    docid = request.POST['docid']
+                    media = Media.objects.get(id = docid)
+                    media.rename(form.cleaned_data['title'])
+                    media.save()
+                else:
+                    context_rename_form = form
 
-        context = {"cls": target_class, "uploadform": context_form, "module": self}
+        context = {'cls': target_class, 'uploadform': context_form, 'module': self, 'renameform': context_rename_form}
 
         return render_to_response(self.baseDir() + "class_docs.html", request, context)
 
@@ -1345,7 +1317,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         if key == "full_classes":
             return user.getFullClasses_pretty(self.program)
 
-        return "No classes."
+        return u''
 
     class Meta:
         proxy = True

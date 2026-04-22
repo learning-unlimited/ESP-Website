@@ -16,18 +16,20 @@
 <!-- STYLE -->
 <link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
-<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+<link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 <link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css" />
 
 <!-- 3rd party -->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
-<script src="https://code.jquery.com/jquery-migrate-1.4.1.{% if not settings.DEBUG %}min.{% endif %}js"></script>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
+<script src="https://code.jquery.com/jquery-migrate-3.3.2.{% if not settings.DEBUG %}min.{% endif %}js"></script>
+<script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type='text/javascript' src='/media/scripts/common.js'></script>
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/google/palette.js@8418158452401c15d276d9632b88933aa581718f/palette.js"></script>
+<script type="text/javascript" src="/media/scripts/lodash.compat.min.js"></script>
+<script type="text/javascript" src="/media/scripts/print.min.js"></script>
 
 <!--Scheduler-->
 <script type="text/javascript">
@@ -37,13 +39,13 @@
   var has_autoscheduler_frontend = "{{ has_autoscheduler_frontend }}";
   var has_moderator_module = "{{ has_moderator_module }}";
   var moderator_title = "{{ program.getModeratorTitle }}";
+  var jqueryui_version = "{{ settings.JQUERY_UI_VERSION }}";
 </script>
 
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/CellColors.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Timeslots.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/ApiClient.js"></script>
-<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Helpers.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Cell.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Sections.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
@@ -164,6 +166,7 @@
                                 <option value="id" selected>ID</option>
                                 <option value="category">Category</option>
                                 <option value="availability">Teacher availability</option>
+                                <option value="hosedness">Teacher hosedness</option>
                                 <option value="capacity">Capacity</option>
                                 <option value="length">Length</option>
                             </select>
@@ -205,6 +208,8 @@
                         <input type="radio" name="scheduling-checks" value="" checked id="scheduling-checks-none"></input><label for="scheduling-checks-none"> None</label>
                         <br />
                         <input type="radio" name="scheduling-checks" value="capacity" id="scheduling-checks-capacity"></input><label for="scheduling-checks-capacity"> Room Capacity Mismatch</label>
+                        <br />
+                        <input type="radio" name="scheduling-checks" value="category" id="scheduling-checks-category"></input><label for="scheduling-checks-category"> Color by Class Category</label>
                         <br />
                         <input type="radio" name="scheduling-checks" value="unapproved" id="scheduling-checks-unapproved"></input><label for="scheduling-checks-unapproved"> Unapproved Classes</label>
                         <br />
@@ -272,7 +277,7 @@
                                    style="width: 8em;"></input>
                             <br />
                             <div id="mod-category-match-wrapper">
-                                <input id="mod-category-match" type="checkbox" checked></input>
+                                <input id="mod-category-match" type="checkbox"></input>
                                 <label for="mod-category-match">Hide sections that don't match preferred categories</label>
                             </div>
                         </form>

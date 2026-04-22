@@ -7,7 +7,7 @@
 <td><img src="/media/images/progress/left_fill.gif" /></td>
 {% for module in modules %}
 {% if module.isStep %}
-{% with module.fillProgressBar as moduleCompleted %}
+{% with module.isCompleted as moduleCompleted %}
 <td class="progress{% if moduleCompleted %}_fill{% endif %}">
 {% if module.useTemplate %}
 <a href="#module-{{ module.id }}">
@@ -26,7 +26,7 @@
     {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
 {% endif %}
 {% if module.required_label %}<em>{{ module.required_label }}</em>{% else %}
-    {% if not module.module.required %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
+    {% if not module.isRequired %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
 {% endif %}
 </td>
 {% endwith %}

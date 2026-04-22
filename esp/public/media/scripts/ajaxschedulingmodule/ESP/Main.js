@@ -2,14 +2,6 @@
  * The entry point for the scheduler
  */
 
-// For the changelog
-var last_applied_index = 0;
-$j.getJSON('ajax_schedule_last_changed', function(data, status) {
-    if (status == "success") {
-        last_applied_index = data['latest_index'];
-    }
-});
-
 // Set the width and height of the matrix and directory
 var resizeElements = function() {
     var window_height = window.innerHeight - 20;
@@ -40,7 +32,6 @@ json_get('lunch_timeslots', {}, function(lunch_timeslots) {
                 $j("#message-div"),
                 $j("#section-info-div"),
                 $j("#commentDialog"),
-                last_applied_index,
                 5000
             );
             s.render();

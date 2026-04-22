@@ -57,6 +57,9 @@ class ClassFlagModule(ProgramModuleObj):
             "choosable": 1,
         }
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

@@ -112,7 +112,23 @@ function populate_get()
     var items = location.search.substr(1).split("&").filter(Boolean);
     for (var index = 0; index < items.length; index++) {
         var key_val = items[index].split("=");
-        $j("[name=" + key_val[0] + "]").val(key_val[1].split(",")).change();
+        var field = $j("[name=" + key_val[0] + "]");
+        if(field.length >= 1){
+            switch (field[0].type) {
+                case 'checkbox':
+                    // don't need a value for a checkbox, just check it
+                    field[0].checked = true;
+                    break;
+                default:
+                    if(key_val.length == 2){
+                        field.val(key_val[1].split(","));
+                        if(key_val[0] == "recipient_type") recipient_type_change(clear = false);
+                    } else {
+                        // skip it and keep going if a value wasn't specified
+                        break;
+                    }
+            }
+        }
     }
 }
 
@@ -120,17 +136,25 @@ function clear_filters()
 {
     //  Remove any existing data in the "user filtering options" part of a comm panel form
     var $form = $j("#filter_accordion");
+    // Don't set the grade fields if we are in the combo list form
+    var set_grade = $form.parent().attr('id') != "combo_filter_accordion";
     var form_fields = $form.find(':input');
     form_fields.each(function(i, form_field) {
-        switch (form_field.type) {
-            case 'checkbox':
-                form_field.checked = false;
-                break;
-            case 'radio':
-                form_field.checked = false;
-                break;
-            default:
-                $j(form_field).val('');
+        if(set_grade && form_field.name == "grade_min" && $j("select[name=recipient_type]").val() == "Student"){
+            $j(form_field).val(program_grade_min);
+        } else if(set_grade && form_field.name == "grade_max" && $j("select[name=recipient_type]").val() == "Student"){
+            $j(form_field).val(program_grade_max);
+        } else{
+            switch (form_field.type) {
+                case 'checkbox':
+                    form_field.checked = false;
+                    break;
+                case 'radio':
+                    form_field.checked = false;
+                    break;
+                default:
+                    $j(form_field).val('');
+            }
         }
     });
     $j("#filter_accordion").accordion("option", "active", false);
@@ -166,7 +190,7 @@ function initialize()
     });
 
     //  Handle changes in the recipient type
-    recipient_type_change = function () {
+    recipient_type_change = function (clear = true) {
         var rb_selected = $j("select[name=recipient_type]").val();
         $j("#recipient_type_name").html("Which set of " + rb_selected + " would you like to contact?");
         $j("#recipient_list_select").children("div").addClass("commpanel_hidden");
@@ -174,7 +198,7 @@ function initialize()
         $j("#recipient_list_options_" + rb_selected).removeClass("commpanel_hidden");
         $j(".sendto_fn_select").addClass("commpanel_hidden");
         $j("." + rb_selected + ".sendto_fn_select").removeClass("commpanel_hidden");
-        clear_filters();
+        if(clear) clear_filters();
         prepare_accordion(rb_selected);
     }
     $j("select[name=recipient_type]").change(recipient_type_change);
@@ -230,11 +254,11 @@ function initialize()
         $j("#bool_options_" + list_names[i]).buttonset();
     }
 
-    //  Make the ANDs turn off the ORs and vice versa
     for (var i = 0; i < list_names.length; i++)
     {
         with ({list_name: list_names[i]})
         {
+            //  Make the ANDs turn off the ORs and vice versa
             $j("input[name=checkbox_and_" + list_name + "]").change(function () {
                 if ($j("input[name=checkbox_and_" + list_name + "]").prop("checked")
                     && $j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
@@ -243,6 +267,13 @@ function initialize()
             $j("input[name=checkbox_or_" + list_name + "]").change(function () {
                 if ($j("input[name=checkbox_and_" + list_name + "]").prop("checked")
                     && $j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
+                    $j("input[name=checkbox_and_" + list_name + "]").click();
+            });
+            //  NOT can't be selected by itself
+            $j("input[name=checkbox_not_" + list_name + "]").change(function () {
+                if ($j("input[name=checkbox_not_" + list_name + "]").prop("checked")
+                    && !$j("input[name=checkbox_and_" + list_name + "]").prop("checked")
+                    && !$j("input[name=checkbox_or_" + list_name + "]").prop("checked"))
                     $j("input[name=checkbox_and_" + list_name + "]").click();
             });
         }

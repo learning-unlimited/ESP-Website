@@ -64,14 +64,16 @@ if (currentPrograms && currentPrograms.forEach) {
     currentPrograms.forEach(function (currentProgram) {
         ESP.registerAdminModule({
             content_html:
-                '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
+                (currentProgram.class_search ? '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
                 '<div class="input-append">' +
                 '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
                 '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
                 '</div>' +
-                '</form>' +
+                '</form>' : '') +
                 '<div id="adminbar_Manage_content" class="content">' +
-                '    <a href="/manage/' + currentProgram.urlBase +'/main">Main Management Page</a><br /><a href="/manage/' + currentProgram.urlBase +'/dashboard">Program Dashboard</a><br /><a href="/onsite/' + currentProgram.urlBase +'/main">Main Onsite Page</a>' +
+                '<a href="/manage/' + currentProgram.urlBase +'/main">Main Management Page</a><br />' +
+                '<a href="/manage/' + currentProgram.urlBase +'/dashboard">Program Dashboard</a><br />' +
+                '<a href="/onsite/' + currentProgram.urlBase +'/main">Main Onsite Page</a>' +
                 '</div>',
             name: 'class_search',
             displayName: 'Manage ' + currentProgram.name
@@ -80,7 +82,11 @@ if (currentPrograms && currentPrograms.forEach) {
 }
 
 ESP.registerAdminModule({
-    content_html: '<a href="/manage/programs/">Manage all programs</a><br/><a href="/manage/pages">Manage static pages</a><br /><a href="/admin/">Administration pages</a><br /><a href="/admin/filebrowser/browse/">Manage media files</a><br /><a href="/themes/">Manage theme settings</a>',
+    content_html: '<a href="/manage/programs/">Manage all programs</a><br/>' +
+                  '<a href="/manage/pages">Manage static pages</a><br />' +
+                  (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
+                  '<a href="/admin/filebrowser/browse/">Manage media files</a><br />' +
+                  '<a href="/themes/">Manage theme settings</a>',
     name: 'Other',
     displayName: 'Other Important Links'
 });

@@ -575,6 +575,8 @@ class ProgramFrameworkTest(TestCase):
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',
                     'start_time': datetime(2222, 7, 7, 7, 5),
+                    'base_cost': 666,
+                    'sibling_discount': 0
                     }
 
         #   Override parameters explicitly
@@ -634,7 +636,8 @@ class ProgramFrameworkTest(TestCase):
                 'student_reg_end':   '3001-01-01 00:00:00',
                 'publish_start':     '2000-01-01 00:00:00',
                 'publish_end':       '3001-01-01 00:00:00',
-                'base_cost':         '666',
+                'base_cost':         settings['base_cost'],
+                'sibling_discount':  settings['sibling_discount'],
             }
 
         #   Create the program much like the /manage/newprogram view does
@@ -658,7 +661,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog.save()
         pcf.save_m2m()
 
-        commit_program(new_prog, perms, pcf.cleaned_data['base_cost'])
+        commit_program(new_prog, perms, pcf.cleaned_data['base_cost'], pcf.cleaned_data['sibling_discount'])
 
         #   Add recursive permissions to open registration to the appropriate people
         (perm, created) = Permission.objects.get_or_create(role=Group.objects.get(name='Teacher'), permission_type='Teacher/All', program=new_prog)
@@ -780,8 +783,8 @@ class ProgramFrameworkTest(TestCase):
     def create_past_program(self):
         # Make a program
         prog_form_values = {
-                'term': '1111_Spring',
-                'term_friendly': 'Spring 1111',
+                'term': '1901_Spring',
+                'term_friendly': 'Spring 1901',
                 'grade_min': '7',
                 'grade_max': '12',
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234568@mit.edu',
@@ -790,11 +793,11 @@ class ProgramFrameworkTest(TestCase):
                 'program_modules': [x.id for x in ProgramModule.objects.all()],
                 'class_categories': [x.id for x in self.categories],
                 'admins': [x.id for x in self.admins],
-                'teacher_reg_start': '1111-01-01 00:00:00',
+                'teacher_reg_start': '1901-01-01 00:00:00',
                 'teacher_reg_end':   '2000-01-01 00:00:00',
-                'student_reg_start': '1111-01-01 00:00:00',
+                'student_reg_start': '1901-01-01 00:00:00',
                 'student_reg_end':   '2000-01-01 00:00:00',
-                'publish_start':     '1111-01-01 00:00:00',
+                'publish_start':     '1901-01-01 00:00:00',
                 'publish_end':       '2000-01-01 00:00:00',
                 'base_cost':         '666',
                 'finaid_cost':       '37',
@@ -822,6 +825,20 @@ class ProgramFrameworkTest(TestCase):
         commit_program(new_prog, perms, pcf.cleaned_data['base_cost'])
 
         self.new_prog = new_prog
+
+        #   Default parameters
+        past_settings = {'num_timeslots': 3,
+                    'timeslot_length': 50,
+                    'timeslot_gap': 10,
+                    'start_time': datetime(1901, 7, 7, 7, 5),
+                    }
+
+        #   Create timeblocks
+        event_type = EventType.get_from_desc('Class Time Block')
+        for i in range(past_settings['num_timeslots']):
+            start_time = past_settings['start_time'] + timedelta(minutes=i * (past_settings['timeslot_length'] + past_settings['timeslot_gap']))
+            end_time = start_time + timedelta(minutes=past_settings['timeslot_length'])
+            event, created = Event.objects.get_or_create(program=self.new_prog, event_type=event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
 
 
 class ProgramCapTest(ProgramFrameworkTest):

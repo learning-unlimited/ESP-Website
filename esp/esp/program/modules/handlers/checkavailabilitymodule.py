@@ -83,6 +83,9 @@ class CheckAvailabilityModule(ProgramModuleObj):
         availability = AvailabilityModule(program = prog)
         return availability.availabilityForm(request, tl, one, two, prog, teacher, True)
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'

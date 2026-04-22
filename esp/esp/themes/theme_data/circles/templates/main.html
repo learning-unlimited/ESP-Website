@@ -129,7 +129,27 @@
 
 <div id="chicago_main_header">{% block welcome_message %}<!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. --><table width="600px" height="30px"><tr><td valign="middle">{{ theme.welcome_message }}</td></tr></table>{% endblock %}</div>
 
-<div id="chicago_main_content">{% block content %}{% endblock %}</div>
+<div id="chicago_main_content">
+  {% if request.mod_required %}
+  <div class="alert alert-danger">
+      <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+      This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
+  </div>
+  {% endif %}
+  {% if request.show_perm_info %}
+  <div class="alert alert-info">
+      <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+      <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
+      <br />
+      {% if request.roles_with_perm %}
+          Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
+      {% else %}
+          <strong>No (non-admin) roles have permission to view this page!</strong>
+      {% endif %}
+  </div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</div>
 
 <div id="footer">{% block footer %}{% endblock %}</div>
 

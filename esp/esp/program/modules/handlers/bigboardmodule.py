@@ -81,6 +81,7 @@ class BigBoardModule(ProgramModuleObj):
             "left_axis_data": left_axis_data,
             "loads": zip([1, 5, 15], self.load_averages()),
             "timeslots": prog.getTimeSlots(),
+            "categories": prog.class_categories.all().order_by('category').values_list("symbol", flat = True)
         }
         return render_to_response(self.baseDir()+'bigboard.html',
                                   request, context)
@@ -358,3 +359,6 @@ class BigBoardModule(ProgramModuleObj):
             return [float(x.strip(',')) for x in uptime.strip().split()[-3:]]
         except:
             return []
+
+    def isStep(self):
+        return False

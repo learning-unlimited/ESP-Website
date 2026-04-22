@@ -41,7 +41,7 @@ function ModeratorDirectory(el, moderators) {
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
-        filterObject.el.change(function() {
+        filterObject.el.on("change", function() {
             filterObject.val = filterObject.el.val().trim();
             if(filterObject.type==="number") {
                 filterObject.val = parseInt(filterObject.val);
@@ -344,8 +344,6 @@ function ModeratorDirectory(el, moderators) {
  *
  * Public methods:
  * @method render()
- * @method hide()
- * @method unHide()
  */
 function ModeratorRow(moderator, el, moderatorDirectory){
     this.el = el;
@@ -360,20 +358,6 @@ function ModeratorRow(moderator, el, moderatorDirectory){
         this.el.append(this.moderatorCell.el);
         this.el.append($j("<td>" + moderator.num_slots + "</td>").addClass("num-avail").css("text-align", "center"));
         this.el.append($j("<td>" + this.moderatorDirectory.numAvailableSlots(moderator) + "</td>").addClass("num-remain").attr("id", "num-remain-" + moderator.id).css("text-align", "center")); // need to calculate how many slots are still available
-    };
-
-    /**
-     * Hide the table row
-     */
-    this.hide = function(){
-        this.el.css("display", "none");
-    };
-
-    /**
-     * Show the table row
-     */
-    this.unHide = function(){
-        this.el.css("display", "table-row");
     };
 }
 

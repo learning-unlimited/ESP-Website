@@ -1,5 +1,5 @@
 /**
- * Controls the color of a cell when it is occuppied by a section
+ * Controls the color of a cell when it is occupied by a section
  *
  * Public methods:
  * @method color(section)

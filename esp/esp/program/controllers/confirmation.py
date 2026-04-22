@@ -52,10 +52,12 @@ class ConfirmationEmailController(object):
         if (created or repeat) and (options.send_confirmation or override):
             try:
                 receipt_template = Template(DBReceipt.objects.get(program=program, action='confirmemail').receipt)
+                receipt_text = receipt_template.render(Context({'user': user, 'program': program}))
             except:
-                receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id),'program/confirm_email.txt'])
+                receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id),'program/confemails/default.txt'])
+                receipt_text = receipt_template.render({'user': user, 'program': program})
             send_mail("Thank you for registering for %s!" %(program.niceName()), \
-                      receipt_template.render(Context({'user': user, 'program': program}, autoescape=False)), \
+                      receipt_text, \
                       (ESPUser.email_sendto_address(program.director_email, program.niceName() + " Directors")), \
                       [user.email], True)
 

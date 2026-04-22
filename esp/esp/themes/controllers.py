@@ -533,6 +533,11 @@ class ThemeController(object):
         for match in re.findall(r'@(\w+):\s*(.*?);', data):
             vars[match[0]] = match[1]
 
+        #   Substitute LESS variables
+        for key, val in vars.items():
+            if val[1:len(val)] in vars.keys():
+                vars[key] = vars[val[1:len(val)]]
+
         #   Collect save name stored in file
         save_name_match = re.search(r'// Theme Name: (.+?)\n', data)
         if save_name_match:

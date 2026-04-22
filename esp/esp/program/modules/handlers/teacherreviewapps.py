@@ -186,6 +186,9 @@ class TeacherReviewApps(ProgramModuleObj):
         scrmi = prog.studentclassregmoduleinfo
         reg_nodes = scrmi.reg_verbs()
 
+        if not extra:
+            return self.goToCore(tl)
+
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
