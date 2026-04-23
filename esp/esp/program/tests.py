@@ -807,6 +807,67 @@ class ProgramFrameworkTest(TestCase):
             end_time = start_time + timedelta(minutes=past_settings['timeslot_length'])
             event, created = Event.objects.get_or_create(program=self.new_prog, event_type=event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
 
+class RegistrationProfileTest(ProgramFrameworkTest):
+
+    def test_getLastForProgram_does_not_auto_save(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test',
+            last_name='Student',
+            username='teststudent1450',
+            email='teststudent1450@example.com',
+        )
+
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 0)
+
+        profile = RegistrationProfile.getLastForProgram(student, self.program)
+
+        self.assertEqual(profile.program, self.program)
+        self.assertIsNone(profile.id)
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 0)
+
+        profile.save()
+        self.assertIsNotNone(profile.id)
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 1)
+
+    def test_getLastForProgram_with_existing_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test2',
+            last_name='Student',
+            username='teststudent1450b',
+            email='teststudent1450b@example.com',
+        )
+
+        profile = RegistrationProfile.objects.create(
+            user=student,
+            program=self.program,
+            most_recent_profile=True
+        )
+        original_id = profile.id
+
+        retrieved = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(retrieved.id, original_id)
+        self.assertEqual(retrieved.program, self.program)
+
+    def test_getLastForProgram_does_not_mutate_cached_last_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test3',
+            last_name='Student',
+            username='teststudent1450c',
+            email='teststudent1450c@example.com',
+        )
+
+        last_profile = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile.program)
+
+        profile_for_program = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(profile_for_program.program, self.program)
+
+        last_profile_again = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile_again.program)
+
 class ProgramCapTest(ProgramFrameworkTest):
     """Test various forms of program cap."""
     def setUp(self):
