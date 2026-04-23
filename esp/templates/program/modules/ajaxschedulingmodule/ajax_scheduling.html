@@ -205,6 +205,14 @@
                         <label for="room-filter-name-text"><b>Name</b></label><br />
                         <input id="room-filter-name-text"></input>
                     </div>
+                    <br />
+                    <div id="room-filter-threshold-container">
+                        <label for="room-filter-threshold"><b>Match Threshold</b></label><br />
+                        <small>Hide rooms below this match score:</small><br />
+                        <input id="room-filter-threshold" type="range" min="0" max="100" value="0"
+                               style="width:100%;margin:6px 0 2px 0;" />
+                        <span id="room-filter-threshold-label" style="font-weight:bold;">0% (show all)</span>
+                    </div>
                   </form>
                 </div>
                 <div id="checks">
