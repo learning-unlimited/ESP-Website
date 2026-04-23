@@ -35,11 +35,10 @@ Learning Unlimited, Inc.
 """
 """ This module will render latex code and return a rendered display. """
 
-import hashlib
 import os.path
 import os
 from functools import partial
-from random import random
+import secrets
 import subprocess
 import tempfile
 
@@ -215,9 +214,9 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
 
 
 def get_rand_file_base():
-    rand = hashlib.md5(str(random()).encode("UTF-8")).hexdigest()
+    rand = secrets.token_hex(16)
 
-    while os.path.exists(os.path.join(TEX_TEMP, rand+TEX_EXT)):
-        rand = hashlib.md5(str(random()).encode("UTF-8")).hexdigest()
+    while os.path.exists(os.path.join(TEX_TEMP, rand + TEX_EXT)):
+        rand = secrets.token_hex(16)
 
     return rand
