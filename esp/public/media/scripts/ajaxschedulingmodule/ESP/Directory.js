@@ -47,6 +47,21 @@ function Directory(sections, el, schedule_assignments, matrix) {
         // set up handlers
         // Whenever the schedule is changed, re-render the entire directory
         $j("body").on("schedule-changed", this.render.bind(this));
+
+        // Delegate tooltip handling to the directory container for class cells
+        this.el.tooltip({
+            content: function() {
+                var $el = $j(this);
+                if ($el.hasClass("occupied-cell")) {
+                    var cell = $el.data("cell");
+                    return cell ? cell.tooltip() : "";
+                }
+            },
+            items: ".occupied-cell",
+            track: true,
+            show: {duration: 100},
+            hide: {duration: 100},
+        });
     }
     this.init();
 
