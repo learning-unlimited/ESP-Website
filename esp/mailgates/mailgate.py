@@ -3,7 +3,7 @@
 # Main mailgate
 # Handles incoming messages etc.
 
-import sys, os, email, re, smtplib, socket, hashlib, random
+import sys, os, email, re, smtplib, socket, hashlib, random, subprocess
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
@@ -51,9 +51,17 @@ DEBUG=False
 
 user = "UNKNOWN USER"
 
-def send_mail(message):
-    p = os.popen("%s -i -t" % MAIL_PATH, 'w')
-    p.write(message)
+def send_mail(message, envelope_recipient=None):
+    if envelope_recipient:
+        # Deliver to explicit envelope recipient, ignoring To: header for routing.
+        # This lets us hide the real recipient address from the message headers.
+        p = subprocess.Popen([MAIL_PATH, '-i', envelope_recipient],
+                             stdin=subprocess.PIPE)
+        p.communicate(message.encode('utf-8') if isinstance(message, str) else message)
+    else:
+        # Default: extract recipients from To: header
+        p = os.popen("%s -i -t" % MAIL_PATH, 'w')
+        p.write(message)
 
 try:
     user = os.environ['LOCAL_PART']
@@ -106,7 +114,8 @@ try:
                                                  host)
 
         # Common path for ALL handlers — iterate recipients
-        if handler.cc_all:
+        hide = getattr(instance, 'hide_recipients', False)
+        if handler.cc_all and not hide:
             # send one mass-email
             del(message['To'])
             message['To'] = ', '.join(instance.recipients)
@@ -115,8 +124,14 @@ try:
             # send an email for each recipient
             for recipient in instance.recipients:
                 del(message['To'])
-                message['To'] = recipient
-                send_mail(str(message))
+                if hide:
+                    # Keep the alias in the To: header so real addresses
+                    # are never exposed to the sender or other recipients.
+                    message['To'] = '%s@%s' % (instance.original_address, host)
+                    send_mail(str(message), envelope_recipient=recipient)
+                else:
+                    message['To'] = recipient
+                    send_mail(str(message))
 
         sys.exit(0)
 
