@@ -37,7 +37,7 @@ import json
 from datetime import datetime, timedelta
 
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Min
+from django.db.models import Count, Min
 from django.db.models.query import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -51,13 +51,113 @@ from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_onsit
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
-from argcache import cache_function
+from argcache import cache_function, cache_function_for
 from esp.utils.models import Printer, PrintRequest
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+
+
+@cache_function_for(10)
+def _full_status_data_cached(prog):
+    now = datetime.now()
+
+    switch_time_program_attendance = Tag.getProgramTag(
+        'switch_time_program_attendance', program=prog
+    )
+    if switch_time_program_attendance:
+        try:
+            switch_time_program_attendance = datetime.strptime(
+                now.strftime('%Y/%m/%d ') + switch_time_program_attendance,
+                '%Y/%m/%d %H:%M',
+            )
+        except (ValueError, TypeError):
+            # Treat invalid tag value as unset, falling back to enrollment-based logic
+            switch_time_program_attendance = None
+
+    switch_lag_class_attendance = Tag.getProgramTag(
+        'switch_lag_class_attendance', program=prog
+    )
+    if switch_lag_class_attendance:
+        try:
+            switch_lag_class_attendance = int(switch_lag_class_attendance)
+        except (ValueError, TypeError):
+            # Treat invalid tag value as unset, falling back to enrollment-based logic
+            switch_lag_class_attendance = None
+
+    use_program_checkin_counts = False
+    checked_in_qs = None
+    if switch_time_program_attendance and now >= switch_time_program_attendance:
+        checked_in_qs = prog.currentlyCheckedInStudents()
+        if checked_in_qs.count() >= 5:
+            use_program_checkin_counts = True
+
+    capacities = prog.capacity_by_section_id()
+
+    sections_qs = (
+        ClassSection.objects.filter(
+            status__gt=0,
+            parent_class__status__gt=0,
+            parent_class__parent_program=prog,
+        )
+        .annotate(
+            meeting_count=Count('meeting_times', distinct=True),
+            first_start=Min('meeting_times__start'),
+        )
+    )
+
+    if use_program_checkin_counts:
+        valid_reg_q = nest_Q(StudentRegistration.is_valid_qobject(now), 'studentregistration')
+        sections_qs = sections_qs.annotate(
+            checked_in_students=Count(
+                'studentregistration__user',
+                distinct=True,
+                filter=(
+                    valid_reg_q
+                    & Q(studentregistration__relationship__name='Enrolled')
+                    & Q(studentregistration__user__in=checked_in_qs)
+                ),
+            )
+        )
+
+    fields = ['id', 'enrolled_students', 'attending_students', 'meeting_count', 'first_start']
+    if use_program_checkin_counts:
+        fields.append('checked_in_students')
+
+    data = []
+    for sec in sections_qs.values(*fields):
+        section_id = sec['id']
+
+        if sec['meeting_count'] == 0:
+            data.append([section_id, True])
+            continue
+
+        capacity = capacities.get(section_id, 0)
+
+        if (sec['enrolled_students'] == 0) and (capacity == 0):
+            data.append([section_id, False])
+            continue
+
+        if (
+            switch_lag_class_attendance
+            and sec['first_start'] is not None
+            and now >= (sec['first_start'] + timedelta(minutes=switch_lag_class_attendance))
+            and sec['attending_students'] >= 1
+        ):
+            num_students = sec['attending_students']
+
+        elif use_program_checkin_counts:
+            num_students = sec.get('checked_in_students', 0)
+
+        else:
+            num_students = sec['enrolled_students']
+
+        data.append([section_id, num_students >= capacity])
+
+    return data
+
 
 class OnSiteClassList(ProgramModuleObj):
     doc = """Display lists of classes for onsite registration purposes."""
@@ -212,9 +312,7 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def full_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
-        data = [[section.id, section.isFull(webapp=True)] for section in
-                     ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0,
-                                                 parent_class__parent_program=prog)]
+        data = _full_status_data_cached(prog)
         json.dump(data, resp)
         return resp
 
