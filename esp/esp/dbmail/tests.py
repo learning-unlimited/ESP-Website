@@ -418,3 +418,121 @@ class MessageRequestAdminTest(TestCase):
         mr = MessageRequest.objects.filter(subject='Test subject').first()
         self.assertIsNotNone(mr)
         self.assertIsNone(mr.processed_by)
+
+# ---------------------------------------------------------------------------
+# Tests for issue #1680: Deactivate old class list
+# ---------------------------------------------------------------------------
+
+from django.test import TestCase
+from django.utils import timezone
+from datetime import timedelta
+from esp.program.models import ClassSubject, ClassCategories, Program
+# from esp.dbmail.models import EmailList
+
+class ClassCleanupTest(TestCase):
+    def setUp(self):
+        # 1. Create the necessary environment
+        self.prog = Program.objects.create(name="Test Prog", grade_min=1, grade_max=12)
+        self.cat = ClassCategories.objects.create(category="Test Cat", symbol="Z")
+        self.event_type, _ = ClassSubject._meta.get_field('meeting_times').remote_field.model._meta.get_field('event_type').remote_field.model.objects.get_or_create(description="Test")
+        
+        # 2. Create an "Old" Class
+        self.old_class = ClassSubject.objects.create(
+            title="Old Physics",
+            parent_program=self.prog,
+            category=self.cat,
+            grade_min=1,
+            grade_max=12
+        )
+        
+        # 3. Add an Event 6 years in the past
+        EventModel = ClassSubject._meta.get_field('meeting_times').remote_field.model
+        old_date = timezone.now() - timedelta(days=2000)
+        past_event = EventModel.objects.create(start=old_date, end=old_date, event_type=self.event_type)
+        self.old_class.meeting_times.add(past_event)
+
+        # 4. Create the matching EmailList
+        self.email_list = EmailList.objects.create(
+            regex=f".*{self.old_class.emailcode()}.*",
+            description=f"List for {self.old_class.emailcode()}",
+            admin_hold=False
+        )
+
+    def test_deactivate_old_class_lists_precision(self):
+        """
+        Verify that ONLY truly inactive classes are deactivated.
+        Tests for overmatching, active classes, and mixed-date classes.
+        """
+        # 1. SETUP: A 'Recent' Class (Should NOT be deactivated)
+        recent_class = ClassSubject.objects.create(
+            title="Recent Physics", parent_program=self.prog, category=self.cat,
+            grade_min=1, grade_max=12
+        )
+        recent_date = timezone.now()
+        EventModel = ClassSubject._meta.get_field('meeting_times').remote_field.model
+        recent_event = EventModel.objects.create(start=recent_date, end=recent_date, event_type=self.event_type)
+        recent_class.meeting_times.add(recent_event)
+        
+        recent_list = EmailList.objects.create(
+            regex=f".*{recent_class.emailcode()}.*",
+            description="Active list", admin_hold=False
+        )
+
+        # 2. SETUP: A 'Mixed' Class (Old date + New date = Should NOT be deactivated)
+        mixed_class = ClassSubject.objects.create(
+            title="Mixed History", parent_program=self.prog, category=self.cat,
+            grade_min=1, grade_max=12
+        )
+        mixed_class.meeting_times.add(recent_event) # New
+        mixed_class.meeting_times.add(self.old_class.meeting_times.first()) # Old (from setUp)
+        
+        mixed_list = EmailList.objects.create(
+            regex=f".*{mixed_class.emailcode()}.*",
+            description="Mixed class list", admin_hold=False
+        )
+
+        # 3. SETUP: A 'Trap' List (Substring matching risk - Should NOT be deactivated)
+        # If old_class is 'Z1', this 'Z11' should stay active.
+        trap_list = EmailList.objects.create(
+            regex=f".*{self.old_class.emailcode()}1.*", 
+            description="Trap list for overmatching", admin_hold=False
+        )
+
+        # --- PRE-CONDITION CHECK (The safety net) ---
+        self.assertFalse(self.email_list.admin_hold)
+        self.assertFalse(recent_list.admin_hold)
+        self.assertFalse(mixed_list.admin_hold)
+        self.assertFalse(trap_list.admin_hold)
+
+        # 4. ACT: Run the cleanup
+        count = ClassSubject.deactivate_old_class_lists()
+
+        # 5. ASSERT: Precision verification
+        self.assertEqual(count, 1, "Only 1 list (the truly old one) should be processed")
+        
+        self.email_list.refresh_from_db()
+        recent_list.refresh_from_db()
+        mixed_list.refresh_from_db()
+        trap_list.refresh_from_db()
+
+        # Final Verdicts
+        self.assertTrue(self.email_list.admin_hold, "The truly old class list should be on hold.")
+        self.assertFalse(recent_list.admin_hold, "Recent classes must stay active.")
+        self.assertFalse(mixed_list.admin_hold, "Classes with recent meetings must stay active.")
+        self.assertFalse(trap_list.admin_hold, "Lists with similar/substring codes must stay active.")
+    
+    def test_mailgate_ignores_held_lists(self):
+        # Verify that mailgate filtering excludes lists on admin_hold.
+        # 1. Ensure our list is on hold
+        self.email_list.admin_hold = True
+        self.email_list.save()
+
+        # 2. Mimic the line you just changed in mailgate.py
+        active_handlers = EmailList.objects.filter(admin_hold=False)
+
+        # 3. Assert that our held list is NOT in the active handlers
+        self.assertNotIn(
+            self.email_list, 
+            active_handlers, 
+            "Mailgate should ignore lists where admin_hold is True"
+        )

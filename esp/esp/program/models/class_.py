@@ -66,10 +66,12 @@ from esp.utils.query_utils import nest_Q
 from esp.utils import cmp
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
+from django.utils import timezone
 
 # ESP models
 from esp.cal.models import Event
 from esp.dbmail.models import send_mail
+from esp.dbmail.models import EmailList
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission, PersistentQueryFilter
@@ -2146,6 +2148,43 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                     mailing_list_name = f"{self.parent_program.program_type}_{self.parent_program.program_instance}"
                     teachers_list_name = f"{mailing_list_name}-teachers"
                     remove_list_member(teachers_list_name, t.email)
+
+#in future this code can be modify to deleate old class if we want 
+#for now it change old class list to deactivate email from getting spamed
+    @classmethod
+    def deactivate_old_class_lists(cls):
+        cutoff = timezone.now() - timedelta(days=1825)
+        
+        # 1. Use .iterator() to save memory
+        old_classes = cls.objects.filter(meeting_times__start__lt=cutoff)\
+                                 .exclude(meeting_times__start__gte=cutoff)\
+                                 .distinct().iterator()
+
+        total_count = 0
+        batch_size = 500  # Process 500 classes at a time
+        current_query = Q()
+        processed_in_batch = 0
+
+        for obj in old_classes:
+            code = obj.emailcode()
+            # 2. Build your specific regex/description query
+            current_query |= Q(regex__regex=r'\b' + re.escape(code) + r'\b') | \
+                             Q(description__icontains=code)
+            processed_in_batch += 1
+
+            # 3. Every 500 classes, hit the DB and reset
+            if processed_in_batch >= batch_size:
+                target_lists = EmailList.objects.filter(current_query).exclude(admin_hold=True)
+                total_count += target_lists.update(admin_hold=True)
+                current_query = Q()
+                processed_in_batch = 0
+
+        # 4. Final update for any remaining classes
+        if processed_in_batch > 0:
+            target_lists = EmailList.objects.filter(current_query).exclude(admin_hold=True)
+            total_count += target_lists.update(admin_hold=True)
+                
+        return total_count
 
     class Meta:
         db_table = 'program_class'
