@@ -1,6 +1,6 @@
 {% autoescape off %} {% load latex %} {% load main %} {% load getTag %}
-\documentclass[letterpaper,12pt]{article}
-\usepackage[left=.75in,top=1in,bottom=.75in,right=.75in]{geometry}
+\documentclass[letterpaper,10pt]{article}
+\usepackage[left=.5in,top=.6in,bottom=.5in,right=.5in]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage{multicol}
 \usepackage{fancyhdr}
@@ -8,11 +8,11 @@
 \usepackage{array}
 \usepackage{setspace}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
-\usepackage[code=Code39,X=.5mm,ratio=2.25,H=2cm]{makebarcode}
+\usepackage[code=Code39,X=.5mm,ratio=2.25,H=1.5cm]{makebarcode}
 
 \pagestyle{fancy}
 \fancyhead[C]{\Huge \textsf{\textbf{ {{ program.niceName|texescape }} } }}
-\setlength\headheight{16pt}
+\setlength\headheight{30pt}
 \renewcommand{\headrulewidth}{3pt}
 \renewcommand{\footrulewidth}{0pt}
 \fancyfoot{}
