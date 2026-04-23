@@ -13,6 +13,10 @@ var ClassSubject = function (data) {
     self.grade_max   = data.grade_max;
     self.class_style = data.class_style;
     self.difficulty  = data.difficulty;
+    self.difficulty_description = data.difficulty_description;
+    self.difficulty_display = data.difficulty_description
+        ? (data.difficulty + " – " + data.difficulty_description)
+        : (data.difficulty || "");
     self.prereqs     = data.prereqs;
     self.interested  = ko.observable(false);
     self.interested_saved = ko.observable(false);
