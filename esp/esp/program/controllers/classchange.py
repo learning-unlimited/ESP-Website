@@ -78,7 +78,7 @@ class ClassChangeController(object):
         for cls in sections:
             schedule += "<tr>\n<td>"+", ".join(cls.friendly_times())+("<br />"+", ".join(cls.prettyrooms()) if show_rooms else "")+"</td>\n<td>"+cls.title()+"<br />"+", ".join(cls.parent_class.getTeacherNames())+"</td>\n<td>"+cls.emailcode()+"</td>\n</tr>\n"
         schedule += "</table>\n"
-        return schedule.encode('ascii', 'ignore')
+        return schedule
 
     def get_changed_student_email_text(self, student_ind, for_real = False):
         student = self.students[student_ind]
@@ -90,7 +90,6 @@ class ClassChangeController(object):
         text += "We hope you enjoy your new schedule. See you soon!<br /><br />"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
-        text = text.encode('ascii', 'ignore')
         return text
 
     def get_unchanged_student_email_text(self, student_ind, for_real = False):
@@ -102,10 +101,9 @@ class ClassChangeController(object):
             text += f"{self.get_student_schedule(student_ind, for_real)}\n\n<br /><br />\n\n"
             text += "See you soon!<br /><br />"
         else:
-            text += "We're sorry that we couldn't accommodate your class preferences this time, and we hope to see you at a future " + self.program.niceName() + " program.<br /<br />\n\n"
+            text += "We're sorry that we couldn't accommodate your class preferences this time, and we hope to see you at a future " + self.program.niceName() + " program.<br /><br />\n\n"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
-        text = text.encode('ascii', 'ignore')
         return text
 
     def _init_Q_objects(self):
@@ -706,7 +704,7 @@ class ClassChangeController(object):
             logger.info(text_fn(student_ind, for_real=False) + sent_to)
             sys.stdout.flush()
         if f:
-            f.write((text_fn(student_ind, for_real=False) + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"').encode('ascii', 'ignore'))
+            f.write((text_fn(student_ind, for_real=False) + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"'))
         if for_real:
             send_mail(self.subject, text_fn(student_ind, for_real=True), self.from_email, recipient_list, bcc=self.bcc, extra_headers=self.extra_headers)
             time.sleep(self.timeout)
