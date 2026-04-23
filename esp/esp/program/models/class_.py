@@ -2358,7 +2358,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def accept_all_sections(self):
         """ Accept all sections of this class that aren't already cancelled/rejected, without any of the checks or messages that are in accept() """
         self.set_all_sections_to_status(ACCEPTED)
-        # MIT approval email stub — never wired up to send_mail; preserved for reference.
+        # MIT approval email stub - never wired up to send_mail; preserved for reference.
         # subject = "Your %s class was approved!" % (self.parent_program.niceName())
         # content = (
         #     "Congratulations, your class,\n%s,\nwas approved! Please go to "

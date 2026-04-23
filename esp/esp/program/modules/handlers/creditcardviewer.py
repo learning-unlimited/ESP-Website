@@ -92,7 +92,8 @@ class CreditCardViewer(ProgramModuleObj):
     setup_path = "tags/learn"
 
     def isCompleted(self):
-        return self.program.getModule('CreditCardModule_Stripe').check_setup()
+        module = self.program.getModule('CreditCardModule_Stripe')
+        return module is not None and module.check_setup()
 
     class Meta:
         proxy = True
