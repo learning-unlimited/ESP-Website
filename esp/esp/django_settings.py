@@ -215,6 +215,7 @@ MIDDLEWARE_GLOBAL = [
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.contrib.admindocs.middleware.XViewMiddleware'),
+    (1150, 'esp.middleware.cache_control.CacheControlMiddleware'),
     (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
     (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
 ]
