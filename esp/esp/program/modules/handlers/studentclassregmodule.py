@@ -41,11 +41,10 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
 from django.http import HttpResponse, Http404
-from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth, render_deadline_for_tl
 from esp.program.modules.admin_search import AdminSearchEntry
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -237,6 +236,20 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             return self.deadline_met(extension) or \
                    super().deadline_met('/Classes/Lottery')
+
+    def _catalog_deadline_closed(self, prog):
+        """Return True if a Student/Catalog deadline exists and is currently closed."""
+        deadline_qs = Permission.objects.filter(
+            permission_type='Student/Catalog',
+            program=prog,
+            user__isnull=True,
+        )
+        # If no deadline is configured, keep catalog endpoints open.
+        if not deadline_qs.exists():
+            return False
+        # If at least one deadline is configured, catalog is open only when
+        # at least one matching permission is currently valid.
+        return not deadline_qs.filter(Permission.is_valid_qobject()).exists()
 
     def prepare(self, context={}):
         user = get_current_request().user
@@ -612,13 +625,19 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=3600)
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
+        # If a Student/Catalog deadline exists and is closed, return a non-cacheable error.
+        if self._catalog_deadline_closed(prog):
+            response = HttpResponse(json.dumps({'error': 'Catalog is closed'}),
+                                    content_type='application/json', status=403)
+            response['Cache-Control'] = 'no-store'
+            return response
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
 
         resp = HttpResponse(content_type='application/json')
+        resp['Cache-Control'] = 'public, max-age=3600'
 
         json.dump(list(classes), resp, default=json_encode)
 
@@ -650,21 +669,33 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
+        if self._catalog_deadline_closed(prog):
+            response = render_deadline_for_tl('learn', request,
+                    {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
+            response['Cache-Control'] = 'no-store'
+            return response
+        response = self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
+        response['Cache-Control'] = 'public, max-age=120'
+        return response
 
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
+        if self._catalog_deadline_closed(prog):
+            response = render_deadline_for_tl('learn', request,
+                    {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
+            response['Cache-Control'] = 'no-store'
+            return response
         #   Get the ProgramPrintables module for the program
         from esp.program.modules.handlers.programprintables import ProgramPrintables
         for module in prog.getModules():
             if isinstance(module, ProgramPrintables):
                 #   Use it to generate a PDF catalog with the default settings
-                return module.coursecatalog(request, tl, one, two, module, extra, prog)
+                response = module.coursecatalog(request, tl, one, two, module, extra, prog)
+                response['Cache-Control'] = 'public, max-age=120'
+                return response
         raise ESPError('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.', log=False)
 
     @aux_call
