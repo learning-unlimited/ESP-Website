@@ -49,6 +49,7 @@ from django.contrib.auth.models import Group
 from django.core.management import call_command
 from django.test import LiveServerTestCase
 from django.test.client import Client
+from django.urls import reverse
 from django import forms
 
 from esp.program.controllers.classreg import get_custom_fields
@@ -2159,3 +2160,9 @@ class HeardAboutNormalizationTest(TestCase):
     def test_only_punctuation_normalizes_to_empty(self):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
+
+
+class SubmitTransactionRequiresPostTest(TestCase):
+    def test_get_returns_405(self):
+        response = self.client.get(reverse('manage_submit_transaction'))
+        self.assertEqual(response.status_code, 405)
