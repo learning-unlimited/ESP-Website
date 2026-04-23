@@ -503,12 +503,11 @@ class StudentClassRegModule(ProgramModuleObj):
 
         #   Override both grade limits and size limits during onsite registration
         #   Classes are sorted like the catalog
-        if is_onsite and not 'filter' in request.GET:
-            classes = list(ClassSubject.objects.catalog(self.program, ts))
-        else:
-            classes = [c for c in list(ClassSubject.objects.catalog(self.program, ts)) if c.grade_min <= user_grade and c.grade_max >= user_grade]
+        classes = list(ClassSubject.objects.catalog(self.program, ts))
+        should_filter_invalid = (not is_onsite) or ('filter' in request.GET)
+        if should_filter_invalid:
             if user_grade != 0:
-                classes = [c for c in classes if c.grade_min <=user_grade and c.grade_max >= user_grade]
+                classes = [c for c in classes if c.grade_min <= user_grade and c.grade_max >= user_grade]
             classes = [c for c in classes if not c.isRegClosed()]
 
         categories_sort = self.sort_categories(classes, self.program)
@@ -568,17 +567,17 @@ class StudentClassRegModule(ProgramModuleObj):
 
         category_list_href = "#top"
         if separate_catalog:
-            category_list_href = "/learn/%s/catalog" % prog.getUrlBase()
+            category_list_href = f"/learn/{prog.getUrlBase()}/catalog"
 
         category_header_str = """
-    <div class="cat_wrapper" data-category="%d">
+    <div class="cat_wrapper" data-category="{cat_id}">
       <hr size="1"/>
-      <a name="cat%d"></a>
+      <a name="cat{cat_id}"></a>
         <p style="font-size: 1.2em;" class="category">
-           %s
+           {cat_name}
         </p>
         <p class="linktop">
-           <a href="%s">[ Return to Category List ]</a>
+           <a href="{category_list_href}">[ Return to Category List ]</a>
         </p>
 """
 
@@ -588,7 +587,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 class_category_id = cls.category.id
                 if (class_category_id != None):
                     class_blobs.append('</div>')
-                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category, category_list_href))
+                class_blobs.append(category_header_str.format(cat_id=class_category_id, cat_name=cls.category.category, category_list_href=category_list_href))
             class_blobs.append(render_class_direct(cls))
             class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)
