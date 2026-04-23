@@ -99,7 +99,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'edit':
             #   pre-fill form
             try:
-                current_slot = Event.objects.get(id=request.GET['id'])
+                current_slot = Event.objects.get(id=request.GET['id'], program=prog)
             except (KeyError, ValueError, Event.DoesNotExist):
                 return (HttpResponseBadRequest('Invalid or missing timeslot ID.'), {})
             context['timeslot_form'] = TimeslotForm(auto_id="timeslot_%s", program = prog)
@@ -108,7 +108,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             try:
-                timeslot = Event.objects.get(id=request.GET['id'])
+                timeslot = Event.objects.get(id=request.GET['id'], program=prog)
             except (KeyError, ValueError, Event.DoesNotExist):
                 return (HttpResponseBadRequest('Invalid or missing timeslot ID.'), {})
             context['prog'] = self.program
@@ -140,7 +140,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'edit':
             #   pre-fill form
             try:
-                current_slot = ResourceType.objects.get(id=request.GET['id'])
+                current_slot = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes')).get(id=request.GET['id'])
             except (KeyError, ValueError, ResourceType.DoesNotExist):
                 return (HttpResponseBadRequest('Invalid or missing resource type ID.'), {})
             context['restype_form'] = ResourceTypeForm(auto_id="restype_%s")
@@ -152,7 +152,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             try:
-                restype = ResourceType.objects.get(id=request.GET['id'])
+                restype = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes')).get(id=request.GET['id'])
             except (KeyError, ValueError, ResourceType.DoesNotExist):
                 return (HttpResponseBadRequest('Invalid or missing resource type ID.'), {})
             context['prog'] = self.program
@@ -192,7 +192,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'edit':
             #   pre-fill form
             try:
-                current_room = Resource.objects.get(id=request.GET['id'])
+                current_room = self.program.getClassrooms().get(id=request.GET['id'])
             except (KeyError, ValueError, Resource.DoesNotExist):
                 return (HttpResponseBadRequest('Invalid or missing classroom ID.'), {})
             context['classroom_form'] = ClassroomForm(self.program, auto_id="classroom_%s")
@@ -204,7 +204,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             try:
-                classroom = Resource.objects.get(id=request.GET['id'])
+                classroom = self.program.getClassrooms().get(id=request.GET['id'])
             except (KeyError, ValueError, Resource.DoesNotExist):
                 return (HttpResponseBadRequest('Invalid or missing classroom ID.'), {})
             context['prog'] = self.program
@@ -486,7 +486,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'edit':
             #   pre-fill form
             try:
-                equip = Resource.objects.get(id=request.GET['id'])
+                equip = self.program.getFloatingResources(queryset=True).get(id=request.GET['id'])
             except (KeyError, ValueError, Resource.DoesNotExist):
                 return (HttpResponseBadRequest('Invalid or missing equipment ID.'), {})
             context['equipment_form'] = EquipmentForm(self.program, auto_id="equipment_%s")
@@ -495,7 +495,7 @@ class ResourceModule(ProgramModuleObj):
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             try:
-                equipment = Resource.objects.get(id=request.GET['id'])
+                equipment = self.program.getFloatingResources(queryset=True).get(id=request.GET['id'])
             except (KeyError, ValueError, Resource.DoesNotExist):
                 return (HttpResponseBadRequest('Invalid or missing equipment ID.'), {})
             context['prog'] = self.program
