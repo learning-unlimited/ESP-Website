@@ -181,8 +181,20 @@ class ClassCreationController(object):
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def teacher_has_time(self, user, hours):
-        return (user.getTaughtTime(self.program, include_scheduled=True) + timedelta(hours=hours) \
-                <= self.program.total_duration())
+        """Check whether a teacher has enough free time to teach `hours` more hours.
+
+        The cap is computed over both "Class Time Block" and "Open Class Time
+        Block" slots so it matches getTaughtTime(), which already counts every
+        taught section regardless of category.  Using only "Class Time Block"
+        events (the old behaviour via total_duration()) underestimated the cap
+        on programs with open-class registration, allowing over-registration.
+        """
+        program_duration = self.program.total_duration(
+            types=['Class Time Block', 'Open Class Time Block']
+        )
+        return (user.getTaughtTime(self.program, include_scheduled=True)
+                + timedelta(hours=hours)
+                <= program_duration)
 
     def require_teacher_has_time(self, user, current_user, hours):
         if not self.teacher_has_time(user, hours):
