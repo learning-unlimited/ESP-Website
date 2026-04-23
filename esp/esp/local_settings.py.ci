@@ -65,6 +65,9 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 DEBUG = True
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = False
+# Disable HTTPS redirect for the test suite (runs over plain HTTP).
+SECURE_SSL_REDIRECT = False
+SECURE_PROXY_SSL_HEADER = None
 
 ##############
 # Middleware #
