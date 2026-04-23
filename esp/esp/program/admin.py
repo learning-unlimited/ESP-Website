@@ -47,6 +47,7 @@ from esp.program.models import RegistrationType, StudentRegistration, StudentSub
 
 from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
+from esp.program.models import TeacherApplication, TeacherAppQuestion, TeacherAppResponse, TeacherAppReview
 
 from esp.program.models import ClassFlag, ClassFlagType
 
@@ -405,3 +406,61 @@ class ModeratorRecordAdmin(admin.ModelAdmin):
     search_fields = ['user__username']
     list_filter = ['program', 'will_moderate']
 admin_site.register(ModeratorRecord, ModeratorRecordAdmin)
+
+# Teacher Application Admin Classes
+class TeacherAppQuestionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'program', 'subject', 'prompt', 'seq')
+    list_filter = ['program', 'subject']
+    search_fields = ['prompt', 'program__name', 'subject__title']
+    ordering = ['program', 'subject', 'seq']
+admin_site.register(TeacherAppQuestion, TeacherAppQuestionAdmin)
+
+class TeacherAppResponseAdmin(admin.ModelAdmin):
+    list_display = ('id', 'question', 'user', 'response')
+    list_filter = ['question__program', 'question__subject']
+    search_fields = ['user__username', 'question__prompt', 'response']
+    ordering = ['-id']
+admin_site.register(TeacherAppResponse, TeacherAppResponseAdmin)
+
+class TeacherAppReviewAdmin(admin.ModelAdmin):
+    list_display = ('id', 'response', 'reviewer', 'score', 'comments')
+    list_filter = ['response__question__program', 'reviewer']
+    search_fields = ['reviewer__username', 'response__user__username', 'comments']
+    ordering = ['-id']
+admin_site.register(TeacherAppReview, TeacherAppReviewAdmin)
+
+class TeacherApplicationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'subject', 'submitted', 'approved', 'rejected', 'needs_review', 'submitted_date')
+    list_filter = ['program', 'submitted', 'approved', 'rejected', 'needs_review']
+    search_fields = ['user__username', 'user__email', 'subject__title']
+    ordering = ['-submitted_date']
+    
+    # Performance optimization
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'user', 
+            'subject__parent_program'
+        )
+    
+    # Actions for bulk operations
+    actions = ['approve_applications', 'reject_applications']
+    
+    def approve_applications(self, request, queryset):
+        approved = 0
+        for app in queryset:
+            if not app.approved and not app.rejected:
+                app.approve()
+                approved += 1
+        self.message_user(request, f"{approved} application(s) approved.")
+    approve_applications.short_description = "Approve selected applications"
+    
+    def reject_applications(self, request, queryset):
+        rejected = 0
+        for app in queryset:
+            if not app.rejected:
+                app.reject()
+                rejected += 1
+        self.message_user(request, f"{rejected} application(s) rejected.")
+    reject_applications.short_description = "Reject selected applications"
+
+admin_site.register(TeacherApplication, TeacherApplicationAdmin)
