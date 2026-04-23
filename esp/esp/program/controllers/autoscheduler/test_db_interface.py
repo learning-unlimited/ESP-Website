@@ -455,7 +455,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         but that we can exclude lunch classes. Note that we are NOT testing
         that we can successfully load lunch classes if we wanted."""
         lunch, created = ClassCategories.objects.get_or_create(
-                category="Lunch", symbol="L")
+                is_lunch=True, symbol="L")
         subj, created = ClassSubject.objects.get_or_create(
                 title="Lunch!", category=lunch, grade_min=7, grade_max=12,
                 parent_program=self.program, class_size_max=2000,

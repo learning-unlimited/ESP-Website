@@ -364,7 +364,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_lunch_timeslots_cached(self, prog):
-        data = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values_list('id', flat=True))
+        data = list(Event.objects.filter(meeting_times__parent_class__category__is_lunch=True, meeting_times__parent_class__parent_program=prog).values_list('id', flat=True))
         response = HttpResponse(content_type="application/json")
         json.dump(data, response)
         return response

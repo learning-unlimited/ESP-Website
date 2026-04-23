@@ -192,7 +192,7 @@ class BigBoardModule(ProgramModuleObj):
         # this caches this based on dependencies, so even if the 105 second
         # timer runs out, we only update if the dependencies have changed
         sections = ClassSection.objects.filter(
-            parent_class__parent_program=prog).exclude(parent_class__category__category='Lunch')
+            parent_class__parent_program=prog).exclude(parent_class__category__is_lunch=True)
         fields = [
             ("number of stars", 'parent_class__studentsubjectinterest', sections),
             ("number of first choices", 'studentregistration',

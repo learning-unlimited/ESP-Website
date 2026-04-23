@@ -187,10 +187,10 @@ class StudentRegTwoPhase(ProgramModuleObj):
         # FIXME(gkanwar): This is a terrible hack, we should find a better way
         # to filter out certain categories of classes
         context['open_class_category_id'] = prog.open_class_category.id
-        try:
-            lunch_category = ClassCategories.objects.get(category='Lunch')
+        lunch_category = ClassCategories.objects.filter(is_lunch=True).first()
+        if lunch_category:
             context['lunch_category_id'] = lunch_category.id
-        except ClassCategories.DoesNotExist:
+        else:
             context['lunch_category_id'] = -1
         return context
 
@@ -215,8 +215,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         category_choices = []
         for category in prog.class_categories.all():
-            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
-            if category.category == 'Lunch':
+            if category.is_lunch:
                 continue
             category_choices.append((category.id, category.category))
         context['category_choices'] = group_columns(category_choices)
@@ -257,8 +256,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         category_choices = []
         for category in prog.class_categories.all():
-            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
-            if category.category == 'Lunch':
+            if category.is_lunch:
                 continue
             category_choices.append((category.id, category.category))
         context['category_choices'] = group_columns(category_choices)
