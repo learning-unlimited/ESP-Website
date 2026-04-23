@@ -49,7 +49,7 @@ from esp.cal.models import Event, EventType
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.class_status import ClassStatus
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, RegistrationType, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student_in_grade, needs_admin, no_auth, aux_call
 from esp.resources.models import ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
@@ -596,8 +596,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def lottery_preferences_legacy(self, request, prog):
         # DEPRECATED: see comments in lottery_preferences method
         sections = list(prog.sections().values('id'))
-        sections_interested = StudentRegistration.valid_objects().filter(relationship__name='Interested', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
-        sections_priority = StudentRegistration.valid_objects().filter(relationship__name='Priority/1', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
+        sections_interested = StudentRegistration.valid_objects().filter(relationship__name='Interested', user=request.user, section__parent_class__parent_program=prog).values_list('section_id', flat=True).distinct()
+        sections_priority = StudentRegistration.valid_objects().filter(relationship__name__startswith='Priority', user=request.user, section__parent_class__parent_program=prog).values_list('section_id', flat=True).distinct()
         for item in sections:
             if item['id'] in sections_interested:
                 item['lottery_interested'] = True
@@ -654,9 +654,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             cls = matching_classes[0]
 
         section_info = []
+        priority_names = list(RegistrationType.objects.filter(name__startswith='Priority').values_list('name', flat=True))
         for sec in cls.get_sections():
             section_info.append({
-                'num_students_priority': sec.num_students(['Priority/1']),
+                'num_students_priority': sec.num_students(priority_names),
                 'num_students_interested': sec.num_students(['Interested']),
                 'num_students_enrolled': sec.num_students(['Enrolled']),
                 'time': ', '.join(sec.friendly_times()),
@@ -774,9 +775,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
         section_info = []
+        priority_names = list(RegistrationType.objects.filter(name__startswith='Priority').values_list('name', flat=True))
         for sec in cls.get_sections():
             section_info.append({
-                'num_students_priority': sec.num_students(['Priority/1']),
+                'num_students_priority': sec.num_students(priority_names),
                 'num_students_interested': sec.num_students(['Interested']),
                 'num_students_enrolled': sec.num_students(['Enrolled']),
                 'time': ', '.join(sec.friendly_times()),
