@@ -203,8 +203,9 @@ Student schedule for {student.name()}:
 
  Time               | Class                   | Room"""
 
-        regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted')
-        classes = sorted([x.section.parent_class for x in regs])
+        regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted').select_related('section__parent_class').prefetch_related('section__parent_class__sections__meeting_times')
+        classes = [x.section.parent_class for x in regs]
+        classes.sort(key=lambda s: s._sort_key())
 
         # now we sort them by time/title
 
