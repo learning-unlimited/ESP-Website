@@ -1,7 +1,7 @@
 Directory Structure
 ===================
 
-This is not intended to be an exhaustive list, just a summary with some comments, to help new devs find things. 
+This is not intended to be an exhaustive list, just a summary with some comments, to help new devs find things.
 
 Quick Reference: Where to Start
 -------------------------------
