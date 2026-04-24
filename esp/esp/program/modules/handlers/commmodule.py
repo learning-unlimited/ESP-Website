@@ -50,6 +50,18 @@ from esp.utils.sanitize import strip_base64_images
 
 import re
 
+
+def _get_required_post_fields(request, *fields):
+    """Safely extract required POST fields, raising ESPError if any are missing."""
+    missing = [f for f in fields if f not in request.POST]
+    if missing:
+        raise ESPError(
+            "One or more required form fields are missing: %s. "
+            "Please go back and try again." % ', '.join(missing)
+        )
+    return [request.POST[f] for f in fields]
+
+
 # Match /learn/, /teach/, or /volunteer/ + ProgramName/Instance (program url = two path segments)
 _PROGRAM_URL_PATTERN = re.compile(
     r'(?:/learn|/teach|/volunteer)/([^/\s\'"<>]+/[^/\s\'"<>]+)',
@@ -182,10 +194,8 @@ class CommModule(ProgramModuleObj):
         from esp.users.models import PersistentQueryFilter
         from django.conf import settings
 
-        filterid, listcount, subject, body = [request.POST['filterid'],
-                                              request.POST['listcount'],
-                                              request.POST['subject'],
-                                              request.POST['body']    ]
+        filterid, listcount, subject, body = _get_required_post_fields(
+            request, 'filterid', 'listcount', 'subject', 'body')
         body, _ = strip_base64_images(body)
         body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
@@ -295,12 +305,8 @@ class CommModule(ProgramModuleObj):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
 
-        filterid, fromemail, replytoemail, subject, body = [
-                                    request.POST['filterid'],
-                                    request.POST['from'],
-                                    request.POST['replyto'],
-                                    request.POST['subject'],
-                                    request.POST['body']    ]
+        filterid, fromemail, replytoemail, subject, body = _get_required_post_fields(
+            request, 'filterid', 'from', 'replyto', 'subject', 'body')
         body, _ = strip_base64_images(body)
         body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
@@ -465,13 +471,8 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def maincomm2(self, request, tl, one, two, module, extra, prog):
 
-        filterid, listcount, fromemail, replytoemail, subject, body = [
-                                                         request.POST['filterid'],
-                                                         request.POST['listcount'],
-                                                         request.POST['from'],
-                                                         request.POST['replyto'],
-                                                         request.POST['subject'],
-                                                         request.POST['body']    ]
+        filterid, listcount, fromemail, replytoemail, subject, body = _get_required_post_fields(
+            request, 'filterid', 'listcount', 'from', 'replyto', 'subject', 'body')
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
