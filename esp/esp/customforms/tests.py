@@ -1083,3 +1083,33 @@ class LinkModuleValidationTest(TestCase):
         self.assertNotEqual(response.status_code, 500)
         self.assertEqual(response.status_code, 400)
         self.assertIn('message', json.loads(response.content))
+
+    def test_form_editor_reloads_after_relink_to_unmoduled_program(self):
+        """After re-linking to a program with no custom form modules, the
+        form must still be editable in the form builder — /customforms/metadata/
+        must return 200 with valid metadata, not error.
+
+        Regression test for samalarussa's follow-up: with the fix, the crash
+        goes away but the form was still not reopenable in the editor."""
+        form = self._create_linked_form()
+        # Re-link to program without any custom form module enabled.
+        relink = self._post_json(
+            self.MODIFY_URL,
+            self._build_modify_payload(form, link_id=self.prog_without_module.id))
+        self.assertEqual(relink.status_code, 200)
+
+        # Now simulate the admin reopening the form in the builder.
+        response = self.client.get(
+            '/customforms/metadata/',
+            {'form_id': form.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200,
+                         msg=f'editor metadata fetch failed: {response.content!r}')
+        metadata = json.loads(response.content)
+        self.assertEqual(metadata['link_type'], 'Program')
+        self.assertEqual(metadata['link_id'], self.prog_without_module.id)
+        # The re-linked program has no module, so link_tl/link_module must be
+        # empty strings (not missing keys, not null — the JS at custom_form.js
+        # calls $j('#links_id_module').val(metadata['link_module']) directly).
+        self.assertEqual(metadata.get('link_tl'), '')
+        self.assertEqual(metadata.get('link_module'), '')

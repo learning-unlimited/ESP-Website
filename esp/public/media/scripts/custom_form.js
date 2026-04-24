@@ -1789,8 +1789,17 @@ var rebuild=function(metadata) {
 		$j('#links_id_specify').val('particular').trigger("change");
 		$j('#links_id_pick').val(metadata['link_id']).trigger("change");
         if(metadata['link_type'] == "Program"){
-            $j('#links_id_tl').val(metadata['link_tl']).trigger("change");
-            $j('#links_id_module').val(metadata['link_module']);
+            // link_tl/link_module are empty when the form is linked to a program
+            // but not attached to any custom form module. Passing an empty value
+            // to #links_id_tl (whose options are only 'learn'/'teach') would make
+            // onChangeLinksTL look up modules[''] and crash, leaving the builder
+            // in an unusable state. Only set when we have a real value.
+            if(metadata['link_tl']){
+                $j('#links_id_tl').val(metadata['link_tl']).trigger("change");
+            }
+            if(metadata['link_module']){
+                $j('#links_id_module').val(metadata['link_module']);
+            }
         }
 	}
 	else $j('#links_id_specify').val('userdef');
