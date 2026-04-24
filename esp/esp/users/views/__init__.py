@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
@@ -7,6 +9,7 @@ from django.utils.html import format_html
 from django.utils.http import is_safe_url
 from django.template import RequestContext
 from django.urls import reverse
+from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
 from esp.program.models import Program, RegistrationProfile
@@ -182,7 +185,7 @@ def signout(request):
 def signed_out_message(request):
     """ If the user is indeed logged out, show them a "Goodbye" message. """
     if request.user.is_authenticated:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('home'))
 
     return render_to_response('registration/logged_out.html', request, {})
 
@@ -250,7 +253,8 @@ def unsubscribe(request, username, token, oneclick = False):
     # so show the login page (with a custom alert message)
     else:
         next_url = reverse('unsubscribe', kwargs={'username': username, 'token': token,})
-        return HttpResponseRedirect('%s?next=%s' % (reverse('login'), next_url))
+        query_string = urlencode({'next': next_url})
+        return HttpResponseRedirect(f'{reverse("login")}?{query_string}')
 
 # have an email client (etc) POST to this view to process a
 # "oneclick" unsubscribe
@@ -275,14 +279,14 @@ def morph_into_user(request):
         onsite = None
     request.user.switch_to_user(request,
                                 morph_user,
-                                '/manage/userview?username=' + morph_user.username,
+                                '%s?%s' % (reverse('manage_userview'), urlencode({'username': morph_user.username})),
                                 'User Search for '+morph_user.name(),
                                 onsite is not None)
 
     if onsite is not None:
-        return HttpResponseRedirect('/learn/%s/studentreg' % onsite.getUrlBase())
+        return HttpResponseRedirect(f'/learn/{onsite.getUrlBase()}/studentreg')
     else:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('home'))
 
 class LoginHelpView(DefaultQSDView):
     template_name = "users/loginhelp.html"

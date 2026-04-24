@@ -84,9 +84,8 @@ class AS_Schedule(object):
         violation = self.constraints.check_schedule(self)
         if violation is not None:
             raise SchedulingError(
-                ("Schedule violated constraints: {}. If this is intended, "
-                 "consider locking the offending class(es)."
-                 .format(violation)))
+                (f"Schedule violated constraints: {violation}. If this is intended, "
+                 "consider locking the offending class(es)."))
 
 
 class AS_ClassSection(object):
@@ -197,7 +196,7 @@ class AS_Classroom(object):
                                   for r in self.availability}
         if len(self.availability_dict) != len(self.availability):
             raise SchedulingError(
-                "Room {} has duplicate resources".format(name))
+                f"Room {name} has duplicate resources")
 
     @util.timed_func("AS_Classroom_get_roomslots_by_duration")
     @util.memoize
@@ -250,7 +249,7 @@ class AS_Timeslot(object):
             if associated_roomslots is not None else set()
         if self.duration < config.DELTA_TIME:
             raise SchedulingError(
-                "Timeslot duration {} is too short".format(self.duration))
+                f"Timeslot duration {self.duration} is too short")
 
     def __eq__(self, other):
         if isinstance(other, type(self)):

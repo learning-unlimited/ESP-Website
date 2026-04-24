@@ -1,7 +1,7 @@
 <!-- Begin Emergency Contact -->
 <h3>Emergency Contact</h3>
 
-<div class="alert" id="id_copy_parent_info">
+<div role="alert" class="alert" id="id_copy_parent_info">
 <button type="button" class="close" data-dismiss="alert">x</button>
 In the unlikely event of an emergency, we need to know who we should contact first, to let
 them know that you're safe (or that you need help). Often, this is just your parents.  However, if your parents will be out of town or unavailable,
@@ -34,7 +34,7 @@ function copy_parent_info() {
  <label class="control-label" for="id_emerg_first_name">First Name:</label>
  <div class="controls">
  {{ form.emerg_first_name }} {% if form.emerg_first_name.errors %}
-   <br /><span class="form_error">{{ form.emerg_first_name.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.emerg_first_name.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -45,7 +45,7 @@ function copy_parent_info() {
  <label class="control-label" for="id_emerg_last_name">Last Name:</label>
  <div class="controls">
  {{ form.emerg_last_name }} {% if form.emerg_last_name.errors %}
-   <br /><span class="form_error">{{ form.emerg_last_name.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.emerg_last_name.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -56,7 +56,7 @@ function copy_parent_info() {
  <label class="control-label" for="id_emerg_e_mail">Email address:</label>
  <div class="controls">
  {{ form.emerg_e_mail }} {% if form.emerg_e_mail.errors %}
-   <br /><span class="form_error">{{ form.emerg_e_mail.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.emerg_e_mail.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -73,7 +73,7 @@ function copy_parent_info() {
     </label>
     <div class="controls">
     {{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
-    <br /><span class="form_error">{{ form.emerg_address_street.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.emerg_address_street.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
@@ -86,19 +86,19 @@ function copy_parent_info() {
     </label>
     <div class="controls controls-row">
         {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
-        <br /><span class="form_error">{{ form.emerg_address_city.errors|join:", " }}</span>
+        <br /><span class="form_error" role="alert">{{ form.emerg_address_city.errors|join:", " }}</span>
         {% endif %}
 
         {{ form.emerg_address_state }} {% if form.emerg_address_state.errors %}
-        <br /><span class="form_error">{{ form.emerg_address_state.errors|join:", " }}</span>
+        <br /><span class="form_error" role="alert">{{ form.emerg_address_state.errors|join:", " }}</span>
         {% endif %}
         
         {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
-        <br /><span class="form_error">{{ form.emerg_address_zip.errors|join:", " }}</span>
+        <br /><span class="form_error" role="alert">{{ form.emerg_address_zip.errors|join:", " }}</span>
         {% endif %}
         
         {{ form.emerg_address_country }} {% if form.emerg_address_country.errors %}
-        <br /><span class="form_error">{{ form.emerg_address_country.errors|join:", " }}</span>
+        <br /><span class="form_error" role="alert">{{ form.emerg_address_country.errors|join:", " }}</span>
         {% endif %}
     </div>
 </div>
@@ -113,7 +113,7 @@ function copy_parent_info() {
  <small><i><label class="control-label" for="id_emerg_phone_day">home</label></i></small>
  <div class="controls">
  {{ form.emerg_phone_day }} {% if form.emerg_phone_day.errors %}
-   <br /><span class="form_error">{{ form.emerg_phone_day.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.emerg_phone_day.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -124,7 +124,7 @@ function copy_parent_info() {
  <small><i><label class="control-label" for="id_emerg_phone_cell">cell</label></i></small>
  <div class="controls">
  {{ form.emerg_phone_cell }} {% if form.emerg_phone_cell.errors %}
-   <br /><span class="form_error">{{ form.emerg_phone_cell.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.emerg_phone_cell.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>

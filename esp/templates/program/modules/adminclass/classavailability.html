@@ -5,7 +5,7 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-<link rel="stylesheet" href="/media/default_styles/availability.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/availability.css" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
@@ -26,14 +26,14 @@ $j(document).ready(function() {
 <h1>Availability for <u>{{ class|escape }}</u></h1>
 
 {% if is_overbooked %}
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
     <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
 This class is registered for more hours than the number of hours for which the teachers are jointly available.
 </div>
 {% endif %}
 
 {% if conflict_found %}
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
     <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
 This class is scheduled during at least one timeslot in which at least one teacher is not marked as available (indicated with a red border).
 </div>
