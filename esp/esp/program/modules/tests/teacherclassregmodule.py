@@ -306,7 +306,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         """Assert that duration warning banner is shown when no timeslots/durations exist."""
         self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Failed to log in")
         # Delete class timeslots configured in setUp
-        self.program.events.filter(event_type__description='Class Time Block').delete()
+        Event.objects.filter(program=self.program, event_type__description='Class Time Block').delete()
         self.assertEqual(len(self.program.countTimeSlots()), 0)
         url = '%smakeaclass' % self.program.get_teach_url()
         response = self.client.get(url)
