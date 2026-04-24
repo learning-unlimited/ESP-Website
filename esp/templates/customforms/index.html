@@ -47,14 +47,14 @@
             <p><label for="input_suc_url">Redirect URL for successful completion</label></p>
             <input type="text" id="input_suc_url" size="30"/>
             <p><label for="id_anonymous">Anonymous Form</label> <input type='checkbox' id='id_anonymous'/></p>
-            <p id="create_text"><label for="base_form">Create from existing form:</label></p>
+            <label for="base_form"><p id="create_text">Create from existing form:</p></label>
             <select id="base_form">
                 <option value="-1">None</option>
                 {% for form in form_list %}
                     <option value="{{form.id}}">{{form.title}}</option>
                 {% endfor %}
             </select>
-            <button type="button" id="create_from_base" hidden type="button" onclick="createFromBase()">Create from previous form</button>
+            <button type="button" id="create_from_base" hidden onclick="createFromBase()">Create from previous form</button>
             <p id="create_from_base_error" hidden style="color: red;"></p>
             <div id="id_modify_wrapper" hidden><p><label for="id_modify">Modify this form</label> <input type="checkbox" id="id_modify"/></p>
             <p>(Please check this off <b>only</b> if you want to modify this form. If you just want to create a form that
@@ -119,7 +119,7 @@
                     <div id="multi_options"></div>
                 </form>
                 <div id="other_options"></div>
-                <button type="button" id="button_add" value="Add to Form"/>Add Field to Form</button>
+                <button type="button" id="button_add" value="Add to Form">Add Field to Form</button>
             </div>
 
         </div>
