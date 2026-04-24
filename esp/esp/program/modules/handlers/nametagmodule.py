@@ -32,7 +32,11 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import os
 from django.conf import settings
+from django.contrib.auth.models import Group
+from django.core.files.storage import default_storage
+from django.db.models.query import Q
 
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
@@ -43,9 +47,6 @@ from esp.users.controllers.usersearch import UserSearchController
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-
-from django.contrib.auth.models import Group
-from django.db.models.query import Q
 
 class NameTagModule(ProgramModuleObj):
     doc = """This module allows you to generate a bunch of IDs for users that match specific criteria."""
@@ -105,7 +106,7 @@ class NameTagModule(ProgramModuleObj):
             else:
                 pronoun = None
             user_dict = {'title': title,
-                         'name' : '%s %s' % (user.first_name, user.last_name),
+                         'name' : f'{user.first_name} {user.last_name}',
                          'id'   : user.id,
                          'username': user.username,
                          'pronoun': pronoun}
@@ -239,8 +240,11 @@ class NameTagModule(ProgramModuleObj):
 
         context['barcodes'] = True if 'barcodes' in request.POST else False
         context['users_and_backs'] = users_and_backs
-        context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+        context['group_name'] = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
         context['phone_number'] = Tag.getTag('group_phone_number')
+        current_logo_version = Tag.getTag('current_logo_version')
+        context['current_logo_version'] = current_logo_version if current_logo_version is not None else ''
+        context['has_logo'] = default_storage.exists('images/theme/logo.png')
 
         return render_to_response(self.baseDir()+'ids.html', request, context)
 
