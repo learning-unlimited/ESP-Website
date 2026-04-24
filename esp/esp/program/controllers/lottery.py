@@ -461,8 +461,9 @@ class LotteryAssignmentController(object):
     def assign_lunches(self):
         """
         Assign students to lunch sections after main lottery assignment.
-        For students with multiple lunch blocks free, randomly distribute them
-        to equalize the number of students in each lunch block.
+        For students with multiple lunch blocks free, assign to the lunch
+        block with the fewest current enrollments to balance sections.
+        Respects section capacity limits.
         """
 
         # Get all lunch sections for this program
@@ -506,10 +507,13 @@ class LotteryAssignmentController(object):
                 continue
 
             # Get timeslot indices for this day's lunches
+            # Use timeslot_indices[ts_id] >= 0 check (not `in`) since
+            # timeslot_indices is a numpy array indexed by ID value.
             day_lunch_timeslots = []
             for ts_id in self.lunch_timeslots[day_index]:
-                if ts_id in self.timeslot_indices:
-                    day_lunch_timeslots.append(self.timeslot_indices[ts_id])
+                ts_index = self.timeslot_indices[ts_id]
+                if ts_index >= 0:
+                    day_lunch_timeslots.append(ts_index)
 
             if not day_lunch_timeslots:
                 continue
@@ -529,12 +533,18 @@ class LotteryAssignmentController(object):
                     continue
 
                 # Find available lunch blocks for this student
+                # A block is available if: student is free AND section has capacity
                 available_lunches = []
                 for ts_index in day_lunch_timeslots:
                     # Check if student is free during this lunch block
                     if not self.student_schedules[student_index, ts_index]:
                         if ts_index in lunch_section_indices:
-                            available_lunches.append(ts_index)
+                            sec_index = lunch_section_indices[ts_index]
+                            # Check section capacity
+                            current_enrollment = numpy.sum(self.student_sections[:, sec_index])
+                            capacity = self.section_capacities[sec_index]
+                            if capacity == 0 or current_enrollment < capacity:
+                                available_lunches.append(ts_index)
 
                 if not available_lunches:
                     # Student has no lunch blocks free (shouldn't happen)
@@ -543,8 +553,12 @@ class LotteryAssignmentController(object):
                                      self.student_ids[student_index], day_index)
                     continue
 
-                # Randomly choose one of the available lunch blocks
-                chosen_lunch_ts = numpy.random.choice(available_lunches)
+                # Choose the lunch block with the fewest current enrollments
+                # to balance students across lunch sections
+                chosen_lunch_ts = min(
+                    available_lunches,
+                    key=lambda ts_idx: numpy.sum(self.student_sections[:, lunch_section_indices[ts_idx]])
+                )
                 chosen_lunch_sec = lunch_section_indices[chosen_lunch_ts]
 
                 # Assign student to this lunch section
