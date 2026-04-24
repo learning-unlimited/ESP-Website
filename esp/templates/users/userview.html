@@ -261,7 +261,8 @@
         <table class="dottedtable">
         <tr><td class="key">School</td><td>{{ profile.student_info.school }}</td></tr>
         <tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }} (currently {{ user.getGrade }}th Grade)<br />
-        <form action="/manage/userview/" method="get" name="change_grade">
+        <form action="/manage/userview/" method="post" name="change_grade">
+        {% csrf_token %}
         {{ change_grade_form.graduation_year }}
         <input type="hidden" name="username" value="{{ user.username }}" />
         {% if program %}
@@ -276,7 +277,8 @@
                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                 {{ gcr }}{% if gcr.reason %} ({{ gcr.reason }}){% endif %}<br />
                 <center>
-                    <form action="/manage/userview/" method="get" name="approve_grade_request">
+                    <form action="/manage/userview/" method="post" name="approve_grade_request">
+                        {% csrf_token %}
                         <input type="hidden" name="approve_request" value="{{ gcr.id }}" />
                         <input type="hidden" name="username" value="{{ user.username }}" />
                         {% if program %}
@@ -284,7 +286,8 @@
                         {% endif %}
                         <input type="submit" value="Approve" class="btn btn-default" />
                     </form>
-                    <form action="/manage/userview/" method="get" name="reject_grade_request">
+                    <form action="/manage/userview/" method="post" name="reject_grade_request">
+                        {% csrf_token %}
                         <input type="hidden" name="reject_request" value="{{ gcr.id }}" />
                         <input type="hidden" name="username" value="{{ user.username }}" />
                         {% if program %}

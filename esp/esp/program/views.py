@@ -542,14 +542,16 @@ def usersearch(request):
 @admin_required
 def userview(request):
     """ Render a template displaying all the information about the specified user """
+    username = request.POST.get('username') or request.GET.get('username')
     try:
-        user = ESPUser.objects.get(username=request.GET['username'])
+        user = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
         raise ESPError("Sorry, can't find anyone with that username.", log=False)
 
-    if 'program' in request.GET:
+    program_id = request.POST.get('program') or request.GET.get('program')
+    if program_id:
         try:
-            program = Program.objects.get(id=request.GET['program'])
+            program = Program.objects.get(id=program_id)
         except Program.DoesNotExist:
             raise ESPError("Sorry, can't find that program.", log=False)
     else:
@@ -576,21 +578,21 @@ def userview(request):
 
     from esp.users.forms.user_profile import StudentInfoForm
 
-    if 'approve_request' in request.GET:
-        gcr = GradeChangeRequest.objects.filter(id=request.GET['approve_request']).first()
+    if 'approve_request' in request.POST:
+        gcr = GradeChangeRequest.objects.filter(id=request.POST['approve_request']).first()
         if gcr:
             gcr.approved = True
             gcr.acknowledged_by = request.user
             gcr.save()
-    if 'reject_request' in request.GET:
-        gcr = GradeChangeRequest.objects.filter(id=request.GET['reject_request']).first()
+    if 'reject_request' in request.POST:
+        gcr = GradeChangeRequest.objects.filter(id=request.POST['reject_request']).first()
         if gcr:
             gcr.approved = False
             gcr.acknowledged_by = request.user
             gcr.save()
 
-    if 'graduation_year' in request.GET:
-        user.set_student_grad_year(request.GET['graduation_year'])
+    if 'graduation_year' in request.POST:
+        user.set_student_grad_year(request.POST['graduation_year'])
 
     change_grade_form = StudentInfoForm(user=user)
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
