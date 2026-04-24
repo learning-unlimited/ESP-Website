@@ -38,6 +38,8 @@ from esp.users.models    import ESPUser
 from django.db.models.query       import Q
 from django              import forms
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.program.models import StudentRegistration
+from esp.utils.query_utils import nest_Q
 
 class StudentJunctionAppModule(ProgramModuleObj):
     doc = """Allows students to submit applications for a program."""
@@ -54,20 +56,33 @@ class StudentJunctionAppModule(ProgramModuleObj):
             }
 
     def students(self, QObject = False):
+        if not self.program.isUsingStudentApps():
+            return {}
         Q_students = Q(studentapplication__program = self.program)
 
         Q_students_complete = Q(studentapplication__done = True)
 
+        Q_accepted = (
+            Q(studentregistration__relationship__name='Accepted',
+              studentregistration__section__parent_class__parent_program=self.program)
+            & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        )
+
         if QObject:
             return {'studentapps_complete': Q_students & Q_students_complete,
-                    'studentapps':          Q_students}
+                    'studentapps':          Q_students,
+                    'app_accepted_to_one_program': Q_accepted}
         else:
             return {'studentapps_complete': ESPUser.objects.filter(Q_students & Q_students_complete),
-                    'studentapps':          ESPUser.objects.filter(Q_students)}
+                    'studentapps':          ESPUser.objects.filter(Q_students),
+                    'app_accepted_to_one_program': ESPUser.objects.filter(Q_accepted).distinct()}
 
     def studentDesc(self):
+        if not self.program.isUsingStudentApps():
+            return {}
         return {'studentapps_complete': """Students who have completed the student application""",
-                'studentapps':          """Students who have started the student application"""}
+                'studentapps':          """Students who have started the student application""",
+                'app_accepted_to_one_program': """Students who are accepted to at least one class"""}
 
     def isCompleted(self, user=None):
         """ This step is completed if the student has marked their application as complete or answered questions for

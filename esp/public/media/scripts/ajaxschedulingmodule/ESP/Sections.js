@@ -673,7 +673,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         } else if(_.uniq(swapping_sections2.filter(Boolean)).length > 1 && !confirm("More than one section will need to be swapped from the new room. Is this OK?")){
             return;
         }
-        $j(".ui-tooltip").hide() // There seems to be a bug or something caused by the confirm box that causes the tooltip to get stuck
+
         var old_assignments1 = _.uniq(swapping_sections1.filter(Boolean)).map(sec => ({"section": sec.id, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room1}));
         var old_assignments2 = _.uniq(swapping_sections2.filter(Boolean)).map(sec => ({"section": sec.id, "timeslots": this.scheduleAssignments[sec.id].timeslots, "room_id": room2}));
         var ignore_sections = _.uniq(_.union(swapping_sections1, swapping_sections2));
