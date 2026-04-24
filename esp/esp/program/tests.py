@@ -141,9 +141,10 @@ class ViewUserInfoTest(TestCase):
         c = Client()
         c.login(username=self.admin.username, password=self.password)
 
-        # Try searching by ID direct hit
+        # Try searching by user ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=%s" % self.admin.username)
 
     def testUserIDSearchMultipleResults(self):
         c = Client()
@@ -1584,12 +1585,17 @@ class SeedDummyDataTest(TestCase):
                 Program.objects.filter(url=url).exists(),
                 f'Program {url} should exist after seeding',
             )
-
         # Users
         for username in ['admin', 'teacher1', 'student1', 'volunteer1']:
             self.assertTrue(
                 ESPUser.objects.filter(username=username).exists(),
                 f'User {username} should exist after seeding',
+            )
+        # ProgramModuleObj
+        for program in Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']):
+            self.assertGreater(
+                ProgramModuleObj.objects.filter(program=program).count(), 0,
+                f'Program {program.url} should have ProgramModuleObj instances after seeding',
             )
 
     def test_seed_dummy_data_idempotent(self):

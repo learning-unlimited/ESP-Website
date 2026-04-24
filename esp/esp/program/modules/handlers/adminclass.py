@@ -179,9 +179,9 @@ class AdminClass(ProgramModuleObj):
                 try:
                     s = ClassSection.objects.get(id=int(request.GET['sec_id']))
                     s.delete()
-                    return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
+                    return HttpResponseRedirect(f'/manage/{one}/{two}/manageclass/{extra}')
                 except (ValueError, ClassSection.DoesNotExist):
-                    raise ESPError('Unable to delete a section.  The section requested was: %s' % request.GET['sec_id'], log=False)
+                    raise ESPError(f'Unable to delete a section.  The section requested was: {request.GET["sec_id"]}', log=False)
         else:
             section_id = int(request.GET['sec_id'])
             section = ClassSection.objects.get(id=section_id)
@@ -196,7 +196,7 @@ class AdminClass(ProgramModuleObj):
         cls = self.getClass(request, extra)
         cls.add_section()
 
-        return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
+        return HttpResponseRedirect(f'/manage/{one}/{two}/manageclass/{extra}')
 
     @aux_call
     @needs_admin
