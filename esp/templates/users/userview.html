@@ -44,6 +44,9 @@
     <h2>
         Administrative links
     </h2>
+    {% if request.user.isAdmin %}
+    <a class="sidelink" href="/myesp/profile/{{user.username}}/">Edit profile</a>
+    {% endif %}
     <form id="morphlink-form" action="/myesp/morph" method="post" style="display:inline">{% csrf_token %}
         <input type="hidden" name="morph_user" value="{{user.id}}"/>
         <a id="morphlink" class="sidelink" onclick="$j(this).parent().submit();return false;" href="">Morph into this user</a>
