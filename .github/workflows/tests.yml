@@ -55,6 +55,16 @@ jobs:
         image: memcached:alpine
         ports:
           - 11211:11211
+    env:
+      DJANGO_SETTINGS_MODULE: esp.settings
+      # Ensure Django/pytest always uses the PostgreSQL service credentials.
+      # Without these, Django can fall back to the runner user (e.g. "root"),
+      # which doesn't exist as a PostgreSQL role.
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: esp_website_test
+      DATABASE_HOST: localhost
+      DATABASE_PORT: "5432"
     steps:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -96,10 +106,6 @@ jobs:
       env:
         CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
-        # Match PostgreSQL service credentials to prevent runner user (root) defaulting
-        DATABASE_USER: postgres
-        DATABASE_PASSWORD: postgres
-        DATABASE_NAME: esp_website_test
       run: deploy/ci/script
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de  # v5

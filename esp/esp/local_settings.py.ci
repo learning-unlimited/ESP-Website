@@ -79,9 +79,11 @@ MIDDLEWARE_LOCAL = []
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "esp_website_test",
-        "USER": "postgres",
-        "PASSWORD": "postgres",
+        # Filled in by `esp/esp/settings.py` from DATABASE_NAME / DATABASE_USER /
+        # DATABASE_PASSWORD environment variables set in CI workflows.
+        "NAME": "",
+        "USER": "",
+        "PASSWORD": "",
         "HOST": "localhost",
         "PORT": "5432",
     }
