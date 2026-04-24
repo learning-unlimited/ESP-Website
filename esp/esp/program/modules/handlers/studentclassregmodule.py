@@ -781,7 +781,13 @@ class StudentClassRegModule(ProgramModuleObj):
 
         module = prog.getModule('OnSiteClassList')
         if module:
-            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options={}, template_name='allclass_fragment.html')
+            # Forward only supported public filtering params to avoid exposing
+            # internal classList options.
+            options = {}
+            for key in ('start', 'end', 'sorting'):
+                if key in request.GET:
+                    options[key] = request.GET.get(key)
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options=options, template_name='openclasses.html')
 
         #  Otherwise this will be a 404
         return None
