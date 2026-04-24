@@ -410,7 +410,7 @@ class ClassSection(models.Model):
         return self.parent_class.category
     category = property(_get_category)
 
-    def _get_room_capacity(self, rooms = None):
+    def _get_room_capacity(self, rooms = None, ignore_changes=False):
         # rooms should be a queryset
         if rooms is None:
             rooms = self.classrooms()
@@ -419,7 +419,7 @@ class ClassSection(models.Model):
         rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
 
         options = self.parent_program.studentclassregmoduleinfo
-        if options.apply_multiplier_to_room_cap:
+        if options.apply_multiplier_to_room_cap and not ignore_changes:
             rc = int(rc * options.class_cap_multiplier + options.class_cap_offset)
 
         return rc
@@ -446,7 +446,7 @@ class ClassSection(models.Model):
                     ans = self.parent_class.class_size_max
             else:
                 class_max = self.parent_class.class_size_max
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 ans = self._min_none_safe(class_max, room_cap)
 
         #hacky fix for classes with no max size
@@ -457,17 +457,17 @@ class ClassSection(models.Model):
                 range_max_vals = list(self.parent_class.allowable_class_size_ranges.order_by('-range_max').values_list('range_max', flat=True))
                 range_max = range_max_vals[0] if range_max_vals else None
                 opt = self.parent_class.class_size_optimal
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 upper = self._max_none_safe(range_max, opt)
                 ans = self._min_none_safe(upper, room_cap)
             elif self.parent_class.class_size_optimal and len(rooms) != 0:
                 opt = self.parent_class.class_size_optimal
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 ans = self._min_none_safe(opt, room_cap)
             elif self.parent_class.class_size_optimal:
                 ans = self.parent_class.class_size_optimal
             elif len(rooms) != 0:
-                ans = self._get_room_capacity(rooms)
+                ans = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
             else:
                 ans = 0
 
@@ -1239,6 +1239,15 @@ class ClassSection(models.Model):
 
     def isFullWebapp(self, ignore_changes=False):
         return self.isFull(ignore_changes = ignore_changes, webapp = True)
+
+    def isFullIgnoreChanges(self, webapp=False):
+        """Return section fullness based on unadjusted/base capacity.
+
+        This bypasses class-cap and room-cap multiplier/offset adjustments.
+        It is used by views like the onsite open class list, where we want to
+        show physically open classes even if registration throttles are active.
+        """
+        return self.isFull(ignore_changes=True, webapp=webapp)
 
     def time_blocks(self):
         return self.friendly_times(raw=True)
