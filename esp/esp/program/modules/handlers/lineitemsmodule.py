@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.accounting.models import LineItemType, LineItemOptions
+from esp.middleware import ESPError
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call
 from esp.program.modules.admin_search import AdminSearchEntry
@@ -72,13 +73,19 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
 
         if request.GET.get('op') == 'edit':
             # load selected line item type in form
-            lineitem = LineItemType.objects.get(id=request.GET['id'])
+            try:
+                lineitem = LineItemType.objects.get(id=request.GET['id'])
+            except (LineItemType.DoesNotExist, ValueError, KeyError):
+                raise ESPError("Invalid or missing Line Item ID.")
             context['lineitem'] = lineitem
             context['lineitem_form'] = LineItemForm(instance = lineitem)
             context['option_formset'] = OptionFormset(queryset = lineitem.lineitemoptions_set.all(), prefix='options')
         elif request.GET.get('op') == 'delete':
             # show delete confirmation page
-            context['lineitem'] = LineItemType.objects.get(id=request.GET['id'])
+            try:
+                context['lineitem'] = LineItemType.objects.get(id=request.GET['id'])
+            except (LineItemType.DoesNotExist, ValueError, KeyError):
+                raise ESPError("Invalid or missing Line Item ID.")
             return render_to_response(self.baseDir()+'lineitem_delete.html', request, context)
         elif request.GET.get('op') == 'import':
             # show import confirmation page
@@ -93,12 +100,18 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
         elif request.method == 'POST':
             if request.POST.get('command') == 'reallyremove':
                 # deletion confirmed
-                lineitem = LineItemType.objects.get(id=request.POST['id'])
+                try:
+                    lineitem = LineItemType.objects.get(id=request.POST['id'])
+                except (LineItemType.DoesNotExist, ValueError, KeyError):
+                    raise ESPError("Invalid or missing Line Item ID.")
                 lineitem.lineitemoptions_set.all().delete()
                 lineitem.delete()
             elif request.POST.get('command') == 'reallyimport':
                 # import confirmed
-                past_program = Program.objects.get(id=request.POST['program'])
+                try:
+                    past_program = Program.objects.get(id=request.POST['program'])
+                except (Program.DoesNotExist, ValueError, KeyError):
+                    raise ESPError("Invalid or missing Program ID.")
                 past_lineitems = past_program.lineitemtype_set.exclude(text__in=exclude_line_items)
                 for past_lineitem in past_lineitems:
                     old_options = past_lineitem.lineitemoptions_set.all()
@@ -112,10 +125,15 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             elif request.POST.get('command') == 'addedit':
                 # addedit form submitted
                 if 'id_lineitem' in request.POST:
-                    lineitem_form = LineItemForm(request.POST, instance = LineItemType.objects.get(id=request.POST['id_lineitem']))
+                    try:
+                        instance = LineItemType.objects.get(id=request.POST['id_lineitem'])
+                        lineitem_form = LineItemForm(request.POST, instance=instance)
+                        options_formset = OptionFormset(request.POST, queryset=instance.lineitemoptions_set.all(), prefix='options')
+                    except (LineItemType.DoesNotExist, ValueError, KeyError):
+                        raise ESPError("Invalid or missing Line Item ID.")
                 else:
                     lineitem_form = LineItemForm(request.POST)
-                options_formset = OptionFormset(request.POST, prefix='options')
+                    options_formset = OptionFormset(request.POST, prefix='options')
                 if lineitem_form.is_valid() and options_formset.is_valid():
                     if LineItemType.objects.filter(text = lineitem_form.cleaned_data['text'], program = prog).exists() and 'id_lineitem' not in request.POST:
                         lineitem_form.add_error('text', 'A line item with that name already exists. Please choose another name.')
@@ -134,6 +152,8 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
                 else:
                     context['lineitem_form'] = lineitem_form
                     context['option_formset'] = options_formset
+            else:
+                raise ESPError("Invalid command.")
         if 'lineitem_form' not in context:
             context['lineitem_form'] = LineItemForm()
         if 'option_formset' not in context:
