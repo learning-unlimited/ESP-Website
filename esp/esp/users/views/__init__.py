@@ -226,7 +226,7 @@ def unsubscribe(request, username, token, oneclick = False):
 
     # otherwise show them a confirmation button
     # if they are logged into the correct account or the token is valid
-    if ( (request.user.is_authenticated and request.user == user) or user.check_token(token)):
+    if ( (request.user.is_authenticated and request.user == user) or request.user.check_token(token)):
         return render_to_response('users/unsubscribe.html', request, context = {'user': user})
     # if they are logged into a different account
     # tell them to log out and try again
