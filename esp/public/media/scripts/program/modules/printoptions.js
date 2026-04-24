@@ -1,7 +1,13 @@
 $j(function () {
-    $j("#student_format").on("change", function (){
+    $j("#student_format, #student_sort").on("change", function (){
         // Get user-selected options
-        var url = "./studentschedules/" + $j("#student_format").val() + "/?recipient_type=Student&base_list=enrolled";
+        var format = $j("#student_format").val() || "pdf";
+        var url = "./studentschedules/" + format + "/?recipient_type=Student&base_list=enrolled";
+        
+        var sortValue = $j("#student_sort").val();
+        if (sortValue && sortValue !== "name") {
+            url += "&sort=" + sortValue;
+        }
         
         // Update href
         $j("#student_schedules a").attr('href', url);
