@@ -166,6 +166,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
     # Shared base templates reference these optional values directly.
     # Default them here so pages that don't populate them don't emit
     # VariableDoesNotExist DEBUG noise during tests or local development.
+    context.setdefault('error', '')
     context.setdefault('login_result', '')
     context.setdefault('active_program_tags', [])
     context.setdefault('active_program_tags_url', '')
