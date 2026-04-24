@@ -72,6 +72,7 @@
     {% endif %}
 
     {% include "themes/bs_form.html" %}
+    <div id="username-live-feedback" class="help-block" aria-live="polite"></div>
     {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 
     <div class="form-actions">
@@ -83,7 +84,80 @@
 
 <script type="text/javascript">
 <!--
-  document.getElementById('id_first_name').focus();
+  (function() {
+    var firstNameInput = document.getElementById('id_first_name');
+    if (firstNameInput) {
+      firstNameInput.focus();
+    }
+
+    var usernameInput = document.getElementById('id_username');
+    var feedback = document.getElementById('username-live-feedback');
+    if (!usernameInput || !feedback) {
+      return;
+    }
+
+    var checkTimer = null;
+    var requestCounter = 0;
+
+    function setFeedback(text, cssClass, symbol) {
+      feedback.className = 'help-block ' + cssClass;
+      feedback.textContent = (symbol ? symbol + ' ' : '') + (text || '');
+    }
+
+    function clearFeedback() {
+      feedback.className = 'help-block';
+      feedback.textContent = '';
+    }
+
+    function runCheck() {
+      var username = usernameInput.value;
+      if (!username) {
+        clearFeedback();
+        return;
+      }
+
+      var currentRequest = ++requestCounter;
+      var url = '/myesp/register/check-username/?username=' + encodeURIComponent(username);
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4 || currentRequest !== requestCounter) {
+          return;
+        }
+
+        if (xhr.status !== 200) {
+          setFeedback('Could not validate username right now.', 'text-warning', '⚠');
+          return;
+        }
+
+        try {
+          var result = JSON.parse(xhr.responseText);
+          if (!result.valid) {
+            setFeedback(result.message, 'text-danger', '✗');
+          } else if (result.available === false) {
+            setFeedback(result.message, 'text-danger', '✗');
+          } else if (result.available === true) {
+            setFeedback(result.message, 'text-success', '✓');
+          } else {
+            setFeedback(result.message, 'text-info', 'ℹ');
+          }
+        } catch (e) {
+          setFeedback('Could not validate username right now.', 'text-warning', '⚠');
+        }
+      };
+      xhr.send();
+    }
+
+    function scheduleCheck() {
+      if (checkTimer) {
+        window.clearTimeout(checkTimer);
+      }
+      checkTimer = window.setTimeout(runCheck, 350);
+    }
+
+    usernameInput.addEventListener('input', scheduleCheck);
+    usernameInput.addEventListener('blur', runCheck);
+  })();
 //-->
 </script>
 
