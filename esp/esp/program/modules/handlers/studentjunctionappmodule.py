@@ -38,6 +38,8 @@ from esp.users.models    import ESPUser
 from django.db.models.query       import Q
 from django              import forms
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.program.models import StudentRegistration
+from esp.utils.query_utils import nest_Q
 
 class StudentJunctionAppModule(ProgramModuleObj):
     doc = """Allows students to submit applications for a program."""
@@ -60,7 +62,11 @@ class StudentJunctionAppModule(ProgramModuleObj):
 
         Q_students_complete = Q(studentapplication__done = True)
 
-        Q_accepted = Q(studentregistration__relationship__name='Accepted', studentregistration__section__parent_class__parent_program=self.program)
+        Q_accepted = (
+            Q(studentregistration__relationship__name='Accepted',
+              studentregistration__section__parent_class__parent_program=self.program)
+            & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        )
 
         if QObject:
             return {'studentapps_complete': Q_students & Q_students_complete,
