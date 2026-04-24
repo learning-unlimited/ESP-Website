@@ -168,6 +168,8 @@ def onSubmit(request):
             except Exception as err:
                 transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
+        return HttpResponse(status=405)
+    return HttpResponse(status=400)
 
 def get_or_create_altered_obj(model, initial_id, **attrs):
     if model.objects.filter(id=initial_id).exists():
@@ -306,6 +308,8 @@ def onModify(request):
             except Exception as err:
                 transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
+        return HttpResponse(status=405)
+    return HttpResponse(status=400)
 
 def hasPerm(user, form):
     """

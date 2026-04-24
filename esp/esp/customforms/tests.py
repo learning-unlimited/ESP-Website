@@ -1084,6 +1084,33 @@ class LinkModuleValidationTest(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('message', json.loads(response.content))
 
+    def test_submit_non_ajax_returns_400(self):
+        """Non-AJAX POST must not fall through to Django 500 (no implicit None)."""
+        response = self.client.post(
+            self.SUBMIT_URL,
+            json.dumps(self._build_submit_payload()),
+            content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_submit_wrong_method_returns_405(self):
+        """Non-POST AJAX request must not fall through."""
+        response = self.client.get(
+            self.SUBMIT_URL, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 405)
+
+    def test_modify_non_ajax_returns_400(self):
+        form = self._create_linked_form()
+        response = self.client.post(
+            self.MODIFY_URL,
+            json.dumps(self._build_modify_payload(form)),
+            content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_modify_wrong_method_returns_405(self):
+        response = self.client.get(
+            self.MODIFY_URL, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 405)
+
     def test_form_editor_reloads_after_relink_to_unmoduled_program(self):
         """After re-linking to a program with no custom form modules, the
         form must still be editable in the form builder — /customforms/metadata/
