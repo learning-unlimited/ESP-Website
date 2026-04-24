@@ -10,20 +10,20 @@
 {% block content %}
 <h1>Wipe Test Registration Data — {{ prog.niceName }}</h1>
 
-<div class="alert alert-warning">
+<div role="alert" class="alert alert-warning">
     <strong>Warning:</strong> This action permanently and irreversibly deletes
     registration data for a single user. Use this only to reset test accounts.
 </div>
 
 {% if error %}
-    <div class="alert alert-danger">
+    <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
         {{ error }}
     </div>
 {% endif %}
 
 {% if success %}
-    <div class="alert alert-success">
+    <div role="alert" class="alert alert-success">
         <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
         Successfully deleted all test data for
         <strong>{{ target_user.username }}</strong>
@@ -76,7 +76,7 @@
     </table>
 
     {% if total == 0 %}
-        <div class="alert alert-info">No data found for this user in this program.</div>
+        <div role="alert" class="alert alert-info">No data found for this user in this program.</div>
         <a href="/manage/{{ prog.getUrlBase }}/wipe_test_data/" class="btn btn-default">Try another user</a>
     {% else %}
         <form action="/manage/{{ prog.getUrlBase }}/wipe_test_data/" method="post">

@@ -19,6 +19,8 @@
 
 {% block body %}
 
+<a href="#chicago_main" class="skip-nav">Skip to main content</a>
+
 <div id="content">
 <div id="topleft"><a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{ theme.titlebar_prefix }}" /></a></div>
 
@@ -101,7 +103,7 @@
     </div>
   </div>
 
-  <div id="chicago_main">
+  <main id="chicago_main" tabindex="-1">
 
 <div id="chicago_main_header">{% block welcome_message %}<!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. --><table width="600px" height="30px"><tr><td valign="middle">{{ theme.welcome_message }}</td></tr></table>{% endblock %}</div>
 
@@ -142,6 +144,17 @@
         &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
       </div>
       {% endif %}
+      {% if active_global_tags %}
+      <div class="alert alert-info alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <strong>Admin notice:</strong>
+        This site has {{ active_global_tags|length }} custom global tag{{ active_global_tags|length|pluralize }} configured that may be modifying page behavior:
+        {% for tag in active_global_tags %}
+          <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        {% endfor %}
+        &mdash; <a href="{{ active_global_tags_url }}" class="alert-link">View tag settings</a>
+      </div>
+      {% endif %}
       {% if messages %}
       {% for message in messages %}
       <div class="alert alert-{{ message.tags }}">{{ message }}</div>
@@ -163,7 +176,7 @@
 
     <div id="footer">{% block footer %}{% endblock %}</div>
 
-  </div>
+  </main>
 
 </div>
 {% endblock %}
