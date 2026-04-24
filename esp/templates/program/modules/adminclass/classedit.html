@@ -16,7 +16,7 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.
 <br />
 
 {% if form.has_errors %}
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
     <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         Please fix the error{{ form.error_dict|pluralize }} in the form.
 </div>
@@ -30,7 +30,7 @@ Course Title:
 <br />
 {% if form.title.errors %}
 <br />
-<span class="form_error">{{ form.title.errors|join:", " }}</span>
+<span class="form_error" role="alert">{{ form.title.errors|join:", " }}</span>
 <br />
 {% endif %}
 {{ form.title }} 
@@ -45,7 +45,7 @@ Course Slug:
 <small>(Used for the URL: https://esp.mit.edu/learn/{{program.getUrlBase}}/[SLUG]/index.html)</small>
 {% if form.url.errors %}
 <br />
-<span class="form_error">{{ form.url.errors|join:", " }}</span>
+<span class="form_error" role="alert">{{ form.url.errors|join:", " }}</span>
 {% endif %}
 {{ form.url }} 
 <br />
@@ -57,7 +57,7 @@ Course Description:
 </label>
 <br />
 {% if form.class_info.errors %}
-   <br /><span class="form_error">{{ form.class_info.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.class_info.errors|join:", " }}</span>
    <br />
 {% endif %}
 {{ form.class_info }}
@@ -74,7 +74,7 @@ Course Description:
     </td>
     <td>
     {% if form.category.errors %}
-       <span class="form_error">{{ form.category.errors|join:", " }}</span><br />
+       <span class="form_error" role="alert">{{ form.category.errors|join:", " }}</span><br />
     {% endif %}
     {{ form.category }}
     </td>
@@ -92,7 +92,7 @@ Course Description:
     </td>
     <td>
     {% if form.grade_min.errors %}
-       <span class="form_error">{{ form.grade_min.errors|join:", " }}</span><br />
+       <span class="form_error" role="alert">{{ form.grade_min.errors|join:", " }}</span><br />
     {% endif %}
     {{ form.grade_min }}
     </td>
@@ -106,7 +106,7 @@ Course Description:
     </td>
     <td>
     {% if form.grade_max.errors %}
-       <span class="form_error">{{ form.grade_max.errors|join:", " }}</span><br />
+       <span class="form_error" role="alert">{{ form.grade_max.errors|join:", " }}</span><br />
     {% endif %}
     {{ form.grade_max }}
     </td>
@@ -120,7 +120,7 @@ Course Description:
     </td>
     <td>
     {% if form.class_size_min.errors %}
-       <span class="form_error">{{ form.class_size_min.errors|join:", " }}</span><br />
+       <span class="form_error" role="alert">{{ form.class_size_min.errors|join:", " }}</span><br />
     {% endif %}
     {{ form.class_size_min }}
     </td>
@@ -134,7 +134,7 @@ Course Description:
     </td>
     <td>
     {% if form.class_size_max.errors %}
-       <span class="form_error">{{ form.class_size_max.errors|join:", " }}</span><br />
+       <span class="form_error" role="alert">{{ form.class_size_max.errors|join:", " }}</span><br />
     {% endif %}
     {{ form.class_size_max }}
     </td>
@@ -149,7 +149,7 @@ Preferred Duration (hours:minutes):
 </label>
 <br />
 {% if form.duration.errors %}
-   <br /><span class="form_error">{{ form.duration.errors|join:", " }}</span><br />
+   <br /><span class="form_error" role="alert">{{ form.duration.errors|join:", " }}</span><br />
 {% endif %}
 {{ form.duration }}
 
@@ -164,7 +164,7 @@ Acceptable Course Times (check all that apply):
 </label>
 <br />
 {% if form.viable_times.errors %}
-   <br /><span class="form_error">{{ form.viable_times.errors|join:", " }}</span><br />
+   <br /><span class="form_error" role="alert">{{ form.viable_times.errors|join:", " }}</span><br />
 {% endif %}
 {{ form.viable_times }}
 
@@ -178,7 +178,7 @@ Resources Required (check all that apply):
 </label>
 <br />
 {% if form.resources.errors %}
-   <br /><span class="form_error">{{ form.resources.errors|join:", " }}</span><br />
+   <br /><span class="form_error" role="alert">{{ form.resources.errors|join:", " }}</span><br />
 {% endif %}
 {{ form.resources }}
 
@@ -190,7 +190,7 @@ Message for Director
 </label>
 <br />
 {% if form.message_for_directors.errors %}
-   <br /><span class="form_error">{{ form.message_for_directors.errors|join:", " }}</span><br />
+   <br /><span class="form_error" role="alert">{{ form.message_for_directors.errors|join:", " }}</span><br />
 {% endif %}
 {{ form.message_for_directors }}
 

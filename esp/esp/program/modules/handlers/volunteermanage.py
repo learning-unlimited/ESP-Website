@@ -208,7 +208,7 @@ class VolunteerManage(ProgramModuleObj):
             target_id = request.POST['user']
         else:
             context = {}
-            return HttpResponseRedirect( '/manage/%s/%s/volunteering' % (one, two) )
+            return HttpResponseRedirect( f'/manage/{one}/{two}/volunteering' )
 
         try:
             volunteer = ESPUser.objects.get(id=target_id)
