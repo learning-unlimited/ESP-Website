@@ -383,7 +383,6 @@ class ProfileEditorCapitalizationTest(TestCase):
 
     def setUp(self):
         # Create a CamelCase group like it exists in real DB
-        from django.contrib.auth.models import Group
         self.group = Group.objects.get_or_create(name='StudentRep')[0]
 
         # Create a test user

@@ -230,9 +230,9 @@ class LunchConstraint(BaseConstraint):
                 end_section = section.assigned_roomslots[-1].timeslot.end
                 if start_section <= start_lunch \
                         and end_section >= end_lunch:
-                            return ConstraintViolation(
-                                self.__class__.__name__,
-                                f"Section id {section.id} is scheduled over lunch")
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        f"Section id {section.id} is scheduled over lunch")
         return None
 
     def check_schedule_section(self, section, start_roomslot, schedule):
