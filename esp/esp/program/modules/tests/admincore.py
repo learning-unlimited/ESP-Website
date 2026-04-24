@@ -1,11 +1,9 @@
-from datetime import datetime
-
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, StudentRegistration, RegistrationProfile, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.handlers.admincore import EditPermissionForm, NewDeadlineForm, NewPermissionForm
+from esp.program.modules.handlers.admincore import EditPermissionForm, NewDeadlineForm
 
 
 class RegistrationTypeManagementTest(ProgramFrameworkTest):
