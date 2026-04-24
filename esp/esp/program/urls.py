@@ -12,6 +12,7 @@ urlpatterns = [
     re_path(r'^manage/submit_transaction/?$', views.submit_transaction, name='manage_submit_transaction'),
     re_path(r'^manage/pages/?$', views.manage_pages, name='manage_pages'),
     re_path(r'^manage/userview/?$', views.userview, name='manage_userview'),
+    re_path(r'^manage/userview_edit/?$', views.userview_edit, name='manage_userview_edit'),
     re_path(r'^manage/deactivate_user/?$', views.deactivate_user, name='manage_deactivate_user'),
     re_path(r'^manage/activate_user/?$', views.activate_user, name='manage_activate_user'),
     re_path(r'^manage/unenroll_student/?$', views.unenroll_student, name='manage_unenroll_student'),

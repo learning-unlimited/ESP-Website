@@ -1,3 +1,5 @@
+// Default to empty array if theme template did not define toolbarLinks
+if (typeof toolbarLinks === 'undefined') { var toolbarLinks = []; }
 ESP = (function () {
   var loaded = false;
   var queued_modules = [];
@@ -5,7 +7,7 @@ ESP = (function () {
 
   $j(document).ready(function () {
     loaded = true;
-    for (var i = 0; i < queued_modules.length; i++) {
+    for (var i = 0; i < queued_modules.length; i++) {        
       ESP.registerAdminModule(queued_modules[i]);
     }
   });
@@ -35,7 +37,6 @@ ESP = (function () {
           module_content.appendChild(document.getElementById(module.content_target));
         }
         module_wrap.appendChild(module_content);
-
         adminbar.appendChild(module_wrap);
       } else {
         queued_modules.push(module);
@@ -80,14 +81,32 @@ if (currentPrograms && currentPrograms.forEach) {
   });
 }
 
-ESP.registerAdminModule({
-  content_html: '<a href="/manage/programs/">Manage all programs</a><br/>' +
-    '<a href="/manage/pages">Manage static pages</a><br />' +
-    (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
-    '<a href="/manage/site_media/">Manage media files</a><br />' +
-    '<a href="/themes/">Manage theme settings</a><br />' +
-    '<a href="/manage/docs/">Website Documentation</a>',
-  name: 'Other',
-  displayName: 'Other Important Links'
-});
+(function() {
+    // Default hardcoded links -- never removed, only added to
+    var linksHtml = '<a href="/manage/programs/">Manage all programs</a><br/>' +
+                    '<a href="/manage/pages">Manage static pages</a><br />' +
+                    (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
+                    '<a href="/admin/filebrowser/browse/">Manage media files</a><br />' +
+                    '<a href="/themes/">Manage theme settings</a><br />' +
+                    '<a href="/manage/docs/">Website Documentation</a>';
 
+    // Append extra links configured in theme settings (never replaces defaults)
+   if (Array.isArray(toolbarLinks) && toolbarLinks.length > 0) {
+        toolbarLinks.forEach(function(link) {
+            // Only allow relative URLs and http/https to prevent javascript:/data: XSS
+            var url = link.link;
+            if (url && (url.indexOf('/') === 0 || url.indexOf('http://') === 0 || url.indexOf('https://') === 0)) {
+                var a = document.createElement('a');
+                a.href = url;
+                a.textContent = link.text;
+                linksHtml += '<br/>' + a.outerHTML;
+            }
+        });
+    }
+
+    ESP.registerAdminModule({
+        content_html: linksHtml,
+        name: 'Other',
+        displayName: 'Other Important Links'
+    });
+})();

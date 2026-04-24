@@ -2,6 +2,10 @@
 
 {% block title %}{{program.niceName}} Accounting{% endblock %}
 
+{% block xtrajs %}
+    <script src="https://cdn.learningu.org/highcharts/highcharts.js"></script>
+{% endblock %}
+
 {% block stylesheets %}
 {{ block.super }}
 <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
@@ -18,6 +22,54 @@ table {
 {% endblock %}
 
 {% block content %}
+
+<div style="margin-bottom: 20px; padding: 15px 20px; background: #f0f8ff; border-left: 4px solid #49afcd; border-radius: 4px; display:flex; justify-content: space-between;">
+    {# Admission Ticker #}
+    <div>
+        <h2 style="margin: 0 0 5px 0;">Admissions</h2>
+        <span style="margin: 0; font-size: 1.3em;">
+            <strong>${{ admission_total|floatformat:"2" }}</strong>
+            from <strong>{{ admission_count }}</strong> admission{{ admission_count|pluralize }}
+        </span>
+    </div>
+    {# Donation Ticker #}
+    <div>
+        <h2 style="margin: 0 0 5px 0;">Donations</h2>
+        <span style="margin: 0; font-size: 1.3em;">
+            <strong>${{ donation_total|floatformat:"2" }}</strong>
+            from <strong>{{ donation_count }}</strong> donation{{ donation_count|pluralize }}
+        </span>
+    </div>
+</div>
+{# Per-Program line graph #}
+{% if donation_graph_data or admission_graph_data %}
+    <div id="donation-chart" style="width:100%; height:400px;"></div>
+    <script>
+    $j(document).ready(function() {
+      const series = []
+      {% if donation_graph_data %}
+        series.push({
+          name: 'Donations',
+          step: 'left',
+          data: {{ donation_graph_data|safe }},
+        })
+      {% endif %}
+      {% if admission_graph_data %}
+        series.push({
+          name: 'Admissions',
+          step: 'left',
+          data: {{ admission_graph_data|safe }},
+        })
+      {% endif %}
+        Highcharts.chart('donation-chart', {
+            title: { text: 'Cumulative Admissions/Donations Over Time' },
+            xAxis: { type: 'datetime', minRange: 24*60*60*1000 },
+            yAxis: { title: { text: '$' }, min: 0 },
+            series,
+        });
+    });
+    </script>
+{% endif %}
 <h2>Accounting{% if target_user %} for {{ target_user.name }} ({{ target_user.username }} / {{ target_user.id }}){% endif %}{% if prog_results|length_is:"1" %} for {{ prog_results.0.program.niceName }}{% endif %}</h2>
 <div id="program_form">
 <form action="{% if program %}/manage/{{ program.getUrlBase }}/accounting{% else %}/accounting/user{% endif %}" id="accountingsearchform" name="accountingsearchform" method="POST">
@@ -48,7 +100,7 @@ table {
 {% if cc_enabled %}
     <div style="margin-bottom: 30px; padding: 15px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">
         <h3 style="margin-top: 0;">{{ program.niceName }} Revenue Summary</h3>
-        
+
         {% if not cc_totals %}
             <p>Summarize credit card payments for this program. This may take a moment to retrieve data from the provider.</p>
             <form action="{{ request.path }}" method="GET">
@@ -120,17 +172,17 @@ table {
                     var chapter_gross = parseFloat("{{ cc_totals.gross_amount|floatformat:'2' }}");
                     var chapter_fees = parseFloat("{{ cc_totals.cc_donation_fees|floatformat:'2' }}");
                     var initial_chapter = chapter_gross + chapter_fees;
-                    
+
                     document.getElementById('total_chapter').innerText = initial_chapter.toFixed(2);
 
                     var refunds = parseFloat("{{ cc_totals.refunded_amount|floatformat:'2' }}");
                     var fees = parseFloat("{{ cc_totals.total_stripe_fees|floatformat:'2' }}");
                     var gross_donations = parseFloat("{{ cc_totals.donation_amount|floatformat:'2' }}");
                     var additional = parseFloat(document.getElementById('additional_donation').value) || 0;
-                    
+
                     var initial_lu = refunds + fees + gross_donations + additional;
                     document.getElementById('total_lu').innerText = initial_lu.toFixed(2);
-                    
+
                     var net = initial_chapter - initial_lu;
                     if (net < 0) {
                         document.getElementById('net_chapter').innerText = net.toFixed(2);
