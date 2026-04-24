@@ -16,11 +16,11 @@
 {% for field in form.visible_fields %}
 
 <div class="control-group">
-  <label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+  <label class="control-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
   <div class="controls">
     {{ field }}
   {% if field.errors %}
-  <span class="help-inline">
+  <span class="help-inline" role="alert">
     {% for error in field.errors %}
     {{error}}
     {% endfor %}
