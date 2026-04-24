@@ -493,8 +493,12 @@ def find_user(userstr):
             formatted = "%s%s%s-%s%s%s-%s%s%s%s" % tuple(cleaned)
             user_q = user_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
         # Try name (including parent/emergency contact)
-        user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
-        user_q = user_q | (Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr))
+        # Skip name search for purely numeric strings: a number is an ID or phone,
+        # not a name, and including name-contains would cause spurious multi-user
+        # matches (e.g. a user whose first name contains the ID digits).
+        if not userstr.isnumeric():
+            user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
+            user_q = user_q | (Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr))
         found_users = ESPUser.objects.filter(user_q).distinct()
     else:
         q_list = []
