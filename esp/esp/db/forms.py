@@ -175,7 +175,6 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         # a ForeignKey subclass, some Django code
         # inserts limit_choices_to into the kwargs, causing
         # IntegerField to error when its __init__ is called
-        #Integerfield to error when its __init__ is called
         for arg in ['limit_choices_to', 'blank', 'null', 'db_index', 'unique']:
             if arg in kwargs:
                 del kwargs[arg]

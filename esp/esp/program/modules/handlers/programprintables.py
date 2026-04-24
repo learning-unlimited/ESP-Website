@@ -73,17 +73,19 @@ class ProgramPrintables(ProgramModuleObj):
     def get_onsite_student(request):
         """
         Extracts and validates 'userid' from request.GET for onsite printable/export views.
-        Returns the ESPUser object or raises an ESPError.
+        Returns the ESPUser object or an HttpResponse with a 4xx error.
+        Returns HttpResponse on invalid input so callers can return it directly.
         """
+        from django.http import HttpResponseBadRequest, HttpResponseNotFound
         user_id = request.GET.get('userid')
         if not user_id:
-            raise ESPError("Missing userid parameter")
+            return HttpResponseBadRequest("Missing userid parameter")
         try:
             return ESPUser.objects.get(id=int(user_id))
         except ESPUser.DoesNotExist:
-            raise ESPError("User not found with the provided userid")
+            return HttpResponseNotFound("User not found with the provided userid")
         except (ValueError, TypeError):
-            raise ESPError("Invalid userid format")
+            return HttpResponseBadRequest("Invalid userid format")
 
     doc = """A wide variety of printable documents that are useful for a program."""
 
@@ -1188,11 +1190,14 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'studentschedule.html', request, context)
 
     @aux_call
-    @needs_onsite
+    @needs_admin
     def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
         onsite = (tl == 'onsite')
         if onsite:
-            students = [ProgramPrintables.get_onsite_student(request)]
+            result = ProgramPrintables.get_onsite_student(request)
+            if isinstance(result, HttpResponse):
+                return result
+            students = [result]
         else:
             filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Student Financial Spreadsheet'})
 
@@ -1201,14 +1206,17 @@ class ProgramPrintables(ProgramModuleObj):
 
             students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
-        from django.http import HttpResponse
+        return ProgramPrintables.generate_financial_spreadsheet(self.program, students)
+
+    @staticmethod
+    def generate_financial_spreadsheet(program, students):
+        """Generate the financial spreadsheet CSV for the given students."""
         response = HttpResponse(content_type='text/csv')
         writer = csv.writer(response)
         writer.writerow(('Control ID', 'Student ID', 'Last name', 'First name', 'Total cost', 'Finaid grant', 'Amount paid', 'Amount owed'))
         for student in students:
-            iac = IndividualAccountingController(self.program, student)
+            iac = IndividualAccountingController(program, student)
             writer.writerow((iac.get_id(), student.id, student.last_name.encode('ascii', 'replace'), student.first_name.encode('ascii', 'replace'), '%.2f' % iac.amount_requested(), '%.2f' % iac.amount_finaid(), '%.2f' % iac.amount_paid(), '%.2f' % iac.amount_due()))
-
         return response
 
     @aux_call
@@ -1244,7 +1252,10 @@ class ProgramPrintables(ProgramModuleObj):
         onsite = (tl == 'onsite')
 
         if onsite:
-            students = [ProgramPrintables.get_onsite_student(request)]
+            result = ProgramPrintables.get_onsite_student(request)
+            if isinstance(result, HttpResponse):
+                return result
+            students = [result]
         else:
             if extra:
                 file_type = extra.strip()

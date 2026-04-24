@@ -266,21 +266,24 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
     def test_studentschedules_invalid_userid(self):
-        """Test studentschedules returns error when userid is invalid (non-numeric)"""
+        """Test studentschedules returns 400 when userid is invalid (non-numeric)"""
         self._login_admin()
         response = self.client.get('/onsite/%s/studentschedules?userid=invalid' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 400)
         self.assertIn(b'Invalid userid format', response.content)
 
     def test_studentschedules_nonexistent_userid(self):
-        """Test studentschedules returns error when userid does not exist"""
+        """Test studentschedules returns 404 when userid does not exist"""
         self._login_admin()
         response = self.client.get('/onsite/%s/studentschedules?userid=99999' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 404)
         self.assertIn(b'User not found with the provided userid', response.content)
 
     def test_studentschedules_missing_userid(self):
-        """Test studentschedules returns error when userid is missing"""
+        """Test studentschedules returns 400 when userid is missing"""
         self._login_admin()
         response = self.client.get('/onsite/%s/studentschedules' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 400)
         self.assertIn(b'Missing userid parameter', response.content)
 
     def test_studentschedules_onsite_success(self):
@@ -293,21 +296,24 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
         self.assertNotEqual(response.status_code, 404)
 
     def test_student_financial_spreadsheet_invalid_userid(self):
-        """Test student_financial_spreadsheet returns error when userid is invalid (non-numeric)"""
+        """Test student_financial_spreadsheet returns 400 when userid is invalid (non-numeric)"""
         self._login_admin()
         response = self.client.get('/onsite/%s/student_financial_spreadsheet?userid=invalid' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 400)
         self.assertIn(b'Invalid userid format', response.content)
 
     def test_student_financial_spreadsheet_nonexistent_userid(self):
-        """Test student_financial_spreadsheet returns error when userid does not exist"""
+        """Test student_financial_spreadsheet returns 404 when userid does not exist"""
         self._login_admin()
         response = self.client.get('/onsite/%s/student_financial_spreadsheet?userid=99999' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 404)
         self.assertIn(b'User not found with the provided userid', response.content)
 
     def test_student_financial_spreadsheet_missing_userid(self):
-        """Test student_financial_spreadsheet returns error when userid is missing"""
+        """Test student_financial_spreadsheet returns 400 when userid is missing"""
         self._login_admin()
         response = self.client.get('/onsite/%s/student_financial_spreadsheet' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 400)
         self.assertIn(b'Missing userid parameter', response.content)
 
     def test_student_financial_spreadsheet_onsite_success(self):
