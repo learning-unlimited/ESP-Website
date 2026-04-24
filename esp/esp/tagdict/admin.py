@@ -9,7 +9,7 @@ class TagAdmin(admin.ModelAdmin):
 
     class Media:
         css = {
-        'all': ('admin/css/tag_fix.css',)
+            'all': ('admin/css/tag_fix.css',)
         }
 
 

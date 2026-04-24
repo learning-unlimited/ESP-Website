@@ -1,9 +1,3 @@
-/* Prevent horizontal scroll */
-html,
-body {
-  overflow-x: hidden;
-}
-
 /* HEADER FIX */
 #header {
   display: block !important;
@@ -37,7 +31,8 @@ body {
 
 /* Links */
 .messagelist a {
-  word-break: break-all;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /* Delete page */
