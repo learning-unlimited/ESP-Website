@@ -62,7 +62,7 @@ class TeacherEventsModule(ProgramModuleObj):
         # Explicit auth check: return JSON errors instead of HTML redirects
         if not user.is_authenticated:
             return JsonResponse({'error': 'Authentication required'}, status=401)
-        if not user.isTeacher(prog):
+        if not user.isTeacher() and not user.isAdmin(prog):
             return JsonResponse({'error': 'Teacher access required'}, status=403)
 
         data = []
