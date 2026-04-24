@@ -33,15 +33,18 @@ Learning Unlimited, Inc.
 """
 
 from unittest.mock import patch
+import pickle
 
 from django.contrib.auth.models import Group
 from django.core import mail
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
-from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, send_mail
+from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, send_mail, MessageVars
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser, PersistentQueryFilter
+from esp.middleware import ESPError
+from esp.utils.pickle_signing import sign_data, verify_and_deserialize
 
 
 def _setup_roles():
@@ -419,14 +422,29 @@ class MessageRequestAdminTest(TestCase):
         self.assertIsNotNone(mr)
 
 
+class DummyProvider:
+    """Simple test provider that implements get_msg_vars."""
+
+    def get_msg_vars(self, user, key):
+        """Return test values for message variables."""
+        return {
+            'test_key': 'test_value',
+            'user_name': user.username if user else 'anonymous'
+        }.get(key, 'default_value')
+
+
+class MaliciousProvider:
+    """Malicious provider for testing tamper detection."""
+
+    def get_msg_vars(self, user, key):
+        """Return malicious values."""
+        return 'HACKED_{}'.format(key)
+
+
 class MessageVarsSecurityTest(TestCase):
     """Test cases for MessageVars signature verification security."""
 
     def setUp(self):
-        from esp.dbmail.models import MessageVars, MessageRequest
-        from esp.users.models import ESPUser
-        from django.contrib.auth.models import Group
-
         _setup_roles()
 
         # Create test user
@@ -450,8 +468,6 @@ class MessageVarsSecurityTest(TestCase):
 
     def test_signed_message_vars_works(self):
         """Test that properly signed MessageVars work correctly."""
-        from esp.dbmail.models import MessageVars
-
         # Create a signed MessageVars
         msgvar = MessageVars.createVar(self.msgrequest, 'test_provider', self.test_provider)
 
@@ -468,10 +484,6 @@ class MessageVarsSecurityTest(TestCase):
 
     def test_unsigned_message_vars_rejected(self):
         """Test that unsigned MessageVars are rejected with ESPError."""
-        from esp.dbmail.models import MessageVars
-        from esp.middleware import ESPError
-        import pickle
-
         # Create MessageVars manually without signature
         msgvar = MessageVars()
         msgvar.messagerequest = self.msgrequest
@@ -494,13 +506,8 @@ class MessageVarsSecurityTest(TestCase):
 
     def test_tampered_message_vars_rejected(self):
         """Test that tampered MessageVars are rejected."""
-        from esp.dbmail.models import MessageVars
-        from esp.middleware import ESPError
-        import pickle
-
         # Create a properly signed MessageVars
         msgvar = MessageVars.createVar(self.msgrequest, 'test_provider', self.test_provider)
-        original_signature = msgvar.signature
 
         # Tamper with the data but keep original signature
         malicious_provider = MaliciousProvider()
@@ -516,9 +523,6 @@ class MessageVarsSecurityTest(TestCase):
 
     def test_corrupted_signature_rejected(self):
         """Test that corrupted signatures are properly rejected."""
-        from esp.dbmail.models import MessageVars
-        from esp.middleware import ESPError
-
         # Create a properly signed MessageVars
         msgvar = MessageVars.createVar(self.msgrequest, 'test_provider', self.test_provider)
 
@@ -531,23 +535,4 @@ class MessageVarsSecurityTest(TestCase):
             msgvar.getDict(self.user)
 
         self.assertIn('Could not load variable provider object', str(cm.exception))
-
-
-class DummyProvider:
-    """Simple test provider that implements get_msg_vars."""
-
-    def get_msg_vars(self, user, key):
-        """Return test values for message variables."""
-        return {
-            'test_key': 'test_value',
-            'user_name': user.username if user else 'anonymous'
-        }.get(key, 'default_value')
-
-
-class MaliciousProvider:
-    """Malicious provider for testing tamper detection."""
-
-    def get_msg_vars(self, user, key):
-        """Return malicious values."""
-        return f'HACKED_{key}'
         self.assertIsNone(mr.processed_by)

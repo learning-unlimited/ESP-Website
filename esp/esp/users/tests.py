@@ -1,5 +1,6 @@
 import datetime
 import json
+import pickle
 
 from django import forms
 from django.core import mail
@@ -9,6 +10,7 @@ from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
 from django.utils.functional import SimpleLazyObject
+from django.db.models import Q
 
 from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program
@@ -17,7 +19,8 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
+from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType, PersistentQueryFilter
+from esp.utils.pickle_signing import sign_data, verify_and_deserialize
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -1111,17 +1114,12 @@ class PersistentQueryFilterSecurityTest(TestCase):
     """Test cases for PersistentQueryFilter signature verification security."""
 
     def setUp(self):
-        from django.db.models import Q
-        from esp.users.models import PersistentQueryFilter
-
         # Create test data
         self.test_q = Q(username__startswith='test')
         self.item_model = 'esp.users.models.ESPUser'
 
     def test_signed_query_filter_works(self):
         """Test that properly signed query filters work correctly."""
-        from esp.users.models import PersistentQueryFilter
-
         # Create a signed filter
         pqf = PersistentQueryFilter.create_from_Q(self.item_model, self.test_q, 'Test filter')
 
@@ -1134,10 +1132,6 @@ class PersistentQueryFilterSecurityTest(TestCase):
 
     def test_unsigned_query_filter_rejected(self):
         """Test that unsigned query filters are rejected with ESPError."""
-        from esp.users.models import PersistentQueryFilter
-        from esp.middleware import ESPError
-        import pickle
-
         # Create filter manually without signature
         pqf = PersistentQueryFilter()
         pqf.item_model = self.item_model
@@ -1153,14 +1147,8 @@ class PersistentQueryFilterSecurityTest(TestCase):
 
     def test_tampered_query_filter_rejected(self):
         """Test that tampered query filters are rejected."""
-        from django.db.models import Q
-        from esp.users.models import PersistentQueryFilter
-        from esp.middleware import ESPError
-        import pickle
-
         # Create a properly signed filter
         pqf = PersistentQueryFilter.create_from_Q(self.item_model, self.test_q, 'Test filter')
-        original_signature = pqf.signature
 
         # Tamper with the data but keep original signature
         tampered_q = Q(username__startswith='hacker')
@@ -1176,9 +1164,6 @@ class PersistentQueryFilterSecurityTest(TestCase):
 
     def test_corrupted_signature_rejected(self):
         """Test that corrupted signatures are properly rejected."""
-        from esp.users.models import PersistentQueryFilter
-        from esp.middleware import ESPError
-
         # Create a properly signed filter
         pqf = PersistentQueryFilter.create_from_Q(self.item_model, self.test_q, 'Test filter')
 
@@ -1194,9 +1179,6 @@ class PersistentQueryFilterSecurityTest(TestCase):
 
     def test_set_q_creates_valid_signature(self):
         """Test that set_Q creates a valid signature that can be verified."""
-        from django.db.models import Q
-        from esp.users.models import PersistentQueryFilter
-
         # Create filter and use set_Q
         pqf = PersistentQueryFilter()
         new_q = Q(email__contains='@example.com')
