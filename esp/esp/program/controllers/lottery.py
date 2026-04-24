@@ -458,6 +458,144 @@ class LotteryAssignmentController(object):
 
         return section_filled
 
+    def assign_lunches(self):
+        """
+        Assign students to lunch sections after main lottery assignment.
+        For students with multiple lunch blocks free, assign to the lunch
+        block with the fewest current enrollments to balance sections.
+        Respects section capacity limits. Only runs for days with at least
+        2 lunch timeslots (the existing lunch-constraint logic requires at
+        least one lunch timeslot to remain free per day).
+        """
+
+        # Get all lunch sections for this program
+        lunch_sections = ClassSection.objects.filter(
+            parent_class__parent_program=self.program,
+            parent_class__category__category='Lunch',
+            meeting_times__isnull=False,
+            status__gt=0,
+            registration_status=0
+        ).prefetch_related('meeting_times')
+
+        if not lunch_sections.exists():
+            if self.options['stats_display']:
+                logger.info('   No lunch sections found, skipping lunch assignment')
+            return
+
+        # Build mapping of lunch sections by timeblock
+        lunch_by_timeblock = {}
+        for lunch_section in lunch_sections:
+            for timeblock in lunch_section.meeting_times.all():
+                lunch_by_timeblock[timeblock.id] = lunch_section.id
+
+        # Get section indices for lunch sections
+        # self.section_indices and self.timeslot_indices are numpy arrays
+        # mapping object IDs to indices (or -1 if not present), so we must
+        # look up the index and ensure it is valid instead of using `in`.
+        lunch_section_indices = {}
+        for ts_id, sec_id in lunch_by_timeblock.items():
+            sec_index = self.section_indices[sec_id]
+            if sec_index >= 0:
+                ts_index = self.timeslot_indices[ts_id]
+                if ts_index >= 0:
+                    lunch_section_indices[ts_index] = sec_index
+
+        # Precompute current enrollment counts for all lunch sections (O(1) lookup/update)
+        lunch_enrollment = {}
+        for ts_index, sec_index in lunch_section_indices.items():
+            lunch_enrollment[sec_index] = int(numpy.sum(self.student_sections[:, sec_index]))
+
+        # Track assignments for logging
+        total_assignments = 0
+
+        # For each day, assign students to lunches
+        for day_index in range(self.lunch_timeslots.shape[0]):
+            day_lunch_count = len(self.lunch_timeslots[day_index])
+            if day_lunch_count == 0:
+                continue
+
+            # The existing lunch-constraint logic requires at least one lunch
+            # timeslot per day to remain free. With only one lunch timeslot,
+            # assigning a student to lunch would make them occupied for every
+            # lunch period that day and cause check_assignments() to fail.
+            if day_lunch_count < 2:
+                if self.options['stats_display']:
+                    logger.info(
+                        '   Skipping lunch assignment for day %d: only %d lunch timeslot',
+                        day_index, day_lunch_count
+                    )
+                continue
+
+            # Get timeslot indices for this day's lunches
+            # Use timeslot_indices[ts_id] >= 0 check (not `in`) since
+            # timeslot_indices is a numpy array indexed by ID value.
+            day_lunch_timeslots = []
+            for ts_id in self.lunch_timeslots[day_index]:
+                ts_index = self.timeslot_indices[ts_id]
+                if ts_index >= 0:
+                    day_lunch_timeslots.append(ts_index)
+
+            if not day_lunch_timeslots:
+                continue
+
+            # Shuffle student order to avoid bias from iteration order
+            student_order = list(range(self.num_students))
+            numpy.random.shuffle(student_order)
+
+            # For each student
+            for student_index in student_order:
+                # Check if student already has a lunch this day
+                has_lunch = False
+                for ts_index in day_lunch_timeslots:
+                    if ts_index in lunch_section_indices:
+                        sec_index = lunch_section_indices[ts_index]
+                        if self.student_sections[student_index, sec_index]:
+                            has_lunch = True
+                            break
+
+                if has_lunch:
+                    continue
+
+                # Find available lunch blocks for this student
+                # A block is available if: student is free AND section has capacity
+                available_lunches = []
+                for ts_index in day_lunch_timeslots:
+                    # Check if student is free during this lunch block
+                    if not self.student_schedules[student_index, ts_index]:
+                        if ts_index in lunch_section_indices:
+                            sec_index = lunch_section_indices[ts_index]
+                            # Check section capacity — match existing lottery semantics:
+                            # capacity == 0 means no seats (not unlimited)
+                            if lunch_enrollment[sec_index] < self.section_capacities[sec_index]:
+                                available_lunches.append(ts_index)
+
+                if not available_lunches:
+                    # Student has no lunch blocks free (shouldn't happen)
+                    if self.options['stats_display']:
+                        logger.warning('   Student %d has no lunch blocks free on day %d',
+                                     self.student_ids[student_index], day_index)
+                    continue
+
+                # Choose the lunch block with the fewest current enrollments to
+                # balance students across sections. Break ties randomly by
+                # shuffling candidates with equal enrollment.
+                min_enrollment = min(lunch_enrollment[lunch_section_indices[ts]] for ts in available_lunches)
+                tied = [ts for ts in available_lunches
+                        if lunch_enrollment[lunch_section_indices[ts]] == min_enrollment]
+                chosen_lunch_ts = numpy.random.choice(tied)
+                chosen_lunch_sec = lunch_section_indices[chosen_lunch_ts]
+
+                # Assign student to this lunch section
+                self.student_sections[student_index, chosen_lunch_sec] = True
+                self.student_schedules[student_index, chosen_lunch_ts] = True
+                self.student_enrollments[student_index, chosen_lunch_ts] = self.section_ids[chosen_lunch_sec]
+                # Update precomputed enrollment count (O(1))
+                lunch_enrollment[chosen_lunch_sec] += 1
+                total_assignments += 1
+
+        if self.options['stats_display']:
+            logger.info('   Assigned %d lunch blocks to students', total_assignments)
+
     def compute_assignments(self, check_result=True):
         """ Figure out what students should be assigned to what sections.
             Doesn't actually store results in the database.
@@ -491,6 +629,11 @@ class LotteryAssignmentController(object):
                             f' with rank {rank}' if self.options['use_student_apps'] else '')
             for section_index in sorted_section_indices:
                 self.fill_section(section_index, priority=False, rank=rank)
+
+        # Assign lunch blocks after all class assignments
+        if self.options['stats_display']:
+            logger.info('\n== Assigning lunch blocks')
+        self.assign_lunches()
 
         if check_result:
             self.check_assignments()
