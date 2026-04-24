@@ -334,7 +334,16 @@ class OnSiteClassList(ProgramModuleObj):
 
         try:
             user = int(request.GET.get('user', None))
+        except (TypeError, ValueError):
+            result['message'] = "Invalid user ID: %r is not an integer." % request.GET.get('user', None)
+            json.dump(result, resp)
+            return resp
+        try:
             user_obj = ESPUser.objects.get(id=user)
+        except ESPUser.DoesNotExist:
+            result['message'] = "Could not find user %s." % user
+            json.dump(result, resp)
+            return resp
         except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
             resp.status_code = 400
             result['message'] = f"Could not find user {request.GET.get('user', None)}."
