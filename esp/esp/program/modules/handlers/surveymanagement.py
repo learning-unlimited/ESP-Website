@@ -37,9 +37,12 @@ from esp.program.models import ClassSubject, ClassSection
 from esp.utils.web import render_to_response
 from esp.survey.models  import QuestionType, Question, Survey
 from esp.survey.views   import survey_review, survey_graphical, survey_review_single, top_classes, survey_dump
-from esp.program.modules.forms.surveys import SurveyForm, QuestionForm, SurveyImportForm
+from esp.program.modules.forms.surveys import SurveyForm, QuestionForm, SurveyImportForm, CSVQuestionImportForm, parse_csv
 
+import csv
 import json
+
+from django.http import HttpResponse
 
 class SurveyManagement(ProgramModuleObj):
     doc = """Manage the post-program/class surveys that are served to students/teachers during registration."""
@@ -55,7 +58,7 @@ class SurveyManagement(ProgramModuleObj):
             }
 
     @needs_admin
-    def survey_manage(self, request, tl, one, two, module, extra, prog):
+    def survey_manage(self, request, tl, one, two, module, extra, prog, extra_context=None):
         context = {'program': prog}
         # Make some dummy data for survey questions that need it
         classes = [ClassSubject(id = i, title="Test %s" %i, parent_program = prog, category = prog.class_categories.all()[0],
@@ -157,6 +160,8 @@ class SurveyManagement(ProgramModuleObj):
             context['question_form'] = QuestionForm(cur_prog = prog)
         if 'import_survey_form' not in context:
             context['import_survey_form'] = SurveyImportForm(cur_prog = prog)
+        if 'csv_import_form' not in context:
+            context['csv_import_form'] = CSVQuestionImportForm(cur_prog = prog)
         context['surveys'] = Survey.objects.filter(program = prog)
         context['questions'] = Question.objects.filter(survey__program = prog).order_by('survey__category', 'survey', 'per_class', 'seq')
 
@@ -186,6 +191,121 @@ class SurveyManagement(ProgramModuleObj):
             return survey_review_single(request, tl, one, two)
         elif extra == 'top_classes':
             return top_classes(request, tl, one, two)
+        elif extra == 'csv_template':
+            return self.csv_template_download(request, tl, one, two, module, extra, prog)
+        elif extra == 'csv_import':
+            return self.csv_import(request, tl, one, two, module, extra, prog)
+
+    @needs_admin
+    def csv_template_download(self, request, tl, one, two, module, extra, prog):
+        """Generate and return a CSV template file with headers and example rows."""
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="survey_questions_template.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(['question_text', 'question_type', 'per_class', 'seq', 'param_values'])
+
+        # Add example rows using actual QuestionType names from the database
+        question_types = list(QuestionType.objects.values_list('name', flat=True)[:3])
+        examples = [
+            ('How would you rate this program?', question_types[0] if len(question_types) > 0 else 'yes-no response', 'false', '1', ''),
+            ('Rate your class experience', question_types[1] if len(question_types) > 1 else 'numeric rating', 'true', '2', '5|Low|Medium|High'),
+            ('Any additional comments?', question_types[0] if len(question_types) > 0 else 'yes-no response', 'false', '3', ''),
+        ]
+        for example in examples:
+            writer.writerow(example)
+
+        return response
+
+    @needs_admin
+    def csv_import(self, request, tl, one, two, module, extra, prog):
+        """Handle CSV file upload, preview, and import of survey questions."""
+        context = {'program': prog}
+
+        if request.method == 'POST' and 'import_confirm' in request.POST:
+            # Step 2: Confirmed import — create Question objects
+            survey_id_raw = request.POST.get('survey_id')
+            try:
+                survey_id = int(survey_id_raw)
+            except (TypeError, ValueError):
+                from esp.middleware import ESPError
+                raise ESPError('Invalid survey selection for import.', log=False)
+
+            try:
+                survey = Survey.objects.get(id=survey_id, program=prog)
+            except Survey.DoesNotExist:
+                from esp.middleware import ESPError
+                raise ESPError('Selected survey does not exist for this program.', log=False)
+
+            imported_count = 0
+            rows_data = request.POST.getlist('row_data')
+
+            try:
+                for row_json in rows_data:
+                    row = json.loads(row_json)
+                    try:
+                        question_type = QuestionType.objects.get(id=row['question_type_id'])
+                    except QuestionType.DoesNotExist:
+                        continue
+                    Question.objects.create(
+                        survey=survey,
+                        name=row['question_text'],
+                        question_type=question_type,
+                        _param_values=row.get('param_values', ''),
+                        per_class=row['per_class'],
+                        seq=row['seq'],
+                    )
+                    imported_count += 1
+
+            except (ValueError, KeyError, json.JSONDecodeError):
+                from esp.middleware import ESPError
+                raise ESPError('There was a problem with the submitted import data. Please restart the CSV import process.', log=False)
+
+            context['imported_count'] = imported_count
+            context['survey'] = survey
+            return render_to_response('program/modules/surveymanagement/csv_import_done.html', request, context)
+
+        elif request.method == 'POST':
+            # Step 1: Parse and validate CSV, show preview
+            form = CSVQuestionImportForm(request.POST, request.FILES, cur_prog=prog)
+            if form.is_valid():
+                csv_file = form.cleaned_data['csv_file']
+                survey = form.cleaned_data['survey']
+                parsed_rows, errors = parse_csv(csv_file)
+
+                # Prepare row data for the confirmation form
+                rows_for_template = []
+                for row in parsed_rows:
+                    row_data = {
+                        'question_text': row['question_text'],
+                        'question_type_id': row['question_type'].id,
+                        'per_class': row['per_class'],
+                        'seq': row['seq'],
+                        'param_values': row['param_values'],
+                    }
+                    rows_for_template.append({
+                        'question_text': row['question_text'],
+                        'question_type_name': row['question_type'].name,
+                        'question_type_id': row['question_type'].id,
+                        'per_class': row['per_class'],
+                        'seq': row['seq'],
+                        'param_values': row['param_values'],
+                        'row_number': row['row_number'],
+                        'json_data': json.dumps(row_data),
+                    })
+
+                context.update({
+                    'parsed_rows': rows_for_template,
+                    'errors': errors,
+                    'survey': survey,
+                    'csv_import_form': form,
+                })
+                return render_to_response('program/modules/surveymanagement/csv_import.html', request, context)
+            else:
+                # Form is invalid: preserve the bound form so errors are displayed
+                return self.survey_manage(request, tl, one, two, module, 'manage', prog, extra_context={'csv_import_form': form})
+        else:
+            return self.survey_manage(request, tl, one, two, module, 'manage', prog)
 
     def isStep(self):
         return False
@@ -193,3 +313,4 @@ class SurveyManagement(ProgramModuleObj):
     class Meta:
         proxy = True
         app_label = 'modules'
+
