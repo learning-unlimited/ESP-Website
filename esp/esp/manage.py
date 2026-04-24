@@ -1,1 +1,1 @@
-../manage.py
+manage.py
