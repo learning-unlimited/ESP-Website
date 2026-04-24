@@ -149,9 +149,11 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
                             option = options_form.save(commit=False)
                             option.lineitem_type = lineitem
                             option.save()
+                else:
+                    context['lineitem_form'] = lineitem_form
+                    context['option_formset'] = options_formset
             else:
-                context['lineitem_form'] = lineitem_form
-                context['option_formset'] = options_formset
+                raise ESPError("Invalid command.")
         if 'lineitem_form' not in context:
             context['lineitem_form'] = LineItemForm()
         if 'option_formset' not in context:
