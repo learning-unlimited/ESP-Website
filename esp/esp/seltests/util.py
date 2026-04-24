@@ -20,12 +20,9 @@ def try_login(selenium, username, password):
 
 def try_normal_login(selenium, live_server_url, username, password):
     try_login(selenium, username, password)
-
-    def login_completed(driver):
-        cookie = driver.get_cookie('cur_username')
-        return cookie and cookie.get('value') == username
-
-    WebDriverWait(selenium, 10).until(login_completed)
+    WebDriverWait(selenium, 10).until(
+        EC.visibility_of_element_located((By.CLASS_NAME, "logged_in"))
+    )
     selenium.get('%s%s' % (live_server_url, "/"))
 
 
