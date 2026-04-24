@@ -2129,7 +2129,11 @@ class K12School(models.Model):
     school_id   = models.CharField(max_length=128, blank=True, null=True,
         help_text='An 8-digit ID number.')
     contact_title = models.TextField(blank=True, null=True)
-    name          = models.TextField(blank=True, null=True)
+    name          = models.TextField(blank=True, null=True, db_index=True)
+    state         = models.CharField(max_length=2, blank=True, null=True, db_index=True,
+        help_text='Two-letter state code (e.g. MA). Used for filtering and NCES import.')
+    city          = models.CharField(max_length=128, blank=True, null=True, db_index=True,
+        help_text='City. Used for display and filtering.')
 
     objects = K12SchoolManager()
 
@@ -2137,20 +2141,44 @@ class K12School(models.Model):
         app_label = 'users'
         db_table = 'users_k12school'
 
+    # Minimum characters before running server-side search (avoids heavy queries on 50k+ rows)
+    AJAX_AUTOCOMPLETE_MIN_QUERY_LENGTH = 2
+    AJAX_AUTOCOMPLETE_MAX_RESULTS = 25
+
     @classmethod
-    def ajax_autocomplete(cls, data, allow_non_staff=True, **kwargs):
-        name = data.strip()
-        query_set = cls.objects.filter(name__icontains = name)
-        values = query_set.order_by('name', 'id').values('name', 'id')
+    def ajax_autocomplete(cls, data, allow_non_staff=True, request=None, **kwargs):
+        """
+        Server-side autocomplete for K12 schools. Requires a minimum query length
+        and limits results for performance with large datasets (e.g. NCES import).
+        Optionally narrow by state via request GET param 'state' (2-letter code).
+        """
+        name = (data or '').strip()
+        if len(name) < cls.AJAX_AUTOCOMPLETE_MIN_QUERY_LENGTH:
+            return []
+        # Use istartswith for case-insensitive prefix matching in autocomplete results
+        query_set = cls.objects.filter(name__istartswith=name)
+        # Optional state filter: only when request is passed and state is provided
+        if request is not None:
+            state = request.GET.get('state') or ''
+            state = (state.strip().upper())[:2]
+            if state:
+                query_set = query_set.filter(state__iexact=state)
+        query_set = query_set.order_by('name', 'id')[:cls.AJAX_AUTOCOMPLETE_MAX_RESULTS]
+        values = list(query_set.values('name', 'id', 'city', 'state'))
         for value in values:
-            value['ajax_str'] = f'{value["name"]}'
+            # Show "School Name (City, ST)" when we have location
+            if value.get('city') and value.get('state'):
+                value['ajax_str'] = f'{value["name"]} ({value["city"]}, {value["state"]})'
+            else:
+                value['ajax_str'] = f'{value["name"]}'
         return values
 
     def __str__(self):
         if self.contact_id and self.contact.address_city and self.contact.address_state:
             return f'{self.name} in {self.contact.address_city}, {self.contact.address_state}'
-        else:
-            return f'{self.name}'
+        if self.city and self.state:
+            return f'{self.name} in {self.city}, {self.state}'
+        return f'{self.name or ""}'
 
     @classmethod
     def choicelist(cls, other_help_text=''):
