@@ -1,23 +1,104 @@
-[![Lint and Unit Tests](https://github.com/learning-unlimited/ESP-Website/actions/workflows/tests.yml/badge.svg)](https://github.com/learning-unlimited/ESP-Website/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/gh/learning-unlimited/ESP-Website/branch/main/graph/badge.svg?token=eY0C5a1Lju)](https://codecov.io/gh/learning-unlimited/ESP-Website)
+[![License](https://img.shields.io/github/license/learning-unlimited/ESP-Website)](./LICENSE)
+[![Python](https://img.shields.io/badge/Python-Django%20app-3776AB?logo=python&logoColor=white)](#development)
+[![Docker](https://img.shields.io/badge/Docker-dev%20setup-2496ED?logo=docker&logoColor=white)](#quick-start)
 
 # ESP Website
 
-This repository contains a website to help manage the logistics of preparing for and running large, short-term educational programs. It is written and maintained by members and alums of the interscholastic Splash community and [Learning Unlimited](https://learningu.org). Documentation for [program administrators](/docs/admin) and [developers](/docs/dev) is in the [`docs`](/docs) directory, including [dev setup documentation](/docs/dev/docker.rst) and [instructions for contributors](/docs/dev/contributing.rst). Additional documentation for chapters of Learning Unlimited is on the [LU Wiki](https://wiki.learningu.org).
+ESP Website is the platform that Learning Unlimited chapters use to run short-term educational programs. It helps organizers manage program logistics, admissions, classes, scheduling, and the chapter website from one codebase.
 
-## Quick Start (Docker)
+It is maintained by members and alumni of the Splash community and Learning Unlimited.
 
-The fastest way to get a local development server running:
+## Table of Contents
+- [What this project is for](#what-this-project-is-for)
+- [Quick start](#quick-start)
+- [Common development tasks](#common-development-tasks)
+- [Project layout](#project-layout)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
 
+## What this project is for
+
+Use ESP Website when you need to run programs such as Splash-style events and want a self-hosted system for:
+
+- chapter and program administration
+- student and teacher flows
+- registration and scheduling
+- theme and content customization
+- ongoing site operations
+
+## Quick start
+
+The fastest local setup uses Docker.
+
+### Prerequisites
+- Docker Desktop, or Docker Engine + Docker Compose plugin
+- Git
+
+### Run locally
 ```bash
 git clone https://github.com/learning-unlimited/ESP-Website.git devsite
 cd devsite
 docker compose up --build
 ```
 
-Then visit http://localhost:8000. See the [Docker setup guide](/docs/dev/docker.rst) for full details.
+Then open <http://localhost:8000>.
 
+To create an admin user:
+```bash
+docker compose exec web python esp/manage.py createsuperuser
+```
 
-## Looking to contribute?
+## Common development tasks
 
-[Check out our wiki for details](https://github.com/learning-unlimited/ESP-Website/wiki#i-want-to-get-involved). We also have a strict [code of conduct](https://github.com/learning-unlimited/ESP-Website?tab=coc-ov-file).
+### Run tests
+```bash
+docker compose exec web python esp/manage.py test
+```
+
+### Open a Django shell
+```bash
+docker compose exec web python esp/manage.py shell_plus
+```
+
+### Seed demo data
+```bash
+docker compose exec web python esp/manage.py seed_dummy_data
+```
+
+### Rebuild after dependency changes
+```bash
+docker compose down
+docker compose up --build
+```
+
+## Project layout
+
+```text
+esp/          Main Django application and project code
+docs/         Admin and developer documentation
+docker/       Docker-related configuration
+Dockerfile    Container image for local development
+```
+
+## Documentation
+
+- Admin and developer docs: [`docs/`](./docs)
+- Docker setup: [`docs/dev/docker.rst`](./docs/dev/docker.rst)
+- Contributing guide: [`docs/dev/contributing.rst`](./docs/dev/contributing.rst)
+- Customization guide: [`docs/customizing.rst`](./docs/customizing.rst)
+- Learning Unlimited wiki: <https://wiki.learningu.org>
+
+## Contributing
+
+Contributions are welcome. A typical flow is:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make and test your changes
+4. Open a pull request
+
+If you are new to the codebase, starting with the Docker workflow and reading the docs in `docs/dev/` is the easiest path.
+
+## License
+
+This project is released under the license in [`LICENSE`](./LICENSE).
