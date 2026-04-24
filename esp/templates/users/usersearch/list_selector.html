@@ -30,6 +30,13 @@ $j(document).ready(function() {
 {% endfor %}{% endfor %}
 </div>
 
+{% if error %}
+<div class="alert alert-danger" id="form-error-message">
+    <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+    <strong>Error:</strong> {{ error }}
+</div>
+{% endif %}
+
 <div id="tabs">
     <ul>
         <li><a id="tab_select_basic" href="#tab_basic">Basic list</a></li>
