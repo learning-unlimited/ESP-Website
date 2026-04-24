@@ -180,6 +180,49 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     };
 
     /**
+     * Get sections scheduled in the same classroom as the given section that
+     * can be swapped with it. A swap is eligible when:
+     *   1. All teachers of `section` are available during `other`'s timeslots.
+     *   2. All teachers of `other` are available during `section`'s timeslots.
+     * When the matrix is not yet bound (e.g. in unit tests), all same-room
+     * sections are returned without the availability filter.
+     *
+     * @param section: The section whose classroom to search in
+     */
+    this.getSameRoomSections = function(section) {
+        var assignment = this.scheduleAssignments[section.id];
+        if (!assignment || !assignment.room_id) {
+            return [];
+        }
+        var room_id = assignment.room_id;
+        var result = [];
+        $j.each(this.sections_data, function(section_id, other) {
+            if (other.id === section.id) return;
+            var other_assignment = this.scheduleAssignments[other.id];
+            if (!other_assignment || other_assignment.room_id !== room_id) return;
+
+            if (this.matrix) {
+                // Only include sections where both sides can actually swap.
+                // Ignore both sections when computing availability so their
+                // current timeslots don't block each other.
+                var ignore = [section, other];
+                var avail_section = this.getAvailableTimeslots(section, ignore)[0];
+                var avail_other   = this.getAvailableTimeslots(other,   ignore)[0];
+                var section_can_go = other_assignment.timeslots.every(function(ts) {
+                    return avail_section.indexOf(ts) >= 0;
+                });
+                var other_can_go = assignment.timeslots.every(function(ts) {
+                    return avail_other.indexOf(ts) >= 0;
+                });
+                if (!section_can_go || !other_can_go) return;
+            }
+
+            result.push(other);
+        }.bind(this));
+        return result;
+    };
+
+    /**
      * Get the sections satisfying the search criteria. By default, filter
      * out sections that have been scheduled.
      */

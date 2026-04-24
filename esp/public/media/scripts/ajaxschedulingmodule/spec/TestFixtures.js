@@ -152,6 +152,7 @@ function section_1() {
         grade_max: 12,
         id: 1,
         teachers: [1, 2],
+        moderators: [],
         resource_requests: {1: []}
     };
 };
@@ -172,6 +173,7 @@ function section_1b() {
         grade_max: 12,
         id: 2,
         teachers: [1, 2],
+        moderators: [],
         resource_requests: {2: []}
     };
 };
@@ -192,6 +194,7 @@ function section_2() {
         grade_max: 11,
         id: 3,
         teachers: [4],
+        moderators: [],
         resource_requests: {3: []}
     };
 };
@@ -212,6 +215,7 @@ function section_3() {
         grade_max: 10,
         id: 4,
         teachers: [1],
+        moderators: [],
         resource_requests: {4: []}
     };
 };
@@ -232,6 +236,7 @@ function section_4() {
         grade_max: 12,
         id: 5,
         teachers: [3],
+        moderators: [],
         resource_requests: {5: []}
     };
 };
@@ -252,6 +257,7 @@ function section_5() {
         grade_max: 12,
         id: 6,
         teachers: [1, 3],
+        moderators: [],
         resource_requests: {6: []}
     };
 };
@@ -271,32 +277,32 @@ function section_fixture() {
 function schedule_assignment_fixture() {
     return {
         1: {
-            room_name: "room-1",
+            room_id: "room-1",
             id: 1,
             timeslots: [3]
         },
         2: {
-            room_name: null,
+            room_id: null,
             id: 2,
             timeslots: []
         },
         3: {
-            room_name: "room-2",
+            room_id: "room-2",
             id: 3,
             timeslots: [11, 13]
         },
         4: {
-            room_name: null,
+            room_id: null,
             id: 4,
             timeslots: []
         },
         5: {
-            room_name: null,
+            room_id: null,
             id: 5,
             timeslots: []
         },
         6: {
-            room_name: null,
+            room_id: null,
             id: 6,
             timeslots: []
         }
