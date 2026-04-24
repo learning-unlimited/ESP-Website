@@ -33,15 +33,18 @@ Learning Unlimited, Inc.
 """
 
 from unittest.mock import patch
+import pickle
 
 from django.contrib.auth.models import Group
 from django.core import mail
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
-from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, send_mail
+from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, send_mail, MessageVars
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser, PersistentQueryFilter
+from esp.middleware import ESPError
+from esp.utils.pickle_signing import sign_data, verify_and_deserialize
 
 
 def _setup_roles():
@@ -417,4 +420,119 @@ class MessageRequestAdminTest(TestCase):
         self.assertNotIn(b'This field is required', response.content)
         mr = MessageRequest.objects.filter(subject='Test subject').first()
         self.assertIsNotNone(mr)
+
+
+class DummyProvider:
+    """Simple test provider that implements get_msg_vars."""
+
+    def get_msg_vars(self, user, key):
+        """Return test values for message variables."""
+        return {
+            'test_key': 'test_value',
+            'user_name': user.username if user else 'anonymous'
+        }.get(key, 'default_value')
+
+
+class MaliciousProvider:
+    """Malicious provider for testing tamper detection."""
+
+    def get_msg_vars(self, user, key):
+        """Return malicious values."""
+        return 'HACKED_{}'.format(key)
+
+
+class MessageVarsSecurityTest(TestCase):
+    """Test cases for MessageVars signature verification security."""
+
+    def setUp(self):
+        _setup_roles()
+
+        # Create test user
+        self.user = ESPUser.objects.create_user(
+            username='testuser',
+            email='testuser@example.com',
+            password='testpass'
+        )
+
+        # Create a test message request
+        self.msgrequest = MessageRequest.objects.create(
+            subject='Test Subject',
+            msgtext='Test message',
+            sender='testsender@example.com',
+            creator=self.user,
+            public=True
+        )
+
+        # Create a simple test provider object
+        self.test_provider = DummyProvider()
+
+    def test_signed_message_vars_works(self):
+        """Test that properly signed MessageVars work correctly."""
+        # Create a signed MessageVars
+        msgvar = MessageVars.createVar(self.msgrequest, 'test_provider', self.test_provider)
+
+        # Verify it has a signature
+        self.assertIsNotNone(msgvar.signature, "Created MessageVars should have a signature")
+
+        # Verify we can retrieve the dict
+        result = msgvar.getDict(self.user)
+        self.assertIn('test_provider', result, "Should be able to retrieve provider dict")
+
+        # Verify we can get a specific var
+        var_result = msgvar.getVar('test_key', self.user)
+        self.assertEqual(var_result, 'test_value', "Should get correct variable value")
+
+    def test_unsigned_message_vars_rejected(self):
+        """Test that unsigned MessageVars are rejected with ESPError."""
+        # Create MessageVars manually without signature
+        msgvar = MessageVars()
+        msgvar.messagerequest = self.msgrequest
+        msgvar.provider_name = 'test_provider'
+        msgvar.pickled_provider = pickle.dumps(self.test_provider)
+        msgvar.signature = None  # Explicitly no signature
+        msgvar.save()
+
+        # Verify it rejects unsigned data
+        with self.assertRaises(ESPError) as cm:
+            msgvar.getDict(self.user)
+
+        self.assertIn('refusing to deserialize unsigned data', str(cm.exception))
+
+        # Test getVar as well
+        with self.assertRaises(ESPError) as cm:
+            msgvar.getVar('test_key', self.user)
+
+        self.assertIn('refusing to deserialize unsigned data', str(cm.exception))
+
+    def test_tampered_message_vars_rejected(self):
+        """Test that tampered MessageVars are rejected."""
+        # Create a properly signed MessageVars
+        msgvar = MessageVars.createVar(self.msgrequest, 'test_provider', self.test_provider)
+
+        # Tamper with the data but keep original signature
+        malicious_provider = MaliciousProvider()
+        msgvar.pickled_provider = pickle.dumps(malicious_provider)
+        # Keep original signature - this should fail verification
+        msgvar.save()
+
+        # Verify tampered data is rejected
+        with self.assertRaises(ESPError) as cm:
+            msgvar.getDict(self.user)
+
+        self.assertIn('Could not load variable provider object', str(cm.exception))
+
+    def test_corrupted_signature_rejected(self):
+        """Test that corrupted signatures are properly rejected."""
+        # Create a properly signed MessageVars
+        msgvar = MessageVars.createVar(self.msgrequest, 'test_provider', self.test_provider)
+
+        # Corrupt the signature
+        msgvar.signature = b'corrupted_signature_data'
+        msgvar.save()
+
+        # Verify corrupted signature is rejected
+        with self.assertRaises(ESPError) as cm:
+            msgvar.getDict(self.user)
+
+        self.assertIn('Could not load variable provider object', str(cm.exception))
         self.assertIsNone(mr.processed_by)
