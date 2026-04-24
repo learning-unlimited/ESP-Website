@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, no_auth
 from esp.program.modules.forms.teacherreg import TeacherEventSignupForm
 from esp.utils.web import render_to_response
 from django.db.models.query import Q
@@ -52,7 +52,7 @@ class TeacherEventsModule(ProgramModuleObj):
         super().__init__(*args, **kwargs)
 
     @aux_call
-    @meets_deadline('/Events')
+    @no_auth
     def calendar_data(self, request, tl, one, two, module, extra, prog):
         """ Provide AJAX-compatible JSON for the calendar view. """
         from django.http import JsonResponse
