@@ -272,7 +272,7 @@
         {% if grade_change_requests %}
         <tr><td colspan="2">
             {% for gcr in grade_change_requests %}
-            <div class="alert alert-danger">
+            <div role="alert" class="alert alert-danger">
                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                 {{ gcr }}{% if gcr.reason %} ({{ gcr.reason }}){% endif %}<br />
                 <center>
