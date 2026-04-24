@@ -187,34 +187,39 @@ class DemographicsTest(StatisticsTestBase):
     def test_excludes_open_class_category(self):
         _, rd_baseline = self._call(rd={})
 
+        # Get the first program in the test suite
         prog = self.programs[0] if isinstance(self.programs, list) else self.programs.first()
 
         # Create a Normal Class (This SHOULD be counted)
         from esp.program.models import ClassSubject, ClassCategories
         from esp.program.class_status import ClassStatus
+        from esp.tagdict.models import Tag
         
         normal_cat = ClassCategories.objects.create(category="Test Normal Category", symbol="N")
         normal_subj = ClassSubject.objects.create(
             title="Normal Class", parent_program=prog, category=normal_cat,
             status=ClassStatus.ACCEPTED, grade_min=7, grade_max=12, class_size_max=10
         )
-        # Adding a 2-hour section
         normal_subj.add_section(duration=2.0, status=ClassStatus.ACCEPTED)
 
-        # Create an Open Class (This SHOULD be ignored)
-        open_cat = prog.open_class_category()
+        # Explicitly configure the Open Class Tag on the Program
+        prog.open_class_registration = True
+        prog.save()
+        
+        open_cat = ClassCategories.objects.create(category="Test Open Category", symbol="O")
+        Tag.setProgramTag('open_class_category', prog, str(open_cat.id))
+
+        # Create an Open Class using the tagged category (This SHOULD be ignored)
         open_subj = ClassSubject.objects.create(
             title="Open Class", parent_program=prog, category=open_cat,
             status=ClassStatus.ACCEPTED, grade_min=7, grade_max=12, class_size_max=20
         )
-        # Adding a 3-hour section
         open_subj.add_section(duration=3.0, status=ClassStatus.ACCEPTED)
 
         # Calculate the dashboard numbers again
         _, rd_after = self._call(rd={})
 
-        # Assert only the normal class was counted
-        # The numbers should go up exactly by 1 class, 1 section, 2 hours, and 20 student-hours (2 hours * 10 students)
+        # 6. Assert only the normal class was counted
         self.assertEqual(rd_after["num_classes"], rd_baseline["num_classes"] + 1)
         self.assertEqual(rd_after["num_sections"], rd_baseline["num_sections"] + 1)
         self.assertEqual(rd_after["num_class_hours"], rd_baseline["num_class_hours"] + 2)
