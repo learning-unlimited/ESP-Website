@@ -50,7 +50,7 @@ There are <strong>{{listcount}}</strong> distinct users in your query{% if selec
 Please write your email message now. Note that you can use <tt>{% templatetag openvariable %} parameter {% templatetag closevariable %}</tt> to enter a parameter
 into the text of the message. You can use the {% templatetag openvariable %}{% templatetag closevariable %} button to choose from the possible parameters.
 
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
 Note, the "From" email address must end in <b>@{{ settings.SITE_INFO.1 }}</b> (your website), <b>@learningu.org</b>, or a valid subdomain of learningu.org (i.e., <b>@<i>subdomain</i>.learningu.org</b>).
 By default the "From" email address is <b>info@{{ current_site.domain }}</b>, which redirects to the "default" email address from your site's settings.
