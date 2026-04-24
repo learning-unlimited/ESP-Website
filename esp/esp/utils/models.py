@@ -79,3 +79,21 @@ class PrintRequest(models.Model):
     user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
     time_requested = models.DateTimeField(auto_now_add=True)
     time_executed = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            # Partial index for the global pending-job queue (no printer filter).
+            # Covers: PrintRequest.objects.filter(time_executed__isnull=True)
+            models.Index(
+                fields=['time_requested', 'id'],
+                name='pr_exec_req_idx',
+                condition=models.Q(time_executed__isnull=True),
+            ),
+            # Partial index for the per-printer pending-job queue.
+            # Covers: PrintRequest.objects.filter(time_executed__isnull=True, printer__name=...)
+            models.Index(
+                fields=['printer', 'time_requested', 'id'],
+                name='pr_printer_exec_req_idx',
+                condition=models.Q(time_executed__isnull=True),
+            ),
+        ]
