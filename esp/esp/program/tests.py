@@ -2159,3 +2159,100 @@ class HeardAboutNormalizationTest(TestCase):
     def test_only_punctuation_normalizes_to_empty(self):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
+
+
+class ProgramCreationFormDateValidationTest(TestCase):
+    """Tests that ProgramCreationForm rejects registration date ranges where
+    end is not strictly after start.  Addresses the Copilot review comment on
+    PR #5748 requesting coverage of the cross-field date validation added in
+    ProgramCreationForm.clean()."""
+
+    def _base_form_data(self, teacher_start, teacher_end, student_start, student_end):
+        """Return a minimal set of form fields sufficient to trigger the date
+        validation logic (other required fields are filled with sane defaults)."""
+        return {
+            'program_type': 'Splash',
+            'term': '2026_Fall',
+            'term_friendly': 'Fall 2026',
+            'grade_min': '7',
+            'grade_max': '12',
+            'director_email': 'info@test.learningu.org',
+            'program_size_max': '3000',
+            'teacher_reg_start': teacher_start,
+            'teacher_reg_end': teacher_end,
+            'student_reg_start': student_start,
+            'student_reg_end': student_end,
+            'base_cost': '0',
+            'program_modules': [],
+            'class_categories': [],
+            'admins': [],
+        }
+
+    def test_teacher_reg_end_before_start_invalid(self):
+        """ProgramCreationForm is invalid when teacher_reg_end <= teacher_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-08-01 00:00:00',
+            student_start='2026-09-01 00:00:00',
+            student_end='2026-11-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(
+            form.errors.get('__all__') or form.errors.get('teacher_reg_end'),
+            "Expected a validation error for teacher_reg_end before teacher_reg_start, "
+            "but got: %s" % form.errors,
+        )
+
+    def test_student_reg_end_before_start_invalid(self):
+        """ProgramCreationForm is invalid when student_reg_end <= student_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-09-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(
+            form.errors.get('__all__') or form.errors.get('student_reg_end'),
+            "Expected a validation error for student_reg_end before student_reg_start, "
+            "but got: %s" % form.errors,
+        )
+
+    def test_teacher_reg_end_equal_start_invalid(self):
+        """ProgramCreationForm is invalid when teacher_reg_end == teacher_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-09-01 00:00:00',
+            student_start='2026-09-01 00:00:00',
+            student_end='2026-11-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+
+    def test_student_reg_end_equal_start_invalid(self):
+        """ProgramCreationForm is invalid when student_reg_end == student_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-10-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+
+    def test_valid_registration_date_ranges(self):
+        """ProgramCreationForm has no date-range error when both end dates are
+        strictly after their respective start dates."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-11-15 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        # A duplicate-URL check may fire (no DB here), but we specifically
+        # assert there is no cross-field date-range error.
+        self.assertNotIn('teacher_reg_end', form.errors)
+        self.assertNotIn('student_reg_end', form.errors)

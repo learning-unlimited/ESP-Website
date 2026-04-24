@@ -3,7 +3,7 @@ from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, StudentRegistration, RegistrationProfile, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.handlers.admincore import EditPermissionForm, NewDeadlineForm
+from esp.program.modules.handlers.admincore import EditPermissionForm, NewDeadlineForm, NewPermissionForm
 
 
 class RegistrationTypeManagementTest(ProgramFrameworkTest):
@@ -411,3 +411,48 @@ class DeadlineDateValidationTest(ProgramFrameworkTest):
             'id': 1,
         })
         self.assertTrue(form.is_valid())
+
+    def _new_permission_data(self, perm_start, perm_end, user_id=None):
+        """Build a minimal NewPermissionForm data dict."""
+        return {
+            'permission_type': 'Student/All',
+            'user': user_id or '',
+            'perm_start_date': perm_start,
+            'perm_end_date': perm_end,
+        }
+
+    def test_new_permission_form_end_before_start_invalid(self):
+        """NewPermissionForm rejects an end date that is before the start date."""
+        data = self._new_permission_data('2026-04-20 10:00:00', '2026-04-01 10:00:00')
+        form = NewPermissionForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+        self.assertIn('End date must be after start date.', form.errors['__all__'])
+
+    def test_new_permission_form_end_equal_start_invalid(self):
+        """NewPermissionForm rejects an end date that equals the start date."""
+        data = self._new_permission_data('2026-04-20 10:00:00', '2026-04-20 10:00:00')
+        form = NewPermissionForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+        self.assertIn('End date must be after start date.', form.errors['__all__'])
+
+    def test_new_permission_form_valid_range(self):
+        """NewPermissionForm accepts an end date strictly after the start date."""
+        data = self._new_permission_data('2026-04-01 10:00:00', '2026-04-20 10:00:00')
+        form = NewPermissionForm(data)
+        # The form may still fail on the required 'user' field; we only care
+        # that the date-range error is NOT present.
+        self.assertNotIn('__all__', form.errors)
+
+    def test_new_permission_form_no_end_date_valid(self):
+        """NewPermissionForm allows an open-ended permission (no end date)."""
+        data = self._new_permission_data('2026-04-01 10:00:00', '')
+        form = NewPermissionForm(data)
+        self.assertNotIn('__all__', form.errors)
+
+    def test_new_permission_form_no_start_date_valid(self):
+        """NewPermissionForm allows a permission with no start date."""
+        data = self._new_permission_data('', '2026-04-20 10:00:00')
+        form = NewPermissionForm(data)
+        self.assertNotIn('__all__', form.errors)
