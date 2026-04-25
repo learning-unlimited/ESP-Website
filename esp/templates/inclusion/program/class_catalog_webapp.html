@@ -1,3 +1,9 @@
+<div class="class_search_data" style="display: none;"
+     data-class-id="{{ class.emailcode }}"
+     data-class-title="{{ class.title }}"
+     data-class-description="{{ class.class_info|escape }}"
+     data-class-teacher="{% for teacher in class.get_teachers %}{{ teacher.first_name }} {{ teacher.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+</div>
 <div class="class_title">
     <b>{{ class.emailcode }}: {{ class.title }}</b>
 </div>
