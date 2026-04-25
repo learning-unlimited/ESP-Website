@@ -288,22 +288,6 @@ class ProgramManager(models.Manager):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by('-id')
 
-class DirectorEmailValidator(validators.RegexValidator):
-    # RegexValidator in Django 2.x doesn't implement __eq__ — it inherits object.__eq__,
-    # which compares by identity (memory address) and causes spurious migrations
-    def __eq__(self, other):
-        return (
-            type(self) == type(other)
-            and self.regex.pattern == other.regex.pattern
-            and self.flags == other.flags
-            and self.inverse_match == other.inverse_match
-            and self.message == other.message
-            and self.code == other.code
-        )
-
-    def __hash__(self):
-        return hash((type(self), self.regex.pattern, self.flags, self.inverse_match, self.message, self.code))
-
 class ProgramEmailField(models.EmailField):
     """EmailField that excludes environment-specific kwargs from migrations.
 
