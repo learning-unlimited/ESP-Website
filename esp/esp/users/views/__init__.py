@@ -82,7 +82,7 @@ class CustomLoginView(LoginView):
         next_url = request.GET.get('next', '')
 
         # SECURITY FIX: Validate next_url to prevent Open Redirects
-        if next_url and not is_safe_url(
+        if next_url and not url_has_allowed_host_and_scheme(
             url=next_url,
             allowed_hosts={request.get_host()},
             require_https=request.is_secure()
@@ -170,7 +170,7 @@ def signout(request):
 
     redirect_path = request.GET.get('redirect')
     
-   # SECURITY FIX: Validate redirect_path to prevent Open Redirects
+    # SECURITY FIX: Validate redirect_path to prevent Open Redirects
     if redirect_path and url_has_allowed_host_and_scheme(
         url=redirect_path,
         allowed_hosts={request.get_host()},
