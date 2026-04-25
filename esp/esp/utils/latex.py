@@ -140,8 +140,8 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
     if file_type == 'tex':
         return texcode
 
-    # write to the LaTeX file
-    with open(file_base+TEX_EXT, 'w') as texfile:
+    # Write with explicit UTF-8 so unicode survives even on non-UTF-8 locales.
+    with open(file_base+TEX_EXT, 'w', encoding='utf-8') as texfile:
         texfile.write(texcode)
 
     # All command calls will use the same values for the cwd, stdout, and
