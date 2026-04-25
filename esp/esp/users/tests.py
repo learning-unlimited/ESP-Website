@@ -5,9 +5,11 @@ from django import forms
 from django.core import mail
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import Group
+from django.test import TestCase
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
+from django.urls import reverse
 from django.utils.functional import SimpleLazyObject
 
 from esp.middleware import ESPError
@@ -138,6 +140,64 @@ class ESPUserTest(TestCase):
                                 f"Token check failed for username: {username}")
             finally:
                 user.delete()
+
+    def testUnsubscribeOneclickVulnerability(self):
+        """Test that one-click unsubscribe requires a valid token and handles edge cases."""
+        user = ESPUser.objects.create(username='vuln_test_user', is_active=True)
+        user.set_password('password123')
+        user.save()
+        other_user = ESPUser.objects.create(username='other_test_user', is_active=True)
+        other_user.set_password('password123')
+        other_user.save()
+
+        try:
+            # extract valid token
+            link = user.unsubscribe_link()
+            parts = [p for p in link.split('/') if p]
+            valid_token = parts[-1]
+            invalid_token = 'invalid-token-123'
+            
+            # check token, if invalid or malformed then request should fail, user remains active
+            with self.assertRaises(ESPError):
+                self.client.post(
+                    reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': invalid_token}),
+                    data={'List-Unsubscribe': 'One-Click'}
+                )
+            user.refresh_from_db()
+            self.assertTrue(user.is_active, "User should remain active if an invalid token is used.")
+            
+            # check logged-in user or token mismatch
+            self.client.login(username=other_user.username, password='password123')
+            with self.assertRaises(ESPError):
+                self.client.post(
+                    reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': valid_token}),
+                    data={'List-Unsubscribe': 'One-Click'}
+                )
+            user.refresh_from_db()
+            self.assertTrue(user.is_active, "User should remain active if a different user attempts the action.")
+            
+            # Logout
+            self.client.logout()
+
+            # check token, if valid then user should be deactivated
+            response = self.client.post(
+                reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': valid_token}),
+                data={'List-Unsubscribe': 'One-Click'}
+            )
+            self.assertEqual(response.status_code, 200)
+            user.refresh_from_db()
+            self.assertFalse(user.is_active, "User should be deactivated with a valid token.")
+
+            # check token reusage
+            with self.assertRaises(ESPError):
+                self.client.post(
+                    reverse('unsubscribe_oneclick', kwargs={'username': user.username, 'token': valid_token}),
+                    data={'List-Unsubscribe': 'One-Click'}
+                )
+
+        finally:
+            user.delete()
+            other_user.delete()
 
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
