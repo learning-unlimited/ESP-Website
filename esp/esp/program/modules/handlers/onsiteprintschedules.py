@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 import json
 from django.http      import HttpResponse
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from datetime         import datetime
 from esp.utils.web    import render_to_response
@@ -42,6 +42,16 @@ from esp.utils.models import Printer, PrintRequest
 
 class OnsitePrintSchedules(ProgramModuleObj):
     doc = """Automatically print student schedules at onsite registration."""
+
+    @aux_call
+    @needs_onsite
+    def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog):
+        return ProgramPrintables.student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog)
+
+    @aux_call
+    @needs_onsite_no_switchback
+    def studentschedules(self, request, tl, one, two, module, extra, prog):
+        return ProgramPrintables.studentschedules(self, request, tl, one, two, module, extra, prog)
 
     @classmethod
     def module_properties(cls):
@@ -57,6 +67,12 @@ class OnsitePrintSchedules(ProgramModuleObj):
     @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
+        if 'userid' in request.GET or ('gen_img' in request.GET and not PrintRequest.objects.filter(time_executed__isnull=True).exists()):
+            result = ProgramPrintables.get_onsite_student(request)
+            if isinstance(result, HttpResponse):
+                return result
+            return ProgramPrintables.get_student_schedules(request, [result], prog, onsite=True)
+
         sure_requested = ('sure' in request.GET) or (request.POST.get('sure', '').lower() in ('1', 'true'))
 
         if not sure_requested and not 'gen_img' in request.GET:
