@@ -64,7 +64,11 @@ class DeactivationModule(ProgramModuleObj):
             raise ESPError()('You must confirm that you want to deactivate these users.')
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        except PersistentQueryFilter.DoesNotExist:
+            raise ESPError()('The selected filter no longer exists. Please go back and reselect a valid user group.')
+
         users = filterObj.getList(ESPUser)
 
         if not users:
