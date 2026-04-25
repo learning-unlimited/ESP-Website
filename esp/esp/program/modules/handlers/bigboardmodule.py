@@ -1,7 +1,7 @@
 import datetime
 import subprocess
 
-from django.db.models.aggregates import Count, Max, Min
+from django.db.models.aggregates import Count, Min
 from django.db.models.query import Q
 
 from argcache import cache_function_for, cache_function
@@ -9,7 +9,6 @@ from esp.program.models import ClassSection
 from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
-from esp.utils.decorators import cached_module_view
 from esp.utils.web import render_to_response
 
 
@@ -143,7 +142,7 @@ class BigBoardModule(ProgramModuleObj):
             .values_list('user').distinct())
         users_with_meds = set(
             Record.objects
-            .filter(program=prog, event__in=['med', 'med_bypass'])
+            .filter(program=prog, event__name__in=['med', 'med_bypass'])
             .filter(time__gt=recent)
             .values_list('user').distinct())
         return len(users_with_ssis | users_with_srs | users_with_meds)
@@ -170,11 +169,11 @@ class BigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def num_medical(self, prog):
         return Record.objects.filter(program=prog,
-                                     event__in=['med', 'med_bypass']).count()
+                                     event__name__in=['med', 'med_bypass']).count()
 
     @cache_function_for(105)
     def checked_in_users(prog):
-        return Record.objects.filter(program=prog, event='attended').values_list('user', flat = True).distinct()
+        return Record.objects.filter(program=prog, event__name='attended').values_list('user', flat = True).distinct()
     checked_in_users = staticmethod(checked_in_users)
 
     @cache_function_for(105)
@@ -259,7 +258,7 @@ class BigBoardModule(ProgramModuleObj):
     def times_medical(self, prog):
         return list(
             Record.objects
-            .filter(program=prog, event__in=('med', 'med_bypass'))
+            .filter(program=prog, event__name__in=('med', 'med_bypass'))
             .values('user').annotate(Min('time'))
             .order_by('time__min').values_list('time__min', flat=True))
 

@@ -9,6 +9,7 @@ function ModeratorDirectory(el, moderators) {
     this.el = el;
     this.moderators = moderators;
     this.selectedModerator = null;
+    this.selectedModeratorCell = null;
 
     // Set up filtering
     this.filter = {
@@ -176,7 +177,7 @@ function ModeratorDirectory(el, moderators) {
     this.numAvailableSlots = function(moderator) {
         var avail_slots = moderator.num_slots;
         for(var section of moderator.sections) {
-            var assignment = this.matrix.sections.scheduleAssignments[section]
+            var assignment = this.matrix.sections.scheduleAssignments[section];
             if(assignment){
                 avail_slots -= assignment.timeslots.length;
             }
@@ -243,6 +244,7 @@ function ModeratorDirectory(el, moderators) {
         }
 
         this.selectedModerator = moderator;
+        if(this.selectedModeratorCell) this.selectedModeratorCell.el.addClass("selected-moderator");
         this.matrix.sectionInfoPanel.displayModerator(moderator);
         this.availableTimeslots = this.getAvailableTimeslots(moderator);
         this.matrix.highlightTimeslots(this.availableTimeslots, null, moderator);
@@ -256,6 +258,10 @@ function ModeratorDirectory(el, moderators) {
         this.matrix.sectionInfoPanel.hide();
         this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots, this.selectedModerator);
+        if(this.selectedModeratorCell) {
+            this.selectedModeratorCell.el.removeClass("selected-moderator");
+            this.selectedModeratorCell = null;
+        }
         this.selectedModerator = null;
     };
 

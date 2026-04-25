@@ -66,13 +66,13 @@ from django import forms
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType
-from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RedirectForm, PlainRedirectForm
+from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
@@ -290,6 +290,7 @@ def find_user(userstr):
     returns: queryset containing ESPUser instances.
     """
 
+    userstr = userstr.strip()
     userstr_parts = [part.strip() for part in userstr.split(' ') if part]
 
     if len(userstr_parts) == 2 and \
@@ -553,8 +554,8 @@ def newprogram(request):
 
             if 'template_prog' in request.session:
                 # Force all ProgramModuleObjs and their extensions to be created now
-                # If we are using another program as a template, let's copy the seq and required values from that program.
                 old_prog = Program.objects.get(id=request.session['template_prog'])
+                # If we are using another program as a template, let's copy the seq and required values from that program.
                 new_prog.getModules(old_prog=old_prog)
                 # Copy CRMI settings from old program
                 old_crmi = ClassRegModuleInfo.objects.get(program=old_prog)
@@ -918,13 +919,14 @@ def redirects(request, section=""):
     return render_to_response('program/redirects.html', request, context)
 
 @admin_required
-def categoriesandflags(request, section=""):
+def catsflagsrecs(request, section=""):
     """
     View that lets admins create/edit class categories and flag types
     """
     context = {}
-    cat_form = CategoryForm()
+    cat_form = CategoryForm(initial={'symbol': ''})
     flag_form = FlagTypeForm()
+    rec_form = RecordTypeForm()
 
     if request.method == 'POST':
         if request.POST.get('object') == 'category':
@@ -983,11 +985,42 @@ def categoriesandflags(request, section=""):
                 if fts.count() == 1:
                     ft = fts[0]
                     ft.delete()
+        elif request.POST.get('object') == 'record_type':
+            section = 'recordtypes'
+            if request.POST.get('command') == 'add': # New record type
+                rec_form = RecordTypeForm(request.POST)
+                if rec_form.is_valid():
+                    rec_form.save()
+                    rec_form = RecordTypeForm()
+            elif request.POST.get('command') == 'load': # Load existing record type into form
+                ft_id = request.POST.get('id')
+                fts = RecordType.objects.filter(id = ft_id)
+                if fts.count() == 1:
+                    ft = fts[0]
+                    rec_form = RecordTypeForm(instance = ft)
+            elif request.POST.get('command') == 'edit': # Edit existing record type
+                rt_id = request.POST.get('id')
+                rts = RecordType.objects.filter(id = rt_id)
+                if rts.count() == 1:
+                    rt = rts[0]
+                    rec_form = RecordTypeForm(request.POST, instance = rt)
+                    if rec_form.is_valid():
+                        rec_form.save()
+                        rec_form = RecordTypeForm()
+            elif request.POST.get('command') == 'delete': # Delete record type
+                rt_id = request.POST.get('id')
+                rts = RecordType.objects.filter(id = rt_id)
+                if rts.count() == 1:
+                    rt = rts[0]
+                    rt.delete()
     context['open_section'] = section
     context['cat_form'] = cat_form
     context['flag_form'] = flag_form
+    context['rec_form'] = rec_form
     context['categories'] = ClassCategories.objects.all().order_by('seq')
     context['flag_types'] = ClassFlagType.objects.all().order_by('seq')
+    rec_types = RecordType.objects.all().order_by('id')
+    context['record_types'] = sorted(rec_types, key = lambda x:x.is_custom(), reverse=True)
 
     return render_to_response('program/categories_and_flags.html', request, context)
 

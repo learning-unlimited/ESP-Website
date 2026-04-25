@@ -31,15 +31,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, aux_call
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
-from esp.program.modules.forms.junction_teacher_review import JunctionTeacherReview
-from esp.users.models import ESPUser, User
+from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject, StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentRegistration
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration
 from datetime import datetime
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request

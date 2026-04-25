@@ -130,9 +130,13 @@ class ThemesTest(TestCase):
                         'subtitle_text': 'themetest',
                         'contact_info': 'themetest',
                         'just_selected': 'True',
+                        'show_email': 'True',
+                        'show_group_name': 'True',
                         'front_page_style': 'bubblesfront.html',
                         'facebook_link': 'http://somehost.net',
+                        'faq_link': '/faq.html',
                         'nav_structure': '[{"header": "header", "header_link": "/header_link/", "links": [{"link": "link1", "text": "text1"}]}]',
+                        'contact_links': '[{"link": "link1", "text": "text1"}]',
                     }
                     for entry in field_matches:
                         if entry[1] not in settings_dict:
@@ -152,11 +156,6 @@ class ThemesTest(TestCase):
 
                 #   Check that the template override is marked with the theme name.
                 self.assertTrue(('<!-- Theme: %s -->' % theme_name) in response.content)
-
-            #   Test that the theme can be cleared and the home page reverts.
-            response = self.client.post('/themes/select/', {'action': 'clear'})
-            response = self.client.get('/')
-            self.assertTrue(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>', response.content, flags=re.DOTALL)) == 1)
 
             self.client.logout()
 

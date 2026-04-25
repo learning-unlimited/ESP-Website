@@ -33,10 +33,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, meets_deadline, main_call, meets_cap
 from esp.utils.web import render_to_response
-from esp.dbmail.models import send_mail
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 from esp.tagdict.models import Tag
 from esp.accounting.models import LineItemType
 from esp.accounting.controllers import IndividualAccountingController
@@ -46,17 +45,11 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
 from django.conf import settings
-from django.db import transaction
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
-from django.contrib.sites.models import Site
-from django.template.loader import render_to_string
 
 from decimal import Decimal
-from datetime import datetime
-import stripe
 import json
-import re
 
 
 
@@ -128,7 +121,7 @@ class DonationModule(ProgramModuleObj):
             user = self.user
         else:
             user = get_current_request().user
-        return Record.objects.filter(user=user, program=self.program, event=self.event).exists()
+        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     def students(self, QObject = False):
         QObj = Q(transfer__line_item=self.line_item_type())
@@ -214,7 +207,8 @@ class DonationModule(ProgramModuleObj):
         # this page to not use AJAX but instead use a normal form submission,
         # we can then switch to granting the Record after the user is done with
         # the page.
-        Record.objects.get_or_create(user=user, program=self.program, event=self.event)
+        rt = RecordType.objects.get(name=self.event)
+        Record.objects.get_or_create(user=user, program=self.program, event=rt)
 
 
         #   Load donation amount separately, since the client-side code needs to know about it separately.

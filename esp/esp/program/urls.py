@@ -16,7 +16,7 @@ urlpatterns = [
     url(r'^manage/usersearch/?$', views.usersearch),
     url(r'^manage/flushcache/?$', views.flushcache),
     url(r'^manage/emails/?$', views.emails),
-    url(r'^manage/categoriesandflags/?(?P<section>[^/]*)/?$', views.categoriesandflags),
+    url(r'^manage/catsflagsrecs/?(?P<section>[^/]*)/?$', views.catsflagsrecs),
     url(r'^manage/tags/?(?P<section>[^/]*)/?$', views.tags),
     url(r'^manage/redirects/?(?P<section>[^/]*)/?$', views.redirects),
     url(r'^manage/statistics/?$', views.statistics),

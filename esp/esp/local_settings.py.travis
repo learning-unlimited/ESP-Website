@@ -48,6 +48,10 @@ SITE_INFO = (1, 'testserver.learningu.org', 'ESP Test Server')
 CACHE_PREFIX = "Test"
 SECRET_KEY = 'b36cfdfb78aba27ddbde330b23352bc6d40973b4'
 
+SERVER_EMAIL = 'server@testserver.learningu.org'
+EMAIL_HOST = 'testserver.learningu.org'
+EMAIL_HOST_SENDER = 'testserver.learningu.org'
+
 ###################
 # Plugin settings #
 ###################

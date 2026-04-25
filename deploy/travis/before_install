@@ -16,3 +16,4 @@ if [ $(echo "$(lsb_release -rs) > 20" | bc) -eq 1 ]; then
 fi
 curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
 sudo python2 get-pip.py
+sudo python2 -m pip install --upgrade pip==20.1

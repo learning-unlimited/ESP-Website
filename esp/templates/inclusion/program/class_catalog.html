@@ -1,6 +1,6 @@
 {% if show_class %}
   {% load class_render %}
-  <div id="class_{{ class.id }}" class="{% for grade in class.grades %}grade_{{ grade }} {% endfor %}show_class{% if errormsg %} class_error{% endif %}">
+  <div id="class_{{ class.id }}" class="{% for grade in class.grades %}grade_{{ grade }} {% endfor %}show_class{% if errormsg %} class_error{% endif %}" data-difficulty="{{ class.hardness_rating }}" data-duration="{{ class.duration }}" data-is-closed="{{ class.isFullOrClosed }}">
   {% render_class_core class %}
   {% if prereg_url %}
       <div id="class_{{ class.id }}_regbuttons" class="class_buttons">
@@ -88,13 +88,11 @@
   if (document.getElementById("student_schedule")) {
     setTimeout(initialize_prereg_{{ class.id }}, Math.random()*1000);
   }
-  </script>
   {% if collapse_full %}
   {% if class.isFullOrClosed %}
   <!-- This class is already full; hide any buttons -->
-  <script type="text/javascript">
   swap_visible('class_{{ class.id }}_regbuttons');
+  {% endif %}
+  {% endif %}
   </script>
-  {% endif %}
-  {% endif %}
 {% endif %}

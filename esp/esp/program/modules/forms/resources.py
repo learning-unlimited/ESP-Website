@@ -13,12 +13,25 @@ from esp.tagdict.models import Tag
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
-    name = forms.CharField(help_text='Approximate time block (e.g. "Sat 9 - 10 AM")')
+    name = forms.CharField(help_text='Approximate timeslot (e.g. "Sat 9 - 10 AM")')
     description = forms.CharField(required=False, widget=forms.Textarea, help_text='Include the exact times here (e.g. "First class period: Sat 9:05 - 9:55 AM")')
     start = forms.DateTimeField(label='Start Time', help_text=mark_safe('Format: MM/DD/YYYY HH:MM:SS <br />Example: 10/14/2007 14:00:00'), widget=DateTimeWidget)
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
-    openclass = forms.BooleanField(required=False, label='Open Class Time Block', help_text="Check this if the time block should be used for open classes only. If in doubt, don't check this.")
+    openclass = forms.BooleanField(required=False, label='Open Class Timeslot', help_text="Check this if the timeslot should be used for open classes only. If in doubt, don't check this.")
+    group = forms.IntegerField(required=False, label='Group')
+
+    def __init__(self, *args, **kwargs):
+        if 'program' in kwargs:
+            program = kwargs.pop('program')
+        else:
+            raise KeyError('Need to supply program as named argument to TimeslotForm')
+        super(TimeslotForm, self).__init__(*args, **kwargs)
+        self.fields['group'].help_text=mark_safe("""All timeslots with this value will always be included in the same timeslot group.
+                                                    Note that the assigned value is solely for grouping purposes; the blocks displayed on
+                                                    availability forms will be numbered consecutively based on the first timeslot in the block.
+                                                    Any timeslots with no value indicated will be grouped together based on the
+                                                    <a href = '%stags/teach' target='_blank'>'Availability group tolerance' tag</a>.""" % program.get_manage_url())
 
     def load_timeslot(self, slot):
         self.fields['name'].initial = slot.short_description
@@ -28,6 +41,7 @@ class TimeslotForm(forms.Form):
         length = (slot.end - slot.start).seconds
         self.fields['hours'].initial = int(length / 3600)
         self.fields['minutes'].initial = int(length / 60 - 60 * self.fields['hours'].initial)
+        self.fields['group'].initial = slot.group
 
     def save_timeslot(self, program, slot):
         slot.short_description = self.cleaned_data['name']
@@ -38,6 +52,7 @@ class TimeslotForm(forms.Form):
             slot.event_type = EventType.get_from_desc("Open Class Time Block")
         else:
             slot.event_type = EventType.get_from_desc("Class Time Block")    # default event type for now
+        slot.group = self.cleaned_data['group']
         slot.program = program
         slot.save()
 

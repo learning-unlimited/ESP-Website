@@ -4,7 +4,7 @@ import random
 from esp.program.models import ClassSection, StudentRegistration
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 
 class UnenrollModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -20,8 +20,9 @@ class UnenrollModuleTest(ProgramFrameworkTest):
 
         # mark some of the students as checked in
         for student in random.sample(self.students, 10):
+            rt = RecordType.objects.get(name='attended')
             Record.objects.create(
-                event='attended', program=self.program, user=student)
+                event=rt, program=self.program, user=student)
 
         self.timeslots = self.program.getTimeSlots()
 
@@ -53,7 +54,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
             self.assertTrue(StudentRegistration.valid_objects().filter(
                 user=student_id, section__meeting_times=ts_id).exists())
             self.assertFalse(Record.objects.filter(
-                event='attended', program=self.program,
+                event__name='attended', program=self.program,
                 user=student_id).exists())
 
         for section_id, ts_id in data['section_timeslots'].items():

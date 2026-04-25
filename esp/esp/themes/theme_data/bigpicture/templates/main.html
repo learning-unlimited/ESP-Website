@@ -1,10 +1,15 @@
 {% extends "elements/html" %}
 
-{% block fulltitle %}{% block title %}{% endblock %} - {{ theme.full_group_name }}{% endblock %}
+{% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Patrick+Hand" />
+<style>
+.jumbotron {
+    background-image: url(/media/images/theme/header.png?v={{ current_header_version }});
+}
+</style>
 {% endblock stylesheets %}
 
 {% block body %}
@@ -25,8 +30,39 @@
   <div>
     <div class="header-cell">
       <a href="/">
-          <img src="/media/images/theme/logo.png" alt="{{theme.full_group_name}}" class="logo">
+          <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo">
       </a>
+       <div id="contact_info">
+        {% if theme.show_group_name %}
+        <span class="title accentcolor">{{ theme.full_group_name }}</span></br>
+        {% endif %}
+        {% if theme.contact_info %}
+        <span class="normal">{{ theme.contact_info|linebreaksbr }}</span></br>
+        {% endif %}
+        {% if theme.show_email %}
+        <span class="normal">Email: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span></br>
+        {% endif %}
+        {% if theme.contact_links %}
+        <span class="normal">
+          {% for link in theme.contact_links %}
+          <a href="{{ link.link }}">{{ link.text }}</a>
+          {% if forloop.counter|divisibleby:3 %}<br />
+          {% elif not forloop.last %} | {% endif %}
+          {% endfor %}
+        </span></br>
+        {% endif %}
+        {% if theme.faq_link or theme.facebook_link %}
+        <span class="normal">
+          {% if theme.faq_link %}
+            <a href="{{ theme.faq_link }}">FAQ</a>
+          {% endif %}
+          {% if theme.faq_link and theme.facebook_link %} | {% endif %}
+          {% if theme.facebook_link %}
+            <a href="{{ theme.facebook_link }}">facebook</a>
+          {% endif %}
+        </span>
+        {% endif %}
+      </div>
     </div>
     <div class="header-cell jumbotron-announcements">
       {% load render_qsd %}
@@ -98,6 +134,8 @@
   </div>
 </div>
 </div>
+</br>
+</br>
 <script>
   {# TODO(benkraft): this is ugly, find a better way #}
   $j('.button').addClass('btn').removeClass('button');

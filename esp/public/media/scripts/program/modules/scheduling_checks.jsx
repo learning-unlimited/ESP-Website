@@ -206,7 +206,9 @@ var SchedulingCheck = React.createClass({
         </div>
         <div className="alittlepspace"></div>
         {helpText}
-        {table}
+        <div className="table-wrapper">
+          {table}
+        </div>
       </div>;
     }
     return <div className={`scheduling-check ${this.state.has_items ? "items" : this.state.data ? "no-items" : "loading"}`}>

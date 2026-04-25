@@ -13,7 +13,7 @@ from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
 from esp.program.models import RegistrationType
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
-from esp.resources.models import Resource, ResourceType, ResourceRequest
+from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
 from esp.utils.query_builder import QueryBuilder, SearchFilter
 from esp.utils.query_builder import SelectInput, SelectQInput, ConstantInput, TextInput

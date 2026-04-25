@@ -101,7 +101,8 @@ class Survey(models.Model):
                                 blank=True, null=True,
                                 help_text="Blank if not associated to a program")
 
-    category = models.CharField(max_length=32) # teach|learn|etc
+    survey_choices = [("learn", "learn"), ("teach", "teach")]
+    category = models.CharField(max_length = 10, choices = survey_choices)
 
     def __unicode__(self):
         return '%s (%s) for %s' % (self.name, self.category, unicode(self.program))

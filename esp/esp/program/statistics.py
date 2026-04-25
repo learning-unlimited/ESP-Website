@@ -39,6 +39,7 @@ from numpy import mean
 from django.template.loader import render_to_string
 
 from esp.program.models import Program, StudentRegistration
+from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 from esp.program.modules.handlers.teacherbigboardmodule import TeacherBigBoardModule
@@ -92,9 +93,9 @@ def demographics(form, programs, students, profiles, result_dict={}):
     result_dict['num_classes'] = result_dict['num_sections'] = 0
     result_dict['num_class_hours'] = result_dict['num_student_class_hours'] = 0
     for program in programs:
-        result_dict['num_classes'] += program.classes().select_related().filter(status=10).count()
-        result_dict['num_sections'] += program.sections().select_related().filter(status=10).count()
-        for section in program.sections().select_related().filter(status=10):
+        result_dict['num_classes'] += program.classes().select_related().filter(status=ClassStatus.ACCEPTED).count()
+        result_dict['num_sections'] += program.sections().select_related().filter(status=ClassStatus.ACCEPTED).count()
+        for section in program.sections().select_related().filter(status=ClassStatus.ACCEPTED):
             result_dict['num_class_hours'] += section.duration
             result_dict['num_student_class_hours'] += section.duration*section.parent_class.class_size_max
     result_dict['num_class_hours'] = int(result_dict['num_class_hours'])
@@ -189,7 +190,7 @@ def startreg(form, programs, students, profiles, result_dict={}):
                     reg_dict[program][reg_bits[0].start_date.date()] = 0
                 reg_dict[program][reg_bits[0].start_date.date()] += 1
 
-            confirm_bits = Record.objects.filter(user=student, event='reg_confirmed', program=program).order_by('-time')
+            confirm_bits = Record.objects.filter(user=student, event__name='reg_confirmed', program=program).order_by('-time')
             if confirm_bits.exists():
                 if confirm_bits[0].time.date() not in confirm_dict[program]:
                     confirm_dict[program][confirm_bits[0].time.date()] = 0
@@ -217,7 +218,7 @@ def repeats(form, programs, students, profiles, result_dict={}):
     #   For each student, find out what other programs they registered for and bin by quantity in each program type
     repeat_count = {}
     for student in students:
-        programs = Program.objects.filter(record__user=student, record__event='reg_confirmed')
+        programs = Program.objects.filter(record__user=student, record__event__name='reg_confirmed')
         indiv_count = {}
         for program in programs:
             if program.program_type not in indiv_count:

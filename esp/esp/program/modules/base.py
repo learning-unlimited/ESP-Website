@@ -271,6 +271,7 @@ class ProgramModuleObj(models.Model):
         return '/%s/%s/%s' % (
             self.module.module_type, self.program.url, self.main_view)
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
+    get_full_path.depend_on_model('program.Program')
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
@@ -281,6 +282,9 @@ class ProgramModuleObj(models.Model):
                (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
+
+    def makeSelfCheckinLink(self):
+        return self.makeLink()
 
     def get_setup_title(self):
         if hasattr(self, 'setup_title') and self.setup_title is not None and str(self.setup_title).strip() != '':
@@ -397,6 +401,9 @@ class ProgramModuleObj(models.Model):
 
     def isStep(self):
         return True
+
+    def inModulesList(self):
+        return self.isStep()
 
     @classmethod
     def module_properties(cls):
@@ -550,6 +557,35 @@ def needs_onsite_no_switchback(method):
     _checkAdmin.method = method
     _checkAdmin.has_auth_check = True
     return _checkAdmin
+
+def needs_student_in_grade(method):
+    def _check_student_and_grade(moduleObj, request, tl, *args, **kwargs):
+        """Check if student and is in correct grade."""
+        errorpage = 'errors/program/wronggrade.html'
+        if not_logged_in(request):
+            return _login_redirect(request)
+        if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
+            return render_to_response('errors/program/notastudent.html', request, {})
+
+        # if there's grade override we can just skip everything
+        if Permission.user_has_perm(request.user, 'GradeOverride', moduleObj.program):
+            return method(moduleObj, request, tl, *args, **kwargs)
+
+        # now we have to use the grade...
+        # get the last grade...
+        cur_grade = request.user.getGrade(moduleObj.program)
+        if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
+                               cur_grade > moduleObj.program.grade_max):
+            return render_to_response(errorpage, request, {
+                    'program': moduleObj.program,
+                    'yog': request.user.getYOG(moduleObj.program),
+                })
+
+        return method(moduleObj, request, tl, *args, **kwargs)
+    _check_student_and_grade.call_tl = 'learn'
+    _check_student_and_grade.method = method
+    _check_student_and_grade.has_auth_check = True
+    return _check_student_and_grade
 
 def needs_student(method):
     def _checkStudent(moduleObj, request, *args, **kwargs):

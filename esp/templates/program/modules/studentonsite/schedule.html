@@ -106,7 +106,7 @@ setInterval(write_updated_time,1000);
         <th colspan="3" class="user_info">
             <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
             {% if not checked_in %}
-                <p class="checkinnote">Note: You will not be able to change any classes or see your classrooms until after your check-in has been processed by the admin team.</p>
+                <p class="checkinnote">{{ checkin_note }}</p>
             {% endif %}
             {% if just_changed_classes %}
                 <p class="checkinnote">Thanks for changing your schedule - please visit Help Desk in Lobby 10 if you want a hard copy of your new schedule!</p>
@@ -144,7 +144,7 @@ setInterval(write_updated_time,1000);
                     </td>
                 {% endif %}
                 <td class="edit">
-                    {% if checked_in %}
+                    {% if deadline_met or checked_in %}
                         <!--link to filtered course catalog like the fillslot page-->
                         <a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog/{{timeslot.0.id}}" title="{% if cls %}View other classes{% else %}Add a class{% endif %}"><i class="material-icons md-4">{% if cls %}create{% else %}add{% endif %}</i></a>
                         {% if cls and cls.first_meeting_time %}
@@ -169,7 +169,7 @@ setInterval(write_updated_time,1000);
   </div>
 
   <div class="popup" onclick="togglePopup()">
-      <span class="popuptext" id="myPopup">Not checked in yet!</span>
+      <span class="popuptext" id="myPopup">You must be checked in to make class changes right now!</span>
   </div>
 
 </center>

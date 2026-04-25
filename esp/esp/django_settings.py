@@ -185,7 +185,8 @@ TEMPLATES = [
             ],
             'loaders': [
                 'admin_tools.template_loaders.Loader',
-                'esp.utils.template.Loader',
+                'esp.utils.template.Loader', # for template overrides
+                'esp.utils.template.ThemeLoader', # theme templates
                 ('django.template.loaders.cached.Loader',
                     (
                      'django.template.loaders.filesystem.Loader',
@@ -247,6 +248,7 @@ INSTALLED_APPS = (
     'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
+    'captcha',
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
@@ -312,7 +314,7 @@ CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 JQUERY_VERSION = '3.6.0'
 JQUERY_HASH = 'sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=='
 
-JQUERY_UI_VERSION = '1.13.0'
+JQUERY_UI_VERSION = '1.13.2'
 
 # allow configuration of additional Javascript to be placed on website
 # configuration should include <script></script> tags
@@ -329,7 +331,7 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.signals.SignalsPanel',
     'debug_toolbar.panels.sql.SQLPanel',
     'debug_toolbar.panels.staticfiles.StaticFilesPanel',
-    'debug_toolbar.panels.templates.TemplatesPanel',
+    'esp.utils.debug_panels.TemplatesPanel',
     'debug_toolbar.panels.timer.TimerPanel',
     'debug_toolbar.panels.versions.VersionsPanel',
     'debug_toolbar.panels.redirects.RedirectsPanel',
@@ -411,3 +413,5 @@ ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
 ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
 ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
+
+SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']

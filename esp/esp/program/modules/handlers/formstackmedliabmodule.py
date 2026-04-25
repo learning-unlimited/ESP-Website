@@ -32,9 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, aux_call, meets_cap, meets_grade
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, aux_call, meets_cap
 from esp.utils.web import render_to_response
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 from esp.tagdict.models import Tag
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
@@ -69,9 +69,9 @@ class FormstackMedliabModule(ProgramModuleObj):
                 program=self.program)
 
     def students(self, QObject=False):
-        Q_students = Q(record__event="med",
+        Q_students = Q(record__event__name="med",
                        record__program=self.program)
-        Q_bypass = Q(record__event="med_bypass",
+        Q_bypass = Q(record__event__name="med_bypass",
                      record__program=self.program)
 
         if QObject:
@@ -93,8 +93,7 @@ class FormstackMedliabModule(ProgramModuleObj):
             }
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/FormstackMedliab')
     @meets_cap
     def medliab(self, request, tl, one, two, module, extra, prog):
@@ -106,10 +105,11 @@ class FormstackMedliabModule(ProgramModuleObj):
                                   request, context)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def medicalpostback581309742(self, request, tl, one, two, module, extra, prog):
         """Marks student off as completed."""
-        Record.objects.create(user=request.user, event="med", program=self.program)
+        rt = RecordType.objects.get(name="med")
+        Record.objects.create(user=request.user, event=rt, program=self.program)
         return self.goToCore(tl)
 
     def isStep(self):

@@ -32,14 +32,13 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from collections import defaultdict
+from esp.program.class_status import ClassStatus
 from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, ClassFlagType
 from esp.tagdict.models import Tag
-from esp.users.models import ESPUser, User
 
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
@@ -73,7 +72,7 @@ class AdminClass(ProgramModuleObj):
         management forms. """
 
         if field_str == 'status':
-            return ((-20, 'Cancelled'), (-10, 'Rejected'), (0, 'Unreviewed'), (5, 'Accepted but hidden'), (10, 'Accepted'))
+            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
@@ -277,7 +276,7 @@ class AdminClass(ProgramModuleObj):
         cls.accept()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
@@ -286,7 +285,7 @@ class AdminClass(ProgramModuleObj):
         cls.reject()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
@@ -295,7 +294,7 @@ class AdminClass(ProgramModuleObj):
         cls.propose()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
@@ -306,7 +305,7 @@ class AdminClass(ProgramModuleObj):
         cls = classes[0]
 
         cls.delete(True)
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'dashboard')
 
     @aux_call
     @needs_admin
@@ -368,11 +367,7 @@ class AdminClass(ProgramModuleObj):
         """ Shows the collective availability of teachers for a class. """
         cls = self.getClass(request,extra)
         time_options = prog.getTimeSlots()
-        #   Group contiguous blocks
-        if not Tag.getBooleanTag('availability_group_timeslots'):
-            time_groups = [list(time_options)]
-        else:
-            time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
+        time_groups = prog.getTimeGroups()
 
         teachers = cls.get_teachers()
 

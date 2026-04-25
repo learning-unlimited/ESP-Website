@@ -36,7 +36,8 @@ Learning Unlimited, Inc.
 import re
 import unicodedata
 
-from esp.users.models import StudentInfo, K12School
+from django.conf import settings
+from esp.users.models import StudentInfo, K12School, RecordType
 from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
 from esp.dbmail.models import PlainRedirect
 from esp.utils.widgets import DateTimeWidget
@@ -151,9 +152,10 @@ class ProgramCreationForm(BetterModelForm):
             'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
         }
         model = Program
-ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
-ProgramCreationForm.base_fields['director_cc_email'].widget = forms.TextInput(attrs={'size': 40})
-ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.TextInput(attrs={'size': 40})
+ProgramCreationForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'size': 40,
+                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)+learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
+ProgramCreationForm.base_fields['director_cc_email'].widget = forms.EmailInput(attrs={'size': 40})
+ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.EmailInput(attrs={'size': 40})
 '''
 ProgramCreationForm.base_fields['term'].line_group = -4
 ProgramCreationForm.base_fields['term_friendly'].line_group = -4
@@ -422,10 +424,24 @@ class FlagTypeForm(forms.ModelForm):
         model = ClassFlagType
         fields = ['name','color','seq','show_in_scheduler','show_in_dashboard']
 
+class RecordTypeForm(forms.ModelForm):
+    def clean_name(self):
+        name = self.cleaned_data.get('name').strip()
+        if name in RecordType.BUILTIN_TYPES:
+            raise forms.ValidationError('You can not add/edit a built-in record type.')
+        else:
+            return name
+    class Meta:
+        model = RecordType
+        fields = ['name','description']
+
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = ClassCategories
         fields = ['category','symbol','seq']
+        widgets = {
+            'symbol': forms.TextInput(attrs={'pattern': '[A-Za-z]{1}', 'title': 'Single letter'})
+        }
 
 class RedirectForm(forms.ModelForm):
     class Meta:

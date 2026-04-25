@@ -44,6 +44,7 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
+from localflavor.us.models import PhoneNumberField
 from django.core import urlresolvers, validators
 from django.core.cache import cache
 from django.db import models
@@ -259,11 +260,11 @@ class Program(models.Model, CustomFormsLinkModel):
                          'the documentation</a> for details.')
     class_categories = models.ManyToManyField('ClassCategories',
                                               blank=True,
-                                              help_text='You can add new categories or modify existing ones <a href="/manage/categoriesandflags/categories">here</a>.')
+                                              help_text='You can add new categories or modify existing ones <a href="/manage/catsflagsrecs/categories">here</a>.')
 
     flag_types = models.ManyToManyField('ClassFlagType',
                     blank=True,
-                    help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/categoriesandflags/flagtypes">here</a>.')
+                    help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/catsflagsrecs/flagtypes">here</a>.')
 
     documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
@@ -674,6 +675,8 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns:
           A ClassCategories object if one was found, or None.
         """
+        if not self.open_class_registration:
+            return ClassCategories()
         pk = Tag.getProgramTag('open_class_category', self)
         cc = None
         if pk is not None:
@@ -687,6 +690,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return cc
     open_class_category.depend_on_model('tagdict.Tag')
     open_class_category.depend_on_model('program.ClassCategories')
+    open_class_category.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
     open_class_category = property(open_class_category)
 
     @cache_function
@@ -710,20 +714,20 @@ class Program(models.Model, CustomFormsLinkModel):
         ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
 
     def isConfirmed(self, espuser):
-        return Record.objects.filter(event="reg_confirmed",user=espuser,
+        return Record.objects.filter(event__name="reg_confirmed",user=espuser,
                                      program=self).exists()
 
     def isCheckedIn(self, espuser, verbose = False):
         status = 0
         verbose_names = ["not_checked_in", "checked_in", "checked_out"]
-        recs = Record.objects.filter(event__in=["attended","checked_out"],user=espuser,
+        recs = Record.objects.filter(event__name__in=["attended","checked_out"],user=espuser,
                                      program=self).order_by("-time")
         if recs.count() > 0:
             # Check if student has ever been checked_in
-            if recs.filter(event="attended").exists():
+            if recs.filter(event__name="attended").exists():
                 status = 1
                 # Check if most recent record is checked_out
-                if recs[0].event == "checked_out":
+                if recs[0].event.name == "checked_out":
                     status = 2
         if verbose:
             return verbose_names[status]
@@ -732,24 +736,24 @@ class Program(models.Model, CustomFormsLinkModel):
 
     """ Returns a queryset of students that are checked out of the program at the specified time """
     def checkedOutStudents(self, time_max = datetime.now()):
-        recs = Record.objects.filter(program = self, event__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
-        return ESPUser.objects.filter(record__id__in=recs, record__event="checked_out")
+        recs = Record.objects.filter(program = self, event__name__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
+        return ESPUser.objects.filter(record__id__in=recs, record__event__name="checked_out")
 
     """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
     @cache_function
     def currentlyCheckedOutStudents(self):
         return self.checkedOutStudents(time_max=datetime.now())
-    currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event in ['attended', "checked_out"])
+    currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name in ['attended', "checked_out"])
 
     """ Returns a queryset of students that are checked in to the program at the specified time """
     def checkedInStudents(self, time_max = datetime.now()):
-        return ESPUser.objects.filter(Q(record__event="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
+        return ESPUser.objects.filter(Q(record__event__name="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
 
     """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
     @cache_function
     def currentlyCheckedInStudents(self):
         return self.checkedInStudents(time_max=datetime.now())
-    currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event == 'attended')
+    currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name == 'attended')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
     "Classrooms."  So, if you try to call the old functions (which have no point anymore), then
@@ -831,6 +835,26 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             qs = qs.filter(event_type__description='Class Time Block')
         return qs.select_related('event_type').order_by('start')
+
+    def getTimeGroups(self, types=None, exclude_types=None):
+        timeslots = self.getTimeSlots(types=types, exclude_types=exclude_types)
+        time_groups = []
+
+        w_group = timeslots.filter(group__isnull=False)
+        groups = sorted(set(w_group.values_list('group', flat=True)))
+
+        for grp in groups:
+            time_groups.append(list(w_group.filter(group=grp)))
+
+        wo_groups = timeslots.filter(group__isnull=True)
+        if wo_groups.exists():
+            if not Tag.getBooleanTag('availability_group_timeslots'):
+                time_groups.append(list(wo_groups))
+            else:
+                time_groups.extend(Event.group_contiguous(list(wo_groups), int(Tag.getProgramTag('availability_group_tolerance', program = self))))
+        # sort by first timeslot within each group
+        time_groups.sort(key = lambda x:x[0].start)
+        return time_groups
 
     def num_timeslots(self):
         return len(self.getTimeSlots())
@@ -931,7 +955,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 return [tagged_programs[0][1]]
         return []
     current_programs.depend_on_model('cal.Event')
-    current_programs.depend_on_model('program.ProgramModule')
+    current_programs.depend_on_model('program.Program')
     current_programs = staticmethod(current_programs)
 
     def date_range(self):
@@ -1218,7 +1242,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     #   Update cache whenever a class is approved, a student is marked as attending, a teacher or student changes their profile, or a volunteer offer is changed
     getShirtInfo.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
-    getShirtInfo.depend_on_row('users.Record', lambda record: {'self': record.program}, lambda record: record.event == 'attended')
+    getShirtInfo.depend_on_row('users.Record', lambda record: {'self': record.program}, lambda record: record.event and record.event.name == 'attended')
     getShirtInfo.depend_on_model('users.TeacherInfo')
     getShirtInfo.depend_on_model('users.StudentInfo')
     getShirtInfo.depend_on_model('program.VolunteerOffer')
@@ -1286,12 +1310,10 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.accounting.models import LineItemType
         if value is not None:
             self._sibling_discount = Decimal(value)
-            Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
-            LineItemType.objects.get_or_create(text='Sibling discount', program=self, amount_dec = self._sibling_discount)
         else:
             self._sibling_discount = Decimal('0.00')
-            Tag.objects.filter(key='sibling_discount', object_id=self.id).delete()
-            LineItemType.objects.filter(text='Sibling discount', program=self).delete()
+        Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
+        LineItemType.objects.get_or_create(text='Sibling discount', program=self, amount_dec = self._sibling_discount)
 
     sibling_discount = property(_sibling_discount_get, _sibling_discount_set)
 

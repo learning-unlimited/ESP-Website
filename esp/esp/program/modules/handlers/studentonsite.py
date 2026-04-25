@@ -33,16 +33,20 @@ Learning Unlimited, Inc.
 """
 import datetime
 
-from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, meets_cap
+from django import forms
+
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, meets_cap
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
-from esp.users.models    import Record
+from esp.users.models    import Record, RecordType, Permission
 from esp.cal.models import Event
 from esp.middleware   import ESPError
 from esp.survey.views   import survey_view
 from esp.tagdict.models  import Tag
 from django.http import HttpResponseRedirect
 
+from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 
 class StudentOnsite(ProgramModuleObj, CoreModule):
@@ -59,26 +63,27 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             }
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     @meets_cap
     def studentonsite(self, request, tl, one, two, module, extra, prog):
         """ Display the landing page for the student onsite webapp """
         context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context.update(StudentClassRegModule.prepare_static(user, prog))
+        scrm = prog.getModule("StudentClassRegModule")
+        context.update(StudentClassRegModule.prepare_static(user, prog, scrm = scrm))
+        context['deadline_met'] = scrm.deadline_met()
 
         context['webapp_page'] = 'schedule'
         context['scrmi'] = prog.studentclassregmoduleinfo
         context['checked_in'] = prog.isCheckedIn(user)
         context['just_changed_classes']=request.GET.get('just_changed_classes','')=='true'
+        context['checkin_note'] = Tag.getProgramTag('student_onsite_checkin_note', program = prog)
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitedetails(self, request, tl, one, two, module, extra, prog):
@@ -102,8 +107,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitemap(self, request, tl, one, two, module, extra, prog):
@@ -116,8 +120,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return render_to_response(self.baseDir()+'map.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitecatalog(self, request, tl, one, two, module, extra, prog):
@@ -147,8 +150,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return render_to_response(self.baseDir()+'catalog.html', request, context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
@@ -157,16 +159,14 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         return survey_view(request, tl, one, two, template = self.baseDir()+'survey.html', context = context)
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     def onsiteaddclass(self, request, tl, one, two, module, extra, prog):
         if StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True):
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite?just_changed_classes=true')
 
     @aux_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Webapp')
     def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
         result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
@@ -174,6 +174,64 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             raise ESPError(result, log=False)
         else:
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite?just_changed_classes=true')
+
+    @aux_call
+    @needs_student_in_grade
+    def selfcheckin(self, request, tl, one, two, module, extra, prog):
+        context = self.onsitecontext(request, tl, one, two, prog)
+        mode = Tag.getProgramTag('student_self_checkin', program = prog)
+        user = request.user
+
+        # Redirect to their schedule if self checkin is not available
+        if mode == "none":
+            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+
+        # Show message if they are already checked in
+        checked_in = prog.isCheckedIn(user)
+        context['checked_in'] = checked_in
+
+        if not checked_in:
+            # Show which modules and/or records they haven't completed
+            # This only includes the required and non-completed subset of modules/records
+            # that would normally be shown on the /studentreg page
+            context['mode'] = mode
+            context['form'] = SelfCheckinForm(program = prog, user = user)
+
+            modules = prog.getModules(user, 'learn')
+            context['completedAll'] = True
+            for module in modules:
+                # If completed all required modules so far...
+                if context['completedAll']:
+                    if not module.isCompleted() and module.isRequired():
+                        context['completedAll'] = False
+
+            records = StudentRegCore.get_reg_records(user, prog, 'learn')
+
+            context['modules'] = filter(lambda x: (x.isRequired() and not x.isCompleted()), modules)
+            context['records'] = filter(lambda x: not x['isCompleted'], records)
+
+            if Tag.getBooleanTag('student_self_checkin_paid', program = prog):
+                iac = IndividualAccountingController(prog, user)
+                context['owes_money'] = iac.amount_due() > 0
+                if context['owes_money']:
+                    if Permission.user_has_perm(user, 'Student/Payment', prog):
+                        if prog.hasModule("CreditCardModule_Stripe"):
+                            context['payment_url'] = "payonline"
+                        elif prog.hasModule("CreditCardModule_Cybersource"):
+                            context['payment_url'] = "cybersource"
+
+            if request.method == 'POST':
+                form = SelfCheckinForm(request.POST, program = prog, user = user)
+                if form.is_valid():
+                    # Check in the student
+                    rt = RecordType.objects.get(name="attended")
+                    rec = Record(user=user, program=prog, event=rt)
+                    rec.save()
+                    return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+                else:
+                    context['form'] = form
+
+        return render_to_response(self.baseDir()+'selfcheckin.html', request, context)
 
     @staticmethod
     def onsitecontext(request, tl, one, two, prog):
@@ -194,3 +252,25 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     class Meta:
         proxy = True
         app_label = 'modules'
+
+class SelfCheckinForm(forms.Form):
+    code = forms.CharField(min_length = 6, max_length = 6, required = True)
+
+    def __init__(self, *args, **kwargs):
+        if 'program' in kwargs and 'user' in kwargs:
+            program = kwargs.pop('program')
+            user = kwargs.pop('user')
+        else:
+            raise KeyError('Need to supply program and user as named arguments to SelfCheckinForm')
+        super(SelfCheckinForm, self).__init__(*args, **kwargs)
+        mode = Tag.getProgramTag('student_self_checkin', program = program)
+        self.hash = user.userHash(program)
+        if mode != 'code':
+            self.fields['code'].initial = self.hash
+            self.fields['code'].widget = forms.HiddenInput()
+
+    def clean_code(self):
+        data = self.cleaned_data['code']
+        if data != self.hash:
+            raise forms.ValidationError("That code is invalid")
+        return data

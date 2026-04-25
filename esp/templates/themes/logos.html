@@ -1,0 +1,168 @@
+{% extends "main.html" %}
+{% block title %}Themes{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/logos.css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script>
+  $j( function() {
+    $j.widget( "custom.iconselectmenu", $j.ui.selectmenu, {
+      _renderItem: function( ul, item ) {
+        var li = $j( "<li>" ),
+          wrapper = $j( "<div>", { text: item.label } );
+ 
+        if ( item.disabled ) {
+          li.addClass( "ui-state-disabled" );
+        }
+ 
+        $j( "<span>", {
+          style: item.element.attr( "data-style" ),
+          "class": "ui-icon " + item.element.attr( "data-class" )
+        })
+          .appendTo( wrapper );
+ 
+        return li.append( wrapper ).appendTo( ul );
+      }
+    });
+
+    $j( "#logo_select" )
+      .iconselectmenu()
+      .iconselectmenu( "menuWidget")
+        .addClass( "ui-menu-icons avatar" );
+    $j( "#header_select" )
+      .iconselectmenu()
+      .iconselectmenu( "menuWidget")
+        .addClass( "ui-menu-icons avatar" );
+    $j( "#favicon_select" )
+      .iconselectmenu()
+      .iconselectmenu( "menuWidget")
+        .addClass( "ui-menu-icons avatar" );
+    $j("option:hidden:disabled:selected").remove();
+  } );
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Logo Editor</h1>
+
+<div class="row-fluid">
+    <div class="well">
+        <center>
+            <h3>Current logo:</h3>
+            <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="No logo selected/uploaded">
+            <br /><br />
+            <form method="post" action="/themes/logos/" enctype="multipart/form-data">
+                <table>
+                    <tr class="options">
+                        <td>
+                            <input type="file" id="new_logo" name="new_logo">
+                        </td>
+                        <td>
+                            <button class="btn btn-large btn-block btn-primary" type="submit">Upload new logo</button>
+                        </td>
+                    </tr>
+                    <tr class="options">
+                        <td>
+                            <select name="logo_select" id="logo_select">
+                                <option hidden disabled selected value> -- select an option -- </option>
+                                {% for logo_file in logo_files %}
+                                <option value="{{ logo_file.1 }}" data-class="avatar" data-style="background-image: url('{{ logo_file.0 }}');">{{ logo_file.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-large btn-block btn-primary" type="submit">Select old logo</button>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </center>
+    </div>
+</div>
+<br />
+{% if has_header %}
+<div class="row-fluid">
+    <div class="well">
+        <center>
+            <h3>Current header:</h3>
+            <img src="/media/images/theme/header.png?v={{ current_header_version }}" alt="No header selected/uploaded">
+            <br /><br />
+            <form method="post" action="/themes/logos/" enctype="multipart/form-data">
+                <table>
+                    <tr class="options">
+                        <td>
+                            <input type="file" id="new_header" name="new_header">
+                        </td>
+                        <td>
+                            <button class="btn btn-large btn-block btn-primary" type="submit">Upload new header</button>
+                        </td>
+                    </tr>
+                    <tr class="options">
+                        <td>
+                            <select name="header_select" id="header_select">
+                                <option hidden disabled selected value> -- select an option -- </option>
+                                {% for header_file in header_files %}
+                                <option value="{{ header_file.1 }}" data-class="avatar" data-style="background-image: url('{{ header_file.0 }}');">{{ header_file.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-large btn-block btn-primary" type="submit">Select old header</button>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </center>
+    </div>
+</div>
+<br />
+{% endif %}
+<div class="row-fluid">
+    <div class="well">
+        <center>
+            <h3>Current favicon:</h3>
+            <img src="/media/images/favicon.ico?v={{ current_favicon_version }}" alt="No favicon selected">
+            <br /><br />
+            <form method="post" action="/themes/logos/" enctype="multipart/form-data">
+                <table>
+                    <tr class="options">
+                        <td>
+                            <input type="file" id="new_favicon" name="new_favicon">
+                        </td>
+                        <td>
+                            <button class="btn btn-large btn-block btn-primary" type="submit">Upload new favicon</button>
+                        </td>
+                    </tr>
+                    <tr class="options">
+                        <td>
+                            <select name="favicon_select" id="favicon_select">
+                                <option hidden disabled selected value> -- select an option -- </option>
+                                {% for favicon_file in favicon_files %}
+                                <option value="{{ favicon_file.1 }}" data-class="avatar" data-style="background-image: url('{{ favicon_file.0 }}');">{{ favicon_file.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-large btn-block btn-primary" type="submit">Select old favicon</button>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </center>
+    </div>
+    <div align="center">
+        <a href="/themes/">
+            <button type="button" class="btn btn-large btn-primary">Return to themes page</button>
+        </a>
+        <a href="/">
+            <button type="button" class="btn btn-large btn-inverse">Return to home page</button>
+        </a>
+        <br/><br/>
+    </div>
+</div>
+
+{% endblock %}

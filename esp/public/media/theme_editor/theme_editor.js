@@ -1,5 +1,6 @@
 function showColor() {
     $j('.color').each(function(i){
+        var default_color = $j(this).data("default");
         $j(this).spectrum({
             type: "color",
             showInput: true,
@@ -9,6 +10,24 @@ function showColor() {
             palette: [palette_list],
             showPaletteOnly: true
         });
+        // Create the "Reset Color" button
+        var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 1.5px;">Reset Color</button>').click(function() {
+            $j(this).siblings("input").spectrum("set", default_color); // Reset color to default
+        });
+        // Create the "Remove" button
+        var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').click(function() {
+            var input = $j(this).siblings("input");
+            input.spectrum("destroy");
+            $j(this).parents(".control-group").remove();
+            console.log(input.attr("name"));
+            $j("option[value=" + input.attr("name") + "]").show();
+        });
+        if ($j(this).siblings(".reset-color").length == 0) {
+            $j(this).parent(".controls").append(resetButton);
+        }
+        if ($j(this).filter("[id*=accent]").length == 1 && $j(this).siblings(".remove-color").length == 0) {
+            $j(this).parent(".controls").append(removeButton);
+        }
     });
 }
 
@@ -37,7 +56,7 @@ function showCustomPalette() {
             showInitial: true,
             showButtons: true,
             preferredFormat: "hex",
-            cancelText: "Remove",
+            cancelText: "Remove"
         });
     });
     var $active;
@@ -51,9 +70,18 @@ function showCustomPalette() {
 }
 
 $j(document).ready(function(){
+    
     showColor();
     showBasePalette();
     showCustomPalette();
+    $j(".length, .text").each(function(){
+        var el = $j(this)
+        var default_val = el.data("default");
+        var resetButton = $j('<button class="reset-length" type="button" style="margin-left: 1.5px;">Reset</button>').click(function() {
+            el.val(default_val); // Reset to default value
+        });
+        el.parent(".controls").append(resetButton);
+    });
     $j('#addToPalette').click(function(){
         var newColor = $j('<input>');
         newColor.addClass('palette');
@@ -71,23 +99,61 @@ $j(document).ready(function(){
         $j(this).popover({placement:'left', animation:false});
     });
     
-    //  Show optional variable selector if there are optional variables available
-    $j('div.opt_var_div:has(select.select_opt_var:has(option))').removeClass('hidden');
+    //  Make optional variable dropdown blank
+    $j('select.select_opt_var').val('');
     
     //  Allow form elements to be created for optional variables
     $j('button.add_opt_var_button').click(function (event) {
         event.preventDefault();
         
-        //  Determine which optional variable we are trying to add.
+        // Determine which optional variable we are trying to add.
         var button_id = event.target.id;
         var button_id_prefix = 'add_opt_var_';
         var select_id = 'new_opt_var_' + button_id.substr(button_id_prefix.length);
-        var select_val = $j('#' + select_id).val();
+        var select_el = $j('#' + select_id);
+        var select_val = select_el.val();
+        var option_el = $j("#new_opt_var_2").find(":selected");
+        option_el.hide();
+        select_el.val("");
+        
+        // Don't want duplicate variables
+        if ($j("#id_" + select_val).length == 0) {
+            // Create a new color input field
+            var colorInput = $j('<input>')
+                .attr({
+                    id: 'id_' + select_val,
+                    class: 'color',
+                    type: 'text',
+                    value: option_el.data('default'),
+                    name: select_val,
+                    style: 'display: none;'
+                });
 
-        //  Insert a new color selector for the desired variable
-        $j(event.target).parent().parent().parent().append($j('<div class="control-group">')
-            .append($j('<label class="control-label" for="' + select_val + '">').html(select_val))
-            .append($j('<input id="id_' + select_val + '" class="color" type="text" value="#000000" name="' + select_val + '" style="display: none;" />')));
-        showColor();
+            // Create the "Reset Color" button
+            var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 5px;">Reset Color</button>').click(function() {
+                $j(this).siblings("input").spectrum("set", option_el.data('default')); // Reset color to default
+            });
+
+            // Create the "Remove" button
+            var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').click(function() {
+                $j(this).siblings("input").spectrum("destroy");
+                $j(this).parents(".control-group").remove();
+                option_el.show();
+            });
+
+            // Create a control group and append the color input and reset button
+            var controlsDiv = $j('<div class="controls">')
+                .append(colorInput)
+                .append(resetButton)
+                .append(removeButton);
+            var controlGroup = $j('<div class="control-group">')
+                .append($j('<label class="control-label" for="' + select_val + '">').html(select_val))
+                .append(controlsDiv)
+
+            // Append the control group to the parent element
+            $j(event.target).parent().parent().parent().append(controlGroup);
+
+            showColor();
+        }
     });
 });

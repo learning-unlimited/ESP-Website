@@ -47,7 +47,7 @@ from decimal import Decimal
 
 class LineItemType(models.Model):
     text = models.TextField(help_text='A description of this line item.')
-    amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this line item.')
+    amount_dec = models.DecimalField(default=0, max_digits=9, decimal_places=2, help_text='The cost of this line item.')
     program = models.ForeignKey(Program)
     required = models.BooleanField(default=False)
     max_quantity = models.PositiveIntegerField(default=1)

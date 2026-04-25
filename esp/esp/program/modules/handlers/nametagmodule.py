@@ -37,6 +37,7 @@ from django.conf import settings
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.handlers.listgenmodule import ListGenModule
+from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
@@ -44,6 +45,7 @@ from esp.utils.web import render_to_response
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
+
 
 
 class NameTagModule(ProgramModuleObj):
@@ -69,24 +71,36 @@ class NameTagModule(ProgramModuleObj):
         context.update(usc.prepare_context(prog, target_path='/manage/%s/generatetags' % prog.url))
         context['combo_form'] = False
         context['include_continue'] = False
+        context['self_checkin'] = Tag.getProgramTag('student_self_checkin', program = prog) == 'code'
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
-    def nametag_data(self, users_list1, user_title1, users_list2 = ESPUser.objects.none(), user_title2 = None):
+    def nametag_data(self, users_list1, user_title1, users_list2 = ESPUser.objects.none(), user_title2 = None, program = None):
         users = []
         users_list = [ user for user in users_list1 | users_list2]
         users_list = filter(lambda x: len(x.first_name+x.last_name), users_list)
         users_list.sort()
 
         for user in users_list:
+            prof = RegistrationProfile.getLastProfile(user)
             if user in users_list1:
                 title = user_title1
             else:
                 title = user_title2
-            users.append({'title': title,
-                          'name' : '%s %s' % (user.first_name, user.last_name),
-                          'id'   : user.id,
-                          'username': user.username})
+            if prof.teacher_info is not None:
+                pronoun = prof.teacher_info.pronoun
+            elif prof.student_info is not None:
+                pronoun = prof.student_info.pronoun
+            else:
+                pronoun = None
+            user_dict = {'title': title,
+                         'name' : '%s %s' % (user.first_name, user.last_name),
+                         'id'   : user.id,
+                         'username': user.username,
+                         'pronoun': pronoun}
+            if program and Tag.getProgramTag('student_self_checkin', program = program) == 'code':
+                user_dict['hash'] = user.userHash(program)
+            users.append(user_dict)
         return users
 
     @aux_call
@@ -108,7 +122,7 @@ class NameTagModule(ProgramModuleObj):
             data = ListGenModule.processPost(request)
             usc = UserSearchController()
             filterObj = usc.filter_from_postdata(prog, data)
-            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title)
+            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title, program = prog)
 
         elif idtype == 'students':
             user_title = "Student"
@@ -118,7 +132,7 @@ class NameTagModule(ProgramModuleObj):
             else:
                 students = ESPUser.objects.filter(student_dict['confirmed']).distinct()
 
-            users = self.nametag_data(students, user_title)
+            users = self.nametag_data(students, user_title, program = prog)
 
         elif idtype == 'teacher':
             user_title = "Teacher"

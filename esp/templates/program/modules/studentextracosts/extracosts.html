@@ -8,6 +8,11 @@
 <link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/smoothness/jquery-ui.css">
 {% endblock %}
 
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/program/modules/extracosts.js"></script>
+{% endblock %}
+
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
@@ -26,6 +31,9 @@ td>ul { list-style-type: none; padding: 0px }
 <p>Food and other additional items can only be changed up until <b>1 week before the program.</b></p>
 {% end_inline_program_qsd_block %}
 
+<br /> 
+{% if paid_for %}<div class="formerror">{{ paid_for_text }}</div>{% endif %} 
+
 <br />
 
 {% if error_custom %}<div class="formerror">You selected a choice with a custom amount but did not specify an amount; please do so below. </div>
@@ -42,21 +50,18 @@ td>ul { list-style-type: none; padding: 0px }
 <tr>
     <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required or f.type == "sibling" %}(required; please make a selection below){% else %}(optional){% endif %}</td>
 </tr>
-<tr style="border-bottom: 1px dashed grey;">
+<tr {% if f.type != "sibling" %}style="border-bottom: 1px dashed grey;"{% endif %}>
     <td>
         {% if f.type == "single" %}
             {% if f.form.cost.errors %}<div style="color: red;">{{ f.form.cost.errors|join:", " }}</div>{% endif %}
             {{ f.form.cost }} ${{ f.LineItem.amount_dec|floatformat:2 }}
-        {% endif %}
-        {% if f.type == "multiple" %}
+        {% elif f.type == "multiple" %}
             {% if f.form.count.errors %}<div style="color: red;">{{ f.form.count.errors|join:", " }}</div>{% endif %}
             {{ f.form.count }} ${{ f.LineItem.amount_dec|floatformat:2 }} each
-        {% endif %}
-        {% if f.type == "select" %}
+        {% elif f.type == "select" %}
             {% if f.form.option.errors %}<div style="color: red;">{{ f.form.option.errors|join:", " }}</div>{% endif %}
             {{ f.form.option }}
-        {% endif %}
-        {% if f.type == "sibling" %}
+        {% elif f.type == "sibling" %}
             {% if f.form.siblingdiscount.errors %}<div style="color: red;">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
             {{ f.form.siblingdiscount }}
     </td>
@@ -71,14 +76,14 @@ td>ul { list-style-type: none; padding: 0px }
                 </td>
             </tr>
             {% endif %}
-            <tr>
+            <tr style="border-bottom: 1px dashed grey;">
                 <td>{{ f.form.siblingname }}</td>
             </tr>
         {% endif %}
         
         {# If num_options, radio buttons will be used for the field. In order to  #}
         {# be able to remove a selected item, we need a button. The Javascript    #}
-        {# code for the button is at the bottom.                                  #}
+        {# code for the button is in extracosts.js.                               #}
 
         {% if f.LineItem.num_options and not f.LineItem.required %}
             <button type="button"
@@ -92,6 +97,24 @@ td>ul { list-style-type: none; padding: 0px }
 </tr>
 {% endfor %}
 <tr>
+    <td align="right">
+        <p>Total cost of selected items: <span style="font-weight: bold;" id="total_cost"></span></p>
+        {% if not program.sibling_discount %}
+        <p>Program admission: <span style="font-weight: bold;" id="amount_cost" data-total="{{ program.base_cost|floatformat:2 }}">${{ program.base_cost|floatformat:2 }}</span></p>
+        {% endif %}
+        {% if paid_for %}
+        <p>Total amount previously paid: <span style="font-weight: bold;" id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">-${{ amount_paid|floatformat:2 }}</span></p>
+        {% endif %}
+        {% if finaid_grant %}
+        <p>Total amount of financial aid: <span style="font-weight: bold;" id="amount_finaid" data-percent="{{ finaid_grant.percent|floatformat:2 }}" data-max_dec="{{ finaid_grant.amount_max_dec|floatformat:2 }}"></span></p>
+        {% endif %}
+        <p id="due_warning">Total amount due: <span style="font-weight: bold;" id="amount_due"></span></p>
+        {% if paid_for %}
+        <p id="donation_warning" style="color: blue;" hidden></p>
+        {% endif %}
+    </td>
+</tr>
+<tr>
     <td align="center">
         <input type="submit" class="btn btn-primary" value="Save"/>
     </td>
@@ -100,15 +123,5 @@ td>ul { list-style-type: none; padding: 0px }
 </center>
 </form>
 </div>
-
-<script type="text/javascript">
-    /*
-     * A click handler that unchecks all inputs with the same name as the
-     * button.
-     **/
-    function remove_item(button) {
-        $j("input[name="+button.name+"]").prop("checked", false);
-    }
-</script>
 
 {% endblock %}

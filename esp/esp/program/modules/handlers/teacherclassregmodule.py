@@ -35,6 +35,7 @@ from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
+from esp.program.class_status import ClassStatus
 from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType, RegistrationProfile, ScheduleMap
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -44,7 +45,7 @@ from esp.utils.web               import render_to_response
 from esp.dbmail.models           import send_mail
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser, Record, TeacherInfo
+from esp.users.models            import ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
@@ -57,7 +58,6 @@ from esp.middleware.threadlocalrequest import get_current_request
 import json
 import re
 import datetime
-from copy import deepcopy
 
 
 class TeacherClassRegModule(ProgramModuleObj):
@@ -160,16 +160,12 @@ class TeacherClassRegModule(ProgramModuleObj):
         full_classes = [x for x in classes if x.isFull()]
         Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
 
-        #   With the new schema it is impossible to make a single Q object for
-        #   teachers who have taught for a previous program and teachers
-        #   who are teaching for the current program.  You have to chain calls
-        #   to .filter().
-        Q_taught_before = Q(
-            classsubject__status=10,
-            classsubject__parent_program__in=Program.objects.exclude(
-                pk=self.program.pk
-            ),
-        )
+        previous_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
+        Q_taught_before_temp = Q(classsubject__status=ClassStatus.ACCEPTED, classsubject__parent_program__in=previous_programs)
+        taught_before_users = ESPUser.objects.filter(Q_taught_before_temp).values('id').distinct()
+        # For past events, we want the query to be solely user based
+        # so events don't have to be BOTH current and past simultaneously for combo lists
+        Q_taught_before = Q(id__in=taught_before_users)
 
         #   Add dynamic queries for checking for teachers with particular resource requests
         additional_qs = {}
@@ -319,7 +315,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                         continue
                 if student.isStudent():
                     if not prog.isCheckedIn(student):
-                        rec = Record(user=student, program=prog, event="attended")
+                        rt = RecordType.objects.get(name="attended")
+                        rec = Record(user=student, program=prog, event=rt)
                         rec.save()
                     sr = StudentRegistration.objects.get_or_create(
                         user=student,
@@ -431,7 +428,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                             )
                     else:
                         if not prog.isCheckedIn(student):
-                            rec = Record(user=student, program=prog, event="attended")
+                            rt = RecordType.objects.get(name="attended")
+                            rec = Record(user=student, program=prog, event=rt)
                             rec.save()
                             json_data["checkedin"] = True
                         sr = StudentRegistration.objects.get_or_create(
@@ -515,24 +513,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         return render_to_response(
             self.baseDir() + "class_students.html", request, {"cls": cls}
         )
-
-    @aux_call
-    @needs_teacher
-    @meets_deadline("/Classes")
-    def deleteclass(self, request, tl, one, two, module, extra, prog):
-        classes = ClassSubject.objects.filter(id=extra)
-        if len(classes) != 1 or not request.user.canEdit(classes[0]):
-            return render_to_response(
-                self.baseDir() + "cannoteditclass.html", request, {}
-            )
-        cls = classes[0]
-        if cls.num_students() > 0:
-            return render_to_response(
-                self.baseDir() + "toomanystudents.html", request, {}
-            )
-
-        cls.delete()
-        return self.goToCore(tl)
 
     @aux_call
     @needs_teacher
@@ -908,18 +888,14 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/Create/Class")
     def copyaclass(self, request, tl, one, two, module, extra, prog):
-        if request.method == "POST":
-            action = "create"
-            if "category" in request.POST:
-                category = request.POST["category"]
-                if category.isdigit() and int(category) == int(
-                    self.program.open_class_category.id
-                ):
-                    action = "createopenclass"
-            return self.makeaclass_logic(
-                request, tl, one, two, module, extra, prog, action=action
-            )
-        if not "cls" in request.GET:
+        if request.method == 'POST':
+            action = 'create'
+            if 'category' in request.POST and self.program.open_class_registration:
+                category = request.POST['category']
+                if category.isdigit() and int(category) == int(self.program.open_class_category.id):
+                    action = 'createopenclass'
+            return self.makeaclass_logic(request, tl, one, two, module, extra, prog, action=action)
+        if not 'cls' in request.GET:
             raise ESPError("No class specified!", log=False)
 
         # Select the class

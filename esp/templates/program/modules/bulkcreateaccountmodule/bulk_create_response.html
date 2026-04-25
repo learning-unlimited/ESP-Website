@@ -20,13 +20,16 @@
         <tr>
             <th>Prefix</th>
             <th>Password</th>
+            <th># Accounts</th>
         </tr>
-        {% for prefix, password in passwords.items %}
+        {% for prefix, data in passwords.items %}
             <tr>
                 <td>{{ prefix }}</td>
-                <td>{{ password }}</td>
+                <td>{{ data.password }}</td>
+                <td>{{ data.number }}</td>
             </tr>
         {% endfor %}
     </table>
+    {% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}

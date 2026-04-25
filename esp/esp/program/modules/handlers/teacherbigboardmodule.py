@@ -6,10 +6,9 @@ from django.db.models.query import Q
 from django.db.models import Count, Sum
 
 from argcache import cache_function_for
-from esp.program.models import ClassSubject, ClassSection, ModeratorRecord
+from esp.program.models import ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
-from esp.utils.decorators import cached_module_view
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 
@@ -220,9 +219,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def num_checked_in_teachers(self, prog):
         now = datetime.datetime.now()
-        return Record.objects.filter(
-            program=prog,
-            event="teacher_checked_in",
+        return Record.objects.filter(program=prog, event__name='teacher_checked_in',
             time__year=now.year,
             time__month=now.month,
             time__day=now.day,

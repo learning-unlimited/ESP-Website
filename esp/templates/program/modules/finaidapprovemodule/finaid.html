@@ -18,6 +18,12 @@
     #finaid_table {
       width: 100% !important;
       margin: 0px !important;
+      position: relative;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 10000;
     }
     </style>
 {% endblock %}
@@ -87,7 +93,7 @@ function toggle(source) {
     <input name="percent" type="number" min="0" step="1" max="100" value="100" required>
     <br />
     <input type="submit" value="Approve Requests" class="btn btn-primary" >
-    <input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks" checked> Approve blank requests?
+    <input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks"> Approve blank requests?
   </form>
 
   {% if error %}

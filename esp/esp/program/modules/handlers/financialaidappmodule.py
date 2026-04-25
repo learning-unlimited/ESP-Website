@@ -32,13 +32,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call
+from esp.accounting.controllers import ProgramAccountingController
 from esp.utils.web import render_to_response, secure_required
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, User
+from esp.users.models    import ESPUser
 from django.db.models.query       import Q
-from django.template.loader import get_template
 from django.utils.decorators import method_decorator
 from esp.program.models  import FinancialAidRequest
 from esp.tagdict.models import Tag
@@ -89,7 +88,7 @@ class FinancialAidAppModule(ProgramModuleObj):
         return user.appliedFinancialAid(self.program)
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Finaid')
     @method_decorator(secure_required)
     # I didn't set @meets_cap here, because I don't want a bug in that to be
@@ -181,6 +180,10 @@ This request can be (re)viewed at:
                                   request,
                                   {'form': form, 'app': app})
 
+    def isStep(self):
+        # Only show this module if there are things (with costs) for financial aid to cover
+        pac = ProgramAccountingController(self.program)
+        return pac.get_lineitemtypes().filter(for_finaid=True, amount_dec__gt=0).exists()
 
     class Meta:
         proxy = True

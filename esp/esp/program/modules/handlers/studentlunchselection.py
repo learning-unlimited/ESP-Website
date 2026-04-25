@@ -33,17 +33,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student, meets_cap, meets_deadline
-from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
-from esp.users.models            import Record
+from esp.program.modules.base    import ProgramModuleObj, main_call, needs_student_in_grade, meets_cap, meets_deadline
+from esp.program.models          import ClassSection, StudentRegistration
+from esp.users.models            import Record, RecordType
 from esp.cal.models              import Event
 
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response
-from esp.middleware              import ESPError
 
 from django                      import forms
-from datetime                    import datetime, timedelta
 
 class StudentLunchSelectionForm(forms.Form):
 
@@ -121,10 +119,10 @@ class StudentLunchSelection(ProgramModuleObj):
             user = self.user
         else:
             user = get_current_request().user
-        return Record.objects.filter(user=user,event="lunch_selected",program=self.program).exists()
+        return Record.objects.filter(user=user,event__name="lunch_selected",program=self.program).exists()
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_cap
     @meets_deadline('/Classes/Lunch')
     def select_lunch(self, request, tl, one, two, module, extra, prog):
@@ -147,7 +145,8 @@ class StudentLunchSelection(ProgramModuleObj):
                         success = False
                     context['messages'] += [msg]
                 if success:
-                    rec, created = Record.objects.get_or_create(user=user,program=prog,event="lunch_selected")
+                    rt = RecordType.objects.get(name="lunch_selected")
+                    rec, created = Record.objects.get_or_create(user=user,program=prog,event=rt)
                     return self.goToCore(tl)
             else:
                 context['errors'] = True

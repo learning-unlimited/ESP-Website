@@ -1,6 +1,6 @@
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
-from esp.users.models import Record
+from esp.users.models import Record, RecordType
 from esp.users.forms.generic_search_form import StudentSearchForm
 
 
@@ -29,16 +29,17 @@ class MedicalBypassModule(ProgramModuleObj):
                 user = form.cleaned_data['target_user']
                 if Record.objects.filter(user=user,
                                          program=self.program,
-                                         event="med_bypass").exists():
+                                         event__name="med_bypass").exists():
                     status = 'bypass exists'
                 elif Record.objects.filter(user=user,
                                            program=self.program,
-                                           event="med").exists():
+                                           event__name="med").exists():
                     status = 'reg bit exists'
                 else:
+                    rt = RecordType.objects.get(name="med_bypass")
                     Record.objects.create(user=user,
                                           program=self.program,
-                                          event="med_bypass")
+                                          event=rt)
                     status = 'success'
             else:
                 status = 'invalid user'

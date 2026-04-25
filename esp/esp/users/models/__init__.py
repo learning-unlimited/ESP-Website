@@ -37,6 +37,7 @@ from datetime import datetime, timedelta, date
 from pytz import country_names
 import json
 import logging
+
 logger = logging.getLogger(__name__)
 import functools
 
@@ -62,6 +63,8 @@ from django_extensions.db.models import TimeStampedModel
 from django.core import urlresolvers
 from django.utils.functional import SimpleLazyObject
 from django.utils.safestring import mark_safe
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+from django.urls import reverse
 
 
 from esp.cal.models import Event, EventType
@@ -76,6 +79,7 @@ from esp.utils.decorators import enable_with_setting
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
+from esp.program.class_status import ClassStatus
 
 from urllib import quote
 
@@ -383,6 +387,8 @@ class BaseESPUser(object):
                          (settings.DEFAULT_HOST, otheruser.password)
         elif key == 'recover_query':
             return "?code=%s" % otheruser.password
+        elif key == 'unsubscribe_link':
+            return otheruser.unsubscribe_link_full()
         return u''
 
     def getTaughtPrograms(self):
@@ -415,9 +421,9 @@ class BaseESPUser(object):
         else:
             classes = self.classsubject_set.filter(parent_program = program)
             if not include_rejected:
-                classes = classes.exclude(status=-10)
+                classes = classes.exclude(status=ClassStatus.REJECTED)
             if not include_cancelled:
-                classes = classes.exclude(status=-20)
+                classes = classes.exclude(status=ClassStatus.CANCELLED)
             return classes
     getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
@@ -460,9 +466,9 @@ class BaseESPUser(object):
             classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
             sections = ClassSection.objects.filter(parent_class__in=classes)
             if not include_rejected:
-                sections = sections.exclude(status=-10)
+                sections = sections.exclude(status=ClassStatus.REJECTED)
             if not include_cancelled:
-                sections = sections.exclude(status=-20)
+                sections = sections.exclude(status=ClassStatus.CANCELLED)
             return self.moderating_sections.filter(parent_class__parent_program = program) | sections
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
@@ -472,9 +478,9 @@ class BaseESPUser(object):
     def getTaughtClassesAll(self, include_rejected = False, include_cancelled = True):
         classes = self.classsubject_set.all()
         if not include_rejected:
-            classes = classes.exclude(status=-10)
+            classes = classes.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
-            classes = classes.exclude(status=-20)
+            classes = classes.exclude(status=ClassStatus.CANCELLED)
         return classes
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
@@ -497,9 +503,9 @@ class BaseESPUser(object):
         classes = list(self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
-            sections = sections.exclude(status=-10)
+            sections = sections.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
-            sections = sections.exclude(status=-20)
+            sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
@@ -511,9 +517,9 @@ class BaseESPUser(object):
         classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
-            sections = sections.exclude(status=-10)
+            sections = sections.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
-            sections = sections.exclude(status=-20)
+            sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
     getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
@@ -1148,6 +1154,36 @@ class BaseESPUser(object):
             rank = default
         return rank
 
+    def userHash(self, program):
+        user_hash = hash(str(self.id) + str(program.id))
+        return '{0:06d}'.format(abs(user_hash))[:6]
+
+    # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
+    def unsubscribe_link(self):
+        username, token = self.make_token().split(":", 1)
+        return reverse('unsubscribe', kwargs={'username': username, 'token': token,})
+
+    def unsubscribe_link_full(self):
+        unsub_link = self.unsubscribe_link()
+        return 'https://%s%s' % (Site.objects.get_current().domain, unsub_link)
+
+    # this is an insecure version that accepts a POST from external sources
+    def unsubscribe_oneclick(self):
+        unsub_link = self.unsubscribe_link()
+        unsub_link = unsub_link.replace("unsubscribe", "unsubscribe_oneclick")
+        return 'http://%s%s' % (Site.objects.get_current().domain, unsub_link)
+
+    def make_token(self):
+        return TimestampSigner().sign(self.username)
+
+    def check_token(self, token):
+        try:
+            key = '%s:%s' % (self.username, token)
+            TimestampSigner().unsign(key, max_age=60 * 60 * 24 * 7) # Valid for 7 days
+        except (BadSignature, SignatureExpired):
+            return False
+        return True
+
 class ESPUser(User, BaseESPUser):
     """ Create a user of the ESP Website
     This user extends the auth.User of django"""
@@ -1351,6 +1387,7 @@ class StudentInfo(models.Model):
     school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=32,blank=True,null=True)
+    pronoun = models.CharField(max_length=50,blank=True,null=True)
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
@@ -1405,6 +1442,7 @@ class StudentInfo(models.Model):
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         form_dict['gender']          = self.gender
+        form_dict['pronoun']         = self.pronoun
         if Tag.getBooleanTag('show_student_tshirt_size_options'):
             form_dict['shirt_size']      = self.shirt_size
         if Tag.getBooleanTag('studentinfo_shirt_type_selection'):
@@ -1451,6 +1489,7 @@ class StudentInfo(models.Model):
         studentInfo.school          = new_data.get('school') if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data.get('dob')
         studentInfo.gender          = new_data.get('gender', None)
+        studentInfo.pronoun         = new_data.get('pronoun', None)
 
         studentInfo.heard_about      = new_data.get('heard_about', '')
 
@@ -1534,6 +1573,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     }
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    pronoun = models.CharField(max_length=50,blank=True,null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     affiliation = models.CharField(max_length=100, blank=True)
     from_here = models.NullBooleanField(null=True)
@@ -1580,11 +1620,13 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         return u'%s - %s %s' % (self.user.ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
+        form_dict['pronoun']         = self.pronoun
         form_dict['graduation_year'] = self.graduation_year
         form_dict['affiliation'] = self.affiliation
         form_dict['major']           = self.major
         form_dict['shirt_size']      = self.shirt_size
         form_dict['shirt_type']      = self.shirt_type
+
         return form_dict
 
     @staticmethod
@@ -1596,6 +1638,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
             teacherInfo.user = curUser
         else:
             teacherInfo = regProfile.teacher_info
+        teacherInfo.pronoun         = new_data.get('pronoun', None)
         teacherInfo.graduation_year = new_data['graduation_year']
         teacherInfo.affiliation = new_data['affiliation']
         affiliation = teacherInfo.affiliation.split(':', 1)[0]
@@ -2296,50 +2339,36 @@ class DBList(object):
     def __unicode__(self):
         return self.key
 
-class Record(models.Model):
-    #To make these better to work with in the admin panel, and to have a
-    #well defined set of possibilities, we'll use a set of choices
-    #if you want to use this model for an additional thing,
-    #add it as a choice
-    EVENT_CHOICES=(
-        ("student_survey", "Completed student survey"),
-        ("teacher_survey", "Completed teacher survey"),
-        ("reg_confirmed", "Confirmed registration"),
-        ("attended", "Attended program"),
-        ("checked_out", "Checked out of program"),
-        ("conf_email","Was sent confirmation email"),
-        ("teacher_quiz_done","Completed teacher quiz"),
-        ("paid","Paid for program"),
-        ("med","Submitted medical form"),
-        ("med_bypass","Recieved medical bypass"),
-        ("liab","Submitted liability form"),
-        ("studentwaiver","Submitted student liability waiver"),
-        ("teacherwaiver","Submitted teacher liability waiver"),
-        ("onsite","Registered for program onsite"),
-        ("schedule_printed","Printed student schedule onsite"),
-        ("teacheracknowledgement","Did teacher acknowledgement"),
-        ("minorspolicyacknowledgement","Acknowledged minors policy"),
-        ("backgroundcheck_affiliated","Acknowledged minors policy: affiliated"),
-        ("backgroundcheck_recent_check","Acknowledged minors policy: recently received background check"),
-        ("backgroundcheck_commit_check","Acknowledged minors policy: committed to getting background check"),
-        ("observing_yes","Agrees to have an observer assigned in exchange for observing as many hours as they teach."),
-        ("observing_no","Has a coteacher or commits to finding a coteacher by the teacher registration deadline."),
-        ("observing_other","Other: will elaborate in the message to directors."),
-        ("studentacknowledgement", "Did student acknowledgement"),
-        ("lunch_selected","Selected a lunch block"),
-        ("student_extra_form_done","Filled out Student Custom Form"),
-        ("teacher_extra_form_done","Filled out Teacher Custom Form"),
-        ("extra_costs_done","Filled out Student Extra Costs Form"),
-        ("donation_done", "Filled out Donation Form"),
-        ("waitlist","Waitlisted for a program"),
-        ("interview","Teacher-interviewed for a program"),
-        ("teacher_training","Attended teacher-training for a program"),
-        ("teacher_checked_in", "Teacher checked in for teaching on the day of the program"),
-        ("twophase_reg_done", "Completed two-phase registration"),
-    )
+class RecordType(models.Model):
+    name = models.CharField(max_length=80, help_text = "A unique short name for the record type", unique=True)
+    description = models.CharField(max_length=255, help_text = "A unique sentence case description for the record type", unique=True)
 
-    event = models.CharField(max_length=80,choices=EVENT_CHOICES)
-    program = models.ForeignKey("program.Program",blank=True,null=True)
+    BUILTIN_TYPES = [
+        "student_survey", "teacher_survey", "reg_confirmed", "attended", "checked_out", "conf_email", "teacher_quiz_done",
+        "paid", "med", "med_bypass", "liab", "onsite", "schedule_printed", "teacheracknowledgement", "studentacknowledgement",
+        "lunch_selected", "student_extra_form_done", "teacher_extra_form_done", "extra_costs_done", "donation_done", "waitlist",
+        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done",
+    ]
+
+    @classmethod
+    def desc(cls):
+        return cls.objects.all().values_list('name', 'description')
+
+    def __unicode__(self):
+        return self.description
+
+    def is_custom(self):
+        return self.name not in self.BUILTIN_TYPES
+
+    def used_by_records(self):
+        return Record.objects.filter(event=self).exists()
+
+    class Meta:
+        app_label = 'users'
+
+class Record(models.Model):
+    event = models.ForeignKey("RecordType", blank=True, null=True)
+    program = models.ForeignKey("program.Program", blank=True, null=True)
     user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
 
     time = models.DateTimeField(blank=True, default = datetime.now)
@@ -2375,7 +2404,7 @@ class Record(models.Model):
         """
         if when is None:
             when = datetime.now()
-        filter = cls.objects.filter(user=user, event=event, time__lte=when)
+        filter = cls.objects.filter(user=user, event__name=event, time__lte=when)
         if program is not None:
             filter = filter.filter(program=program)
         if only_today:
@@ -2401,7 +2430,7 @@ class Record(models.Model):
             return True
 
     def __unicode__(self):
-        return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
+        return unicode(self.user) + " has completed " + unicode(self.event) + " for " + unicode(self.program)
 
 #helper method for designing implications
 def flatten(choices):
@@ -2464,7 +2493,6 @@ class Permission(ExpirableModel):
             ("Teacher/Quiz", "Teacher quiz"),
             ("Teacher/Catalog", "Catalog"),
             ("Teacher/Classes/All", "All classes deadlines"),
-            ("Teacher/Classes", "Classes"),
             ("Teacher/Classes/View", "View registered classes"),
             ("Teacher/Classes/Edit", "Edit registered classes"),
             ("Teacher/Classes/CancelReq", "Request class cancellation"),
@@ -2848,7 +2876,7 @@ class GradeChangeRequest(TimeStampedModel):
         subject, message = self._confirmation_email_content()
         send_mail(subject,
                   message,
-                  settings.DEFAULT_FROM_EMAIL,
+                  'info@' + settings.SITE_INFO[1],
                   [self.requesting_student.email, ])
 
     def get_admin_url(self):

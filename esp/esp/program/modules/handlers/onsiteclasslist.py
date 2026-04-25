@@ -43,16 +43,15 @@ from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
 
-from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
+from esp.users.models    import ESPUser, Record
 from esp.program.models import RegistrationProfile
+from esp.program.class_status import ClassStatus
 
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student_in_grade, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
-from esp.users.models import ESPUser, Record
-from esp.resources.models import ResourceAssignment
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
@@ -178,7 +177,7 @@ class OnSiteClassList(ProgramModuleObj):
         if success:
             registration_profile.save()
 
-            for extension in ['attended','medical','liability','onsite']:
+            for extension in ['attended','med','liab','onsite']:
                 Record.createBit(extension, program, student)
 
             IndividualAccountingController.updatePaid(self.program, student, paid=True)
@@ -359,7 +358,7 @@ class OnSiteClassList(ProgramModuleObj):
         return self.classList_base(request, tl, one, two, module, extra, prog, template_name='classlist.html')
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def classlist_public(self, request, tl, one, two, module, extra, prog):
         return self.classList_base(request, tl, one, two, module, extra, prog, options={}, template_name='allclass_fragment.html')
 
@@ -416,12 +415,12 @@ class OnSiteClassList(ProgramModuleObj):
             if endtime:
                 endtime = endtime[0]
                 classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                    status=10, parent_class__status=10,
+                    status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
                     begin_time__gte=curtime.start, begin_time__lte=endtime.start
                     )
             else:
                  classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                     status=10, parent_class__status=10,
+                     status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
                      begin_time__gte=curtime.start
                      )
             if sort_spec == 'unsorted':

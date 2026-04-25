@@ -1,6 +1,8 @@
 from decimal import Decimal
 from django import forms
+from django.conf import settings
 from django.contrib import admin
+from django.template import Template, Context
 from django.template.loader import select_template
 from django.utils.safestring import mark_safe
 from form_utils.forms import BetterForm, BetterModelForm
@@ -13,6 +15,7 @@ from esp.program.models import RegistrationType, Program, ScheduleConstraint, Bo
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
 from esp.tagdict import all_program_tags, tag_categories
 from esp.tagdict.models import Tag
+from esp.utils.models import TemplateOverride
 
 def get_rt_choices():
     choices = [("All","All")]
@@ -91,6 +94,7 @@ class ProgramSettingsForm(ProgramCreationForm):
             'program_modules': forms.SelectMultiple(attrs={'class': 'hidden-field'}),
         }
         model = Program
+ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """
@@ -116,11 +120,18 @@ class StudentRegSettingsForm(BetterModelForm):
         fieldsets = [
                      ('Capacity Settings', {'fields': ['enforce_max', 'class_cap_multiplier', 'class_cap_offset', 'apply_multiplier_to_room_cap']}),
                      ('Priority Registration Settings', {'fields': ['priority_limit']}), # use_priority is not included here to prevent confusion; to my knowledge, only HSSP uses this setting - WG
-                     ('Enrollment Settings', {'fields': ['use_grade_range_exceptions', 'register_from_catalog', 'visible_enrollments', 'visible_meeting_times', 'show_emailcodes']}),
+                     ('Enrollment Settings', {'fields': ['register_from_catalog', 'visible_enrollments', 'visible_meeting_times', 'show_emailcodes']}), # use_grade_range_exceptions is excluded until there is an interface for it - WG 5/25/23
                      ('Button Settings', {'fields': ['confirm_button_text', 'view_button_text', 'cancel_button_text', 'temporarily_full_text', 'cancel_button_dereg', 'send_confirmation']}),
                      ('Visual Options', {'fields': ['progress_mode','force_show_required_modules']}),
                     ]# Here you can also add description for each fieldset.
         model = StudentClassRegModuleInfo
+
+def get_template_source(template_list):
+    template = select_template(template_list)
+    if template.origin.name == "(template override)": # source is from a template override
+        return TemplateOverride.objects.get(name=template.template.name).content.replace('\r\n', '\n').strip() # Use unix line endings and strip whitespace just in case
+    else: # source is from a file
+        return open(template.origin.name, 'r').read().strip()
 
 class ReceiptsForm(BetterForm):
     confirm = forms.CharField(widget=forms.Textarea(attrs={'class': 'fullwidth'}),
@@ -144,14 +155,12 @@ class ReceiptsForm(BetterForm):
             if receipts.count() > 0:
                 receipt_text = receipts.latest('id').receipt
             elif action == "confirm":
-                template = select_template(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
-                receipt_text = open(template.origin.name, 'r').read().encode('UTF-8')
+                receipt_text = get_template_source(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
             elif action == "confirmemail":
-                template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
-                receipt_text = open(template.origin.name, 'r').read().encode('UTF-8')
+                receipt_text = get_template_source(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
             else:
-                receipt_text = "".encode('UTF-8')
-            self.fields[action].initial = receipt_text
+                receipt_text = ""
+            self.fields[action].initial = receipt_text.encode('UTF-8')
 
     def save(self):
         for action in ['confirm', 'confirmemail', 'cancel']:
@@ -161,11 +170,9 @@ class ReceiptsForm(BetterForm):
                 receipts.delete()
             else:
                 if action == "confirm":
-                    template = select_template(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
-                    default_text = open(template.origin.name, 'r').read().strip()
+                    default_text = get_template_source(['program/receipts/%s_custom_receipt.html' %(self.program.id), 'program/receipts/default.html'])
                 elif action == "confirmemail":
-                    template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
-                    default_text = open(template.origin.name, 'r').read().strip()
+                    default_text = get_template_source(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confemails/default.txt'])
                 elif action == "cancel":
                     default_text = ""
                 if cleaned_text == default_text:
@@ -184,6 +191,8 @@ class ProgramTagSettingsForm(BetterForm):
         self.program = kwargs.pop('program')
         self.categories = set()
         super(ProgramTagSettingsForm, self).__init__(*args, **kwargs)
+        from esp.program.modules.forms.teacherreg import TeacherClassRegForm
+        classreg_fields = [field.name for field in TeacherClassRegForm(self.program.classregmoduleinfo).visible_fields()]
         for key in all_program_tags:
             # generate field for each tag
             tag_info = all_program_tags[key]
@@ -191,18 +200,22 @@ class ProgramTagSettingsForm(BetterForm):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
                 if key == 'teacherreg_hide_fields':
-                    from esp.program.modules.forms.teacherreg import TeacherClassRegForm
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[1].label if field[1].label else field[0]) for field in TeacherClassRegForm.declared_fields.items() if not field[1].required])
                 elif key in ['student_reg_records', 'teacher_reg_records']:
-                    from esp.users.models import Record
-                    self.fields[key] = forms.MultipleChoiceField(choices=Record.EVENT_CHOICES)
+                    from esp.users.models import RecordType
+                    self.fields[key] = forms.MultipleChoiceField(choices=list(RecordType.desc()))
                 elif field is not None:
                     self.fields[key] = field
                 elif tag_info.get('is_boolean', False):
                     self.fields[key] = forms.BooleanField()
                 else:
                     self.fields[key] = forms.CharField()
-                self.fields[key].help_text = tag_info.get('help_text', '')
+                # some help texts need to be rendered
+                if key in ['student_self_checkin']:
+                    template = Template(tag_info.get('help_text', ''))
+                    self.fields[key].help_text = template.render(Context({'program': self.program}))
+                else:
+                    self.fields[key].help_text = tag_info.get('help_text', '')
                 self.fields[key].initial = self.fields[key].default = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key, program = self.program) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, program = self.program)
@@ -210,6 +223,11 @@ class ProgramTagSettingsForm(BetterForm):
                     if isinstance(self.fields[key], forms.MultipleChoiceField):
                         set_val = set_val.split(",")
                     self.fields[key].initial = set_val
+                # For class reg tags, hide them if the fields are not in the form
+                if key.startswith("teacherreg_label") and key.partition("teacherreg_label_")[2] not in classreg_fields:
+                    self.fields[key].widget = forms.HiddenInput()
+                elif key.startswith("teacherreg_help_text") and key.partition("teacherreg_help_text_")[2] not in classreg_fields:
+                    self.fields[key].widget = forms.HiddenInput()
 
     def save(self):
         prog = self.program

@@ -41,7 +41,7 @@ import re
 from cStringIO import StringIO
 from django.db import models
 from django.db.models import Q
-from esp.users.models import ESPUser, Record, admin_required
+from esp.users.models import ESPUser, Record, RecordType, admin_required
 from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.utils.web import render_to_response
@@ -144,7 +144,8 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
                 response.save()
 
                 # Set record to mark general survey as completed
-                r = Record(user=user, event=event, program=prog, time=datetime.datetime.now())
+                rt = RecordType.objects.get(name=event)
+                r = Record(user=user, event=rt, program=prog, time=datetime.datetime.now())
                 r.save()
 
                 response.set_answers(request.POST, save=True)

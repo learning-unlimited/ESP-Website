@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import Program, ClassSection, ClassSubject
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 from esp.program.modules.module_ext import DBReceipt
 
 from django.template import Template, Context
@@ -46,7 +46,8 @@ class ConfirmationEmailController(object):
         options = program.studentclassregmoduleinfo
         ## Get or create a userbit indicating whether or not email's been sent.
         try:
-            record, created = Record.objects.get_or_create(user=user, event="conf_email", program=program)
+            rt = RecordType.objects.get(name="conf_email")
+            record, created = Record.objects.get_or_create(user=user, event=rt, program=program)
         except Exception:
             created = False
         if (created or repeat) and (options.send_confirmation or override):

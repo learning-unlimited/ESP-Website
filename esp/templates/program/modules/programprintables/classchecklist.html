@@ -1,4 +1,5 @@
 {% load users %}
+{% load getTag %}
 
 <div class="classroster">
   <div class="classtitle">Check-in List for {{ item.cls.title }}
@@ -19,7 +20,11 @@
 
   <table align="center" class="pretty" cellspacing="0" cellpadding="3px">
     <tr>
-      <th colspan="6" align="center">Students</th>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+        <th colspan="7" align="center">Students</th>
+      {% else %}
+        <th colspan="6" align="center">Students</th>
+      {% endif %}
       <th colspan="4" align="center">Payments</th>
       <th colspan="2" align="center">Forms</th>
     </tr>
@@ -28,6 +33,9 @@
       <th>Here?</th>
       <th>Student ID</th>
       <th>Student Name</th>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th>Pronouns</th>
+      {% endif %}
       <th>Grade</th>
       <th>Email address</th>
       <th>Credit</th>
@@ -42,6 +50,9 @@
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
       <td>{{ student.user.id }}</td>
       <td>{{ student.user.name }}</td>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <td>{{ student.user.getLastProfile.student_info.pronoun }}</td>
+      {% endif %}
       <td>{{ student.user|getGradeForProg:program.id }}</td>
       <td>{{ student.user.getLastProfile.contact_user.e_mail }}</td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;{{ student.paid }}</div></td>
@@ -55,8 +66,12 @@
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
-          <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th colspan="4">
+      {% else %}
+      <th colspan="3">
+      {% endif %} 
+         <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
       <th>  
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
@@ -71,8 +86,12 @@
     <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
-          <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th colspan="4">
+      {% else %}
+      <th colspan="3">
+      {% endif %} 
+         <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
       <th>  
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
@@ -86,8 +105,12 @@
     </tr>    <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
-          <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th colspan="4">
+      {% else %}
+      <th colspan="3">
+      {% endif %} 
+         <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
       <th>  
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
@@ -101,8 +124,12 @@
     </tr>    <tr>
       <td>&nbsp; </td>
       <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
-      <th colspan="3">  
-          <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
+      {% if "student_profile_pronoun_field"|getBooleanTag %}
+      <th colspan="4">
+      {% else %}
+      <th colspan="3">
+      {% endif %} 
+         <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>
       </th>
       <th>  
           <center><div style="padding: 3px; border: solid black 2px; border-width: 0 0 1px 0; width:80%;">&nbsp;</div></center>

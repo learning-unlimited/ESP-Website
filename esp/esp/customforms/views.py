@@ -72,16 +72,7 @@ def getPerms(request):
             except ValueError:
                 return HttpResponse(status=400)
             prog = Program.objects.get(pk=prog_id)
-            perms = {'teachers': [], 'students': []}
-            for module in prog.getModules(None):
-                teach_desc = module.teacherDesc()
-                stud_desc = module.studentDesc()
-                if teach_desc:
-                    for k,v in teach_desc.items():
-                        perms['teachers'].append([k,v])
-                elif stud_desc:
-                    for k,v in stud_desc.items():
-                        perms['students'].append([k,v])
+            perms = {'teachers': [[desc[0], desc[1]] for desc in prog.teacherDesc().items()], 'students': [[desc[0], desc[1]] for desc in prog.studentDesc().items()]}
             return HttpResponse(json.dumps(perms))
     return HttpResponse(status=400)
 

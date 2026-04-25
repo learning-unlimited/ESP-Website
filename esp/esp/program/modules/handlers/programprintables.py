@@ -39,11 +39,11 @@ from esp.program.modules.base import (
     aux_call,
 )
 from esp.utils.web import render_to_response
-from esp.users.models import ESPUser, User, Record
-from esp.program.models import ClassSubject, ClassSection, StudentRegistration
-from esp.program.models import ClassFlagType
-from esp.program.models.class_ import ACCEPTED
-from esp.users.views import search_for_user
+from esp.users.models    import ESPUser, Record, RecordType
+from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.models  import ClassFlagType
+from esp.program.class_status import ClassStatus
+from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
 from esp.utils.latex import render_to_latex
 from esp.accounting.controllers import (
@@ -67,11 +67,10 @@ from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
 
 from datetime import timedelta
-from decimal import Decimal
-import json
 import collections
 import copy
 import csv
+import json
 
 
 class ProgramPrintables(ProgramModuleObj):
@@ -91,16 +90,16 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def paid_list_filter(self, request, tl, one, two, module, extra, prog):
+        exclude_line_items = ["Sibling discount", "Program admission", "Financial aid grant", "Student payment"]
         pac = ProgramAccountingController(prog)
-        lineitemtypes = pac.get_lineitemtypes(optional_only=True)
-        context = {"lineitemtypes": lineitemtypes}
-        return render_to_response(
-            self.baseDir() + "paid_list_filter.html", request, context
-        )
+        lineitemtypes = pac.get_lineitemtypes().exclude(text__in=exclude_line_items)
+        context = { 'lineitemtypes': lineitemtypes }
+        return render_to_response(self.baseDir()+'paid_list_filter.html', request, context)
 
     @aux_call
     @needs_admin
     def paid_list(self, request, tl, one, two, module, extra, prog):
+        exclude_line_items = ["Sibling discount", "Program admission", "Financial aid grant", "Student payment"]
         pac = ProgramAccountingController(prog)
         if "filter" in request.GET:
             try:
@@ -111,25 +110,12 @@ class ProgramPrintables(ProgramModuleObj):
                 single_select = False
 
             if ids == None:
-                transfers = (
-                    pac.all_transfers(optional_only=True)
-                    .order_by("line_item", "user")
-                    .select_related()
-                )
+                transfers = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item','user').select_related()
             else:
-                lineitems = (
-                    pac.all_transfers(optional_only=True)
-                    .filter(line_item__id__in=ids)
-                    .order_by("line_item", "user")
-                    .select_related()
-                )
+                lineitems = pac.all_transfers().filter(line_item__id__in=ids).order_by('line_item','user').select_related()
         else:
             single_select = False
-            lineitems = (
-                pac.all_transfers(optional_only=True)
-                .order_by("line_item", "user")
-                .select_related()
-            )
+            lineitems = pac.all_transfers().exclude(line_item__text__in=exclude_line_items).order_by('line_item','user').select_related()
 
         for lineitem in lineitems:
             lineitem.has_financial_aid = lineitem.user.hasFinancialAid(prog)
@@ -154,8 +140,10 @@ class ProgramPrintables(ProgramModuleObj):
     @main_call
     @needs_admin
     def printoptions(self, request, tl, one, two, module, extra, prog):
-        """Display a teacher eg page"""
-        context = {"module": self, "li_types": prog.getLineItemTypes(required=False)}
+        """ Display a teacher eg page """
+        pac = ProgramAccountingController(prog)
+        exclude_line_items = ["Sibling discount", "Program admission", "Financial aid grant", "Student payment"]
+        context = {'module': self, 'li_types': list(pac.get_lineitemtypes().exclude(text__in=exclude_line_items))}
 
         return render_to_response(self.baseDir() + "options.html", request, context)
 
@@ -727,7 +715,7 @@ class ProgramPrintables(ProgramModuleObj):
         if extra and "secondday" in extra:
             from django.db.models import Min
 
-            allclasses = prog.sections().filter(status=10, parent_class__status=10, meeting_times__isnull=False)
+            allclasses = prog.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED, meeting_times__isnull=False)
             first_timeblock_dict = allclasses.aggregate(Min('meeting_times__start'))
 
         scheditems = []
@@ -736,7 +724,7 @@ class ProgramPrintables(ProgramModuleObj):
         records = []
         tag_data = Tag.getProgramTag('teacher_reg_records', prog)
         if tag_data:
-            records = [x.strip().lower() for x in tag_data.split(',')]
+            records = [x.strip().lower() for x in tag_data.split(',') if RecordType.objects.filter(name = x.strip().lower()).exists()]
 
         for teacher in teachers:
             # get list of valid classes
@@ -993,26 +981,6 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
-    def students_lineitem(self, request, tl, one, two, module, extra, prog):
-        from esp.accounting.models import Transfer, LineItemType
-
-        #   Determine line item
-        student_ids = []
-        if "id" in request.GET:
-            lit_id = request.GET["id"]
-            request.session["li_type_id"] = lit_id
-        else:
-            lit_id = request.session["li_type_id"]
-
-        lit = LineItemType.objects.get(id = lit_id)
-        line_items = Transfer.objects.filter(line_item__id=lit_id)
-        for l in line_items:
-            student_ids.append(l.user_id)
-
-        return self.studentsbyFOO(request, tl, one, two, module, extra, prog, filt_exp = lambda x: x.id in student_ids, display_name = 'Student List for %s' % (lit.text))
-
-    @aux_call
-    @needs_admin
     def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
         """generate teacher/moderator schedules"""
 
@@ -1175,7 +1143,6 @@ class ProgramPrintables(ProgramModuleObj):
     def get_msg_vars(self, user, key):
         if key == "receipt":
             #   Take the user's most recent registration profile.
-            from esp.middleware.threadlocalrequest import AutoRequestContext as Context
             from django.conf import settings
 
             prof = user.getLastProfile()
@@ -1275,7 +1242,6 @@ class ProgramPrintables(ProgramModuleObj):
     @staticmethod
     def getTranscript(program, student, format='text', verbs = ['Enrolled'], valid_only = True):
         from django.template import Template
-        from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
         template_keys = {
             "text": "program/modules/programprintables/transcript.txt",
@@ -1437,6 +1403,31 @@ class ProgramPrintables(ProgramModuleObj):
         return response
 
     @aux_call
+    @needs_admin
+    def studentscheduleform(self, request, tl, one, two, module, extra, prog):
+        context = {}
+
+        # handle submission of the form
+        if request.method == 'POST':
+            if 'save' in request.POST:
+                form = StudentScheduleFormatForm(program = prog, data = request.POST)
+                if form.is_valid():
+                    Tag.setTag(key = "student_schedule_format", value = json.dumps(form.cleaned_data['schedule_fields']), target = prog)
+                    Tag.setTag(key = "student_schedule_pretext", value = form.cleaned_data['pretext'], target = prog)
+                    Tag.setTag(key = "student_schedule_posttext", value = form.cleaned_data['posttext'], target = prog)
+            elif 'reset' in request.POST:
+                Tag.unSetTag(key = "student_schedule_format", target = prog)
+                Tag.unSetTag(key = "student_schedule_pretext", target = prog)
+                Tag.unSetTag(key = "student_schedule_posttext", target = prog)
+                form = StudentScheduleFormatForm(program = prog)
+        else:
+            form = StudentScheduleFormatForm(program = prog)
+
+        context['form'] = form
+
+        return render_to_response(self.baseDir()+'studentscheduleform.html', request, context)
+
+    @aux_call
     @needs_onsite_no_switchback
     def studentschedules(
         self, request, tl, one, two, module, extra, prog, onsite=False
@@ -1503,11 +1494,10 @@ class ProgramPrintables(ProgramModuleObj):
             studentregistration__user__in=students,
             studentregistration__relationship__name="Enrolled",
             parent_class__parent_program=prog,
-            status=ACCEPTED,
-            meeting_times__isnull=False,
-        ).distinct()
-        all_classes = all_classes.select_related("parent_class")
-        all_classes = all_classes.prefetch_related("meeting_times")
+            status=ClassStatus.ACCEPTED,
+            meeting_times__isnull=False).distinct()
+        all_classes = all_classes.select_related('parent_class')
+        all_classes = all_classes.prefetch_related('meeting_times')
         classes_by_id = {cls.id: cls for cls in all_classes}
 
         sr_pairs = all_classes.values_list("id", "studentregistration__user")
@@ -1586,12 +1576,9 @@ class ProgramPrintables(ProgramModuleObj):
             # attach payment information to student
             student.invoice_id = iac.get_id()
             student.itemizedcosts = iac.get_transfers()
-            student.meals = iac.get_transfers(
-                optional_only=True
-            )  # catch everything that's not admission to the program.
-            student.admission = iac.get_transfers(
-                required_only=True
-            )  # Program admission
+            student.meals = iac.get_transfers(optional_only=True)  # catch everything that's not admission to the program.
+            student.required = iac.get_transfers(required_only=True).exclude(line_item=iac.default_admission_lineitemtype())
+            student.admission = iac.get_transfers(line_items = [iac.default_admission_lineitemtype()])  # Program admission
             student.paid_online = iac.has_paid()
             student.amount_finaid = iac.amount_finaid()
             student.amount_siblingdiscount = iac.amount_siblingdiscount()
@@ -1608,6 +1595,12 @@ class ProgramPrintables(ProgramModuleObj):
         from django.conf import settings
 
         basedir = 'program/modules/programprintables/'
+        if Tag.getProgramTag("student_schedule_format", prog):
+            context["schedule_format"] = {x: True for x in json.loads(Tag.getProgramTag("student_schedule_format", prog))}
+        else:
+            context["schedule_format"] = {choice[0]: True for choice in StudentScheduleFormatForm(program = prog).fields['schedule_fields'].choices}
+        context["pretext"] = Tag.getProgramTag("student_schedule_pretext", prog)
+        context["posttext"] = Tag.getProgramTag("student_schedule_posttext", prog)
         if file_type == 'html':
             return render_to_response(basedir+'studentschedule.html', request, context)
         elif file_type == 'pdf':
@@ -1666,7 +1659,7 @@ class ProgramPrintables(ProgramModuleObj):
         """generate class room rosters"""
         from esp.cal.models import Event
 
-        classes = self.program.sections().filter(status=10, parent_class__status=10)
+        classes = self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED)
 
         context = {}
 
@@ -1890,7 +1883,7 @@ class ProgramPrintables(ProgramModuleObj):
         records = []
         tag_data = Tag.getProgramTag('student_reg_records', prog)
         if tag_data:
-            records = [event for event in [x.strip().lower() for x in tag_data.split(',')] if event not in ['attended', 'med', 'liab']]
+            records = [event for event in [x.strip().lower() for x in tag_data.split(',') if RecordType.objects.filter(name = x.strip().lower()).exists()] if event not in ['attended', 'med', 'liab']]
         studentList = []
         for student in students:
             finaid_status = "None"
@@ -2097,7 +2090,7 @@ class ProgramPrintables(ProgramModuleObj):
         # get only the unscheduled sections, rather than all of them
         # also, only approved classes in the spreadsheet; can be changed
         if extra == "unscheduled":
-            sections = sections.filter(meeting_times__isnull=True, status=10)
+            sections = sections.filter(meeting_times__isnull=True, status=ClassStatus.ACCEPTED)
 
         times = prog.getTimeSlots()
         if extra == "unscheduled":
@@ -2219,8 +2212,8 @@ class ProgramPrintables(ProgramModuleObj):
 
         # get only the unscheduled sections, rather than all of them
         # also, only approved classes in the spreadsheet; can be changed
-        # if extra == "unscheduled":
-        #    sections = sections.filter(meeting_times__isnull=True, status=10)
+        #if extra == "unscheduled":
+        #    sections = sections.filter(meeting_times__isnull=True, status=ClassStatus.ACCEPTED)
 
         times = prog.getTimeSlots()
         if extra == "unscheduled":
@@ -2316,7 +2309,7 @@ class ProgramPrintables(ProgramModuleObj):
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
-        sections = list(self.program.sections().filter(status=10, parent_class__status=10))
+        sections = list(self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED))
         sections.sort()
 
         rooms = {}
@@ -2471,4 +2464,28 @@ class AllClassesSelectionForm(forms.Form):
         super(AllClassesSelectionForm, self).__init__(*args, **kwargs)
 
         self.converter = AllClassesFieldConverter(program)
-        self.fields["subject_fields"].choices = self.converter.field_choices
+        self.fields['subject_fields'].choices = self.converter.field_choices
+
+class StudentScheduleFormatForm(forms.Form):
+    schedule_fields = forms.MultipleChoiceField(choices = [
+                                                           ("username", "Student's Username"),
+                                                           ("userid", "Student's ID"),
+                                                           ("barcode", "Barcode"),
+                                                           ("amount_owed", "Amount Owed"),
+                                                           ("required_costs", "Required Choices"),
+                                                           ("optional_costs", "Optional Purchases"),
+                                                           ("codes", "Class Codes"),
+                                                          ],
+                                                widget = forms.widgets.CheckboxSelectMultiple,
+                                                label = "Select the fields that you would like to include in the schedule",
+                                                required = False)
+    pretext = forms.CharField(required = False, widget = forms.widgets.Textarea, label = mark_safe("Text to be placed just <u>above</u> the schedule, if any (supports LaTeX)"))
+    posttext = forms.CharField(required = False, widget = forms.widgets.Textarea, label = mark_safe("Text to be placed just <u>below</u> the schedule, if any (supports LaTeX)"))
+    def __init__(self, program, *args, **kwargs):
+        super(StudentScheduleFormatForm, self).__init__(*args, **kwargs)
+        if Tag.getProgramTag("student_schedule_format", program):
+            self.fields['schedule_fields'].initial = json.loads(Tag.getProgramTag("student_schedule_format", program))
+        else:
+            self.fields['schedule_fields'].initial = [choice[0] for choice in self.fields['schedule_fields'].choices]
+        self.fields['pretext'].initial = Tag.getProgramTag("student_schedule_pretext", program)
+        self.fields['posttext'].initial = Tag.getProgramTag("student_schedule_posttext", program)

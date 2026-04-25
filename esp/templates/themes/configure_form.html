@@ -1,5 +1,16 @@
 {% extends "main.html" %}
 {% block title %}Theme Selector{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <style>
+        tr {
+          border-bottom: grey 1px dashed;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 
 <h1>Themes - Setup Theme</h1>
@@ -10,19 +21,21 @@
 
 <p>These settings primarily affect the information that is displayed on your site.  For control over the appearance, you will want to use the <a href="/themes/customize/">theme editor</a>.</p>
 
-<p>
+<div id="program_form">
 <form id="theme_setup_form" method="POST" action="/themes/setup/">
 <input type="hidden" name="confirm_overwrite" value="{{ confirm_overwrite }}" />
 {% for filename in keep_files %}
-<input type="hidden" name="keep_files" id="keep_files_{{ forloop.counter0 }}" value="{{ filename }}" />{% endfor %}
-    {{ form }}
-<br />
+<input type="hidden" name="keep_files" id="keep_files_{{ forloop.counter0 }}" value="{{ filename }}" />
+{% endfor %}
+<table>
+    {{ form.as_table }}
+</table>
 <br />
 <center>
 <button class="btn btn-large btn-block btn-primary" type="submit">Save</button>
 </center>
 </form>
-</p>
+</div>
 
 {% else %}
 There is nothing to set up for this theme.  Please <a href="/themes/">return to the main theme page</a>.

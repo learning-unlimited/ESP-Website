@@ -83,6 +83,9 @@ class ClassFlagType(models.Model):
     get_flag_types.depend_on_m2m('program.Program', 'flag_types', lambda prog, flag_type: {'program': prog})
     get_flag_types = classmethod(get_flag_types)
 
+    def used_by_flags(self):
+        return ClassFlag.objects.filter(flag_type=self).exists()
+
 class ClassFlag(models.Model):
     subject = AjaxForeignKey('ClassSubject', related_name='flags')
     flag_type = models.ForeignKey(ClassFlagType)

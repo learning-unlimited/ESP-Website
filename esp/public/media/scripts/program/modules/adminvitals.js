@@ -96,8 +96,15 @@ function fillStats(data)
     html_string = ""
     for (var group of shirtnum.data)
     {
+        if (group.name == "Assigned Moderators")
+        {
+            group_name = "Assigned " + shirtnum.moderator_title + "s";
+        } else 
+        {
+            group_name = group.name;
+        }
         var shirtsizes = group.shirt_sizes;
-        html_string = html_string.concat("<table><tr><th colspan='"+(shirtsizes.length+1)+"'>"+group.name+" T-Shirts</th></tr>");
+        html_string = html_string.concat("<table><tr><th colspan='"+(shirtsizes.length+1)+"'>"+group_name+" T-Shirts</th></tr>");
         // Sizes header
         html_string = html_string.concat("<tr><td></td>");
         for (var i = 0; i < shirtsizes.length; i++)

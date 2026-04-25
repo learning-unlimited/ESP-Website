@@ -1,26 +1,26 @@
-
 $j(document).ready(function(){
     // when the page loads, check/select the questions induced by the modules
     // that are already selected (if any, from a template program e.g.)
     $j(".hidden-field").parents("tr").hide()
     modulesToQuestions();
-    // questionsToModules is called when the form gets submitted, but the following
-    // is useful for debugging
-    /*
-    $j("input[name='program_module_questions']" ).change(function() {
-        questionsToModules();
-    });*/
+    
+    // when any question is checked/unchecked, add/remove only those modules
+    $j("#id_program_module_questions").find("input").change(function(){
+        var modules = $j("#id_program_modules").val();
+        var checkbox_modules = $j(this).val().split(",");
+        if ($j(this).prop("checked")) {
+            modules = $j.merge(modules, checkbox_modules);
+        } else {
+            modules = _.without(modules, ...checkbox_modules);
+        }
+        $j("#id_program_modules").val(_.uniq(modules));
+    });
 });
 
 
+// called when the form gets submitted
 function questionsToModules() {
-    var nQuestions = $j("#id_program_module_questions").children().length;
-    var modules = [];
-    for (var i=0; i < nQuestions; i++) {
-        // record which questions are checked (and save their corresponding modules)
-        if ($j("#id_program_module_questions_" + String(i)).prop("checked"))
-            $j.merge(modules, $j("#id_program_module_questions_"+i).val().split(","))
-    }
+    var modules = $j("#id_program_modules").val();
     // Check if there is a nonzero admissions fee entered; if so, add the associated modules
     if ($j("#id_base_cost").val() != "" && parseInt($j("#id_base_cost").val()) > 0) {
         var modules_to_check = $j("#id_program_modules").children().filter(function(index){
@@ -29,9 +29,7 @@ function questionsToModules() {
         $j.merge(modules, modules_to_check.map(function(index){return this.value;}));
     }
     // Now just check those modules in the list.
-    modules = $j.unique(modules)
-    modules.sort() // $j.uniqueSort doesn't exist for jQuery < 2.2
-    $j("#id_program_modules").val(modules);
+    $j("#id_program_modules").val(_.uniq(modules));
     return
 };
 
@@ -47,13 +45,13 @@ function modulesToQuestions() {
     if (currentlySelectedIds == null || currentlySelectedIds.length == 0)
         return
     // otherwise, get the questions and see whether we should check them
-    var questions = $j("#id_program_module_questions").children()
-    // check if all the modules associated with a given question are selected
+    var questions = $j("#id_program_module_questions").children();
+    // check if ALL the modules associated with a given question are selected
     // if so, check that box
     for (var i=0; i < questions.length; i++) {
         var q = questions[i];
         var qvalslist = q.firstChild.firstChild.value.split(",");
-        var include = false;
+        var include = true;
         if (qvalslist.length == 0) {
             alert("The following question is associated with zero modules! "
                   + "Please contact web support.\n"
@@ -61,8 +59,9 @@ function modulesToQuestions() {
         }
         else {
             for (var j=0; j < qvalslist.length; j++) {
-                if (currentlySelectedIds.includes(qvalslist[j])) {
-                    include = true;
+                if (!currentlySelectedIds.includes(qvalslist[j])) {
+                    include = false;
+                    break
                 }
             }
             $j("#id_program_module_questions_" + i).prop("checked", include);

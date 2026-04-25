@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth, meets_deadline, needs_account
 from esp.middleware import ESPError
-from esp.cal.models import Event
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser
@@ -96,12 +95,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         vrs = prog.getVolunteerRequests()
         time_options = [v.timeslot for v in vrs]
         time_options_dict = dict(zip(time_options, vrs))
-
-        #   Group contiguous blocks
-        if not Tag.getBooleanTag('availability_group_timeslots'):
-            time_groups = [list(time_options)]
-        else:
-            time_groups = Event.group_contiguous(list(time_options), int(Tag.getProgramTag('availability_group_tolerance', program = prog)))
+        time_groups = prog.getTimeGroups(types = ["Volunteer"])
 
         context['groups'] = [[{'slot': t, 'id': time_options_dict[t].id} for t in group] for group in time_groups]
 

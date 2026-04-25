@@ -387,3 +387,13 @@ table.sortable tbody tr:nth-child(2n) td {
 table.sortable tbody tr:nth-child(2n+1) td {
   background: #fff;
 }
+
+#id_code {
+  font-size: xx-large;
+}
+
+#checkin_form .errorlist {
+  list-style-type: none;
+  padding-left: 0;
+  color: #c50000;
+}

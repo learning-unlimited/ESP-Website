@@ -40,20 +40,20 @@ import operator
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
-from django.http import Http404, HttpResponse
+from django.http import Http404
 
 from argcache import cache_function
 
 from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
+from esp.program.class_status import ClassStatus
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
-from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
-from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
+from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student_in_grade, needs_admin, no_auth, aux_call
+from esp.resources.models import ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, UserAvailability, StudentInfo, Record
 from esp.utils.decorators import cached_module_view, json_response
-from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import Transfer
 
@@ -498,7 +498,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'subject': 'id',
             'subject__sections': 'id',
             })
-    @needs_student
+    @needs_student_in_grade
     def interested_classes(self, request, tl, one, two, module, extra, prog):
         ssis = StudentSubjectInterest.valid_objects().filter(
             user=request.user)
@@ -510,7 +510,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
-    @needs_student
+    @needs_student_in_grade
     def lottery_preferences(self, request, tl, one, two, module, extra, prog):
         if prog.priorityLimit() > 1:
             return self.lottery_preferences_usepriority(request, prog)
@@ -735,6 +735,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
             'teacher_names': cls.pretty_teachers(),
             'moderator_names': cls.pretty_moderators(),
+            'moderator_title': Tag.getProgramTag("moderator_title", prog).capitalize() + "s",
             'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
             'special_requests': cls.requested_special_resources,
@@ -770,11 +771,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Classes Scheduled", classes.filter(sections__meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Class Sections", sections.distinct().count()))
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))
-        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10, sections__status=10).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=-10).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=-20).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=ClassStatus.ACCEPTED).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=ClassStatus.UNREVIEWED).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=ClassStatus.ACCEPTED, sections__status=ClassStatus.ACCEPTED).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=ClassStatus.REJECTED).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=ClassStatus.CANCELLED).exclude(category__category='Lunch').distinct().count()))
         return class_num_list
     class_nums.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
@@ -796,15 +797,16 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         teachers = prog.teachers()
         moderator_list = []
         if 'will_moderate' in teachers:
-            moderator_list.append(("Teachers who have offered to moderate", teachers['will_moderate'].count()))
+            moderator_list.append(("Teachers who have offered to be a " + Tag.getProgramTag("moderator_title", prog).lower(), teachers['will_moderate'].count()))
         if 'assigned_moderator' in teachers:
-            moderator_list.append(("Moderators who have been assigned to sections", teachers['assigned_moderator'].count()))
-        moderator_list.append(("Total number of time blocks offered by moderators", ModeratorRecord.objects.filter(program=prog).aggregate(Sum('num_slots'))['num_slots__sum'] or 0))
-        moderator_list.append(("Total number of time blocks assigned moderators", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().aggregate(Count('meeting_times'))['meeting_times__count']))
-        moderator_list.append(("Total number of sections assigned moderators", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().count()))
+            moderator_list.append((Tag.getProgramTag("moderator_title", prog).capitalize() + "s who have been assigned to sections", teachers['assigned_moderator'].count()))
+        moderator_list.append(("Total number of time blocks offered by " + Tag.getProgramTag("moderator_title", prog).lower() + "s", ModeratorRecord.objects.filter(program=prog).aggregate(Sum('num_slots'))['num_slots__sum'] or 0))
+        moderator_list.append(("Total number of time blocks assigned " + Tag.getProgramTag("moderator_title", prog).lower() + "s", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().aggregate(Count('meeting_times'))['meeting_times__count']))
+        moderator_list.append(("Total number of sections assigned " + Tag.getProgramTag("moderator_title", prog).lower() + "s", ClassSection.objects.filter(parent_class__parent_program=prog, moderators__isnull=False).distinct().count()))
         return moderator_list
     mod_nums.depend_on_row(ModeratorRecord, lambda mr: {'prog': mr.program})
     mod_nums.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
+    mod_nums.depend_on_model(Tag)
     mod_nums = staticmethod(mod_nums)
 
     @cache_function
@@ -987,7 +989,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     hour_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     hour_nums.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
     hour_nums.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
-    hour_nums.depend_on_row(Record, lambda rec: {'prog': rec.program}, lambda rec: rec.event == 'attended')
+    hour_nums.depend_on_row(Record, lambda rec: {'prog': rec.program}, lambda rec: rec.event and rec.event.name == 'attended')
     hour_nums = staticmethod(hour_nums)
 
     @cache_function
@@ -1058,6 +1060,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         dictOut["stats"].append(vitals)
 
         shirt_data = {"id": "shirtnum"};
+        shirt_data["moderator_title"] = Tag.getProgramTag("moderator_title", prog).capitalize();
         adminvitals_shirt = prog.getShirtInfo()
         shirt_data["types"] = adminvitals_shirt['shirt_types'];
         shirt_data["data"] = adminvitals_shirt['shirts'];
@@ -1085,7 +1088,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return dictOut
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def set_donation_amount(self, request, tl, one, two, module, extra, prog):
         """ Set the student's desired donation amount.
             Creates a line item type for donations if it does not exist. """

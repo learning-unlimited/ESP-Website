@@ -33,29 +33,18 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.forms.onsite import TeacherCheckinForm
-from esp.program.modules.base import (
-    ProgramModuleObj,
-    needs_teacher,
-    needs_student,
-    needs_admin,
-    usercheck_usetl,
-    needs_onsite,
-    main_call,
-    aux_call,
-)
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 from esp.program.models import RegistrationProfile
 from esp.program.models.class_ import ClassSubject, ClassSection
+from esp.program.class_status import ClassStatus
 from esp.program.models.flags import ClassFlagType
 from esp.utils.web import render_to_response
 from esp.utils.decorators import json_response
-from django.contrib.auth.decorators import login_required
-from esp.users.models import ESPUser, PersistentQueryFilter, Record, ContactInfo
+from esp.users.models    import ESPUser, PersistentQueryFilter, Record, RecordType
 from esp.cal.models import Event
-from django import forms
-from django.http import HttpResponse, HttpResponseRedirect
-from django.template.loader import render_to_string, get_template
+from django.http import HttpResponse
+from django.template.loader import get_template
 from django.db.models.aggregates import Min, Max
 from django.db.models.query import Q
 from datetime import datetime, timedelta, time
@@ -91,10 +80,9 @@ class TeacherCheckinModule(ProgramModuleObj):
                 teacher, "teacher_checked_in", prog, when, only_today=True
             )
             if not checked_in_already:
-                Record.objects.create(
-                    user=teacher, event="teacher_checked_in", program=prog, time=when
-                )
-                return "%s is checked in until %s." % (teacher.name(), str(endtime))
+                rt = RecordType.objects.get(name="teacher_checked_in")
+                Record.objects.create(user=teacher, event=rt, program=prog, time=when)
+                return '%s is checked in until %s.' % (teacher.name(), str(endtime))
             else:
                 return "%s has already been checked in until %s." % (
                     teacher.name(),
@@ -165,23 +153,25 @@ class TeacherCheckinModule(ProgramModuleObj):
                               it were that time.  Should be given in the format
                               "%m/%d/%Y %H:%M".
         """
-        json_data = {}
+        json_data = {'message': 'User not found'}
+        teachers = []
         if 'teacher' in request.POST:
             teachers = ESPUser.objects.filter(username=request.POST['teacher'])
-            if not teachers.exists():
-                json_data['message'] = 'User not found!'
+        elif 'teacherid' in request.POST:
+            teachers = ESPUser.objects.filter(id=request.POST['teacherid'])
+        if teachers and teachers.exists():
+            json_data['name'] = teachers[0].name()
+            json_data['username'] = teachers[0].username
+            when = None
+            if 'when' in request.POST:
+                try:
+                    when = datetime.strptime(request.POST['when'], "%m/%d/%Y %H:%M")
+                except:
+                    pass
+            if 'undo' in request.POST and request.POST['undo'].lower() == 'true':
+                json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
             else:
-                json_data['name'] = teachers[0].name()
-                when = None
-                if 'when' in request.POST:
-                    try:
-                        when = datetime.strptime(request.POST['when'], "%m/%d/%Y %H:%M")
-                    except:
-                        pass
-                if 'undo' in request.POST and request.POST['undo'].lower() == 'true':
-                    json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
-                else:
-                    json_data['message'] = self.checkIn(teachers[0], prog, when)
+                json_data['message'] = self.checkIn(teachers[0], prog, when)
         return HttpResponse(json.dumps(json_data), content_type='text/json')
 
     @aux_call
@@ -318,11 +308,8 @@ class TeacherCheckinModule(ProgramModuleObj):
         if when is None:
             when = datetime.now()
 
-        sections = (
-            prog.sections()
-            .annotate(begin_time=Min("meeting_times__start"))
-            .filter(status=10, parent_class__status=10, begin_time__isnull=False)
-        )
+        sections = prog.sections().annotate(begin_time=Min("meeting_times__start")) \
+            .filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED, begin_time__isnull=False)
         if date is not None:
             # Only consider classes happening on this date.
             sections = sections.filter(
@@ -360,7 +347,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         moderators = ESPUser.objects.filter(moderating_sections__in=sections).distinct()
         arrived_teachers = teachers.filter(
             record__program=prog,
-            record__event="teacher_checked_in",
+            record__event__name='teacher_checked_in',
             record__time__lte=when,
             record__time__year=when.year,
             record__time__month=when.month,
@@ -368,7 +355,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         ).distinct()
         arrived_moderators = moderators.filter(
             record__program=prog,
-            record__event="teacher_checked_in",
+            record__event__name='teacher_checked_in',
             record__time__lte=when,
             record__time__year=when.year,
             record__time__month=when.month,
@@ -465,12 +452,9 @@ class TeacherCheckinModule(ProgramModuleObj):
                           floating resources that have not been returned.
         """
 
-        sections = (
-            prog.sections()
-            .annotate(end_time=Max("meeting_times__end"))
-            .filter(status=10, parent_class__status=10, end_time__isnull=False)
-            .order_by("end_time")
-        )
+        sections = prog.sections().annotate(end_time=Max("meeting_times__end")) \
+                                  .filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED, end_time__isnull=False) \
+                                  .order_by('end_time')
         if starttime is None and date is not None:
             starttime = datetime.combine(date, time())
         if starttime is not None:
