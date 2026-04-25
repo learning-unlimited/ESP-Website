@@ -55,7 +55,6 @@ from esp.users.models import Permission, ESPUser, PersistentQueryFilter
 from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
 
-import six
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -95,7 +94,33 @@ class NewPermissionForm(forms.Form):
 
 class NewFilterPermissionForm(forms.Form):
     permission_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
-    user_filter = forms.ModelChoiceField(
+
+    class _PersistentQueryFilterChoiceField(forms.ModelChoiceField):
+        def label_from_instance(self, obj):
+            # Default PQF __str__ is often just "<name> (id)" where <name> is
+            # generic (e.g. "Custom list"). Add a short preview of the Q object
+            # to make selections actionable. Prefer a short count of matching users.
+            name = (obj.useful_name or '').strip() or ("Filter #%s" % obj.id)
+            try:
+                user_count = obj.getList(ESPUser).distinct().count()
+            except Exception:
+                user_count = None
+            if user_count is not None:
+                return "%s (#%s) — %s users" % (name, obj.id, user_count)
+            try:
+                q = obj.get_Q()
+                q_preview = str(q)
+            except Exception:
+                q_preview = ''
+            # Keep it readable in a <select> while still distinguishing entries.
+            q_preview = (q_preview or '').replace('\n', ' ').strip()
+            if q_preview:
+                if len(q_preview) > 80:
+                    q_preview = q_preview[:77] + '...'
+                return "%s (#%s) — %s" % (name, obj.id, q_preview)
+            return "%s (#%s)" % (name, obj.id)
+
+    user_filter = _PersistentQueryFilterChoiceField(
         queryset=PersistentQueryFilter.objects.none(),
         label='User filter',
         help_text='Saved user filter defining which users this permission applies to.',
@@ -468,7 +493,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         start_date=filter_perm_form.cleaned_data['perm_start_date'],
                         end_date=filter_perm_form.cleaned_data['perm_end_date'],
                     )
-                    target = perm.user_filter.useful_name or six.text_type(perm.user_filter_id)
+                    target = perm.user_filter.useful_name or str(perm.user_filter_id)
                     message_good = 'Permission created for filter %s: %s.' % (target, perm.nice_name())
                     filter_perm_form = NewFilterPermissionForm()
                 else:
