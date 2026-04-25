@@ -3,12 +3,9 @@
 # Main mailgate
 # Handles incoming messages etc.
 
-from __future__ import absolute_import
-from __future__ import print_function
-
 import itertools
 import logging
-import os.path
+import os
 import sys
 import smtplib
 import traceback
@@ -49,12 +46,10 @@ if os.environ.get('VIRTUAL_ENV') is None:
 # Import Django and site-defined modules after activating the virtual environment
 import django
 django.setup()
-from esp.dbmail.models import EmailList, PlainRedirect, send_mail
+from esp.dbmail.models import PlainRedirect
 from esp.users.models import ESPUser
 from django.conf import settings
 from django.db.models.functions import Lower
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 
 import_location = 'esp.dbmail.receivers.'
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
