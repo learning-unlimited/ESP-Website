@@ -62,11 +62,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
     def studentDesc(self):
         return {'phasezero': """Students who have entered the Student Lottery"""}
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return user.can_skip_phase_zero(self.program)
 
     @classmethod
@@ -187,7 +184,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                         if not old_group.user.exists():
                             old_group.delete()
                 else:
-                    join_error = 'Error - This group already contains the maximum number of students (%s).' % (num_allowed_users)
+                    join_error = f'Error - This group already contains the maximum number of students ({num_allowed_users}).'
 
         context['join_error'] = join_error
         if join_error and not in_lottery:
@@ -205,7 +202,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
     def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string
-        if not 'username' in request.GET or 'username' in request.POST:
+        if 'username' not in request.GET and 'username' not in request.POST:
             return self.goToCore(tl)
 
         limit = 10
@@ -236,8 +233,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
         return JsonResponse(obj_list, safe=False)
 
     def send_confirmation_email(self, student, note=None):
-        email_title = 'Student Lottery Confirmation for %s: %s' % (self.program.niceName(), student.name())
-        email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+        email_title = f'Student Lottery Confirmation for {self.program.niceName()}: {student.name()}'
+        email_from = f'{self.program.program_type} Registration System <server@{settings.EMAIL_HOST_SENDER}>'
         email_context = {'student': student,
                          'program': self.program,
                          'curtime': datetime.datetime.now(),

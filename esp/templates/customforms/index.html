@@ -4,7 +4,7 @@
 
 {% block stylesheets %}
     {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-style.css">
+    <link rel="stylesheet" type="text/css" href="/media/styles/customforms-style.css">
 {% endblock %}
 
 {% block js1 %}
@@ -39,16 +39,16 @@
     <div id="form_toolbox">
         <h3 id="header_information"><a href='#'>Form information</a></h3>
         <div id="form_information">
-            <p>Form Title</p> <input type='text' id='input_form_title' size='30' value='Form Title'/>
-            <p>Description</p>
+            <label for="input_form_title">Form Title</label> <input type='text' id='input_form_title' size='30' value='Form Title'/>
+            <label for="input_form_description">Description</label>
             <textarea rows='3' cols='30' id='input_form_description'></textarea>
-            <p>Message on Success</p>
+            <label for="input_form_sucmsg">Message on Success</label>
             <textarea rows='3' cols='30' id='input_form_sucmsg'></textarea>
-            <p>Redirect URL for successful completion</p>
+            <label for="input_suc_url">Redirect URL for successful completion</label>
             <input type="text" id="input_suc_url" size="30"/>
-            <p>Anonymous Form <input type='checkbox' id='id_anonymous'/></p>
+            <p><label for="id_anonymous">Anonymous Form</label> <input type='checkbox' id='id_anonymous'/></p>
             <p id="create_text">Create from existing form:</p>
-            <select id="base_form">
+            <select id="base_form" aria-label="Create from existing form">
                 <option value="-1">None</option>
                 {% for form in form_list %}
                     <option value="{{form.id}}">{{form.title}}</option>
@@ -70,7 +70,7 @@
                 <table border="0">
                     <tr>
                         <td>
-                            <p>Field Category</p>
+                            <label for="cat_selector">Field Category</label>
                         </td>
                         <td>
                             <select id="cat_selector">
@@ -79,7 +79,7 @@
                     </tr>
                     <tr>
                         <td>
-                            <p>Field</p>
+                            <label for="elem_selector">Field</label>
                         </td>
                         <td>
                             <select id="elem_selector">
@@ -93,12 +93,12 @@
                     <p>These fields will modify existing values in the database, or create new ones. Please select how you want
                         this to happen.
                     </p>
-                    <select id="main_cat_spec">
+                    <select id="main_cat_spec" aria-label="Field instance mode">
                         <option value="automatic">Automatic</option>
                         <option value="particular">Choose particular instance to modify</option>
                     </select>
                     <br/>
-                    <select id="cat_instance_sel">
+                    <select id="cat_instance_sel" aria-label="Choose instance">
                     </select>
                     <br/>				
                 </div>
@@ -107,11 +107,11 @@
             
             <div id="field_properties">
                 
-                <p class="toolboxText">Field label</p>
+                <label for="id_question" class="toolboxText">Field label</label>
                 <textarea name="question" id="id_question" rows=4 cols=30 maxlength=200></textarea>
-                <p class="toolboxText">Instructions for user</p>
+                <label for="id_instructions" class="toolboxText">Instructions for user</label>
                 <textarea name="instructions" id="id_instructions" rows=4 cols=30></textarea>
-                <p class="toolboxText">Required&nbsp;
+                <p class="toolboxText"><label for="id_required">Required</label>&nbsp;
                     <input type="checkbox" id="id_required" name="required" /><br/><br/></p>
                 <form id="elem_properties">
                     <div id="multi_options"></div>
@@ -123,14 +123,14 @@
         </div>
         <h3><a href='#'>Form Permissions</a></h3>
         <div>
-            <p>Restrict to -
+            <p><label for="id_main_perm">Restrict to -</label>
             <select id="id_main_perm">
                 <option value="none">None</option>
                 <option value="Teacher">Teachers</option>
                 <option value="Student">Students</option>
             </select></p>
             <p><input type="checkbox" id="id_prog_belong" /><label for="id_prog_belong"> Belonging to program</label></p>
-            <select id="id_perm_program">
+            <select id="id_perm_program" aria-label="Program">
                 <option value="-1">None</option>
                 {% for prog in prog_list %}
                     <option value="{{ prog.id }}">{{ prog.niceName }}</option>

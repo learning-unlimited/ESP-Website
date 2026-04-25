@@ -38,6 +38,7 @@ from esp.accounting.models import FinancialAidGrant, LineItemType
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.users.models import ESPUser
 
 from decimal import Decimal
 import random
@@ -73,7 +74,7 @@ class StudentRegTest(ProgramFrameworkTest):
         return [x.name for x in response.templates]
 
     def expect_template(self, response, template):
-        self.assertTrue(template in self.get_template_names(response), 'Wrong template for profile: got %s, expected %s' % (self.get_template_names(response), template))
+        self.assertTrue(template in self.get_template_names(response), f'Wrong template for profile: got {self.get_template_names(response)}, expected {template}')
 
     def test_confirm(self):
         program = self.program
@@ -106,22 +107,22 @@ class StudentRegTest(ProgramFrameworkTest):
 
                 #   Check title
                 title = cls_info['title'].strip()
-                expected_title = '%s: %s' % (cls.emailcode(), cls.title)
-                self.assertTrue(title == expected_title, 'Incorrect class title in catalog: got "%s", expected "%s"' % (title, expected_title))
+                expected_title = f'{cls.emailcode()}: {cls.title}'
+                self.assertTrue(title == expected_title, f'Incorrect class title in catalog: got "{title}", expected "{expected_title}"')
 
                 #   Check description
                 description = cls_info['description'].replace('<br />', '').strip()
-                self.assertTrue(description == cls.class_info.strip(), 'Incorrect class description in catalog: got "%s", expected "%s"' % (description, cls.class_info.strip()))
+                self.assertTrue(description == cls.class_info.strip(), f'Incorrect class description in catalog: got "{description}", expected "{cls.class_info.strip()}"')
 
                 #   Check enrollments
                 enrollments = [x.replace('<br />', '').strip() for x in cls_info['enrollment'].split('Section')[1:]]
                 class_sections = cls.sections.order_by('id')
                 self.assertTrue(len(enrollments) == len(list(class_sections)),
-                                'Recovered {} enrollments from catalog but expecting {}. Listed below\n\tRecovered: {}\n\tExpecting: {}'.format(len(enrollments), len(list(class_sections)), enrollments, list(class_sections)))
+                                f'Recovered {len(enrollments)} enrollments from catalog but expecting {len(list(class_sections))}. Listed below\n\tRecovered: {enrollments}\n\tExpecting: {list(class_sections)}')
                 for sec in class_sections:
                     i = sec.index() - 1
-                    expected_str = '%s: %s (max %s)' % (sec.index(), sec.num_students(), sec.capacity)
-                    self.assertTrue(enrollments[i] == expected_str, 'Incorrect enrollment for %s in catalog: got "%s", expected "%s"' % (sec.emailcode(), enrollments[i], expected_str))
+                    expected_str = f'{sec.index()}: {sec.num_students()} (max {sec.capacity})'
+                    self.assertTrue(enrollments[i] == expected_str, f'Incorrect enrollment for {sec.emailcode()} in catalog: got "{enrollments[i]}", expected "{expected_str}"')
 
         program = self.program
 
@@ -145,6 +146,195 @@ class StudentRegTest(ProgramFrameworkTest):
         student = random.choice(self.students)
         sec.preregister_student(student)
         verify_catalog_correctness()
+
+    def test_separate_catalog(self):
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        # Enable separate catalog pages
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        # Get a category ID from existing classes
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0, "No classes found to test catalog")
+        cat = classes[0].category
+        cat_id = cat.id
+        cat_name = cat.category
+
+        # Test main catalog page (should only show categories, no classes)
+        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Jump to Categories')
+        self.assertContains(response, '/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+
+        # Test specific category page
+        response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Back to Category List')
+        self.assertContains(response, cat_name)
+
+        # Disable the tag and ensure original behavior
+        Tag.setTag('separate_catalog_pages', target=self.program, value='False')
+        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        self.assertContains(response, 'Jump to Categories')
+        # Anchor links instead of URL links
+        self.assertContains(response, '#cat%s' % cat_id)
+
+    def test_separate_catalog_main_page_no_class_content(self):
+        """When separate_catalog_pages is enabled, the main catalog page should
+        not render individual class descriptions — only category links."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+
+        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content.decode('UTF-8')
+        # Individual class divs should NOT appear on the main page
+        for cls in classes:
+            self.assertNotIn('class_%d' % cls.id, content,
+                "Class %s should not appear on the main catalog page when separate_catalog_pages is enabled" % cls.emailcode())
+
+    def test_separate_catalog_category_shows_only_matching_classes(self):
+        """A category page should only show classes belonging to that category."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+
+        # Build a mapping of category_id -> class ids
+        cat_classes = {}
+        for cls in classes:
+            cat_classes.setdefault(cls.category_id, []).append(cls.id)
+
+        # Only test if we have at least one category with classes
+        for cat_id, class_ids in cat_classes.items():
+            response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+            self.assertEqual(response.status_code, 200)
+            content = response.content.decode('UTF-8')
+
+            # Classes in this category should be present
+            for cid in class_ids:
+                self.assertIn('class_%d' % cid, content,
+                    "Class id=%d should appear on category %d page" % (cid, cat_id))
+
+            # Classes from OTHER categories should NOT be present
+            for other_cat_id, other_ids in cat_classes.items():
+                if other_cat_id == cat_id:
+                    continue
+                for cid in other_ids:
+                    self.assertNotIn('class_%d' % cid, content,
+                        "Class id=%d (category %d) should not appear on category %d page" % (cid, other_cat_id, cat_id))
+
+    def test_separate_catalog_invalid_category_id(self):
+        """A non-numeric extra parameter should yield an empty class list (no crash)."""
+        from esp.tagdict.models import Tag
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        response = self.client.get('/learn/%s/catalog/not-a-number' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        # Should still render the page without error
+        content = response.content.decode('UTF-8')
+        self.assertNotIn('class_', content,
+            "No classes should appear for an invalid category id")
+
+    def test_separate_catalog_nonexistent_category_id(self):
+        """A numeric category id that doesn't match any category should show no classes."""
+        from esp.tagdict.models import Tag
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        response = self.client.get('/learn/%s/catalog/999999' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('UTF-8')
+        self.assertNotIn('class_', content,
+            "No classes should appear for a non-existent category id")
+
+    def test_separate_catalog_back_link(self):
+        """The category page should contain a link back to the main catalog."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+        cat_id = classes[0].category_id
+
+        response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '/learn/%s/catalog' % self.program.getUrlBase(),
+            msg_prefix="Category page should contain a back-link to the main catalog")
+        self.assertContains(response, 'Back to Category List')
+
+    def test_separate_catalog_disabled_shows_all_classes(self):
+        """When the tag is disabled (or absent), the catalog should render all classes
+        with anchor-based category navigation."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        # Ensure the tag is explicitly disabled
+        Tag.setTag('separate_catalog_pages', target=self.program, value='False')
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+
+        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('UTF-8')
+
+        # All classes should appear on the single catalog page
+        for cls in classes:
+            self.assertIn('class_%d' % cls.id, content,
+                "Class %s should appear on the catalog when separate_catalog_pages is disabled" % cls.emailcode())
+
+        # Category links should be anchors, not separate-page URLs
+        seen_categories = set()
+        for cls in classes:
+            if cls.category_id not in seen_categories:
+                seen_categories.add(cls.category_id)
+                self.assertContains(response, '#cat%s' % cls.category_id)
+                self.assertNotContains(response, '/learn/%s/catalog/%s' % (self.program.getUrlBase(), cls.category_id))
+
+    def test_separate_catalog_context_variables(self):
+        """Verify that the template context contains the expected variables
+        for separate catalog mode."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+        cat_id = classes[0].category_id
+
+        # Main catalog page: separate_catalog=True, selected_category=None
+        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['separate_catalog'],
+            "Context should have separate_catalog=True")
+        self.assertIsNone(response.context['selected_category'],
+            "Context should have selected_category=None on main page")
+        self.assertIn('categories', response.context)
+        self.assertTrue(len(response.context['categories']) > 0,
+            "Context should contain at least one category")
+
+        # Category-specific page: separate_catalog=True, selected_category set
+        response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['separate_catalog'])
+        self.assertIsNotNone(response.context['selected_category'],
+            "Context should have selected_category set on a category page")
+        self.assertEqual(response.context['selected_category']['id'], cat_id)
 
     def test_profile(self):
 
@@ -316,4 +506,249 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(iac.amount_due(), program_cost - 20)
         spi = SplashInfo.getForUser(student, self.program)
         self.assertEqual(spi.siblingname, 'Test Name')
+
+
+class UserviewGradeUpdateTest(ProgramFrameworkTest):
+    """
+    Tests for the grade-update functionality introduced in PR #208 (commit
+    7db5367) that resolves Issue #26.  The feature allows an admin to visit
+    /manage/userview?username=<student>&graduation_year=<year> and have the
+    student's graduation year updated immediately.
+
+    Covers Issue #226: "Test for updating student grades".
+    """
+
+    def setUp(self, *args, **kwargs):
+        # Minimal program scaffold; we only need students, teachers, and admins.
+        kwargs.update({
+            'num_timeslots': 1, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 1, 'classes_per_teacher': 1, 'sections_per_class': 1,
+            'num_rooms': 1,
+        })
+        super().setUp(*args, **kwargs)
+
+        # Build StudentInfo / RegistrationProfile rows for every student.
+        self.add_student_profiles()
+
+        self.student = self.students[0]
+        self.admin   = self.admins[0]
+
+        # Record the initial graduation year so each test can assert "unchanged".
+        self.initial_grad_year = (
+            self.student.getLastProfile().student_info.graduation_year
+        )
+
+        # A graduation year different from the initial one, chosen from a valid
+        # ChoiceField value (grade 11 in the current school year).
+        new_grade = 11
+        new_yog = ESPUser.YOGFromGrade(new_grade)
+        # Make sure we actually pick a *different* value
+        if new_yog == self.initial_grad_year:
+            new_grade = 10
+            new_yog = ESPUser.YOGFromGrade(new_grade)
+        self.new_grad_year = new_yog
+
+        self.userview_base = '/manage/userview'
+
+    # ------------------------------------------------------------------
+    # Test 1: Admin can update a student's grade
+    # ------------------------------------------------------------------
+
+    def test_admin_can_update_grade(self):
+        """A logged-in admin should be able to change a student's graduation
+        year via the graduation_year GET parameter."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(response.status_code, 200)
+
+        # Re-fetch from DB to confirm persistence.
+        updated_info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            updated_info.graduation_year, self.new_grad_year,
+            "Admin update failed: expected grad year %s, got %s"
+            % (self.new_grad_year, updated_info.graduation_year),
+        )
+
+    # ------------------------------------------------------------------
+    # Test 2: A student cannot update their own grade
+    # ------------------------------------------------------------------
+
+    def test_student_cannot_update_own_grade(self):
+        """A student is not an administrator, so the view should return 403
+        and leave the graduation year unchanged."""
+        self.client.login(username=self.student.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(
+            response.status_code, 403,
+            "Expected 403 for non-admin access, got %s" % response.status_code,
+        )
+
+        # Grade must not have changed.
+        info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            info.graduation_year, self.initial_grad_year,
+            "Graduation year was incorrectly modified by the student themselves.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 3: An unrelated non-admin user cannot update the grade
+    # ------------------------------------------------------------------
+
+    def test_non_admin_cannot_update_grade(self):
+        """A teacher (non-admin) should receive 403 and leave the grade
+        unchanged."""
+        teacher = self.teachers[0]
+        self.client.login(username=teacher.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(
+            response.status_code, 403,
+            "Expected 403 for teacher access, got %s" % response.status_code,
+        )
+
+        info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            info.graduation_year, self.initial_grad_year,
+            "Graduation year was incorrectly modified by a non-admin teacher.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 4: Unauthenticated user is redirected and grade is unchanged
+    # ------------------------------------------------------------------
+
+    def test_unauthenticated_cannot_update_grade(self):
+        """An unauthenticated visitor should be redirected to login (302) and
+        the graduation year must remain untouched."""
+        # Ensure no session cookie is active.
+        self.client.logout()
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(
+            response.status_code, 302,
+            "Expected 302 redirect for unauthenticated access, got %s"
+            % response.status_code,
+        )
+
+        info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            info.graduation_year, self.initial_grad_year,
+            "Graduation year was incorrectly modified by an unauthenticated user.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 5: Invalid (non-numeric) graduation_year does not crash silently
+    # and leaves the grade unchanged
+    # ------------------------------------------------------------------
+
+    def test_invalid_graduation_year_does_not_change_grade(self):
+        """Passing a non-integer graduation_year should be silently ignored:
+        the view returns 200 without crashing, and the graduation year in the
+        DB remains unchanged."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': 'not_a_number',
+        })
+        self.assertEqual(
+            response.status_code, 200,
+            "Expected 200 for invalid graduation_year input, got %s"
+            % response.status_code,
+        )
+
+        info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            info.graduation_year, self.initial_grad_year,
+            "Graduation year was incorrectly modified on invalid input.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 6: StudentInfo is recreated only for valid grade updates
+    # ------------------------------------------------------------------
+
+    def test_creates_student_info_when_missing(self):
+        """If a student's most recent profile has no StudentInfo row, an admin
+        grade update should recreate it and persist the new graduation year."""
+        profile = self.student.getLastProfile()
+        profile.student_info = None
+        profile.save()
+
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(response.status_code, 200)
+
+        updated_info = self.student.getLastProfile().student_info
+        self.assertIsNotNone(updated_info)
+        self.assertEqual(
+            updated_info.graduation_year, self.new_grad_year,
+            "Expected StudentInfo to be recreated and graduation year updated.",
+        )
+
+    def test_out_of_range_graduation_year_does_not_change_grade(self):
+        """Passing a graduation year outside configured grade options should be
+        ignored safely, leaving the existing graduation year unchanged."""
+        self.client.login(username=self.admin.username, password='password')
+
+        for invalid_year in ('-100', '999999'):
+            response = self.client.get(self.userview_base, data={
+                'username': self.student.username,
+                'graduation_year': invalid_year,
+            })
+            self.assertEqual(response.status_code, 200)
+
+            info = self.student.getLastProfile().student_info
+            self.assertEqual(
+                info.graduation_year, self.initial_grad_year,
+                "Graduation year changed unexpectedly for invalid input %s"
+                % invalid_year,
+            )
+
+    def test_invalid_graduation_year_does_not_create_missing_student_info(self):
+        """If StudentInfo is missing, invalid input must not recreate it."""
+        profile = self.student.getLastProfile()
+        profile.student_info = None
+        profile.save()
+
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': 'not_a_number',
+        })
+        self.assertEqual(response.status_code, 200)
+
+        profile.refresh_from_db()
+        self.assertIsNone(
+            profile.student_info,
+            "StudentInfo should not be created for invalid graduation year input.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 7: change_grade_form is present in template context
+    # ------------------------------------------------------------------
+
+    def test_change_grade_form_in_context(self):
+        """A GET to userview without a graduation_year param should still
+        include 'change_grade_form' in the template context so the UI can
+        render the grade-change widget."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            'change_grade_form', response.context,
+            "'change_grade_form' was not found in the userview template context.",
+        )
 

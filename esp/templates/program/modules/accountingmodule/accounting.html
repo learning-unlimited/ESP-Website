@@ -2,6 +2,10 @@
 
 {% block title %}{{program.niceName}} Accounting{% endblock %}
 
+{% block xtrajs %}
+    <script src="https://cdn.learningu.org/highcharts/highcharts.js"></script>
+{% endblock %}
+
 {% block stylesheets %}
 {{ block.super }}
 <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
@@ -18,6 +22,54 @@ table {
 {% endblock %}
 
 {% block content %}
+
+<div style="margin-bottom: 20px; padding: 15px 20px; background: #f0f8ff; border-left: 4px solid #49afcd; border-radius: 4px; display:flex; justify-content: space-between;">
+    {# Admission Ticker #}
+    <div>
+        <h2 style="margin: 0 0 5px 0;">Admissions</h2>
+        <span style="margin: 0; font-size: 1.3em;">
+            <strong>${{ admission_total|floatformat:"2" }}</strong>
+            from <strong>{{ admission_count }}</strong> admission{{ admission_count|pluralize }}
+        </span>
+    </div>
+    {# Donation Ticker #}
+    <div>
+        <h2 style="margin: 0 0 5px 0;">Donations</h2>
+        <span style="margin: 0; font-size: 1.3em;">
+            <strong>${{ donation_total|floatformat:"2" }}</strong>
+            from <strong>{{ donation_count }}</strong> donation{{ donation_count|pluralize }}
+        </span>
+    </div>
+</div>
+{# Per-Program line graph #}
+{% if donation_graph_data or admission_graph_data %}
+    <div id="donation-chart" style="width:100%; height:400px;"></div>
+    <script>
+    $j(document).ready(function() {
+      const series = []
+      {% if donation_graph_data %}
+        series.push({
+          name: 'Donations',
+          step: 'left',
+          data: {{ donation_graph_data|safe }},
+        })
+      {% endif %}
+      {% if admission_graph_data %}
+        series.push({
+          name: 'Admissions',
+          step: 'left',
+          data: {{ admission_graph_data|safe }},
+        })
+      {% endif %}
+        Highcharts.chart('donation-chart', {
+            title: { text: 'Cumulative Admissions/Donations Over Time' },
+            xAxis: { type: 'datetime', minRange: 24*60*60*1000 },
+            yAxis: { title: { text: '$' }, min: 0 },
+            series,
+        });
+    });
+    </script>
+{% endif %}
 <h2>Accounting{% if target_user %} for {{ target_user.name }} ({{ target_user.username }} / {{ target_user.id }}){% endif %}{% if prog_results|length_is:"1" %} for {{ prog_results.0.program.niceName }}{% endif %}</h2>
 <div id="program_form">
 <form action="{% if program %}/manage/{{ program.getUrlBase }}/accounting{% else %}/accounting/user{% endif %}" id="accountingsearchform" name="accountingsearchform" method="POST">
@@ -44,6 +96,108 @@ table {
 </table>
 </form>
 </div>
+
+{% if cc_enabled %}
+    <div style="margin-bottom: 30px; padding: 15px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">
+        <h3 style="margin-top: 0;">{{ program.niceName }} Revenue Summary</h3>
+
+        {% if not cc_totals %}
+            <p>Summarize credit card payments for this program. This may take a moment to retrieve data from the provider.</p>
+            <form action="{{ request.path }}" method="GET">
+                {% if target_user %}<input type="hidden" name="target_user" value="{{ target_user.id }}">{% endif %}
+                <input type="hidden" name="fetch_cc_totals" value="1">
+                <input class="button" type="submit" value="View credit card payment totals for {{ program.niceName }}" />
+            </form>
+        {% elif cc_totals.error %}
+            <p style="color: red;">Error retrieving payment totals: {{ cc_totals.error }}</p>
+            <p>If the error persists, please contact <a href="mailto:cfo@learningu.org">cfo@learningu.org</a> to retrieve this information manually.</p>
+        {% else %}
+            <p><strong>Registration Count:</strong> {{ cc_totals.gross_count }}</p>
+            <table class="table" style="width: auto; min-width: 500px; margin-bottom: 0;">
+                <tr>
+                    <th style="text-align:left;">Description</th>
+                    <th style="text-align:right;">To Chapter</th>
+                    <th style="text-align:right;">To LU</th>
+                </tr>
+                <tr>
+                    <td style="text-align:left;">Gross Amount</td>
+                    <td style="text-align:right;">{{ cc_totals.gross_amount|floatformat:"2" }}</td>
+                    <td style="text-align:right;"></td>
+                </tr>
+                <tr>
+                    <td style="text-align:left;">Refunds</td>
+                    <td style="text-align:right;"></td>
+                    <td style="text-align:right;">{{ cc_totals.refunded_amount|floatformat:"2" }}</td>
+                </tr>
+                <tr>
+                    <td style="text-align:left;">Fees</td>
+                    <td style="text-align:right;"></td>
+                    <td style="text-align:right;">{{ cc_totals.total_stripe_fees|floatformat:"2" }}</td>
+                </tr>
+                <tr>
+                    <td style="text-align:left;">Gross LU Donations</td>
+                    <td style="text-align:right;"></td>
+                    <td style="text-align:right;">{{ cc_totals.donation_amount|floatformat:"2" }}</td>
+                </tr>
+                <tr>
+                    <td style="text-align:left;">LU Donation Fees</td>
+                    <td style="text-align:right;">{{ cc_totals.cc_donation_fees|floatformat:"2" }}</td>
+                    <td style="text-align:right;"></td>
+                </tr>
+                <tr>
+                    <td style="text-align:left;">Additional donation to LU</td>
+                    <td style="text-align:right;"></td>
+                    <td style="text-align:right;">
+                        <input type="number" id="additional_donation" value="0.00" step="0.01" min="0" style="width: 80px; text-align: right;" onchange="updateNet();" onkeyup="updateNet();">
+                        <div id="donation_error" style="color: red; display: none; font-size: 0.9em; margin-top: 5px;">* Net amount to chapter cannot be negative</div>
+                    </td>
+                </tr>
+                <tr style="background-color: #eee;">
+                    <td style="text-align:left;"><strong>Totals</strong></td>
+                    <td style="text-align:right;"><strong><span id="total_chapter"></span></strong></td>
+                    <td style="text-align:right;"><strong><span id="total_lu"></span></strong></td>
+                </tr>
+                <tr style="background-color: #ddd;">
+                    <td style="text-align:left;"><strong>Net Amount to Chapter</strong></td>
+                    <td style="text-align:right;"><strong><span id="net_chapter">0.00</span></strong></td>
+                    <td style="text-align:right;"></td>
+                </tr>
+            </table>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #555;">
+                Please contact <a href="mailto:cfo@learningu.org">cfo@learningu.org</a> if you have any questions or if there is an error with this information.
+            </p>
+
+            <script type="text/javascript">
+                function updateNet() {
+                    var chapter_gross = parseFloat("{{ cc_totals.gross_amount|floatformat:'2' }}");
+                    var chapter_fees = parseFloat("{{ cc_totals.cc_donation_fees|floatformat:'2' }}");
+                    var initial_chapter = chapter_gross + chapter_fees;
+
+                    document.getElementById('total_chapter').innerText = initial_chapter.toFixed(2);
+
+                    var refunds = parseFloat("{{ cc_totals.refunded_amount|floatformat:'2' }}");
+                    var fees = parseFloat("{{ cc_totals.total_stripe_fees|floatformat:'2' }}");
+                    var gross_donations = parseFloat("{{ cc_totals.donation_amount|floatformat:'2' }}");
+                    var additional = parseFloat(document.getElementById('additional_donation').value) || 0;
+
+                    var initial_lu = refunds + fees + gross_donations + additional;
+                    document.getElementById('total_lu').innerText = initial_lu.toFixed(2);
+
+                    var net = initial_chapter - initial_lu;
+                    if (net < 0) {
+                        document.getElementById('net_chapter').innerText = net.toFixed(2);
+                        document.getElementById('donation_error').style.display = 'block';
+                    } else {
+                        document.getElementById('net_chapter').innerText = net.toFixed(2);
+                        document.getElementById('donation_error').style.display = 'none';
+                    }
+                }
+                updateNet();
+            </script>
+        {% endif %}
+    </div>
+{% endif %}
+
 {% if target_user %}
 {% for result in prog_results %}
 {% if prog_results|length > 1 %}
@@ -129,6 +283,13 @@ table {
         <td style="text-align:right;"><em>Total Paid</em></td>
         <td style="text-align:right;"><em>${{ result.paid|floatformat:"2" }}</em></td>
     </tr>
+    {% if result.refunded > 0 %}
+    <tr>
+        <td style="border-top: none;"></td>
+        <td style="text-align:right;"><em>Total Refunded</em></td>
+        <td style="text-align:right;"><em>${{ result.refunded|floatformat:"2" }}</em></td>
+    </tr>
+    {% endif %}
     <tr>
         <td style="border-top: none;"></td>
         <td style="text-align:right;"><strong>Balance</strong></td>
