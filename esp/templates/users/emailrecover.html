@@ -26,7 +26,7 @@ password you would like to use.
 <tr>
  <td><label for="username"><strong>Username: *</strong></label></td>
  <td>{{ form.username }} {% if form.username.errors %}
-   <br /><span class="form_error">{{ form.username.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.username.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -34,7 +34,7 @@ password you would like to use.
 <tr>
  <td><label for="newpasswd"><strong>New Password: *</strong></label></td>
  <td>{{ form.newpasswd }} {% if form.newpasswd.errors %}
-   <br /><span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.newpasswd.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -42,7 +42,7 @@ password you would like to use.
 <tr>
  <td><label for="newpasswdconfirm"><strong>New Password Confirm: *</strong></label></td>
  <td>{{ form.newpasswdconfirm }} {% if form.newpasswdconfirm.errors %}
-   <br /><span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.newpasswdconfirm.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
