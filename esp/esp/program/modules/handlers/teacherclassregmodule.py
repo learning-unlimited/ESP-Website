@@ -836,6 +836,104 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action)
 
+    @aux_call
+    @needs_teacher
+    @meets_deadline("/Classes/Edit")
+    def editcapacity(self, request, tl, one, two, module, extra, prog):
+        try:
+            int(extra)
+        except (ValueError, TypeError):
+            raise ESPError("Invalid integer for class ID! Got `{}`".format(extra), log=False)
+
+        classes = ClassSubject.objects.filter(id=extra)
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+
+        cls = classes[0]
+        saved = False
+        # Track validation errors per section: {section_id: error_message}
+        errors = {}
+
+        if request.method == 'POST':
+            # Track if any errors occurred during processing
+            any_errors = False
+
+            for sec in cls.sections.all():
+                key = 'capacity_%d' % sec.id
+                if key in request.POST:
+                    try:
+                        new_cap_str = request.POST[key].strip()
+
+                        # Handle empty string: revert to default calculated capacity
+                        if not new_cap_str:
+                            old_cap = sec.max_class_capacity
+                            sec.max_class_capacity = None
+                            fallback_capacity = sec.capacity
+                            current_enrolled = sec.count_enrolled_students()
+                            if fallback_capacity < current_enrolled:
+                                sec.max_class_capacity = old_cap
+                                errors[sec.id] = (
+                                    f"Default capacity would be less than the {current_enrolled} "
+                                    "currently enrolled students in this section."
+                                )
+                                any_errors = True
+                                continue
+                            sec.save()
+                            sec.max_class_capacity = None
+                            sec.save()
+                        else:
+                            # Attempt to parse the input as an integer
+                            try:
+                                new_cap = int(new_cap_str)
+                            except ValueError:
+                                # Invalid input (non-integer): record error and skip this section
+                                errors[sec.id] = "Capacity must be a whole number (e.g., 20, not '20.5' or 'abc')."
+                                any_errors = True
+                                continue  # Move to next section without saving
+
+                            # Validate that capacity is not negative
+                            if new_cap < 0:
+                                # Reject negative values
+                                errors[sec.id] = "Capacity cannot be negative."
+                                any_errors = True
+                                continue  # Skip save for this section
+
+                            # Validate that capacity is not below current enrollment
+                            current_enrolled = sec.count_enrolled_students()
+                            if new_cap < current_enrolled:
+                                # Capacity would be below current enrollment: block the save
+                                errors[sec.id] = (
+                                    f"Capacity cannot be less than the {current_enrolled} "
+                                    "currently enrolled students in this section."
+                                )
+                                any_errors = True
+                                continue  # Skip save for this section
+
+                            # Validation passed: update and save the section
+                            sec.max_class_capacity = new_cap
+                            sec.save()
+
+                    except Exception as e:
+                        # Catch any unexpected errors to prevent a 500 error
+                        errors[sec.id] = f"An unexpected error occurred: {str(e)}"
+                        any_errors = True
+
+            # Only set saved=True if NO sections had errors
+            saved = not any_errors and len(errors) == 0
+
+        context = {
+            'cls': cls,
+            'saved': saved,
+            'errors': errors,  # Pass error dict so template can display per-section errors
+            'one': one,
+            'two': two,
+            'module': self,
+            'program': self.program,
+        }
+
+        return render_to_response(self.baseDir()+'editcapacity.html', request, context)
+
+
     @main_call
     @needs_teacher
     @meets_deadline('/Classes/Create/Class')
