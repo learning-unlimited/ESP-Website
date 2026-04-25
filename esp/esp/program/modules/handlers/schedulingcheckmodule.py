@@ -115,7 +115,7 @@ class SchedulingCheckRunner:
         self.formatter = formatter
 
         request = get_current_request()
-        self.incl_unreview = "unreviewed" in request.GET
+        self.incl_unreview = bool(request and "unreviewed" in request.GET)
 
         self.lunch_blocks = self._getLunchByDay()
 
