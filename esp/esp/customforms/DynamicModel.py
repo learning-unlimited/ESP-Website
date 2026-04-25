@@ -80,7 +80,7 @@ class DynamicModelHandler:
         'pronoun': {'typeMap': models.CharField, 'attrs': {'max_length': 50}, 'args': []},
         'radio_yesno': {'typeMap': models.CharField, 'attrs':{'max_length': 1,}, 'args':[]},
         'boolean': {'typeMap': models.BooleanField, 'attrs':{'default': False}, 'args':[]},
-        'null_boolean': {'typeMap': models.BooleanField, 'attrs':{'default': None, 'null': True}, 'args':[]},
+        'null_boolean': {'typeMap': models.NullBooleanField, 'attrs':{'default': None}, 'args':[]},
         'instructions': {'typeMap': None},
     }
 
@@ -288,8 +288,8 @@ class DynamicModelHandler:
                 # Old FK column needs to go
                 model = self.createDynModel()
                 old_model_cls = cf_cache.only_fkey_models[old_link_type]
-                old_field_name = f'link_{old_model_cls.__name__}_id'
-                schema_editor.remove_field(model, model._meta.get_field(old_field_name))
+                field_name = f'link_{old_model_cls.__name__}'
+                schema_editor.remove_field(model, model._meta.get_field(field_name))
 
             form.link_type = new_link_type
             form.link_id = link_id
@@ -300,7 +300,7 @@ class DynamicModelHandler:
                 model = self.createDynModel()
                 new_model_cls = cf_cache.only_fkey_models[new_link_type]
                 new_field = self._getLinkModelField(new_model_cls)
-                new_field.column = f'link_{new_model_cls.__name__}_id'
+                new_field.set_attributes_from_name(f'link_{new_model_cls.__name__}')
                 schema_editor.add_field(model, new_field)
 
     def createDynModel(self):

@@ -885,7 +885,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_teacher
     @user_passes_test(
-        lambda moduleObj, request: moduleObj.open_class_reg_is_open(),
+        open_class_reg_is_open,
         (
             'the deadline Teacher/Classes/Create/OpenClass '
             'or the setting ClassRegModuleInfo.open_class_registration were'
