@@ -756,3 +756,37 @@ class TagRegistrationTest(SimpleTestCase):
                 "esp.tagdict.__init__ (all_global_tags or all_program_tags):\n"
                 + tag_list
             )
+
+
+class TagSearchUITest(ProgramFrameworkTest):
+
+    def setUp(self):
+        super().setUp()
+        self.admin = self.admins[0]
+        self.client.login(username=self.admin.username, password='password')
+
+    def _get_tags_page_content(self):
+        response = self.client.get('/manage/tags/')
+        self.assertEqual(response.status_code, 200)
+        return str(response.content, encoding='UTF-8')
+
+    def test_tags_page_contains_search_input(self):
+        content = self._get_tags_page_content()
+        self.assertIn('id="tag-search-input"', content)
+        self.assertIn('placeholder="Search tags by name or description..."', content)
+
+    def test_tags_page_includes_search_filter_script(self):
+        content = self._get_tags_page_content()
+        self.assertIn('search_filter.js', content)
+        self.assertIn('initSearchFilter', content)
+
+    def test_tag_rows_have_search_attributes(self):
+        content = self._get_tags_page_content()
+        self.assertIn('class="tag-row"', content)
+        self.assertIn('data-search-text=', content)
+
+    def test_tags_page_contains_highlight_css(self):
+        content = self._get_tags_page_content()
+        self.assertIn('.tag-row.highlighted-match', content)
+        self.assertIn('background-color', content)
+
