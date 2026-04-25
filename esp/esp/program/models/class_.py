@@ -940,8 +940,9 @@ class ClassSection(models.Model):
             meeting_times = self.meeting_times.all()
         for sec in user.getTaughtSections(self.parent_program, include_cancelled = False).exclude(id=self.id):
             for time in sec.meeting_times.all():
-                if meeting_times.filter(id = time.id).exists():
-                    return (sec, time)
+                for mt in meeting_times:
+                    if mt.start < time.end and time.start < mt.end:
+                        return (sec, time)
 
         return None
 
