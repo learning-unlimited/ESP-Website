@@ -6,6 +6,7 @@ Tests for esp.survey
 import datetime
 
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
 from unittest.mock import MagicMock, patch
 
@@ -137,12 +138,25 @@ class QuestionTypeTest(TestCase):
         )
         self.assertTrue(qt.is_countable)
 
+    def test_invalid_template_raises_validation_error(self, mock_clean):
+        mock_clean.side_effect = None
+        qt = QuestionType(name='Invalid Type', is_numeric=False, is_countable=False)
+        with self.assertRaises(ValidationError):
+            qt.save()
+
+    def test_valid_template_saves_successfully(self, mock_clean):
+        mock_clean.side_effect = None
+        qt = QuestionType(name='Long Answer', is_numeric=False, is_countable=False)
+        qt.save()
+        self.assertIsNotNone(qt.pk)
+
 
 class QuestionTest(TestCase):
     def setUp(self):
         super().setUp()
         self.patcher = patch('esp.survey.models.QuestionType.clean')
         self.patcher.start()
+        self.addCleanup(self.patcher.stop)
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(
@@ -164,10 +178,6 @@ class QuestionTest(TestCase):
             seq=1,
         )
 
-    def tearDown(self):
-        self.patcher.stop()
-        super().tearDown()
-
     def test_str(self):
         result = str(self.question)
         self.assertIn('Do you like it?', result)
@@ -182,6 +192,7 @@ class AnswerTest(TestCase):
         super().setUp()
         self.patcher = patch('esp.survey.models.QuestionType.clean')
         self.patcher.start()
+        self.addCleanup(self.patcher.stop)
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(
@@ -208,10 +219,6 @@ class AnswerTest(TestCase):
             question=self.question,
             value='test answer',
         )
-
-    def tearDown(self):
-        self.patcher.stop()
-        super().tearDown()
 
     def test_str(self):
         result = str(self.answer)

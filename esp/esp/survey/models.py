@@ -183,18 +183,22 @@ class QuestionType(models.Model):
             return str(self.name)
 
     def clean(self):
+        super().clean()
         try:
             loader.get_template(self.template_file)
         except TemplateDoesNotExist:
-            raise ValidationError(
-                f"No template found for question type '{self.name}'. "
-                f"Expected template at: {self.template_file}"
-            )
+            raise ValidationError({
+                'name': (
+                    f"No template found for question type '{self.name}'. "
+                    f"Expected template at: {self.template_file}"
+                )
+            })
 
     def save(self, *args, **kwargs):
-        self.full_clean()
+        if not kwargs.get('raw'):
+            self.full_clean()
         super().save(*args, **kwargs)
-
+        
 class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)

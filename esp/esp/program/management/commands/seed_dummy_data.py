@@ -274,8 +274,14 @@ class Command(BaseCommand):
             defaults=dict(admin_title='Teacher Profile Editor',
                           seq=0, required=True, choosable=1))
 
-        for name in ['Yes-No Response', 'Numeric Rating', 'Long Answer', 'Multiple Choice']:
-            QuestionType.objects.get_or_create(name=name)
+        question_type_defaults = {
+            'Yes-No Response': dict(is_numeric=False, is_countable=True),
+            'Numeric Rating': dict(is_numeric=True, is_countable=True),
+            'Long Answer': dict(is_numeric=False, is_countable=False),
+            'Multiple Choice': dict(is_numeric=False, is_countable=True),
+        }
+        for name, defaults in question_type_defaults.items():
+            QuestionType.objects.update_or_create(name=name, defaults=defaults)
 
     # ── navbar ────────────────────────────────────────────────────────────────
 
