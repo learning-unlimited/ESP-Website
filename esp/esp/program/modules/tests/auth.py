@@ -308,10 +308,7 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
             for view_name in view_names:
                 view = getattr(module, view_name)
                 self.assertTrue(getattr(view, 'has_auth_check', None), \
-                    'Module "{}" is missing an auth check for view "{}"'.format(
-                        module,
-                        view_name
-                    ))
+                    f'Module "{module}" is missing an auth check for view "{view_name}"')
 
     def testViewDecoratorOrder(self):
         """Check that module view decorators are ordered as expected.
@@ -381,88 +378,55 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
                         if name in self.CACHE_DECORATORS
                     ]
 
-                    method_name = '{}.{}'.format(class_node.name, func_node.name)
-                    decorator_list = ', '.join('@{}'.format(name) for name in decorator_names if name)
+                    method_name = f'{class_node.name}.{func_node.name}'
+                    decorator_list = ', '.join(f'@{name}' for name in decorator_names if name)
 
                     if call_pos != 0:
                         failures.append(
-                            '{}:{} {} should have @main_call/@aux_call as the outermost decorator. '
-                            'Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} should have @main_call/@aux_call as the outermost decorator. '
+                            f'Found: {decorator_list}'
                         )
 
                     if auth_positions and grade_positions and min(auth_positions) > min(grade_positions):
                         failures.append(
-                            '{}:{} {} has @meets_grade outside auth decorators. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has @meets_grade outside auth decorators. '
+                            f'Found: {decorator_list}'
                         )
 
                     if auth_positions and deadline_positions and min(auth_positions) > min(deadline_positions):
                         failures.append(
-                            '{}:{} {} has deadline decorators outside auth decorators. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has deadline decorators outside auth decorators. '
+                            f'Found: {decorator_list}'
                         )
 
                     if grade_positions and deadline_positions and min(grade_positions) > min(deadline_positions):
                         failures.append(
-                            '{}:{} {} has deadline decorators outside @meets_grade. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has deadline decorators outside @meets_grade. '
+                            f'Found: {decorator_list}'
                         )
 
                     if auth_positions and cap_positions and min(auth_positions) > min(cap_positions):
                         failures.append(
-                            '{}:{} {} has @meets_cap outside auth decorators. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has @meets_cap outside auth decorators. '
+                            f'Found: {decorator_list}'
                         )
 
                     if grade_positions and cap_positions and min(grade_positions) > min(cap_positions):
                         failures.append(
-                            '{}:{} {} has @meets_cap outside @meets_grade. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has @meets_cap outside @meets_grade. '
+                            f'Found: {decorator_list}'
                         )
 
                     if deadline_positions and cap_positions and min(deadline_positions) > min(cap_positions):
                         failures.append(
-                            '{}:{} {} has @meets_cap outside deadline decorators. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has @meets_cap outside deadline decorators. '
+                            f'Found: {decorator_list}'
                         )
 
                     if no_auth_positions and cache_positions and min(no_auth_positions) > min(cache_positions):
                         failures.append(
-                            '{}:{} {} has cache decorators outside @no_auth. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has cache decorators outside @no_auth. '
+                            f'Found: {decorator_list}'
                         )
 
         self.assertEqual([], failures, '\n'.join(failures))
