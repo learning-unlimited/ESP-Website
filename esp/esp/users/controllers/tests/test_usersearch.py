@@ -5,13 +5,12 @@ from esp.tests.util import user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission
 from django.test import TestCase
+from django.test.client import RequestFactory
 import esp.users.views as views
 from esp.program.models import Program
 
 import random
 import string
-
-#python manage.py test users.controllers.tests.test_usersearch:TestUserSearchController.test_overlap_bug
 
 from esp.users.controllers.usersearch import UserSearchController
 
@@ -65,3 +64,111 @@ class TestUserSearchController(ProgramFrameworkTest):
         result = query.getList(ESPUser)
         self.assertEqual(result.model, ESPUser)
         self.assertGreater(result.count(), 0)
+
+
+class TestAutoSubmitCreateFilter(ProgramFrameworkTest):
+
+    def setUp(self):
+        super().setUp(num_students=3, num_teachers=2)
+        self.add_student_profiles()
+        self.controller = UserSearchController()
+        self.factory = RequestFactory()
+
+    def _make_get(self, params):
+        request = self.factory.get('/manage/test/printables', params)
+        request.user = self.admins[0]
+        return request
+
+    def _make_post(self, params):
+        request = self.factory.post('/manage/test/printables', params)
+        request.user = self.admins[0]
+        return request
+
+    def test_auto_submit_returns_filter(self):
+        request = self._make_get({
+            'auto_submit': 'true',
+            'recipient_type': 'Student',
+            'base_list': 'enrolled',
+        })
+        result, found = self.controller.create_filter(request, self.program)
+        self.assertTrue(found)
+        users = result.getList(ESPUser)
+        self.assertEqual(users.model, ESPUser)
+
+    def test_auto_submit_teacher_list(self):
+        request = self._make_get({
+            'auto_submit': 'true',
+            'recipient_type': 'Teacher',
+            'base_list': 'class_approved',
+        })
+        result, found = self.controller.create_filter(request, self.program)
+        self.assertTrue(found)
+        users = result.getList(ESPUser)
+        self.assertEqual(users.model, ESPUser)
+
+    def test_auto_submit_combo_list(self):
+        request = self._make_get({
+            'auto_submit': 'true',
+            'combo_base_list': 'Teacher:class_approved',
+        })
+        result, found = self.controller.create_filter(request, self.program)
+        self.assertTrue(found)
+
+    def test_auto_submit_false_falls_through(self):
+        request = self._make_get({
+            'auto_submit': 'false',
+            'recipient_type': 'Student',
+            'base_list': 'enrolled',
+        })
+        result, found = self.controller.create_filter(request, self.program)
+        self.assertFalse(found)
+
+    def test_get_without_auto_submit_shows_form(self):
+        request = self._make_get({
+            'recipient_type': 'Student',
+            'base_list': 'enrolled',
+        })
+        result, found = self.controller.create_filter(request, self.program)
+        self.assertFalse(found)
+
+    def test_auto_submit_missing_base_list_falls_through(self):
+        request = self._make_get({
+            'auto_submit': 'true',
+            'recipient_type': 'Student',
+        })
+        result, found = self.controller.create_filter(request, self.program)
+        self.assertFalse(found)
+
+    def test_auto_submit_missing_recipient_type_falls_through(self):
+        request = self._make_get({
+            'auto_submit': 'true',
+            'base_list': 'enrolled',
+        })
+        result, found = self.controller.create_filter(request, self.program)
+        self.assertFalse(found)
+
+    def test_auto_submit_empty_params_falls_through(self):
+        request = self._make_get({'auto_submit': 'true'})
+        result, found = self.controller.create_filter(request, self.program)
+        self.assertFalse(found)
+
+    def test_post_still_works(self):
+        request = self._make_post({
+            'recipient_type': 'Student',
+            'base_list': 'enrolled',
+            'use_checklist': '0',
+        })
+        result, found = self.controller.create_filter(request, self.program)
+        self.assertTrue(found)
+        users = result.getList(ESPUser)
+        self.assertEqual(users.model, ESPUser)
+
+    def test_auto_submit_strips_param_from_data(self):
+        request = self._make_get({
+            'auto_submit': 'true',
+            'recipient_type': 'Student',
+            'base_list': 'enrolled',
+        })
+        result, found = self.controller.create_filter(request, self.program)
+        self.assertTrue(found)
+        self.assertNotIn('auto_submit', result.useful_name)
