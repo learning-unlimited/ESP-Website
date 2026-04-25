@@ -50,42 +50,11 @@ class JSONDataModuleTest(ProgramFrameworkTest):
     ## at the moment it just assumes that they are correct.
     ## It also also needs to test all the other queries on this page.
 
-    @classmethod
-    def setUpTestData(cls):
-        """Run all heavy DB setup once at the class level.
-
-        Django wraps this in a transaction savepoint that is shared by every
-        test method in the class and rolled back when the class finishes.
-        This avoids repeating the expensive program-framework scaffolding
-        (user creation, class scheduling, student registration) on every
-        individual test method.
-        """
-        super().setUpTestData()
-        # Bootstrap the program framework at the class level.  We invoke each
-        # instance method explicitly with `cls` as the receiver so that Python
-        # binds the class object as `self`.  ProgramFrameworkTest.setUp only
-        # performs DB writes (no HTTP client usage), so this is safe.
-        ProgramFrameworkTest.setUp(cls)
-        ProgramFrameworkTest.schedule_randomly(cls)
-        ProgramFrameworkTest.add_user_profiles(cls)
-        ProgramFrameworkTest.classreg_students(cls)
-
     def setUp(self):
-        # We deliberately do NOT call super().setUp() here.  ProgramFrameworkTest
-        # mixes two concerns in its setUp: (a) expensive one-time DB scaffolding
-        # (program creation, user creation, etc.) which was already done once at
-        # the class level in setUpTestData, and (b) lightweight per-test state
-        # resets.  Calling super().setUp() per-test would re-run the full program
-        # creation form, which fails because the program already exists.
-        #
-        # We therefore replicate only the per-test isolation steps from
-        # ProgramFrameworkTest.setUp explicitly:
-        #   1. Reset the in-memory ResourceType cache so stale entries from one
-        #      test can't pollute the next (ProgramFrameworkTest.setUp line ~527).
-        #   2. No other shared mutable state is mutated by ProgramFrameworkTest.setUp.
-        #
-        # This preserves test isolation without the O(N) per-test DB overhead.
-        ResourceType._get_or_create_cache = {}
+        super().setUp()
+        self.schedule_randomly()
+        self.add_user_profiles()
+        self.classreg_students()
         self.pm = ProgramModule.objects.get(handler='AdminCore')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.pm)
         self.moduleobj.user = self.students[0]
@@ -98,40 +67,27 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         # Ensure endpoints returned successfully before attempting to parse JSON.
         self.assertEqual(
             self.stats_response.status_code, 200,
-            "Expected 200 from /json/%s/stats, got %d. Body snippet: %r"
-            % (self.program.getUrlBase(),
-               self.stats_response.status_code,
-               self.stats_response.content[:200]),
+            f"Expected 200 from /json/{self.program.getUrlBase()}/stats, got {self.stats_response.status_code}. Body snippet: {self.stats_response.content[:200]!r}"
         )
         self.assertEqual(
             self.classes_response.status_code, 200,
-            "Expected 200 from /json/%s/class_subjects, got %d. Body snippet: %r"
-            % (self.program.getUrlBase(),
-               self.classes_response.status_code,
-               self.classes_response.content[:200]),
+            f"Expected 200 from /json/{self.program.getUrlBase()}/class_subjects, got {self.classes_response.status_code}. Body snippet: {self.classes_response.content[:200]!r}"
         )
         # Cache parsed payloads so individual tests don't re-parse repeatedly.
         try:
             self.stats_data = self.stats_response.json()
         except ValueError:
             self.fail(
-                "Failed to parse JSON from /json/%s/stats (status %d). "
-                "Body snippet: %r"
-                % (self.program.getUrlBase(),
-                   self.stats_response.status_code,
-                   self.stats_response.content[:200])
+                f"Failed to parse JSON from /json/{self.program.getUrlBase()}/stats (status {self.stats_response.status_code}). "
+                f"Body snippet: {self.stats_response.content[:200]!r}"
             )
         try:
             self.classes_data = self.classes_response.json()
         except ValueError:
             self.fail(
-                "Failed to parse JSON from /json/%s/class_subjects (status %d). "
-                "Body snippet: %r"
-                % (self.program.getUrlBase(),
-                   self.classes_response.status_code,
-                   self.classes_response.content[:200])
+                f"Failed to parse JSON from /json/{self.program.getUrlBase()}/class_subjects (status {self.classes_response.status_code}). "
+                f"Body snippet: {self.classes_response.content[:200]!r}"
             )
-
     def testStudentStats(self):
         ## Student statistics
         student_labels_dict = {}
@@ -145,7 +101,7 @@ class JSONDataModuleTest(ProgramFrameworkTest):
 
         for query_label, query in student_display_dict.items():
             value = query.count()
-            json_str = "[\"%s\", %d]" % (query_label, value)
+            json_str = f'["{query_label}", {value}]'
             self.assertContains(self.stats_response, json_str)
 
     def testTeacherStats(self):
@@ -161,7 +117,7 @@ class JSONDataModuleTest(ProgramFrameworkTest):
 
         for query_label, query in teacher_display_dict.items():
             value = query.count()
-            json_str = "[\"%s\", %d]" % (query_label, value)
+            json_str = f'["{query_label}", {value}]'
             self.assertContains(self.stats_response, json_str)
 
     def testGradesStats(self):
@@ -268,8 +224,7 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         _label, total_count = class_num_pairs[0]
         expected = self.program.classes().distinct().count()
         self.assertEqual(total_count, expected,
-                         "vitals classnum total mismatch: got %d, expected %d"
-                         % (total_count, expected))
+                         f"vitals classnum total mismatch: got {total_count}, expected {expected}")
 
     def testCategoriesSection(self):
         """The 'categories' section has per-category data with required fields."""
@@ -330,7 +285,7 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                                       "section id should be an int, got %r" % sec_id)
             # No duplicate section IDs within a class.
             self.assertEqual(len(sections), len(set(sections)),
-                             "Duplicate section IDs for class id=%s: %r" % (cid, sections))
+                             f"Duplicate section IDs for class id={cid}: {sections!r}")
 
     def testClassSubjectsTeachersAreListed(self):
         """The 'teachers' field in each class_subjects entry is a list of ints."""
@@ -341,8 +296,7 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                                   "teachers should be a list for class id=%s" % cid)
             for t_id in teachers:
                 self.assertIsInstance(t_id, int,
-                                      "teacher id should be an int, got %r (class id=%s)"
-                                      % (t_id, cid))
+                                      f"teacher id should be an int, got {t_id!r} (class id={cid})")
 
     def testClassSubjectsTeachersBlock(self):
         """The top-level 'teachers' block in class_subjects has correct fields."""
