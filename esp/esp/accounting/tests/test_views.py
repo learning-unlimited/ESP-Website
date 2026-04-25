@@ -25,21 +25,21 @@ class SummaryViewTest(TestCase):
         super().setUp()
         _setup_roles()
         self.client = Client()
-        
+
         self.admin = ESPUser.objects.create_user(
             username='admin', password='pass'
         )
         self.admin.makeRole('Administrator')
-        
+
         self.student = ESPUser.objects.create_user(
             username='student', password='pass'
         )
         self.student.makeRole('Student')
-        
+
         GlobalAccountingController().setup_accounts()
-        
+
         # Using exact URL name from urls.py
-        self.url = reverse('accounting_summary') 
+        self.url = reverse('accounting_summary')
 
     def test_summary_admin_can_access(self):
         """Admin user gets 200 response from summary view."""
@@ -53,7 +53,7 @@ class SummaryViewTest(TestCase):
         response = self.client.get(self.url)
         # Assumes your app returns a 403 Permission Denied for unauthorized access.
         # If it redirects instead, change this to 302.
-        self.assertEqual(response.status_code, 403) 
+        self.assertEqual(response.status_code, 403)
 
     def test_summary_not_logged_in_blocked(self):
         """Unauthenticated user cannot access summary view and is redirected."""
@@ -67,17 +67,17 @@ class UserSummaryViewTest(TestCase):
         super().setUp()
         _setup_roles()
         self.client = Client()
-        
+
         self.admin = ESPUser.objects.create_user(
             username='admin', password='pass'
         )
         self.admin.makeRole('Administrator')
-        
+
         self.student = ESPUser.objects.create_user(
             username='student', password='pass'
         )
         self.student.makeRole('Student')
-        
+
         # Using exact URL name from urls.py
         self.url = reverse('accounting_user_summary')
 
@@ -103,14 +103,14 @@ class UserAccountingFunctionTest(TestCase):
     def setUp(self):
         super().setUp()
         _setup_roles()
-        
+
         self.program = Program.objects.create(
             grade_min=7, grade_max=12
         )
         self.student = ESPUser.objects.create_user(
             username='student', password='pass'
         )
-        
+
         GlobalAccountingController().setup_accounts()
         pac = ProgramAccountingController(self.program)
         pac.setup_accounts()
@@ -139,7 +139,7 @@ class UserAccountingFunctionTest(TestCase):
         )
         iac.ensure_required_transfers()
         iac.submit_payment(Decimal('50.00'))
-        
+
         result = user_accounting(self.student, [self.program])
         self.assertEqual(result[0]['paid'], Decimal('50.00'))
         self.assertEqual(result[0]['due'], Decimal('0.00'))
