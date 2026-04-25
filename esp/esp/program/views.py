@@ -495,10 +495,15 @@ def find_user(userstr):
             if exact_users.exists():
                 return exact_users
 
-        # Try name (including parent/emergency contact)
-        fuzzy_q = Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr)
-        fuzzy_q = fuzzy_q | Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr)
-        found_users = ESPUser.objects.filter(exact_q | fuzzy_q).distinct()
+        # Skip name search for purely numeric strings: a number is an ID or phone,
+        # not a name, and including name-contains would cause spurious multi-user
+        # matches (e.g. a user whose first name contains the ID digits).
+        if userstr.isnumeric():
+            found_users = exact_users
+        else:
+            fuzzy_q = Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr)
+            fuzzy_q = fuzzy_q | Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr)
+            found_users = ESPUser.objects.filter(exact_q | fuzzy_q).distinct()
     else:
         q_list = []
         for i in range(len(userstr_parts)):
