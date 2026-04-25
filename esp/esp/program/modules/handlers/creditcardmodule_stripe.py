@@ -49,6 +49,10 @@ from decimal import Decimal
 import stripe
 import json
 import re
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class CreditCardModule_Stripe(ProgramModuleObj):
     doc = """Accept credit card payments via Stripe."""
@@ -74,7 +78,22 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
         DEFAULTS.update(settings.STRIPE_CONFIG)
-        tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program))
+
+        # Handle missing or invalid 'stripe_settings' JSON to prevent apply_settings() from crashing (see issue #5474).
+        raw = Tag.getProgramTag('stripe_settings', self.program)
+        try:
+            tag_data = json.loads(raw) if raw else {}
+        except (json.JSONDecodeError, TypeError):
+            if raw:
+                logger.warning(
+                    'Could not parse stripe_settings tag for program %s (id=%s). '
+                    'Falling back to empty settings.',
+                    self.program.url_base,
+                    self.program.id
+                )
+            tag_data = {}
+
+
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings

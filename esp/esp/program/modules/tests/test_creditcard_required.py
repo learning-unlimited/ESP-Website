@@ -332,3 +332,43 @@ class CreditCardSelfBlockingTest(TestCase):
 
         self.assertFalse(completedAll,
             "Other incomplete required modules should block payment")
+class CreditCardStripeApplySettingsTest(TestCase):
+    """Tests for CreditCardModule_Stripe.apply_settings() safe JSON parsing (issue #5474)."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(
+            url='ccstripe', name='CC Stripe Settings Program', grade_min=7, grade_max=12)
+
+        gac = GlobalAccountingController()
+        gac.setup_accounts()
+        pac = ProgramAccountingController(self.program)
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(50.0)
+
+        self.cc_module = _get_cc_module(self.program, 'CreditCardModule_Stripe')
+
+    def test_apply_settings_tag_missing(self):
+        """apply_settings() should not crash when stripe_settings Tag is None."""
+        Tag.unSetTag('stripe_settings', target=self.program)
+        result = self.cc_module.apply_settings()
+        self.assertIsInstance(result, dict)
+
+    def test_apply_settings_tag_empty_string(self):
+        """apply_settings() should not crash when stripe_settings Tag is empty."""
+        Tag.setTag('stripe_settings', target=self.program, value='')
+        result = self.cc_module.apply_settings()
+        self.assertIsInstance(result, dict)
+
+    def test_apply_settings_tag_valid_json(self):
+        """apply_settings() should correctly parse valid stripe_settings JSON."""
+        Tag.setTag('stripe_settings', target=self.program, value='{"offer_donation": false}')
+        result = self.cc_module.apply_settings()
+        self.assertFalse(result['offer_donation'])
+
+    def test_apply_settings_tag_malformed_json(self):
+        """apply_settings() should not crash when stripe_settings Tag has malformed JSON."""
+        Tag.setTag('stripe_settings', target=self.program, value='{broken json...')
+        result = self.cc_module.apply_settings()
+        self.assertIsInstance(result, dict)
