@@ -5,6 +5,22 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/admin/base.css" type="text/css" />
+    <style>
+      .errorlist {
+          color: #ff0000;
+          list-style: none;
+          padding: 0;
+          margin: 5px 0 0 0;
+          font-size: 0.9em;
+          display: block;
+          font-weight: bold;
+      }
+      .errorlist + input, 
+      .errorlist + select,
+      td > .errorlist ~ input {
+          border: 1px solid #ff0000 !important;
+      }
+  </style>
 {% endblock %}
 
 {% block content %}
