@@ -836,6 +836,45 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action)
 
+    @aux_call
+    @needs_teacher
+    @meets_deadline("/Classes/Edit")
+    def editcapacity(self, request, tl, one, two, module, extra, prog):
+        try:
+            int(extra)
+        except (ValueError, TypeError):
+            raise ESPError("Invalid integer for class ID! Got `{}`".format(extra), log=False)
+
+        classes = ClassSubject.objects.filter(id=extra)
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+        
+        cls = classes[0]
+        saved = False
+        errors = {}
+
+        if request.method == 'POST':
+            for sec in cls.sections.all():
+                key = 'capacity_%d' % sec.id
+                if key in request.POST:
+                    try:
+                        new_cap = int(request.POST[key])
+                        if new_cap >= 0:
+                            # Check if new capacity is less than current enrollment
+                            if new_cap < sec.num_students():
+                                errors[sec.id] = 'Capacity cannot be less than current enrollment ({} students)'.format(sec.num_students())
+                            else:
+                                sec.max_class_capacity = new_cap
+                                sec.save()
+                    except ValueError:
+                        pass
+            
+            # Only mark as saved if there were no validation errors
+            if not errors:
+                saved = True
+
+        return render_to_response(self.baseDir()+'editcapacity.html', request, {'cls': cls, 'saved': saved, 'errors': errors})
+
     @main_call
     @needs_teacher
     @meets_deadline('/Classes/Create/Class')
