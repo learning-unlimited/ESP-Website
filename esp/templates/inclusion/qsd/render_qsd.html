@@ -18,7 +18,7 @@
     <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
 </div>
 <div class="qsd_view_visible prettify" id="inline_qsd_{{ qsdrec.edit_id }}">
-    {% autoescape off %}{{ qsdrec.content|markdown }}{% endautoescape %}
+    {% autoescape off %}{{ qsdrec.content|markdown_safe }}{% endautoescape %}
 </div>
 <div class="qsd_bits hidden">
     <div class="hidden" id="inline_edit_{{ qsdrec.edit_id }}">
@@ -53,34 +53,42 @@ $j(document).ready(function() {
 });
 
 (function() {
-var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
-  "enter": "P",
-  "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
-  "toolbarAdaptive": false,
-  "saveModeInStorage": true,
-  "uploader": {
-    "url": "/admin/ajax_qsd_image_upload/",
-    "format": "json",
-    "headers": { "X-CSRFToken": csrf_token() },
-    "data": { "qsd_url": "{{ qsdrec.url|escapejs }}" },
-    "isSuccess": function(resp) { return resp.success; },
-    "getMessage": function(resp) {
-      return resp.data && resp.data.messages ? resp.data.messages.join("\n") : "";
-    },
-    "process": function(resp) {
-      return { files: resp.data.files || [], baseurl: "", error: resp.success ? 0 : 1, msg: "" };
-    },
-    "defaultHandlerSuccess": function(data) {
-      for (var i = 0; i < data.files.length; i++) {
-        editor.selection.insertImage(data.files[i]);
+try {
+  var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
+    "enter": "P",
+    "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
+    "toolbarAdaptive": false,
+    "saveModeInStorage": true,
+    "uploader": {
+      "url": "/admin/ajax_qsd_image_upload/",
+      "format": "json",
+      "headers": { "X-CSRFToken": csrf_token() },
+      "data": { "qsd_url": "{{ qsdrec.url|escapejs }}" },
+      "isSuccess": function(resp) { return resp.success; },
+      "getMessage": function(resp) {
+        return resp.data && resp.data.messages ? resp.data.messages.join("\n") : "";
+      },
+      "process": function(resp) {
+        return { files: resp.data.files || [], baseurl: "", error: resp.success ? 0 : 1, msg: "" };
+      },
+      "defaultHandlerSuccess": function(data) {
+        for (var i = 0; i < data.files.length; i++) {
+          editor.selection.insertImage(data.files[i]);
+        }
+      },
+      "error": function(e) {
+        editor.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
       }
-    },
-    "error": function(e) {
-      editor.events.fire("errorMessage", e.message || "Upload failed", "error", 4000);
     }
+  });
+  espHandleBase64Paste(editor);
+} catch (e) {
+  var textarea = document.getElementById("qsd_content_{{ qsdrec.edit_id }}");
+  if (textarea) {
+    textarea.style.display = "block";
+    textarea.className = textarea.className.replace(/\bhidden\b/g, "").trim();
   }
-});
-espHandleBase64Paste(editor);
+}
 })();
 </script>
 <br />
