@@ -11,7 +11,6 @@ from django.template import RequestContext
 from django.urls import reverse
 from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
-from django.test import SimpleTestCase
 
 from esp.program.models import Program, RegistrationProfile
 from esp.tagdict.models import Tag
@@ -39,32 +38,7 @@ def HttpMetaRedirect(location='/'):
     """, location)
     return response
 
-class HttpMetaRedirectEscapingTest(SimpleTestCase):
-    """
-    Regression test: ensure that HttpMetaRedirect escapes malicious
-locations so
-    that no raw <script> tags or broken attributes appear in the response.
-    """
 
-def test_malicious_location_is_escaped(self):
-    # This location attempts to break out of the content attribute and inject script.
-     malicious_location = '"/><script>alert(1)</script>'
-
-    response = HttpMetaRedirect(malicious_location)
-    # Django HttpResponse.content is bytes; decode to text for assertions.
-    content = response.content.decode("utf-8")
-if isinstance(response.content, bytes) else response.content
-
-    # The raw script tag must not appear in the output.
-    self.assertNotIn("<script>alert(1)</script>", content)
-    # The script tag should be HTML-escaped instead.
-    self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", content)
-    # The injected quote should also be escaped so it cannot break the attribute.
-    self.assertNotIn('content="0; url="/>', content)
-
-
-mask_locations = ['/', '/myesp/signout', '/myesp/signout/', '/admin/logout/']
-def mask_redirect(user, next):
     # We're getting redirected to somewhere undesirable.
     # Let's try to do something smarter.
     admin_home_url = Tag.getTag('admin_home_page')
