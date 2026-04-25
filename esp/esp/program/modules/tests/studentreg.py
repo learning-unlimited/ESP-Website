@@ -336,6 +336,25 @@ class StudentRegTest(ProgramFrameworkTest):
             "Context should have selected_category set on a category page")
         self.assertEqual(response.context['selected_category']['id'], cat_id)
 
+    def test_catalog_sort_legacy_field_with_spaces(self):
+        """Legacy sort field values with spaces should be translated and work."""
+        from esp.tagdict.models import Tag
+        from esp.program.models import ClassSubject
+
+        Tag.setTag(
+            'catalog_sort_fields',
+            target=self.program,
+            value='category__symbol, sections__meeting_times__start, id',
+        )
+
+        classes = ClassSubject.objects.catalog(self.program)
+        self.assertTrue(len(classes) > 0)
+        self.assertTrue(hasattr(classes[0], 'earliest_start'))
+
+        # Ensure translated ordering does not duplicate rows.
+        class_ids = [cls.id for cls in classes]
+        self.assertEqual(len(class_ids), len(set(class_ids)))
+
     def test_profile(self):
 
         #   Login as a student and ensure we can submit the profile
