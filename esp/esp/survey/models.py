@@ -198,7 +198,7 @@ class QuestionType(models.Model):
         if not kwargs.get('raw'):
             self.full_clean()
         super().save(*args, **kwargs)
-        
+
 class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions", on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
