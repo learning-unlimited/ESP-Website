@@ -47,12 +47,13 @@ from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
 
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student_in_grade, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_onsite_no_switchback, needs_student_in_grade, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
 from esp.utils.models import Printer, PrintRequest
+from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
@@ -257,7 +258,7 @@ class OnSiteClassList(ProgramModuleObj):
         try:
             desired_sections = json.loads(request.GET['sections'])
         except (KeyError, ValueError, TypeError):
-            result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
+            result['messages'].append(f'Error: could not parse requested sections {request.GET.get("sections", None)}')
             desired_sections = None
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
@@ -276,7 +277,7 @@ class OnSiteClassList(ProgramModuleObj):
             failed_add_sections = []
             for sec in sections_to_add:
                 if sec.isFull(webapp=True) and not override_full:
-                    result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, 'Class is currently full.'))
+                    result['messages'].append(f'Failed to add {user.name()} ({user.id}) to {sec.emailcode()}: {sec.title()} ({sec.id}).  Error was: Class is currently full.')
                     failed_add_sections.append(sec.id)
 
             if len(failed_add_sections) == 0:
@@ -284,7 +285,7 @@ class OnSiteClassList(ProgramModuleObj):
                 #   Remove sections the student wants out of
                 for sec in sections_to_remove:
                     sec.unpreregister_student(user, verbs)
-                    result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
+                    result['messages'].append(f'Removed {user.name()} ({user.id}) from {sec.emailcode()}: {sec.title()} ({sec.id})')
 
                 #   Remove sections that conflict with those the student wants into
                 sec_times = sections_to_add.select_related('meeting_times__id').values_list('id', 'meeting_times__id').order_by('meeting_times__id').distinct()
@@ -298,7 +299,7 @@ class OnSiteClassList(ProgramModuleObj):
                         for sm_sec in sm.map[ts]:
                             if sm_sec.id not in sections_to_add_ids:
                                 sm_sec.unpreregister_student(user, verbs)
-                                result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
+                                result['messages'].append(f'Removed {user.name()} ({user.id}) from {sm_sec.emailcode()}: {sm_sec.title()} ({sm_sec.id})')
                             else:
                                 existing_sections.append(sm_sec)
 
@@ -313,9 +314,9 @@ class OnSiteClassList(ProgramModuleObj):
                         else:
                             reg_result = False
                         if reg_result:
-                            result['messages'].append('Added %s (%s) to %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
+                            result['messages'].append(f'Added {user.name()} ({user.id}) to {sec.emailcode()}: {sec.title()} ({sec.id})')
                         else:
-                            result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, error))
+                            result['messages'].append(f'Failed to add {user.name()} ({user.id}) to {sec.emailcode()}: {sec.title()} ({sec.id}).  Error was: {error}')
 
             result['user'] = user.id
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
@@ -336,7 +337,7 @@ class OnSiteClassList(ProgramModuleObj):
             user_obj = ESPUser.objects.get(id=user)
         except (ValueError, TypeError, KeyError, ESPUser.DoesNotExist):
             resp.status_code = 400
-            result['message'] = "Could not find user %s." % request.GET.get('user', None)
+            result['message'] = f"Could not find user {request.GET.get('user', None)}."
             json.dump(result, resp)
             return resp
 
@@ -345,10 +346,22 @@ class OnSiteClassList(ProgramModuleObj):
             printer = Printer.objects.get(name=printer)
 
         req = PrintRequest.objects.create(user=user_obj, printer=printer)
-        result['message'] = "Submitted %s's schedule for printing (print request #%s)." % (user_obj.name(), req.id)
+        result['message'] = f"Submitted {user_obj.name()}'s schedule for printing (print request #{req.id})."
 
         json.dump(result, resp)
         return resp
+
+    @aux_call
+    @needs_onsite_no_switchback
+    def schedule_pdf(self, request, tl, one, two, module, extra, prog):
+        user_param = request.GET.get('user', None)
+        try:
+            user_id = int(user_param)
+            user_obj = ESPUser.objects.get(id=user_id)
+        except (ValueError, TypeError, ESPUser.DoesNotExist):
+            return HttpResponse("Error: Could not find user.", status=400, content_type="text/plain")
+
+        return ProgramPrintables.get_student_schedules(request, [user_obj], prog, onsite=False)
 
     @aux_call
     @needs_onsite
@@ -473,17 +486,16 @@ class OnSiteClassList(ProgramModuleObj):
 
     def makeLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
-        strings = ['<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1], call[1]) for call in calls]
+        strings = [f'<a href="/{self.module.module_type}/{self.program.url}/{call[0]}" title="{call[1]}" class="vModuleLink" >{call[1]}</a>' for call in calls]
         return "</li><li>".join(strings)
 
     def makeButtonLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
-        strings = ["""<div class="module_button">\
-                                <a href="%s"><button type="button" class="module_link_large">
-                                    <div class="module_link_main">%s</div>
+        strings = [f"""<div class="module_button">\
+                                <a href="/{self.module.module_type}/{self.program.url}/{call[0]}"><button type="button" class="module_link_large">
+                                    <div class="module_link_main">{call[1]}</div>
                                 </button></a>
-                            </div>""" % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
+                            </div>""" for call in calls]
         return "".join(strings)
 
     class Meta:
