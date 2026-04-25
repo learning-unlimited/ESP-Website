@@ -449,19 +449,38 @@ var CatalogViewModel = function () {
                 type: "POST",
                 url: url,
                 data: data,
-                success: function () {
+                success: function (data) {
                     // update dirty bits
+                    var excluded = [];
+                    if (data && data.excluded_ids && data.excluded_ids.length > 0) {
+                        excluded = data.excluded_ids;
+                    }
+                    var excludedLookup = {};
+                    for (var i = 0; i < excluded.length; i++) {
+                        excludedLookup[excluded[i]] = true;
+                    }
                     var classes = self.classes();
                     ko.utils.arrayForEach(updates.interested,
                         function (cls_id) {
                             var cls = classes[cls_id];
-                            cls.interested_saved(true);
+                            if (!excludedLookup[cls_id]) {
+                                cls.interested_saved(true);
+                            }
                         });
                     ko.utils.arrayForEach(updates.not_interested,
                         function (cls_id) {
                             var cls = classes[cls_id];
                             cls.interested_saved(false);
                         });
+                    // Warn if any classes were excluded due to grade restrictions
+                    if (data && data.excluded_ids && data.excluded_ids.length > 0) {
+                        var names = data.excluded_ids.map(function (id) {
+                            return classes[id] ? classes[id].fulltitle : 'class ' + id;
+                        });
+                        alert('The following class(es) could not be starred because ' +
+                              'your grade is outside their allowed range:\n' +
+                              names.join('\n'));
+                    }
                 },
                 complete: function () {
                     // if dirty, update again!
