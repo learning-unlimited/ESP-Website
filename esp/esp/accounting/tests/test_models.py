@@ -498,3 +498,18 @@ class IndividualAccountingControllerTest(TestCase):
         self.assertIn('Refund', types)
         self.assertEqual(results[0]['refunded'], Decimal('15.00'))
 
+    def test_record_payment_from_identifier_handles_multiple_transfers_same_line_item(self):
+        """Reconciliation should consume one unpaid transfer per identifier entry."""
+        self.pac.setup_lineitemtypes(50.0, optional_items=[('T-Shirt', 15.0, 5)])
+
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-Shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        amount_due = self.iac.amount_due()
+
+        IndividualAccountingController.record_payment_from_identifier(identifier, amount_due)
+
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+        self.assertEqual(self.iac.get_transfers().filter(paid_in__isnull=False).count(), 3)
+

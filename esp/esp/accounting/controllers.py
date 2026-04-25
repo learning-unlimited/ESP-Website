@@ -526,24 +526,63 @@ class IndividualAccountingController(ProgramAccountingController):
 
         # Reconcile Transfers with what's listed in the identifier. Note that
         # any exception will roll back the entire transaction.
-        transfer_total = 0
+        parsed_items = []
+        line_item_ids = set()
         for item in transfer_list.split(';'):
             line_item_id, saved_amount = item.split(',')
-            transfer = Transfer.objects.get(
-                user=iac.user,
-                line_item__id=int(line_item_id),
-            )
+            line_item_id = int(line_item_id)
+            parsed_items.append((line_item_id, saved_amount))
+            line_item_ids.add(line_item_id)
+
+        candidate_transfers = Transfer.objects.filter(
+            user=iac.user,
+            line_item__id__in=line_item_ids,
+        ).select_related('line_item').order_by('id')
+
+        transfers_by_line_item = {}
+        for transfer in candidate_transfers:
+            transfers_by_line_item.setdefault(transfer.line_item_id, []).append(transfer)
+
+        consumed_transfer_ids = set()
+        transfer_total = 0
+        for line_item_id, saved_amount in parsed_items:
+            unpaid_candidates = []
+            all_candidates = []
+            for candidate in transfers_by_line_item.get(line_item_id, []):
+                if candidate.id in consumed_transfer_ids:
+                    continue
+                all_candidates.append(candidate)
+                if not candidate.paid_in:
+                    unpaid_candidates.append(candidate)
+
+            transfer = None
+            if trusted:
+                if unpaid_candidates:
+                    transfer = unpaid_candidates[0]
+            else:
+                for candidate in unpaid_candidates:
+                    if '%.2f' % candidate.amount == saved_amount:
+                        transfer = candidate
+                        break
+                if transfer is None and unpaid_candidates:
+                    transfer = unpaid_candidates[0]
+
+            if transfer is None:
+                # Distinguish between "transfer already paid" and "transfer doesn't exist"
+                paid_candidates = [c for c in all_candidates if c.paid_in]
+                if paid_candidates:
+                    raise DuplicatePaymentError(
+                        f"Failed on processing line item type {line_item_id}: transfer already paid")
+                raise ReconciliationError(
+                    f"Failed on processing line item type {line_item_id}: no transfer found")
+
+            consumed_transfer_ids.add(transfer.id)
 
             # This case is rare, since it's unusual to change the program of a
             # Line Item Type after it's been created.
             if transfer.line_item.program != iac.program:
                 raise ReconciliationError(
                     f"Failed on processing Transfer {transfer.id}: program changed")
-
-            # Check for duplicate payment
-            if transfer.paid_in:
-                raise DuplicatePaymentError(
-                    f"Failed on processing Transfer {transfer.id}: already paid")
 
             # Check to see if the amount changed
             if '%.2f' % transfer.amount != saved_amount:
