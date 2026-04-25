@@ -2064,6 +2064,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return self.__cmp__(other) != 0
 
     def __hash__(self):
+        # Required for Django's deletion collector (set membership). __eq__ without __hash__ makes instances unhashable in Python 3.
         if self.pk is None:
             return super().__hash__()
         return hash(self.pk)

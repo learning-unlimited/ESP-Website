@@ -396,6 +396,28 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return retVal
 
+    def delete(self, *args, **kwargs):
+        # Clean up program-scoped resource links before deleting the Program
+        # so admin-driven deletion does not require separate manual resource
+        # cleanup.
+        from esp.resources.models import Resource, ResourceRequest, ResourceType
+
+        program_res_type_ids = list(
+            ResourceType.objects.filter(program=self).values_list('id', flat=True)
+        )
+
+        Resource.objects.filter(event__program=self).delete()
+        ResourceRequest.objects.filter(
+            Q(target__parent_class__parent_program=self) |
+            Q(target_subj__parent_program=self)
+        ).delete()
+
+        if program_res_type_ids:
+            Resource.objects.filter(res_type_id__in=program_res_type_ids).delete()
+            ResourceRequest.objects.filter(res_type_id__in=program_res_type_ids).delete()
+
+        return super(Program, self).delete(*args, **kwargs)
+
     def __str__(self):
         return self.niceName()
 

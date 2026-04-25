@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta
 
-from django.db.models import ProtectedError
-
 from esp.cal.models import Event, EventType
 from esp.program.models import Program
 from esp.program.models.class_ import ClassSubject, ClassSection, ClassCategories
@@ -29,21 +27,24 @@ class ResourceTypeTest(TestCase):
         )
         self.section = ClassSection.objects.create(parent_class=self.subject)
 
-    def testCascadingDeleteDisabled(self):
+    def test_cascading_delete_deletes_related_resource_and_request(self):
+        """Deleting a ResourceType CASCADEs to related Resource and ResourceRequest."""
         res_type = ResourceType.objects.create(name='res_type', description='')
 
         resource = Resource.objects.create(name='resource', res_type=res_type, event=self.event)
-        with self.assertRaises(ProtectedError):
-            res_type.delete()
-        resource.delete()
+        resource_request = ResourceRequest.objects.create(
+            desired_value='desired_value', res_type=res_type, target=self.section
+        )
+        resource_id = resource.id
+        request_id = resource_request.id
+        res_type_id = res_type.id
 
-        resource_request = ResourceRequest.objects.create(desired_value='desired_value', res_type=res_type, target=self.section)
-        with self.assertRaises(ProtectedError):
-            res_type.delete()
-        resource_request.delete()
-
-        # This should now be okay.
         res_type.delete()
+
+        self.assertFalse(ResourceType.objects.filter(id=res_type_id).exists())
+        self.assertFalse(Resource.objects.filter(id=resource_id).exists())
+        self.assertFalse(ResourceRequest.objects.filter(id=request_id).exists())
+
 
 class FloatingResourceAvailabilityTest(TestCase):
 
