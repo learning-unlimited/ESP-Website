@@ -2821,9 +2821,9 @@ class Permission(ExpirableModel):
         if self.user is not None:
             grantee = self.user.username
         elif self.role is not None:
-            grantee = six.text_type(self.role)
+            grantee = str(self.role)
         elif self.user_filter is not None:
-            grantee = six.text_type(self.user_filter)
+            grantee = str(self.user_filter)
         else:
             grantee = "None"
 
