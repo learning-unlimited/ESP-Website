@@ -34,3 +34,26 @@ class LoginOpenRedirectTests(TestCase):
         
         # Prove the JS payload was stripped out
         self.assertNotIn(malicious_url, response.content.decode())
+
+class SignoutOpenRedirectTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.signout_url = reverse('signout')
+
+    def test_signout_external_redirect_blocked(self):
+        """Test that passing an external URL in the 'redirect' parameter falls back safely."""
+        malicious_url = "http://evil-phishing-site.com"
+        response = self.client.get(f"{self.signout_url}?redirect={malicious_url}")
+
+        # The view should block the redirect and return the standard 200 OK logged-out page
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'registration/logged_out.html')
+
+    def test_signout_safe_redirect_allowed(self):
+        """Test that passing a safe internal URL in the 'redirect' parameter works."""
+        safe_url = "/myesp/profile"
+        response = self.client.get(f"{self.signout_url}?redirect={safe_url}")
+
+        # The view should allow the redirect because it is an internal path
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, safe_url)
