@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 from django.urls import include, path, re_path
-from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
 from django.conf.urls.static import static

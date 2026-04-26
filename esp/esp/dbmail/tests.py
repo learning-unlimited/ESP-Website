@@ -271,7 +271,6 @@ class MailgateBounceTest(TestCase):
 
     def test_bounce_sent_for_known_user(self):
         """Known ESP user should receive a bounce email."""
-        import email.utils
         from django.core.mail import send_mail as django_send_mail
         from django.conf import settings
 

@@ -45,9 +45,8 @@ import numpy.random
 from datetime import date, datetime
 
 from esp.cal.models import Event
-from esp.users.models import ESPUser, StudentInfo
+from esp.users.models import ESPUser
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile, ClassSection
-from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_members, remove_list_member, list_contents
 from esp.tagdict.models import Tag
 

@@ -51,8 +51,6 @@ from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
 from urllib.parse import quote
-from django.template.loader import get_template
-from django.template import TemplateDoesNotExist
 
 from django.core.exceptions import ImproperlyConfigured
 from esp.middleware import ESPError
@@ -134,7 +132,6 @@ class ProgramModuleObj(models.Model):
         return None
 
     def getCoreURL(self, tl):
-        import esp.program.modules.models
         modules = self.program.getModules(get_current_request().user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
@@ -210,7 +207,6 @@ class ProgramModuleObj(models.Model):
 
     @staticmethod
     def getFromProgModule(prog, mod, old_prog = None):
-        import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
 

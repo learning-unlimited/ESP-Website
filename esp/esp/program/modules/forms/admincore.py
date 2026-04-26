@@ -1,6 +1,5 @@
 from django import forms
 from django.conf import settings
-from django.contrib import admin
 from django.template import Template, Context
 from django.template.loader import select_template
 from django.utils.safestring import mark_safe

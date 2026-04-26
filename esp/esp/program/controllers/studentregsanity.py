@@ -32,17 +32,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from datetime import date, datetime
+from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)
 
-from esp.cal.models import Event
-from esp.users.models import ESPUser, StudentInfo
-from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
-from esp.mailman import add_list_member, remove_list_member, list_contents
 
-from django.conf import settings
 import os
 
 class StudentRegSanityController(object):

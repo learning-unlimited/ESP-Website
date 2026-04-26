@@ -35,13 +35,10 @@ Learning Unlimited, Inc.
 
 from django import forms
 from django.core import validators
-from django.core.exceptions import ObjectDoesNotExist
 from django.utils.safestring import mark_safe
-from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
-from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
-import re
-from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
-from esp.program.modules.module_ext import ClassRegModuleInfo
+from esp.utils.forms import StrippedCharField, FormWithRequiredCss
+from esp.utils.widgets import BlankSelectWidget
+from esp.program.models import ClassSizeRange
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.tagdict.models import Tag

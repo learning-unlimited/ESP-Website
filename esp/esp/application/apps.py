@@ -5,7 +5,7 @@ class ApplicationConfig(AppConfig):
     name = 'esp.application'
 
     def ready(self):
-        import esp.application.signals
+        import esp.application.signals  # noqa: F401
         # h/t https://github.com/noripyt/django-cachalot/issues/125
         # https://docs.python.org/3/library/copyreg.html#copyreg.pickle
         copyreg.pickle(memoryview, lambda val: (memoryview, (bytes(val),)))

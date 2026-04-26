@@ -11,7 +11,6 @@ And to activate the app index dashboard::
 """
 
 from django.utils.translation import ugettext as _
-from django.urls import reverse
 
 from admin_tools.dashboard import modules, Dashboard, AppIndexDashboard
 from admin_tools.utils import get_admin_site_name, get_avail_models

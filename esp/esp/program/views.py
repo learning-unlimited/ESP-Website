@@ -38,7 +38,6 @@ import logging
 logger = logging.getLogger(__name__)
 import traceback
 import os
-from operator import __or__ as OR
 from pprint import pprint
 
 from argcache import cache_function
@@ -85,7 +84,6 @@ from esp.tagdict.models import Tag
 from django.conf import settings
 
 import re
-import pickle
 import operator
 import json
 from docutils.core import publish_parts

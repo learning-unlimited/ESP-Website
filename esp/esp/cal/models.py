@@ -36,7 +36,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
-from datetime import datetime, timedelta
+from datetime import timedelta
 from argcache import cache_function
 from esp.utils import cmp
 
