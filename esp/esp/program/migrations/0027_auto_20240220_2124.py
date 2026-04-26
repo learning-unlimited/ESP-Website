@@ -9,11 +9,8 @@ import django.db.models.fields
 import re
 
 def replace_director_emails(apps, schema_editor):
-    Program = apps.get_model('program', 'Program')
-    for prog in Program.objects.all():
-        if not re.match(r"(^.+@%s$)|(^.+@(\w+\.)*learningu\.org$)" % settings.SITE_INFO[1].replace(".", "\."), prog.director_email):
-            prog.director_email = 'info@' + settings.SITE_INFO[1]
-            prog.save()
+    # MIT: skip - director emails are not constrained to learningu.org domains
+    pass
 
 def create_info_redirect(apps, schema_editor):
     PlainRedirect = apps.get_model('dbmail', 'PlainRedirect')

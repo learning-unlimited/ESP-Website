@@ -254,7 +254,6 @@ INSTALLED_APPS = (
     'debug_toolbar',
     'esp.formstack',
     'esp.application.apps.ApplicationConfig',
-    'captcha',
     'admin_tools',
     'admin_tools.theming',
     'admin_tools.menu',
