@@ -274,8 +274,14 @@ class Command(BaseCommand):
             defaults=dict(admin_title='Teacher Profile Editor',
                           seq=0, required=True, choosable=1))
 
-        for name in ['yes/no', 'rating', 'open response', 'multiple choice']:
-            QuestionType.objects.get_or_create(name=name)
+        question_type_defaults = {
+            'Yes-No Response': dict(is_numeric=False, is_countable=True),
+            'Numeric Rating': dict(is_numeric=True, is_countable=True),
+            'Long Answer': dict(is_numeric=False, is_countable=False),
+            'Multiple Choice': dict(is_numeric=False, is_countable=True),
+        }
+        for name, defaults in question_type_defaults.items():
+            QuestionType.objects.update_or_create(name=name, defaults=defaults)
 
     # ── navbar ────────────────────────────────────────────────────────────────
 
@@ -619,8 +625,8 @@ class Command(BaseCommand):
             name=f'Dev Survey - {program.name}', program=program,
             defaults=dict(category='learn'))
 
-        rt = QuestionType.objects.get(name='rating')
-        ot = QuestionType.objects.get(name='open response')
+        rt = QuestionType.objects.get(name='Numeric Rating')
+        ot = QuestionType.objects.get(name='Long Answer')
 
         # Question has: survey, name, question_type (FK), seq, per_class
         # There is no 'question' text field — the name IS the question label.

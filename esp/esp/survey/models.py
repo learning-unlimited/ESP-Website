@@ -38,7 +38,8 @@ Learning Unlimited, Inc.
 import datetime
 import json
 from django.db import models
-from django.template import loader
+from django.core.exceptions import ValidationError
+from django.template import loader, TemplateDoesNotExist
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 
@@ -180,6 +181,23 @@ class QuestionType(models.Model):
             return f'{self.name}: includes {self._param_names.replace("|", ", ")}'
         else:
             return str(self.name)
+
+    def clean(self):
+        super().clean()
+        try:
+            loader.get_template(self.template_file)
+        except TemplateDoesNotExist:
+            raise ValidationError({
+                'name': (
+                    f"No template found for question type '{self.name}'. "
+                    f"Expected template at: {self.template_file}"
+                )
+            })
+
+    def save(self, *args, **kwargs):
+        if not kwargs.get('raw'):
+            self.full_clean()
+        super().save(*args, **kwargs)
 
 class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name="questions", on_delete=models.CASCADE)
