@@ -1105,3 +1105,64 @@ class StudentProfileForm__emailvalidationtest(TestCase):
         email_errors = [e for e in form.non_field_errors()
                         if 'email' in e.lower()]
         self.assertEqual(email_errors, [])
+        
+class TestInactiveAccountLogin(TestCase):
+    """
+    Regression test for issue #1213:
+    Logging in with an unactivated account should show a specific message,
+    not the generic wrong-password error.
+    """
+
+    def setUp(self):
+        from django.contrib.auth.models import Group
+        groups = ['Student', 'Teacher', 'Educator', 'Guardian',
+                  'Volunteer', 'Administrator']
+        for g in groups:
+            Group.objects.get_or_create(name=g)
+
+        self.user = ESPUser.objects.create_user(
+            username='inactiveuser',
+            password='correctpassword',
+            email='inactive@example.com',
+        )
+        # Simulate what registration does when require_email_validation is True
+        import random
+        userkey = random.randint(0, 2**31 - 1)
+        self.user.password += '_%d' % userkey
+        self.user.is_active = False
+        self.user.save()
+
+    def test_inactive_account_shows_specific_message(self):
+        """Logging in with correct credentials on an unactivated account
+        should show the activation message, not the wrong-password error."""
+        Tag.setTag('require_email_validation', value='True')
+        response = self.client.post('/myesp/login/', {
+            'username': 'inactiveuser',
+            'password': 'correctpassword',
+            'next': '/myesp/register/information',
+        })
+        self.assertContains(response, 'not been activated yet')
+        self.assertNotContains(response, 'password you entered is not valid')
+
+    def test_inactive_account_without_validation_tag_shows_wrong_pw(self):
+        """When require_email_validation is False, inactive account should
+        show the generic wrong-password error (admin-disabled account)."""
+        Tag.setTag('require_email_validation', value='False')
+        response = self.client.post('/myesp/login/', {
+            'username': 'inactiveuser',
+            'password': 'correctpassword',
+            'next': '/myesp/register/information',
+        })
+        self.assertContains(response, 'password you entered is not valid')
+        self.assertNotContains(response, 'not been activated yet')
+
+    def test_nonexistent_user_shows_wrong_user(self):
+        """Unknown username should show the wrong-username error."""
+        Tag.setTag('require_email_validation', value='True')
+        response = self.client.post('/myesp/login/', {
+            'username': 'nosuchuser',
+            'password': 'anything',
+            'next': '/myesp/register/information',
+        })
+        self.assertContains(response, 'username you entered is not valid')
+        self.assertNotContains(response, 'not been activated yet')
