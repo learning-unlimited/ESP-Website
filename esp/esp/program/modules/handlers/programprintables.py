@@ -53,13 +53,14 @@ from esp.program.models import VolunteerOffer
 from django import forms
 from django.conf import settings
 from django.http import HttpResponse
-from django.db.models import IntegerField, Case, When, Count
+from django.db.models import IntegerField, Case, When, Count, Prefetch
 from django.template import loader
 from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
 
 from datetime import timedelta
+import datetime
 from functools import cmp_to_key
 import collections
 import copy
@@ -166,6 +167,68 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'options.html', request, context)
 
+    @staticmethod
+    def _catalog_filter_flags(request):
+        open_only = ('open' in request.GET) or ('only_nonfull' in request.GET)
+        show_rooms = ('show_rooms' in request.GET)
+        future_only = ('future' in request.GET) or ('future_only' in request.GET)
+        return open_only, show_rooms, future_only
+
+    @staticmethod
+    def _catalog_query_suffix(open_only, future_only, show_rooms):
+        catalog_query = []
+        if open_only:
+            catalog_query.append("open=1")
+        if future_only:
+            catalog_query.append("future=1")
+        if show_rooms:
+            catalog_query.append("show_rooms=1")
+        catalog_query = "&".join(catalog_query)
+        return f"&{catalog_query}" if catalog_query else ""
+
+    @staticmethod
+    def _section_has_future_time(section, now):
+        for event in section.get_meeting_times():
+            if getattr(event, 'end', None) and event.end > now:
+                return True
+            if event.start and event.start > now:
+                return True
+        return False
+
+    def _filter_catalog_sections(self, sections, open_only, future_only, now):
+        filtered = []
+        for section in sections:
+            if open_only and section.isFull():
+                continue
+            if future_only and not self._section_has_future_time(section, now):
+                continue
+            filtered.append(section)
+        return filtered
+
+    @staticmethod
+    def _catalog_blocks_for_sections(sections, show_rooms):
+        blocks = []
+        for section in sections:
+            times = section.friendly_times()
+            if show_rooms:
+                rooms = ", ".join(section.prettyrooms())
+                if rooms:
+                    blocks.extend([f"{t} in {rooms}" for t in times])
+                else:
+                    blocks.extend(times)
+            else:
+                blocks.extend(times)
+
+        # Deduplicate while preserving order
+        seen = set()
+        unique_blocks = []
+        for block in blocks:
+            if block in seen:
+                continue
+            seen.add(block)
+            unique_blocks.append(block)
+        return unique_blocks
+
     @aux_call
     @needs_admin
     def catalog(self, request, tl, one, two, module, extra, prog):
@@ -185,6 +248,8 @@ class ProgramPrintables(ProgramModuleObj):
         grade_options = list(range(grade_min, grade_max + 1))
         category_options = prog.class_categories.all().values_list('category', flat=True)
         categories = category_options
+        open_only, show_rooms, future_only = self._catalog_filter_flags(request)
+        now = datetime.datetime.now()
 
         if request.GET.get('first_sort', ''):
             sort_list.append( cmp_fn[request.GET['first_sort']] )
@@ -217,6 +282,15 @@ class ProgramPrintables(ProgramModuleObj):
         classes = classes.filter(category__category__in=categories)
         classes = [cls for cls in classes
                    if cls.isAccepted() ]
+        if open_only or future_only:
+            filtered_classes = []
+            for cls in classes:
+                catalog_sections = self._filter_catalog_sections(cls.get_sections(), open_only, future_only, now)
+                if not catalog_sections:
+                    continue
+                cls.catalog_sections = catalog_sections
+                filtered_classes.append(cls)
+            classes = filtered_classes
 
         if 'ids' in request.GET and 'op' in request.GET and \
            'clsid' in request.GET:
@@ -258,12 +332,12 @@ class ProgramPrintables(ProgramModuleObj):
                 classes.append(cls_dict[clsid])
 
             clsids = ','.join(clsids)
+            catalog_query_suffix = self._catalog_query_suffix(open_only, future_only, show_rooms)
             return render_to_response(self.baseDir()+'catalog_order.html',
                                       request,
-                                      {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories })
+                                      {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories, 'open_only': open_only, 'show_rooms': show_rooms, 'future_only': future_only, 'catalog_query_suffix': catalog_query_suffix })
 
-        if "only_nonfull" in request.GET:
-            classes = [x for x in classes if not x.isFull()]
+        # open_only/future_only filters are applied earlier to keep the class list consistent
 
         sort_list_reversed = sort_list
         sort_list_reversed.reverse()
@@ -272,9 +346,10 @@ class ProgramPrintables(ProgramModuleObj):
 
         clsids = ','.join([str(cls.id) for cls in classes])
 
+        catalog_query_suffix = self._catalog_query_suffix(open_only, future_only, show_rooms)
         return render_to_response(self.baseDir()+'catalog_order.html',
                                   request,
-                                  {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories  })
+                                  {'clsids': clsids, 'classes': classes, 'sorting_options': list(cmp_fn.keys()), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories, 'open_only': open_only, 'show_rooms': show_rooms, 'future_only': future_only, 'catalog_query_suffix': catalog_query_suffix  })
 
     @aux_call
     @needs_admin
@@ -291,8 +366,8 @@ class ProgramPrintables(ProgramModuleObj):
             maxgrade=int(request.GET['maxgrade'])
             classes = classes.filter(grade_min__lte=maxgrade)
 
-        if 'open' in request.GET:
-            classes = [cls for cls in classes if not cls.isFull()]
+        open_only, show_rooms, future_only = self._catalog_filter_flags(request)
+        now = datetime.datetime.now()
 
         if request.GET.get('sort_name_list'):
             sort_order = request.GET['sort_name_list'].split(',')
@@ -308,6 +383,10 @@ class ProgramPrintables(ProgramModuleObj):
             if sort_order[i] == 'timeblock':
                 sort_order[i] = 'meeting_times__start'
         classes = classes.order_by(*sort_order)
+        section_prefetch = ClassSection.objects.order_by('id').prefetch_related('meeting_times')
+        if show_rooms:
+            section_prefetch = section_prefetch.prefetch_related('resourceassignment_set__resource')
+        classes = classes.prefetch_related(Prefetch('sections', queryset=section_prefetch, to_attr='_sections'))
 
         #   Filter out classes that are not scheduled
         classes = [cls for cls in classes
@@ -330,7 +409,19 @@ class ProgramPrintables(ProgramModuleObj):
                 cls_dict[str(cls.id)] = cls
             classes = [cls_dict[clsid] for clsid in clsids if clsid in cls_dict]
 
-        context = {'classes': classes, 'program': self.program}
+        # Apply open/future filters and build catalog display fields.
+        filtered_classes = []
+        for cls in classes:
+            catalog_sections = self._filter_catalog_sections(cls.get_sections(), open_only, future_only, now)
+            if (open_only or future_only) and not catalog_sections:
+                continue
+            cls.catalog_sections = catalog_sections
+            cls.catalog_blocks = self._catalog_blocks_for_sections(catalog_sections, show_rooms)
+            cls.catalog_is_full = bool(catalog_sections) and all(section.isFull() for section in catalog_sections)
+            filtered_classes.append(cls)
+        classes = filtered_classes
+
+        context = {'classes': classes, 'program': self.program, 'show_rooms': show_rooms}
 
         group_name = Tag.getTag('full_group_name')
         if not group_name:
@@ -343,7 +434,13 @@ class ProgramPrintables(ProgramModuleObj):
             template_name = 'catalog_timeblock.tex'
             sections = []
             for cls in classes:
-                sections += list(x for x in cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct() if not ('open' in request.GET and x.isFull()))
+                catalog_sections = getattr(cls, 'catalog_sections', cls.get_sections())
+                for section in catalog_sections:
+                    if section.status <= 0:
+                        continue
+                    if not section.get_meeting_times():
+                        continue
+                    sections.append(section)
             sections.sort(key=lambda x: x.start_time())
             context['sections'] = sections
 

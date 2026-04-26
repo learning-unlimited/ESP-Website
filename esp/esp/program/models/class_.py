@@ -37,6 +37,7 @@ from datetime import timedelta
 import time
 from collections import defaultdict
 import logging
+from decimal import Decimal, InvalidOperation
 logger = logging.getLogger(__name__)
 
 import random
@@ -410,6 +411,18 @@ class ClassSection(models.Model):
         return self.parent_class.category
     category = property(_get_category)
 
+    @staticmethod
+    def _normalized_capacity_adjustment(options):
+        try:
+            multiplier = Decimal(str(options.class_cap_multiplier))
+        except (InvalidOperation, TypeError, ValueError):
+            multiplier = Decimal('1')
+        try:
+            offset = Decimal(str(options.class_cap_offset))
+        except (InvalidOperation, TypeError, ValueError):
+            offset = Decimal('0')
+        return multiplier, offset
+
     def _get_room_capacity(self, rooms = None):
         # rooms should be a queryset
         if rooms is None:
@@ -420,7 +433,8 @@ class ClassSection(models.Model):
 
         options = self.parent_program.studentclassregmoduleinfo
         if options.apply_multiplier_to_room_cap:
-            rc = int(rc * options.class_cap_multiplier + options.class_cap_offset)
+            multiplier, offset = self._normalized_capacity_adjustment(options)
+            rc = int(Decimal(str(rc)) * multiplier + offset)
 
         return rc
 
@@ -478,7 +492,8 @@ class ClassSection(models.Model):
 
         #   Apply dynamic capacity rule
         if not (ignore_changes or options.apply_multiplier_to_room_cap):
-            return int(ans * options.class_cap_multiplier + options.class_cap_offset)
+            multiplier, offset = self._normalized_capacity_adjustment(options)
+            return int(Decimal(str(ans)) * multiplier + offset)
         else:
             return int(ans)
 

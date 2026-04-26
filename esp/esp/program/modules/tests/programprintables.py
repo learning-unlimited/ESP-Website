@@ -31,10 +31,13 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import datetime
+
 from django.test.client import RequestFactory
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models  import ClassSubject
+from esp.cal.models import Event
 from ..handlers.programprintables import *
 
 class ProgramPrintablesModuleTest(ProgramFrameworkTest):
@@ -229,3 +232,60 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
         for t in class_subject.prettyrooms():
             self.assertIn(t, formatted_rooms)
 
+
+class ProgramPrintablesCatalogFilterTest(ProgramFrameworkTest):
+    def setUp(self, *args, **kwargs):
+        super().setUp(num_students=1, num_teachers=1, classes_per_teacher=1, sections_per_class=1, num_rooms=1, num_timeslots=1)
+        self.add_student_profiles()
+        self.module = ProgramPrintables()
+
+    def _make_class_section(self, event):
+        cls = ClassSubject.objects.create(
+            title='Catalog Filter Test',
+            category=self.categories[0],
+            grade_min=7,
+            grade_max=12,
+            parent_program=self.program,
+            class_size_max=10,
+            class_info='Catalog filter test class',
+        )
+        cls.accept()
+        section = cls.add_section(duration=1)
+        section.assign_meeting_times([event])
+        return cls, section
+
+    def test_catalog_open_only_excludes_full_sections(self):
+        event = self.program.getTimeSlots()[0]
+        _, section = self._make_class_section(event)
+        section.max_class_capacity = 1
+        section.save()
+        section.preregister_student(self.students[0], fast_force_create=True)
+
+        filtered = self.module._filter_catalog_sections([section], open_only=True, future_only=False, now=datetime.datetime.now())
+        self.assertEqual(filtered, [])
+
+    def test_catalog_future_only_includes_in_progress_sections(self):
+        now = datetime.datetime.now()
+        event = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=now - datetime.timedelta(minutes=15),
+            end=now + datetime.timedelta(minutes=15),
+            short_description='In progress',
+            description='In progress event',
+        )
+        _, section = self._make_class_section(event)
+
+        filtered = self.module._filter_catalog_sections([section], open_only=False, future_only=True, now=now)
+        self.assertEqual(filtered, [section])
+
+    def test_catalog_show_rooms_adds_rooms_to_blocks(self):
+        event = self.program.getTimeSlots()[0]
+        _, section = self._make_class_section(event)
+        room = self.program.getClassrooms().filter(event=event).first()
+        self.assertIsNotNone(room)
+        status, errors = section.assign_room(room)
+        self.assertTrue(status, msg=", ".join(errors))
+
+        blocks = self.module._catalog_blocks_for_sections([section], show_rooms=True)
+        self.assertTrue(any(f"in {room.name}" in block for block in blocks))

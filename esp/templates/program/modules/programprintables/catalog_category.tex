@@ -47,8 +47,10 @@ No classes have yet been approved and scheduled!
 \textit{% templatetag openbrace %}{{cls.getTeacherNames|join:", "|texescape }} }  \\
 {{ cls.class_info|texescape }} \\
 \textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
-\textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\\\ \textbf{" }} } \\
-{% if cls.isFull %}\textbf{Class is FULL!} \\ {% endif %}
+{% for block in cls.catalog_blocks %}
+\textbf{% templatetag openbrace %}{{ block|texescape }} } \\
+{% endfor %}
+{% if cls.catalog_is_full %}\textbf{Class is FULL!} \\ {% endif %}
 
 %\end{tabular}
 \vspace{.1in}
