@@ -1195,6 +1195,23 @@ class MeetingTimesTest(ProgramFrameworkTest):
         section.meeting_times.remove(ts2)
         self.assertSetEquals(section.get_meeting_times(), [])
 
+
+class OnsiteCatalogRenderTest(ProgramFrameworkTest):
+    def test_untimed_render_does_not_call_cannot_add(self):
+        from unittest.mock import MagicMock
+
+        from esp.program.templatetags.class_render import _render_class_helper
+
+        cls = self.program.classes()[0]
+        cls.cannotAdd = MagicMock(side_effect=AssertionError('cannotAdd should not run without a timeslot'))
+
+        context = _render_class_helper(cls, user=self.students[0], filter=True, timeslot=None)
+
+        cls.cannotAdd.assert_not_called()
+        self.assertIsNone(context['errormsg'])
+        self.assertTrue(context['show_class'])
+
+
 class LSRAssignmentTest(ProgramFrameworkTest):
     def setUp(self):
         random.seed()

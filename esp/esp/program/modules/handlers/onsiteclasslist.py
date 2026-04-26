@@ -369,8 +369,30 @@ class OnSiteClassList(ProgramModuleObj):
         context = {}
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = Printer.objects.all().values_list('name', flat=True)
-        context['initial_student'] = request.GET.get('student_id', '')
-        context['check_in_default'] = datetime.today().date() in prog.dates()
+        # Validate student ID as an integer to prevent script injection
+        initial_student = request.GET.get('student_id', '')
+        if initial_student.isdigit():
+            context['initial_student'] = initial_student
+        else:
+            context['initial_student'] = ''
+
+        context['check_in_default'] = (datetime.today().date() in prog.dates()) or (request.GET.get('check_in') == 'true')
+
+        options = request.GET.copy()
+        context['show_full_default'] = options.get('show_full', 'true') == 'true'
+        context['override_default'] = options.get('override', 'false') == 'true'
+        context['grade_limits_default'] = options.get('grade_limits', 'false') == 'true'
+        context['show_titles_default'] = options.get('show_titles', 'false') == 'true'
+        context['show_teachers_default'] = options.get('show_teachers', 'false') == 'true'
+        context['show_rooms_default'] = options.get('show_rooms', 'false') == 'true'
+        context['show_closed_default'] = options.get('show_closed', 'false') == 'true'
+        context['hide_past_default'] = options.get('hide_past', 'false') == 'true'
+        context['hide_conflicting_default'] = options.get('hide_conflicting', 'false') == 'true'
+        context['sort_default'] = options.get('sort', 'length')
+
+        # Sanitize hide_categories to only allow comma-separated digits
+        hide_cats_raw = options.get('hide_categories', '')
+        context['hide_categories'] = ','.join([c.strip() for c in hide_cats_raw.split(',') if c.strip().isdigit()])
 
         open_class_category = prog.open_class_category
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id', 'symbol', 'category'] ] )
