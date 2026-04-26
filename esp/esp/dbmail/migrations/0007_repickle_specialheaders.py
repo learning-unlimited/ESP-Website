@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 from __future__ import absolute_import
 from django.db import migrations, models
+import ast
 import json
 import pickle
 
@@ -10,7 +11,11 @@ def resave_special_headers(apps, schema_editor):
     MessageRequest = apps.get_model('dbmail', 'MessageRequest')
     for mr in MessageRequest.objects.all():
         if mr.special_headers != None and mr.special_headers != '':
-            special_headers = pickle.loads(mr.special_headers.replace('\r\n', '\n').encode('latin1'))
+            try:
+                special_headers = pickle.loads(mr.special_headers.replace('\r\n', '\n').encode('latin1'))
+            except Exception:
+                # fall back for Python dict repr stored as str() instead of pickle
+                special_headers = ast.literal_eval(mr.special_headers)
             mr.special_headers = json.dumps(special_headers)
             mr.save()
 

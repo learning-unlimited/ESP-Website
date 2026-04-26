@@ -413,7 +413,7 @@ class MessageRequest(models.Model):
 @python_2_unicode_compatible
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
-    messagerequest = models.ForeignKey(MessageRequest)
+    messagerequest = models.ForeignKey(MessageRequest, null=True, blank=True)
     user = AjaxForeignKey(ESPUser, blank=True, null=True) # blank=True because there isn't an easy way to backfill this
     send_to = models.CharField(max_length=1024)  # Valid email address, "Name" <foo@bar.com>
     send_from = models.CharField(max_length=1024) # Valid email address

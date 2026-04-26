@@ -34,7 +34,7 @@ BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 sudo apt update
 if ! find /etc/apt/ -name *.list | xargs cat | grep  '^[[:space:]]*deb' | grep -q 'deadsnakes'
 then
-    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo add-apt-repository -y ppa:deadsnakes/ppa
     sudo apt update
 fi
 

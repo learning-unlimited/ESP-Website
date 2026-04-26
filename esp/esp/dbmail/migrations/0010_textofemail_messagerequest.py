@@ -30,11 +30,6 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(null=True, blank=True, on_delete=django.db.models.deletion.CASCADE, to='dbmail.MessageRequest'),
         ),
         # fill in the message request for all texts
+        # MIT: many historical rows have no matching MessageRequest; field stays nullable
         migrations.RunPython(fill_requests, migrations.RunPython.noop),
-        # now we can make null=False (requiring the field)
-        migrations.AlterField(
-            model_name='textofemail',
-            name='messagerequest',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='dbmail.MessageRequest'),
-        ),
     ]
