@@ -1685,6 +1685,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     bio = models.TextField(blank=True, null=True)
     shirt_size = models.TextField(blank=True, null=True)
     shirt_type = models.TextField(blank=True, null=True)
+    can_view_schedule = models.BooleanField(default=True)
 
     @classmethod
     def cf_link_instance(cls, request):
