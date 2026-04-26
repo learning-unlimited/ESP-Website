@@ -15,7 +15,9 @@
 	</ul>
 	<ul class="nav pull-right">
 	  <li>
-	    {% include "users/loginbox_content.html" %} 
+	    {% if "/accounts/login" not in request.path %}
+    {% include "users/loginbox_content.html" %}
+{% endif %}
 	  </li>
 	</ul>
       </div>
