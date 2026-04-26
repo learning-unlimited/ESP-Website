@@ -1,4 +1,3 @@
-from django.forms.fields import Select
 from django import forms
 from collections import OrderedDict
 from localflavor.us.forms import USStateField, USStateSelect

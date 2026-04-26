@@ -4,7 +4,6 @@
 from django.conf import settings
 from django.core import validators
 from django.db import migrations, models
-import django.db.models.fields
 import re
 
 def replace_director_emails(apps, schema_editor):

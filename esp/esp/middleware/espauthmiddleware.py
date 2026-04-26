@@ -36,7 +36,6 @@ import datetime
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.middleware import AuthenticationMiddleware
-from django.contrib.auth.models import AnonymousUser
 from django.utils.cache import patch_vary_headers
 from django.utils.functional import SimpleLazyObject
 

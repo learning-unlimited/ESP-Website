@@ -2,10 +2,8 @@ from copy import deepcopy
 import json
 
 from django.db import transaction
-from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
-from django.db import connection
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -15,7 +13,6 @@ from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.linkfields import cf_cache
 from esp.tagdict.models import Tag
-from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.decorators import user_passes_test, login_required
 
 from esp.users.models import ESPUser

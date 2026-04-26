@@ -32,17 +32,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import json
 import logging
 logger = logging.getLogger(__name__)
 import sys
 from datetime import datetime
 
-from django.conf import settings
-from django.db.models.base import ObjectDoesNotExist
-from django.http import HttpResponse, Http404
 from django.template import RequestContext
-from django.utils.translation import ugettext as _
 
 try:
     from django.utils.deprecation import MiddlewareMixin

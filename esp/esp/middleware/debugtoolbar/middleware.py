@@ -1,4 +1,4 @@
-from django import http
+from django import http # noqa: F401
 from debug_toolbar.middleware import DebugToolbarMiddleware
 
 class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):

@@ -32,5 +32,5 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.middleware.esperrormiddleware import *
-from esp.middleware.fixiemiddleware import *
+from esp.middleware.esperrormiddleware import *  # noqa: F401
+from esp.middleware.fixiemiddleware import *  #noqa: F401

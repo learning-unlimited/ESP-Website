@@ -1,5 +1,4 @@
 from django.http import HttpResponse, Http404
-from django.dispatch import receiver
 from django.views.decorators.csrf import csrf_exempt
 from esp.formstack.signals import formstack_post_signal
 
@@ -19,12 +18,10 @@ def formstack_webhook(request):
 from django.contrib.auth import authenticate
 from django.http import HttpResponse, Http404, HttpResponseServerError, \
     HttpResponseForbidden, HttpResponseNotFound
-from django.dispatch import receiver
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from esp.program.models import Program
-from esp.users.models import ESPUser
 import json
 
 @csrf_exempt

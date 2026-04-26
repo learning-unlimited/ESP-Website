@@ -47,7 +47,6 @@ from esp.tagdict.models import Tag
 
 from django.contrib.auth.models import Group
 from django.core.management import call_command
-from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
 
@@ -1623,7 +1622,7 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     """Tests for making class flags visible to teachers."""
 
     def setUp(self):
-        from esp.program.models import ClassFlag, ClassFlagType
+        from esp.program.models import ClassFlagType
         # Clear any stale thread-local request from previous test classes.
         # ClassFlag.save() overrides created_by with request.user, which may
         # reference a user whose savepoint was already rolled back.
@@ -1851,7 +1850,6 @@ and repeat sending logic.
 from unittest.mock import patch, MagicMock
 
 from django.contrib.auth.models import Group
-from django.core import mail
 
 from esp.cal.models import install as install_cal
 from esp.program.controllers.confirmation import ConfirmationEmailController

@@ -1,5 +1,4 @@
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.core import serializers
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 import json
 
