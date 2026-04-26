@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 
 import datetime
 from datetime import timedelta
-import time
 from collections import defaultdict
 import logging
 logger = logging.getLogger(__name__)
@@ -50,8 +49,6 @@ from django.db.models import signals, Sum
 from django.db.models.manager import Manager
 from collections import OrderedDict
 from django.template.loader import render_to_string
-from django.template import Template, Context
-from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site

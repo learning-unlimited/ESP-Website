@@ -40,7 +40,7 @@ from django.core.validators import RegexValidator, validate_comma_separated_inte
 from django.db import models
 
 from esp.db.fields import AjaxForeignKey
-from esp.program.models import Program, RegistrationType, ClassSection
+from esp.program.models import Program, RegistrationType
 from esp.users.models import ESPUser
 
 # If this module is a little confusingly named, or has some cruft in it, it's
@@ -430,4 +430,4 @@ class AJAXSectionDetail(models.Model):
         self.locked = locked
         self.save()
 
-from esp.application.models import FormstackAppSettings
+from esp.application.models import FormstackAppSettings # noqa: F401
