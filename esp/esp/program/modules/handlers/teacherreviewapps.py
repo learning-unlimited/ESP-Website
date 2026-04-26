@@ -78,7 +78,8 @@ class TeacherReviewApps(ProgramModuleObj):
 
         for student in students:
             now = datetime.now()
-            student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
+            reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
+            student.added_class = reg.start_date if reg else None
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except StudentApplication.DoesNotExist:
@@ -103,7 +104,7 @@ class TeacherReviewApps(ProgramModuleObj):
                         student.app_completed = True
 
         students = list(students)
-        students.sort(key=lambda s: s.added_class)
+        students.sort(key=lambda s: s.added_class or datetime.min)
 
         if 'prev' in request.GET:
             prev_id = int(request.GET.get('prev'))
@@ -213,7 +214,8 @@ class TeacherReviewApps(ProgramModuleObj):
             student.app = None
             raise ESPError('Error: Student did not start an application.', log=False)
 
-        student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
+        reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
+        student.added_class = reg.start_date if reg else None
 
         teacher_reviews = student.app.reviews.all().filter(reviewer=request.user)
         if teacher_reviews.count() > 0:

@@ -79,7 +79,8 @@ class AdminReviewApps(ProgramModuleObj):
         students = [x for x in students if x.studentapplication_set.filter(program=self.program).count() > 0]
 
         for student in students:
-            student.added_class = student.studentregistration_set.filter(section__parent_class=cls)[0].start_date
+            reg = student.studentregistration_set.filter(section__parent_class=cls).first()
+            student.added_class = reg.start_date if reg else None
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except StudentApplication.DoesNotExist:
