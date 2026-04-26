@@ -38,7 +38,7 @@ from esp.program.modules.handlers.commmodule import _make_image_urls_absolute
 from esp.program.tests import ProgramFrameworkTest
 from esp.dbmail.models import ActionHandler, MessageRequest
 from esp.dbmail.cronmail import process_messages, send_email_requests
-from esp.users.models import Permission
+from esp.users.models import ESPUser, Permission
 from django.contrib.auth.models import Group
 
 from django.conf import settings
@@ -174,6 +174,239 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertIn(expected_first_day, rendered, 'program.date should render as first program day')
         self.assertIn(expected_date_range, rendered, 'program.date_range should render as program date range')
         self.assertIn(expected_teacher_reg_deadline, rendered, 'program.teacher_reg_deadline should render as Teacher/Classes/Create end_date')
+
+class ProgramUrlsInTextTest(ProgramFrameworkTest):
+    """Tests for the _program_urls_in_text helper function."""
+
+    def setUp(self, *args, **kwargs):
+        super().setUp(*args, **kwargs)
+        self.current_url = self.program.getUrlBase()
+
+    def test_finds_other_program_urls(self):
+        """Should find program URLs that differ from the current program."""
+        from esp.program.modules.handlers.commmodule import _program_urls_in_text
+        text = 'Visit /learn/Splash/2024_Winter/studentreg for info.'
+        result = _program_urls_in_text(text, self.current_url)
+        self.assertIn('Splash/2024_Winter', result)
+
+    def test_ignores_current_program_url(self):
+        """Should not include the current program's URL."""
+        from esp.program.modules.handlers.commmodule import _program_urls_in_text
+        text = 'Go to /learn/%s/studentreg' % self.current_url
+        result = _program_urls_in_text(text, self.current_url)
+        self.assertEqual(result, [])
+
+    def test_empty_text_returns_empty(self):
+        """None and empty string should return empty list."""
+        from esp.program.modules.handlers.commmodule import _program_urls_in_text
+        self.assertEqual(_program_urls_in_text(None, self.current_url), [])
+        self.assertEqual(_program_urls_in_text('', self.current_url), [])
+
+    def test_finds_teach_and_volunteer_urls(self):
+        """Should also match /teach/ and /volunteer/ URLs."""
+        from esp.program.modules.handlers.commmodule import _program_urls_in_text
+        text = '/teach/HSSP/2024_Fall/dashboard /volunteer/Splash/2025_Spring/signup'
+        result = _program_urls_in_text(text, self.current_url)
+        self.assertIn('HSSP/2024_Fall', result)
+        self.assertIn('Splash/2025_Spring', result)
+
+
+class ApproxNumRecipientsTest(ProgramFrameworkTest):
+    """Tests for CommModule.approx_num_of_recipients static method."""
+
+    def setUp(self, *args, **kwargs):
+        from esp.program.modules.base import ProgramModule, ProgramModuleObj
+        kwargs.update({'num_students': 5, 'num_teachers': 2})
+        super().setUp(*args, **kwargs)
+        self.add_student_profiles()
+        self.schedule_randomly()
+        self.classreg_students()
+
+        m = ProgramModule.objects.get(handler='CommModule', module_type='manage')
+        self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
+
+    def test_approx_recipients_with_enrolled_students(self):
+        """Should return a positive count for enrolled students."""
+        from esp.program.modules.handlers.commmodule import CommModule
+
+        self.assertTrue(self.client.login(
+            username=self.admins[0].username, password='password'))
+        # Create a filter for enrolled students
+        post_data = {
+            'submit_user_list': 'true',
+            'base_list': 'enrolled',
+            'keys': '',
+            'finalsent': 'Test',
+            'submitform': 'I have my list, go on!',
+        }
+        response = self.client.post(
+            '/manage/%s/commpanel_old' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+
+        import re as re_mod
+        s = re_mod.search(
+            r'<input type="hidden" name="filterid" value="([0-9]+)" />',
+            response.content.decode('UTF-8'))
+        self.assertIsNotNone(
+            s,
+            'Expected hidden "filterid" input in commpanel response for enrolled students.',
+        )
+        filterid = int(s.group(1))
+        from esp.users.models import PersistentQueryFilter
+        filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        sendto_fn = MessageRequest.SEND_TO_SELF_REAL
+        fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn)
+        count = CommModule.approx_num_of_recipients(filterObj, fn)
+        self.assertGreater(
+            count, 0,
+            "Should return a positive count for enrolled students")
+
+
+class CommPanelViewsTest(ProgramFrameworkTest):
+    """Tests for commpanel GET/POST, maincomm2, and admin permissions."""
+
+    def setUp(self, *args, **kwargs):
+        from esp.program.modules.base import ProgramModule, ProgramModuleObj
+        kwargs.update({'num_students': 3, 'num_teachers': 2})
+        super().setUp(*args, **kwargs)
+        self.add_student_profiles()
+        self.schedule_randomly()
+        self.classreg_students()
+
+        m = ProgramModule.objects.get(handler='CommModule', module_type='manage')
+        self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
+
+    def test_commpanel_get_renders_list_selection(self):
+        """GET request to commpanel should render the user list selection page."""
+        self.assertTrue(self.client.login(
+            username=self.admins[0].username, password='password'))
+        response = self.client.get(
+            '/manage/%s/commpanel' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+    def test_commpanel_requires_admin(self):
+        """Non-admin users should get the not-an-admin page."""
+        self.assertTrue(self.client.login(
+            username=self.students[0].username, password='password'))
+        response = self.client.get(
+            '/manage/%s/commpanel' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
+        content = response.content.decode('UTF-8')
+        self.assertNotIn('base_list', content,
+                         "Non-admin should not see the user list selection form")
+
+    def test_commfinal_requires_admin(self):
+        """Non-admin users should not be able to send emails."""
+        self.assertTrue(self.client.login(
+            username=self.students[0].username, password='password'))
+        from esp.dbmail.models import MessageRequest as MR
+        initial_count = MR.objects.count()
+        response = self.client.post(
+            '/manage/%s/commfinal' % self.program.getUrlBase(),
+            {'filterid': '1', 'from': 'test@test.com',
+             'replyto': 'test@test.com', 'subject': 'Test', 'body': 'Test'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
+        self.assertEqual(
+            MR.objects.count(), initial_count,
+            "Non-admin should not be able to create a MessageRequest")
+        self.assertFalse(
+            MR.objects.filter(subject='Test').exists(),
+            "Non-admin should not be able to create a MessageRequest")
+
+    def test_maincomm2_renders_step2(self):
+        """POST to maincomm2 with required data should render step2 template."""
+        self.assertTrue(self.client.login(
+            username=self.admins[0].username, password='password'))
+
+        # First get a filterid from commpanel_old
+        post_data = {
+            'submit_user_list': 'true',
+            'base_list': 'enrolled',
+            'keys': '',
+            'finalsent': 'Test',
+            'submitform': 'I have my list, go on!',
+        }
+        response = self.client.post(
+            '/manage/%s/commpanel_old' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+
+        import re as re_mod
+        s = re_mod.search(
+            r'<input type="hidden" name="filterid" value="([0-9]+)" />',
+            response.content.decode('UTF-8'))
+        self.assertIsNotNone(
+            s,
+            "Expected commpanel_old to render a hidden 'filterid' input.",
+        )
+        filterid = s.group(1)
+        post_data = {
+            'filterid': filterid,
+            'listcount': '3',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+            'subject': 'Test Subject',
+            'body': 'Test Body',
+        }
+        response = self.client.post(
+            '/manage/%s/maincomm2' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'program/modules/commmodule/step2.html',
+        )
+
+    def test_commprev_renders_preview(self):
+        """POST to commprev should render the email preview page."""
+        self.assertTrue(self.client.login(
+            username=self.admins[0].username, password='password'))
+
+        # Get filter ID first
+        post_data = {
+            'submit_user_list': 'true',
+            'base_list': 'enrolled',
+            'keys': '',
+            'finalsent': 'Test',
+            'submitform': 'I have my list, go on!',
+        }
+        response = self.client.post(
+            '/manage/%s/commpanel_old' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+
+        import re as re_mod
+        s = re_mod.search(
+            r'<input type="hidden" name="filterid" value="([0-9]+)" />',
+            response.content.decode('UTF-8'))
+        self.assertIsNotNone(
+            s,
+            "Expected commpanel_old to render a hidden 'filterid' input.",
+        )
+        filterid = s.group(1)
+        s2 = re_mod.search(
+            r'<input type="hidden" name="listcount" value="([0-9]+)" />',
+            response.content.decode('UTF-8'))
+        self.assertIsNotNone(
+            s2,
+            "Expected commpanel_old to render a hidden 'listcount' input.",
+        )
+        listcount = s2.group(1)
+        post_data = {
+            'filterid': filterid,
+            'listcount': listcount,
+            'subject': 'Preview Subject',
+            'body': '<p>Preview Body</p>',
+            'from': 'info@testserver.learningu.org',
+            'replyto': 'replyto@testserver.learningu.org',
+        }
+        response = self.client.post(
+            '/manage/%s/commprev' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'program/modules/commmodule/preview.html',
+        )
+
 
 class MakeImageUrlsAbsoluteTest(SimpleTestCase):
     def _make_image_urls_absolute_request(self):
