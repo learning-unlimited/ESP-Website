@@ -248,6 +248,35 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
         qsd_rec_new.save()
 
 
+class CsrfFailureFallbackTest(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_logs_and_falls_back_when_custom_rendering_fails(self):
+        from unittest.mock import patch
+
+        from django.http import HttpResponseForbidden
+
+        from esp.web.views.csrf import csrf_failure
+
+        request = self.factory.post('/learn/testprog/testterm/submit')
+        request.user = type('User', (), {'isAdministrator': lambda self, program=None: False})()
+
+        with patch('esp.utils.web.render_to_response', side_effect=Exception('boom')):
+            with patch('esp.web.views.csrf.django_csrf_failure', return_value=HttpResponseForbidden('fallback')) as mock_fallback:
+                with patch('esp.web.views.csrf.logger.exception') as mock_exception:
+                    response = csrf_failure(request, reason='CSRF token missing')
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content, b'fallback')
+        mock_exception.assert_called_once_with(
+            'Custom CSRF failure view failed; falling back to Django default. path=%s reason=%r',
+            '/learn/testprog/testterm/submit',
+            'CSRF token missing',
+        )
+        mock_fallback.assert_called_once_with(request, reason='CSRF token missing')
+
+
 class JavascriptSyntaxTest(TestCase):
 
     def runTest(self, display=False):
