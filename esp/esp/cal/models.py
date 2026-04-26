@@ -1,4 +1,10 @@
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -38,15 +44,16 @@ logger = logging.getLogger(__name__)
 from django.db import models
 from datetime import datetime, timedelta
 from argcache import cache_function
+from esp.utils import cmp
 
 # Create your models here.
-
+@python_2_unicode_compatible
 class EventType(models.Model):
     """ A list of possible event types, ie. Program, Social Activity, etc. """
     description = models.TextField() # Textual description; not computer-parseable
 
-    def __unicode__(self):
-        return unicode(self.description)
+    def __str__(self):
+        return six.text_type(self.description)
 
     @cache_function
     def get_from_desc(cls, desc):
@@ -63,6 +70,7 @@ class EventType(models.Model):
             'training': cls.get_from_desc('Teacher Training'),
         }
 
+@python_2_unicode_compatible
 class Event(models.Model):
     """ A unit calendar entry.
 
@@ -72,7 +80,7 @@ class Event(models.Model):
     short_description = models.TextField() # Event short description
     description = models.TextField() # Event textual description; not computer-parseable
     name = models.CharField(max_length=80)
-    program = models.ForeignKey('program.Program',blank=True, null=True)
+    program = models.ForeignKey('program.Program', blank=True, null=True)
     event_type = models.ForeignKey(EventType) # The type of event.  This implies, though does not require, the types of data that are keyed to this event.
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
     group = models.IntegerField(blank=True, null=True) # Event group
@@ -96,28 +104,28 @@ class Event(models.Model):
 
     def duration_str(self):
         dur = self.end - self.start
-        hours = int(dur.seconds / 3600)
-        minutes = int(dur.seconds / 60) - hours * 60
-        return u'%d hr %d min' % (hours, minutes)
+        hours = int(dur.seconds // 3600)
+        minutes = int(dur.seconds // 60) - hours * 60
+        return six.u('%d hr %d min') % (hours, minutes)
 
-    def __unicode__(self):
-        return self.start.strftime('%a %b %d: ').decode('utf-8') + self.short_time()
+    def __str__(self):
+        return self.start.strftime('%a %b %d: ') + self.short_time()
 
     def short_time(self):
-        day_list = [u'Mon', u'Tue', u'Wed', u'Thu', u'Fri', u'Sat', u'Sun']
+        day_list = [six.u('Mon'), six.u('Tue'), six.u('Wed'), six.u('Thu'), six.u('Fri'), six.u('Sat'), six.u('Sun')]
 
-        start_minutes = u''
-        end_minutes = u''
-        start_ampm = u''
+        start_minutes = six.u('')
+        end_minutes = six.u('')
+        start_ampm = six.u('')
         if self.start.minute != 0:
-            start_minutes = u':%02d' % self.start.minute
+            start_minutes = six.u(':%02d') % self.start.minute
         if self.end.minute != 0:
-            end_minutes = u':%02d' % self.end.minute
+            end_minutes = six.u(':%02d') % self.end.minute
         if (self.start.hour < 12) != (self.end.hour < 12):
-            start_ampm = self.start.strftime(' %p').decode('utf-8')
+            start_ampm = self.start.strftime(' %p')
 
-        return u'%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
-            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p').decode('utf-8') )
+        return six.u('%d%s%s to %d%s %s') % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
+            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p') )
 
     @staticmethod
     def total_length(event_list):
@@ -137,14 +145,14 @@ class Event(models.Model):
         """ this method will return a list of new collapsed events """
         from copy import copy
         sortedList = copy(eventList)
-        sortedList.sort()
+        sortedList.sort(key=lambda e: e.start)
 
-        for i in range(1,len(sortedList)):
+        for i in range(1, len(sortedList)):
             if (sortedList[i-1].end+tol) >= sortedList[i].start:
                 sortedList[i]   = Event(start=sortedList[i-1].start, end=sortedList[i].end)
                 sortedList[i-1] = None
 
-        newList = [ x for x in sortedList if x != None ]
+        newList = [x for x in sortedList if x is not None]
 
         return newList
 
@@ -163,7 +171,7 @@ class Event(models.Model):
         """ Takes a list of events and returns a list of lists where each sublist is a contiguous group. """
         from copy import copy
         sorted_list = copy(event_list)
-        sorted_list.sort()
+        sorted_list.sort(key=lambda e: e.start)
 
         grouped_list = []
         current_group = []
@@ -185,27 +193,27 @@ class Event(models.Model):
         return grouped_list
 
     def pretty_time(self, include_date = False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
-        s = self.start.strftime('%a').decode('utf-8')
-        s2 = self.end.strftime('%a').decode('utf-8')
+        s = self.start.strftime('%a')
+        s2 = self.end.strftime('%a')
         # The two days of the week are different
         if include_date:
-            s += self.start.strftime(', %b %d,').decode('utf-8')
-            s2 += self.end.strftime(', %b %d,').decode('utf-8')
+            s += self.start.strftime(', %b %d,')
+            s2 += self.end.strftime(', %b %d,')
         if s != s2:
-            return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
-               + s2 + u' ' + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
+            return s + six.u(' ') + self.start.strftime('%I:%M%p').lower().strip('0') + six.u('--') \
+               + s2 + six.u(' ') + self.end.strftime('%I:%M%p').lower().strip('0')
         else:
-            return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
-               + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
+            return s + six.u(' ') + self.start.strftime('%I:%M%p').lower().strip('0') + six.u('--') \
+               + self.end.strftime('%I:%M%p').lower().strip('0')
 
     def pretty_time_with_date(self):
         return self.pretty_time(include_date = True)
 
     def pretty_date(self):
-        return self.start.strftime('%A, %B %d').decode('utf-8')
+        return self.start.strftime('%A, %B %d')
 
     def pretty_start_time(self):
-        return self.start.strftime('%a').decode('utf-8') + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
+        return self.start.strftime('%a') + six.u(' ') + self.start.strftime('%I:%M%p').lower().strip('0')
 
     def parent_program(self):
         return self.program
@@ -215,6 +223,18 @@ class Event(models.Model):
             return cmp(self.start, other.start)
         except:
             return 0
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
 
 def install():
     """

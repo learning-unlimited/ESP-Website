@@ -1,4 +1,7 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from esp.program.models import *
+import six
 
 splash = Program.objects.get(id=2)
 
@@ -10,14 +13,14 @@ for student in students:
     school = student.getLastProfile().student_info.school
     if school is None or len(school) == 0:
         school = 'N/A'
-    print student.id, student.first_name, student.last_name, school
+    print(student.id, student.first_name, student.last_name, school)
     if school not in school_dict:
         school_dict[school] = []
     school_dict[school].append(student)
 
-schools = school_dict.keys()
+schools = list(school_dict.keys())
 def school_key(school):
-    if isinstance(school, basestring):
+    if isinstance(school, six.string_types):
         return school.lower()
     else:
         return 'N/A'
@@ -25,7 +28,7 @@ def school_key(school):
 schools.sort(key=school_key)
 
 for school in schools:
-    print '%s: %d students' % (school, len(school_dict[school]))
+    print('%s: %d students' % (school, len(school_dict[school])))
     for student in school_dict[school]:
-        print '  %s %s (%d) %s' % (student.first_name, student.last_name, student.id, student.email)
+        print('  %s %s (%d) %s' % (student.first_name, student.last_name, student.id, student.email))
 

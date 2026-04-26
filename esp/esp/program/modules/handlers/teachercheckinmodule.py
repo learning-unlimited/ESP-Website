@@ -1,7 +1,9 @@
-__author__ = "Individual contributors (see AUTHORS file)"
-__date__ = "$DATE$"
-__rev__ = "$REV$"
-__license__ = "AGPL v.3"
+
+from __future__ import absolute_import
+__author__    = "Individual contributors (see AUTHORS file)"
+__date__      = "$DATE$"
+__rev__       = "$REV$"
+__license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors

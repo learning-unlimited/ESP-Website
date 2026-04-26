@@ -1,14 +1,17 @@
 """A class for using depth-limited DFS find improvements to a schedule."""
 
+from __future__ import absolute_import
 import datetime
 import esp.program.controllers.autoscheduler.util as util
+import six
+from six.moves import range
 
 
 class SearchOptimizer:
     def __init__(self, manipulator):
         self.manipulator = manipulator
         self.roomslots = []
-        for room in manipulator.schedule.classrooms.itervalues():
+        for room in six.itervalues(manipulator.schedule.classrooms):
             self.roomslots += room.availability
 
     @util.timed_func("SearchOptimizer_optimize_section")
@@ -95,5 +98,5 @@ class SearchOptimizer:
     @util.timed_func("SearchOptimizer_revert")
     def revert(self, n):
         """Undo the last n actions."""
-        for action in xrange(n):
+        for action in range(n):
             self.manipulator.undo()

@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,12 +41,12 @@ from esp.miniblog.models import AnnouncementLink, Entry, Comment
 
 class AnnouncementLinkAdmin(admin.ModelAdmin):
     list_display= ('category', 'title', 'section', 'highlight_begin', 'highlight_expire')
-    list_filter = ('section','highlight_begin', 'highlight_expire')
+    list_filter = ('section', 'highlight_begin', 'highlight_expire')
     search_fields=('category', 'title', 'href')
 admin_site.register(AnnouncementLink, AnnouncementLinkAdmin)
 
 class EntryAdmin(admin.ModelAdmin):
-    search_fields = ['slug', 'content','title']
+    search_fields = ['slug', 'content', 'title']
     list_display = ('section', 'slug', 'title', 'highlight_begin', 'highlight_expire')
     list_filter = ('highlight_begin', 'highlight_expire')
     class Media:
@@ -55,6 +56,6 @@ class EntryAdmin(admin.ModelAdmin):
 admin_site.register(Entry, EntryAdmin)
 
 class CommentAdmin(admin.ModelAdmin):
-    search_fields = ['author__first_name','author__last_name',
-                     'subject','entry__title']
+    search_fields = ['author__first_name', 'author__last_name',
+                     'subject', 'entry__title']
 admin_site.register(Comment, CommentAdmin)

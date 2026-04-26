@@ -1,8 +1,10 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Adds lunches in an empty block for users who don't have one.  Chooses the
 # lunch randomly for users with both lunch blocks free.
 
+from __future__ import absolute_import
+from __future__ import print_function
 from script_setup import *
 
 import random
@@ -11,6 +13,7 @@ from esp.cal.models import Event
 from esp.program.models import Program, StudentRegistration, RegistrationType
 from esp.program.models.class_ import ClassSection
 from esp.users.models import ESPUser
+import six
 
 program = Program.objects.get(id=115)  # Change me! (Splash 2014)
 relationship = RegistrationType.objects.get(name='Enrolled')
@@ -52,11 +55,11 @@ for timeblock_id, section_id in lunches:
         lunchtimes_by_day[date].append(timeblock_id)
 
 for user in users:
-    for day, lunchtimes in lunchtimes_by_day.iteritems():
+    for day, lunchtimes in six.iteritems(lunchtimes_by_day):
         # If the user has any lunch already, continue to the next day/user
         if any(sections_by_user_timeblock.get((user.id, lunchtime_id), 0)
                in lunch_ids for lunchtime_id in lunchtimes):
-            print "[", user.username, "already had lunch]"
+            print("[", user.username, "already had lunch]")
             continue
         # Otherwise, check lunch blocks in a random order until finding an
         # empty one
@@ -66,8 +69,8 @@ for user in users:
             if (user.id, lunchtime_id) not in sections_by_user_timeblock:
                 # The user has nothing here; assign a lunch and skip to the
                 # next day/user
-                print "assigning", user.username, "to lunch",
-                print timeblocks_by_id[lunchtime_id]
+                print("assigning", user.username, "to lunch", end=' ')
+                print(timeblocks_by_id[lunchtime_id])
                 StudentRegistration.objects.create(
                     user=users_by_id[user.id],
                     section=sections_by_id[lunches_by_timeblock[lunchtime_id]],
@@ -75,5 +78,5 @@ for user in users:
                 hungry = False
                 break
         if hungry:
-            print "***", user.username, "is hungry ***"
+            print("***", user.username, "is hungry ***")
             hungry = False

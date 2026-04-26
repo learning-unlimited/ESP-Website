@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import zip
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -73,7 +75,7 @@ class ResourceRequestForm(forms.Form):
                 self.fields['desired_value'].label = self.resource_type.name
             #   Don't provide a blank default value
             #   self.fields['desired_value'].choices = zip(tuple(' ') + self.resource_type.choices, tuple(' ') + self.resource_type.choices)
-            self.fields['desired_value'].choices = zip(self.resource_type.choices, self.resource_type.choices)
+            self.fields['desired_value'].choices = list(zip(self.resource_type.choices, self.resource_type.choices))
 
             self.initial['resource_type'] = self.resource_type.id
 

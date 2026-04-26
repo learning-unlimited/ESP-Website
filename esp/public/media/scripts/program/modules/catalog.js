@@ -166,4 +166,22 @@ function configure_addbuttons()
         $j("input.addbutton").show();
     }
 }
+function topFunction() 
+{ 
+    document.body.scrollTop = 0; // For Safari 
+    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera 
+} 
+     
+window.onscroll = function() {scrollFunction()}; 
+     
+function scrollFunction() { 
+    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) { 
+        document.getElementById("topBtn").style.display = "block"; 
+        document.getElementById("topBtn").style.position = "fixed";
+        document.getElementById("topBtn").style.bottom = "20px";
+    } else { 
+        document.getElementById("topBtn").style.display = "none"; 
+    } 
+} 
+
 $j(document).ready(configure_addbuttons);

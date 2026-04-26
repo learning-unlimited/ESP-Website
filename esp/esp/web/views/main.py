@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -42,7 +44,6 @@ from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
 import datetime
 import re
-import json
 
 from esp.dbmail.models import MessageRequest
 from esp.web.models import NavBarCategory
@@ -56,11 +57,6 @@ from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 from django.views.decorators.cache import cache_control
 from django.conf import settings
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 @cache_control(max_age=180)
 @disable_csrf_cookie_update
@@ -235,39 +231,45 @@ def registration_redirect(request):
     # prepare the rendered page so it points them to open student/teacher reg's
     ctxt = {}
     userrole = {}
-    regperm = None
+
     if user.isTeacher():
         userrole['name'] = 'Teacher'
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
-        regperm = 'Teacher/Classes'
+        # first check for which programs they can still create a class
+        progs = list(set(Permission.program_by_perm(user, 'Teacher/Classes/Create/Class')) | set(Permission.program_by_perm(user, 'Teacher/Classes/Create/OpenClass')))
+        # then check for which programs they have already registered a class
+        for prog in user.getTaughtPrograms():
+            # only include the program if it hasn't finished yet
+            if prog not in progs and prog.datetime_range()[1] > datetime.datetime.now():
+                progs.append(prog)
     elif user.isVolunteer():
         userrole['name'] = 'Volunteer'
         userrole['base'] = 'volunteer'
         userrole['reg'] = 'signup'
-        regperm = 'Volunteer/Signup'
+        progs = list(Permission.program_by_perm(user, 'Volunteer/Signup'))
     elif user.isStudent():
         userrole['name'] = 'Student'
         userrole['base'] = 'learn'
         userrole['reg'] = 'studentreg'
-        regperm = 'Student/Classes'
-
-    ctxt['userrole'] = userrole
-
-    if regperm:
-        if user.isTeacher() or user.isVolunteer():
-            progs = list(Permission.program_by_perm(user,regperm))
-        else:
-            user_grade = user.getGrade()
-            progs = list(Permission.program_by_perm(user,regperm).filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+        # first check for which program they can still register for a class
+        user_grade = user.getGrade()
+        progs = list(Permission.program_by_perm(user, 'Student/Classes').filter(grade_min__lte=user_grade, grade_max__gte=user_grade))
+        # then check for which programs they have already registered for a class
+        for prog in user.getLearntPrograms():
+            # only include the program if it hasn't finished yet
+            if prog not in progs and prog.datetime_range()[1] > datetime.datetime.now():
+                progs.append(prog)
     else:
         progs = []
+
+    ctxt['userrole'] = userrole
 
     #   If we have 1 program, automatically redirect to registration for that program.
     #   Most chapters will want this, but it can be disabled by a Tag.
     if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect'):
         ctxt['prog'] = progs[0]
-        return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+        return HttpResponseRedirect(six.u('/%s/%s/%s') % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
         if len(progs) > 0:
             #   Sort available programs newest first

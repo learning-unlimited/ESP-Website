@@ -8,8 +8,10 @@ The functions in this file are globally relevant, too annoying to inline,
     and too small to merit their own modules.
 """
 
+from __future__ import absolute_import
 import sys
-from urllib import quote_plus
+from six.moves.urllib.parse import quote_plus
+import six
 
 def force_str(x):
     """
@@ -21,9 +23,9 @@ def force_str(x):
     '\\xc3\\x85ngstrom'
 
     """
-    if isinstance(x, str):
+    if isinstance(x, str) or isinstance(x, six.text_type):
         return x
-    return unicode(x).encode('utf8')
+    return six.text_type(x).encode('utf8')
 
 def ascii(x):
     """
@@ -40,3 +42,15 @@ def ascii(x):
 
     """
     return quote_plus(force_str(x))
+
+# copied from: https://portingguide.readthedocs.io/en/latest/comparisons.html
+def cmp(x, y):
+    """
+    Replacement for built-in function cmp that was removed in Python 3
+
+    Compare the two objects x and y and return an integer according to
+    the outcome. The return value is negative if x < y, zero if x == y
+    and strictly positive if x > y.
+    """
+
+    return (x > y) - (x < y)

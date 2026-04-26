@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -73,6 +74,11 @@ handler500 = 'esp.utils.web.error500'
 # Static media
 urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + staticfiles_urlpatterns()
 
+# Robots.txt
+urlpatterns += [
+    url('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain"))
+]
+
 # Admin stuff
 urlpatterns += [
     url(r'^admin_tools/', include('admin_tools.urls')),
@@ -83,7 +89,7 @@ urlpatterns += [
     url(r'^admin/filebrowser/', include(filebrowser_site.urls)),
     url(r'^admin/', include(admin_site.urls)),
     url(r'^accounts/login/$', esp.users.views.login_checked),
-    url(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
+    url(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
 ]
 
 # Adds missing trailing slash to any admin urls that haven't been matched yet.

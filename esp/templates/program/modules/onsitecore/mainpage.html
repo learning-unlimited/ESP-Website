@@ -12,79 +12,133 @@
 
 <h1>Onsite Portal for {{program.niceName}} </h1>
 
-<p style="text-align: center">
-Welcome to the OnSite portal for {{program.niceName}}.<br />
-Please select from the option below to continue.
-</p>
-
-<br />
-<br>
+<div class="alert alert-info">
+    <h4 style="text-align: center">
+        Welcome to the OnSite portal for {{program.niceName}}.<br />
+        Please select from the options below to continue.
+    </p>
+</div>
 
 
 <div class="module_group" id="module_group_2">
     <div class="module_group_header">
         Onsite Check-in
     </div>
-    <div style="display: inline-block;" class="button_wrapper">
-        {% if program|hasModule:"OnSiteCheckinModule" %} <a href="/onsite/{{ program.getUrlBase }}/rapidcheckin"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Check-in Students</div></button></a>{% endif %}
-        {% if program|hasModule:"TeacherCheckinModule" %}<a href="/onsite/{{ program.getUrlBase }}/teachercheckin"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Check-in Teachers{% if program|hasModule:"TeacherModeratorModule" %}/{{ program.getModeratorTitle }}s{% endif %}</div></button></a>{% endif %}
-        {% if program|hasModule:"OnSiteCheckoutModule" %}<a href="/onsite/{{ program.getUrlBase }}/checkout"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Check-out Students</div></button></a>{% endif %}
-        {% if program|hasModule:"OnSiteRegister" %}<a href="/onsite/{{ program.getUrlBase }}/onsite_create"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Register a New Student</div></button></a>{% endif %}
+    <div class="button_wrapper">
+        {% if program|hasModule:"OnSiteCheckinModule" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/rapidcheckin"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-log-in"></i> Check-in Students</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if program|hasModule:"OnSiteCheckoutModule" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/checkout"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-log-out"></i> Check-out Students</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if program|hasModule:"OnSiteRegister" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/onsite_create"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-user"></i> Register a New Student</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if program|hasModule:"TeacherCheckinModule" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/teachercheckin"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-check"></i> Check-in Teachers{% if program|hasModule:"TeacherModeratorModule" %}/{{ program.getModeratorTitle }}s{% endif %}</div>
+            </button></a>
+        </div>
+        {% endif %}
     </div>
 </div>
 <div class="module_group" id="module_group_2">
     <div class="module_group_header">
         Class Information and Changes
     </div>
-    <div style="display: inline-block;" class="button_wrapper">
-        {% if program|hasModule:"OnsiteClassSchedule" %}<a href="/onsite/{{ program.getUrlBase }}/schedule_students"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Scheduling and Class Changes</div></button></a>{% endif %}
-        {% if program|hasModule:"OnSiteClassList" %}<a href="/onsite/{{ program.getUrlBase }}/classchange_grid"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Grid-Based Class Changes</div></button></a>{% endif %}
-        {% if program|hasModule:"OnSiteClassList" %}<a href="/onsite/{{ program.getUrlBase }}/classList"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Scrolling Class List</div></button></a>{% endif %}
-        {% if program|hasModule:"OnSiteClassList" %}<a href="/onsite/{{ program.getUrlBase }}/allClassList"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">List of Open Classes</div></button></a>{% endif %}
+    <div class="button_wrapper">
+        {% if program|hasModule:"OnsiteClassSchedule" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/schedule_students"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-calendar"></i> Scheduling and Class Changes</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if program|hasModule:"OnSiteClassList" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/classchange_grid"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Grid-Based Class Changes</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if program|hasModule:"OnSiteClassList" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/classList"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-list"></i> Scrolling Class List</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if program|hasModule:"OnSiteClassList" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/allClassList"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-tasks"></i> List of Open Classes</div>
+            </button></a>
+        </div>
+        {% endif %}
     </div>
 </div>
 <div class="module_group" id="module_group_2">
     <div class="module_group_header">
         Student Information
     </div>
-    <div style="display: inline-block;" class="button_wrapper">
-        {% if program|hasModule:"OnSiteAttendance" %}<a href="/onsite/{{ program.getUrlBase }}/attendance"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">Check Student Attendance</div></button></a>{% endif %}
-        {% if program|hasModule:"OnsitePaidItemsModule" %}<a href="/onsite/{{ program.getUrlBase }}/paiditems"><button type="button" class="module_link_large btn btn-default btn-lg"><div class="module_link_main">View Student's Purchased Items</div></button></a>{% endif %}
+    <div class="button_wrapper">
+        {% if program|hasModule:"OnSiteAttendance" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/attendance"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Check Student Attendance</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if program|hasModule:"OnsitePaidItemsModule" %}
+        <div class="module_button">
+            <a href="/onsite/{{ program.getUrlBase }}/paiditems"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-shopping-cart"></i> View Student's Purchased Items</div>
+            </button></a>
+        </div>
+        {% endif %}
     </div>
 </div>
 <div class="module_group" id="module_group_2">
     <div class="module_group_header">
         Other Modules
     </div>
-
+    <div class="button_wrapper">
+        {% for module in modules %}
+        {% if module.isStep %}
+            {% comment %} am I a module that has not been called yet? {% endcomment %}
+            {% if not module.isOnSiteFeatured %}
+            {% if not module.useTemplate %}
+              {% autoescape off %}{{ module.makeButtonLink }}{% endautoescape %}
+            {% else %}
+              <em>{{ module.module.link_title }} (below)</em>
+            {% endif %}
+            {% endif %}
+        {% endif %}
+        {% endfor %}
+    </div>
 </div>
 
 
 
-{% for module in modules %}
-{% if module.isStep %}
 
-  {% comment %} am I a module that has not been called yet {% endcomment %}
-  {% if not module.isOnSiteFeatured %}
-  {% if not module.useTemplate %}
-    {% autoescape off %}{{ module.makeButtonLink }}{% endautoescape %}
-  {% else %}
-    <em>{{ module.module.link_title }} (below)</em>
-  {% endif %}
-  {% endif %}
-{% endif %}
-{% endfor %}
-
-
-
-
-<br />
-<br />
 <br />
 {% for module in modules %}
 {% if module.useTemplate %}
 <br />
- {% include module.getTemplate %}
+    {% include module.getTemplate %}
 
 {% endif %}
 {% endfor %}

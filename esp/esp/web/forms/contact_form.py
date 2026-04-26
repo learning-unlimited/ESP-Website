@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -51,8 +52,8 @@ person_type = (
 hear_about = (
     ('School', 'School'),
     ('Posters', 'Posters'),
-    ('Friend','Friend'),
-    ('Website','Website'),
+    ('Friend', 'Friend'),
+    ('Website', 'Website'),
     ('Referral', 'Referral'),
     ('Other', 'Other'),
     )

@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -185,6 +189,13 @@ class ProgramAccountingController(BaseAccountingController):
             return lineitems[0]
         return None
 
+    def donation_lineitemtype(self):
+        for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
+            other_module = self.program.getModule(module_name)
+            if other_module and other_module.get_setting('offer_donation', default=True):
+                return LineItemType.objects.get_or_create(program=self.program, text=other_module.get_setting('donation_text'))[0]
+        return None
+
     def get_lineitemtypes_Q(self, include_donations=True, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):
         if lineitemtype_id:
             return Q(id=lineitemtype_id)
@@ -265,6 +276,7 @@ class ProgramAccountingController(BaseAccountingController):
         else:
             return 'Unrelated!?'
 
+@python_2_unicode_compatible
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
         super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
@@ -322,7 +334,7 @@ class IndividualAccountingController(ProgramAccountingController):
         result = []
         program_account = self.default_program_account()
         source_account = self.default_source_account()
-        line_items = self.get_lineitemtypes().exclude(text__in=self.admission_items)
+        line_items = self.get_lineitemtypes(include_donations=False).exclude(text__in=self.admission_items)
 
         #   Clear existing transfers
         Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
@@ -397,11 +409,11 @@ class IndividualAccountingController(ProgramAccountingController):
         transfers = self.get_transfers(line_items)
         for transfer in transfers:
             li_name = transfer.line_item.text
-            if (li_name, transfer.amount_dec, transfer.option_id) not in map(lambda x: (x[0], x[2], x[3]), result):
+            if (li_name, transfer.amount_dec, transfer.option_id) not in [(x[0], x[2], x[3]) for x in result]:
                 result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
                 result_index = len(result) - 1
             else:
-                result_index = map(lambda x: (x[0], x[2], x[3]), result).index((li_name, transfer.amount_dec, transfer.option_id))
+                result_index = [(x[0], x[2], x[3]) for x in result].index((li_name, transfer.amount_dec, transfer.option_id))
             result[result_index][1] += 1
         return result
 
@@ -560,6 +572,13 @@ class IndividualAccountingController(ProgramAccountingController):
 
         return aid_amount
 
+    def amount_donation(self):
+        lit = self.donation_lineitemtype()
+        if lit is not None and Transfer.objects.filter(user=self.user, line_item=lit).exists():
+            return Transfer.objects.filter(user=self.user, line_item=lit).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        else:
+            return Decimal('0')
+
     def amount_siblingdiscount(self):
         if self.program.sibling_discount and SplashInfo.getForUser(self.user, self.program).siblingdiscount:
             return self.program.sibling_discount
@@ -646,5 +665,5 @@ class IndividualAccountingController(ProgramAccountingController):
             if paid:
                 iac.submit_payment(iac.amount_due())
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 import django.db.models.deletion
 
@@ -55,10 +56,10 @@ class Migration(migrations.Migration):
                 ('description', models.TextField()),
                 ('consumable', models.BooleanField(default=False)),
                 ('priority_default', models.IntegerField(default=-1)),
-                ('only_one', models.BooleanField(default=False, help_text=b'If set, in some cases, only allow adding one instance of this resource.')),
-                ('attributes_pickled', models.TextField(default=b"Don't care", help_text=b'A pipe (|) delimited list of possible attribute values.', blank=True)),
+                ('only_one', models.BooleanField(default=False, help_text='If set, in some cases, only allow adding one instance of this resource.')),
+                ('attributes_pickled', models.TextField(default="Don't care", help_text='A pipe (|) delimited list of possible attribute values.', blank=True)),
                 ('autocreated', models.BooleanField(default=False)),
-                ('distancefunc', models.TextField(help_text=b'Enter python code that assumes <tt>r1</tt> and <tt>r2</tt> are resources with this type.', null=True, blank=True)),
+                ('distancefunc', models.TextField(help_text='Enter python code that assumes <tt>r1</tt> and <tt>r2</tt> are resources with this type.', null=True, blank=True)),
                 ('program', models.ForeignKey(blank=True, to='program.Program', null=True)),
             ],
         ),

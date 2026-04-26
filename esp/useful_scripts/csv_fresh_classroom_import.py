@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #
 # Import classrooms from two csv files: one from schedules, and one we make
 # with furnishings.
@@ -9,6 +9,8 @@
 #   Classroom: 1-115
 #
 
+from __future__ import absolute_import
+from __future__ import print_function
 from script_setup import EventType, ResourceType, Program, Event, Resource
 
 import csv
@@ -17,6 +19,9 @@ import re
 import argparse
 
 from datetime import datetime
+import six
+from io import open
+from six.moves import input
 
 
 ETYPE_CLASSBLOCK = EventType.objects.get(description='Class Time Block')
@@ -40,7 +45,7 @@ sched_csvfile = open(sched_filename, "r")
 sched_reader = csv.reader(sched_csvfile)
 sched_rows = list(sched_reader)
 SCHED_ROOM_NUMBER_COL = 3
-ALL_USED_ROOMS = set([row[SCHED_ROOM_NUMBER_COL] for row in sched_rows])
+ALL_USED_ROOMS = {row[SCHED_ROOM_NUMBER_COL] for row in sched_rows}
 
 furnish_filename = os.path.expanduser(args.furnish_filename)
 furnish_csvfile = open(furnish_filename, "r")
@@ -72,7 +77,7 @@ def subsequence_match(item, options, exclude):
 
 def do_match(items_to_match, possible_options, description,
              force_unique=False):
-    print "Now attempting to match {}s...".format(description)
+    print("Now attempting to match {}s...".format(description))
     matching_idx = {}
     force_manual = False
     while True:
@@ -81,27 +86,27 @@ def do_match(items_to_match, possible_options, description,
             # possible. Since the user is supposed to verify anyway,
             # this shouldn't cause any major issues.
             match_attempt = subsequence_match(
-                    item, possible_options, matching_idx.values())
+                    item, possible_options, list(matching_idx.values()))
             if match_attempt is None or force_manual:
                 if force_manual:
-                    print "Manual mode forced due to attempt failure."
-                print (
+                    print("Manual mode forced due to attempt failure.")
+                print((
                     "Unable to automatically match {desc} "
                     "'{}' to possible {desc}s."
-                ).format(item, desc=description)
-                print ""
-                print "Available {}s:".format(description)
+                ).format(item, desc=description))
+                print("")
+                print("Available {}s:".format(description))
                 allowed = set()
                 for i, option in enumerate(possible_options):
-                    if force_unique and i in matching_idx.values():
+                    if force_unique and i in list(matching_idx.values()):
                         continue
                     else:
                         allowed.add(i)
-                        print i, option
+                        print(i, option)
 
                 valid = False
                 while not valid:
-                    input_idx = raw_input(
+                    input_idx = input(
                         "Input {desc} index for '{}' (or 'None'): ".format(
                             item, desc=description))
                     if input_idx == "None":
@@ -113,16 +118,16 @@ def do_match(items_to_match, possible_options, description,
                             assert match_attempt in allowed, "Invalid index"
                             valid = True
                         except:
-                            print "Invalid choice: {}; try again.".format(
-                                    input_idx)
+                            print("Invalid choice: {}; try again.".format(
+                                    input_idx))
             matching_idx[item] = match_attempt
-        print "We have the following matchings:"
-        print matching_idx
-        for item, match_idx in matching_idx.iteritems():
+        print("We have the following matchings:")
+        print(matching_idx)
+        for item, match_idx in six.iteritems(matching_idx):
             match_name = None if match_idx is None else \
                 possible_options[match_idx]
-            print "{}: {} ({})".format(item, match_name, match_idx)
-        conf = raw_input("Confirm correctness: y/n")
+            print("{}: {} ({})".format(item, match_name, match_idx))
+        conf = input("Confirm correctness: y/n")
         if "y" in conf.lower():
             return matching_idx
         else:
@@ -135,7 +140,7 @@ resource_matching = do_match(RESOURCE_NAMES, furnish_headers, "resource type",
 
 resource_value_matching = {}
 for rtype in RESOURCE_TYPES:
-    possible_values = rtype.attributes_pickled.split("|")
+    possible_values = rtype.attributes_dumped.split("|")
     if len(possible_values) == 1:
         resource_value_matching[rtype.name] = None
     else:
@@ -143,14 +148,13 @@ for rtype in RESOURCE_TYPES:
         if rtype_idx is None:
             resource_value_matching[rtype.name] = None
         else:
-            known_values = set(
-                [row[rtype_idx] for row in furnish_classrooms
-                 if row[FURNISH_ROOM_NUMBER_COL] in ALL_USED_ROOMS])
+            known_values = {row[rtype_idx] for row in furnish_classrooms
+                 if row[FURNISH_ROOM_NUMBER_COL] in ALL_USED_ROOMS}
             resource_value_matching[rtype.name] = {
                     known: (possible_values[idx] if idx is not None else "")
                     for known, idx in
-                    do_match(
-                        known_values, possible_values, rtype.name).iteritems()}
+                    six.iteritems(do_match(
+                        known_values, possible_values, rtype.name))}
 
 
 def parse_time(date, time):
@@ -163,7 +167,7 @@ def parse_time(date, time):
 
 
 EXTRA_DATA = 1  # Number of extra data entries in rooms_dict
-print "Reading from furnishings csv..."
+print("Reading from furnishings csv...")
 for row in furnish_classrooms:
     room_number = row[FURNISH_ROOM_NUMBER_COL]
     if room_number not in ALL_USED_ROOMS:
@@ -180,8 +184,8 @@ for row in furnish_classrooms:
         assert len(rooms_dict[room_number]) == EXTRA_DATA + len(others), \
             "value of EXTRA_DATA is incorrect"
     except:
-        print "Error reading furnishings for room {}; skipping".format(
-            room_number)
+        print("Error reading furnishings for room {}; skipping".format(
+            room_number))
 
 skipped_rooms = set()
 for row in sched_rows:
@@ -194,7 +198,7 @@ for row in sched_rows:
     room_number = row[SCHED_ROOM_NUMBER_COL]
 
     # Test parsing code
-    print "%s from %s to %s" % (room_number, start.__repr__(), end.__repr__())
+    print("%s from %s to %s" % (room_number, start.__repr__(), end.__repr__()))
 
     timeblocks = Event.objects.filter(start__gte=start, end__lte=end,
                                       event_type=ETYPE_CLASSBLOCK,
@@ -204,7 +208,7 @@ for row in sched_rows:
 
     if room_number not in rooms_dict:
         skipped_rooms.add(room_number)
-        print "WARNING: {} not found; skipping".format(room_number)
+        print("WARNING: {} not found; skipping".format(room_number))
         continue
     room_desc = rooms_dict[room_number]
     for i, res in enumerate(list(RESOURCE_TYPES)):
@@ -231,8 +235,8 @@ for row in sched_rows:
                 resource.attribute_value = val
             resource.save()
 
-print "Done creating resources."
+print("Done creating resources.")
 for r in skipped_rooms:
-    print "Skipped: {}".format(r)
+    print("Skipped: {}".format(r))
 
-print "Done!"
+print("Done!")

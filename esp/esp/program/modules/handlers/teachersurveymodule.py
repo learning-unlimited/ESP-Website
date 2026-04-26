@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -67,7 +68,7 @@ class TeacherSurveyModule(ProgramModuleObj):
     def isStep(self):
         return (Tag.getBooleanTag('teacher_survey_isstep', program=self.program) and
                 self.program.getTimeSlots()[0].start < datetime.datetime.now() and
-                self.program.getSurveys().filter(category__in = ["learn","teach"]).exists())
+                self.program.getSurveys().filter(category__in = ["learn", "teach"]).exists())
 
     @main_call
     @needs_teacher

@@ -1,5 +1,7 @@
+from __future__ import absolute_import
 import datetime
 import logging
+import six
 logger = logging.getLogger(__name__)
 
 from django import forms
@@ -32,7 +34,7 @@ class TestUserSearchController(TestCase):
     controller = UserSearchController()
     program = Program.objects.get(id=88)#Splash
 
-    def _get_combination_post_data(self,list_a, list_b):
+    def _get_combination_post_data(self, list_a, list_b):
         return {
             'username': '',
             'checkbox_and_confirmed': '',
@@ -49,7 +51,7 @@ class TestUserSearchController(TestCase):
             'zipdistance': '',
             'grade_min': '',
             'gradyear_min': '',
-            'checkbox_and_attended':'',
+            'checkbox_and_attended': '',
             'csrfmiddlewaretoken': '3kn9b0NY3t6WNbDRqA7zq7dy6FVOF8iD',
             'grade_max': '',
             'student_sendto_self': '1',
@@ -59,36 +61,36 @@ class TestUserSearchController(TestCase):
 
 
     def test_student_confirmed(self):
-        post_data = self._get_combination_post_data('Student','confirmed')
+        post_data = self._get_combination_post_data('Student', 'confirmed')
         qobject = self.controller.filter_from_postdata(self.program, post_data).getList(ESPUser)
 
         self.assertGreater(qobject.count(), 0)
 
 
     def test_teacher_classroom_tables(self):
-        post_data = self._get_combination_post_data('Teacher','teacher_res_150_8')
+        post_data = self._get_combination_post_data('Teacher', 'teacher_res_150_8')
         qobject = self.controller.filter_from_postdata(self.program, post_data).getList(ESPUser)
         self.assertGreater(qobject.count(), 0)
 
     def test_teacher_classroom_tables_query_from_post(self):
-        post_data = {u'username': u'',
-                     u'zipdistance_exclude': u'',
-                     u'first_name': u'',
-                     u'last_name': u'',
-                     u'use_checklist': u'0',
-                     u'gradyear_max': u'',
-                     u'userid': u'',
-                     u'school': u'',
-                     u'combo_base_list': u'Teacher:teacher_res_150_8',
-                     u'zipcode': u'',
-                     u'states': u'',
-                     u'student_sendto_self': u'1',
-                     u'checkbox_and_teacher_res_152_0': u'',
-                     u'grade_min': u'',
-                     u'gradyear_min': u'',
-                     u'zipdistance': u'',
-                      u'csrfmiddlewaretoken': u'GKk9biBZE2muppi7jcv2OnqQyIehiCuw',
-                      u'grade_max': u'', u'email': u''}
+        post_data = {six.u('username'): six.u(''),
+                     six.u('zipdistance_exclude'): six.u(''),
+                     six.u('first_name'): six.u(''),
+                     six.u('last_name'): six.u(''),
+                     six.u('use_checklist'): six.u('0'),
+                     six.u('gradyear_max'): six.u(''),
+                     six.u('userid'): six.u(''),
+                     six.u('school'): six.u(''),
+                     six.u('combo_base_list'): six.u('Teacher:teacher_res_150_8'),
+                     six.u('zipcode'): six.u(''),
+                     six.u('states'): six.u(''),
+                     six.u('student_sendto_self'): six.u('1'),
+                     six.u('checkbox_and_teacher_res_152_0'): six.u(''),
+                     six.u('grade_min'): six.u(''),
+                     six.u('gradyear_min'): six.u(''),
+                     six.u('zipdistance'): six.u(''),
+                      six.u('csrfmiddlewaretoken'): six.u('GKk9biBZE2muppi7jcv2OnqQyIehiCuw'),
+                      six.u('grade_max'): six.u(''), six.u('email'): six.u('')}
 
         query =  self.controller.query_from_postdata(self.program, post_data)
         # TODO(benkraft): what is going on here?  Should these tests be getting
@@ -98,6 +100,6 @@ class TestUserSearchController(TestCase):
         #self.assertGreater(qobject.count(), 0)
 
     def test_teacher_interview(self):
-        post_data = self._get_combination_post_data('Teacher','interview')
+        post_data = self._get_combination_post_data('Teacher', 'interview')
         qobject = self.controller.filter_from_postdata(self.program, post_data).getList(ESPUser)
         self.assertGreater(qobject.count(), 0)

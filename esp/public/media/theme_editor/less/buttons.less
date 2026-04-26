@@ -17,7 +17,8 @@
   text-align: center;
   vertical-align: middle;
   cursor: pointer;
-  .buttonBackground(@btnBackground, @btnBackgroundHighlight, @grayDark, 0 1px 1px rgba(255, 255, 255, .75));
+  .buttonBackground(@btnBackground, @btnBackgroundHighlight, @grayDark, 0 1px 1px rgba(255,255,255,.75));
+  color: @btnLinkColor !important;
   border: 1px solid @btnBorder;
   *border: 0; // Remove the border to prevent IE7's black border on input:focus
   border-bottom-color: darken(@btnBorder, 10%);
@@ -181,50 +182,59 @@ input[type="button"] {
   color: rgba(255, 255, 255, .75);
 }
 
-// Set the backgrounds
+// Set the backgrounds and text color
 // -------------------------
 .btn-primary {
   .buttonBackground(@btnPrimaryBackground, @btnPrimaryBackgroundHighlight);
+  color: @btnPrimaryLinkColor !important;
 }
 
 // Warning appears are orange
 .btn-warning {
   .buttonBackground(@btnWarningBackground, @btnWarningBackgroundHighlight);
+  color: @white !important;
 }
 
 // Danger and error appear as red
 .btn-danger {
   .buttonBackground(@btnDangerBackground, @btnDangerBackgroundHighlight);
+  color: @white !important;
 }
 
 // Success appears as green
 .btn-success {
   .buttonBackground(@btnSuccessBackground, @btnSuccessBackgroundHighlight);
+  color: @white !important;
 }
 
 // Info appears as a neutral blue
 .btn-info {
   .buttonBackground(@btnInfoBackground, @btnInfoBackgroundHighlight);
+  color: @white !important;
 }
 
 // Inverse appears as dark gray
 .btn-inverse {
   .buttonBackground(@btnInverseBackground, @btnInverseBackgroundHighlight);
+  color: @btnInverseLinkColor !important;
 }
 
 // Approve appears as light green
 .btn-approve {
-  .buttonBackground(@btnApproveBackground, @btnApproveBackgroundHighlight, @grayDark, 0 1px 1px rgba(255, 255, 255, .75));
+  .buttonBackground(@btnApproveBackground, @btnApproveBackgroundHighlight, @grayDark, 0 1px 1px rgba(255,255,255,.75));
+  color: @white !important;
 }
 
 // Unreview appears as light yellow
 .btn-unreview {
-  .buttonBackground(@btnUnreviewBackground, @btnUnreviewBackgroundHighlight, @grayDark, 0 1px 1px rgba(255, 255, 255, .75));
+  .buttonBackground(@btnUnreviewBackground, @btnUnreviewBackgroundHighlight, @grayDark, 0 1px 1px rgba(255,255,255,.75));
+  color: @white !important;
 }
 
 // Reject appears as light red
 .btn-reject {
-  .buttonBackground(@btnRejectBackground, @btnRejectBackgroundHighlight, @grayDark, 0 1px 1px rgba(255, 255, 255, .75));
+  .buttonBackground(@btnRejectBackground, @btnRejectBackgroundHighlight, @grayDark, 0 1px 1px rgba(255,255,255,.75));
+  color: @white !important;
 }
 
 // Cross-browser Jank

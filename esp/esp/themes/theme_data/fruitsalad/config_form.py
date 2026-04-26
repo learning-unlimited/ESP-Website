@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -58,9 +59,11 @@ class ConfigForm(ThemeConfigurationForm):
     # URLField requires an absolute URL, here we probably want relative.
     faq_link = forms.CharField(required=False, initial='/faq.html',
                                help_text='Leave blank to omit an FAQ link.')
+    show_footer_textbox = forms.BooleanField(initial = False, required = False,
+                                            help_text='Should there be an editable text field in the footer?')
     front_page_style = forms.ChoiceField(
-                           choices=(('bubblesfront.html','Bubbles'),
-                                    ('qsdfront.html','QSD')),
+                           choices=(('bubblesfront.html', 'Bubbles'),
+                                    ('qsdfront.html', 'QSD')),
                            initial='qsdfront.html',
                            help_text='Choose the style of the front page of ' +
                            '<a href="%(home)s">%(host)s</a>. "Bubbles" is a ' +

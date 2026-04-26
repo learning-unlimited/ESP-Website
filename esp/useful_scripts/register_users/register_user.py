@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 import datetime
 import random
 
 from twill.commands import *
 from generators import *
+from six.moves import range
 
 base_host = 'http://dev2.learningu.org'
 splash_name = 'Splash/2011_Spring'
@@ -13,7 +15,7 @@ people_generator = random_people('Teacher')
 
 def register_users():
     for i in range(200):
-        register_user(people_generator.next())
+        register_user(next(people_generator))
 
 def register_user(user):
     b = get_browser()
@@ -38,11 +40,11 @@ def register_user(user):
 
 
 def register_student_profile(b, user):
-    parent = people_generator.next()
-    address = random_address().next()
-    emerg = people_generator.next()
-    emerg_address = random_address().next()
-    phone = random_phone().next()
+    parent = next(people_generator)
+    address = next(random_address())
+    emerg = next(people_generator)
+    emerg_address = next(random_address())
+    phone = next(random_phone())
     update_info = {
         'address_street': address.street,
         'address_city': address.city,
@@ -58,8 +60,8 @@ def register_student_profile(b, user):
         "guard_first_name": parent.first,
         "guard_last_name": parent.last,
         "guard_e_mail": parent.email,
-        "guard_phone_day": random_phone().next(),
-        "guard_phone_cell": random_phone().next(),
+        "guard_phone_day": next(random_phone()),
+        "guard_phone_cell": next(random_phone()),
         "emerg_first_name": emerg.first,
         "emerg_last_name": emerg.last,
         "emerg_e_mail": emerg.email,
@@ -67,8 +69,8 @@ def register_student_profile(b, user):
         "emerg_address_city": emerg_address.city,
         "emerg_address_state": emerg_address.state,
         "emerg_address_zip": emerg_address.zip,
-        "emerg_phone_day": random_phone().next(),
-        "emerg_phone_cell": random_phone().next(),
+        "emerg_phone_day": next(random_phone()),
+        "emerg_phone_cell": next(random_phone()),
         }
     for key, value in update_info.items():
         try:
@@ -78,9 +80,9 @@ def register_student_profile(b, user):
     submit('0')
 
 def register_teacher_profile(b, user):
-    address = random_address().next()
-    phone = random_phone().next()
-    cell = random_phone().next()
+    address = next(random_address())
+    phone = next(random_phone())
+    cell = next(random_phone())
     update_info = {
         'address_street': address.street,
         'address_city': address.city,
@@ -100,7 +102,7 @@ def register_teacher_profile(b, user):
 
 def register_teacher_splash(b, user):
     b.go('%s/teach/%s/makeaclass' % (base_host, splash_name))
-    class_ = random_classes().next()
+    class_ = next(random_classes())
     update_info = {
         'title': class_.title,
         'class_info': class_.description,
@@ -115,7 +117,7 @@ def register_teacher_splash(b, user):
                 try:
                     if item.name.strip():
                         item_values.append(item.name)
-                except AttributeError, ValueError:
+                except AttributeError as ValueError:
                     pass
             if item_values:
                 update_info[control.name] = random.choice(item_values)

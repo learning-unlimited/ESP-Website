@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -99,7 +100,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # Test to see whether the graduation year is required
         self.client.login(username=self.students[2].username, password='password')
         response = self.client.post('%sprofile' % self.program.get_learn_url(), {'graduation_year': '', 'profile_page': ''})
-        lines = response.content.split('\n')
+        lines = response.content.decode('UTF-8').split('\n')
 
         ## Find the line for the start of the graduation-year form field
         for i, line in enumerate(lines):

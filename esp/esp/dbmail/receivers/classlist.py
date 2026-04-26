@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.dbmail.base import BaseHandler
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
@@ -29,11 +30,11 @@ class ClassList(BaseHandler):
 
         user_type = user_type.strip().lower()
 
-        if user_type in ('teachers','class'):
+        if user_type in ('teachers', 'class'):
             self.recipients += [user.get_email_sendto_address()
                                 for user in cls.get_teachers()     ]
 
-        if user_type in ('students','class'):
+        if user_type in ('students', 'class'):
             for section in sections:
                 self.recipients += [user.get_email_sendto_address()
                                     for user in section.students()     ]
@@ -43,7 +44,7 @@ class ClassList(BaseHandler):
 
 
     def process_mailman(self, user, class_id, user_type):
-        if not (settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys()):
+        if not (settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys())):
             return
         try:
             cls = ClassSubject.objects.get(id = class_id)

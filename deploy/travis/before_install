@@ -1,19 +1,9 @@
 #!/bin/bash
 set -euf -o pipefail
 
-if [ $(echo "$(lsb_release -rs) > 20" | bc) -eq 1 ]; then 
-  sudo apt update
- else
-  sudo apt-get update
-fi
+sudo add-apt-repository ppa:deadsnakes/ppa
+
+sudo apt update
 
 # install pip
-sudo add-apt-repository universe
-if [ $(echo "$(lsb_release -rs) > 20" | bc) -eq 1 ]; then 
-  sudo apt install -y curl
- else
-  sudo apt-get install -y curl
-fi
-curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-sudo python2 get-pip.py
-sudo python2 -m pip install --upgrade pip==20.1
+sudo apt -y install python3-pip

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import migrations, models
 
 
@@ -14,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='program',
             name='program_size_max',
-            field=models.IntegerField(help_text=b'Set to 0 for no cap. Student registration performance is best when no cap is set.', null=True),
+            field=models.IntegerField(help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.', null=True),
         ),
     ]

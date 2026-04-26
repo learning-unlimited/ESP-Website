@@ -23,6 +23,10 @@ else
     sudo -H npm install less@1.7.5 -g
 fi
 
+curl https://bootstrap.pypa.io/pip/3.7/get-pip.py -o get-pip-3.7.py
+python3.7 get-pip-3.7.py
+rm get-pip-3.7.py
+
 # increase memcached limit
 sudo su -c '(echo ""; echo "-I 3M") >> /etc/memcached.conf'
 

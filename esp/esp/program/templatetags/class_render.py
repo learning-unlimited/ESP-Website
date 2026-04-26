@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import template
 from django.template.loader import render_to_string
 
@@ -17,7 +18,7 @@ def render_class_core(cls):
     scrmi = prog.studentclassregmoduleinfo
     colorstring = prog.getColor()
     if colorstring is not None:
-        colorstring = ' background-color:#' + colorstring + ';'
+        colorstring = ' background-color: ' + colorstring + ';'
 
     # Allow tag configuration of whether class descriptions get collapsed
     # when the class is full (default: yes)

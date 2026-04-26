@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 from django import forms
 from django.utils.safestring import mark_safe
 from django.db.models import IntegerField, Case, When, Count
@@ -10,6 +12,8 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program
 from esp.utils.widgets import DateTimeWidget, DateWidget
 from esp.tagdict.models import Tag
+import six
+from six.moves import range
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -39,8 +43,8 @@ class TimeslotForm(forms.Form):
         self.fields['start'].initial = slot.start
         self.fields['id'].initial = slot.id
         length = (slot.end - slot.start).seconds
-        self.fields['hours'].initial = int(length / 3600)
-        self.fields['minutes'].initial = int(length / 60 - 60 * self.fields['hours'].initial)
+        self.fields['hours'].initial = int(length // 3600)
+        self.fields['minutes'].initial = int(length // 60 - 60 * self.fields['hours'].initial)
         self.fields['group'].initial = slot.group
 
     def save_timeslot(self, program, slot):
@@ -60,7 +64,7 @@ class TimeslotForm(forms.Form):
 class ResourceTypeForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
     name = forms.CharField()
-    description = forms.CharField(required=False,widget=forms.Textarea)
+    description = forms.CharField(required=False, widget=forms.Textarea)
     priority = forms.IntegerField(required=False, help_text='Assign this a unique number in relation to the priority of other resource types')
     only_one = forms.BooleanField(label='Only one?', required=False, help_text='Limit teachers to selecting only one of the options?')
     is_global = forms.BooleanField(label='Global?', required=False, help_text='Should this resource be associated with all programs?')
@@ -75,7 +79,7 @@ class ResourceTypeForm(forms.Form):
         self.fields['name'].initial = res_type.name
         self.fields['description'].initial = res_type.description
         self.fields['priority'].initial = res_type.priority_default
-        self.fields['is_global'].initial = (res_type.program == None)
+        self.fields['is_global'].initial = (res_type.program is None)
         self.fields['only_one'].initial = res_type.only_one
         self.fields['hidden'].initial = res_type.hidden
         self.fields['id'].initial = res_type.id
@@ -97,14 +101,14 @@ class ResourceTypeForm(forms.Form):
             res_type.hidden = False
         if self.cleaned_data['priority']:
             res_type.priority_default = self.cleaned_data['priority']
-        if choices and filter(None, choices):
-            res_type.choices = filter(None, choices)
+        if choices and [_f for _f in choices if _f]:
+            res_type.choices = [_f for _f in choices if _f]
         else:
             """ This is already set by default when making a new resource type,
                 but if you remove all of the choices from a pre-existing resource type
-                you need to reset the default. Setting attributes_pickled is equivalent to
+                you need to reset the default. Setting attributes_dumped is equivalent to
                 setting choices. """
-            res_type.attributes_pickled = ResourceType._meta.get_field('attributes_pickled').default
+            res_type.attributes_dumped = ResourceType._meta.get_field('attributes_dumped').default
 
         res_type.save()
 
@@ -130,7 +134,7 @@ class EquipmentForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         if isinstance(args[0], Program):
-            self.base_fields['resource_type'].choices = tuple([(u'', '(type)')] + list(setup_furnishings(args[0].getResourceTypes())))
+            self.base_fields['resource_type'].choices = tuple([(six.u(''), '(type)')] + list(setup_furnishings(args[0].getResourceTypes())))
             self.base_fields['times_available'].choices = setup_timeslots(args[0])
             super(EquipmentForm, self).__init__(*args[1:], **kwargs)
         else:
@@ -284,7 +288,7 @@ def FurnishingFormForProgram(prog):
         choice = forms.CharField(required=False, max_length=200, widget=forms.TextInput(attrs={'placeholder': '(option)', 'style': 'margin-left: 8px'}))
         def __init__(self, *args, **kwargs):
             furnishings = setup_furnishings(prog.getResourceTypes())
-            self.base_fields['furnishing'].choices = tuple([(u'', '(furnishing)')] + list(furnishings))
+            self.base_fields['furnishing'].choices = tuple([(six.u(''), '(furnishing)')] + list(furnishings))
             super(FurnishingForm, self).__init__(*args, **kwargs)
     return FurnishingForm
 

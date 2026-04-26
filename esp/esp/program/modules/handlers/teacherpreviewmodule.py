@@ -1,7 +1,9 @@
-__author__ = "Individual contributors (see AUTHORS file)"
-__date__ = "$DATE$"
-__rev__ = "$REV$"
-__license__ = "AGPL v.3"
+
+from __future__ import absolute_import
+__author__    = "Individual contributors (see AUTHORS file)"
+__date__      = "$DATE$"
+__rev__       = "$REV$"
+__license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -68,11 +70,8 @@ class TeacherPreviewModule(ProgramModuleObj):
     ):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
-
-        context = {"module": self}
-        pmos = ProgramModuleObj.objects.filter(
-            program=prog, module__handler__icontains="printables"
-        )
+        context = {'module': self}
+        pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and "user" in request.GET:
@@ -80,15 +79,10 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = [
-                cls
-                for cls in teacher.getTaughtSectionsFromProgram(self.program)
-                if cls.parent_program == self.program
-                and cls.meeting_times.all().exists()
-                and cls.resourceassignment_set.all().exists()
-                and cls.status > 0
-            ]
-            classes.sort()
+            classes = sorted([cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0])
             for cls in classes:
                 scheditems.append(
                     {"name": teacher.name(), "teacher": teacher, "cls": cls}
@@ -129,11 +123,8 @@ class TeacherPreviewModule(ProgramModuleObj):
     ):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
-
-        context = {"module": self}
-        pmos = ProgramModuleObj.objects.filter(
-            program=prog, module__handler__icontains="printables"
-        )
+        context = {'module': self}
+        pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and "user" in request.GET:
@@ -141,16 +132,10 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = [
-                cls
-                for cls in teacher.getTaughtOrModeratingSectionsFromProgram(
-                    self.program
-                )
-                if cls.meeting_times.all().exists()
-                and cls.resourceassignment_set.all().exists()
-                and cls.status > 0
-            ]
-            classes.sort()
+            classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0])
             for cls in classes:
                 if teacher in cls.parent_class.get_teachers():
                     role = "Teacher"
@@ -202,11 +187,8 @@ class TeacherPreviewModule(ProgramModuleObj):
     ):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
-
-        context = {"module": self}
-        pmos = ProgramModuleObj.objects.filter(
-            program=prog, module__handler__icontains="printables"
-        )
+        context = {'module': self}
+        pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and "user" in request.GET:
@@ -214,14 +196,10 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = [
-                cls
-                for cls in teacher.getModeratingSectionsFromProgram(self.program)
-                if cls.meeting_times.all().exists()
-                and cls.resourceassignment_set.all().exists()
-                and cls.status > 0
-            ]
-            classes.sort()
+            classes = sorted([cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
+                    if cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0])
             for cls in classes:
                 scheditems.append(
                     {"name": teacher.name(), "teacher": teacher, "cls": cls}
@@ -249,141 +227,6 @@ class TeacherPreviewModule(ProgramModuleObj):
             extra,
             prog,
             template_file="moderatorschedule.html",
-        )
-
-    def teachermoderatorhandout(
-        self,
-        request,
-        tl,
-        one,
-        two,
-        module,
-        extra,
-        prog,
-        template_file="teachermoderatorschedule.html",
-    ):
-        #   Use the template defined in ProgramPrintables
-        from esp.program.modules.handlers import ProgramPrintables
-
-        context = {"module": self}
-        pmos = ProgramModuleObj.objects.filter(
-            program=prog, module__handler__icontains="printables"
-        )
-        if pmos.count() == 1:
-            pmo = ProgramPrintables(pmos[0])
-            if request.user.isAdmin() and "user" in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET["user"])
-            else:
-                teacher = request.user
-            scheditems = []
-            classes = [
-                cls
-                for cls in teacher.getTaughtOrModeratingSectionsFromProgram(
-                    self.program
-                )
-                if cls.meeting_times.all().exists()
-                and cls.resourceassignment_set.all().exists()
-                and cls.status > 0
-            ]
-            classes.sort()
-            for cls in classes:
-                if teacher in cls.parent_class.get_teachers():
-                    role = "Teacher"
-                else:
-                    role = self.program.getModeratorTitle()
-                scheditems.append(
-                    {
-                        "name": teacher.name(),
-                        "teacher": teacher,
-                        "cls": cls,
-                        "role": role,
-                    }
-                )
-            context["scheditems"] = scheditems
-            context["teachers"] = True
-            context["moderators"] = True
-            return render_to_response(pmo.baseDir() + template_file, request, context)
-        else:
-            raise ESPError(
-                "No printables module resolved, so this document cannot be generated.  Consult the webmasters.",
-                log=False,
-            )
-
-    @aux_call
-    # No need for needs_teacher, since it depends on request.user, and onsite may want to use it (with ?user=foo).
-    @needs_account
-    def teachermoderatorschedule(self, request, tl, one, two, module, extra, prog):
-        return self.teachermoderatorhandout(
-            request,
-            tl,
-            one,
-            two,
-            module,
-            extra,
-            prog,
-            template_file="teachermoderatorschedule.html",
-        )
-
-    def moderatorhandout(
-        self,
-        request,
-        tl,
-        one,
-        two,
-        module,
-        extra,
-        prog,
-        template_file="moderatorschedule.html",
-    ):
-        #   Use the template defined in ProgramPrintables
-        from esp.program.modules.handlers import ProgramPrintables
-
-        context = {"module": self}
-        pmos = ProgramModuleObj.objects.filter(
-            program=prog, module__handler__icontains="printables"
-        )
-        if pmos.count() == 1:
-            pmo = ProgramPrintables(pmos[0])
-            if request.user.isAdmin() and "user" in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET["user"])
-            else:
-                teacher = request.user
-            scheditems = []
-            classes = [
-                cls
-                for cls in teacher.getModeratingSectionsFromProgram(self.program)
-                if cls.meeting_times.all().exists()
-                and cls.resourceassignment_set.all().exists()
-                and cls.status > 0
-            ]
-            classes.sort()
-            for cls in classes:
-                scheditems.append(
-                    {"name": teacher.name(), "teacher": teacher, "cls": cls}
-                )
-            context["scheditems"] = scheditems
-            context["teachers"] = False
-            context["moderators"] = True
-            return render_to_response(pmo.baseDir() + template_file, request, context)
-        else:
-            raise ESPError(
-                "No printables module resolved, so this document cannot be generated.  Consult the webmasters.",
-                log=False,
-            )
-
-    @aux_call
-    # No need for needs_teacher, since it depends on request.user, and onsite may want to use it (with ?user=foo).
-    @needs_account
-    def teacherschedule(self, request, tl, one, two, module, extra, prog):
-        return self.teacherhandout(
-            request,
-            tl,
-            one,
-            two,
-            module,
-            extra,
-            prog,
-            template_file="teacherschedule.html",
         )
 
     @aux_call
@@ -418,9 +261,7 @@ class TeacherPreviewModule(ProgramModuleObj):
 
     def get_handouts(self):
         sections = get_current_request().user.getTaughtSections(self.program)
-        sections = filter(
-            lambda x: x.isAccepted() and x.meeting_times.count() > 0, sections
-        )
+        sections = [x for x in sections if x.isAccepted() and x.meeting_times.count() > 0]
         if len(sections) > 0:
             return {
                 "teacherschedule": "Your Class Schedule",

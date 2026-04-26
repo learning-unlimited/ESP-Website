@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import print_function
+import six
+from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -63,9 +67,9 @@ class StudentRegSanityController(object):
         category_walkin = ClassCategories.objects.get(category="Walk-in Activity")
         if csvlog and not(fake): #If I'm actually doing things, and I want a log....
             import csv
-            if csvwriter==None:
+            if csvwriter is None:
                 closeatend = True
-                if directory==None: directory = self.options['directory']
+                if directory is None: directory = self.options['directory']
                 filefullname = directory +'/santitize_walkins_log.csv'
                 csvfile = open(filefullname, 'ab+')
                 csvwriter = csv.writer(csvfile)
@@ -80,7 +84,7 @@ class StudentRegSanityController(object):
 
         for sr in srs:
             if not fake:
-                if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
+                if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
                 sr.expire()
         logger.debug(report)
         if closeatend: csvfile.close()
@@ -93,9 +97,9 @@ class StudentRegSanityController(object):
         closeatend = False
         if csvlog and not(fake): #If I'm actually doing things, and I want a log....
             import csv
-            if csvwriter==None:
+            if csvwriter is None:
                 closeatend = True
-                if directory==None: directory = self.options['directory']
+                if directory is None: directory = self.options['directory']
                 filefullname = directory +'/santitize_lunch_log.csv'
                 csvfile = open(filefullname, 'ab+')
                 csvwriter = csv.writer(csvfile)
@@ -110,7 +114,7 @@ class StudentRegSanityController(object):
             report.append((l, srs.count()))
             if not fake:
                 for sr in srs:
-                    if csvlog: csvwriter.writerow([l.title().encode('ascii', 'ignore'), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
+                    if csvlog: csvwriter.writerow([l.title().encode('ascii', 'ignore'), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
                     sr.expire()
         logger.debug(report)
         if closeatend: csvfile.close()
@@ -128,24 +132,24 @@ class StudentRegSanityController(object):
         Set fake=False if you actually want something to happen.
         Set csvlog=False if you don't want a log of what was done
         Set directory to where you'd like the csvlog filed saved (if csvlog=False, does nothing)"""
-        if checks==None:
-            print "You didn't enter a check! Please enter the checks you'd like to run as a list of strings. Run self.sanitize('--help') for more information!"
+        if checks is None:
+            print("You didn't enter a check! Please enter the checks you'd like to run as a list of strings. Run self.sanitize('--help') for more information!")
             return None
         if checks=='--help':
-            print 'Sanitize - a module used to clear up oddities in Student Registrations.'
-            print "Syntax: self.sanitize(['check1', 'check2', 'check3'], fake=False, csvlog=True, directory='" + self.options['directory'] + "')"
-            print ''
-            print '-------------Current Checks----------------'
-            print 'antiwalk-in: Checks for Student Registrations made for walk-in classes. If fake=False, will remove them.'
-            print 'antilunch: Checks for Student Registrations made for lunch. If fake=False, will remove them.'
-            print '-------------Known Bugs-----------------'
-            print "Guys, I'm not course 6 for a reason~shulinye"
+            print('Sanitize - a module used to clear up oddities in Student Registrations.')
+            print("Syntax: self.sanitize(['check1', 'check2', 'check3'], fake=False, csvlog=True, directory='" + self.options['directory'] + "')")
+            print('')
+            print('-------------Current Checks----------------')
+            print('antiwalk-in: Checks for Student Registrations made for walk-in classes. If fake=False, will remove them.')
+            print('antilunch: Checks for Student Registrations made for lunch. If fake=False, will remove them.')
+            print('-------------Known Bugs-----------------')
+            print("Guys, I'm not course 6 for a reason~shulinye")
             return None
-        if isinstance(checks, basestring):
+        if isinstance(checks, six.string_types):
             checks = [checks]
         if csvlog:
             import csv
-            if directory==None: directory = self.options['directory']
+            if directory is None: directory = self.options['directory']
             filefullname = directory + '/'+ datetime.now().strftime("%Y-%m-%d_") + 'santitize_log.csv'
             csvfile = open(filefullname, 'ab+')
             csvwriter = csv.writer(csvfile)

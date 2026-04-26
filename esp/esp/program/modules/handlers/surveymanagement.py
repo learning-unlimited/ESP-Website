@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -59,7 +61,7 @@ class SurveyManagement(ProgramModuleObj):
         context = {'program': prog}
         # Make some dummy data for survey questions that need it
         classes = [ClassSubject(id = i, title="Test %s" %i, parent_program = prog, category = prog.class_categories.all()[0],
-                   grade_min = prog.grade_min, grade_max = prog.grade_max) for i in range(1,4)]
+                   grade_min = prog.grade_min, grade_max = prog.grade_max) for i in range(1, 4)]
         context['classes'] = classes
         context['section'] = ClassSection(parent_class=classes[0])
         context['question_types'] = json.dumps({str(qt.id): qt.param_names for qt in QuestionType.objects.all()})

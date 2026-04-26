@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from collections import OrderedDict
 from django import forms
 from django.forms import widgets
@@ -7,6 +8,7 @@ from decimal import Decimal
 import datetime
 
 from esp.users.forms import _states
+from six.moves import zip
 
 import json
 
@@ -48,6 +50,13 @@ all_global_tags = {
         'help_text': 'Include global resource types in the manage resources and teacher registration options',
         'default': False,
         'category': 'teach',
+        'is_setting': True,
+    },
+    'fruitsalad_sounds': {
+        'is_boolean': True,
+        'help_text': 'Play sounds when the user enters cheat codes and hovers over elements in the Fruitsalad theme (just for fun)',
+        'default': False,
+        'category': 'theme',
         'is_setting': True,
     },
     'full_group_name': {
@@ -399,7 +408,7 @@ all_global_tags = {
     'ask_about_duplicate_accounts': {
         'is_boolean': True,
         'help_text': 'Before creating an account for an email address already in the database, ask if the user wants to log into an existing account instead',
-        'default': False,
+        'default': True,
         'category': 'manage',
         'is_setting': True,
     },
@@ -430,7 +439,7 @@ all_global_tags = {
         'default': None,
         'category': 'manage',
         'is_setting': True,
-        'field': forms.ChoiceField(required=True, choices=zip(_states,_states))
+        'field': forms.ChoiceField(required=True, choices=list(zip(_states, _states)))
     },
     'teacher_address_required': {
         'is_boolean': True,
@@ -479,6 +488,13 @@ all_global_tags = {
     'google_cloud_api_key': {
         'is_boolean': False,
         'help_text': 'An API key for use with the Google Cloud Platform. Used for the maps in the student and teacher onsite webapps. The embedded map is entirely free but requires an API key. If not set, the map tab will be hidden.',
+        'default': '',
+        'category': 'manage',
+        'is_setting': True,
+    },
+    'google_analytics_id': {
+        'is_boolean': False,
+        'help_text': 'A <a href="https://support.google.com/analytics/answer/12270356?hl=en" target="_blank">measurement ID</a> for a <a href="https://developers.google.com/analytics" target="_blank">Google Analytics</a> property. The format of a measurement ID in Google Analytics 4 is "G-" followed by a combination of numbers and letters, such as "G-PSW1MY7HB4". Setting this value will enable the passing of traffic data to Google Analytics.',
         'default': '',
         'category': 'manage',
         'is_setting': True,
@@ -1314,7 +1330,7 @@ all_program_tags = {
     'already_paid_extracosts_allowed': {
         'is_boolean': True,
         'help_text': 'Whether students should be able to return to the extracosts page to add items or change options after they have already paid once via credit card.',
-        'default': True ,
+        'default': True,
         'category': 'learn',
         'is_setting': True,
     },
@@ -1325,7 +1341,7 @@ all_program_tags = {
                     selections below. If your new balance is larger than what you have already paid, \
                     you can pay the remaining balance via credit card. If your new balance is smaller \
                     than what you have already paid, we will treat the negative balance as a donation \
-                    to our program (thanks!).' ,
+                    to our program (thanks!).',
         'category': 'learn',
         'is_setting': True,
     },
@@ -1340,7 +1356,7 @@ all_program_tags = {
     'student_schedule_pretext': {
         'is_boolean': False,
         'help_text': 'The text that is included right above the schedule in PDF student schedules (LaTeX is supported).',
-        'default': '' ,
+        'default': '',
         'category': 'manage',
         'is_setting': False,
     },

@@ -297,11 +297,16 @@ width: 121px;
 #menu li .accent {
     position: absolute;
     left: -10px;
-    width: 20px;
+    transition: left 0.25s ease-out;
+    width: @rounding_radius + 18px;  /* the below bezier hits -16.06px so this gives >1px bleed margin */
     border-top-left-radius: @rounding_radius;
     border-bottom-left-radius: @rounding_radius;
     height: 100%;
     z-index: -1;
+}
+#menu li:hover .accent {
+    left: -15px;
+    transition: left 0.2s cubic-bezier(0.6, 2.0, 0.8, 0.9);  /* small bounce */
 }
 
 #menu a {
@@ -329,8 +334,12 @@ text-transform: uppercase;
 
 #menu #tab_logo #logo {
 border: none;
-margin-left: 9px;
-margin-top: 9px;
+max-height: 100%;
+max-width: calc(100% - 9px);
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
 }
 
 #menu #tab_proveit {
@@ -477,8 +486,9 @@ font-size: 12px;
 #login_submit {
 position: absolute;
 top: 9px; right: 48px;
-height: 21px; width: 45px;
-font-size: 10.5px;
+height: 20px; width: 45px;
+font-size: 1em;
+font-size: 1.3vmin;
 text-decoration: none;
 border-radius: 0px;
 border: none;
@@ -508,11 +518,13 @@ z-index: 1;
 #login_signup {
 position: absolute;
 top: 9px; right: 4px; 
-height: 17px; width: 40px; 
-padding-top: 4px; padding-right: 4px;
-font-size: 10.5px;
+line-height: 20px; width: 40px;
+padding-top: 0px; padding-right: 4px;
+font-size: 1em;
+font-size: 1.3vmin;
 text-decoration: none;
 border: none;
+white-space: nowrap;
 }
 
 #login_help {
@@ -753,18 +765,6 @@ background: #bbb;
 #content a:focus {
   color: @linkColorHover;
   text-decoration: underline;
-}
-#content .btn {
-  background: @btnBackground;
-  color: @btnLinkColor;
-}
-#content .btn-primary {
-  background: @btnPrimaryBackground;
-  color: @btnPrimaryLinkColor;
-}
-#content .btn-inverse {
-  background: @btnInverseBackground;
-  color: @btnInverseLinkColor;
 }
 
 #admin_link {

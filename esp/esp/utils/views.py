@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import datetime
 import subprocess
 
@@ -11,6 +12,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
+import six
+from six.moves import zip
 
 
 def get_filter(prog, approved=False, scheduled=False, teachers=None):
@@ -164,7 +167,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
             "numbers": numbers,
             "left_axis_data": left_axis_data,
             "right_axis_data": right_axis_data,
-            "loads": zip([1, 5, 15], self.load_averages()),
+            "loads": list(zip([1, 5, 15], self.load_averages())),
         }
         return render_to_response(
             "program/modules/bigboardmodule/bigboard.html", request, context
@@ -280,18 +283,12 @@ class TeacherBigBoardModule(ProgramModuleObj):
     style_classes = staticmethod(style_classes)
 
     @cache_function_for(105)
-    def teach_times(self, prog, approved=False, scheduled=False):
-        teacher_times = dict(
-            ClassSubject.objects.filter(
-                get_filter(prog, approved=approved, scheduled=scheduled)
-            )
-            .exclude(category__category__iexact="Lunch")
-            .exclude(teachers=None)
-            .distinct()
-            .values_list("teachers")
-            .annotate(Min("timestamp"))
-        )
-        return sorted(teacher_times.itervalues())
+    def teach_times(self, prog, approved = False, scheduled = False):
+        teacher_times = dict(ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled)
+        ).exclude(category__category__iexact="Lunch"
+        ).exclude(teachers=None
+        ).distinct().values_list('teachers').annotate(Min('timestamp')))
+        return sorted(six.itervalues(teacher_times))
 
     @cache_function_for(105)
     def get_hours(prog, approved=False, scheduled=False, teachers=None):
@@ -316,9 +313,9 @@ class TeacherBigBoardModule(ProgramModuleObj):
         ]
 
         # use mindate if a class is missing a timestamp so we can still calculate static stats
-        sorted_hours = sorted(hours, key=lambda x: x[0] or mindate)
+        sorted_hours = sorted(hours, key=lambda x:x[0] or mindate)
         class_hours = [(hour[2], hour[0]) for hour in sorted_hours]
-        student_hours = [(hour[2] * hour[1], hour[0]) for hour in sorted_hours]
+        student_hours = [(hour[2]*hour[1], hour[0]) for hour in sorted_hours]
         return class_hours, student_hours
 
     get_hours = staticmethod(get_hours)
@@ -329,10 +326,9 @@ class TeacherBigBoardModule(ProgramModuleObj):
             prog, approved=approved, scheduled=scheduled, teachers=teachers
         )
         if hours[0]:
-            return [sum(zip(*j)[0]) for j in hours]
+            return [sum(list(zip(*j))[0]) for j in hours]
         else:
             return [0, 0]
-
     static_hours = staticmethod(static_hours)
 
     # runs in 9ms, so don't bother caching

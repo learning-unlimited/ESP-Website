@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -56,7 +58,7 @@ class FormWithRequiredCss(forms.Form):
     """ Form that adds the "required" class to every required widget, to restore oldforms behavior. """
     def __init__(self, *args, **kwargs):
         super(FormWithRequiredCss, self).__init__(*args, **kwargs)
-        for field in self.fields.itervalues():
+        for field in six.itervalues(self.fields):
             if field.required:
                 if 'class' in field.widget.attrs:
                     field.widget.attrs['class'] += ' required'
@@ -97,7 +99,7 @@ class FormUnrestrictedOtherUser(FormWithRequiredCss):
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
             pass
         else:
-            for field in self.fields.itervalues():
+            for field in six.itervalues(self.fields):
                 if field.required:
                     field.required = False
                     field.widget.attrs['class'] = None # GAH!

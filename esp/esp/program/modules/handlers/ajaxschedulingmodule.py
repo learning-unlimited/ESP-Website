@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -200,7 +201,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
         Clears the change log for this program. """
 
         self.get_change_log(prog).entries.all().delete()
-        return HttpResponse('')
+        context = {}
+        return render_to_response(self.baseDir()+'clear_cache_confirmation.html', request, context)
 
     def get_change_log(self, prog):
         change_log = module_ext.AJAXChangeLog.objects.filter(program=prog)

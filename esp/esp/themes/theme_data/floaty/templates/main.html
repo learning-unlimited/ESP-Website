@@ -139,6 +139,13 @@
     {% endblock %}
 
     <div id="footer">
+		{% if theme.show_footer_textbox %}
+		  <div>
+		    {% load render_qsd %}
+		    {% inline_qsd_block "footer_text" %}
+		    {% end_inline_qsd_block %}
+		  </div>
+		{% endif %}
         <span class="normal">Copyright {{ theme.mtime.year }}, {{ settings.ORGANIZATION_SHORT_NAME }} at {{ settings.INSTITUTION_NAME }}</span><br>
         {% if theme.show_email or theme.contact_links %}
         <span class="normal">

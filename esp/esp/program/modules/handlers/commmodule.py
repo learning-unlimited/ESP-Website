@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,8 +41,10 @@ from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
 from esp.dbmail.models import ActionHandler
+from esp.tagdict.models import Tag
 from django.template import Template
 from django.template import Context as DjangoContext
+from django.template.loader import render_to_string
 from esp.middleware import ESPError
 
 import re
@@ -80,7 +83,7 @@ class CommModule(ProgramModuleObj):
         # Set From address
         if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
-            if not re.match(r"(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)" % settings.SITE_INFO[1].replace(".", "\."), fromemail):
+            if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')), fromemail):
                 raise ESPError("Invalid 'From' email address. The 'From' email address must " +
                                "end in @" + settings.SITE_INFO[1] + " (your website), " +
                                "@learningu.org, or a valid subdomain of learningu.org " +
@@ -90,7 +93,8 @@ class CommModule(ProgramModuleObj):
             prs = PlainRedirect.objects.filter(original = "info")
             if not prs.exists():
                 redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
-            fromemail = '%s@%s' % ("info", settings.SITE_INFO[1])
+            fromemail = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
+                                        "info", settings.SITE_INFO[1])
 
         # Set Reply-To address
         if request.POST.get('replyto', '').strip():
@@ -119,11 +123,16 @@ class CommModule(ProgramModuleObj):
         if '<html>' not in body:
             body = '<html>' + body + '</html>'
 
+        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
+        template = request.POST.get('template', 'default')
+        rendered_text = render_to_string('email/{}_email.html'.format(template),
+                                        {'msgbody': body})
+        # Render the text for the first user
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
-                       'request': ActionHandler(MessageRequest(), firstuser)}
-
-        renderedtext = Template(body).render(DjangoContext(contextdict))
+                       'request': ActionHandler(MessageRequest(), firstuser),
+                       'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
+        rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
@@ -135,7 +144,8 @@ class CommModule(ProgramModuleObj):
                                                'replyto': replytoemail,
                                                'public_view': public_view,
                                                'body': body,
-                                               'renderedtext': renderedtext})
+                                               'template': template,
+                                               'rendered_text': rendered_text})
 
     @staticmethod
     def approx_num_of_recipients(filterObj, sendto_fn):
@@ -176,6 +186,11 @@ class CommModule(ProgramModuleObj):
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
 
+        # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
+        template = request.POST.get('template', 'default')
+        rendered_text = render_to_string('email/{}_email.html'.format(template),
+                                        {'msgbody': body})
+
         try:
             filterid = int(filterid)
         except:
@@ -195,26 +210,13 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext = body,
+                                                      msgtext = rendered_text,
                                                       public = public_view,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
         newmsg_request.save()
 
-        # now we're going to process everything
-        # nah, we'll do this later.
-        #newmsg_request.process()
-        # old code that prints out an estimated time
-        # numusers = self.approx_num_of_recipients(filterobj, sendto_fn)
-
-        # from django.conf import settings
-        # if hasattr(settings, 'EMAILTIMEOUT') and \
-        #        settings.EMAILTIMEOUT is not None:
-        #     est_time = settings.EMAILTIMEOUT * numusers
-        # else:
-        #     est_time = 1.5 * numusers
-        # context = {'time': est_time}
         context = {}
         if public_view:
             context['req_id'] = newmsg_request.id
@@ -225,20 +227,32 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def commpanel_old(self, request, tl, one, two, module, extra, prog):
         from esp.users.views     import get_user_list
+        from django.conf import settings
+
         filterObj, found = get_user_list(request, self.program.getLists(True))
 
         if not found:
             return filterObj
+        context = {}
 
-        sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
-        sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
+        context['sendto_fn_name'] = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
+        context['sendto_fn'] = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(context['sendto_fn_name'])
 
-        listcount = self.approx_num_of_recipients(filterObj, sendto_fn)
+        context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
+                                              "info", settings.SITE_INFO[1])
+        context['from'] = context['default_from']
 
-        return render_to_response(self.baseDir()+'step2.html', request,
-                                              {'listcount': listcount,
-                                               'filterid': filterObj.id,
-                                               'sendto_fn_name': sendto_fn_name })
+        context['listcount'] = self.approx_num_of_recipients(filterObj, context['sendto_fn'])
+        context['filterid'] = filterObj.id
+
+        # Use the info redirect (make one for the default email address if it doesn't exist)
+        prs = PlainRedirect.objects.filter(original = "info")
+
+        if not prs.exists():
+           redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+
+        return render_to_response(self.baseDir()+'step2.html', request, context)
+
 
     @main_call
     @needs_admin
@@ -253,7 +267,8 @@ class CommModule(ProgramModuleObj):
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
             data = ListGenModule.processPost(request)
-
+            context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
+                                                      "info", settings.SITE_INFO[1])
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
 
@@ -274,7 +289,7 @@ class CommModule(ProgramModuleObj):
                 prs = PlainRedirect.objects.filter(original = "info")
                 if not prs.exists():
                     redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
-                context['from'] = '%s@%s' % ("info", settings.SITE_INFO[1])
+                context['from'] = context['default_from']
                 return render_to_response(self.baseDir()+'step2.html', request, context)
 
             ##  Prepare a message starting from an earlier request

@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+import six
+from six.moves import range
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -94,7 +98,7 @@ from reversion import revisions as reversion
 try:
     from cStringIO import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 
 
 @login_required
@@ -134,7 +138,7 @@ def lottery_student_reg_simple(request, program = None):
 
 #@transaction.atomic
 @login_required
-def lsr_submit(request, program = None):
+def lsr_submit(request, program=None):
 
     priority_limit = program.priorityLimit()
 
@@ -152,7 +156,7 @@ def lsr_submit(request, program = None):
     reg_interested, created = RegistrationType.objects.get_or_create(name="Interested", category="student",
                                                                      defaults={"description":"For lottery reg, a student would be interested in being placed into this class, but it isn't their first choice"})
 
-    for reg_token, reg_status in data.iteritems():
+    for reg_token, reg_status in six.iteritems(data):
         parts = reg_token.split('_')
         if parts[0] == 'flag':
             ## Flagged class
@@ -221,10 +225,10 @@ def lsr_submit(request, program = None):
 @login_required
 def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary function. will merge the two later -jmoldow 05/31
 
-    classes_flagged = [set() for i in range(0,priority_limit+1)] # 1-indexed
-    sections_by_block = [defaultdict(set) for i in range(0,priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
+    classes_flagged = [set() for i in range(0, priority_limit+1)] # 1-indexed
+    sections_by_block = [defaultdict(set) for i in range(0, priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
 
-    for section_id, (priority, block_id) in data.iteritems():
+    for section_id, (priority, block_id) in six.iteritems(data):
         section_id = int(section_id)
         priority = int(priority)
         block_id = int(block_id)
@@ -242,7 +246,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
     if len(errors):
         return HttpResponse(json.dumps(errors), content_type='application/json')
 
-    reg_priority = [(None,None)] + [RegistrationType.objects.get_or_create(name="Priority/"+str(i), category="student") for i in range(1,priority_limit+1)]
+    reg_priority = [(None, None)] + [RegistrationType.objects.get_or_create(name="Priority/"+str(i), category="student") for i in range(1, priority_limit+1)]
     reg_priority = [reg_priority[i][0] for i in range(0, priority_limit+1)]
 
     allStudentRegistrations = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=program, user=request.user)
@@ -326,7 +330,7 @@ def find_user(userstr):
         found_users = ESPUser.objects.filter(user_q).distinct()
     else:
         q_list = []
-        for i in xrange(len(userstr_parts)):
+        for i in range(len(userstr_parts)):
             q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
             q_list.append( Q( contactinfo__first_name__icontains = ' '.join(userstr_parts[:i]), contactinfo__last_name__icontains = ' '.join(userstr_parts[i:]) ) )
         # Allow any of the above permutations
@@ -355,14 +359,14 @@ def usersearch(request):
     num_users = found_users.count()
 
     if num_users == 1:
-        from urllib import urlencode
+        from six.moves.urllib.parse import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
         found_users = found_users.all()
         sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
         return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
-        raise ESPError("No user found by that name!", log=False)
+        raise ESPError("No user found by that name! Searched for `{}`".format(userstr), log=False)
 
 
 @admin_required
@@ -424,13 +428,13 @@ def userview(request):
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
         del change_grade_form.fields['graduation_year'].widget.attrs['disabled']
     change_grade_form.fields['graduation_year'].initial = user.getYOG()
-    change_grade_form.fields['graduation_year'].choices = filter(lambda choice: bool(choice[0]), change_grade_form.fields['graduation_year'].choices)
+    change_grade_form.fields['graduation_year'].choices = [choice for choice in change_grade_form.fields['graduation_year'].choices if bool(choice[0])]
 
     context = {
         'user': user,
-        'taught_classes' : user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
-        'enrolled_classes' : user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
-        'taken_classes' : user.getSections().order_by('parent_class__parent_program', 'id'),
+        'taught_classes': user.getTaughtClasses(include_rejected = True).order_by('parent_program', 'id'),
+        'enrolled_classes': user.getEnrolledSections().order_by('parent_class__parent_program', 'id'),
+        'taken_classes': user.getSections().order_by('parent_class__parent_program', 'id'),
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
@@ -496,10 +500,10 @@ def manage_programs(request):
 
 @admin_required
 def newprogram(request):
+    # First, if the user selected a template program, pre-populate fields with that program's data.
     template_prog = None
     template_prog_id = None
-    if 'template_prog' in request.GET and (int(request.GET["template_prog"])) != 0:       # if user selects None which value is 0,so we need to check for 0.
-       #try:
+    if 'template_prog' in request.GET and (int(request.GET["template_prog"])) != 0:  # user might select `None` whose value is 0, we need to check for 0.
         template_prog_id = int(request.GET["template_prog"])
         tprogram = Program.objects.get(id=template_prog_id)
         request.session['template_prog'] = template_prog_id
@@ -535,26 +539,24 @@ def newprogram(request):
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
         template_prog["sibling_discount"] = tprogram.sibling_discount
 
-    if 'checked' in request.GET:
-        # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
-        # Don't bother trying to fix the form; just re-set the anchor when we're done.
-        context = pickle.loads(request.session['context_str'])
-        pcf = ProgramCreationForm(context['prog_form_raw'])
-        if pcf.is_valid():
 
-            new_prog = pcf.save(commit = True)
-
-            commit_program(new_prog, context['perms'], context['cost'], context['sibling_discount'])
-
+    # If the form has been submitted, process it.
+    if request.method == 'POST':
+        form = ProgramCreationForm(request.POST)
+        if form.is_valid():
+            temp_prog = form.save(commit=False)
+            perms, modules = prepare_program(temp_prog, form.cleaned_data)
+            new_prog = form.save(commit = True)
+            commit_program(new_prog, perms, form.cleaned_data['base_cost'], form.cleaned_data['sibling_discount'])
             # Create the default resource types now
             default_restypes = Tag.getTag('default_restypes')
             if default_restypes:
                 resource_type_labels = json.loads(default_restypes)
                 resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
-
-            if 'template_prog' in request.session:
+            # If a template program was chosen, load modules based on that program's
+            if template_prog is not None:
                 # Force all ProgramModuleObjs and their extensions to be created now
-                old_prog = Program.objects.get(id=request.session['template_prog'])
+                old_prog = Program.objects.get(id=template_prog_id)
                 # If we are using another program as a template, let's copy the seq and required values from that program.
                 new_prog.getModules(old_prog=old_prog)
                 # Copy CRMI settings from old program
@@ -582,14 +584,13 @@ def newprogram(request):
                         if created:
                             new_tag.value = old_tag.value
                             new_tag.save()
+            # If no template program is selected, create new modules
             else:
                 # Create new modules
                 new_prog.getModules()
-
             manage_url = '/manage/' + new_prog.url + '/resources'
-
-            if settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
-                # While we're at it, create the program's mailing list
+            # While we're at it, create the program's mailing list
+            if settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
                 mailing_list_name = "%s_%s" % (new_prog.program_type, new_prog.program_instance)
                 teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
                 students_list_name = "%s-%s" % (mailing_list_name, "students")
@@ -603,41 +604,19 @@ def newprogram(request):
                 apply_list_settings(teachers_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
                 apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
 
-                if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
+                if 'archive' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys()):
                     add_list_members(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
                     add_list_members(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
-
-
+            # Submit and create the program
             return HttpResponseRedirect(manage_url)
-        else:
-            raise ESPError("Improper form data submitted.", log=False)
-
-
-    #   If the form has been submitted, process it.
-    if request.method == 'POST':
-        form = ProgramCreationForm(request.POST)
-
-        if form.is_valid():
-            temp_prog = form.save(commit=False)
-            if Program.objects.filter(url=temp_prog.url).exists():
-                raise ESPError("A %s program already exists with this name. Please choose a new name or change the name of the old program." % temp_prog.program_type, log=False)
-            perms, modules = prepare_program(temp_prog, form.cleaned_data)
-            #   Save the form's raw data instead of the form itself, or its clean data.
-            #   Unpacking of the data happens at the next step.
-
-            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
-            request.session['context_str'] = context_pickled
-
-            return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms':perms, 'modules': modules})
-
+    # If the form has not been submitted, the default view is a blank form (or the pre-populated form with the template data).
     else:
-        #   Otherwise, the default view is a blank form.
         if template_prog:
             form = ProgramCreationForm(template_prog)
         else:
             form = ProgramCreationForm()
 
-    return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'),'template_prog_id':template_prog_id})
+    return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'), 'template_prog_id': template_prog_id})
 
 @csrf_exempt
 @transaction.non_atomic_requests
@@ -1082,12 +1061,12 @@ def statistics(request, program=None):
                 if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types'] and not form.cleaned_data['student_reg_types']:
                     students_objects = program.students(QObjects=True)
                     for reg_type in form.cleaned_data['student_reg_types']:
-                        if reg_type in students_objects.keys():
+                        if reg_type in list(students_objects.keys()):
                             users_q = users_q | students_objects[reg_type]
                 elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types'] and not form.cleaned_data['teacher_reg_types']:
                     teachers_objects = program.teachers(QObjects=True)
                     for reg_type in form.cleaned_data['teacher_reg_types']:
-                        if reg_type in teachers_objects.keys():
+                        if reg_type in list(teachers_objects.keys()):
                             users_q = users_q | teachers_objects[reg_type]
 
             #   Narrow down by school (perhaps not ideal results, but faster)

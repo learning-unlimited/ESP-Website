@@ -4,6 +4,7 @@ functions that take a user, and return a list of associated sendto addresses.
 These addresses are (email address, name) pairs.
 """
 
+from __future__ import absolute_import
 import re
 
 def send_to_self(user):

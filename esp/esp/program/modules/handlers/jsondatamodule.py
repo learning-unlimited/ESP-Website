@@ -1,4 +1,9 @@
 
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import range
+from six.moves import zip
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -191,7 +196,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'description': rt.description,
                 # Comment carried over from ajaxschedulingmodule.py -- gurtej 03/06/2012
                 ## .attributes wasn't working properly; so just using this for now -- aseering 10/21/2010
-                'attributes': rt.attributes_pickled.split("|"),
+                'attributes': rt.attributes_dumped.split("|"),
             }
             for rt in res_types ]
 
@@ -256,7 +261,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def sections(extra, prog):
         if extra == 'catalog':
             catalog = True
-        elif extra == None:
+        elif extra is None:
             catalog = False
         else:
             raise Http404
@@ -439,24 +444,28 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def class_subjects(extra, prog):
         if extra == 'catalog':
             catalog = True
-        elif extra == None:
+        elif extra is None:
             catalog = False
         else:
             raise Http404
         teacher_dict = {}
+        moderator_dict = {}
         teachers = []
+        moderators = []
         classes = []
         qs = prog.classes().prefetch_related(
             'category', 'sections', 'teachers')
 
         for c in qs:
             class_teachers = c.get_teachers()
+            class_moderators = c.moderators()
             cls = {
                 'id': c.id,
                 'status': c.status,
                 'title': c.title,
                 'category': c.category.symbol,
                 'category_id': c.category.id,
+                'class_size_max': c.class_size_max,
                 'grade_max': c.grade_max,
                 'grade_min': c.grade_min,
             }
@@ -484,12 +493,26 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 }
                 teachers.append(teacher)
                 teacher_dict[t.id] = teacher
+            cls['moderators'] = [m.id for m in class_moderators]
+            for m in class_moderators:
+                if m.id in moderator_dict:
+                    moderator_dict[m.id]['sections'] += cls['sections']
+                    continue
+                moderator = {
+                    'id': m.id,
+                    'username': m.username,
+                    'first_name': m.first_name,
+                    'last_name': m.last_name,
+                    'sections': list(cls['sections'])
+                }
+                moderators.append(moderator)
+                moderator_dict[m.id] = moderator
 
         # Build up teacher availability
         for teacher in teachers:
             teacher['availability'] = [event.id for event in ESPUser.objects.get(id=teacher['id']).getAvailableTimes(prog, ignore_classes=True)]
 
-        return {'classes': classes, 'teachers': teachers}
+        return {'classes': classes, 'teachers': teachers, 'moderators': moderators}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
 
@@ -522,7 +545,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             sections_merged = []
             for item, item_legacy in zip(sections, sections_legacy):
                 assert item['id'] == item_legacy['id']
-                item_merged = dict(item_legacy.items() + item.items())
+                item_merged = dict(list(item_legacy.items()) + list(item.items()))
                 sections_merged.append(item_merged)
             return {'sections': sections_merged}
 
@@ -565,14 +588,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         if 'return_key' in request.GET:
             return_key = request.GET['return_key']
         if 'section_id' in request.GET:
-            if return_key == None: return_key = 'sections'
+            if return_key is None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
                 matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
-            if return_key == None: return_key = 'classes'
+            if return_key is None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
             matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
@@ -610,7 +633,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
             'location': ", ".join(cls.prettyrooms()),
-            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
+            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades",
         }
 
         return {return_key: [return_dict]}
@@ -627,14 +650,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             return_key = request.GET['return_key']
 
         if 'section_id' in request.GET:
-            if return_key == None: return_key = 'sections'
+            if return_key is None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
                 target_qs = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
-            if return_key == None: return_key = 'classes'
+            if return_key is None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
             target_qs = ClassSubject.objects.filter(id=class_id)
         else:
@@ -676,14 +699,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             return_key = request.GET['return_key']
 
         if 'section_id' in request.GET:
-            if return_key == None: return_key = 'sections'
+            if return_key is None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
                 matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
-            if return_key == None: return_key = 'classes'
+            if return_key is None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
             matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
@@ -732,7 +755,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
             'location': ", ".join(cls.prettyrooms()),
-            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
+            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades",
             'teacher_names': cls.pretty_teachers(),
             'moderator_names': cls.pretty_moderators(),
             'moderator_title': Tag.getProgramTag("moderator_title", prog).capitalize() + "s",
@@ -823,7 +846,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             if annotated_categories[i]['num_class_hours'] is None:
                 annotated_categories[i]['num_class_hours'] = 0
             annotated_categories[i]['num_class_hours'] = float(annotated_categories[i]['num_class_hours'])
-        return filter(lambda x: x['id'] in program_categories, annotated_categories)
+        return [x for x in annotated_categories if x['id'] in program_categories]
     cat_nums.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     cat_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     cat_nums = staticmethod(cat_nums)

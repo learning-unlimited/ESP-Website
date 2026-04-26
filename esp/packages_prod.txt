@@ -1,4 +1,3 @@
-libapache2-mod-wsgi
 libapache2-mod-svn
 libapache2-mod-rpaf
 exim4-config

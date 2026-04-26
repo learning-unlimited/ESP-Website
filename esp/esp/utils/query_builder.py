@@ -1,9 +1,14 @@
+from __future__ import absolute_import
 import datetime
 import operator
 
 from django.db.models.query import Q
 
 from esp.middleware import ESPError
+from six.moves import map
+import six
+from six.moves import zip
+from functools import reduce
 
 
 class QueryBuilder(object):
@@ -24,7 +29,7 @@ class QueryBuilder(object):
     def __init__(self, base, filters, english_name=None):
         self.base = base
         if english_name is None:
-            self.english_name = unicode(base.model._meta.verbose_name_plural)
+            self.english_name = six.text_type(base.model._meta.verbose_name_plural)
         else:
             self.english_name = english_name
         self.filters = filters
@@ -51,7 +56,7 @@ class QueryBuilder(object):
                 op = operator.and_
             else:
                 op = operator.or_
-            combined = reduce(op, map(self.as_queryset, value['values']))
+            combined = reduce(op, list(map(self.as_queryset, value['values'])))
             if value['negated']:
                 return self.base.exclude(pk__in=combined)
             else:

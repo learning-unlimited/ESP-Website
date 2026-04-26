@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -54,6 +55,8 @@ class ExpirableModel(models.Model):
 
     def unexpire(self, save=True):
         self.end_date = None
+        if self.start_date > datetime.now():
+            self.start_date = datetime.now()
         if save:
             self.save()
 

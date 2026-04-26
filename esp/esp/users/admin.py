@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 from esp.admin import admin_site
@@ -81,7 +82,7 @@ class ExpiredListFilter(admin.SimpleListFilter):
             return queryset.filter(end_date__lte=datetime.datetime.now())
 
 class PermissionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'role', 'permission_type','program','start_date','end_date']
+    list_display = ['id', 'user', 'role', 'permission_type', 'program', 'start_date', 'end_date']
     search_fields = default_user_search() + ['permission_type', 'program__url']
     list_filter = ['permission_type', 'program', 'role', ExpiredListFilter]
     date_hierarchy = 'start_date'
@@ -108,7 +109,7 @@ class PermissionAdmin(admin.ModelAdmin):
 admin_site.register(Permission, PermissionAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']
+    list_display = ['id', 'user', 'e_mail', 'phone_day']
     search_fields = default_user_search() + ['e_mail']
 admin_site.register(ContactInfo, ContactInfoAdmin)
 
@@ -140,7 +141,7 @@ admin_site.register(EducatorInfo, EducatorInfoAdmin)
 class K12SchoolAdmin(admin.ModelAdmin):
     list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']
     formfield_overrides = {
-        models.TextField: {'widget': forms.TextInput(attrs={'size':'50',}),},
+        models.TextField: {'widget': forms.TextInput(attrs={'size': '50',}),},
     }
     search_fields = ['name', 'contact__first_name', 'contact__last_name'] #no, using default_user_search does not work.
     list_filter = ['school_type']
@@ -153,10 +154,10 @@ class K12SchoolAdmin(admin.ModelAdmin):
 admin_site.register(K12School, K12SchoolAdmin)
 
 class GradeChangeRequestAdmin(admin.ModelAdmin):
-    list_display = ['requesting_student', 'claimed_grade', 'approved','acknowledged_by','acknowledged_time', 'created']
-    readonly_fields = ['grade_before_request', 'requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
+    list_display = ['requesting_student', 'claimed_grade', 'approved', 'acknowledged_by', 'acknowledged_time', 'created']
+    readonly_fields = ['grade_before_request', 'requesting_student', 'acknowledged_by', 'acknowledged_time', 'claimed_grade']
     search_fields = default_user_search('requesting_student')
-    list_filter = ('created','approved',)
+    list_filter = ('created', 'approved',)
 
     def save_model(self, request, obj, form, change):
         if getattr(obj, 'acknowledged_by', None) is None:

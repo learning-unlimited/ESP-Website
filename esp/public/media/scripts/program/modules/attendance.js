@@ -10,7 +10,7 @@ Quagga.onDetected(function(result) {
     if (lastResult !== code) {
         beep();
         lastResult = code;
-        var results = document.querySelector('textarea');
+        var results = $j("[name=misc_students]")[0];
         var codes = results.value.trim().split(/\s+/).filter(Boolean);
         console.log(codes);
         if (!codes.includes(code)) {

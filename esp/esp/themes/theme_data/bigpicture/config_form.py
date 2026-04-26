@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 
 from esp.themes.forms import ThemeConfigurationForm
@@ -18,3 +19,4 @@ class ConfigForm(ThemeConfigurationForm):
     # URLField requires an absolute URL, here we probably want relative.
     faq_link = forms.CharField(required=False, initial='/faq.html',
                                help_text='Leave blank to omit an FAQ link.')
+    show_footer_textbox = forms.BooleanField(initial = False, required = False, help_text='Should there be an editable text field in the footer?')

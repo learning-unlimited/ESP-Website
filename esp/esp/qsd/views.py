@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -48,6 +49,8 @@ from django.utils.cache import add_never_cache_headers, patch_cache_control, pat
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
 from esp.varnish.varnish import purge_page
+from urllib.parse import urlparse
+from bleach import clean
 
 from django.conf import settings
 
@@ -83,12 +86,14 @@ def qsd(request, url):
         have_read = False
 
     if not have_read and action == 'read':
-        raise Http403, "You do not have permission to access this page."
+        raise Http403("You do not have permission to access this page.")
+
+    class_qsd = len(url_parts) > 3 and url_parts[3] == "Classes"
 
     # Fetch the QSD object
     try:
         qsd_rec = QuasiStaticData.objects.get_by_url(base_url)
-        if qsd_rec == None:
+        if qsd_rec is None:
             raise QuasiStaticData.DoesNotExist
         if qsd_rec.disabled:
             raise QuasiStaticData.DoesNotExist
@@ -97,7 +102,7 @@ def qsd(request, url):
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if have_edit:
-            if action in ('edit','create',):
+            if action in ('edit', 'create',):
                 qsd_rec = QuasiStaticData()
                 qsd_rec.url = base_url
                 qsd_rec.nav_category = default_navbarcategory()
@@ -115,9 +120,9 @@ def qsd(request, url):
                 return response
         else:
             if action == 'read':
-                raise Http404, 'This page does not exist.'
+                raise Http404('This page does not exist.')
             else:
-                raise Http403, 'Sorry, you can not modify <tt>%s</tt>.' % request.path
+                raise Http403('Sorry, you can not modify <tt>%s</tt>.' % request.path)
 
     if action == 'create':
         action = 'edit'
@@ -132,6 +137,7 @@ def qsd(request, url):
             'content': qsd_rec.html(),
             'settings': settings,
             'qsdrec': qsd_rec,
+            'class_qsd' : class_qsd,
             'have_edit': True,  ## Edit-ness is determined client-side these days
             'edit_url': '/' + base_url + ".edit.html" }, use_request_context=False)
 
@@ -150,16 +156,20 @@ def qsd(request, url):
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
-            raise Http403, "Sorry, you do not have permission to edit this page."
+            raise Http403("Sorry, you do not have permission to edit this page.")
 
         nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
+
+        data = request.POST['content']
+        if class_qsd:
+            data = clean(data, strip = True)
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
         copy_map = {
             'url': base_url,
             'nav_category': nav_category_target,
-            'content': request.POST['content'],
+            'content': data,
             'title': request.POST['title'],
             'description': request.POST['description'],
             'keywords': request.POST['keywords'],
@@ -184,7 +194,7 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise Http403, "You don't have permission to edit this page."
+            raise Http403("You don't have permission to edit this page.")
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
@@ -196,6 +206,7 @@ def qsd(request, url):
             'nav_categories': NavBarCategory.objects.all(),
             'qsdrec'       : qsd_rec,
             'qsd'          : True,
+            'class_qsd'    : class_qsd,
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
             'return_to_view': base_url.split("/")[-1] + ".html#refresh" },
             use_request_context=False)
@@ -225,10 +236,21 @@ def ajax_qsd(request):
         if not QuasiStaticData.objects.get_by_url(qsd.url) == qsd:
             return HttpResponse(content='The edit you are submitting is not based on the newest version!\n(Is someone else editing? Did you get here by a back button?)\nCopy out your work if you need it. Then refresh the page to get the latest version.', status=409)
 
+        data = post_dict['data']
+
+        # Get the URL from the request information
+        referer = request.META.get('HTTP_REFERER')
+        path = urlparse(referer).path
+        path_parts = [el for el in path.split('/') if el != '']
+
+        # Santize if this is for a class QSD
+        if len(path_parts) > 3 and path_parts[3] == "Classes":
+            data = clean(data, strip = True)
+
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
-        if qsd.content != post_dict['data']:
-            qsd.content = post_dict['data']
+        if qsd.content != data:
+            qsd.content = data
             qsd.load_cur_user_time(request, )
             qsd.save()
 
@@ -245,9 +267,19 @@ def ajax_qsd_preview(request):
     """ Ajax function for previewing the result of QSD editing. """
     import json
     from markdown import markdown
+    data = request.POST['data']
+
+    # Get the URL from the request information
+    referer = request.META.get('HTTP_REFERER')
+    path = urlparse(referer).path
+    path_parts = [el for el in path.split('/') if el != '']
+
+    # Santize if this is for a class QSD
+    if len(path_parts) > 3 and path_parts[3] == "Classes":
+        data = clean(data, strip = True)
 
     # We don't necessarily need to wrap it in JSON, but this seems more
     # future-proof.
-    result = {'content': markdown(request.POST['data'])}
+    result = {'content': markdown(data)}
 
     return HttpResponse(json.dumps(result))

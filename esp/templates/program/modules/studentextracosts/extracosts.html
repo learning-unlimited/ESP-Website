@@ -32,7 +32,7 @@ td>ul { list-style-type: none; padding: 0px }
 {% end_inline_program_qsd_block %}
 
 <br /> 
-{% if paid_for %}<div class="formerror">{{ paid_for_text }}</div>{% endif %} 
+{% if paid_for %}<div class="alert alert-danger"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>{{ paid_for_text }}</div>{% endif %} 
 
 <br />
 
@@ -44,7 +44,7 @@ td>ul { list-style-type: none; padding: 0px }
 <div id="program_form">
 <form action="" method="post">
 <center>
-<table width="400" cellpadding="2" cellspacing="0">
+<table width="60%" style="min-width: 350px;" cellpadding="2" cellspacing="0">
 <tr><th>Additional Items for {{ program.niceName }}</th></tr>
 {% for f in forms %}
 <tr>
@@ -98,9 +98,14 @@ td>ul { list-style-type: none; padding: 0px }
 {% endfor %}
 <tr>
     <td align="right">
-        <p>Total cost of selected items: <span style="font-weight: bold;" id="total_cost"></span></p>
+        {% if forms %}
+        <p>Total cost of selected items: <span style="font-weight: bold;" id="total_extras"></span></p>
+        {% endif %}
         {% if not program.sibling_discount %}
         <p>Program admission: <span style="font-weight: bold;" id="amount_cost" data-total="{{ program.base_cost|floatformat:2 }}">${{ program.base_cost|floatformat:2 }}</span></p>
+        {% endif %}
+        {% if amount_donation > 0 %}
+        <p>Donation: <span style="font-weight: bold;" id="amount_donation" data-donation="{{ amount_donation|floatformat:2 }}">${{ amount_donation|floatformat:2 }}</span></p>
         {% endif %}
         {% if paid_for %}
         <p>Total amount previously paid: <span style="font-weight: bold;" id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">-${{ amount_paid|floatformat:2 }}</span></p>

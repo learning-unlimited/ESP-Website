@@ -11,21 +11,21 @@ function showColor() {
             showPaletteOnly: true
         });
         // Create the "Reset Color" button
-        var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 1.5px;">Reset Color</button>').click(function() {
+        var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 1.5px;">Reset Color</button>').on('click', function() {
             $j(this).siblings("input").spectrum("set", default_color); // Reset color to default
         });
         // Create the "Remove" button
-        var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').click(function() {
+        var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').on('click', function() {
             var input = $j(this).siblings("input");
             input.spectrum("destroy");
             $j(this).parents(".control-group").remove();
-            console.log(input.attr("name"));
             $j("option[value=" + input.attr("name") + "]").show();
         });
         if ($j(this).siblings(".reset-color").length == 0) {
             $j(this).parent(".controls").append(resetButton);
         }
-        if ($j(this).filter("[id*=accent]").length == 1 && $j(this).siblings(".remove-color").length == 0) {
+        var reg = new RegExp("optional", "i");
+        if (reg.test($j(this).parents("[id^=adv_category]").children("h3").text()) && $j(this).siblings(".remove-color").length == 0) {
             $j(this).parent(".controls").append(removeButton);
         }
     });
@@ -60,10 +60,10 @@ function showCustomPalette() {
         });
     });
     var $active;
-    $j("#palette_custom_div .sp-replacer").click(function(e) {
+    $j("#palette_custom_div .sp-replacer").on('click', function(e) {
         $active = $j(e.target).closest(".sp-replacer").prev();
     });
-    $j(".sp-container button.sp-cancel").click(function(e) {
+    $j(".sp-container button.sp-cancel").on('click', function(e) {
         $active.spectrum("destroy");
         $active.remove();
     });
@@ -77,12 +77,12 @@ $j(document).ready(function(){
     $j(".length, .text").each(function(){
         var el = $j(this)
         var default_val = el.data("default");
-        var resetButton = $j('<button class="reset-length" type="button" style="margin-left: 1.5px;">Reset</button>').click(function() {
+        var resetButton = $j('<button class="reset-length" type="button" style="margin-left: 1.5px;">Reset</button>').on('click', function() {
             el.val(default_val); // Reset to default value
         });
         el.parent(".controls").append(resetButton);
     });
-    $j('#addToPalette').click(function(){
+    $j('#addToPalette').on('click', function(){
         var newColor = $j('<input>');
         newColor.addClass('palette');
         newColor.attr({
@@ -103,7 +103,7 @@ $j(document).ready(function(){
     $j('select.select_opt_var').val('');
     
     //  Allow form elements to be created for optional variables
-    $j('button.add_opt_var_button').click(function (event) {
+    $j('button.add_opt_var_button').on('click', function (event) {
         event.preventDefault();
         
         // Determine which optional variable we are trying to add.
@@ -112,7 +112,8 @@ $j(document).ready(function(){
         var select_id = 'new_opt_var_' + button_id.substr(button_id_prefix.length);
         var select_el = $j('#' + select_id);
         var select_val = select_el.val();
-        var option_el = $j("#new_opt_var_2").find(":selected");
+        var option_el = select_el.find(":selected");
+        var default_color = option_el.data('default');
         option_el.hide();
         select_el.val("");
         
@@ -124,18 +125,18 @@ $j(document).ready(function(){
                     id: 'id_' + select_val,
                     class: 'color',
                     type: 'text',
-                    value: option_el.data('default'),
+                    value: default_color,
                     name: select_val,
                     style: 'display: none;'
                 });
 
             // Create the "Reset Color" button
-            var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 5px;">Reset Color</button>').click(function() {
-                $j(this).siblings("input").spectrum("set", option_el.data('default')); // Reset color to default
+            var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 5px;">Reset Color</button>').on('click', function() {
+                $j(this).siblings("input").spectrum("set", default_color); // Reset color to default
             });
 
             // Create the "Remove" button
-            var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').click(function() {
+            var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').on('click', function() {
                 $j(this).siblings("input").spectrum("destroy");
                 $j(this).parents(".control-group").remove();
                 option_el.show();

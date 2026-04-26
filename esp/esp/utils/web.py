@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -76,7 +78,7 @@ def esp_context_stuff():
     return context
 
 def render_to_response(template, request, context, content_type=None, use_request_context=True):
-    if isinstance(template, (basestring,)):
+    if isinstance(template, (six.string_types,)):
         template = [ template ]
 
     section = request.path.split('/')[1]

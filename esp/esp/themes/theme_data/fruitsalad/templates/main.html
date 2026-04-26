@@ -2,6 +2,7 @@
 
 {% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
 
+{% load getTag %}
 {% load main %} {# helpful functions #}
 {% load modules %}
 
@@ -65,6 +66,9 @@
 <!--[if lt IE 9]>
 <script src="/media/scripts/IE9.js"></script>
 <![endif]-->
+{% if "fruitsalad_sounds"|getBooleanTag %}
+<script type="text/javascript" src="/media/scripts/theme/piano.js"></script>
+{% endif %}
 {% endblock %}
 
 {% block body %}
@@ -265,6 +269,13 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
       {% endwith %}
     </div>
     <div id="footer">
+	  {% if theme.show_footer_textbox %}
+		<div>
+		  {% load render_qsd %}
+		  {% inline_qsd_block "footer_text" %}
+		  {% end_inline_qsd_block %}
+		</div>
+	  {% endif %}
       &copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}
       <br />
       <a href="/privacy-policy.html" target="_blank">Privacy Policy</a>

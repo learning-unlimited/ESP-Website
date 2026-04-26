@@ -31,7 +31,7 @@ Here are your class' students.  Only those who have enrolled will show up on you
 <table align="center" width="400px">
 <thead>
 <tr>
- <th>
+ <th class="program_form_narrow">
    #
  </th>
  <th>
@@ -60,7 +60,7 @@ Here are your class' students.  Only those who have enrolled will show up on you
     </tr>
     {% for student in students %}
     <tr>
-        <th class="small">{{ forloop.counter }}</th>
+        <th class="program_form_narrow">{{ forloop.counter }}</th>
         <td>{{ student.name }}</td>
         {% if "student_profile_pronoun_field"|getBooleanTag %}
             <td>{{ student.getLastProfile.student_info.pronoun }}</td>

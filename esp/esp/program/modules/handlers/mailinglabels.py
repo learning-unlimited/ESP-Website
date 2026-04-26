@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+import six
+from functools import reduce
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,8 +37,9 @@ Learning Unlimited, Inc.
 """
 
 from esp.utils.web import render_to_response
-from esp.users.models import PersistentQueryFilter, ContactInfo, ESPUser, ESPError, ZipCode
-from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.users.models import PersistentQueryFilter, K12School, ContactInfo, ESPUser, User, ESPError, ZipCode
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
+from esp.program.modules import module_ext
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
 from esp.program.modules.forms.mailinglabels_schools import SchoolSelectForm
@@ -89,7 +93,7 @@ class MailingLabels(ProgramModuleObj):
         combine = True
 
         if extra is None or extra.strip() == '':
-            return render_to_response(self.baseDir()+'mailinglabel_index.html',request, {})
+            return render_to_response(self.baseDir()+'mailinglabel_index.html', request, {})
 
         if 'nocombine' in extra.strip().lower():
             combine = False
@@ -102,7 +106,7 @@ class MailingLabels(ProgramModuleObj):
                     A filter was passed.
                     """
                     f = PersistentQueryFilter.objects.get(id = request.POST['filter_id'])
-                    combine = (request.POST['combine'].upper() in ('TRUE','1','T'))
+                    combine = (request.POST['combine'].upper() in ('TRUE', '1', 'T'))
                     infos = f.getList(ContactInfo).distinct()
                 else:
 
@@ -157,7 +161,7 @@ class MailingLabels(ProgramModuleObj):
 
             infos = [user.getLastProfile().contact_user for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
 
-            infos_filtered = [ info for info in infos if (info != None and info.undeliverable != True) ]
+            infos_filtered = [ info for info in infos if (info is not None and info.undeliverable != True) ]
 
         output = MailingLabels.gen_addresses(infos, combine)
 
@@ -173,7 +177,7 @@ class MailingLabels(ProgramModuleObj):
         import pycurl
         from django.template.defaultfilters import urlencode
         import re
-        #import time
+        import time
 
 
         regex = re.compile(r""""background:url\(images\/table_gray.gif\); padding\:5px 10px;">\s*(.*?)<br \/>\s*(.*?)&nbsp;(.{2})&nbsp;&nbsp;(\d{5}\-\d{4})""")
@@ -182,7 +186,7 @@ class MailingLabels(ProgramModuleObj):
         addresses = {}
         ids_zipped = []
 
-        infos = [i for i in infos if i != None]
+        infos = [i for i in infos if i is not None]
 
         if len(infos) > 0 and infos[0].k12school_set.all().count() > 0:
             use_title = True
@@ -190,7 +194,7 @@ class MailingLabels(ProgramModuleObj):
             use_title = False
 
         for info in infos:
-            if info == None:
+            if info is None:
                 continue
 
             schools = info.k12school_set.all()
@@ -208,7 +212,7 @@ class MailingLabels(ProgramModuleObj):
             else:
                 name = '%s %s' % (info.first_name.strip(), info.last_name.strip())
 
-            if info.address_postal != None:
+            if info.address_postal is not None:
                 key = info.address_postal
             else:
 
@@ -225,12 +229,12 @@ class MailingLabels(ProgramModuleObj):
 
 
                 post_data.update({'address2': info.address_street.title(),
-                                  'state'   : info.address_state,
-                                  'city'    : info.address_city.title(),
-                                  'zip5'    : info.address_zip,
+                                  'state': info.address_state,
+                                  'city': info.address_city.title(),
+                                  'zip5': info.address_zip,
                                   })
 
-                post_string = '&'.join(['%s=%s' % (key, urlencode(value)) for key, value in post_data.iteritems()])
+                post_string = '&'.join(['%s=%s' % (key, urlencode(value)) for key, value in six.iteritems(post_data)])
 
                 c = pycurl.Curl()
 
@@ -242,13 +246,13 @@ class MailingLabels(ProgramModuleObj):
 
 
 
-                import StringIO
-                b = StringIO.StringIO()
+                from io import StringIO
+                b = StringIO()
                 c.setopt(pycurl.WRITEFUNCTION, b.write)
 
                 c.perform()
 
-                retdata = b.getvalue().replace('\n','').replace('\r','')
+                retdata = b.getvalue().replace('\n', '').replace('\r', '')
 
                 ma = regex.search(retdata)
                 try:
@@ -279,13 +283,13 @@ class MailingLabels(ProgramModuleObj):
             output = ["'Num','Name','Street','City','State','Zip'"]
         #output.append(','.join(ids_zipped))
         i = 1
-        for key, value in addresses.iteritems():
+        for key, value in six.iteritems(addresses):
             if key != False:
                 if combine:
                     if use_title:
                         output.append("'%s',%s,%s" % (i, ' and '.join(value), key))
                     else:
-                        output.append("'%s','%s',%s" % (i,' and '.join(value), key))
+                        output.append("'%s','%s',%s" % (i, ' and '.join(value), key))
                     i += 1
                 else:
                     for name in value:

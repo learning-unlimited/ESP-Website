@@ -1,4 +1,5 @@
-import httplib
+from __future__ import absolute_import
+import six.moves.http_client
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -12,12 +13,12 @@ def get_varnish_host():
         return None
 
 def purge_page(url, host=None):
-    if host == None:
+    if host is None:
         host = get_varnish_host()
         if host is None:
             return None
 
-    conn = httplib.HTTPConnection(host)
+    conn = six.moves.http_client.HTTPConnection(host)
     cur_domain = Site.objects.get_current().domain
     conn.request("PURGE", url, "", {'Host': cur_domain, 'Accept-Encoding': 'gzip'})
     ret = conn.getresponse()
@@ -31,7 +32,7 @@ def purge_all(host=None):
         if host is None:
             return None
 
-    conn = httplib.HTTPConnection(host)
+    conn = six.moves.http_client.HTTPConnection(host)
     cur_domain = Site.objects.get_current().domain
     conn.request("BAN", "/", "", {'Host': cur_domain, 'Accept-Encoding': 'gzip'})
     ret = conn.getresponse()

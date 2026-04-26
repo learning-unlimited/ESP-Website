@@ -21,11 +21,17 @@ Please search for a user: <br />
 </p>
 
 {% if error %}
-<p class="error">Error: No user found by that criteria.</p>
+<div align="center" class="alert alert-warning">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  Error: No user found by that criteria.
+</div>
 {% endif %}
 
 {% if message %}
-<p><b>{{ message }}</b></p>
+<div class="alert alert-info">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  <b>{{ message }}</b>
+</div>
 {% endif %}
 
 </center>

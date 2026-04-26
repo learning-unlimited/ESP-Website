@@ -1,5 +1,5 @@
 function update_user_classes() {
-    if (esp_user.cur_admin == "1") {
+    if (esp_user.cur_admin == "1" || esp_user.cur_retTitle) {
         $j(".admin").removeClass("hidden");
         $j(".onsite").removeClass("hidden");
         $j(".hide-if-admin").addClass("hidden");

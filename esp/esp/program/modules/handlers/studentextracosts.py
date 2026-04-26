@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from six.moves import range
+from six.moves import map
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -158,7 +161,7 @@ class StudentExtraCosts(ProgramModuleObj):
     @needs_student_in_grade
     @meets_deadline('/ExtraCosts')
     @meets_cap
-    def extracosts(self,request, tl, one, two, module, extra, prog):
+    def extracosts(self, request, tl, one, two, module, extra, prog):
         """
         Query the user for any extra items they may wish to purchase for this program
 
@@ -259,8 +262,8 @@ class StudentExtraCosts(ProgramModuleObj):
             #   Merge previous and new preferences (update only if the form was valid)
             new_prefs = []
             for lineitem_name in preserve_items.keys():
-                if lineitem_name in map(lambda x: x[0], prefs):
-                    new_prefs.append(prefs[map(lambda x: x[0], prefs).index(lineitem_name)])
+                if lineitem_name in [x[0] for x in prefs]:
+                    new_prefs.append(prefs[[x[0] for x in prefs].index(lineitem_name)])
 
             new_prefs += form_prefs
             iac.apply_preferences(new_prefs)
@@ -349,7 +352,8 @@ class StudentExtraCosts(ProgramModuleObj):
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
                                   { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'finaid_grant': iac.latest_finaid_grant(), 'select_qty': len(multicosts_list) > 0,
-                                    'paid_for': iac.has_paid(), 'amount_paid': iac.amount_paid(), 'paid_for_text': Tag.getProgramTag("already_paid_extracosts_text", program = prog) })
+                                    'paid_for': iac.has_paid(), 'amount_paid': iac.amount_paid(), 'amount_donation': iac.amount_donation(),
+                                    'paid_for_text': Tag.getProgramTag("already_paid_extracosts_text", program = prog) })
 
     def isStep(self):
         return self.lineitemtypes().exists()

@@ -1,6 +1,7 @@
 ## Code from <http://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
 ## Modified to not use (process-)global variables
 
+from __future__ import absolute_import
 import logging
 logger = logging.getLogger(__name__)
 import threading

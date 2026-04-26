@@ -7,6 +7,22 @@
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/admin.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/spectrum-colorpicker2/dist/spectrum.min.css">
+{% endblock %}
+
+{% block xtrajs %}
+<script src="https://cdn.jsdelivr.net/npm/spectrum-colorpicker2/dist/spectrum.min.js"></script>
+<script>
+$j(document).ready(function(){
+    $j("[name=color_code]").spectrum({
+      type: "color",
+      togglePaletteOnly: true,
+      showInput: true,
+      showInitial: true,
+      showAlpha: false
+    });
+});
+</script>
 {% endblock %}
 
 {% block content %}

@@ -4,8 +4,13 @@ A somewhat higher-level interface to the Formstack API.
 Employs caching to avoid hitting Formstack's API more than necessary.
 """
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 from argcache import cache_function
 from esp.formstack.api import Formstack
+import six
+from six.moves import range
 
 CACHE_TIMEOUT = 3600 # seconds to keep things cached
 
@@ -17,6 +22,7 @@ def get_form_by_id(form_id, api_key):
     """ Shortcut function that returns a FormstackForm from a form ID. """
     return FormstackForm(form_id, Formstack(api_key))
 
+@python_2_unicode_compatible
 class FormstackForm(object):
     """
     A Formstack form.
@@ -40,11 +46,12 @@ class FormstackForm(object):
             forms.append(form)
         return forms
 
-    def __unicode__(self):
-        return u'{0}'.format(self.id)
+
+    def __str__(self):
+        return '{0}'.format(self.id)
 
     def __repr__(self):
-        return u'<FormstackForm: {0}>'.format(self)
+        return six.u('<FormstackForm: {0}>').format(self)
 
     @cache_function
     def info(self):
@@ -92,6 +99,7 @@ class FormstackForm(object):
         return submissions
     submissions.timeout_seconds = CACHE_TIMEOUT
 
+@python_2_unicode_compatible
 class FormstackSubmission(object):
     """
     A Formstack form submission.
@@ -101,11 +109,11 @@ class FormstackSubmission(object):
         self.id = submission_id
         self.formstack = formstack
 
-    def __unicode__(self):
-        return unicode(self.id)
+    def __str__(self):
+        return six.text_type(self.id)
 
     def __repr__(self):
-        return u'<FormstackSubmission: {0}>'.format(self)
+        return six.u('<FormstackSubmission: {0}>').format(self)
 
     @cache_function
     def data(self):

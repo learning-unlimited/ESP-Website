@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -98,12 +99,12 @@ class TeacherEventsManageModule(ProgramModuleObj):
                     new_timeslot = Event()
 
                     # decide type
-                    type = "training"
+                    event_type = "training"
 
-                    if data.get('submit') == "Add Interview":
-                        type = "interview"
+                    if data.get('submit_btn') == "Add Interview":
+                        event_type = "interview"
 
-                    form.save_timeslot(self.program, new_timeslot, type)
+                    form.save_timeslot(self.program, new_timeslot, event_type)
                 else:
                     context['timeslot_form'] = form
 
@@ -128,7 +129,7 @@ class TeacherEventsManageModule(ProgramModuleObj):
     setup_title = "Set up events for teachers to attend before the program"
 
     def isCompleted(self):
-        return Event.objects.filter(program=self.program, event_type__in=EventType.teacher_event_types().values()).exists()
+        return Event.objects.filter(program=self.program, event_type__in=list(EventType.teacher_event_types().values())).exists()
 
     class Meta:
         proxy = True
