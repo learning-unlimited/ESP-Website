@@ -7,7 +7,6 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
 from django.template import RequestContext
 from django.urls import reverse
-from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
 from esp.program.models import Program, RegistrationProfile

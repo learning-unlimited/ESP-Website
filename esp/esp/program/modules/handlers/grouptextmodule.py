@@ -138,7 +138,7 @@ class GroupTextModule(ProgramModuleObj):
         ourNumbers = settings.TWILIO_ACCOUNT_NUMBERS
 
         if not account_sid or not auth_token or not ourNumbers:
-          raise ESPError()("You must configure the Twilio account settings before attempting to send texts using this module")
+            raise ESPError()("You must configure the Twilio account settings before attempting to send texts using this module")
 
         # cycle through our phone numbers to reduce sending time
         numberIndex = 0

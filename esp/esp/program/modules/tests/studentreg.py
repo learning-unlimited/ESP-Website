@@ -46,7 +46,7 @@ import re
 
 class StudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        from esp.program.modules.base import ProgramModule, ProgramModuleObj
+        from esp.program.modules.base import ProgramModule
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update( {

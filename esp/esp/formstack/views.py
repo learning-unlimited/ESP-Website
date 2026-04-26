@@ -17,9 +17,7 @@ def formstack_webhook(request):
         raise Http404
 
 from django.contrib.auth import authenticate
-from django.http import HttpResponse, Http404, HttpResponseServerError, \
-    HttpResponseForbidden, HttpResponseNotFound
-from django.dispatch import receiver
+from django.http import HttpResponseServerError, HttpResponseForbidden, HttpResponseNotFound
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
