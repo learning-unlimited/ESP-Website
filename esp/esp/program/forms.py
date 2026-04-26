@@ -160,6 +160,16 @@ class ProgramCreationForm(BetterModelForm):
                     # Using the syntax you requested to attach the error to a specific field
                     self.add_error('grade_max', "The maximum grade must be greater than or equal to the minimum grade.")
 
+        teacher_reg_start = self.cleaned_data.get('teacher_reg_start')
+        teacher_reg_end = self.cleaned_data.get('teacher_reg_end')
+        if teacher_reg_start and teacher_reg_end and teacher_reg_end <= teacher_reg_start:
+            self.add_error('teacher_reg_end', 'Teacher registration end date must be after start date.')
+
+        student_reg_start = self.cleaned_data.get('student_reg_start')
+        student_reg_end = self.cleaned_data.get('student_reg_end')
+        if student_reg_start and student_reg_end and student_reg_end <= student_reg_start:
+            self.add_error('student_reg_end', 'Student registration end date must be after start date.')
+
     class Meta:
         fieldsets = [
                      ('Program Title', {'fields': ['term', 'term_friendly'] }),
