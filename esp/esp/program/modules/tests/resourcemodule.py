@@ -129,6 +129,24 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('Edited Room', self.checkDisplayedClassroomList())   #   checks consistency and presence of room
 
+    def _assert_bad_request(self, url, params):
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 400)
+
+    def testStaleOrInvalidIds(self):
+        base = '/manage/%s/resources' % self.program.getUrlBase()
+        nonexistent_id = '999999999'
+        invalid_id = 'not-an-int'
+
+        for section in ('timeslot', 'restype', 'classroom', 'equipment'):
+            for op in ('edit', 'delete'):
+                # missing id
+                self._assert_bad_request('%s/%s' % (base, section), {'op': op})
+                # non-integer id
+                self._assert_bad_request('%s/%s' % (base, section), {'op': op, 'id': invalid_id})
+                # nonexistent (stale) id
+                self._assert_bad_request('%s/%s' % (base, section), {'op': op, 'id': nonexistent_id})
+
     def testResourceTypes(self):
         #   Check that resource types started out consistent
         self.checkDisplayedResourceTypeList()
