@@ -104,7 +104,7 @@ def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = F
     else:
         prereg_url = cls.parent_program.get_learn_url() + prereg_suffix
 
-    if user and prereg_url and timeslot:
+    if user and prereg_url:
         errormsg = cls.cannotAdd(user, which_section=section, webapp = webapp)
     else:
         errormsg = None
