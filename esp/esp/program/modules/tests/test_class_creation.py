@@ -9,7 +9,12 @@ from django.test import TestCase
 
 # CORRECT import - ProgramFrameworkTest is in tests.py (the file, not folder)
 from esp.program.tests import ProgramFrameworkTest
-from esp.program.models.class_ import ClassSubject
+from esp.program.models.class_ import (
+    ClassSubject,
+    EXTENDED_BUDGET_STATUS_PENDING,
+    EXTENDED_BUDGET_STATUS_APPROVED,
+    EXTENDED_BUDGET_STATUS_REJECTED,
+)
 
 # ---------------------------------------------------------------------------
 # URL helper
@@ -506,7 +511,93 @@ class ClassFormValidationTest(EditClassBaseTest):
 
 
 # ---------------------------------------------------------------------------
-# 6. Teacher availability consistency
+# 6. Extended budget field locking
+# ---------------------------------------------------------------------------
+
+class ExtendedBudgetFieldLockingTest(EditClassBaseTest):
+    """Security checks for crafted POSTs touching extended-budget fields."""
+
+    def _post_edit(self, data):
+        teacher = self.subject.get_teachers()[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+        self.client.post(self._editclass_url(), data)
+
+    def _get_edit_response(self):
+        teacher = self.subject.get_teachers()[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+        return self.client.get(self._editclass_url())
+
+    def test_budget_justification_fields_unchanged_when_extended_budget_approved(self):
+        self.subject.purchase_requests = 'Original request'
+        self.subject.message_for_directors = 'Original justification'
+        self.subject.extended_budget_status = EXTENDED_BUDGET_STATUS_APPROVED
+        self.subject.save(update_fields=['purchase_requests', 'message_for_directors', 'extended_budget_status'])
+
+        data = self._make_edit_form_data(self.subject)
+        data['purchase_requests'] = 'Crafted overwrite'
+        data['message_for_directors'] = 'Crafted overwrite'
+        data['extended_budget_requested'] = 'on'
+        self._post_edit(data)
+
+        self.subject.refresh_from_db()
+        self.assertEqual(self.subject.purchase_requests, 'Original request')
+        self.assertEqual(self.subject.message_for_directors, 'Original justification')
+        self.assertEqual(self.subject.extended_budget_status, EXTENDED_BUDGET_STATUS_APPROVED)
+
+    def test_budget_justification_fields_unchanged_when_extended_budget_rejected(self):
+        self.subject.purchase_requests = 'Original request'
+        self.subject.message_for_directors = 'Original justification'
+        self.subject.extended_budget_status = EXTENDED_BUDGET_STATUS_REJECTED
+        self.subject.save(update_fields=['purchase_requests', 'message_for_directors', 'extended_budget_status'])
+
+        data = self._make_edit_form_data(self.subject)
+        data['purchase_requests'] = 'Crafted overwrite'
+        data['message_for_directors'] = 'Crafted overwrite'
+        data['extended_budget_requested'] = 'on'
+        self._post_edit(data)
+
+        self.subject.refresh_from_db()
+        self.assertEqual(self.subject.purchase_requests, 'Original request')
+        self.assertEqual(self.subject.message_for_directors, 'Original justification')
+        self.assertEqual(self.subject.extended_budget_status, EXTENDED_BUDGET_STATUS_REJECTED)
+
+    def test_budget_justification_fields_update_when_extended_budget_pending(self):
+        self.subject.purchase_requests = 'Original request'
+        self.subject.message_for_directors = 'Original justification'
+        self.subject.extended_budget_status = EXTENDED_BUDGET_STATUS_PENDING
+        self.subject.save(update_fields=['purchase_requests', 'message_for_directors', 'extended_budget_status'])
+
+        data = self._make_edit_form_data(self.subject)
+        data['purchase_requests'] = 'Updated request'
+        data['message_for_directors'] = 'Updated justification'
+        data['extended_budget_requested'] = 'on'
+        self._post_edit(data)
+
+        self.subject.refresh_from_db()
+        self.assertEqual(self.subject.purchase_requests, 'Updated request')
+        self.assertEqual(self.subject.message_for_directors, 'Updated justification')
+        self.assertEqual(self.subject.extended_budget_status, EXTENDED_BUDGET_STATUS_PENDING)
+
+    def test_edit_form_disables_budget_fields_when_extended_budget_approved(self):
+        self.subject.extended_budget_status = EXTENDED_BUDGET_STATUS_APPROVED
+        self.subject.save(update_fields=['extended_budget_status'])
+
+        response = self._get_edit_response()
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertTrue(form.fields['extended_budget_requested'].disabled)
+        self.assertTrue(form.fields['purchase_requests'].disabled)
+        self.assertTrue(form.fields['message_for_directors'].disabled)
+
+
+# ---------------------------------------------------------------------------
+# 7. Teacher availability consistency
 # ---------------------------------------------------------------------------
 
 class TeacherAvailabilityConsistencyTest(ClassCreationTestMixin,

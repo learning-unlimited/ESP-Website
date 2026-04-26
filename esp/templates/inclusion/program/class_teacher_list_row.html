@@ -34,6 +34,16 @@
           <span style="background: {{ flag.flag_type.getColor }}; padding: 1px 6px; color: #fff; font-size: 90%; margin-right: 3px;" title="{{ flag.comment }}">{{ flag.flag_type.name }}</span>
         {% endfor %}
         {% endif %}
+        {% if cls.has_extended_budget_request %}
+        <br/><b>Extended budget request</b>:
+            {% if cls.is_extended_budget_pending %}
+            <span style="font-weight: bold; color: #00C;">Pending</span>
+            {% elif cls.is_extended_budget_approved %}
+            <span style="font-weight: bold; color: #0C0;">Approved</span>
+            {% else %}
+            <span style="font-weight: bold; color: #C00;">Rejected</span>
+            {% endif %}
+        {% endif %}
     </td>
     {% block cls_row_1_buttons %}
     <td>

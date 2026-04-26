@@ -109,6 +109,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
     purchase_requests = forms.CharField( label='Planned Purchases', widget=forms.Textarea(), required=False,
                                          help_text='Please type a budget proposal here stating what you would like to buy, what it will cost, and why you would like to purchase it.' )
 
+    extended_budget_requested = forms.BooleanField(
+        label='Request Extended Budget',
+        required=False,
+        help_text='Check this box if you expect expenses above the standard reimbursement limit and would like director approval.'
+    )
+
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
 

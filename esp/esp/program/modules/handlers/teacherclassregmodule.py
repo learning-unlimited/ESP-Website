@@ -37,7 +37,20 @@ from collections import defaultdict
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.class_status import ClassStatus
-from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType, RegistrationProfile, ScheduleMap
+from esp.program.models          import (
+    ClassSubject,
+    ClassSection,
+    Program,
+    ProgramModule,
+    StudentRegistration,
+    RegistrationType,
+    ClassFlagType,
+    RegistrationProfile,
+    ScheduleMap,
+    EXTENDED_BUDGET_STATUS_NONE,
+    EXTENDED_BUDGET_STATUS_APPROVED,
+    EXTENDED_BUDGET_STATUS_REJECTED,
+)
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.resources.models        import ResourceRequest
@@ -977,6 +990,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                 current_data['allow_lateness'] = newclass.allow_lateness
                 current_data['title'] = newclass.title
                 current_data['url']   = newclass.emailcode()
+                current_data['extended_budget_requested'] = (
+                    newclass.extended_budget_status != EXTENDED_BUDGET_STATUS_NONE
+                )
                 min_grade = newclass.grade_min
                 max_grade = newclass.grade_max
                 if Tag.getProgramTag('grade_ranges', prog):
@@ -1012,6 +1028,21 @@ class TeacherClassRegModule(ProgramModuleObj):
                     reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
                     # TODO: remove private API use
                     if populateonly: reg_form._errors = ErrorDict()
+                if action in ('edit', 'editopenclass'):
+                    if newclass.extended_budget_status in (EXTENDED_BUDGET_STATUS_APPROVED, EXTENDED_BUDGET_STATUS_REJECTED):
+                        locked_fields = (
+                            'extended_budget_requested',
+                            'purchase_requests',
+                            'message_for_directors',
+                        )
+                        for field_name in locked_fields:
+                            field = reg_form.fields.get(field_name)
+                            if field:
+                                field.disabled = True
+                                field.help_text = (
+                                    "Decision made by the program directors. "
+                                    "Contact them if you need to request a change."
+                                )
 
                 #   Todo...
                 ds = newclass.default_section()
