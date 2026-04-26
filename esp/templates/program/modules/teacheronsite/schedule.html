@@ -6,7 +6,6 @@
 
   <div class="main">
 
-```
 {% if error %}
   <p style="color:red; text-align:center; font-weight:bold; font-size:18px;">
     {{ error }}
@@ -44,7 +43,7 @@
                 <br>
                 {% if cls.initial_lat_long %}
                     <a class="no-dec" title="Directions" target="_blank" rel="noopener noreferrer"
-                       href="https://www.google.com/maps/dir/?api=1&destination={{ cls.initial_lat_long }}&travelmode=walking">
+                       href="https://www.google.com/maps/dir/?api=1&destination={{ cls.initial_lat_long|urlencode }}&travelmode=walking">
                 {% endif %}
                 {{ cls.prettyrooms|join:", " }}
                 {% if cls.initial_lat_long %}
@@ -65,7 +64,6 @@
 </table>
 
 {% endif %}
-```
 
   </div>
 </center>

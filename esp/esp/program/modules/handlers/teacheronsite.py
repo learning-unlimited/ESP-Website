@@ -38,6 +38,7 @@ from datetime import datetime
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 from django.db.models import Count
 from esp.users.models import TeacherInfo
+from esp.program.models import RegistrationProfile
 
 class TeacherOnsite(ProgramModuleObj, CoreModule):
     doc = """Provides a mobile-friendly interface for common onsite functions for teachers."""
@@ -80,7 +81,6 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def teacheronsite(self, request, tl, one, two, module, extra, prog):
         """ Display the landing page for the teacher onsite webapp """
-        from esp.program.models import RegistrationProfile
 
         user = request.user
         now = datetime.now()
@@ -152,6 +152,17 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
                 num_meeting_times__gt=0, status__gt=0)
         context['sections'] = sections
 
+        teacher_profile = RegistrationProfile.getLastForProgram(
+            request.user,
+            prog,
+            tl='teach'
+        )
+
+        teacher = teacher_profile.teacher_info if teacher_profile else None
+
+        context['can_view_schedule'] = (
+            teacher.can_view_schedule if teacher else True
+        )
         return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
 
     @aux_call
