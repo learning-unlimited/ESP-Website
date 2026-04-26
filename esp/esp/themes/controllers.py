@@ -60,6 +60,7 @@ from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
 from esp.varnish import varnish
 from esp.middleware import ESPError
+from django.utils.html import format_html
 
 THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')
 THEME_COMPILED_WARNING = textwrap.dedent("""\
@@ -245,7 +246,17 @@ class ThemeController(object):
         css_data = lessc_process.communicate(less_data.encode())[0]
 
         if lessc_process.returncode != 0:
-            raise ESPError(f'The stylesheet compiler (lessc) returned error code {lessc_process.returncode}.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:{settings.DEFAULT_EMAIL_ADDRESSES["support"]}">Web support team</a>.<br />LESS compile command was: <pre>{" ".join(lessc_args)}</pre>', log=True)
+            raise ESPError(format_html(
+                'The stylesheet compiler (lessc) returned error code {}. '
+                ' Please check the LESS sources and settings you are using'
+                ' to generate the theme, or if you are using a provided'
+                ' theme please contact the '
+                '<a href="mailto:{}">Web support team</a>.'
+                '<br />LESS compile command was: <pre>{}</pre>',
+                lessc_process.returncode,
+                settings.DEFAULT_EMAIL_ADDRESSES["support"],
+                " ".join(lessc_args),
+            ), log=True)
 
         return css_data
 
