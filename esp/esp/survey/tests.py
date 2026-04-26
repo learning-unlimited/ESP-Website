@@ -139,7 +139,7 @@ class QuestionTypeTest(TestCase):
         self.assertTrue(qt.is_countable)
 
     def test_invalid_template_raises_validation_error(self, mock_clean):
-        mock_clean.side_effect = None
+        mock_clean.side_effect = ValidationError({'name': 'No template found'})
         qt = QuestionType(name='Invalid Type', is_numeric=False, is_countable=False)
         with self.assertRaises(ValidationError):
             qt.save()
@@ -149,7 +149,6 @@ class QuestionTypeTest(TestCase):
         qt = QuestionType(name='Long Answer', is_numeric=False, is_countable=False)
         qt.save()
         self.assertIsNotNone(qt.pk)
-
 
 class QuestionTest(TestCase):
     def setUp(self):
