@@ -33,8 +33,13 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.tests import ProgramFrameworkTest
+from esp.program.models import ClassCategories
 from esp.program.modules.tests.support import ProgramManagerTestHelper
 from esp.program.modules.module_ext import AJAXChangeLog
+from esp.program.modules.handlers.schedulingcheckmodule import SchedulingCheckRunner
+from esp.resources.models import Resource, ResourceType
+from esp.cal.models import Event, EventType
+from datetime import timedelta
 import json
 import time
 
@@ -146,6 +151,146 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': a2, 'override': 'false'})
         self.assertTrue(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
         self.assertTrue(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")
+
+    def testTeacherConflictsAllowsConsecutiveIntervals(self):
+        """Same-teacher classes that only touch endpoints should not conflict."""
+        self.emptySchedule()
+
+        teacher = self.teachers[0]
+        s1, s2 = teacher.getTaughtSections(self.program)[:2]
+        start = self.settings['start_time']
+        event_1 = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=start,
+            end=start + timedelta(hours=1),
+            short_description='Consecutive test 1',
+            description='Consecutive test 1',
+        )
+        event_2 = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=event_1.end,
+            end=event_1.end + timedelta(hours=1),
+            short_description='Consecutive test 2',
+            description='Consecutive test 2',
+        )
+
+        s1.assign_meeting_times([event_1])
+        self.assertIsNone(
+            s2.conflicts(teacher, [event_2]),
+            "Consecutive intervals should not be treated as teacher conflicts.",
+        )
+
+    def testTeacherConflictsDetectsOverlappingDistinctEvents(self):
+        """Overlapping intervals must conflict even when event IDs differ."""
+        self.emptySchedule()
+
+        teacher = self.teachers[0]
+        s1, s2 = teacher.getTaughtSections(self.program)[:2]
+        start = self.settings['start_time']
+        event_1 = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=start,
+            end=start + timedelta(hours=1),
+            short_description='Overlap test 1',
+            description='Overlap test 1',
+        )
+        event_2 = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=start + timedelta(minutes=30),
+            end=start + timedelta(hours=1, minutes=30),
+            short_description='Overlap test 2',
+            description='Overlap test 2',
+        )
+
+        s1.assign_meeting_times([event_1])
+        conflict = s2.conflicts(teacher, [event_2])
+        self.assertIsNotNone(conflict, "Overlapping intervals should be detected as conflicts.")
+        self.assertEqual(conflict[0].id, s1.id, "Conflict should reference the already-scheduled section.")
+
+    def testSchedulingCheckHandlesOpenClassTimeBlocks(self):
+        """Scheduling checks should handle walk-in-only time blocks not in getTimeSlotList."""
+        self.emptySchedule()
+
+        teacher = self.teachers[0]
+        section = teacher.getTaughtSections(self.program)[0]
+        section.duration = '1.0'
+        section.save()
+        walkin_category, _ = ClassCategories.objects.get_or_create(
+            category='Walk-in Activity',
+            defaults={'symbol': 'W', 'seq': 0},
+        )
+        section.parent_class.category = walkin_category
+        section.parent_class.save()
+
+        start = self.settings['start_time']
+        open_block_type = EventType.get_from_desc('Open Class Time Block')
+        open_event = Event.objects.create(
+            program=self.program,
+            event_type=open_block_type,
+            start=start,
+            end=start + timedelta(hours=1),
+            short_description='Open block test',
+            description='Open block test',
+        )
+
+        section.assign_meeting_times([open_event])
+        open_room = Resource.objects.create(
+            name='Open Block Room',
+            num_students=30,
+            event=open_event,
+            res_type=ResourceType.get_or_create('Classroom'),
+        )
+        assign_result = section.assign_room(open_room)
+        self.assertTrue(assign_result[0], "Failed to assign a room for open-block scheduling check setup.")
+
+        check_data = json.loads(SchedulingCheckRunner(self.program).teachers_teaching_two_classes_same_time())
+        self.assertIn('body', check_data, "Scheduling diagnostics did not return a valid table payload.")
+        self.assertEqual(check_data['body'], [], "Single walk-in section should not produce a conflict entry.")
+
+    def testSectionOverlapHelperIgnoresSplitScheduleGap(self):
+        """Split schedules should not conflict with a class scheduled in the gap."""
+        self.emptySchedule()
+
+        teacher = self.teachers[0]
+        s1, s2 = teacher.getTaughtSections(self.program)[:2]
+        start = self.settings['start_time']
+
+        first_block = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=start,
+            end=start + timedelta(hours=1),
+            short_description='Split block 1',
+            description='Split block 1',
+        )
+        gap_block = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=first_block.end,
+            end=first_block.end + timedelta(hours=1),
+            short_description='Gap block',
+            description='Gap block',
+        )
+        second_block = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=gap_block.end,
+            end=gap_block.end + timedelta(hours=1),
+            short_description='Split block 2',
+            description='Split block 2',
+        )
+
+        s1.assign_meeting_times([first_block, second_block])
+        s2.assign_meeting_times([gap_block])
+
+        self.assertFalse(
+            SchedulingCheckRunner._sections_time_overlap(s1, s2),
+            "A class inside the split-schedule gap should not be flagged as overlapping.",
+        )
 
 
     #############################################################
