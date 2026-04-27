@@ -2,7 +2,7 @@ from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser, Record
+from esp.users.models   import ESPUser, Record, RecordType
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
@@ -55,7 +55,7 @@ class MinorsPolicyModule(ProgramModuleObj):
     def isCompleted(self):
         return Record.objects.filter(user=get_current_request().user,
                                      program=self.program,
-                                     event="minorspolicyacknowledgement").exists()
+                                     event__name="minorspolicyacknowledgement").exists()
 
     @main_call
     @needs_teacher
@@ -66,26 +66,34 @@ class MinorsPolicyModule(ProgramModuleObj):
             context['form'] = minorspolicyacknowledgementform_factory(prog)(request.POST)
             backgroundcheck_selection = context['form']['backgroundcheck_choice'].data
             observing_selection = context['form']['observing_choice'].data
+            rt_main, _ = RecordType.objects.get_or_create(name="minorspolicyacknowledgement",
+                                                           defaults={'description': 'Acknowledged minors policy'})
             rec, created = Record.objects.get_or_create(user=request.user,
                                                         program=self.program,
-                                                        event="minorspolicyacknowledgement")
+                                                        event=rt_main)
             # delete old choices
             Record.objects.filter(
                     user=get_current_request().user,
                     program=self.program,
-                    event__startswith=BACKGROUNDCHECK_CHOICE_PREFIX).delete()
+                    event__name__startswith=BACKGROUNDCHECK_CHOICE_PREFIX).delete()
             Record.objects.filter(
                     user=get_current_request().user,
                     program=self.program,
-                    event__startswith=OBSERVING_CHOICE_PREFIX).delete()
+                    event__name__startswith=OBSERVING_CHOICE_PREFIX).delete()
             # backgroundcheck_affiliated / backgroundcheck_recent_check / backgroundcheck_commit_check
+            backgroundcheck_name = BACKGROUNDCHECK_CHOICE_PREFIX + backgroundcheck_selection
+            rt_backgroundcheck, _ = RecordType.objects.get_or_create(name=backgroundcheck_name,
+                                                                      defaults={'description': backgroundcheck_name})
             backgroundcheck_rec_type, _ = Record.objects.get_or_create(user=request.user,
                                                         program=self.program,
-                                                        event=BACKGROUNDCHECK_CHOICE_PREFIX + backgroundcheck_selection)
+                                                        event=rt_backgroundcheck)
             # observing_yes / observing_no / observing_other
+            observing_name = OBSERVING_CHOICE_PREFIX + observing_selection
+            rt_observing, _ = RecordType.objects.get_or_create(name=observing_name,
+                                                                defaults={'description': observing_name})
             observing_rec_type, _ = Record.objects.get_or_create(user=request.user,
                                                         program=self.program,
-                                                        event=OBSERVING_CHOICE_PREFIX + observing_selection)
+                                                        event=rt_observing)
             if context['form'].is_valid():
                 return self.goToCore(tl)
             else:
@@ -96,20 +104,20 @@ class MinorsPolicyModule(ProgramModuleObj):
             backgroundcheck_choice_records = Record.objects.filter(
                     user=get_current_request().user,
                     program=self.program,
-                    event__startswith=BACKGROUNDCHECK_CHOICE_PREFIX)
+                    event__name__startswith=BACKGROUNDCHECK_CHOICE_PREFIX)
 
             backgroundcheck_choice = None
             if backgroundcheck_choice_records:
-                backgroundcheck_choice = backgroundcheck_choice_records[0].event[len(BACKGROUNDCHECK_CHOICE_PREFIX):]
+                backgroundcheck_choice = backgroundcheck_choice_records[0].event.name[len(BACKGROUNDCHECK_CHOICE_PREFIX):]
 
             observing_choice_records = Record.objects.filter(
                     user=get_current_request().user,
                     program=self.program,
-                    event__startswith=OBSERVING_CHOICE_PREFIX)
+                    event__name__startswith=OBSERVING_CHOICE_PREFIX)
 
             observing_choice = None
             if observing_choice_records:
-                observing_choice = observing_choice_records[0].event[len(OBSERVING_CHOICE_PREFIX):]
+                observing_choice = observing_choice_records[0].event.name[len(OBSERVING_CHOICE_PREFIX):]
 
             context['form'] = minorspolicyacknowledgementform_factory(prog)({
                 'backgroundcheck_choice': backgroundcheck_choice,
@@ -122,7 +130,7 @@ class MinorsPolicyModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have submitted the acknowledgement. """
         from datetime import datetime
-        qo = Q(record__program=self.program, record__event="minorspolicyacknowledgement")
+        qo = Q(record__program=self.program, record__event__name="minorspolicyacknowledgement")
         if QObject is True:
             return {'minorspolicyacknowledgement': qo}
 
