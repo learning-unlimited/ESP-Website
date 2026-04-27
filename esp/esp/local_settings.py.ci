@@ -45,7 +45,8 @@ Learning Unlimited, Inc.
 ###########################
 
 SITE_INFO = (1, 'testserver.learningu.org', 'ESP Test Server')
-CACHE_PREFIX = "Test"
+# CACHE_PREFIX removed - replaced by KEY_PREFIX inside CACHES
+# See: https://github.com/learning-unlimited/ESP-Website/issues/1306
 SECRET_KEY = 'b36cfdfb78aba27ddbde330b23352bc6d40973b4'
 
 SERVER_EMAIL = 'server@testserver.learningu.org'
@@ -80,3 +81,17 @@ MIDDLEWARE_LOCAL = []
 DATABASE_NAME = 'test_django'
 DATABASE_USER = 'testuser'
 DATABASE_PASSWORD = 'testpassword'
+
+################
+# Cache        #
+################
+
+# Replaced esp.utils.memcached_multikey.CacheClass with Django's built-in backend
+# See: https://github.com/learning-unlimited/ESP-Website/issues/1306
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
+        'LOCATION': '127.0.0.1:11211',
+        'KEY_PREFIX': 'Test',  # replaces CACHE_PREFIX = "Test"
+    }
+}
