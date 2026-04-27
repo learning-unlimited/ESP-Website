@@ -5,13 +5,12 @@
 
 if [ $(echo "$(lsb_release -rs) >= 20" | bc) -eq 1 ]; then
   sudo apt install -y curl
+  sudo apt install -y nodejs
+  sudo apt install -y npm
  else
   sudo apt-get install -y curl
-fi
-if [ $(echo "$(lsb_release -rs) >= 20" | bc) -eq 1 ]; then
-  sudo apt install -y nodejs
- else
   sudo apt-get install -y nodejs
+  sudo apt-get install -y npm
 fi
 
 if [[ ":$PATH:" == *":/usr/bin:"* ]]
