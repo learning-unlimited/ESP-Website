@@ -51,6 +51,7 @@ def prepare_program(program, data):
     perms += [('Student/Profile', None, data['student_reg_start'], None)]
     perms += [('Teacher/All', None, data['teacher_reg_start'], data['teacher_reg_end'])]
     perms += [('Teacher/Classes/View', None, data['teacher_reg_start'], None)]
+    perms += [('Teacher/Classes/Schedule', None, data['teacher_reg_start'], None)]
     perms += [('Teacher/MainPage', None, data['teacher_reg_start'], None)]
     perms += [('Teacher/Profile', None, data['teacher_reg_start'], None)]
 

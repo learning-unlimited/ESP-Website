@@ -10,13 +10,14 @@ register = template.Library()
 
 
 @cache_inclusion_tag(register, 'inclusion/program/class_teacher_list_row.html')
-def render_class_teacher_list_row(cls, can_req_cancel, survey_results, user=None):
+def render_class_teacher_list_row(cls, can_req_cancel, survey_results, can_view_schedule, user=None):
     """Render a class for the teacher list of classes in teacherreg."""
     return {'cls': cls,
             'program': cls.parent_program,
             'crmi': cls.parent_program.classregmoduleinfo,
             'can_req_cancel': can_req_cancel,
             'survey_results': survey_results,
+            'can_view_schedule': can_view_schedule,
             'friendly_times_with_date': Tag.getBooleanTag(
                 'friendly_times_with_date', cls.parent_program),
             'email_host_sender': settings.EMAIL_HOST_SENDER,
