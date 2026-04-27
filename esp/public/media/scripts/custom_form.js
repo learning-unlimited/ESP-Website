@@ -265,7 +265,7 @@ $j(document).ready(function() {
     if(edit_form != -1){
         $j("#base_form").val(edit_form).trigger("change");
         createFromBase();
-        $j("#create_text").html("Modifying existing form:");
+        $j("#create_text").text("Modifying existing form:");
         $j("#base_form").prop('disabled', true);
         $j("#create_from_base").hide();
         $j("#id_modify").prop('checked', true).trigger("change");
