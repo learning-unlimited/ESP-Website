@@ -1,6 +1,6 @@
 # Technical Audit: UI/UX Migration Roadmap (Bootstrap 2.3.2 to 5.3)
 
-# Technical Audit: Bootstrap 5 Migration Roadmap
+## Bootstrap 5 Migration Roadmap
 **Lead Contributor:** @Janvi-kapoor  
 **Related Issues:** #3810 (Parent), #3809 (Bootstrap 5), #3808 (Bootswatch)
 
