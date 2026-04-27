@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 {% block doctype %}<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">{% endblock doctype %}
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 {% if theme %}<!-- Theme: {{ theme.theme_name }} -->{% endif %}
   <head>
     <title>{% block fulltitle %}{% endblock %}</title>
-    <meta name="csrf-cookie-name" content="{{ settings.CSRF_COOKIE_NAME|escape }}">
   {% block meta %}
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="csrf-cookie-name" content="{{ settings.CSRF_COOKIE_NAME|escape }}">
     <meta name="description" content="{% block description %}{% endblock %}" />
     <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
     <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
@@ -15,11 +15,27 @@
 
     {% block stylesheets %}
     <link rel="shortcut icon" href="/media/images/favicon.ico?v={{ current_favicon_version }}">
-    {% comment %}PNG/manifest URLs: 404 until theme favicon upload generates them (Pillow/favicons follow-up). Kept here so upload flow can update cache-busting.{% endcomment %}
     <link rel="icon" type="image/png" sizes="32x32" href="/media/images/favicon-32x32.png?v={{ current_favicon_version }}">
     <link rel="icon" type="image/png" sizes="16x16" href="/media/images/favicon-16x16.png?v={{ current_favicon_version }}">
     <link rel="apple-touch-icon" sizes="180x180" href="/media/images/apple-touch-icon.png?v={{ current_favicon_version }}">
     <link rel="manifest" href="/media/images/site.webmanifest?v={{ current_favicon_version }}">
+    <style>
+      .skip-nav {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: #000;
+        color: #fff;
+        padding: 8px;
+        text-decoration: none;
+        z-index: 100;
+      }
+
+      .skip-nav:focus,
+      .skip-nav:focus-visible {
+        top: 0;
+      }
+    </style>
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
@@ -116,7 +132,7 @@
               submitted = true;
             }
           }
-          <!-- if we didn't end up submitting the form, re-enable the submit button -->
+          <!-- if we didn't end up submitting the form, reenable the submit button -->
           if(!submitted) {
             $j(this).prop('disabled', false);
           }
@@ -163,3 +179,4 @@
     {% endblock %}
   </body>
 </html>
+

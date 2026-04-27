@@ -6,10 +6,9 @@
 {{ block.super }}
 <style>
 div.required label.control-label:after {
-  content:"*";
+  content:" *";
   color:red;
 }
-
 #id_receive_txt_message {
   list-style-type: none;
   margin-left: 0px;
@@ -21,6 +20,7 @@ div.required label.control-label:after {
 <div class="row-fluid">
   <div class="span10">
     <h1>Your Profile Information</h1>
+    <p class="help-block"><span aria-hidden="true" style="color:red;">*</span> indicates a required field</p>
   </div>
   <div class="row-fluid">
     <div class="span12">
@@ -38,7 +38,7 @@ div.required label.control-label:after {
 <div class="row-fluid">
   <div class="span10">
       {% if form.errors %}
-            <div class="alert alert-danger">
+            <div role="alert" class="alert alert-danger">
                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                     Please fix the following error{{ form.errors|pluralize }} in the form.
             </div>

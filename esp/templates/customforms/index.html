@@ -35,42 +35,42 @@
             </div>
         </div>
     </div>
-        
+
     <div id="form_toolbox">
         <h3 id="header_information"><a href='#'>Form information</a></h3>
         <div id="form_information">
-            <p>Form Title</p> <input type='text' id='input_form_title' size='30' value='Form Title'/>
-            <p>Description</p>
+            <p><label for="input_form_title">Form Title</label></p> <input type='text' id='input_form_title' size='30' value='Form Title'/>
+            <p><label for="input_form_description">Description</label></p>
             <textarea rows='3' cols='30' id='input_form_description'></textarea>
-            <p>Message on Success</p>
+            <p><label for="input_form_sucmsg">Message on Success</label></p>
             <textarea rows='3' cols='30' id='input_form_sucmsg'></textarea>
-            <p>Redirect URL for successful completion</p>
+            <p><label for="input_suc_url">Redirect URL for successful completion</label></p>
             <input type="text" id="input_suc_url" size="30"/>
-            <p>Anonymous Form <input type='checkbox' id='id_anonymous'/></p>
-            <p id="create_text">Create from existing form:</p>
+            <p><label for="id_anonymous">Anonymous Form</label> <input type='checkbox' id='id_anonymous'/></p>
+            <label for="base_form" id="create_text">Create from existing form:</label>
             <select id="base_form">
                 <option value="-1">None</option>
                 {% for form in form_list %}
                     <option value="{{form.id}}">{{form.title}}</option>
-                {% endfor %}	
+                {% endfor %}
             </select>
-            <button type="button" id="create_from_base" hidden type="button" onclick="createFromBase()">Create from previous form</button>
+            <button type="button" id="create_from_base" hidden onclick="createFromBase()">Create from previous form</button>
             <p id="create_from_base_error" hidden style="color: red;"></p>
-            <div id="id_modify_wrapper" hidden><p>Modify this form <input type="checkbox" id="id_modify"/></p>
+            <div id="id_modify_wrapper" hidden><p><label for="id_modify">Modify this form</label> <input type="checkbox" id="id_modify"/></p>
             <p>(Please check this off <b>only</b> if you want to modify this form. If you just want to create a form that
                 resembles this one, leave this unchecked.)</p>
-            </div> 		
+            </div>
         </div>
-            
+
         <h3 id="header_fields"><a href='#'>Fields</a></h3>
         <div id="toolbox_content">
-        
+
             <div id="field_selector">
                 <br/>
                 <table border="0">
                     <tr>
                         <td>
-                            <p>Field Category</p>
+                            <label for="cat_selector">Field Category</label>
                         </td>
                         <td>
                             <select id="cat_selector">
@@ -79,13 +79,13 @@
                     </tr>
                     <tr>
                         <td>
-                            <p>Field</p>
+                            <label for="elem_selector">Field</label>
                         </td>
                         <td>
                             <select id="elem_selector">
                             </select>
                         </td>
-                    </tr>		
+                    </tr>
                 </table>
                 <br/>
                 <div id="cat_spec_options">
@@ -93,93 +93,95 @@
                     <p>These fields will modify existing values in the database, or create new ones. Please select how you want
                         this to happen.
                     </p>
+                    <p><label for="main_cat_spec">Modification method:</label></p>
                     <select id="main_cat_spec">
                         <option value="automatic">Automatic</option>
                         <option value="particular">Choose particular instance to modify</option>
                     </select>
                     <br/>
+                    <p><label for="cat_instance_sel">Instance:</label></p>
                     <select id="cat_instance_sel">
                     </select>
-                    <br/>				
+                    <br/>
                 </div>
-                                        
+
             </div>
-            
+
             <div id="field_properties">
-                
-                <p class="toolboxText">Field label</p>
+
+                <p class="toolboxText"><label for="id_question">Field label</label></p>
                 <textarea name="question" id="id_question" rows=4 cols=30 maxlength=200></textarea>
-                <p class="toolboxText">Instructions for user</p>
+                <p class="toolboxText"><label for="id_instructions">Instructions for user</label></p>
                 <textarea name="instructions" id="id_instructions" rows=4 cols=30></textarea>
-                <p class="toolboxText">Required&nbsp;
+                <p class="toolboxText"><label for="id_required">Required</label>&nbsp;
                     <input type="checkbox" id="id_required" name="required" /><br/><br/></p>
                 <form id="elem_properties">
                     <div id="multi_options"></div>
                 </form>
-                <div id="other_options"></div>		
-                <button type="button" id="button_add" value="Add to Form"/>Add Field to Form</button>
+                <div id="other_options"></div>
+                <button type="button" id="button_add" value="Add to Form">Add Field to Form</button>
             </div>
-            
+
         </div>
         <h3><a href='#'>Form Permissions</a></h3>
         <div>
-            <p>Restrict to -
+            <p><label for="id_main_perm">Restrict to</label>
             <select id="id_main_perm">
                 <option value="none">None</option>
                 <option value="Teacher">Teachers</option>
                 <option value="Student">Students</option>
             </select></p>
             <p><input type="checkbox" id="id_prog_belong" /><label for="id_prog_belong"> Belonging to program</label></p>
+            <p><label for="id_perm_program">Program:</label></p>
             <select id="id_perm_program">
                 <option value="-1">None</option>
                 {% for prog in prog_list %}
                     <option value="{{ prog.id }}">{{ prog.niceName }}</option>
                 {% endfor %}
             </select>
-            <br/>	
+            <br/>
             <div>
-                <p>Filter</p>
+                <p><label for="id_sub_perm">Filter</label></p>
                 <select id="id_sub_perm">
-                </select>		
+                </select>
             </div>
         </div>
-        
+
         <h3><a href='#'>Link to a Program or Course</a></h3>
         <div>
-            <p>Link to -
-            <select id="links_id_main">	
+            <p><label for="links_id_main">Link to</label>
+            <select id="links_id_main">
             </select>
             </p>
-            
-            <p>Specify -
+
+            <p><label for="links_id_specify">Specify</label>
             <select id="links_id_specify">
                 <option value="userdef">Let user pick</option>
                 <option value="particular">Particular Instance</option>
             </select>
             </p>
-            
-            <p>Pick -
+
+            <p><label for="links_id_pick">Pick</label>
             <select id="links_id_pick">
             </select>
             </p>
 
-            <p>User type -
+            <p><label for="links_id_tl">User type</label>
             <select id="links_id_tl">
                 <option value="learn">Students</option>
                 <option value="teach">Teachers</option>
             </select>
             </p>
 
-            <p>Module -
+            <p><label for="links_id_module">Module</label>
             <select id="links_id_module">
             </select>
             </p>
             <p id="links_id_module_help_text" hidden style="color: red;"></p>
-        </div>	
-            
+        </div>
+
         <input type="button" id="submit" value="Create Form"/>
         <p id="submit_error" hidden style="color: red;"></p>
     </div>
 </div>
 {% endblock %}
-
