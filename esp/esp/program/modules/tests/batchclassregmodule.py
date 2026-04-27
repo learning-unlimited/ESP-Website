@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from unittest.mock import patch
 
 from django.db.models import Q
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log
 from esp.program.models import ClassSection
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -148,19 +148,19 @@ class BatchClassRegModuleTest(ProgramFrameworkTest):
             self.skipTest("No accepted sections in test program")
         self.client.login(username='admin', password='password')
 
-        errorMessage = 'Selected Filter is either invalid or available no more'
+        errorMessage = 'Selected filter is invalid or no longer available.'
         
-        # testing with a non-existing integer filter ID
+        # Test with a non-existing integer filter ID (tests the ObjectDoesNotExist branch)
         url = '/manage/' + self.program.url + '/batchclassregfinal?filterid=999999'
-        with self.assertRaisesMessage(ESPError(), errorMessage):
+        with self.assertRaisesMessage(ESPError_Log, errorMessage):
             self.client.post(url, {'section_id': section.id})
             
-        # test with filter ID which is not a number, which triggers ValueError branch
+        # Test with a filter ID that is not a number (tests the ValueError branch)
         url_bad_type = '/manage/' + self.program.url + '/batchclassregfinal?filterid=abc'
-        with self.assertRaisesMessage(ESPError(), errorMessage):
+        with self.assertRaisesMessage(ESPError_Log, errorMessage):
             self.client.post(url_bad_type, {'section_id': section.id})
             
-        # test with missing filter ID
+        # Test missing filter ID entirely (tests the early request validation)
         url_missing = '/manage/' + self.program.url + '/batchclassregfinal'
-        with self.assertRaisesMessage(ESPError, errorMessage):
+        with self.assertRaisesMessage(ESPError_Log, 'Filter and/or section has not been properly set'):
             self.client.post(url_missing, {'section_id': section.id})
