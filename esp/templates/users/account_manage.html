@@ -5,11 +5,11 @@
 {% block stylesheets %}
 {{ block.super }}
 <style>
-.text-link {
+.privacy-policy-link {
   color: #007bff;
   text-decoration: underline;
 }
-.text-link:hover {
+.privacy-policy-link:hover {
   color: #0056b3;
   text-decoration: underline;
   cursor: pointer;
@@ -36,6 +36,6 @@
 {% inline_qsd_block "contact_password_recovery_check" %}
 {% end_inline_qsd_block %}
 
-<p>By creating an account, you agreed to the <a href="https://www.learningu.org/about/privacy/" target="_blank" class="text-link">Privacy Policy</a>
+<p>By creating an account, you agreed to the <a href="https://www.learningu.org/about/privacy/" target="_blank" rel="noopener noreferrer" class="privacy-policy-link">Privacy Policy</a>
   set forth by Learning Unlimited, the umbrella organization of which we are a member.</p>
 {% endblock %}
