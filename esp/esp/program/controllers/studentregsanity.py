@@ -1,4 +1,3 @@
-from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -60,19 +59,22 @@ class StudentRegSanityController(object):
 
     def sanitize_walkin(self, fake=True, csvwriter=None, csvlog=False, directory=None):
         """Checks for Student Registrations made for walk-in classes. If fake=False, will remove them."""
-        closeatend = False
         category_walkin = ClassCategories.objects.get(category="Walk-in Activity")
-        if csvlog and not(fake): #If I'm actually doing things, and I want a log....
+        if csvlog and not(fake) and csvwriter is None:
             import csv
-            if csvwriter is None:
-                closeatend = True
-                if directory is None: directory = self.options['directory']
-                filefullname = directory +'/sanitize_walkins_log.csv'
-                csvfile = open(filefullname, 'ab+')
+            if directory is None: directory = self.options['directory']
+            filefullname = os.path.join(directory, 'sanitize_walkins_log.csv')
+            with open(filefullname, 'a', newline='', encoding='utf-8') as csvfile:
                 csvwriter = csv.writer(csvfile)
+                return self._run_walkin_check(csvwriter, category_walkin, fake, csvlog)
+        return self._run_walkin_check(csvwriter, category_walkin, fake, csvlog)
+
+    def _run_walkin_check(self, csvwriter, category_walkin, fake, csvlog):
+        """Process walk-in class registrations."""
+        if csvlog and not fake:
             csvwriter.writerow(['Sanitizing Walkins'])
             csvwriter.writerow(['Class Title', 'Scheduled at:', 'Student', 'Enrollment Type:'])
-        walkins=self.program.classes().filter(category=category_walkin)
+        walkins = self.program.classes().filter(category=category_walkin)
         report = []
         for w in walkins:
             for sec in w.get_sections():
@@ -80,28 +82,31 @@ class StudentRegSanityController(object):
                 report.append((sec, srs.count()))
                 if not fake:
                     for sr in srs:
-                        if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
+                        if csvlog:
+                            csvwriter.writerow([w.title(), ', '.join(sec.friendly_times()), sr.user.name(), str(sr.relationship)])
                         sr.expire()
         logger.debug(report)
-        if closeatend: csvfile.close()
         logger.info("Walkins checked")
-        if not fake: "Please re-run self.initialize() to update."
+        if not fake:
+            logger.info("Please re-run self.initialize() to update.")
         return report
 
     def sanitize_lunch(self, csvlog=False, fake = True, csvwriter=None, directory=None):
         """Checks to see if any students have registrations for lunch. If fake=False, removes them."""
-        closeatend = False
-        if csvlog and not(fake): #If I'm actually doing things, and I want a log....
+        if csvlog and not(fake) and csvwriter is None:
             import csv
-            if csvwriter is None:
-                closeatend = True
-                if directory is None: directory = self.options['directory']
-                filefullname = directory +'/sanitize_lunch_log.csv'
-                csvfile = open(filefullname, 'ab+')
+            if directory is None: directory = self.options['directory']
+            filefullname = os.path.join(directory, 'sanitize_lunch_log.csv')
+            with open(filefullname, 'a', newline='', encoding='utf-8') as csvfile:
                 csvwriter = csv.writer(csvfile)
+                return self._run_lunch_check(csvwriter, fake, csvlog)
+        return self._run_lunch_check(csvwriter, fake, csvlog)
+
+    def _run_lunch_check(self, csvwriter, fake, csvlog):
+        """Process lunch block registrations."""
+        if csvlog and not fake:
             csvwriter.writerow(['Sanitizing Lunch Blocks'])
             csvwriter.writerow(['Lunch Block', 'Student', 'Enrollment Type:'])
-
         category_lunch = ClassCategories.objects.get(category="Lunch")
         lunchblocks = self.program.classes().filter(category=category_lunch)
         report = []
@@ -110,12 +115,12 @@ class StudentRegSanityController(object):
             report.append((l, srs.count()))
             if not fake:
                 for sr in srs:
-                    if csvlog: csvwriter.writerow([l.title().encode('ascii', 'ignore'), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
+                    if csvlog: csvwriter.writerow([l.title(), sr.user.name(), str(sr.relationship)])
                     sr.expire()
         logger.debug(report)
-        if closeatend: csvfile.close()
         logger.info("Lunch checked.")
-        if not fake: "Please re-run self.initialize() to update."
+        if not fake:
+            logger.info("Please re-run self.initialize() to update.")
         return report
 
     def sanitize(self, checks=None, fake=True, csvlog=True, directory=None):
@@ -146,15 +151,19 @@ class StudentRegSanityController(object):
         if csvlog:
             import csv
             if directory is None: directory = self.options['directory']
-            filefullname = directory + '/'+ datetime.now().strftime("%Y-%m-%d_") + 'sanitize_log.csv'
-            csvfile = open(filefullname, 'ab+')
-            csvwriter = csv.writer(csvfile)
+            filefullname = os.path.join(directory, datetime.now().strftime("%Y-%m-%d_") + 'sanitize_log.csv')
+            with open(filefullname, 'a', newline='', encoding='utf-8') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                return self._run_sanitize_checks(checks, fake, csvlog, csvwriter)
+        return self._run_sanitize_checks(checks, fake, csvlog, None)
+
+    def _run_sanitize_checks(self, checks, fake, csvlog, csvwriter):
+        """Run the requested sanitize checks."""
         self.reports = {}
         for ck in checks:
             logger.debug("Now running " + ck)
             if ck == 'antiwalk-in':
-                self.reports['walkin'] = self.sanitize_walkin(fake = fake, csvwriter = csvwriter if csvlog else None, csvlog=csvlog)
-            if ck == 'antilunch':
-                self.reports['antilunch'] = self.sanitize_lunch(fake = fake, csvwriter = csvwriter if csvlog else None, csvlog=csvlog)
-        if csvlog: csvfile.close()
+                self.reports['walkin'] = self.sanitize_walkin(fake = fake, csvwriter = csvwriter, csvlog=csvlog)
+            elif ck == 'antilunch':
+                self.reports['antilunch'] = self.sanitize_lunch(fake = fake, csvwriter = csvwriter, csvlog=csvlog)
         return self.reports
