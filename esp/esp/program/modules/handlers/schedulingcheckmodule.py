@@ -314,12 +314,12 @@ class SchedulingCheckRunner:
         s2_times = list(s2.meeting_times.all())
         if not s1_times or not s2_times:
             return False
-        s1_start = min(t.start for t in s1_times)
-        s1_end   = max(t.end   for t in s1_times)
-        s2_start = min(t.start for t in s2_times)
-        s2_end   = max(t.end   for t in s2_times)
-        # Overlap iff intervals interleave strictly; touching endpoints is NOT an overlap.
-        return s1_start < s2_end and s2_start < s1_end
+        for t1 in s1_times:
+            for t2 in s2_times:
+                # Strict overlap: touching endpoints (end == start) is not a conflict.
+                if max(t1.start, t2.start) < min(t1.end, t2.end):
+                    return True
+        return False
 
     def teachers_teaching_two_classes_same_time(self):
         if self.p.hasModule("TeacherModeratorModule"):

@@ -251,6 +251,47 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.assertIn('body', check_data, "Scheduling diagnostics did not return a valid table payload.")
         self.assertEqual(check_data['body'], [], "Single walk-in section should not produce a conflict entry.")
 
+    def testSectionOverlapHelperIgnoresSplitScheduleGap(self):
+        """Split schedules should not conflict with a class scheduled in the gap."""
+        self.emptySchedule()
+
+        teacher = self.teachers[0]
+        s1, s2 = teacher.getTaughtSections(self.program)[:2]
+        start = self.settings['start_time']
+
+        first_block = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=start,
+            end=start + timedelta(hours=1),
+            short_description='Split block 1',
+            description='Split block 1',
+        )
+        gap_block = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=first_block.end,
+            end=first_block.end + timedelta(hours=1),
+            short_description='Gap block',
+            description='Gap block',
+        )
+        second_block = Event.objects.create(
+            program=self.program,
+            event_type=self.event_type,
+            start=gap_block.end,
+            end=gap_block.end + timedelta(hours=1),
+            short_description='Split block 2',
+            description='Split block 2',
+        )
+
+        s1.assign_meeting_times([first_block, second_block])
+        s2.assign_meeting_times([gap_block])
+
+        self.assertFalse(
+            SchedulingCheckRunner._sections_time_overlap(s1, s2),
+            "A class inside the split-schedule gap should not be flagged as overlapping.",
+        )
+
 
     #############################################################
     #
