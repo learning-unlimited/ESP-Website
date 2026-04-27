@@ -2159,3 +2159,51 @@ class HeardAboutNormalizationTest(TestCase):
     def test_only_punctuation_normalizes_to_empty(self):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
+
+
+class ProgramCreationFormHandlerLookupTest(TestCase):
+    """
+    Verify that ProgramCreationForm.program_module_question_ids is built using
+    handler lookups (not admin_title), and that the AdmissionsDashboard
+    manage-only special case is preserved correctly.
+    """
+
+    def setUp(self):
+        self.form = ProgramCreationForm()
+
+    def _ids_for_question(self, question_text):
+        for key, ids in self.form.program_module_question_ids.items():
+            if question_text in str(key):
+                return ids
+        return None
+
+    def test_admissions_dashboard_manage_only_question(self):
+        """'Do students have to apply...' must include AdmissionsDashboard manage row only."""
+        manage_row = ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='manage').first()
+        teach_row = ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='teach').first()
+        if manage_row is None:
+            self.skipTest("AdmissionsDashboard manage row not in DB")
+        ids = self._ids_for_question('Do students have to apply to individual classes?')
+        self.assertIsNotNone(ids)
+        self.assertIn(manage_row.id, ids)
+        if teach_row is not None:
+            self.assertNotIn(teach_row.id, ids)
+
+    def test_admissions_dashboard_both_rows_in_teacher_question(self):
+        """'If yes, can teachers admit them...' must include both AdmissionsDashboard rows."""
+        rows = list(ProgramModule.objects.filter(handler='AdmissionsDashboard'))
+        if not rows:
+            self.skipTest("AdmissionsDashboard rows not in DB")
+        ids = self._ids_for_question('If yes, can teachers admit them')
+        self.assertIsNotNone(ids)
+        for row in rows:
+            self.assertIn(row.id, ids)
+
+    def test_handler_based_lookup_includes_expected_module(self):
+        """Spot-check: CreditCardModule_Stripe appears under the credit card question."""
+        pm = ProgramModule.objects.filter(handler='CreditCardModule_Stripe').first()
+        if pm is None:
+            self.skipTest("CreditCardModule_Stripe not in DB")
+        ids = self._ids_for_question('will you accept payment by credit card')
+        self.assertIsNotNone(ids)
+        self.assertIn(pm.id, ids)
