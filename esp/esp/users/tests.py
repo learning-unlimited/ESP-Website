@@ -102,7 +102,7 @@ class ESPUserTest(TestCase):
         testGrade = 11
         curYear = ESPUser.current_schoolyear()
         gradYear = curYear + (12 - testGrade)
-        self.client.get("/manage/userview?username=student&graduation_year="+str(gradYear))
+        self.client.post("/manage/userview/", data={"username": "student", "graduation_year": gradYear})
         self.assertTrue(studentUser.getGrade() == testGrade, f"Grades don't match: {studentUser.getGrade()} {testGrade}")
 
         # Clean up

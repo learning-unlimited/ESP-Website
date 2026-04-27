@@ -542,14 +542,16 @@ def usersearch(request):
 @admin_required
 def userview(request):
     """ Render a template displaying all the information about the specified user """
+    username = request.POST.get('username') or request.GET.get('username')
     try:
-        user = ESPUser.objects.get(username=request.GET['username'])
+        user = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
         raise ESPError("Sorry, can't find anyone with that username.", log=False)
 
-    if 'program' in request.GET:
+    program_id = request.POST.get('program') or request.GET.get('program')
+    if program_id:
         try:
-            program = Program.objects.get(id=request.GET['program'])
+            program = Program.objects.get(id=program_id)
         except Program.DoesNotExist:
             raise ESPError("Sorry, can't find that program.", log=False)
     else:
@@ -576,23 +578,21 @@ def userview(request):
 
     from esp.users.forms.user_profile import StudentInfoForm
 
-    if 'approve_request' in request.GET:
-        gcrs = GradeChangeRequest.objects.filter(id=request.GET['approve_request'])
-        if gcrs.count() == 1:
-            gcr = gcrs[0]
+    if 'approve_request' in request.POST:
+        gcr = GradeChangeRequest.objects.filter(id=request.POST['approve_request']).first()
+        if gcr:
             gcr.approved = True
             gcr.acknowledged_by = request.user
             gcr.save()
-    if 'reject_request' in request.GET:
-        gcrs = GradeChangeRequest.objects.filter(id=request.GET['reject_request'])
-        if gcrs.count() == 1:
-            gcr = gcrs[0]
+    if 'reject_request' in request.POST:
+        gcr = GradeChangeRequest.objects.filter(id=request.POST['reject_request']).first()
+        if gcr:
             gcr.approved = False
             gcr.acknowledged_by = request.user
             gcr.save()
 
-    if 'graduation_year' in request.GET:
-        user.set_student_grad_year(request.GET['graduation_year'])
+    if 'graduation_year' in request.POST:
+        user.set_student_grad_year(request.POST['graduation_year'])
 
     change_grade_form = StudentInfoForm(user=user)
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
@@ -700,11 +700,10 @@ def activate_user(request):
 def unenroll_student(request):
     if request.method != 'POST' or 'user_id' not in request.POST or 'program' not in request.POST:
         return HttpResponseBadRequest('')
-    users = ESPUser.objects.filter(id=request.POST['user_id'])
-    if users.count() != 1:
+    user = ESPUser.objects.filter(id=request.POST['user_id']).first()
+    if not user:
         return HttpResponseBadRequest('')
     else:
-        user = users[0]
         sections = user.getSections(program = request.POST['program'])
         verbs = RTC.getVisibleRegistrationTypeNames(request.POST['program'])
         for sec in sections:
@@ -717,11 +716,10 @@ def activate_or_deactivate_user(request, activate):
     if request.method != 'POST' or 'user_id' not in request.POST:
         return HttpResponseBadRequest('')
     else:
-        users = ESPUser.objects.filter(id=request.POST['user_id'])
-        if users.count() != 1:
+        user = ESPUser.objects.filter(id=request.POST['user_id']).first()
+        if not user:
             return HttpResponseBadRequest('')
         else:
-            user = users[0]
             user.is_active = activate
             user.save()
             return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
