@@ -497,7 +497,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         moderators = []
         classes = []
         qs = prog.classes().prefetch_related(
-            'category', 'sections', 'teachers')
+            'category', 'sections', 'teachers',
+            'flags__flag_type')
 
         for c in qs:
             class_teachers = c.get_teachers()
@@ -519,6 +520,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 cls['difficulty'] = c.hardness_rating
                 cls['prereqs'] = c.prereqs
             cls['emailcode'] = c.emailcode()
+            cls['dashboard_flags'] = [
+                {'name': f.flag_type.name, 'color': f.flag_type.getColor()}
+                for f in c.flags.all()
+                if f.flag_type.show_in_dashboard
+            ]
             if c.duration:
                 cls['length'] = float(c.duration)
             cls['sections'] = [s.id for s in c.sections.all()]
@@ -560,6 +566,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'classes': classes, 'teachers': teachers, 'moderators': moderators}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
+    class_subjects.cached_function.depend_on_row(ClassFlag, lambda flag: {'prog': flag.subject.parent_program})
+    class_subjects.cached_function.depend_on_row(ClassFlagType, lambda ft: {})
 
     @aux_call
     @json_response({
@@ -806,7 +814,16 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'comments': cls.message_for_directors,
             'special_requests': cls.requested_special_resources,
             'purchases': cls.purchase_requests,
-            'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
+            'flags': [
+                {
+                    'name': f.flag_type.name,
+                    'color': f.flag_type.getColor(),
+                    'comment': f.comment,
+                    'modified_by': f.modified_by.username if f.modified_by_id else '',
+                    'modified_time': f.modified_time.strftime('%Y-%m-%d %H:%M'),
+                }
+                for f in cls.flags.select_related('flag_type', 'modified_by').all()
+            ],
         }
 
         return {return_key: [return_dict]}
