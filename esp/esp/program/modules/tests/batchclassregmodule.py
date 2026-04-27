@@ -152,10 +152,15 @@ class BatchClassRegModuleTest(ProgramFrameworkTest):
         
         # testing with a non-existing integer filter ID
         url = '/manage/' + self.program.url + '/batchclassregfinal?filterid=999999'
-        with self.assertRaisesMessage(ESPError, errorMessage):
+        with self.assertRaisesMessage(ESPError(), errorMessage):
             self.client.post(url, {'section_id': section.id})
-
+            
         # test with filter ID which is not a number, which triggers ValueError branch
         url_bad_type = '/manage/' + self.program.url + '/batchclassregfinal?filterid=abc'
-        with self.assertRaisesMessage(ESPError, errorMessage):
+        with self.assertRaisesMessage(ESPError(), errorMessage):
             self.client.post(url_bad_type, {'section_id': section.id})
+            
+        # test with missing filter ID
+        url_missing = '/manage/' + self.program.url + '/batchclassregfinal'
+        with self.assertRaisesMessage(ESPError, errorMessage):
+            self.client.post(url_missing, {'section_id': section.id})

@@ -102,7 +102,7 @@ class BatchClassRegModule(ProgramModuleObj):
         try:
             filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         except (PersistentQueryFilter.DoesNotExist, ValueError):
-            raise ESPError()('Selected Filter is either not valid or available no more')
+            raise ESPError()('Selected filter is invalid or no longer available.')
         
         override_full = 'override_full' in request.POST
         result = self.batch_register(filterObj, section, override_full)
