@@ -558,7 +558,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """A logged-in admin should be able to change a student's graduation
         year via the graduation_year GET parameter."""
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -580,7 +580,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """A student is not an administrator, so the view should return 403
         and leave the graduation year unchanged."""
         self.client.login(username=self.student.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -605,7 +605,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         unchanged."""
         teacher = self.teachers[0]
         self.client.login(username=teacher.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -629,7 +629,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         the graduation year must remain untouched."""
         # Ensure no session cookie is active.
         self.client.logout()
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -655,7 +655,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         the view returns 200 without crashing, and the graduation year in the
         DB remains unchanged."""
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': 'not_a_number',
         })
@@ -683,7 +683,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         profile.save()
 
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -702,7 +702,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         self.client.login(username=self.admin.username, password='password')
 
         for invalid_year in ('-100', '999999'):
-            response = self.client.get(self.userview_base, data={
+            response = self.client.post(self.userview_base, data={
                 'username': self.student.username,
                 'graduation_year': invalid_year,
             })
@@ -722,7 +722,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         profile.save()
 
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': 'not_a_number',
         })
