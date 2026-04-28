@@ -228,17 +228,17 @@ class ClassManager(Manager):
 
         if initial_queryset is None:
             expanded_classes = []
-  
+
             for cls in classes:
                 # original category
                 expanded_classes.append(cls)
-  
+
                 # secondary categories
                 for sec_cat in cls.secondary_categories.all():
                     clone = copy.copy(cls)
                     clone.category = sec_cat
                     expanded_classes.append(clone)
-  
+
             classes = expanded_classes
 
         #   Filter out duplicates by ID.  This is necessary because Django's ORM
@@ -293,7 +293,7 @@ class ClassManager(Manager):
     catalog_cached.depend_on_model('program.ClassSection')
     catalog_cached.depend_on_model('qsdmedia.Media')
     catalog_cached.depend_on_model('tagdict.Tag')
-    catalog_cached.depend_on_m2m('program.ClassSubject', 'secondary_categories')
+    catalog_cached.depend_on_m2m('program.ClassSubject', 'secondary_categories', lambda subj, cat: {'self': subj})
 
     #perhaps make it program-specific?
     @staticmethod
