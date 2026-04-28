@@ -10,6 +10,7 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
 import datetime
 
+
 class UserForwarderAdmin(admin.ModelAdmin):
     list_display = ('source', 'target')
     search_fields = default_user_search('source') + default_user_search('target')
@@ -97,8 +98,8 @@ class PermissionAdmin(admin.ModelAdmin):
         if rows_updated == 1:
             message_bit = "1 permission was"
         else:
-            message_bit = "%s permissions were" % rows_updated
-        self.message_user(request, "%s successfully expired." % message_bit)
+            message_bit = f"{rows_updated} permissions were"
+        self.message_user(request, f"{message_bit} successfully expired.")
     expire.short_description = "Expire permissions"
 
     def renew(self, request, queryset):
@@ -106,8 +107,8 @@ class PermissionAdmin(admin.ModelAdmin):
         if rows_updated == 1:
             message_bit = "1 permission was"
         else:
-            message_bit = "%s permissions were" % rows_updated
-        self.message_user(request, "%s successfully expired." % message_bit)
+            message_bit = f"{rows_updated} permissions were"
+        self.message_user(request, f"{message_bit} successfully renewed.")
     renew.short_description = "Renew permissions"
 
 admin_site.register(Permission, PermissionAdmin)
@@ -151,7 +152,7 @@ class K12SchoolAdmin(admin.ModelAdmin):
     list_filter = ['school_type']
     def contact_name(self, obj):
         if obj.contact:
-            return "%s %s" % (obj.contact.first_name, obj.contact.last_name)
+            return f"{obj.contact.first_name} {obj.contact.last_name}"
         return None
     contact_name.short_description = 'Contact name'
 
@@ -173,4 +174,3 @@ admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group
 admin_site.register(Group, GroupAdmin)
-

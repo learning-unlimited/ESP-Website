@@ -114,7 +114,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         self.assertTrue(j < len(lines) - 2) ## Found the line, need to also find the error message on the next line
 
         ## Find the error message
-        self.assertTrue('<span class="form_error">This field is required.</span>' in lines[i+j+1])
+        self.assertTrue('<span class="form_error" role="alert">This field is required.</span>' in lines[i+j+1])
 
         ## Validate that the default value of the form is the empty string, like we assumed in POST'ing it above
         found_default = False
