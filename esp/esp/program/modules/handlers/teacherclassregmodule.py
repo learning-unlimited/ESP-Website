@@ -871,23 +871,36 @@ class TeacherClassRegModule(ProgramModuleObj):
                                 stored_capacity = sec.max_class_capacity
 
                                 # The form displays the effective capacity, which may differ
-                                # from the raw override stored in max_class_capacity when
-                                # program-level multiplier/offset logic is applied. In that
-                                # case, writing the displayed value back into
-                                # max_class_capacity would change the effective capacity
-                                # unexpectedly. Allow no-op submissions, but reject edits
-                                # that cannot be safely converted here.
-                                if displayed_capacity != stored_capacity:
-                                    if new_cap != displayed_capacity:
-                                        errors[sec.id] = 'Capacity cannot be edited here because the displayed effective capacity differs from the stored raw capacity override for this section.'
-                                else:
-                                    sec.max_class_capacity = new_cap
-                                    sec.save()
+            submitted_capacities = 0
+            for sec in cls.sections.all():
+                key = 'capacity_%d' % sec.id
+                if key in request.POST:
+                    submitted_capacities += 1
+                    raw_cap = request.POST[key]
+                    if raw_cap is None or not raw_cap.strip():
+                        errors[sec.id] = 'Capacity must be a non-negative integer'
+                        continue
+
+                    try:
+                        new_cap = int(raw_cap)
                     except ValueError:
-                        pass
+                        errors[sec.id] = 'Capacity must be a non-negative integer'
+                        continue
+
+                    if new_cap < 0:
+                        errors[sec.id] = 'Capacity must be a non-negative integer'
+                        continue
+
+                    # Check if new capacity is less than current enrollment
+                    current_enrollment = sec.num_students()
+                    if new_cap < current_enrollment:
+                        errors[sec.id] = 'Capacity cannot be less than current enrollment ({} students)'.format(current_enrollment)
+                    else:
+                        sec.max_class_capacity = new_cap
+                        sec.save()
             
-            # Only mark as saved if there were no validation errors
-            if not errors:
+            # Only mark as saved if all submitted values were successfully applied
+            if submitted_capacities > 0 and not errors:
                 saved = True
 
         return render_to_response(self.baseDir()+'editcapacity.html', request, {'cls': cls, 'saved': saved, 'errors': errors})
