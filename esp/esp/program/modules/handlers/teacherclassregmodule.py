@@ -861,11 +861,26 @@ class TeacherClassRegModule(ProgramModuleObj):
                         new_cap = int(request.POST[key])
                         if new_cap >= 0:
                             # Check if new capacity is less than current enrollment
-                            if new_cap < sec.num_students():
-                                errors[sec.id] = 'Capacity cannot be less than current enrollment ({} students)'.format(sec.num_students())
+                            current_students = sec.num_students()
+                            if new_cap < current_students:
+                                errors[sec.id] = 'Capacity cannot be less than current enrollment ({} students)'.format(current_students)
                             else:
-                                sec.max_class_capacity = new_cap
-                                sec.save()
+                                displayed_capacity = sec.capacity
+                                stored_capacity = sec.max_class_capacity
+
+                                # The form displays the effective capacity, which may differ
+                                # from the raw override stored in max_class_capacity when
+                                # program-level multiplier/offset logic is applied. In that
+                                # case, writing the displayed value back into
+                                # max_class_capacity would change the effective capacity
+                                # unexpectedly. Allow no-op submissions, but reject edits
+                                # that cannot be safely converted here.
+                                if displayed_capacity != stored_capacity:
+                                    if new_cap != displayed_capacity:
+                                        errors[sec.id] = 'Capacity cannot be edited here because the displayed effective capacity differs from the stored raw capacity override for this section.'
+                                else:
+                                    sec.max_class_capacity = new_cap
+                                    sec.save()
                     except ValueError:
                         pass
             
