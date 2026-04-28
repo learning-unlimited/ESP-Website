@@ -43,6 +43,7 @@ import random
 import re
 import copy
 
+
 # django Util
 from django.conf import settings
 from django.db import models, transaction
@@ -164,9 +165,6 @@ class ClassManager(Manager):
 
     @cache_function
     def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None, order_args_override=None):
-
-        catalog_cached.depend_on_model('program.ClassSubject')
-        catalog_cached.depend_on_m2m('program.ClassSubject', 'secondary_categories')
         """ Return a queryset of classes for view in the catalog.
 
         In addition to just giving you the classes, it also
@@ -295,6 +293,7 @@ class ClassManager(Manager):
     catalog_cached.depend_on_model('program.ClassSection')
     catalog_cached.depend_on_model('qsdmedia.Media')
     catalog_cached.depend_on_model('tagdict.Tag')
+    catalog_cached.depend_on_m2m('program.ClassSubject', 'secondary_categories')
 
     #perhaps make it program-specific?
     @staticmethod
@@ -1488,7 +1487,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     message_for_directors = models.TextField(blank=True)
     class_size_optimal = models.IntegerField(blank=True, null=True)
     optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True, on_delete=models.CASCADE)
-    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True, null=True)
+    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)

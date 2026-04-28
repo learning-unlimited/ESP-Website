@@ -287,9 +287,9 @@ class SectionInline(admin.TabularInline):
     can_delete = False
 
 class SubjectAdmin(admin.ModelAdmin):
-    
+
     filter_horizontal = ('secondary_categories',)
-    
+
     list_display = ('category', 'id', 'title', 'parent_program',
                     'pretty_teachers')
     list_display_links = ('title',)
@@ -298,12 +298,12 @@ class SubjectAdmin(admin.ModelAdmin):
     readonly_fields = ('timestamp',)
     list_filter = ('parent_program', 'category')
     inlines = (SectionInline,)
-    
+
     def get_readonly_fields(self, request, obj=None):
         if obj:  # Editing an existing object
             return self.readonly_fields + ('parent_program',)
         return self.readonly_fields
-      
+
     fieldsets = (
         (None, {
             'fields': ('title', 'parent_program', 'timestamp', 'category', 'secondary_categories',
