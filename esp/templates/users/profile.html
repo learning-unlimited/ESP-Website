@@ -44,9 +44,9 @@ div.required label.control-label:after {
             </div>
       <ul>
 	{% for error in form.errors.items %}
-	{% ifequal error.0 '__all__' %}
+	{% if error.0 == '__all__' %}
 	{{ error.1 }}
-	{% endifequal %}
+	{% endif %}
 	{% endfor %}
       </ul>
       <br />
@@ -57,39 +57,39 @@ div.required label.control-label:after {
         <input type="hidden" name="profile_page" value="true" />
         <input type="hidden" name="current_role" value="{{ profiletype }}" />
 
-        {% ifequal profiletype "teacher" %}
+        {% if profiletype == "teacher" %}
             {% include "users/profiles/usercontact.html" %}
             {% include "users/profiles/teacherinfo.html" %}
         {% else %}
         
-        {% ifequal profiletype "student" %}
+        {% if profiletype == "student" %}
             {% include "users/profiles/usercontact.html" %}
             {% include "users/profiles/studentinfo.html" %}
             {% include "users/profiles/guardiancontact.html" %}
             {% include "users/profiles/emergencycontact.html" %}
         {% else %}
 
-        {% ifequal profiletype "educator" %}
+        {% if profiletype == "educator" %}
             {% include "users/profiles/usercontact.html" %}
             {% include "users/profiles/educatorinfo.html" %}
         {% else %}
 
-        {% ifequal profiletype "guardian" %}
+        {% if profiletype == "guardian" %}
             {% include "users/profiles/usercontact.html" %}
             {% include "users/profiles/guardianinfo.html" %}
         {% else %}
         
-        {% ifequal profiletype "volunteer" %}
+        {% if profiletype == "volunteer" %}
             {% include "users/profiles/usercontact.html" %}
         {% else %}
 
         {% include "themes/bs_form.html" %}
 
-        {% endifequal %}
-        {% endifequal %}
-        {% endifequal %}
-        {% endifequal %}
-        {% endifequal %}
+        {% endif %}
+        {% endif %}
+        {% endif %}
+        {% endif %}
+        {% endif %}
 
         <div class="form-actions"><input type="submit" class="btn btn-primary" value="{% if new_user %}Submit{% else %}Update{% endif %} Your Information!" /></div>
 

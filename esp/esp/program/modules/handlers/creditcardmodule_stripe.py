@@ -165,7 +165,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   and followed by a 24 character base64-encoded string.
         valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
         valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
-        if not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
+        if not self.settings.get('publishable_key') or not self.settings.get('secret_key') or not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
             return False
         return True
 

@@ -276,13 +276,13 @@ class AJAXChangeLogEntry(models.Model):
     moderator = models.IntegerField(blank=True, null=True)
 
     # moderator entry: add or remove moderator?
-    assigned = models.NullBooleanField()
+    assigned = models.BooleanField(null=True)
 
     # comment entry: comment text
     comment = models.CharField(max_length=256)
 
     # comment entry: is locked
-    locked = models.NullBooleanField()
+    locked = models.BooleanField(null=True)
 
     # ClassSection ID to update
     cls_id = models.IntegerField()

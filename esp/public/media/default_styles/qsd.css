@@ -62,3 +62,43 @@ textarea.qsd_fullsize
 {
     height: 450px !important;
 }
+
+/* Version history panel */
+.qsd_history_panel {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    margin: 4px 0;
+    background: #fff;
+}
+
+.qsd_history_list table {
+    font-size: 12px;
+}
+
+.qsd_history_list table td,
+.qsd_history_list table th {
+    padding: 4px 6px;
+    vertical-align: middle;
+}
+
+.qsd_history_snippet {
+    color: #777;
+    display: block;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qsd-last-viewed {
+    background-color: #d9edf7;
+    border-color: #31708f;
+    color: #31708f;
+}
+
+.qsd-last-viewed-label {
+    font-size: 11px;
+    color: #31708f;
+    font-style: italic;
+}

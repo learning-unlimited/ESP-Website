@@ -46,8 +46,8 @@ class DropdownOtherField(forms.MultiValueField):
 class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     """ Base for contact form """
 
-    first_name = StrippedCharField(length=25, max_length=64)
-    last_name = StrippedCharField(length=30, max_length=64)
+    first_name = StrippedCharField(length=25, max_length=ESPUser._meta.get_field('first_name').max_length)
+    last_name = StrippedCharField(length=30, max_length=ESPUser._meta.get_field('last_name').max_length)
     e_mail = forms.EmailField()
     phone_day = PhoneNumberField(required=False)
     phone_cell = PhoneNumberField(required=False)

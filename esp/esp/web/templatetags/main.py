@@ -64,7 +64,7 @@ def get_field(object, field):
 
 @register.filter
 def regexsite(str):
-    return str.replace(".", "\.")
+    return str.replace(".", r"\.")
 
 @register.filter
 def extract_theme(url):

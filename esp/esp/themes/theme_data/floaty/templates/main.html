@@ -44,9 +44,16 @@
         },
     {% endfor %}
     ];
+
     var debug = {{ settings.DEBUG|yesno:"true,false" }};
     </script>
+    {{ theme.toolbar_links|json_script:"toolbar-links-data" }}
+    <script type="text/javascript">
+    var rawToolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').textContent);
+    var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
+    </script>
     <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
+
     {% comment %} === Ends Admin Toolbar (includes user search) === {% endcomment %}
 
     <div id="nav_buffer">
@@ -174,3 +181,4 @@
 {% endblock %} {# endblock main #}
 
 {% endblock %} {# endblock body #}
+

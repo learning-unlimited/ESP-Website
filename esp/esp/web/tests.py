@@ -43,6 +43,7 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.utils.models import TemplateOverride
 from esp.web.admin import NavBarCategoryAdmin
 from esp.admin import admin_site
+from django.contrib.auth.models import Group
 
 import difflib
 import logging
@@ -312,3 +313,39 @@ class JavascriptSyntaxTest(TestCase):
             self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
 
 
+class ProfileEditorCapitalizationTest(TestCase):
+    """
+    Test that profile_editor() handles CamelCase group names correctly.
+    Groups in the database use CamelCase (e.g. "StudentRep") but
+    profile_editor() convention is all-lowercase. This test ensures
+    no crash occurs due to capitalization mismatch.
+    """
+
+    def setUp(self):
+        # Create a CamelCase group like it exists in real DB
+        self.group = Group.objects.get_or_create(name='StudentRep')[0]
+
+        # Create a test user
+        from esp.users.models import ESPUser
+        self.user = ESPUser.objects.create_user(
+            username='teststudentrep',
+            password='password',
+            email='teststudentrep@test.com'
+        )
+
+        # Assign ONLY the CamelCase group — no standard role
+        self.user.groups.add(self.group)
+        self.user.save()
+
+    def test_profile_editor_with_camelcase_group(self):
+        """
+        A user with only a CamelCase group (e.g. StudentRep) should be
+        able to visit their profile page without a ValueError crash.
+        """
+        c = Client()
+        logged_in = c.login(username='teststudentrep', password='password')
+        self.assertTrue(logged_in, "Could not log in test user 'teststudentrep'")
+        response = c.get('/myesp/profile/')
+
+        # Should load fine — not crash with ValueError
+        self.assertEqual(response.status_code, 200)

@@ -39,7 +39,39 @@ from esp.users.models import admin_required
 from difflib import HtmlDiff
 import os.path
 from django.conf import settings
-from django.http import Http404
+from django.http import Http404, JsonResponse
+
+@admin_required
+def get_default_template_content(request):
+    """Return the on-disk content of a default template as JSON, for use by
+    the admin "Load default template" button on the TemplateOverride add form.
+
+    GET parameter:
+        name -- relative path of the template (e.g. "program/receipt.html")
+
+    Responds with JSON:
+        {"content": "..."} on success
+        {"error": "..."} on failure (with an appropriate HTTP status code)
+    """
+    name = request.GET.get('name', '').strip()
+    if not name:
+        return JsonResponse({'error': 'No template name provided.'}, status=400)
+
+    template_dir = os.path.realpath(os.path.join(settings.PROJECT_ROOT, 'templates'))
+    requested_path = os.path.realpath(os.path.join(template_dir, name))
+
+    # Guard against path traversal (e.g. "../../etc/passwd")
+    if not requested_path.startswith(template_dir + os.sep):
+        return JsonResponse({'error': 'Invalid template name.'}, status=400)
+
+    if not os.path.isfile(requested_path):
+        return JsonResponse({'error': 'Template not found: %s' % name}, status=404)
+
+    with open(requested_path) as f:
+        content = f.read()
+
+    return JsonResponse({'content': content})
+
 
 @admin_required
 def diff_templateoverride(request, template_id):

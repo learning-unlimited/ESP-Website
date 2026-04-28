@@ -1,6 +1,6 @@
 import json
 
-class TestProgramManager():
+class ProgramManagerTestHelper():
     def __init__(self, client, program, teachers, rooms, timeslots):
         self.client = client
         self.program = program

@@ -47,5 +47,6 @@ local_fabfile.py
 # Node.js
 node_modules/
 .docker-setup-done
+.collectstatic-done
 esp/db.sqlite3
 esp/esp/db.sqlite3

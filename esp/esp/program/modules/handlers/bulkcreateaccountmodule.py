@@ -1,9 +1,12 @@
-from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.base import (ProgramModuleObj, needs_admin,
+                                      main_call, aux_call)
 from esp.utils.web import render_to_response
 from esp.middleware import ESPError
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo
+from esp.program.models import RegistrationProfile
 from django.contrib.auth.models import Group
 import random
+
 
 class BulkCreateAccountModule(ProgramModuleObj):
     doc = """Create a bulk set of accounts (e.g. for outreach)."""
@@ -176,12 +179,62 @@ def get_group(group):
 
 
 def create_user_with_profile(username, password, program, groups):
-    # print "creating", username
+    """
+    Create a user with complete profile information for program use.
+
+    Creates:
+    - ESPUser account
+    - ContactInfo with basic user information
+    - RegistrationProfile linked to the program
+    - StudentInfo (if Student group) or TeacherInfo (if Teacher group)
+    """
+    # Create the user account
     user = ESPUser.objects.create_user(username=username, password=password)
     user.groups.add(*groups)
+
+    # Create ContactInfo with username as first name (limited without real names)
+    contact_info = ContactInfo(
+        user=user,
+        first_name=username,
+        last_name='',
+        e_mail=''
+    )
+    contact_info.save()
+
+    # Get or create RegistrationProfile for this program
+    reg_profile = RegistrationProfile.getLastForProgram(user, program)
+    reg_profile.contact_user = contact_info
+
+    # Create StudentInfo or TeacherInfo based on groups
+    group_names = [g.name for g in groups]
+
+    if 'Student' in group_names:
+        # Create StudentInfo with a default graduation year
+        default_grade = 9
+        if program:
+            yog = ESPUser.YOGFromGrade(default_grade,
+                                       ESPUser.program_schoolyear(program))
+        else:
+            yog = ESPUser.YOGFromGrade(default_grade,
+                                       ESPUser.current_schoolyear())
+        student_info = StudentInfo(
+            user=user,
+            graduation_year=yog
+        )
+        student_info.save()
+        reg_profile.student_info = student_info
+
+    if 'Teacher' in group_names:
+        # Create TeacherInfo for teacher accounts
+        teacher_info = TeacherInfo(user=user)
+        teacher_info.save()
+        reg_profile.teacher_info = teacher_info
+
+    reg_profile.save()
+
     return {
         'username': username,
         'password': password,
         'user': user,
+        'profile': reg_profile,
     }
-

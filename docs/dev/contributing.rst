@@ -43,7 +43,7 @@ From the directory ``/esp``: ::
 Write some code!
 Test your code!
 
-Look at what you've changed (``git status`` and/or ``git diff``), and then run ``git commit -a -m``, and type a commit message (see `<http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>` for good commit message style), like so: ::
+Look at what you've changed (``git status`` and/or ``git diff``), and then run ``git commit -a -m``, and type a commit message (see `<https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>` for good commit message style), like so: ::
 
   git commit -a -m "Hello world"
 

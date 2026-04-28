@@ -93,7 +93,7 @@ def inline_qsd_block(parser, token):
     if len(tokens) == 2:
         iqb, url = tokens
     else:
-        raise Exception("Wrong number of inputs for %s, 1 expected" % (tokens))
+        raise Exception(f"Wrong number of inputs for {tokens}, 1 expected")
 
     nodelist = parser.parse(("end_inline_qsd_block",))
     parser.delete_first_token()
@@ -107,7 +107,7 @@ def inline_program_qsd_block(parser, token):
     if len(tokens) == 3:
         iqb, program, url = tokens
     else:
-        raise Exception("Wrong number of inputs for %s, 2 expected" % (tokens))
+        raise Exception(f"Wrong number of inputs for {tokens}, 2 expected")
 
     nodelist = parser.parse(("end_inline_program_qsd_block",))
     parser.delete_first_token()

@@ -146,7 +146,7 @@ Extra Explanation:
 ========================================
 
 This request can be (re)viewed at:
-<http://%s/admin/program/financialaidrequest/%s/>
+<%s://%s/admin/program/financialaidrequest/%s/>
 
 
 """) % (request.user.first_name,
@@ -162,6 +162,7 @@ This request can be (re)viewed at:
     str(app.household_income),
     str(app.student_prepare),
     app.extra_explaination,
+    'http' if settings.DEBUG else 'https',
     settings.DEFAULT_HOST, # server hostname
     str(app.id)),
                             settings.SERVER_EMAIL,
