@@ -30,7 +30,7 @@ permissions:
 jobs:
   migrations:
     name: Migration Consistency Check
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     services:
       postgres:
         image: postgres:14
@@ -58,14 +58,16 @@ jobs:
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-3.7-${{ hashFiles('esp/requirements.txt') }}
+        key: ${{ runner.os }}-u2204-pip-3.7-${{ hashFiles('esp/requirements.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-3.7-
-          ${{ runner.os }}-pip-
+          ${{ runner.os }}-u2204-pip-3.7-
+    - name: Clear cached psycopg2 wheels
+      run: |
+        rm -rf ~/.cache/pip/wheels
     - name: Get apt packages list
       id: apt-action-migrations
       run: |
-        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+        PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^.*pip' | tr '\n' ' ')
         echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
       uses: Eeems-Org/apt-cache-action@v1
@@ -79,6 +81,8 @@ jobs:
       env:
         CI_JOB: test
         PYTHON_VERSION: "3.7"
+        PIP_NO_BINARY: "psycopg2,psycopg2-binary"
+        PIP_NO_CACHE_DIR: "1"
       run: deploy/ci/install
     - name: Prepare for Migration Check
       env:
