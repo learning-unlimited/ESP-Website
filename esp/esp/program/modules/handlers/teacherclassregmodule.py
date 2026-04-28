@@ -846,6 +846,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             raise ESPError("Invalid integer for class ID! Got `{}`".format(extra), log=False)
 
         classes = ClassSubject.objects.filter(id=extra)
+        if len(classes) == 0:
+            raise ESPError("No class found matching this ID (ID={})!".format(extra), log=False)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         
