@@ -301,3 +301,100 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.client.login(username=self.teacher.username, password='password')
         url = '%steacherlookup' % self.program.get_teach_url()
         self.assertEqual(self.client.get(url).status_code, 302)
+
+    # ------------------------------------------------------------------ #
+    #  editcapacity endpoint tests (Issue 9)                              #
+    # ------------------------------------------------------------------ #
+
+    def _editcapacity_url(self, cls=None):
+        if cls is None:
+            cls = self.cls
+        return '%seditcapacity/%d' % (self.program.get_teach_url(), cls.id)
+
+    def test_editcapacity_get_authorized(self):
+        """GET by an authorized teacher renders the form with section fields."""
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get(self._editcapacity_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Edit Capacity')
+        for sec in self.cls.sections.all():
+            self.assertContains(response, 'capacity_%d' % sec.id)
+
+    def test_editcapacity_post_updates_capacity(self):
+        """POST with valid capacity values updates max_class_capacity."""
+        self.client.login(username=self.teacher.username, password='password')
+        sec = self.cls.sections.all()[0]
+        new_cap = 3
+        response = self.client.post(self._editcapacity_url(), {
+            'capacity_%d' % sec.id: str(new_cap),
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Success')
+        sec.refresh_from_db()
+        self.assertEqual(sec.max_class_capacity, new_cap)
+
+    def test_editcapacity_unauthorized_teacher(self):
+        """A teacher who does not own the class cannot edit capacity."""
+        self.client.login(username=self.other_teacher1.username, password='password')
+        response = self.client.get(self._editcapacity_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Edit Capacity')
+
+    def test_editcapacity_nonexistent_class(self):
+        """Accessing a non-existent class ID raises ESPError (500)."""
+        self.client.login(username=self.teacher.username, password='password')
+        url = '%seditcapacity/99999' % self.program.get_teach_url()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 500)
+
+    def test_editcapacity_blank_clears_override(self):
+        """Submitting a blank value clears max_class_capacity."""
+        self.client.login(username=self.teacher.username, password='password')
+        sec = self.cls.sections.all()[0]
+        sec.max_class_capacity = 2
+        sec.save()
+        response = self.client.post(self._editcapacity_url(), {
+            'capacity_%d' % sec.id: '',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Success')
+        sec.refresh_from_db()
+        self.assertIsNone(sec.max_class_capacity)
+
+    def test_editcapacity_invalid_input(self):
+        """Non-integer input produces an error."""
+        self.client.login(username=self.teacher.username, password='password')
+        sec = self.cls.sections.all()[0]
+        response = self.client.post(self._editcapacity_url(), {
+            'capacity_%d' % sec.id: 'abc',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Success')
+        self.assertContains(response, 'whole number')
+
+    def test_editcapacity_negative_input(self):
+        """Negative input produces an error."""
+        self.client.login(username=self.teacher.username, password='password')
+        sec = self.cls.sections.all()[0]
+        response = self.client.post(self._editcapacity_url(), {
+            'capacity_%d' % sec.id: '-5',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Success')
+        self.assertContains(response, 'negative')
+
+    @transaction.atomic
+    def test_editcapacity_below_enrollment(self):
+        """Cannot set capacity below current enrollment."""
+        self.client.login(username=self.teacher.username, password='password')
+        sec = self.cls.sections.all()[0]
+        self.add_student_profiles()
+        for student in self.students[:3]:
+            sec.preregister_student(student)
+        self.assertEqual(sec.num_students(), 3)
+        response = self.client.post(self._editcapacity_url(), {
+            'capacity_%d' % sec.id: '1',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Success')
+        self.assertContains(response, 'currently enrolled')
