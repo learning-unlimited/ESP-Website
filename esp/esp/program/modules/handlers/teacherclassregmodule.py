@@ -840,91 +840,125 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/Edit")
     def editcapacity(self, request, tl, one, two, module, extra, prog):
+        """Allow teachers to edit the max_class_capacity override for their sections.
+
+        Capacity model (see ClassSection._get_capacity):
+          - max_class_capacity: per-section override stored in the DB.
+            When set, it replaces the room/class_size_max default.
+          - capacity (property): effective capacity shown to students,
+            equal to max_class_capacity (or the default) after applying the
+            program-wide multiplier/offset.
+
+        This form edits max_class_capacity directly to avoid double-applying
+        the multiplier.  Blank input clears the override, reverting the
+        section to its default capacity.
+
+        Permission policy: non-admin teachers may only *decrease* effective
+        capacity.  Setting an override that would raise effective capacity
+        above the natural default requires administrator privileges.
+        """
         try:
             int(extra)
         except (ValueError, TypeError):
             raise ESPError("Invalid integer for class ID! Got `{}`".format(extra), log=False)
 
         classes = ClassSubject.objects.filter(id=extra)
+
+        # Distinguish "not found" from "permission denied" so missing IDs
+        # aren't silently masked as auth failures.
+        if len(classes) == 0:
+            raise ESPError("No class found matching this ID (ID={})!".format(extra), log=False)
+
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         cls = classes[0]
         saved = False
-        # Track validation errors per section: {section_id: error_message}
         errors = {}
 
         if request.method == 'POST':
-            # Track if any errors occurred during processing
             any_errors = False
 
             for sec in cls.sections.all():
                 key = 'capacity_%d' % sec.id
-                if key in request.POST:
-                    try:
-                        new_cap_str = request.POST[key].strip()
+                if key not in request.POST:
+                    continue
 
-                        # Handle empty string: revert to default calculated capacity
-                        if not new_cap_str:
-                            old_cap = sec.max_class_capacity
-                            sec.max_class_capacity = None
-                            fallback_capacity = sec.capacity
-                            current_enrolled = sec.count_enrolled_students()
-                            if fallback_capacity < current_enrolled:
-                                sec.max_class_capacity = old_cap
-                                errors[sec.id] = (
-                                    f"Default capacity would be less than the {current_enrolled} "
-                                    "currently enrolled students in this section."
-                                )
-                                any_errors = True
-                                continue
-                            sec.save()
-                            sec.max_class_capacity = None
-                            sec.save()
-                        else:
-                            # Attempt to parse the input as an integer
-                            try:
-                                new_cap = int(new_cap_str)
-                            except ValueError:
-                                # Invalid input (non-integer): record error and skip this section
-                                errors[sec.id] = "Capacity must be a whole number (e.g., 20, not '20.5' or 'abc')."
-                                any_errors = True
-                                continue  # Move to next section without saving
+                new_cap_str = request.POST[key].strip()
 
-                            # Validate that capacity is not negative
-                            if new_cap < 0:
-                                # Reject negative values
-                                errors[sec.id] = "Capacity cannot be negative."
-                                any_errors = True
-                                continue  # Skip save for this section
-
-                            # Validate that capacity is not below current enrollment
-                            current_enrolled = sec.count_enrolled_students()
-                            if new_cap < current_enrolled:
-                                # Capacity would be below current enrollment: block the save
-                                errors[sec.id] = (
-                                    f"Capacity cannot be less than the {current_enrolled} "
-                                    "currently enrolled students in this section."
-                                )
-                                any_errors = True
-                                continue  # Skip save for this section
-
-                            # Validation passed: update and save the section
-                            sec.max_class_capacity = new_cap
-                            sec.save()
-
-                    except Exception as e:
-                        # Catch any unexpected errors to prevent a 500 error
-                        errors[sec.id] = f"An unexpected error occurred: {str(e)}"
+                # Blank input: clear the override, reverting to default capacity
+                if not new_cap_str:
+                    # Check that the default capacity won't be below enrollment
+                    old_cap = sec.max_class_capacity
+                    sec.max_class_capacity = None
+                    fallback_capacity = sec.capacity
+                    current_enrolled = sec.count_enrolled_students()
+                    if fallback_capacity < current_enrolled:
+                        sec.max_class_capacity = old_cap
+                        errors[sec.id] = (
+                            f"Default capacity ({fallback_capacity}) would be less than "
+                            f"the {current_enrolled} currently enrolled students."
+                        )
                         any_errors = True
+                        continue
+                    sec.save()
+                    continue
 
-            # Only set saved=True if NO sections had errors
+                # Parse as integer
+                try:
+                    new_cap = int(new_cap_str)
+                except ValueError:
+                    errors[sec.id] = "Capacity must be a whole number (e.g., 20, not '20.5' or 'abc')."
+                    any_errors = True
+                    continue
+
+                if new_cap < 0:
+                    errors[sec.id] = "Capacity cannot be negative."
+                    any_errors = True
+                    continue
+
+                # Must not drop below current enrollment
+                current_enrolled = sec.count_enrolled_students()
+                if new_cap < current_enrolled:
+                    errors[sec.id] = (
+                        f"Capacity cannot be less than the {current_enrolled} "
+                        "currently enrolled students in this section."
+                    )
+                    any_errors = True
+                    continue
+
+                # Capacity ceiling for non-admins: cannot increase effective
+                # capacity beyond the natural default (what the section would
+                # have with no override).  This prevents teachers from
+                # circumventing room/program capacity limits.
+                if not request.user.isAdministrator():
+                    original_override = sec.max_class_capacity
+                    sec.max_class_capacity = None
+                    natural_cap = sec._get_capacity()
+                    sec.max_class_capacity = new_cap
+                    proposed_cap = sec._get_capacity()
+                    sec.max_class_capacity = original_override
+
+                    if proposed_cap > natural_cap:
+                        errors[sec.id] = (
+                            f"You cannot increase effective capacity beyond the "
+                            f"default limit of {natural_cap} (proposed override "
+                            f"would result in {proposed_cap} after program "
+                            f"multipliers). Contact an administrator for higher limits."
+                        )
+                        any_errors = True
+                        continue
+
+                # All checks passed
+                sec.max_class_capacity = new_cap
+                sec.save()
+
             saved = not any_errors and len(errors) == 0
 
         context = {
             'cls': cls,
             'saved': saved,
-            'errors': errors,  # Pass error dict so template can display per-section errors
+            'errors': errors,
             'one': one,
             'two': two,
             'module': self,
