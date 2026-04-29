@@ -398,3 +398,45 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'Success')
         self.assertContains(response, 'currently enrolled')
+
+    def test_editcapacity_post_unauthorized(self):
+        """POST by a non-owner teacher is rejected (cannot save)."""
+        self.client.login(username=self.other_teacher1.username, password='password')
+        sec = self.cls.sections.all()[0]
+        old_cap = sec.max_class_capacity
+        response = self.client.post(self._editcapacity_url(), {
+            'capacity_%d' % sec.id: '1',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Edit Capacity')
+        # Verify DB was not modified
+        sec.refresh_from_db()
+        self.assertEqual(sec.max_class_capacity, old_cap)
+
+    def test_editcapacity_no_partial_saves(self):
+        """If one section fails validation, no sections should be persisted.
+
+        This verifies the validate-all-then-save-all atomicity guarantee.
+        """
+        self.client.login(username=self.teacher.username, password='password')
+        sections = list(self.cls.sections.all())
+        if len(sections) < 2:
+            # Need at least 2 sections for this test; add one
+            self.cls.add_section()
+            sections = list(self.cls.sections.all())
+        sec1, sec2 = sections[0], sections[1]
+        old_cap1 = sec1.max_class_capacity
+        old_cap2 = sec2.max_class_capacity
+
+        # Submit valid value for sec1, invalid for sec2
+        response = self.client.post(self._editcapacity_url(), {
+            'capacity_%d' % sec1.id: '3',
+            'capacity_%d' % sec2.id: 'invalid',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Success')
+        # Neither section should have been modified
+        sec1.refresh_from_db()
+        sec2.refresh_from_db()
+        self.assertEqual(sec1.max_class_capacity, old_cap1)
+        self.assertEqual(sec2.max_class_capacity, old_cap2)
