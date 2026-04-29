@@ -69,24 +69,45 @@ Your password has been successfully changed.
 
 <tr>
  <td><label for="password"><strong>Current Password:</strong></label></td>
- <td>{{ form.password }} {% if form.password.errors %}
-   <br /><span class="form_error">{{ form.password.errors|join:", " }}</span>
+ <td>
+   <div class="password-wrapper">
+     {{ form.password }}
+     <button type="button" class="toggle-password" tabindex="-1" aria-label="Toggle password visibility">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+     </button>
+   </div>
+   {% if form.password.errors %}
+     <span class="form_error">{{ form.password.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 <tr>
  <td><label for="newpasswd"><strong>New Password:</strong></label></td>
- <td>{{ form.newpasswd }} {% if form.newpasswd.errors %}
-   <br /><span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
+ <td>
+   <div class="password-wrapper">
+     {{ form.newpasswd }}
+     <button type="button" class="toggle-password" tabindex="-1" aria-label="Toggle password visibility">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+     </button>
+   </div>
+   {% if form.newpasswd.errors %}
+     <span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 <tr>
  <td><label for="newpasswdconfirm"><strong>New password confirm:</strong></label></td>
- <td>{{ form.newpasswdconfirm }} {% if form.newpasswdconfirm.errors %}
-   <br /><span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
+ <td>
+   <div class="password-wrapper">
+     {{ form.newpasswdconfirm }}
+     <button type="button" class="toggle-password" tabindex="-1" aria-label="Toggle password visibility">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+     </button>
+   </div>
+   {% if form.newpasswdconfirm.errors %}
+     <span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
