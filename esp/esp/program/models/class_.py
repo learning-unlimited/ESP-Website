@@ -279,8 +279,8 @@ class ClassManager(Manager):
             p = Program.objects.get(id=classes[0].parent_program_id)
 
         for c in classes:
-            c._teachers = list(c.teachers.all())
-            c._teachers.sort(key=lambda t: t.last_name)
+            c_teachers = list(c.teachers.all())
+            c_teachers.sort(key=lambda t: t.last_name)
             c._sections = sections_by_parent_id[c.id]
             for s in c._sections:
                 s.parent_class = c
