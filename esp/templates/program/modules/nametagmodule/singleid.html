@@ -6,8 +6,10 @@
   <table class="bottom">
   <tr>
      <td class="left">
-        <img src="/media/images/my-logo-small.png" class="logo" alt="{{ group_name }} logo" />
-     </td>
+      {% if has_logo %}
+        <img src="{{ MEDIA_URL }}images/theme/logo.png?v={{ current_logo_version }}" class="logo" alt="{{ group_name }} logo" />
+      {% endif %}
+      </td>
      <td class="right url">
     {% if user.id %}
       <span class="studentid">{{ user.username }} (ID: {{ user.id }})</span>

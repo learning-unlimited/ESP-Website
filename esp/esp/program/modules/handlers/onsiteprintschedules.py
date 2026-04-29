@@ -57,13 +57,29 @@ class OnsitePrintSchedules(ProgramModuleObj):
     @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
-        if not 'sure' in request.GET and not 'gen_img' in request.GET:
+        sure_requested = ('sure' in request.GET) or (request.POST.get('sure', '').lower() in ('1', 'true'))
+
+        if not sure_requested and not 'gen_img' in request.GET:
             printers = Printer.objects.all().values_list('name', flat=True)
 
             return render_to_response(self.baseDir()+'instructions.html',
                                     request, {'printers': printers})
 
-        if 'sure' in request.GET:
+        if sure_requested:
+            expire_old_requested = (
+                request.method == 'POST' and
+                request.POST.get('expire_old', '').lower() in ('1', 'true')
+            )
+            if expire_old_requested:
+                # Clear all pending (unexecuted) print requests for this session.
+                # Scoped to the selected printer when a printer name is in the URL.
+                old_requests = PrintRequest.objects.filter(time_executed__isnull=True)
+                if extra:
+                    if Printer.objects.filter(name=extra).exists():
+                        old_requests = old_requests.filter(printer__name=extra)
+                    else:
+                        old_requests = PrintRequest.objects.none()
+                old_requests.delete()
             return render_to_response(self.baseDir()+'studentschedulesrenderer.html',
                             request, {})
 
@@ -78,7 +94,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
             response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)
             if request.GET['gen_img'] == 'json':
                 import base64
-                src = "data:image/png;base64,{}".format(base64.b64encode(response.content))
+                src = f"data:image/png;base64,{base64.b64encode(response.content)}"
                 data = {
                     'src': src,
                     'id': req.id,
