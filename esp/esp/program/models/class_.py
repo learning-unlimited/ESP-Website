@@ -293,7 +293,6 @@ class ClassManager(Manager):
     catalog_cached.depend_on_model('program.ClassSection')
     catalog_cached.depend_on_model('qsdmedia.Media')
     catalog_cached.depend_on_model('tagdict.Tag')
-    catalog_cached.depend_on_m2m('program.ClassSubject', 'secondary_categories', lambda subj, cat: {'self': subj})
 
     #perhaps make it program-specific?
     @staticmethod
