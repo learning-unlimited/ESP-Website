@@ -57,6 +57,28 @@ class UserPasswdForm(FormWithRequiredCss):
             raise forms.ValidationError(mark_safe('As a security measure, please enter your <strong>current</strong> password.'))
         return current_passwd
 
+    def clean_newpasswd(self):
+        new_passwd = self.cleaned_data.get('newpasswd')
+        current_passwd = self.cleaned_data.get('password')
+
+        if new_passwd == current_passwd:
+            raise forms.ValidationError("New password cannot be the same as the current password.")
+
+        if len(new_passwd) < 8:
+            raise forms.ValidationError("Password must be at least 8 characters long.")
+
+        import re
+        if not re.search(r'[A-Z]', new_passwd):
+            raise forms.ValidationError("Password must contain at least one uppercase letter.")
+        if not re.search(r'[a-z]', new_passwd):
+            raise forms.ValidationError("Password must contain at least one lowercase letter.")
+        if not re.search(r'[0-9]', new_passwd):
+            raise forms.ValidationError("Password must contain at least one number.")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_passwd):
+            raise forms.ValidationError("Password must contain at least one special character.")
+
+        return new_passwd
+
     def clean_newpasswdconfirm(self):
         new_passwd = self.cleaned_data['newpasswdconfirm'].strip()
 
