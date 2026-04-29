@@ -541,9 +541,12 @@ class ClassSection(models.Model):
                 if not ans:
                     ans = self.parent_class.class_size_max
             else:
-                ans = min(
-                    self.parent_class.class_size_max, self._get_room_capacity(rooms)
-                )
+                room_cap = self._get_room_capacity(rooms)
+                class_max = self.parent_class.class_size_max
+                if class_max is None:
+                    ans = room_cap
+                else:
+                    ans = min(class_max, room_cap)
 
         #hacky fix for classes with no max size
         if ans is None or ans == 0:
