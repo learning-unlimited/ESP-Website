@@ -51,7 +51,7 @@ from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
 from django.http                 import HttpResponse, HttpResponseRedirect
-from django.db                   import models
+from django.db                   import models, transaction
 from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
@@ -877,7 +877,11 @@ class TeacherClassRegModule(ProgramModuleObj):
         errors = {}
 
         if request.method == 'POST':
-            any_errors = False
+            # Phase 1: Validate all submitted sections and collect pending changes.
+            # Nothing is saved to the DB during this phase.  Each entry in
+            # pending_changes is (section, new_max_class_capacity) where
+            # new_max_class_capacity may be None (clear override) or an int.
+            pending_changes = []
 
             for sec in cls.sections.all():
                 key = 'capacity_%d' % sec.id
@@ -893,15 +897,16 @@ class TeacherClassRegModule(ProgramModuleObj):
                     sec.max_class_capacity = None
                     fallback_capacity = sec.capacity
                     current_enrolled = sec.count_enrolled_students()
+                    # Restore immediately — we're only validating, not saving
+                    sec.max_class_capacity = old_cap
+
                     if fallback_capacity < current_enrolled:
-                        sec.max_class_capacity = old_cap
                         errors[sec.id] = (
                             f"Default capacity ({fallback_capacity}) would be less than "
                             f"the {current_enrolled} currently enrolled students."
                         )
-                        any_errors = True
                         continue
-                    sec.save()
+                    pending_changes.append((sec, None))
                     continue
 
                 # Parse as integer
@@ -909,12 +914,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                     new_cap = int(new_cap_str)
                 except ValueError:
                     errors[sec.id] = "Capacity must be a whole number (e.g., 20, not '20.5' or 'abc')."
-                    any_errors = True
                     continue
 
                 if new_cap < 0:
                     errors[sec.id] = "Capacity cannot be negative."
-                    any_errors = True
                     continue
 
                 # Must not drop below current enrollment
@@ -924,13 +927,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                         f"Capacity cannot be less than the {current_enrolled} "
                         "currently enrolled students in this section."
                     )
-                    any_errors = True
                     continue
 
                 # Capacity ceiling for non-admins: cannot increase effective
-                # capacity beyond the natural default (what the section would
-                # have with no override).  This prevents teachers from
-                # circumventing room/program capacity limits.
+                # capacity beyond the natural default.
                 if not request.user.isAdministrator():
                     original_override = sec.max_class_capacity
                     sec.max_class_capacity = None
@@ -946,14 +946,17 @@ class TeacherClassRegModule(ProgramModuleObj):
                             f"would result in {proposed_cap} after program "
                             f"multipliers). Contact an administrator for higher limits."
                         )
-                        any_errors = True
                         continue
 
-                # All checks passed
-                sec.max_class_capacity = new_cap
-                sec.save()
+                pending_changes.append((sec, new_cap))
 
-            saved = not any_errors and len(errors) == 0
+            # Phase 2: Persist all changes only if every section passed validation.
+            if pending_changes and not errors:
+                with transaction.atomic():
+                    for sec, new_cap in pending_changes:
+                        sec.max_class_capacity = new_cap
+                        sec.save()
+                saved = True
 
         context = {
             'cls': cls,
