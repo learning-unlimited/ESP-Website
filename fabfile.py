@@ -458,6 +458,14 @@ def runserver():
 
     manage("runserver 0.0.0.0:8000")
 
+@task
+def flush():
+    """
+    Flush the cache
+    """
+    run("echo 'flush_all' | nc -q1 localhost 11211")
+
+
 try:
     from local_fabfile import *
 except ImportError:
