@@ -703,7 +703,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                     newcoteachers.append(coteacher)
 
             coteachers = newcoteachers
-            txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
+
+            txtTeachers = ",".join([str(c.id) for c in coteachers])
 
             new_coteachers_set = set(coteachers)
             to_be_deleted = old_coteachers_set - new_coteachers_set
@@ -716,32 +717,37 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             cls.refresh_from_db()
 
-            ccc.send_class_mail_to_directors(cls)
-
         elif is_admin and op == "addmod":
-            if len(request.POST['moderator_selected'].strip()) == 0:
+            selected = request.POST.get('moderator_selected', '').strip()
+
+            if len(selected) == 0:
                 error = 'Error - Please click on the name when it drops down.'
 
-            elif request.POST['moderator_selected'] in request.POST.get('moderators', '').split(','):
+            elif selected in request.POST.get('moderators', '').split(','):
                 error = 'Error - You already added this ' + prog.getModeratorTitle().lower() + ' to this section!'
 
-            sections = ClassSection.objects.filter(id = request.POST.get('secid'))
+            secid = request.POST.get('secid')
+            sections = ClassSection.objects.filter(id=secid) if secid else []
             if len(sections) != 1:
                 error = 'Error - Please use the form to add a ' + prog.getModeratorTitle().lower() + '.'
             else:
                 section = sections[0]
 
             if error:
-                return render_to_response(template, request, {'class': cls,
-                                                              'ajax': ajax,
-                                                              'txtTeachers': txtTeachers,
-                                                              'coteachers': coteachers,
-                                                              'error': error,
-                                                              'conflict': [],
-                                                              'prog': prog})
+                return render_to_response(template, request, {
+                                                'class': cls,
+                                                'ajax': ajax,
+                                                'txtTeachers': txtTeachers,
+                                                'coteachers': coteachers,
+                                                'error': error,
+                                                'conflict': [],
+                                                'unavailableuser': None,
+                                                'unavailabletimes': [],
+                                                'prog': prog
+                                            })
 
             # add schedule conflict checking here...
-            moderator = ESPUser.objects.get(id = request.POST['moderator_selected'])
+            moderator = ESPUser.objects.get(id=int(selected))
 
             if section.conflicts(moderator):
                 conflictinguser = moderator
@@ -777,7 +783,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                               'conflict': [],
                                                               'prog': prog})
 
-            ids = list(map(int, request.POST.getlist('delete_coteachers')))
+            ids = list(map(int, request.POST.getlist('delete_moderators')))
 
             newcoteachers = []
             for coteacher in coteachers:
