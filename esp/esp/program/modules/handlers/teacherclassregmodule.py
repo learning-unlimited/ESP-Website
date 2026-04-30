@@ -627,8 +627,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             txtTeachers = request.POST['coteachers']
             coteachers = txtTeachers.split(',')
             coteachers = [ x for x in coteachers if x != '' ]
-            coteachers = [ ESPUser.objects.get(id=userid)
-                           for userid in coteachers                ]
+            coteachers = [ESPUser.objects.get(id=int(userid)) for userid in coteachers]
             add_list_members(f"{prog.program_type}_{prog.program_instance}-teachers", coteachers)
 
         op = ''
@@ -661,7 +660,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                               'conflict': [],
                                                               'prog': prog})
 
-            teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
+            teacher = ESPUser.objects.get(id=int(request.POST['teacher_selected']))
 
             availability = teacher.getAvailableTimes(prog)
             # check that the teacher doesn't have a conflicting schedule
@@ -696,10 +695,11 @@ class TeacherClassRegModule(ProgramModuleObj):
                 ccc.send_class_mail_to_directors(cls)
 
         elif op == 'del':
-            ids = request.POST.getlist('delete_coteachers')
+            ids = list(map(int, request.POST.getlist('delete_coteachers')))
+
             newcoteachers = []
             for coteacher in coteachers:
-                if str(coteacher.id) not in ids:
+                if coteacher.id not in ids:
                     newcoteachers.append(coteacher)
 
             coteachers = newcoteachers
@@ -777,16 +777,26 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                               'conflict': [],
                                                               'prog': prog})
 
-            ids = request.POST.getlist('delete_moderators')
-            newmoderators = []
-            for moderator in section.get_moderators():
-                if str(moderator.id) not in ids:
-                    newmoderators.append(moderator)
-            new_moderators_set = set(newmoderators)
-            to_be_deleted = set(section.get_moderators()) - new_moderators_set
-            for moderator in to_be_deleted:
-                section.moderators.remove(moderator)
-            # should we send the moderator or directors an email?
+            ids = list(map(int, request.POST.getlist('delete_coteachers')))
+
+            newcoteachers = []
+            for coteacher in coteachers:
+                if coteacher.id not in ids:
+                    newcoteachers.append(coteacher)
+
+            coteachers = newcoteachers
+            txtTeachers = ",".join([str(c.id) for c in coteachers])
+
+            new_coteachers_set = set(coteachers)
+            to_be_deleted = old_coteachers_set - new_coteachers_set
+
+            if not is_admin and request.user in to_be_deleted:
+                to_be_deleted.remove(request.user)
+
+            for teacher in to_be_deleted:
+                cls.removeTeacher(teacher)
+
+            cls.refresh_from_db()
 
         return render_to_response(template, request, {'class': cls,
                                                       'ajax': ajax,
