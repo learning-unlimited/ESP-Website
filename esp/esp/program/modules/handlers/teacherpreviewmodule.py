@@ -244,20 +244,6 @@ class TeacherPreviewModule(ProgramModuleObj):
             template_file="classrosters.html",
         )
 
-    @aux_call
-    @needs_teacher
-    def catalogpreview(self, request, tl, one, two, module, extra, prog):
-        try:
-            qs = ClassSubject.objects.filter(id=int(extra))
-            cls = qs[0]
-        except (ValueError, IndexError):
-            raise Http404("The requested class could not be found.")
-        cls = ClassSubject.objects.catalog(
-            cls.parent_program, force_all=True, initial_queryset=qs
-        )[0]
-        return render_to_response(
-            self.baseDir() + "catalogpreview.html", request, {"class": cls}
-        )
 
     def get_handouts(self):
         sections = get_current_request().user.getTaughtSections(self.program)

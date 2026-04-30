@@ -54,7 +54,8 @@ from esp.users.models            import ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
-from django.http                 import HttpResponse, HttpResponseRedirect
+from django.http                 import Http404, HttpResponse, HttpResponseRedirect
+from esp.middleware.esperrormiddleware import Http403
 from django.db                   import models
 from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
@@ -654,6 +655,23 @@ class TeacherClassRegModule(ProgramModuleObj):
         context = {'cls': target_class, 'uploadform': context_form, 'module': self, 'renameform': context_rename_form}
 
         return render_to_response(self.baseDir() + "class_docs.html", request, context)
+
+    @aux_call
+    @needs_teacher
+    def catalogpreview(self, request, tl, one, two, module, extra, prog):
+        try:
+            qs = ClassSubject.objects.filter(id=int(extra))
+            cls = qs[0]
+        except (ValueError, IndexError):
+            raise Http404
+        if not request.user.canEdit(cls):
+            raise Http403("You do not have permission to preview this class.")
+        cls = ClassSubject.objects.catalog(
+            cls.parent_program, force_all=True, initial_queryset=qs
+        )[0]
+        return render_to_response(
+            'program/modules/teacherpreviewmodule/catalogpreview.html', request, {"class": cls}
+        )
 
     @staticmethod
     def coteachers_logic(cls, request, prog, template, ajax, is_admin=False):

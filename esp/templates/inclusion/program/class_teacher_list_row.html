@@ -38,7 +38,7 @@
                 <li><a href="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}" title="View/edit class" target="_blank">View/Edit</a></li>
                 <li><a href="/teach/{{program.getUrlBase}}/coteachers?clsid={{cls.id}}" title="Add/remove coteachers" target="_blank">Modify Coteachers</a></li>
                 <li><a href="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}" title="View detailed status" target="_blank">Detailed Status</a></li>
-                <li><a href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}" title="Catalog preview" target="_blank">Catalog Preview</a></li>
+                <li><a href="/teach/{{ program.getUrlBase }}/catalogpreview/{{ cls.id }}" title="Catalog preview" target="_blank">Catalog Preview</a></li>
                 <li><a href="/teach/{{ program.getUrlBase }}/class_docs/{{cls.id}}" title="Upload/manage files" target="_blank">Manage Documents</a></li>
                 {% if not cls.isRejected and not cls.isCancelled %}
                 <li>
