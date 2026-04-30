@@ -29,8 +29,8 @@ def set_my_defaults(apps, schema_editor):
                     props = props[0] # IndexError here means there were no properties found, which is... bad
             pm.choosable = props['choosable']
             pm.save()
-        except:
-            print(("No handler for module %s" % (pm)))
+        except Exception as e:
+            print("No handler for module with handler=%r (id=%s): %s: %s" % (pm.handler, pm.pk, type(e).__name__, e))
 
 def reverse_func(apps, schema_editor):
     pass  #
