@@ -147,7 +147,8 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
             list(map(response.delete_cookie, cookies_to_delete))
             modified_cookies = (len(cookies_to_delete) > 0)
 
-        request.session.accessed = request.session.modified  ## Django only uses this for determining whether it refreshed the session cookie (and so needs to vary on cache), and its behavior is buggy; this works around it. -- aseering 11/1/2010
+        if hasattr(request, 'session'):
+            request.session.accessed = request.session.modified  ## Django only uses this for determining whether it refreshed the session cookie (and so needs to vary on cache), and its behavior is buggy; this works around it. -- aseering 11/1/2010
 
         if modified_cookies:
             patch_vary_headers(response, ('Cookie',))
