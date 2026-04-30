@@ -25,9 +25,9 @@ def set_my_defaults(apps, schema_editor):
 
     # Build priority update mapping: user > guardian > emergency.
     updates = {}  # ci_id -> user_id
-    for ci_id, user_id in as_user_map.iteritems():
+    for ci_id, user_id in as_user_map.items():
         updates[ci_id] = user_id
-    for ci_id, user_id in as_guardian_map.iteritems():
+    for ci_id, user_id in as_guardian_map.items():
         if ci_id not in updates:
             updates[ci_id] = user_id
 
@@ -60,7 +60,7 @@ def set_my_defaults(apps, schema_editor):
                 FROM (VALUES %s) AS data(ci_id, user_id)
                 WHERE ci.id = data.ci_id AND ci.user_id IS NULL
                 """.format(table=table),
-                list(updates.iteritems()),
+                list(updates.items()),
                 page_size=1000,
             )
 
