@@ -658,7 +658,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                               'txtTeachers': txtTeachers,
                                                               'coteachers': coteachers,
                                                               'error': error,
-                                                              'conflict': []})
+                                                              'conflict': [],
+                                                              'prog': prog})
 
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
@@ -691,6 +692,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
                 ccc.associate_teacher_with_class(cls, teacher)
+                cls.refresh_from_db()
                 ccc.send_class_mail_to_directors(cls)
 
         elif op == 'del':
@@ -711,6 +713,8 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             for teacher in to_be_deleted:
                 cls.removeTeacher(teacher)
+
+            cls.refresh_from_db()
 
             ccc.send_class_mail_to_directors(cls)
 
@@ -733,7 +737,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                               'txtTeachers': txtTeachers,
                                                               'coteachers': coteachers,
                                                               'error': error,
-                                                              'conflict': []})
+                                                              'conflict': [],
+                                                              'prog': prog})
 
             # add schedule conflict checking here...
             moderator = ESPUser.objects.get(id = request.POST['moderator_selected'])
@@ -769,7 +774,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                               'txtTeachers': txtTeachers,
                                                               'coteachers': coteachers,
                                                               'error': error,
-                                                              'conflict': []})
+                                                              'conflict': [],
+                                                              'prog': prog})
+
             ids = request.POST.getlist('delete_moderators')
             newmoderators = []
             for moderator in section.get_moderators():
@@ -787,7 +794,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                       'coteachers': coteachers,
                                                       'conflict': conflictinguser,
                                                       'unavailableuser': unavailableuser,
-                                                      'unavailabletimes': unavailabletimes})
+                                                      'unavailabletimes': unavailabletimes,
+                                                      'prog': prog,
+                                                      'error': error})
 
     @aux_call
     @needs_teacher

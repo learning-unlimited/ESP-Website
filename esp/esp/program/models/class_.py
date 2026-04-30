@@ -281,6 +281,7 @@ class ClassManager(Manager):
         for c in classes:
             c_teachers = list(c.teachers.all())
             c_teachers.sort(key=lambda t: t.last_name)
+            c_teachers.sort(key=lambda t: t.last_name)
             c._sections = sections_by_parent_id[c.id]
             for s in c._sections:
                 s.parent_class = c
@@ -2189,6 +2190,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     class Meta:
         db_table = 'program_class'
         app_label = 'program'
+
+    @property
+    def _teachers(self):
+        return list(self.teachers.values_list('id', flat=True))
 
 class ClassCategories(models.Model):
     """ A list of all possible categories for an ESP class
