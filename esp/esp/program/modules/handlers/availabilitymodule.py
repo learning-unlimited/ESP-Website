@@ -144,11 +144,9 @@ class AvailabilityModule(ProgramModuleObj):
 
     def prettyTime(self, time, inc_date=True):
         if inc_date:
-            return time.strftime("%A, %b %d, ").decode("utf-8") + time.strftime(
-                "%I:%M %p"
-            ).lower().strip("0").decode("utf-8")
+            return time.strftime("%A, %b %d, ") + time.strftime("%I:%M %p").lower().strip("0")
         else:
-            return time.strftime("%I:%M %p").lower().strip("0").decode("utf-8")
+            return time.strftime("%I:%M %p").lower().strip("0")
 
     @main_call
     @needs_teacher
@@ -183,7 +181,10 @@ class AvailabilityModule(ProgramModuleObj):
         teaching_times = {}
         conflict_found = False
         for section in user_sections:
-            for timeslot in section.get_meeting_times():
+            sec_times = section.get_meeting_times()
+            if len(sec_times) == 0:
+                unscheduled_classes.append(section)
+            for timeslot in sec_times:
                 taken_slots.append(timeslot)
                 if timeslot not in available_slots:
                     conflict_found = True
@@ -193,22 +194,21 @@ class AvailabilityModule(ProgramModuleObj):
                     teaching_times[timeslot].append(section)
                 else:
                     teaching_times[timeslot] = [section]
-        if self.program.hasModule("TeacherModeratorModule"):
-            for section in teacher.getModeratingSectionsFromProgram(self.program):
-                section.moderating = True
-                sec_times = section.get_meeting_times()
-                for timeslot in sec_times:
-                    taken_slots.append(timeslot)
-                    if timeslot not in available_slots:
-                        conflict_found = True
-                    else:
-                        avail_and_teaching.append(timeslot)
-                    if timeslot in teaching_times:
-                        teaching_times[timeslot].append(section)
-                    else:
-                        teaching_times[timeslot] = [section]
+        for section in teacher.getModeratingSectionsFromProgram(self.program):
+            section.moderating = True
+            sec_times = section.get_meeting_times()
+            for timeslot in sec_times:
+                taken_slots.append(timeslot)
+                if timeslot not in available_slots:
+                    conflict_found = True
+                else:
+                    avail_and_teaching.append(timeslot)
+                if timeslot in teaching_times:
+                    teaching_times[timeslot].append(section)
+                else:
+                    teaching_times[timeslot] = [section]
 
-        if request.method == "POST":
+        if request.method == "POST" and "search" not in request.POST:
             #   Process form
             post_vars = request.POST
 
@@ -263,23 +263,24 @@ class AvailabilityModule(ProgramModuleObj):
 
         context = {
             "groups": [
-                {
-                    "selections": [
-                        {
-                            "checked": (t in available_slots),
-                            "taken": (t in taken_slots and t in available_slots),
-                            "slot": t,
-                            "sections": teaching_times.get(t),
-                        }
-                        for t in group
-                    ]
-                }
+                [
+                    {
+                        "checked": (t in available_slots),
+                        "taken": (t in taken_slots),
+                        "slot": t,
+                        "id": t.id,
+                        "sections": teaching_times.get(t),
+                    }
+                    for t in group
+                ]
                 for group in time_groups
             ]
         }
+        context["unscheduled"] = unscheduled_classes
         context["num_groups"] = len(context["groups"])
         context["prog"] = self.program
-        context["is_overbooked"] = not self.isCompleted() and (
+        context["isAdmin"] = isAdmin
+        context["is_overbooked"] = not self.isCompleted(user=teacher) and (
             teacher.getTaughtTime(self.program) > timedelta(0)
         )
         context["submitted_blank"] = blank

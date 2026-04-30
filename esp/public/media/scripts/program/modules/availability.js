@@ -119,7 +119,6 @@ var Availability = (function () {
             if (this.disabled == true) {
                 $j(cell).removeClass("proposed");
                 $j(cell).addClass("teaching");
-                cell.title = disabledText;
             }
             if (this.checked == true) {
                 $j(cell).removeClass("proposed");
@@ -133,12 +132,15 @@ var Availability = (function () {
             $j(".summary_div").show();
         });
 
-        //If there is hover text, show it when hovering over the timeslot
+        //If there is hover text, show it centered on the hovered row in the right panel
         $j(".group td").mouseover(function() {
             var hover_text = $j('#checkboxes > input[value='+parseInt($j(this).attr('name'))+']').data('hover')
             if (hover_text) {
-                $j(".right .details").html(hover_text);
-                $j(".right .details").css("display", "block");
+                var rowCenter = $j(this).offset().top + $j(this).outerHeight() / 2;
+                var panelTop = $j(".side.right").offset().top;
+                var details = $j(".right .details");
+                details.html(hover_text).css("display", "block");
+                details.css("top", (rowCenter - panelTop - details.outerHeight() / 2) + "px");
             }
         }).mouseout(function() {
             $j(".right .details").css("display", "none");

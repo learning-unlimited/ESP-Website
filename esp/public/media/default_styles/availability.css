@@ -12,6 +12,11 @@
   width: 280px;
 }
 
+.side.right {
+  flex: 0 0 130px;
+  position: relative;
+}
+
 .summary {
   display: block;
   padding: 5px 5px;
@@ -29,6 +34,9 @@
   padding: 5px 5px;
   font-size: small;
   width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  position: absolute;
   display: none;
 }
 
