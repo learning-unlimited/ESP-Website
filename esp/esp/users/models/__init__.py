@@ -56,7 +56,7 @@ from localflavor.us.forms import USStateSelect
 
 from django.contrib.sites.models import Site
 from django.core.cache import cache
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db import models
 from django.db.models import signals, Min
 from django.db.models.base import ModelState
@@ -569,7 +569,12 @@ class BaseESPUser(object):
         for s in user_sections:
             #   don't count cancelled or rejected classes -- Ted
             #   or rejected sections -- lua
-            if (include_scheduled or (s.start_time() is None)) and (s.status >= 0 and s.parent_class.status >= 0):
+            try:
+                parent_status = s.parent_class.status
+            except ObjectDoesNotExist:
+                logger.warning("Orphaned ClassSection id=%d: parent_class_id=%d does not exist in ClassSubject", s.id, s.parent_class_id)
+                continue
+            if (include_scheduled or (s.start_time() is None)) and (s.status >= 0 and parent_status >= 0):
                 total_time = total_time + timedelta(hours=rounded_hours(s.duration))
         return total_time
 
