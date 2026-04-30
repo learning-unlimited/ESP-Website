@@ -142,7 +142,7 @@ def secure_required(view_fn):
     missing form submissions, even if they are insecure.
     """
     def _wrapped_view(request, *args, **kwargs):
-        if request.method == 'GET' and not request.is_secure():
+        if not settings.DEBUG and request.method == 'GET' and not request.is_secure():
             return HttpResponseRedirect(re.sub(r'^\w+://',
                                                r'https://',
                                                request.build_absolute_uri()))
