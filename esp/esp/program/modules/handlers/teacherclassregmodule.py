@@ -652,13 +652,17 @@ class TeacherClassRegModule(ProgramModuleObj):
                 error = 'Error - You already added this teacher as a coteacher!'
 
             if error:
-                return render_to_response(template, request, {'class': cls,
-                                                              'ajax': ajax,
-                                                              'txtTeachers': txtTeachers,
-                                                              'coteachers': coteachers,
-                                                              'error': error,
-                                                              'conflict': [],
-                                                              'prog': prog})
+                return render_to_response(template, request, {
+                    'class': cls,
+                    'ajax': ajax,
+                    'txtTeachers': txtTeachers,
+                    'coteachers': coteachers,
+                    'conflict': conflictinguser,
+                    'unavailableuser': unavailableuser,
+                    'unavailabletimes': unavailabletimes,
+                    'prog': prog,
+                    'error': error
+                })
 
             teacher = ESPUser.objects.get(id=int(request.POST['teacher_selected']))
 
@@ -775,35 +779,33 @@ class TeacherClassRegModule(ProgramModuleObj):
             else:
                 section = sections[0]
             if error:
-                return render_to_response(template, request, {'class': cls,
-                                                              'ajax': ajax,
-                                                              'txtTeachers': txtTeachers,
-                                                              'coteachers': coteachers,
-                                                              'error': error,
-                                                              'conflict': [],
-                                                              'prog': prog})
+                return render_to_response(template, request, {
+                    'class': cls,
+                    'ajax': ajax,
+                    'txtTeachers': txtTeachers,
+                    'coteachers': coteachers,
+                    'error': error,
+                    'conflict': [],
+                    'unavailableuser': None,
+                    'unavailabletimes': [],
+                    'prog': prog
+                })
 
             ids = list(map(int, request.POST.getlist('delete_moderators')))
 
-            newcoteachers = []
-            for coteacher in coteachers:
-                if coteacher.id not in ids:
-                    newcoteachers.append(coteacher)
+            # CORRECT
+            ids = list(map(int, request.POST.getlist('delete_moderators')))
 
-            coteachers = newcoteachers
-            txtTeachers = ",".join([str(c.id) for c in coteachers])
+            new_moderators = []
+            for moderator in section.get_moderators():
+                if moderator.id not in ids:
+                    new_moderators.append(moderator)
 
-            new_coteachers_set = set(coteachers)
-            to_be_deleted = old_coteachers_set - new_coteachers_set
+            new_moderators_set = set(new_moderators)
+            to_be_deleted = set(section.get_moderators()) - new_moderators_set
 
-            if not is_admin and request.user in to_be_deleted:
-                to_be_deleted.remove(request.user)
-
-            for teacher in to_be_deleted:
-                cls.removeTeacher(teacher)
-
-            cls.refresh_from_db()
-
+            for moderator in to_be_deleted:
+                section.moderators.remove(moderator)
         return render_to_response(template, request, {'class': cls,
                                                       'ajax': ajax,
                                                       'txtTeachers': txtTeachers,
