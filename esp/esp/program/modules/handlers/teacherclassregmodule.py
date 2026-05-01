@@ -50,17 +50,15 @@ from esp.users.models            import ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
-from django.http                 import HttpResponse, HttpResponseRedirect
+from django.http                 import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db                   import models
 from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
-
 from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
-
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
 
@@ -138,8 +136,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             possible_values = res_type.resourcerequest_set.values_list('desired_value', flat=True).distinct()
             for i in range(len(possible_values)):
                 val = possible_values[i]
-                label = 'teacher_res_%d_%d' % (res_type.id, i)
-                full_description = 'Teachers who requested "%s" for their %s' % (val, res_type.name)
+                label = f'teacher_res_{res_type.id}_{i}'
+                full_description = f'Teachers who requested "{val}" for their {res_type.name}'
                 query = Q(classsubject__sections__resourcerequest__res_type=res_type, classsubject__sections__resourcerequest__desired_value=val, classsubject__sections__parent_class__parent_program=self.program)
                 items.append((label, full_description, query))
         return items
@@ -210,7 +208,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             'class_proposed': """Teachers teaching an unreviewed class""",
             'class_rejected': """Teachers teaching a rejected class""",
             'class_full': """Teachers teaching a completely full class""",
-            'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity)""" % (100 * capacity_factor),
+            'class_nearly_full': f"""Teachers teaching a nearly-full class (>{int(100 * capacity_factor)}% of capacity)""",
             'taught_before': """Teachers who have taught for a previous program""",
         }
         for item in self.get_resource_pairs():
@@ -452,8 +450,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             reason = request.POST['reason']
             request_teacher = request.user
 
-            email_title = '[%s] Class Cancellation Request for %s: %s' % (self.program.niceName(), cls.emailcode(), cls.title)
-            email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+            email_title = f'[{self.program.niceName()}] Class Cancellation Request for {cls.emailcode()}: {cls.title}'
+            email_from = f'{self.program.program_type} Registration System <server@{settings.EMAIL_HOST_SENDER}>'
             email_context = {'request_teacher': request_teacher,
                              'program': self.program,
                              'cls': cls,
@@ -504,7 +502,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         from django.contrib.contenttypes.models import ContentType
         import os
         from django.core.files import File
-
         clsid = 0
         if 'clsid' in request.POST:
             clsid = request.POST['clsid']
@@ -533,7 +530,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     ufile = form.cleaned_data['uploadedfile']
 
                     #	Append the class code on the filename
-                    desired_filename = '%s_%s' % (target_class.emailcode(), ufile.name)
+                    desired_filename = f'{target_class.emailcode()}_{ufile.name}'
                     media.handle_file(ufile, desired_filename)
 
                     media.format = ''
@@ -629,7 +626,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             coteachers = [ x for x in coteachers if x != '' ]
             coteachers = [ ESPUser.objects.get(id=userid)
                            for userid in coteachers                ]
-            add_list_members("%s_%s-teachers" % (prog.program_type, prog.program_instance), coteachers)
+            add_list_members(f"{prog.program_type}_{prog.program_instance}-teachers", coteachers)
 
         op = ''
         if 'op' in request.POST:
@@ -819,11 +816,11 @@ class TeacherClassRegModule(ProgramModuleObj):
         try:
             int(extra)
         except (ValueError, TypeError):
-            raise ESPError("Invalid integer for class ID! Got `{}`".format(extra), log=False)
+            raise ESPError(f"Invalid integer for class ID! Got `{extra}`", log=False)
 
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) == 0:
-            raise ESPError("No class found matching this ID (ID={})!".format(extra), log=False)
+            raise ESPError(f"No class found matching this ID (ID={extra})!", log=False)
 
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
@@ -885,7 +882,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_teacher
     @user_passes_test(
-        open_class_reg_is_open,
+        lambda moduleObj, request: moduleObj.open_class_reg_is_open(),
         (
             'the deadline Teacher/Classes/Create/OpenClass '
             'or the setting ClassRegModuleInfo.open_class_registration were'
@@ -934,7 +931,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     if request.POST['manage_submit'] == 'reload':
                         return HttpResponseRedirect(request.get_full_path()+'?manage=manage')
                     elif request.POST['manage_submit'] == 'manageclass':
-                        return HttpResponseRedirect('/manage/%s/manageclass/%s' % (self.program.getUrlBase(), extra))
+                        return HttpResponseRedirect(f'/manage/{self.program.getUrlBase()}/manageclass/{extra}')
                     elif request.POST['manage_submit'] == 'dashboard':
                         return HttpResponseRedirect('/manage/%s/dashboard' % self.program.getUrlBase())
                     elif request.POST['manage_submit'] == 'main':
@@ -1077,6 +1074,8 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         context['manage'] = False
         context['sectionNums'] = prog.countTimeSlots()
+        context['no_durations'] = len(context['sectionNums']) == 0
+        context['is_admin'] = request.user.isAdministrator()
 
         if ((request.method == "POST" and request.POST.get('manage') == 'manage') or
             (request.method == "GET" and request.GET.get('manage') == 'manage') or
@@ -1101,8 +1100,6 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from django.http import JsonResponse
-
         Q_teacher = Q(groups__name="Teacher")
 
         queryset = ESPUser.objects.filter(Q_teacher)
@@ -1144,7 +1141,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             users = list(user_dict.values())
 
             # Construct combo-box items
-            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
+            obj_list = [{'name': f"{user.last_name}, {user.first_name}", 'username': user.username, 'id': user.id} for user in users]
         else:
             obj_list = []
 

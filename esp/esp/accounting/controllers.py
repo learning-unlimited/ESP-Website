@@ -74,6 +74,40 @@ class GlobalAccountingController(BaseAccountingController):
             result.append(account)
         return result
 
+    def _global_donation_line_item(self):
+        '''Get donation line items for all programs'''
+        if hasattr(self, '_cached_donation_lits'): # check cache
+            return self._cached_donation_lits
+
+        donation_texts = set()
+        for program in Program.objects.all():
+            for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
+                other_module = program.getModule(module_name)
+                if other_module and other_module.get_setting('offer_donation', default=True):
+                    donation_texts.add(other_module.get_setting('donation_text'))
+                    break
+        donation_lits = list(LineItemType.objects.filter(text__in=donation_texts))
+
+        self._cached_donation_lits = donation_lits # set per-request cache
+        return donation_lits
+
+    def global_donation_summary(self):
+        lits = self._global_donation_line_item()
+        payments = Transfer.objects.filter(line_item__in=lits, paid_in__isnull=False)
+        total = payments.aggregate(total=Sum('amount_dec'))['total'] or Decimal('0')
+
+        return (payments.count(), total)
+
+    def global_donation_times(self):
+        lits = self._global_donation_line_item()
+        if not lits:
+            return []
+        transfers = Transfer.objects.filter(line_item__in=lits, paid_in__isnull=False) \
+        .annotate(total_amount=Sum('amount_dec')) \
+        .order_by('timestamp')
+
+        return list(map(lambda transfer: (transfer.total_amount, transfer.timestamp), transfers))
+
 class ProgramAccountingController(BaseAccountingController):
     def __init__(self, program, *args, **kwargs):
         self.program = program
@@ -266,6 +300,36 @@ class ProgramAccountingController(BaseAccountingController):
         payment_li_type = self.default_payments_lineitemtype()
         payments = Transfer.objects.filter(line_item=payment_li_type)
         return (payments.count(), payments.aggregate(total=Sum('amount_dec'))['total'])
+
+    def _program_accounting_summary(self, line_item):
+        if line_item is None:
+            return (0, Decimal('0'))
+        payments = Transfer.objects.filter(
+            line_item=line_item,
+            paid_in__isnull=False
+        )
+        total = payments.aggregate(total=Sum('amount_dec'))['total'] or Decimal('0')
+        return (payments.count(), total)
+
+    def donation_summary(self):
+        return self._program_accounting_summary(self.donation_lineitemtype())
+
+    def admission_summary(self):
+        return self._program_accounting_summary(self.default_admission_lineitemtype())
+
+    def _program_accounting_times(self, line_item):
+        if line_item is None:
+            return []
+        transfers = Transfer.objects.filter(line_item=line_item, paid_in__isnull=False) \
+        .annotate(total_amount=Sum('amount_dec')) \
+        .order_by('timestamp')
+        return list(map(lambda transfer: (transfer.total_amount, transfer.timestamp), transfers))
+
+    def donation_times(self):
+        return self._program_accounting_times(self.donation_lineitemtype())
+
+    def admission_times(self):
+        return self._program_accounting_times(self.default_admission_lineitemtype())
 
     def classify_transfer(self, transfer):
         """Give a short human-readable description of a transfer.

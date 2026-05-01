@@ -11,7 +11,7 @@
     <h1 class="form_title">{{ form_title }}</h1>
     <h2 class="form_desc">{{ form_description }}</h2>
     <em class="step_count">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</em>
-    <em class="req_text">(Fields in blue are required)</em>
+    <p class="req_text"><span class="required_asterisk" aria-hidden="true">*</span> Required fields</p>
 
     <form action="." method="post" enctype="multipart/form-data" id="cstform" class="form-stacked">
     {% include "customforms/single_form_fragment.html" %}
