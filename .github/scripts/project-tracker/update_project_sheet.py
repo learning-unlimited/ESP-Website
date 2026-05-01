@@ -103,7 +103,7 @@ def paginate(query: str, path: list[str], variables: dict | None = None) -> list
 PR_QUERY = """
 query($owner: String!, $repo: String!, $cursor: String) {
   repository(owner: $owner, name: $repo) {
-    pullRequests(states: OPEN, first: 100, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
+    pullRequests(states: OPEN, first: 50, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
         number
@@ -111,6 +111,9 @@ query($owner: String!, $repo: String!, $cursor: String) {
         author { login }
         createdAt
         updatedAt
+        changedFiles
+        additions
+        deletions
         labels(first: 50) { nodes { name } }
         reviewRequests(first: 20) {
           nodes {
@@ -126,7 +129,7 @@ query($owner: String!, $repo: String!, $cursor: String) {
         closingIssuesReferences(first: 20) {
           nodes { number }
         }
-        commits(last: 5) {
+        commits(last: 3) {
           nodes {
             commit {
               committedDate
@@ -223,6 +226,7 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
     """Build the rows for the Pull Requests sheet."""
     header = [
         "PR #", "Title", "Author", "Opened", "Last Updated",
+        "Files Changed", "Lines Changed",
         "Reviewers", "Linked Issues", "Labels",
     ]
     rows = [header]
@@ -254,6 +258,8 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
             link_profile(author),
             fmt_time(pr["createdAt"]),
             fmt_time(pr["updatedAt"]),
+            pr.get("changedFiles", 0),
+            f"'+{pr.get('additions', 0)} / -{pr.get('deletions', 0)}",
             ", ".join(sorted(reviewers)),
             ", ".join(linked_issues),
             ", ".join(labels),
@@ -602,6 +608,76 @@ def write_sheet(
     print(f"  ✓ '{title}' – {len(rows) - 1} data rows written")
 
 
+def color_lines_changed(
+    spreadsheet: gspread.Spreadsheet,
+    title: str,
+    rows: list[list],
+    col: int,
+) -> None:
+    """
+    Apply green/red rich text coloring to the Lines Changed column.
+
+    Each cell contains text like ``+123 / -45``.  The additions portion
+    is colored green, the separator is left as default, and the
+    deletions portion is colored red.
+    """
+    ws = spreadsheet.worksheet(title)
+    sheet_id = ws.id
+
+    GREEN = {"red": 0.13, "green": 0.55, "blue": 0.13}
+    GRAY = {"red": 0.4, "green": 0.4, "blue": 0.4}
+    RED = {"red": 0.8, "green": 0.13, "blue": 0.13}
+
+    cell_data = []
+    for row in rows[1:]:  # skip header
+        raw = str(row[col])
+        # Strip the leading apostrophe used to force text mode
+        text = raw.lstrip("'")
+
+        if " / " not in text:
+            cell_data.append({"values": [{}]})
+            continue
+
+        additions_part, _ = text.split(" / ", 1)
+        sep_start = len(additions_part)
+        removals_start = sep_start + len(" / ")
+
+        cell_data.append({
+            "values": [{
+                "userEnteredValue": {"stringValue": text},
+                "textFormatRuns": [
+                    {"startIndex": 0,
+                     "format": {"foregroundColorStyle": {"rgbColor": GREEN}}},
+                    {"startIndex": sep_start,
+                     "format": {"foregroundColorStyle": {"rgbColor": GRAY}}},
+                    {"startIndex": removals_start,
+                     "format": {"foregroundColorStyle": {"rgbColor": RED}}},
+                ],
+            }]
+        })
+
+    if not cell_data:
+        return
+
+    spreadsheet.batch_update({
+        "requests": [{
+            "updateCells": {
+                "range": {
+                    "sheetId": sheet_id,
+                    "startRowIndex": 1,
+                    "endRowIndex": 1 + len(cell_data),
+                    "startColumnIndex": col,
+                    "endColumnIndex": col + 1,
+                },
+                "rows": cell_data,
+                "fields": "userEnteredValue,textFormatRuns",
+            }
+        }]
+    })
+
+    print(f"  ✓ '{title}' – Lines Changed column colored")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -631,6 +707,7 @@ def main() -> None:
     spreadsheet = gc.open_by_key(SHEET_ID)
 
     write_sheet(spreadsheet, "Open Pull Requests", pr_rows)
+    color_lines_changed(spreadsheet, "Open Pull Requests", pr_rows, col=6)
     write_sheet(spreadsheet, "Open Issues", issue_rows)
     write_sheet(spreadsheet, "Contributor Activity", contributor_rows)
 

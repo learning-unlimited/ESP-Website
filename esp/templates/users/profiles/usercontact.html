@@ -9,7 +9,7 @@
  <label class="control-label" for="id_first_name">First Name:</label>
  <div class="controls">
  {{ form.first_name }} {% if form.first_name.errors %}
-   <br /><span class="form_error">{{ form.first_name.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.first_name.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -20,7 +20,7 @@
  <label class="control-label" for="id_last_name">Last Name:</label>
  <div class="controls">
  {{ form.last_name }} {% if form.last_name.errors %}
-   <br /><span class="form_error">{{ form.last_name.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.last_name.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -28,7 +28,7 @@
 
 {% if form.e_mail %}
 {% if profiletype == "student" %}
-<div class="alert">
+<div role="alert" class="alert">
     <button type="button" class="close" data-dismiss="alert">x</button>
     {% inline_program_qsd_block program "student_email_instructions" %}
     <strong>Students:</strong> Please enter your primary email address.  It is important that you check your email at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  Enter your parents' email address in the parent/guardian section below.
@@ -40,7 +40,7 @@
  <label class="control-label" for="id_e_mail">Email address:</label>
  <div class="controls">
  {{ form.e_mail }} {% if form.e_mail.errors %}
-   <br /><span class="form_error">{{ form.e_mail.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.e_mail.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -57,7 +57,7 @@
     </label>
     <div class="controls">
     {{ form.address_street }} {% if form.address_street.errors %}
-    <br /><span class="form_error">{{ form.address_street.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.address_street.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
@@ -70,19 +70,19 @@
     </label>
     <div class="controls controls-row">
         {{ form.address_city }} {% if form.address_city.errors %}
-        <br /><span class="form_error">{{ form.address_city.errors|join:", " }}</span>
+        <br /><span class="form_error" role="alert">{{ form.address_city.errors|join:", " }}</span>
         {% endif %}
 
         {{ form.address_state }} {% if form.address_state.errors %}
-        <br /><span class="form_error">{{ form.address_state.errors|join:", " }}</span>
+        <br /><span class="form_error" role="alert">{{ form.address_state.errors|join:", " }}</span>
         {% endif %}
         
         {{ form.address_zip }} {% if form.address_zip.errors %}
-        <br /><span class="form_error">{{ form.address_zip.errors|join:", " }}</span>
+        <br /><span class="form_error" role="alert">{{ form.address_zip.errors|join:", " }}</span>
         {% endif %}
         
         {{ form.address_country }} {% if form.address_country.errors %}
-        <br /><span class="form_error">{{ form.address_country.errors|join:", " }}</span>
+        <br /><span class="form_error" role="alert">{{ form.address_country.errors|join:", " }}</span>
         {% endif %}
     </div>
 </div>
@@ -92,7 +92,7 @@
 <h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<font color="red">*</font>{% endif %}</h4>
 
 {% if profiletype == "student" %}
-<div class="alert">
+<div role="alert" class="alert">
     <button type="button" class="close" data-dismiss="alert">x</button>
     {% inline_program_qsd_block program "student_phone_instructions" %}
     <strong>Students:</strong> Please enter <b>your</b> phone numbers below.{% if not require_student_phonenum %} If you do not have {% if form.phone_day %}a home phone {% endif %}{% if form.phone_day and form.phone_cell %}nor {% endif %}{% if form.phone_cell %}a personal cell phone{% endif %}, please leave this blank.{% endif %} You will enter your guardian and emergency contact phone numbers in the sections below.
@@ -105,7 +105,7 @@
  <small><i><label class="control-label" for="id_phone_day">home</label></i></small>
  <div class="controls">
  {{ form.phone_day }} {% if form.phone_day.errors %}
-   <br /><span class="form_error">{{ form.phone_day.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.phone_day.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -116,7 +116,7 @@
  <small><i><label class="control-label" for="id_phone_cell">cell</label></i></small>
  <div class="controls">
  {{ form.phone_cell }} {% if form.phone_cell.errors %}
-   <br /><span class="form_error">{{ form.phone_cell.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.phone_cell.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -128,7 +128,7 @@
  <small><i><label class="control-label" for="id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
  <div class="controls">
  {{ form.receive_txt_message }} {% if form.receive_txt_message.errors %}
-   <br /><span class="form_error">{{ form.receive_txt_message.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.receive_txt_message.errors|join:", " }}</span>
    {% endif %}
  </div>
 </div>
