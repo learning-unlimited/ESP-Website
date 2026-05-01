@@ -21,12 +21,11 @@
 		<div class="content">
 			<input type="hidden" id="form_id" value="{{form.id}}"/>
 			<h2>{{form.title}} (ID# {{ form.id }})</h2>
-			<table id="jqGrid"></table>
+			<table id="jqGrid" role="grid" aria-label="Form responses for {{form.title}}"></table>
 			<div id="jqGridPager"></div>
 		</div>
 		<br/><br/>
-        <p id="download-legend" hidden><span style="font-size: 14px;" class="glyphicon glyphicon-download-alt"></span>: Download Files as Zip Folder</p>
+        <p id="download-legend" hidden><span style="font-size: 14px;" class="glyphicon glyphicon-download-alt" aria-hidden="true"></span><span class="sr-only">Download</span>: Download Files as Zip Folder</p>
 		<p><a href="/customforms/exceldata/{{form.id}}/">Download as Excel</a></p>
 		<script type="text/javascript" src="/media/scripts/customforms_response.js"></script>	
 {% endblock %}
-
