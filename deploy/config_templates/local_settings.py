@@ -3,7 +3,6 @@
 import os
 
 SITE_INFO = (1, 'devsite.learningu.org', 'LU Dev Site')
-CACHE_PREFIX = "ludev"
 PROJECT_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 USE_MAILMAN = False
 DEBUG = True
@@ -31,3 +30,11 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 SECRET_KEY = '%(secret_key)s'
 
 ALLOWED_HOSTS = ['localhost']
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
+        'LOCATION': '127.0.0.1:11211',
+        'KEY_PREFIX': 'ludev',
+    }
+}

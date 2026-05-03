@@ -30,7 +30,7 @@ class CacheFlushTestCase(TestCase):
         super().tearDown()
 
     def _flush_cache(self):
-        """ Don't do any actual fancy deletions; just change the cache prefix """
+        """ Don't do any actual fancy deletions; just change the cache key prefix """
         if hasattr(cache, "flush_all"):
             cache.flush_all()
         else:
@@ -41,11 +41,12 @@ class CacheFlushTestCase(TestCase):
                 # Catch "AttributeError: 'NewCls' object has no attribute 'model'"
                 # generated from argcache's derivedfield.py during testing
                 pass
-
-            from esp import settings
-            settings.CACHE_PREFIX = ''.join( random.sample( string.ascii_letters + string.digits, 16 ) )
+            # Rotate KEY_PREFIX to effectively invalidate all cache entries
+            # (replaces old CACHE_PREFIX rotation used with memcached_multikey)
             from django.conf import settings as django_settings
-            django_settings.CACHE_PREFIX = settings.CACHE_PREFIX
+            new_prefix = ''.join(random.sample(string.ascii_letters + string.digits, 16))
+            django_settings.CACHES['default']['KEY_PREFIX'] = new_prefix
+            cache.key_prefix = new_prefix
 
     def _fixture_setup(self):
         self._flush_cache()
