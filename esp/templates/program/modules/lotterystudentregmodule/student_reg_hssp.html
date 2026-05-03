@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 {% load render_qsd %}
 
 {% block title %} Class Lottery Registration for {{prog.niceName}} {% endblock %}
@@ -34,7 +34,7 @@ var priority_limit = {{ prog.priorityLimit }};
 {% endblock %}                      
 
 
-{% block content %} 
+{% block module_content %} 
     {% inline_program_qsd_block prog "lsr_title" %}Class Lottery for {{prog.niceName}}{% end_inline_program_qsd_block %}
 
     <div id="lsr_content">

@@ -1,7 +1,7 @@
 name: Label High-Volume PR Contributors
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, closed]
   workflow_dispatch:
     inputs:
@@ -47,7 +47,7 @@ jobs:
 
             // Get the author from the event context
             const author = context.eventName === 'workflow_dispatch'
-              ? context.payload.inputs.author
+              ? context.payload.inputs.author.trim()
               : context.payload.pull_request.user.login;
 
             // Fetch all open PRs

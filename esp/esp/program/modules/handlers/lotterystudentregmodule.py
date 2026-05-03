@@ -61,11 +61,8 @@ class LotteryStudentRegModule(ProgramModuleObj):
     def studentDesc(self):
         return {'lotteried_students': "Students who have entered the lottery"}
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=user))
 
     @classmethod
