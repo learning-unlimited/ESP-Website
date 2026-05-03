@@ -6,6 +6,7 @@
     {{ block.super }}
 	<link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/ui.jqgrid.css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/customforms-common.css" />
     <link rel="stylesheet" type="text/css" href="/media/styles/customforms-responses.css" />
 {% endblock %}
 
@@ -25,7 +26,7 @@
 			<div id="jqGridPager"></div>
 		</div>
 		<br/><br/>
-        <p id="download-legend" hidden><span style="font-size: 14px;" class="glyphicon glyphicon-download-alt" aria-hidden="true"></span><span class="sr-only">Download</span>: Download Files as Zip Folder</p>
+        <p id="download-legend" style="display: none;"><span style="font-size: 14px;" class="glyphicon glyphicon-download-alt" aria-hidden="true"></span><span class="sr-only">Download</span>: Download Files as Zip Folder</p>
 		<p><a href="/customforms/exceldata/{{form.id}}/">Download as Excel</a></p>
 		<script type="text/javascript" src="/media/scripts/customforms_response.js"></script>	
 {% endblock %}

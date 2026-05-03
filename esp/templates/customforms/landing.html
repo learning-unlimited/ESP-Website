@@ -4,6 +4,7 @@
 
 {% block stylesheets %}
     {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/customforms-common.css" />
     <link rel="stylesheet" type="text/css" href="/media/styles/customforms-landing.css" />
 {% endblock %}
 
@@ -25,7 +26,7 @@
             <th scope="col" width="25%">Form Name</th>
             <th scope="col" width="15%">Form ID</th>
             {% if form.link_obj %}<th scope="col" width="35%">Associated {{ form.link_type }}</th>{% endif %}
-            <th scope="col" colspan="3" width="25%">Options</th>
+            <th scope="colgroup" colspan="3" width="25%">Options</th>
         </tr>
     {% endifchanged %}
         <tr>
