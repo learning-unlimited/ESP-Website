@@ -45,8 +45,12 @@ jobs:
           POSTGRES_DB: test_django
         ports:
           - 5432:5432
-        # needed because the postgres container does not provide a healthcheck
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        # Use explicit credentials so health checks don't default to the root user.
+        options: >-
+          --health-cmd "pg_isready -U testuser -d test_django"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       memcached:
         image: memcached:alpine
         ports:

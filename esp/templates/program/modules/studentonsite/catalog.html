@@ -9,6 +9,76 @@
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 
 <script>
+// Class search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    
+    var searchInput = document.getElementById('student_class_search');
+    if (!searchInput) {
+        return;
+    }
+
+    // Cache the class rows and precompute their searchable data once
+    var classRowsNodeList = document.querySelectorAll('.class_search_data');
+    var classRows = [];
+    for (var i = 0; i < classRowsNodeList.length; i++) {
+        classRows.push(classRowsNodeList[i]);
+    }
+
+    for (var i = 0; i < classRows.length; i++) {
+        var row = classRows[i];
+        // Precompute searchable data from data attributes (lowercased once)
+        var classId = (row.getAttribute('data-class-id') || '').toLowerCase();
+        var classTitle = (row.getAttribute('data-class-title') || '').toLowerCase();
+        var classDescription = (row.getAttribute('data-class-description') || '').toLowerCase();
+        var classTeacher = (row.getAttribute('data-class-teacher') || '').toLowerCase();
+        row._searchData = {
+            id: classId,
+            title: classTitle,
+            description: classDescription,
+            teacher: classTeacher
+        };
+    }
+
+    // Helper to filter visible classes based on the current search term
+    function filterClasses(searchTerm) {
+        var normalizedTerm = (searchTerm || '').toLowerCase();
+
+        for (var i = 0; i < classRows.length; i++) {
+            var row = classRows[i];
+            // Use precomputed searchable data
+            var data = row._searchData;
+
+            // Search in specific fields only
+            var matchFound = normalizedTerm === "" ||
+                            data.id.indexOf(normalizedTerm) !== -1 ||
+                            data.title.indexOf(normalizedTerm) !== -1 ||
+                            data.description.indexOf(normalizedTerm) !== -1 ||
+                            data.teacher.indexOf(normalizedTerm) !== -1;
+            if (matchFound) {
+                row.closest('tr').style.display = '';
+            } else {
+                row.closest('tr').style.display = 'none';
+            }
+        }
+    }
+
+    var isComposing = false;
+    searchInput.addEventListener('compositionstart', function() {
+        isComposing = true;
+    });
+    searchInput.addEventListener('compositionend', function() {
+        isComposing = false;
+        filterClasses(this.value);
+    });
+    searchInput.addEventListener('input', function() {
+        if (isComposing) {
+            return;
+        }
+        filterClasses(this.value);
+    });
+});
+
+// Scroll to top functionality
 function topFunction() {
     document.body.scrollTop = 0; // For Safari
     document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
@@ -43,6 +113,19 @@ function scrollFunction() {
                         <a name="top"></a>{{ program.niceName }} Course Catalog{% if timeslot %}<br><i>Viewing classes for: {{ timeslot.short_description }}</i>{% endif %}
                     </span>
                 </th>
+            </tr>
+            <!-- Search box for class search -->
+            <tr class="search_row">
+                <td colspan="2">
+                    <div class="search_controls">
+                        <label for="student_class_search"><b>Search Classes</b></label>
+                        <input 
+                        type="text" 
+                        id="student_class_search" 
+                        style="padding:10px; width:100%; max-width:600px; font-size:16px; box-sizing:border-box;"
+                        placeholder="Search by class ID, title, or teacher"/>
+                    </div>
+                </td>
             </tr>
             {% if categories %}
                 <tr class="jump">
