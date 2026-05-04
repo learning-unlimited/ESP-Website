@@ -357,6 +357,8 @@ class ProgramModuleObj(models.Model):
     def isRequired(self):
         return self.required
 
+    hideNotRequired = False
+
     def prepare(self, context):
         return context
 
