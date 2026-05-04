@@ -2,7 +2,7 @@
 Django==2.2.28
 
 # Django-specific packages
-git+https://github.com/learning-unlimited/django-argcache.git@django2 # Handles caching
+git+https://github.com/learning-unlimited/django-argcache.git@django2-fixed # Handles caching
 django-debug-toolbar==3.2.4 # Provides the debug toolbar
 django-extensions==3.1.5 # Provides shell_plus, runserver_plus, and other utilities
 django-filebrowser-no-grappelli==3.8.0 # Provides admin panel interface for files
@@ -21,13 +21,14 @@ git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends D
 bleach==6.0.0 # For sanitizing QSD content
 dill # For migrating Python 2 pickles in the database
 docutils==0.12 # Needed for django.contrib.admindocs
+Faker==18.13.0 # For generating dummy/seed data
 flake8==3.9.2 # Required for linter
 pytest==7.4.4 # Test runner (last version supporting Python 3.7)
 pytest-cov==4.1.0 # Coverage measurement compatible with pytest-xdist parallel runs
 pytest-django==4.5.2 # Django integration for pytest
 pytest-xdist==3.3.1 # Parallel test execution via -n auto
 ipython==7.34.0 # Used for shell_plus
-Markdown==2.3.1 # Used in QSD
+Markdown==3.4.4 # Used in QSD
 numpy==1.16.6 # Used mainly in the lottery and class change controller
 pillow==8.3.2 # Required for ImageField, which we use in teacher bios
 psycopg2==2.8.6 # Talks to postgres

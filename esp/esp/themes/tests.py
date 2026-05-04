@@ -232,3 +232,33 @@ class ThemesTest(TestCase):
 
         #   We're done.  Log out.
         self.client.logout()
+
+    def testRecompileThemeCreatesMissingCustomization(self):
+        """ Check that recompile_theme does not crash and leaves the system in a consistent state
+            by creating the customization file if it is missing. """
+        import tempfile
+        import uuid
+
+        tc = ThemeController()
+        tc.clear_theme()
+        tc.load_theme('barebones')
+
+        # Use a temporary directory + unique filename to avoid dirtying the working tree
+        original_themes_dir = themes_settings.themes_dir
+        themes_settings.themes_dir = tempfile.mkdtemp()
+        fake_customization_name = f'test_missing_{uuid.uuid4().hex}'
+        customization_file = os.path.join(themes_settings.themes_dir, f'{fake_customization_name}.less')
+
+        tc.set_current_customization(fake_customization_name)
+
+        try:
+            # This shouldn't raise FileNotFoundError; it should catch it and create the file
+            tc.recompile_theme(customization_name=fake_customization_name)
+
+            # The file should be created now
+            self.assertTrue(os.path.exists(customization_file))
+        finally:
+            # Cleanup tag and temporary files
+            tc.unset_current_customization()
+            shutil.rmtree(themes_settings.themes_dir, ignore_errors=True)
+            themes_settings.themes_dir = original_themes_dir
