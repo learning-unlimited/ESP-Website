@@ -111,11 +111,11 @@ class DonationModule(ProgramModuleObj):
         except (TypeError, ValueError):
             logger.warning("Invalid donation_settings tag for program %s: %s", self.program, raw)
             tag_data = {}
-        
+
         if not isinstance(tag_data, dict):
             logger.warning("Non-dict donation_settings tag for program %s: %s", self.program, tag_data)
             tag_data = {}
-            
+
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings
