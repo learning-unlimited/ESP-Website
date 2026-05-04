@@ -216,6 +216,30 @@ class AccountingModule(ProgramModuleObj):
 
         context['target_user'] = user
         context['form'] = form
+
+        pac = ProgramAccountingController(self.program)
+
+        context['donation_count'], context['donation_total'] = pac.donation_summary()
+        context['admission_count'], context['admission_total'] = pac.admission_summary()
+
+        donation_data = pac.donation_times()
+        if donation_data:
+            cumulative = []
+            running = Decimal('0')
+            for amount, dt in donation_data:
+                running += amount
+                cumulative.append([dt.timestamp() * 1000, float(running)]) # [timestamp_ms, value]
+            context['donation_graph_data'] = cumulative
+
+        admission_data = pac.admission_times()
+        if admission_data:
+            cumulative = []
+            running = Decimal('0')
+            for amount, dt in admission_data:
+                running += amount
+                cumulative.append([dt.timestamp() * 1000, float(running)])
+            context['admission_graph_data'] = cumulative
+
         return render_to_response(self.baseDir()+'accounting.html', request, context)
 
     def isStep(self):
