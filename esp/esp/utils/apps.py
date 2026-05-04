@@ -2,7 +2,11 @@ from django.apps import AppConfig
 from django.db.models import signals
 
 def run_install(sender, **kwargs):
-    sender.models_module.install()
+    models_module = getattr(sender, "models_module", None)
+    if models_module is not None:
+        install = getattr(models_module, "install", None)
+        if callable(install):
+            install()
 
 class InstallConfig(AppConfig):
     """

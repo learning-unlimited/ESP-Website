@@ -65,10 +65,10 @@ class TeacherReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError('Cannot find class with ID {}).'.format(extra), log=False)
+            raise ESPError(f'Cannot find class with ID {extra}.', log=False)
 
         if not request.user.canEdit(cls):
-            raise ESPError('You cannot edit class "%s"' % cls, log=False)
+            raise ESPError(f'You cannot edit class "{cls}"', log=False)
 
         #   Fetch any student even remotely related to the class.
         students_dict = cls.students_dict()
@@ -112,7 +112,7 @@ class TeacherReviewApps(ProgramModuleObj):
             for current in students[1:]:
                 if prev.id == prev_id and current.app_completed:
                     from django.shortcuts import redirect
-                    url = "/%s/%s/%s/review_student/%s/?student=%s" % (tl, one, two, extra, current.id)
+                    url = f"/{tl}/{one}/{two}/review_student/{extra}/?student={current.id}"
                     return redirect(url)
                 if prev.id != prev_id:
                     prev = current
@@ -192,7 +192,7 @@ class TeacherReviewApps(ProgramModuleObj):
             raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
-            raise ESPError('You cannot edit class "%s"' % cls, log=False)
+            raise ESPError(f'You cannot edit class "{cls}"', log=False)
 
         student = request.GET.get('student', None)
         if not student:
@@ -201,7 +201,7 @@ class TeacherReviewApps(ProgramModuleObj):
         try:
             student = ESPUser.objects.get(id = int(student))
         except ESPUser.DoesNotExist:
-            raise ESPError('Cannot find student, %s' % student, log=False)
+            raise ESPError(f'Cannot find student, {student}', log=False)
 
         not_registered = not StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student).exists()
         if not_registered:
@@ -228,9 +228,9 @@ class TeacherReviewApps(ProgramModuleObj):
             if form.is_valid():
                 form.target.update(form)
                 if 'submit_next' in request.POST or 'submit_return' in request.POST:
-                    url = '/%s/%s/%s/review_students/%s/' % (tl, one, two, extra)
+                    url = f'/{tl}/{one}/{two}/review_students/{extra}/'
                     if 'submit_next' in request.POST:
-                        url += '?prev=%s' % student.id
+                        url += f'?prev={student.id}'
                     from django.shortcuts import redirect
                     return redirect(url) # self.review_students(request, tl, one, two, module, extra, prog)
 
