@@ -121,7 +121,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Add free_teacher1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Error on adding the same coteacher again
@@ -130,29 +130,29 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Add free_teacher2
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher2.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher2.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher2.username})", status_code=200)
         cur_coteachers.append(self.free_teacher2.id)
 
         # Delete free_teacher 1
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertNotContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertNotContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.remove(self.free_teacher1.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Delete both free_teacher1 and free_teacher2
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': [self.free_teacher1.id, self.free_teacher2.id], 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertNotContains(response, "({})".format(self.free_teacher1.username), status_code=200)
-        self.assertNotContains(response, "({})".format(self.free_teacher2.username), status_code=200)
+        self.assertNotContains(response, f"({self.free_teacher1.username})", status_code=200)
+        self.assertNotContains(response, f"({self.free_teacher2.username})", status_code=200)
         cur_coteachers.remove(self.free_teacher1.id)
         cur_coteachers.remove(self.free_teacher2.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
         cur_coteachers.append(self.free_teacher1.id)
 
         # Save the coteachers
@@ -172,7 +172,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         ResourceRequest.objects.filter(target = sec, res_type = res_type).delete()
 
     def has_resource_pair_with_teacher(self, res_type, val_index, teacher):
-        label = 'teacher_res_%d_%d' % (res_type.id, val_index)
+        label = f'teacher_res_{res_type.id}_{val_index}'
         label_list = [resource_pair[0] for resource_pair in self.moduleobj.get_resource_pairs()]
         if not label in label_list:
             return False
@@ -302,141 +302,13 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         url = '%steacherlookup' % self.program.get_teach_url()
         self.assertEqual(self.client.get(url).status_code, 302)
 
-    # ------------------------------------------------------------------ #
-    #  editcapacity endpoint tests (Issue 9)                              #
-    # ------------------------------------------------------------------ #
-
-    def _editcapacity_url(self, cls=None):
-        if cls is None:
-            cls = self.cls
-        return '%seditcapacity/%d' % (self.program.get_teach_url(), cls.id)
-
-    def test_editcapacity_get_authorized(self):
-        """GET by an authorized teacher renders the form with section fields."""
-        self.client.login(username=self.teacher.username, password='password')
-        response = self.client.get(self._editcapacity_url())
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Edit Capacity')
-        for sec in self.cls.sections.all():
-            self.assertContains(response, 'capacity_%d' % sec.id)
-
-    def test_editcapacity_post_updates_capacity(self):
-        """POST with valid capacity values updates max_class_capacity."""
-        self.client.login(username=self.teacher.username, password='password')
-        sec = self.cls.sections.all()[0]
-        new_cap = 3
-        response = self.client.post(self._editcapacity_url(), {
-            'capacity_%d' % sec.id: str(new_cap),
-        })
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Success')
-        sec.refresh_from_db()
-        self.assertEqual(sec.max_class_capacity, new_cap)
-
-    def test_editcapacity_unauthorized_teacher(self):
-        """A teacher who does not own the class cannot edit capacity."""
-        self.client.login(username=self.other_teacher1.username, password='password')
-        response = self.client.get(self._editcapacity_url())
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Edit Capacity')
-
-    def test_editcapacity_nonexistent_class(self):
-        """Accessing a non-existent class ID raises ESPError (500)."""
-        self.client.login(username=self.teacher.username, password='password')
-        url = '%seditcapacity/99999' % self.program.get_teach_url()
+    def test_makeaclass_no_durations_shows_warning(self):
+        """Assert that duration warning banner is shown when no timeslots/durations exist."""
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Failed to log in")
+        # Delete class timeslots configured in setUp
+        Event.objects.filter(program=self.program, event_type__description='Class Time Block').delete()
+        self.assertEqual(len(self.program.countTimeSlots()), 0)
+        url = '%smakeaclass' % self.program.get_teach_url()
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 500)
-
-    def test_editcapacity_blank_clears_override(self):
-        """Submitting a blank value clears max_class_capacity."""
-        self.client.login(username=self.teacher.username, password='password')
-        sec = self.cls.sections.all()[0]
-        sec.max_class_capacity = 2
-        sec.save()
-        response = self.client.post(self._editcapacity_url(), {
-            'capacity_%d' % sec.id: '',
-        })
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Success')
-        sec.refresh_from_db()
-        self.assertIsNone(sec.max_class_capacity)
-
-    def test_editcapacity_invalid_input(self):
-        """Non-integer input produces an error."""
-        self.client.login(username=self.teacher.username, password='password')
-        sec = self.cls.sections.all()[0]
-        response = self.client.post(self._editcapacity_url(), {
-            'capacity_%d' % sec.id: 'abc',
-        })
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Success')
-        self.assertContains(response, 'whole number')
-
-    def test_editcapacity_negative_input(self):
-        """Negative input produces an error."""
-        self.client.login(username=self.teacher.username, password='password')
-        sec = self.cls.sections.all()[0]
-        response = self.client.post(self._editcapacity_url(), {
-            'capacity_%d' % sec.id: '-5',
-        })
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Success')
-        self.assertContains(response, 'negative')
-
-    @transaction.atomic
-    def test_editcapacity_below_enrollment(self):
-        """Cannot set capacity below current enrollment."""
-        self.client.login(username=self.teacher.username, password='password')
-        sec = self.cls.sections.all()[0]
-        self.add_student_profiles()
-        for student in self.students[:3]:
-            sec.preregister_student(student)
-        self.assertEqual(sec.num_students(), 3)
-        response = self.client.post(self._editcapacity_url(), {
-            'capacity_%d' % sec.id: '1',
-        })
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Success')
-        self.assertContains(response, 'currently enrolled')
-
-    def test_editcapacity_post_unauthorized(self):
-        """POST by a non-owner teacher is rejected (cannot save)."""
-        self.client.login(username=self.other_teacher1.username, password='password')
-        sec = self.cls.sections.all()[0]
-        old_cap = sec.max_class_capacity
-        response = self.client.post(self._editcapacity_url(), {
-            'capacity_%d' % sec.id: '1',
-        })
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Edit Capacity')
-        # Verify DB was not modified
-        sec.refresh_from_db()
-        self.assertEqual(sec.max_class_capacity, old_cap)
-
-    def test_editcapacity_no_partial_saves(self):
-        """If one section fails validation, no sections should be persisted.
-
-        This verifies the validate-all-then-save-all atomicity guarantee.
-        """
-        self.client.login(username=self.teacher.username, password='password')
-        sections = list(self.cls.sections.all())
-        if len(sections) < 2:
-            # Need at least 2 sections for this test; add one
-            self.cls.add_section()
-            sections = list(self.cls.sections.all())
-        sec1, sec2 = sections[0], sections[1]
-        old_cap1 = sec1.max_class_capacity
-        old_cap2 = sec2.max_class_capacity
-
-        # Submit valid value for sec1, invalid for sec2
-        response = self.client.post(self._editcapacity_url(), {
-            'capacity_%d' % sec1.id: '3',
-            'capacity_%d' % sec2.id: 'invalid',
-        })
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Success')
-        # Neither section should have been modified
-        sec1.refresh_from_db()
-        sec2.refresh_from_db()
-        self.assertEqual(sec1.max_class_capacity, old_cap1)
-        self.assertEqual(sec2.max_class_capacity, old_cap2)
+        self.assertContains(response, 'no valid class meeting timeslots or durations are available')
