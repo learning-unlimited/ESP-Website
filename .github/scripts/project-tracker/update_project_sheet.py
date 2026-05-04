@@ -123,8 +123,8 @@ query($owner: String!, $repo: String!, $cursor: String) {
             }
           }
         }
-        reviews(first: 50) {
-          nodes { author { login } }
+        reviews(last: 20) {
+          nodes { author { login } state }
         }
         closingIssuesReferences(first: 20) {
           nodes { number }
@@ -136,6 +136,12 @@ query($owner: String!, $repo: String!, $cursor: String) {
               author { user { login } }
             }
           }
+        }
+        comments(last: 10) {
+          nodes { createdAt author { login } }
+        }
+        reviewThreads(first: 100) {
+          nodes { isResolved }
         }
       }
     }
@@ -204,6 +210,14 @@ def fmt_time(iso: str | None) -> str:
     return dt.strftime("%Y-%m-%d %H:%M UTC")
 
 
+def days_since(iso: str | None) -> int | str:
+    """Return the number of days between an ISO-8601 timestamp and now."""
+    if not iso:
+        return ""
+    dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+    return (datetime.now(timezone.utc) - dt).days
+
+
 REPO_URL = f"https://github.com/{REPO_OWNER}/{REPO_NAME}"
 
 
@@ -227,6 +241,8 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
     header = [
         "PR #", "Title", "Author", "Opened", "Last Updated",
         "Files Changed", "Lines Changed",
+        "Review State", "Days Since Author Activity",
+        "Unresolved Review Threads",
         "Reviewers", "Linked Issues", "Labels",
     ]
     rows = [header]
@@ -252,6 +268,52 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
         labels = [l["name"] for l in pr["labels"]["nodes"]]
         author = (pr["author"] or {}).get("login", "ghost")
 
+        # Count unresolved review threads (includes Copilot comments)
+        unresolved = sum(
+            1 for t in (pr.get("reviewThreads") or {}).get("nodes", [])
+            if not t.get("isResolved")
+        )
+
+        # Determine the overall review state from the most recent
+        # non-PENDING review per reviewer (latest wins)
+        reviewer_states: dict[str, str] = {}
+        for rv in pr["reviews"]["nodes"]:
+            rv_author = (rv.get("author") or {}).get("login", "")
+            state = rv.get("state", "")
+            if rv_author and state != "PENDING":
+                reviewer_states[rv_author] = state
+        states = set(reviewer_states.values())
+        if "CHANGES_REQUESTED" in states:
+            review_state = "Changes Requested"
+        elif "APPROVED" in states and unresolved > 0:
+            review_state = "Approved (Comments Pending)"
+        elif "APPROVED" in states:
+            review_state = "Approved"
+        elif unresolved > 0:
+            review_state = "Comments Pending"
+        elif reviewers:
+            review_state = "Pending"
+        else:
+            review_state = "No Review"
+
+        # Find the author's most recent activity on this PR:
+        # their latest commit or comment
+        author_last = pr["createdAt"]  # fallback to PR open date
+        for commit_node in (pr.get("commits") or {}).get("nodes", []):
+            commit = commit_node.get("commit") or {}
+            commit_login = (
+                (commit.get("author") or {}).get("user") or {}
+            ).get("login")
+            if commit_login == author:
+                committed = commit.get("committedDate", "")
+                if committed > author_last:
+                    author_last = committed
+        for comment in (pr.get("comments") or {}).get("nodes", []):
+            comment_author = (comment.get("author") or {}).get("login", "")
+            if comment_author == author:
+                if comment["createdAt"] > author_last:
+                    author_last = comment["createdAt"]
+
         rows.append([
             link_pr(pr["number"]),
             pr["title"],
@@ -260,6 +322,9 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
             fmt_time(pr["updatedAt"]),
             pr.get("changedFiles", 0),
             f"'+{pr.get('additions', 0)} / -{pr.get('deletions', 0)}",
+            review_state,
+            days_since(author_last),
+            unresolved,
             ", ".join(sorted(reviewers)),
             ", ".join(linked_issues),
             ", ".join(labels),
@@ -272,7 +337,8 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
     """Build the rows for the Issues sheet."""
     header = [
         "Issue #", "Title", "Author", "Opened", "Assignee(s)",
-        "Assigned Date", "Last Updated", "Linked PRs", "Labels",
+        "Assigned Date", "Days Since Assigned",
+        "Last Updated", "Linked PRs", "Labels",
     ]
     rows = [header]
 
@@ -298,9 +364,9 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
                     linked_prs.append(f"#{source['number']} ({state_label})")
 
         # Use the earliest assignment date across current assignees
-        earliest_assign = ""
+        earliest_assign_raw = ""
         if assign_dates:
-            earliest_assign = fmt_time(min(assign_dates.values()))
+            earliest_assign_raw = min(assign_dates.values())
 
         author = (issue["author"] or {}).get("login", "ghost")
         labels = [l["name"] for l in issue["labels"]["nodes"]]
@@ -311,7 +377,8 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
             link_profile(author),
             fmt_time(issue["createdAt"]),
             ", ".join(assignees),
-            earliest_assign,
+            fmt_time(earliest_assign_raw),
+            days_since(earliest_assign_raw),
             fmt_time(issue["updatedAt"]),
             ", ".join(linked_prs),
             ", ".join(labels),
@@ -488,7 +555,8 @@ def build_contributor_rows(
     """Build the rows for the Contributor Activity sheet."""
     header = [
         "Contributor", "Name", "Open PRs", "Merged PRs", "Closed PRs",
-        "Assigned Open Issues", "Oldest Open PR", "Last Activity",
+        "Assigned Open Issues", "Oldest Open PR",
+        "Last Activity", "Days Since Last Activity",
     ]
 
     activity: dict[str, dict] = defaultdict(
@@ -561,6 +629,7 @@ def build_contributor_rows(
             link_count(issues_url, info["assigned_issues"]),
             fmt_time(info["oldest_open_pr"]),
             fmt_time(last_activity.get(login, "")),
+            days_since(last_activity.get(login, "")),
         ])
 
     return rows
