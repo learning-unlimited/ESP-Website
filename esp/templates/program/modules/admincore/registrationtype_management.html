@@ -20,13 +20,13 @@
     </form>
     <br /><br />
     {% if POST and saved %}
-        <div class="alert alert-success">
+        <div role="alert" class="alert alert-success">
             <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                 Settings successfully saved.
         </div><br />
     {% endif %}
     {% if POST and not saved %}
-        <div class="alert alert-danger">
+        <div role="alert" class="alert alert-danger">
             <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                 There was an error with saving your settings. Please try again.
         </div><br />
