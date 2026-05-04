@@ -42,6 +42,12 @@ jobs:
 
             const WIKI_LINKS = `\n\n📖 [Getting Started](https://github.com/learning-unlimited/ESP-Website/wiki#getting-started) · [Contribution Rules](https://github.com/learning-unlimited/ESP-Website/wiki#rules) · [Code of Conduct](https://github.com/learning-unlimited/ESP-Website/blob/main/CODE_OF_CONDUCT.md)`;
 
+            // Only accept "/assign" as the entire comment (ignoring whitespace)
+            if (context.payload.comment.body.trim() !== '/assign') {
+              core.info(`Ignored non-exact /assign comment from @${requester} on #${issueNumber}.`);
+              return;
+            }
+
             const max = parseInt(
               process.env.MAX_OVERRIDE || process.env.DEFAULT_MAX,
               10

@@ -224,6 +224,9 @@
         <td class="not-checked-in">
         {% endif %}
             <a href="/manage/userview?username={{ teacher.username }}&program={{ program.id }}" target="_blank">{{ teacher.name }}</a>
+            {% if teacher.id in previously_checked_in %}
+                <span class="label label-info previously-checked-in" title="Checked in on the previous program day">prev-day</span>
+            {% endif %}
         </td>
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
@@ -263,6 +266,9 @@
             <td class="not-checked-in"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
             {% endif %}
                 <a href="/manage/userview?username={{ teacher.username }}&program={{ program.id }}" target="_blank">{{ teacher.name }}</a>
+                {% if teacher.id in previously_checked_in %}
+                    <span class="label label-info previously-checked-in" title="Checked in on the previous program day">prev-day</span>
+                {% endif %}
             </td>
             <td class="checkin-column"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
                 {% if teacher.id not in arrived %}

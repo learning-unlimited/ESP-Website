@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
@@ -80,6 +81,37 @@ class ProgramPrintables(ProgramModuleObj):
             "seq": 5,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        base = program.getUrlBase()
+        entries = {
+            "catalog": ("PDF Catalog", "Printables", ["printable", "pdf catalog", "classes"]),
+            "studentschedules": ("Student Schedules", "Printables", ["printable", "student schedules", "schedules"]),
+            "studentscheduleform": ("Student Schedule Formatter", "Printables", ["formatter", "student schedules", "printable"]),
+            "printoptions": ("All Printables", "Printables", ["printables", "all printables", "pdf", "documents"]),
+            "teachersbytime": ("Teacher List by Time", "Other", ["teachers", "time", "printables"]),
+            "teachermoderatorsbytime": ("Teacher and Moderator List by Time", "Other", ["teachers", "moderators", "time", "printables"]),
+            "classesbyteacher": ("Classes by Teacher", "Other", ["classes", "teacher", "printables"]),
+            "teacherlabels": ("Teacher Labels", "Other", ["teacher", "labels", "printables"]),
+            "teachermoderatorsbyname": ("Teacher and Moderator List by Name", "Other", ["teachers", "moderators", "name", "printables"]),
+            "teachermoderatorschedules": ("Teacher and Moderator Schedules", "Other", ["teachers", "moderators", "schedules", "printables"]),
+            "teachermoderatorlist": ("Teacher and Moderator List", "Other", ["teachers", "moderators", "list", "printables"]),
+            "teachersbyname": ("Teacher List by Name", "Other", ["teachers", "name", "printables"]),
+            "teacherschedules": ("Teacher Schedules", "Other", ["teachers", "schedules", "printables"]),
+            "teacherlist": ("Teacher List", "Other", ["teachers", "list", "printables"]),
+        }
+        if view_name not in entries:
+            return None
+        title, category, keywords = entries[view_name]
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/manage/%s/%s" % (base, view_name),
+            title=title,
+            category=category,
+            keywords=keywords,
+            disambiguation_label=title.split(" (")[1].strip(")") if "(" in title else None,
+        )
 
     @aux_call
     @needs_admin
@@ -302,7 +334,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         group_name = Tag.getTag('full_group_name')
         if not group_name:
-            group_name = '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+            group_name = f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
         context['group_name'] = group_name
 
         #   Hack for timeblock sorting (sorting by category is the default)
@@ -686,13 +718,13 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def teachermoderatorlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=True, moderating=True, display_name = 'Teacher and %s List' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=True, moderating=True, display_name = f'Teacher and {prog.getModeratorTitle()} List')
 
     @aux_call
     @needs_admin
     def moderatorlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True, display_name = '%s List' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True, display_name = f'{prog.getModeratorTitle()} List')
 
     @staticmethod
     def cmpsorttime(one, other):
@@ -722,12 +754,12 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def teachermoderatorsbytime(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = True, display_name = 'Teacher and %s List by Time' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = True, display_name = f'Teacher and {prog.getModeratorTitle()} List by Time')
 
     @aux_call
     @needs_admin
     def moderatorsbytime(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = False, moderating = True, display_name = '%s List by Time' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = False, moderating = True, display_name = f'{prog.getModeratorTitle()} List by Time')
 
     @staticmethod
     def cmpsortname(one, other):
@@ -748,12 +780,12 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def teachermoderatorsbyname(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = True, display_name = 'Teacher and %s List by Name' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = True, display_name = f'Teacher and {prog.getModeratorTitle()} List by Name')
 
     @aux_call
     @needs_admin
     def moderatorsbyname(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True, display_name = '%s List by Name' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True, display_name = f'{prog.getModeratorTitle()} List by Name')
 
     @needs_admin
     def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
@@ -832,7 +864,7 @@ class ProgramPrintables(ProgramModuleObj):
     def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher/moderator schedules """
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Teacher and %s Schedules' % (prog.getModeratorTitle())})
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': f'Teacher and {prog.getModeratorTitle()} Schedules'})
         if not found:
             return filterObj
 
@@ -901,7 +933,7 @@ class ProgramPrintables(ProgramModuleObj):
     def moderatorschedules(self, request, tl, one, two, module, extra, prog):
         """ generate moderator schedules """
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': '%s Schedules' % (prog.getModeratorTitle())})
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': f'{prog.getModeratorTitle()} Schedules'})
         if not found:
             return filterObj
 
@@ -1544,7 +1576,7 @@ class ProgramPrintables(ProgramModuleObj):
     def classrostersbymoderator(self, request, tl, one, two, module, extra, prog):
         """ generate class rosters by moderator"""
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Class Rosters by %s' % (prog.getModeratorTitle())})
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': f'Class Rosters by {prog.getModeratorTitle()}'})
         if not found:
             return filterObj
 
@@ -1764,10 +1796,10 @@ class ProgramPrintables(ProgramModuleObj):
                                [smart_str(section.parent_class.pretty_teachers())] + \
                                [needs_resource('LCD Projector', section)] + \
                                [needs_resource('Computer Lab', section)] + \
-                               [', '.join(['%s: %s' % (r.res_type.name, r.desired_value) for r in section.getResourceRequests()])] + \
+                               [', '.join([f'{r.res_type.name}: {r.desired_value}' for r in section.getResourceRequests()])] + \
                                [section.parent_class.class_size_optimal] + \
                                [section.parent_class.class_size_max] + \
-                               ['%d--%d' %(section.parent_class.grade_min, section.parent_class.grade_max)] +\
+                               [f'{section.parent_class.grade_min}--{section.parent_class.grade_max}'] +\
                                [smart_str(section.parent_class.message_for_directors)] + \
                                [", ".join(section.friendly_times())] + [", ".join(section.prettyrooms())] + \
                                time_values)
@@ -1975,7 +2007,7 @@ class AllClassesFieldConverter(object):
         elif hasattr(class_subject, fieldname):
             fieldvalue = getattr(class_subject, fieldname)
         else:
-            raise ValueError('Invalid fieldname supplied {0}'.format(fieldname))
+            raise ValueError(f'Invalid fieldname supplied {fieldname}')
         return fieldvalue
 
 class AllClassesSelectionForm(forms.Form):

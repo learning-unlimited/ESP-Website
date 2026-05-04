@@ -79,7 +79,7 @@ class TagTest(TestCase):
 
         user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
 
-        self.assertFalse(Tag.getTag("test", user), "Retrieved a tag for key 'test' target '%s', but we haven't set one yet!" % (user))
+        self.assertFalse(Tag.getTag("test", user), f"Retrieved a tag for key 'test' target '{user}', but we haven't set one yet!")
         Tag.setTag("test", user, "frobbed again")
         self.assertEqual(Tag.getTag("test", user), "frobbed again")
         Tag.setTag("test", user)
@@ -305,6 +305,328 @@ class ProgramTagTest(ProgramFrameworkTest):
             for b in [True, False]:
                 self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
                 self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
+
+
+class GetNondefaultProgramTagsTest(ProgramFrameworkTest):
+    def setUp(self):
+        super().setUp()
+        # Remove any pre-existing test tags for this program
+        Tag.objects.filter(key__in=["test", "test_bool"]).delete()
+
+    def test_no_tags_set(self):
+        '''When no program-specific tags exist, result should be empty.'''
+        result = Tag.get_nondefault_program_tags(self.program)
+        self.assertEqual(result, [])
+
+    def test_program_tag_returned(self):
+        '''A tag set for the program with is_setting=True appears in the result.'''
+        Tag.setTag("test", target=self.program, value="hello")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertIn("test", keys)
+        entry = next(d for d in result if d['key'] == "test")
+        self.assertEqual(entry['value'], "hello")
+
+    def test_global_tag_not_returned(self):
+        '''A global tag (no target) is not included in program tag results.'''
+        Tag.setTag("test", target=None, value="global")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test", keys)
+
+    def test_non_setting_tag_excluded(self):
+        '''A tag with is_setting=False is excluded from the result.'''
+        # 'student_lottery_run' is in all_program_tags with is_setting=False
+        Tag.setTag("student_lottery_run", target=self.program, value="True")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertNotIn("student_lottery_run", keys)
+
+    def test_result_contains_help_text(self):
+        '''Each entry in the result includes the help_text from the tag definition.'''
+        Tag.setTag("test", target=self.program, value="x")
+        result = Tag.get_nondefault_program_tags(self.program)
+        entry = next((d for d in result if d['key'] == "test"), None)
+        self.assertIsNotNone(entry)
+        self.assertIn('help_text', entry)
+
+    def test_tag_at_default_value_excluded(self):
+        '''A tag stored in the DB but set to its default value is not shown in the banner.'''
+        # 'test_bool' has default=False; setting it to its default should hide it
+        all_program_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=self.program, value="False")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test_bool", keys)
+
+    def test_tag_at_nondefault_value_included(self):
+        '''A tag stored with a value different from the default is shown in the banner.'''
+        all_program_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=self.program, value="True")
+        result = Tag.get_nondefault_program_tags(self.program)
+        keys = [d['key'] for d in result]
+        self.assertIn("test_bool", keys)
+
+
+class PageSpecificTagBannerTest(ProgramFrameworkTest):
+    """
+    Tests that _inject_active_program_tags only shows tags that were actually
+    consulted (via getProgramTag) while handling the current request, not all
+    non-default tags for the program.
+    """
+
+    def setUp(self):
+        super().setUp()
+        Tag.objects.filter(key__in=["test", "test_bool"]).delete()
+        Tag._getTag.delete_all()
+
+    def _make_mock_request(self, with_tracking=True):
+        """Return a minimal mock request object."""
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req.path = '/manage/%s/main' % self.program.url
+        req.user = self.admins[0]
+        if with_tracking:
+            req._active_program_tag_keys = set()
+            req._active_global_tag_keys = set()
+        else:
+            # Explicitly set to None so getattr() returns None (not a MagicMock),
+            # simulating a request where the middleware never ran.
+            req._active_program_tag_keys = None
+            req._active_global_tag_keys = None
+        return req
+
+    def test_only_accessed_tag_shown(self):
+        """Only the tag that getProgramTag was called for appears in the banner."""
+        Tag.setTag("test", target=self.program, value="custom")
+        Tag.setTag("test_bool", target=self.program, value="True")
+
+        req = self._make_mock_request()
+        # Simulate a view that only consults "test"
+        req._active_program_tag_keys.add("test")
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        shown_keys = [t['key'] for t in context.get('active_program_tags', [])]
+        self.assertIn("test", shown_keys)
+        self.assertNotIn("test_bool", shown_keys)
+
+    def test_no_accessed_tags_shows_nothing(self):
+        """If the view accessed no program tags, the banner is empty."""
+        Tag.setTag("test", target=self.program, value="custom")
+
+        req = self._make_mock_request()
+        # _active_program_tag_keys is empty — no tags consulted
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        self.assertNotIn('active_program_tags', context)
+
+    def test_fallback_when_tracking_not_initialized(self):
+        """Without tracking, all non-default tags are shown as a fallback."""
+        Tag.setTag("test", target=self.program, value="custom")
+
+        req = self._make_mock_request(with_tracking=False)
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        shown_keys = [t['key'] for t in context.get('active_program_tags', [])]
+        self.assertIn("test", shown_keys)
+
+    def test_get_program_tag_records_access(self):
+        """Calling getProgramTag with a program populates _active_program_tag_keys."""
+        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
+        # Simulate middleware having set up the request
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req._active_program_tag_keys = set()
+        req._active_global_tag_keys = set()
+        _threading_local.request = req
+        try:
+            Tag.getProgramTag("test", program=self.program)
+            self.assertIn("test", req._active_program_tag_keys)
+        finally:
+            clear_current_request()
+
+
+class GetNondefaultGlobalTagsTest(TestCase):
+    """Tests for Tag.get_nondefault_global_tags()."""
+
+    def setUp(self):
+        Tag.objects.filter(key__in=["test", "test_bool"]).delete()
+
+    def test_no_tags_set(self):
+        """When no global tags exist, the result is empty."""
+        result = Tag.get_nondefault_global_tags()
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test", keys)
+        self.assertNotIn("test_bool", keys)
+
+    def test_global_tag_returned(self):
+        """A global tag (no target) with is_setting=True appears in the result."""
+        Tag.setTag("test", target=None, value="hello")
+        result = Tag.get_nondefault_global_tags()
+        keys = [d['key'] for d in result]
+        self.assertIn("test", keys)
+        entry = next(d for d in result if d['key'] == "test")
+        self.assertEqual(entry['value'], "hello")
+        self.assertIn('help_text', entry)
+
+    def test_targeted_tag_not_returned(self):
+        """A tag with a non-null target is not included in global results."""
+        # Setting a tag with any target row should be excluded by the
+        # content_type__isnull / object_id__isnull filter on the query.
+        user, _ = User.objects.get_or_create(
+            username="GlobalTagTestUser", email="gtt@example.com", password="")
+        Tag.setTag("test", target=user, value="targeted")
+        result = Tag.get_nondefault_global_tags()
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test", keys)
+
+    def test_non_setting_tag_excluded(self):
+        """A global tag with is_setting=False is excluded from the result."""
+        # Pick a real global key registered with is_setting=False, if any.
+        # Fall back to flipping our test tag's is_setting for the duration of
+        # this test if no such key exists.
+        original = all_global_tags['test'].get('is_setting', True)
+        all_global_tags['test']['is_setting'] = False
+        try:
+            Tag.setTag("test", target=None, value="something")
+            result = Tag.get_nondefault_global_tags()
+            keys = [d['key'] for d in result]
+            self.assertNotIn("test", keys)
+        finally:
+            all_global_tags['test']['is_setting'] = original
+
+    def test_tag_at_default_value_excluded(self):
+        """A global tag stored at its default value is hidden from the banner."""
+        all_global_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=None, value="False")
+        result = Tag.get_nondefault_global_tags()
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test_bool", keys)
+
+    def test_tag_at_nondefault_value_included(self):
+        """A global tag stored with a non-default value is shown."""
+        all_global_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=None, value="True")
+        result = Tag.get_nondefault_global_tags()
+        keys = [d['key'] for d in result]
+        self.assertIn("test_bool", keys)
+
+
+class PageSpecificGlobalTagBannerTest(ProgramFrameworkTest):
+    """
+    Tests that _inject_active_program_tags also injects ``active_global_tags``
+    based on which global tag keys were consulted while handling the request,
+    in addition to the existing program-tag behavior.
+    """
+
+    def setUp(self):
+        super().setUp()
+        Tag.objects.filter(key__in=["test", "test_bool"]).delete()
+        Tag._getTag.delete_all()
+
+    def _make_mock_request(self, with_tracking=True):
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req.path = '/manage/%s/main' % self.program.url
+        req.user = self.admins[0]
+        if with_tracking:
+            req._active_program_tag_keys = set()
+            req._active_global_tag_keys = set()
+        else:
+            req._active_program_tag_keys = None
+            req._active_global_tag_keys = None
+        return req
+
+    def test_only_accessed_global_tag_shown(self):
+        """Only the global tag the view actually consulted appears in the banner."""
+        Tag.setTag("test", target=None, value="global custom")
+        Tag.setTag("test_bool", target=None, value="True")
+
+        req = self._make_mock_request()
+        # Simulate a view that only consults the global "test" tag.
+        req._active_global_tag_keys.add("test")
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        shown_keys = [t['key'] for t in context.get('active_global_tags', [])]
+        self.assertIn("test", shown_keys)
+        self.assertNotIn("test_bool", shown_keys)
+        # Settings link should point to the global tag management page.
+        self.assertEqual(context.get('active_global_tags_url'), '/manage/tags/')
+
+    def test_no_accessed_global_tags_shows_nothing(self):
+        """If the view accessed no global tags, the global banner is empty."""
+        Tag.setTag("test", target=None, value="global custom")
+
+        req = self._make_mock_request()
+        # _active_global_tag_keys stays empty.
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        self.assertNotIn('active_global_tags', context)
+
+    def test_fallback_when_tracking_not_initialized(self):
+        """Without tracking, all non-default global tags are shown as a fallback."""
+        Tag.setTag("test", target=None, value="global custom")
+
+        req = self._make_mock_request(with_tracking=False)
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        shown_keys = [t['key'] for t in context.get('active_global_tags', [])]
+        self.assertIn("test", shown_keys)
+
+    def test_get_tag_records_global_access(self):
+        """Calling Tag.getTag (no target) populates _active_global_tag_keys."""
+        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req._active_program_tag_keys = set()
+        req._active_global_tag_keys = set()
+        _threading_local.request = req
+        try:
+            Tag.getTag("test")
+            self.assertIn("test", req._active_global_tag_keys)
+        finally:
+            clear_current_request()
+
+    def test_get_program_tag_fallback_records_global_access(self):
+        """
+        getProgramTag falling back to the global lookup (because no
+        program-specific value exists) also records the key into
+        _active_global_tag_keys, so global non-default values can show up in
+        the banner even when accessed through getProgramTag.
+        """
+        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req._active_program_tag_keys = set()
+        req._active_global_tag_keys = set()
+        _threading_local.request = req
+        try:
+            # No program-specific tag; getProgramTag will fall through to the
+            # global lookup branch and should record the key as a global hit.
+            Tag.getProgramTag("test", program=self.program)
+            self.assertIn("test", req._active_program_tag_keys)
+            self.assertIn("test", req._active_global_tag_keys)
+        finally:
+            clear_current_request()
+
 
 
 class TagRegistrationTest(SimpleTestCase):

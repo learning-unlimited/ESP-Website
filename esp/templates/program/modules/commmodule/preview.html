@@ -99,7 +99,8 @@ users to whom you are sending this email.
 <input type="hidden" name="selected" value="{{selected}}" />
 <input type="submit" value="Edit Your Email" id="submitform" class="btn btn-default" />
 </form>
-<form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="mainback">
+<button id="send-test-email-btn" class="btn btn-warning">Send Test Email to Me</button>
+<form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="mainfinal">
 <input type="hidden" name="filterid" value="{{filterid}}" />
 <input type="hidden" name="sendto_fn_name" value="{{sendto_fn_name}}" />
 <input type="hidden" name="from" value="{{from}}" />
@@ -115,6 +116,7 @@ users to whom you are sending this email.
 {% endif %}
 <input type="submit" value="{% if confirm_send_required %}Send anyway{% else %}Send Message!{% endif %}" id="submitform" class="btn btn-primary" />
 </form>
+<span id="send-test-email-status" style="margin-left: 10px;"></span>
 
 <script>
 $j(function() {
@@ -122,6 +124,40 @@ $j(function() {
         element.onload = function() {
             element.style.height = element.contentWindow.document.body.scrollHeight + 16 + 'px';
         }
+    });
+
+    $j('#send-test-email-btn').on('click', function() {
+        var btn = $j(this);
+        var status = $j('#send-test-email-status');
+        btn.prop('disabled', true);
+        status.text('Sending...');
+        $j.ajax({
+            url: '/manage/{{program.getUrlBase}}/send_test_email',
+            method: 'POST',
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+                from: '{{from|escapejs}}',
+                replyto: '{{replyto|escapejs}}',
+                subject: '{{subject|escapejs}}',
+                body: $j('form[name="mainfinal"] input[name="body"]').val(),
+                template: '{{template|escapejs}}'
+            },
+            success: function(data) {
+                if (data.success) {
+                    status.text('Test email sent to ' + data.email + '!').css('color', 'green');
+                } else {
+                    status.text('Error: ' + data.error).css('color', 'red');
+                }
+            },
+            error: function(xhr) {
+                var msg = 'Failed to send test email.';
+                try { msg = JSON.parse(xhr.responseText).error; } catch(e) {}
+                status.text('Error: ' + msg).css('color', 'red');
+            },
+            complete: function() {
+                btn.prop('disabled', false);
+            }
+        });
     });
 });
 </script>

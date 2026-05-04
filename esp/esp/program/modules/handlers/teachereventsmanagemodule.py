@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.cal.models import Event, EventType
 from esp.users.models import UserAvailability
@@ -60,6 +61,19 @@ class TeacherEventsManageModule(ProgramModuleObj):
             'seq': 5,
             'choosable': 0,
         }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "teacher_events":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_teacher_events",
+            url="/manage/%s/teacher_events" % base,
+            title="Teacher Training / Interviews",
+            category="Configure",
+            keywords=["teacher", "training", "interviews", "events"],
+        )
 
     @main_call
     @needs_admin

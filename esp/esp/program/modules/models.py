@@ -57,15 +57,14 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
     mods = []
     global_defaults = {'seq': 0, 'required': False}
     for datum in update_data:
+        #   Remove non-model-field keys before any DB operations
+        datum.pop('main_call', None)
+        datum.pop('aux_calls', None)
         query_kwargs = {'handler': datum["handler"], 'module_type': datum["module_type"]}
         qs = model.objects.filter(**query_kwargs)
         if qs.exists():
             mods.append((datum, (qs[0], False)))
         else:
-            if 'main_call' in datum:
-                datum.pop('main_call')
-            if 'aux_calls' in datum:
-                datum.pop('aux_calls')
             #   Ensure that all of the required fields are present when calling get_or_create
             new_obj_defaults = global_defaults.copy()
             new_obj_defaults.update(datum)
@@ -85,7 +84,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
         for (datum, (mod, created)) in mods:
             ids.append(mod.id)
 
-        ProgramModule.objects.exclude(id__in=ids).delete()
+        model.objects.exclude(id__in=ids).delete()
 
     for (datum, (mod, created)) in mods:
         #   If the module exists but the provided data adds fields that
@@ -109,6 +108,6 @@ def install(model=None):
     for module in modules:
         table_data += module.module_properties_autopopulated()
 
-    updateModules(table_data, deleteExtra=True, model=model)
+    updateModules(table_data, overwriteExisting=True, deleteExtra=True, model=model)
 
 from esp.program.modules.module_ext import *

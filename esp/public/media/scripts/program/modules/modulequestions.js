@@ -2,8 +2,9 @@ $j(document).ready(function(){
     // when the page loads, check/select the questions induced by the modules
     // that are already selected (if any, from a template program e.g.)
     $j(".hidden-field").parents("tr").hide()
+
     modulesToQuestions();
-    
+
     // when any question is checked/unchecked, add/remove only those modules
     $j("#id_program_module_questions").find("input").change(function(){
         var modules = $j("#id_program_modules").val();
