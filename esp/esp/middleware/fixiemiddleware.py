@@ -3,7 +3,7 @@ from django.utils.deprecation import MiddlewareMixin
 
 class FixIEMiddleware(MiddlewareMixin):
     """
-    Quick MiddleWare that will fix the bug reported at
+    Quick middleware that will fix the bug reported at
     https://support.microsoft.com/kb/824847/en-us?spid=8722&sid=global (thanks aconbere)
     for Internet Explorer since Microsoft doesn't know how to do HTTP.
 
