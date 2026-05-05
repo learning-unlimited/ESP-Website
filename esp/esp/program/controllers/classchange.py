@@ -155,7 +155,7 @@ class ClassChangeController(object):
         self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, meeting_times__isnull=False).order_by('id').select_related('parent_class', 'parent_class__parent_program').distinct()
         if not self.options['use_closed_classes']:
             self.sections = self.sections.filter(registration_status=0).distinct()
-        self.timeslots = self.program.getTimeSlots().order_by('id').distinct()
+        self.timeslots = self.program.getTimeSlots().order_by('start').distinct()
         self.num_timeslots = len(self.timeslots)
         self.num_students = len(self.students)
         self.num_sections = len(self.sections)
