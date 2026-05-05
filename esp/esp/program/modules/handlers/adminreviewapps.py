@@ -55,17 +55,6 @@ class AdminReviewApps(ProgramModuleObj):
             "choosable": 0,
             }
 
-    def students(self, QObject=False):
-        Q_accepted = Q(studentregistration__relationship__name='Accepted', studentregistration__section__parent_class__parent_program=self.program)
-
-        if QObject:
-            return {'app_accepted_to_one_program': Q_accepted}
-        else:
-            return {'app_accepted_to_one_program': ESPUser.objects.filter(Q_accepted).distinct()}
-
-    def studentDesc(self):
-        return {'app_accepted_to_one_program': """Students who are accepted to at least one class"""}
-
     @main_call
     @needs_admin
     def review_students(self, request, tl, one, two, module, extra, prog):
@@ -198,10 +187,10 @@ class AdminReviewApps(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
 
-        schedule = """
-Student schedule for %s:
+        schedule = f"""
+Student schedule for {student.name()}:
 
- Time               | Class                   | Room""" % student.name()
+ Time               | Class                   | Room"""
 
         regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted')
         classes = sorted([x.section.parent_class for x in regs])
@@ -215,10 +204,8 @@ Student schedule for %s:
             else:
                 rooms = ", ".join(rooms)
 
-            schedule += """
-%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
-               cls.title.ljust(25),
-               rooms)
+            schedule += f"""
+{",".join(cls.friendly_times()).ljust(20)}|{cls.title.ljust(25)}|{rooms}"""
 
         return schedule
 

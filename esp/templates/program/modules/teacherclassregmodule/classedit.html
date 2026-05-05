@@ -22,6 +22,7 @@
 
 <h1>{{ addoredit }}ing a {{ classtype }} for {{ program.niceName }}</h1>
 
+
 {% if manage %}
     <p>
     <a href="/manage/{{ program.getUrlBase }}/dashboard">Return to the {{ program.niceName }} dashboard</a><br />
@@ -58,7 +59,7 @@
 
 {% if form.errors %}
 <p align="center">
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
     <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         Please fix the errors in the form below.
 </div>
@@ -74,6 +75,21 @@
         {% render_inline_program_qsd program "classroom_form_advisories" %}
         </td>
     </tr>
+    {% if no_durations %}
+    <tr>
+        <td colspan="2">
+        <div class="alert alert-warning" role="alert" style="margin-top: 8px; background-color: #fcf8e3; border: 1px solid #faebcc; color: #8a6d3b; padding: 15px; border-radius: 4px;">
+          <span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span>
+          <strong>Duration of a Class Meeting</strong> &mdash; This field is not available because no valid class meeting timeslots or durations are available for this program yet.
+          {% if is_admin %}
+          <a href="/manage/{{ program.getUrlBase }}/resources">Go to Manage Resources &rarr; Step 1: Create Timeslots</a> to fix this.
+          {% else %}
+          Please contact the program directors to set up timeslots before registering.
+          {% endif %}
+        </div>
+        </td>
+    </tr>
+    {% endif %}
     {{ form }}
     <tr>
         <td colspan="2">&nbsp;</td>
