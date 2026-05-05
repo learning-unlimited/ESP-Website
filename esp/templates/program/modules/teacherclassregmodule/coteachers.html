@@ -34,19 +34,19 @@
 </ol>
 
 {% if conflict %}
-    <div class="alert alert-danger">
+    <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
             {{ conflict.name }} has a conflicting schedule.
     </div>
 {% elif unavailableuser %}
-    <div class="alert alert-danger">
+    <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
             {{ unavailableuser.name }}</font> is not available when this class is scheduled ({{ unavailabletimes|join:", " }}).
     </div>
 {% endif %}
 
 {% if error %}
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
     <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         {{ error }}
 </div>

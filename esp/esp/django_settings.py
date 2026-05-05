@@ -421,7 +421,7 @@ ADMIN_TOOLS_MENU = 'admintoolsmenu.CustomMenu'
 ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
 ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
-ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
+ADMIN_TOOLS_THEMING_CSS = '/media/styles/admin_theme.css'
 
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']
