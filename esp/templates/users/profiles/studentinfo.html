@@ -4,7 +4,7 @@
 {{ form.errors }}
 
 {% if not user.getGrade or form.allow_change_grade_level %}
-<div class="alert">
+<div role="alert" class="alert">
 <button type="button" class="close" data-dismiss="alert">x</button>
 Please fill out your current age and grade accurately and honestly.
 We trust our students to represent themselves honestly, but
@@ -33,7 +33,7 @@ Your grade level will update automatically every August.
     <label for="id_dob_0" class="control-label">Date of Birth:</label>
     <div class="controls controls-row">
     {{ form.dob }} {% if form.dob.errors %}
-    <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.dob.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
@@ -44,7 +44,7 @@ Your grade level will update automatically every August.
     <label for="id_graduation_year" class="control-label">Grade / Graduation Year:</label>
     <div class="controls">
     {{ form.graduation_year }} {% if form.graduation_year.errors %}
-    <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.graduation_year.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
@@ -55,7 +55,7 @@ Your grade level will update automatically every August.
     <label for="id_dob"  class="control-label">Gender:</label>
     <div class="controls">
     {{ form.gender }} {% if form.gender.errors %}
-    <br /><span class="form_error">{{ form.gender.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.gender.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
@@ -67,7 +67,7 @@ Your grade level will update automatically every August.
     <div class="controls">
     <p style="font-size: 0.8em; font-style: italic;">(Anyone with access to your account will be able to see this on your profile. Teachers and administrators will also have access to this information. This field is not required.)</p>
     {{ form.pronoun }} {% if form.pronoun.errors %}
-    <br /><span class="form_error">{{ form.pronoun.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.pronoun.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
@@ -79,7 +79,7 @@ Your grade level will update automatically every August.
     <div class="controls controls-row">
     <p style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school if it comes up, otherwise enter the full school name.)</p>
     {{ form.k12school }} {% if form.k12school.errors %}
-    <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.k12school.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
@@ -90,7 +90,7 @@ Your grade level will update automatically every August.
     <label for="id_unmatched_school" class="control-label"></label>
     <div class="controls">
     {{ form.unmatched_school }} {% if form.unmatched_school.errors %}
-    <br /><span class="form_error">{{ form.unmatched_school.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.unmatched_school.errors|join:", " }}</span>
     {% endif %}
     </div>
     <span style="font-size: 0.8em;">Check this box only if you've tried searching but could not find your school.</span>
@@ -104,7 +104,7 @@ Your grade level will update automatically every August.
     <div class="controls controls-row">
     <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
     {{ form.heard_about }} {% if form.heard_about.errors %}
-    <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.heard_about.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
@@ -116,7 +116,7 @@ Your grade level will update automatically every August.
     <div class="controls">
     {{ form.studentrep }} 
     {% if form.studentrep.errors %}
-    <br /><span class="form_error">{{ form.studentrep.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.studentrep.errors|join:", " }}</span>
     {% endif %}
     </div>
     {% if form.fields.studentrep_expl %}
@@ -128,7 +128,7 @@ Your grade level will update automatically every August.
     <div class="controls">
     {{ form.studentrep_expl }}
     {% if form.studentrep_expl.errors %}
-    <br /><span class="form_error">{{ form.studentrep_expl.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.studentrep_expl.errors|join:", " }}</span>
     {% endif %}
     </div>
     {% endif %}
@@ -140,14 +140,14 @@ Your grade level will update automatically every August.
     <label for="id_food_preference" class="control-label">Food preference: </label>
     <div class="controls">
     {{ form.food_preference }} {% if form.food_preference.errors %}
-    <br /><span class="form_error">{{ form.food_preference.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.food_preference.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
 {% endif %}
 
 {% if form.shirt_size %}
-<div class="alert">
+<div role="alert" class="alert">
 <button type="button" class="close" data-dismiss="alert">x</button>
 T-shirts are available at some of our programs. When you reserve a t-shirt, this is the shirt size and type that will be ordered. Note that choosing a shirt size and type here does <b>not</b> reserve a t-shirt for you!
 </div>
@@ -156,7 +156,7 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
     <label for="id_shirt_size" class="control-label">Shirt size:</label>
     <div class="controls">
     {{ form.shirt_size }} {% if form.shirt_size.errors %}
-    <br /><span class="form_error">{{ form.shirt_size.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.shirt_size.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div> 
@@ -165,7 +165,7 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
     <label for="id_shirt_type" class="control-label">Shirt type:</label>
     <div class="controls">
     {{ form.shirt_type }} {% if form.shirt_type.errors %}
-    <br /><span class="form_error">{{ form.shirt_type.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.shirt_type.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
@@ -176,7 +176,7 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
     <label for="id_medical_needs" class="control-label">(Optional) Medical needs:</label>
     <div class="controls">
     {{ form.medical_needs }} {% if form.medical_needs.errors %}
-    <br /><span class="form_error">{{ form.medical_needs.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.medical_needs.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>
@@ -188,7 +188,7 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
     <div class="controls controls-row">
     <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
     {{ form.transportation }} {% if form.transportation.errors %}
-    <br /><span class="form_error">{{ form.transportation.errors|join:", " }}</span>
+    <br /><span class="form_error" role="alert">{{ form.transportation.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>

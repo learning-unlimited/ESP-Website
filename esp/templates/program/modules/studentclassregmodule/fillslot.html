@@ -1,5 +1,5 @@
 
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{program.niceName}}{% endblock %}
 
@@ -22,7 +22,7 @@ input.addbutton {
 </style>
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <br />
 <h1>
     {{ program.niceName }} 

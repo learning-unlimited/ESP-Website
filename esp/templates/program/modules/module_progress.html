@@ -1,0 +1,23 @@
+{% comment %}
+Rendered by the {% registration_progress %} template tag (defined in
+esp/program/templatetags/modules.py).
+
+Shows the registration checklist or progress bar at the top of a
+module page, giving users orientation context about where they are in
+the registration workflow.
+
+Context variables injected by the tag:
+  modules       -- all ProgramModuleObj instances for this tl
+  scrmi         -- StudentClassRegModuleInfo or ClassRegModuleInfo instance
+  completedAll  -- bool, True if all required modules are completed
+  program       -- the Program instance
+  extra_steps   -- QSD key for the extra-steps inline block
+{% endcomment %}
+{% if modules %}
+{% ifequal scrmi.progress_mode 1 %}
+{% include "program/modules/checkboxes.html" %}
+{% endifequal %}
+{% ifequal scrmi.progress_mode 2 %}
+{% include "program/modules/progressbar.html" %}
+{% endifequal %}
+{% endif %}
