@@ -94,4 +94,3 @@ deploy/ci
 fabfile.py
 *.wsgi
 codecov.yml
-esp/.watchmanconfig
