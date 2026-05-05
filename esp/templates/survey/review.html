@@ -30,7 +30,7 @@ td, th {
 <form method="POST" action="{{ request.get_full_path }}">
 <h2>Search for a teacher to retrieve their specific survey results:</h2>
 {% for error in teacher_form.target_user.errors %}
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
     <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         {{ error|escape }}
 </div>

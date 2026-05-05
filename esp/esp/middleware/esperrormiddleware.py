@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -79,8 +78,8 @@ def ESPError(message=None, log=True):
     if isinstance(message, bool):
         # trying to pass a bool argument: assume they meant log rather than message
         # this should become deprecated -lua 2013-02-15
-        message = None
         log = message
+        message = None
 
     if log:
         cls = ESPError_Log
@@ -92,69 +91,6 @@ def ESPError(message=None, log=True):
         return cls
     else:
         return cls(message)
-
-""" Adapted from https://www.djangosnippets.org/snippets/802/ """
-class AjaxErrorMiddleware(MiddlewareMixin):
-    '''Return AJAX errors to the browser in a sensible way.
-
-    Includes some code from https://www.djangosnippets.org/snippets/650/
-    '''
-
-    # Some useful errors that this middleware will catch.
-    class AjaxError(Exception):
-        def __init__(self, message):
-            self.message = message
-            super(AjaxErrorMiddleware.AjaxError, self).__init__(message)
-
-    class AjaxParameterMissingError(AjaxError):
-        def __init__(self, param):
-            super(AjaxErrorMiddleware.AjaxParameterMissingError, self).__init__(
-                _('Required parameter missing: %s') % param)
-
-
-    def process_exception(self, request, exception):
-        #   This line has been commented out for debugging so that requests
-        #   can be made using a normal browser like Firefox with UrlParams.
-        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest': return
-
-        if isinstance(exception, (ObjectDoesNotExist, Http404)):
-            return self.not_found(request, exception)
-
-        if isinstance(exception, AjaxErrorMiddleware.AjaxError):
-            return self.bad_request(request, exception)
-
-        return None
-
-
-    def serialize_error(self, status, message):
-        return HttpResponse(json.dumps({
-                    'status': status,
-                    'error': message}),
-                            status=status)
-
-
-    def not_found(self, request, exception):
-        return self.serialize_error(404, str(exception))
-
-
-    def bad_request(self, request, exception):
-        return self.serialize_error(200, exception.message)
-
-
-    def server_error(self, request, exception):
-        if settings.DEBUG:
-            import sys, traceback
-            (exc_type, exc_info, tb) = sys.exc_info()
-            message = f"{exc_type.__name__}\n"
-            message += f"{exc_info}\n\n"
-            message += "TRACEBACK:\n"
-            for tb in traceback.format_tb(tb):
-                message += f"{tb}\n"
-            return self.serialize_error(500, message)
-        else:
-            return self.serialize_error(500, _('Internal error'))
-
-AjaxError = AjaxErrorMiddleware.AjaxError
 
 
 class ESPErrorMiddleware(MiddlewareMixin):

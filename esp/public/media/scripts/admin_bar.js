@@ -7,7 +7,7 @@ ESP = (function () {
 
   $j(document).ready(function () {
     loaded = true;
-    for (var i = 0; i < queued_modules.length; i++) {
+    for (var i = 0; i < queued_modules.length; i++) {        
       ESP.registerAdminModule(queued_modules[i]);
     }
   });
