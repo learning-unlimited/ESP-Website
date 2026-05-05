@@ -726,7 +726,7 @@ class ClassChangeController(object):
             self.timeout = settings.EMAILTIMEOUT
         else:
             self.timeout = 2
-        f = open(os.getenv("HOME")+'/'+"classchanges.txt", 'w')
+        f = open(os.getenv("HOME")+'/'+"classchanges.txt", 'w', encoding='utf-8')
         self.subject = "[" + self.program.niceName() + "] Class Change"
         self.from_email = ESPUser.email_sendto_address(self.program.director_email, self.program.niceName())
         self.bcc = [self.from_email]
