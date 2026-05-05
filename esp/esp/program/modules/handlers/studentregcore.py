@@ -133,7 +133,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if not waitlist.exists():
             rt = RecordType.objects.get(name="waitlist")
             Record.objects.create(event=rt, user=request.user,
-                                program=prog)
+                                  program=prog)
             already_on_list = False
         else:
             already_on_list = True
