@@ -84,7 +84,7 @@
           <!-- prevent any other behaviors -->
           event.preventDefault();
           event.stopPropagation();
-
+          
           <!-- disable the submit button -->
           $j(this).prop('disabled', true);
           var form = $j(this).parents('form');

@@ -7,7 +7,6 @@ from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
 import six
 
-
 def teacheracknowledgementform_factory(prog):
     name = "TeacherAcknowledgementForm"
     bases = (forms.Form,)
@@ -26,7 +25,6 @@ def teacheracknowledgementform_factory(prog):
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
 
-
 class TeacherAcknowledgementModule(ProgramModuleObj):
     doc = """Serves a form asking teachers to acknowledge some agreement."""
 
@@ -37,7 +35,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             "link_title": "Teacher Acknowledgement",
             "module_type": "teach",
             "required": True,
-            "choosable": 1,
+            'choosable': 1,
         }
 
     def isCompleted(self):
@@ -51,7 +49,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
 
     @main_call
     @needs_teacher
-    @meets_deadline("/Acknowledgement")
+    @meets_deadline('/Acknowledgement')
     def acknowledgement(self, request, tl, one, two, module, extra, prog):
         context = {'prog': prog}
         if request.method == 'POST':
@@ -65,30 +63,26 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             else:
                 rec.delete()
         elif self.isCompleted():
-            context["form"] = teacheracknowledgementform_factory(prog)(
-                {"acknowledgement": True}
-            )
+            context['form'] = teacheracknowledgementform_factory(prog)({'acknowledgement': True})
         else:
-            context["form"] = teacheracknowledgementform_factory(prog)()
-        return render_to_response(
-            self.baseDir() + "acknowledgement.html", request, context
-        )
+            context['form'] = teacheracknowledgementform_factory(prog)()
+        return render_to_response(self.baseDir()+'acknowledgement.html', request, context)
 
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have submitted the acknowledgement. """
         qo = Q(record__program=self.program, record__event__name="teacheracknowledgement")
         if QObject is True:
-            return {"acknowledgement": qo}
+            return {'acknowledgement': qo}
 
         teacher_list = ESPUser.objects.filter(qo).distinct()
 
-        return {"acknowledgement": teacher_list}
+        return {'acknowledgement': teacher_list }
 
     def teacherDesc(self):
-        return {
-            "acknowledgement": """Teachers who have submitted the acknowledgement for the program"""
-        }
+        return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program"""}
 
     class Meta:
         proxy = True
-        app_label = "modules"
+        app_label = 'modules'
+
+

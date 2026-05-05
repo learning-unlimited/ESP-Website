@@ -61,15 +61,15 @@
             <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
 
             <select id="current_coteachers"
-                    class="coteachers" name="delete_coteachers"
+                    class="coteachers" name="delete_coteachers" 
                     size="5" multiple="multiple">
             {% for teacher in coteachers %}
-                <option value="{{teacher.id}}">{{teacher.last_name }},
+                <option value="{{teacher.id}}">{{teacher.last_name }}, 
                     {{teacher.first_name}} ({{teacher.username}})</option>
             {% endfor %}
             </select>
             <br />
-
+            
         </td>
         <td>
             <input type="submit" class="button" value="Delete Selected" /><br />
@@ -121,15 +121,15 @@
             <input type="hidden" name="moderators" value="{% for moderator in section.get_moderators %}{{ moderator.id }}{% if not forloop.last %},{% endif %}{% endfor %}" />
 
             <select id="current_moderators_{{ section.id }}"
-                    class="moderators" name="delete_moderators"
+                    class="moderators" name="delete_moderators" 
                     size="5" multiple="multiple">
             {% for moderator in section.get_moderators %}
-                <option value="{{ moderator.id }}">{{ moderator.last_name }},
+                <option value="{{ moderator.id }}">{{ moderator.last_name }}, 
                     {{ moderator.first_name }} ({{ moderator.username }})</option>
             {% endfor %}
             </select>
             <br />
-
+            
         </td>
         <td>
             <input type="submit" class="button" value="Delete Selected" /><br />

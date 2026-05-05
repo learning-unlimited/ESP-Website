@@ -116,7 +116,7 @@ setInterval(write_updated_time,1000);
         {% for timeslot in timeslots %}
             {% ifchanged timeslot.0.start.day %}
                 <tr>
-                    <th colspan="3" class="day">{% if program.getUrlBase == "HSSP/2022_Summer" %}Saturdays, July 9 - August 13{% else %}{{ timeslot.0.pretty_date }}{% endif %}</th>
+                    <th colspan="3" class="day">{{ timeslot.0.pretty_date }}</th>
                 </tr>
             {% endifchanged %}
             {% with timeslot.1.0 as cls %}
