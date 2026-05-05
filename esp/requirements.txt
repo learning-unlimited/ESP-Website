@@ -2,7 +2,7 @@
 Django==3.2.25
 
 # Django-specific packages
-git+https://github.com/learning-unlimited/django-argcache.git@django2-fixed # Handles caching
+git+https://github.com/learning-unlimited/django-argcache.git@django3 # Handles caching
 django-debug-toolbar==3.2.4 # Provides the debug toolbar
 django-extensions==3.1.5 # Provides shell_plus, runserver_plus, and other utilities
 django-filebrowser-no-grappelli==3.8.0 # Provides admin panel interface for files
@@ -40,6 +40,7 @@ pytz==2023.3 # Required for timezone support
 # pywatchman # Makes dev servers auto-reload
 raven # Required for Sentry error reporting
 setuptools==57.5.0 # For building packages from source; stripe and a few others don't work with v58+
+six # Required by django-argcache
 selenium>=4.9,<5 # Runs selenium tests
 shortuuid==0.4.2 # django-extensions dependency
 stripe==2.60.0 # Required for credit card processing
