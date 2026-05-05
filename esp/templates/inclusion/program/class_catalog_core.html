@@ -7,15 +7,15 @@
 	 </div>
      <div class="class_subtitle_row">
      <div class="class_difficulty">
-	 {% ifnotequal class.hardness_rating "Normal"  %}
+	 {% if class.hardness_rating != "Normal" %}
 	   Difficulty:  {{ class.hardness_rating }}
-	   {% ifequal class.hardness_rating "Hard" %}
+	   {% if class.hardness_rating == "Hard" %}
 	      - This class may be exceptionally difficult
-	   {% endifequal %}
-	   {% ifequal class.hardness_rating "Easy" %}
+	   {% endif %}
+	   {% if class.hardness_rating == "Easy" %}
 	      - This class is meant to be accessible to most students
-	   {% endifequal %}
-	 {% endifnotequal %}
+	   {% endif %}
+	 {% endif %}
     </div>
     <div class="class_teachers">
        Teachers:

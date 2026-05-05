@@ -5,8 +5,19 @@
 
 if [ $(echo "$(lsb_release -rs) >= 20" | bc) -eq 1 ]; then
   sudo apt install -y curl
- else
+else
   sudo apt-get install -y curl
+fi
+
+# Install Node.js + npm via NodeSource if npm isn't already available
+# (the distro npm package has broken dependencies on Ubuntu 20+)
+if ! command -v npm &> /dev/null; then
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  if [ $(echo "$(lsb_release -rs) >= 20" | bc) -eq 1 ]; then
+    sudo apt install -y nodejs
+  else
+    sudo apt-get install -y nodejs
+  fi
 fi
 
 if [[ ":$PATH:" == *":/usr/bin:"* ]]

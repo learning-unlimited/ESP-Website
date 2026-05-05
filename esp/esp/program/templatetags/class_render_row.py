@@ -33,14 +33,22 @@ render_class_teacher_list_row.cached_function.get_or_create_token(('user',))
 
 
 @cache_inclusion_tag(register, 'inclusion/program/class_copy_row.html')
-def render_class_copy_row(cls):
+def render_class_copy_row(cls, user=None, program=None):
     """Render a class for the list of classes that can be copied in teacherreg.
 
     Similar to render_class_teacher_list_row, but with a few differences.
+
+    user: the teacher that is copying the class
+    program: the program that the teacher is copying the class _to_
     """
     return {'cls': cls,
             'program': cls.parent_program,
-            'crmi': cls.parent_program.classregmoduleinfo}
+            'crmi': cls.parent_program.classregmoduleinfo,
+            'email_host_sender': settings.EMAIL_HOST_SENDER,
+            'user': user,
+            'program': program}
 render_class_copy_row.cached_function.depend_on_cache(
     render_class_teacher_list_row.cached_function,
     lambda cls=wildcard, **kwargs: {'cls': cls})
+render_class_copy_row.cached_function.depend_on_row('program.Program', lambda program: {'program': program})
+render_class_copy_row.cached_function.get_or_create_token(('user',))
