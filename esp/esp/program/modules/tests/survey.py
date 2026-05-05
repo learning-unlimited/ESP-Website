@@ -89,7 +89,7 @@ class SurveyTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Question1', str(response.content, encoding='UTF-8'))
         #   Check the section-specific survey
-        response = self.client.get('/learn/%s/survey?sec=%s' % (self.program.url, sec.id))
+        response = self.client.get(f'/learn/{self.program.url}/survey?sec={sec.id}')
         self.assertEqual(response.status_code, 200)
         self.assertIn('Question2', str(response.content, encoding='UTF-8'))
         self.assertIn('Question3', str(response.content, encoding='UTF-8'))
@@ -99,8 +99,8 @@ class SurveyTest(ProgramFrameworkTest):
         form_settings = {
             'attendance_%d' % sec_timeslot.id: '%s' % sec.id,
             'question_%d' % question_base.id: 'Yes',
-            'question_%d_%d' % (question_perclass.id, sec_timeslot.id): 'No',
-            'question_%d_%d' % (question_number.id, sec_timeslot.id): '3',
+            f'question_{question_perclass.id}_{sec_timeslot.id}': 'No',
+            f'question_{question_number.id}_{sec_timeslot.id}': '3',
         }
 
         #   Submit the survey
