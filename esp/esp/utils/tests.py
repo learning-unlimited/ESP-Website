@@ -27,6 +27,7 @@ from esp.middleware import ESPError_Log
 from esp.users.models import ESPUser
 from esp import utils
 from esp.utils import query_builder
+from esp.utils.formats import format_lazy
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
 from unittest.mock import Mock, MagicMock
@@ -774,6 +775,20 @@ class RunInstallTestCase(unittest.TestCase):
         sender.models_module = models_module
         # Should not raise
         run_install(sender)
+
+
+class FormatLazyTest(DjangoTestCase):
+    def test_basic_substitution(self):
+        result = format_lazy("Hello %s", "world")
+        self.assertEqual(str(result), "Hello world")
+
+    def test_returns_lazy_proxy(self):
+        result = format_lazy("Hello %s", "world")
+        self.assertNotIsInstance(result, str)
+
+    def test_integer_substitution(self):
+        result = format_lazy("Value: %d", 42)
+        self.assertEqual(str(result), "Value: 42")
 
 
 def suite():

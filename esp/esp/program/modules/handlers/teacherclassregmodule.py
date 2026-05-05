@@ -50,17 +50,15 @@ from esp.users.models            import ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
-from django.http                 import HttpResponse, HttpResponseRedirect
+from django.http                 import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db                   import models
 from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
-
 from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
-
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
 
@@ -504,7 +502,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         from django.contrib.contenttypes.models import ContentType
         import os
         from django.core.files import File
-
         clsid = 0
         if 'clsid' in request.POST:
             clsid = request.POST['clsid']
@@ -1077,6 +1074,8 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         context['manage'] = False
         context['sectionNums'] = prog.countTimeSlots()
+        context['no_durations'] = len(context['sectionNums']) == 0
+        context['is_admin'] = request.user.isAdministrator()
 
         if ((request.method == "POST" and request.POST.get('manage') == 'manage') or
             (request.method == "GET" and request.GET.get('manage') == 'manage') or
@@ -1101,8 +1100,6 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from django.http import JsonResponse
-
         Q_teacher = Q(groups__name="Teacher")
 
         queryset = ESPUser.objects.filter(Q_teacher)
