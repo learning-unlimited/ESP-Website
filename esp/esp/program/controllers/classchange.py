@@ -102,7 +102,7 @@ class ClassChangeController(object):
             text += f"{self.get_student_schedule(student_ind, for_real)}\n\n<br /><br />\n\n"
             text += "See you soon!<br /><br />"
         else:
-            text += "We're sorry that we couldn't accommodate your class preferences this time, and we hope to see you at a future " + self.program.niceName() + " program.<br /<br />\n\n"
+            text += "We're sorry that we couldn't accommodate your class preferences this time, and we hope to see you at a future " + self.program.niceName() + " program.<br /><br />\n\n"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
         text = text.encode('ascii', 'ignore')
@@ -703,12 +703,12 @@ class ClassChangeController(object):
             text_fn = self.get_unchanged_student_email_text
         sent_to = "\n\nSent to " + student.username + ", " + student.name() + " <" + student.email + ">\n\n------------------------\n\n"
         if self.options['stats_display']:
-            logger.info(text_fn(student_ind, for_real=False) + sent_to)
+            logger.info(text_fn(student_ind, for_real=False).decode('ascii', 'ignore') + sent_to)
             sys.stdout.flush()
         if f:
-            f.write((text_fn(student_ind, for_real=False) + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"').encode('ascii', 'ignore'))
+            f.write((text_fn(student_ind, for_real=False).decode('ascii', 'ignore') + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"'))
         if for_real:
-            send_mail(self.subject, text_fn(student_ind, for_real=True), self.from_email, recipient_list, bcc=self.bcc, extra_headers=self.extra_headers)
+            send_mail(self.subject, text_fn(student_ind, for_real=True).decode('ascii', 'ignore'), self.from_email, recipient_list, bcc=self.bcc, extra_headers=self.extra_headers)
             time.sleep(self.timeout)
 
     def send_emails(self, for_real = False):
