@@ -113,7 +113,9 @@ Run any ``manage.py`` command::
 
     docker compose exec web python esp/manage.py <command>
 
-Examples::
+Examples:
+
+.. parsed-literal::
 
     # Open a Django shell
     docker compose exec web python esp/manage.py shell_plus
@@ -121,7 +123,7 @@ Examples::
     # Run migrations
     docker compose exec web python esp/manage.py migrate
 
-    # Run tests (see `<contributing.rst>`_ for full options)
+    # Run tests (see `contributing.rst <contributing.rst>`_ for full options)
     docker compose exec -w /app/esp web pytest
 
     # Open a bash shell inside the container
