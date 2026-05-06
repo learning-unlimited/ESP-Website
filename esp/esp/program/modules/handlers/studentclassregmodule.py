@@ -40,6 +40,7 @@ from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
@@ -388,17 +389,17 @@ class StudentClassRegModule(ProgramModuleObj):
         if not hasattr(request.user, "onsite_local"):
             request.user.onsite_local = False
 
-        if 'class_id' in request.POST:
-            classid = request.POST['class_id']
-            sectionid = request.POST['section_id']
-        else:
+        try:
+            classid = int(request.POST['class_id'])
+            sectionid = int(request.POST['section_id'])
+        except (KeyError, ValueError, TypeError):
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
-        section = ClassSection.objects.get(id=sectionid)
+        section = get_object_or_404(ClassSection, id=sectionid, parent_class__id=classid, parent_class__parent_program=prog)
+        cobj = section.parent_class
         if not scrmi.use_priority:
             error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
         if scrmi.use_priority or not error:
-            cobj = ClassSubject.objects.get(id=classid)
             error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
 
         if scrmi.use_priority:
@@ -499,12 +500,11 @@ class StudentClassRegModule(ProgramModuleObj):
 
         #   Override both grade limits and size limits during onsite registration
         #   Classes are sorted like the catalog
-        if is_onsite and not 'filter' in request.GET:
-            classes = list(ClassSubject.objects.catalog(self.program, ts))
-        else:
-            classes = [c for c in list(ClassSubject.objects.catalog(self.program, ts)) if c.grade_min <= user_grade and c.grade_max >= user_grade]
+        classes = list(ClassSubject.objects.catalog(self.program, ts))
+        should_filter_invalid = (not is_onsite) or ('filter' in request.GET)
+        if should_filter_invalid:
             if user_grade != 0:
-                classes = [c for c in classes if c.grade_min <=user_grade and c.grade_max >= user_grade]
+                classes = [c for c in classes if c.grade_min <= user_grade and c.grade_max >= user_grade]
             classes = [c for c in classes if not c.isRegClosed()]
 
         categories_sort = self.sort_categories(classes, self.program)
@@ -564,17 +564,17 @@ class StudentClassRegModule(ProgramModuleObj):
 
         category_list_href = "#top"
         if separate_catalog:
-            category_list_href = "/learn/%s/catalog" % prog.getUrlBase()
+            category_list_href = f"/learn/{prog.getUrlBase()}/catalog"
 
         category_header_str = """
-    <div class="cat_wrapper" data-category="%d">
+    <div class="cat_wrapper" data-category="{cat_id}">
       <hr size="1"/>
-      <a name="cat%d"></a>
+      <a name="cat{cat_id}"></a>
         <p style="font-size: 1.2em;" class="category">
-           %s
+           {cat_name}
         </p>
         <p class="linktop">
-           <a href="%s">[ Return to Category List ]</a>
+           <a href="{category_list_href}">[ Return to Category List ]</a>
         </p>
 """
 
@@ -584,7 +584,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 class_category_id = cls.category.id
                 if (class_category_id != None):
                     class_blobs.append('</div>')
-                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category, category_list_href))
+                class_blobs.append(category_header_str.format(cat_id=class_category_id, cat_name=cls.category.category, category_list_href=category_list_href))
             class_blobs.append(render_class_direct(cls))
             class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)

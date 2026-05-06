@@ -34,13 +34,20 @@ The following workflow applies if you've already been added as a collaborator to
 
 From the directory ``/esp``: ::
 
-  git checkout main  # for historical reasons we use 'main' instead of 'master'
+  git checkout main
   git pull
-  ./update_deps.sh # if using Docker: docker compose up --build; no need to bother if deps haven’t changed
-  ./manage.py update # if using Docker: docker compose exec web python esp/manage.py update
   git checkout -b new-branch-name
 
+If you've changed dependencies (for example, ``requirements.txt``) or modified the Dockerfile, rebuild first::
+
+  docker compose up --build
+
+Otherwise, you don't need to rebuild, just start the server::
+
+  docker compose up
+
 Write some code!
+(the server will automatically reload when you save changes to Python files, but you might need to refresh the page in your browser to see changes to HTML/CSS/JS files).
 Test your code!
 
 Look at what you've changed (``git status`` and/or ``git diff``), and then run ``git commit -a -m``, and type a commit message (see `<https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>` for good commit message style), like so: ::
@@ -108,8 +115,6 @@ This project uses Django's built-in test framework. Tests generally live in thei
 Running Tests
 ~~~~~~~~~~~~~
 
-**Using Docker (recommended):**
-
 To run all tests::
 
   docker compose exec web python esp/manage.py test
@@ -118,12 +123,6 @@ To run tests for a specific module (e.g. ``accounting``)::
 
   docker compose exec web python esp/manage.py test esp.accounting.tests
 
-**Without Docker:**
-
-If you are running the server natively without Docker::
-
-  cd esp
-  python manage.py test --settings=esp.settings
 
 Test Suite Reference
 ~~~~~~~~~~~~~~~~~~~~
