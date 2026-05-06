@@ -93,12 +93,9 @@ class StudentCustomFormModule(ProgramModuleObj):
             'student_custom_form': """Students who have completed the custom form""",
         }
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """Return true if user has filled out the student custom form."""
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     @main_call
@@ -109,13 +106,13 @@ class StudentCustomFormModule(ProgramModuleObj):
             cf = Form.objects.get(id=int(custom_form_id))
         else:
             if request.user.isAdmin():
-                error = 'Cannot find an appropriate form for this module. You should <a href="/customforms" target="_blank">create one</a> and link it to the "Student Custom Form" module of the %s program.' % (self.program)
+                error = f'Cannot find an appropriate form for this module. You should <a href="/customforms" target="_blank">create one</a> and link it to the "Student Custom Form" module of the {self.program} program.'
             else:
                 error = 'Cannot find an appropriate form for this module. Please ask your administrator to create a form and link it to the "Student Custom Form" module.'
             raise ESPError(error, log=False)
 
         #   If the user already filled out the form, use their earlier response for the initial values
-        if self.isCompleted():
+        if self.isCompleted(request.user):
             prev_result_data = TeacherCustomFormModule.get_prev_data(cf, request)
             return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=StudentCustomComboForm, initial_data = prev_result_data,
                                extra_context = {'prog': prog, 'qsd_name': 'learn:customform_header', 'module': self.module.link_title}, program = prog)

@@ -9,8 +9,8 @@
 {% if num_affected_sections %}
 <form action="" method="post">
 {% csrf_token %}
-<h1>{% trans "Clear Schedule<" %}/h1>
-<div class="alert alert-error">
+<h1>{% trans "Clear Schedule" %}</h1>
+<div role="alert" class="alert alert-error">
   <p><h2>{% trans "Warning" %}!</h2> 
   {% blocktrans %}
   You are about to unschedule {{num_affected_sections}} section{{ num_affected_sections|pluralize }}.
@@ -23,7 +23,7 @@
 </div>
 </form>
 {% else %}
-<div class="alert alert-info">
+<div role="alert" class="alert alert-info">
  <p>{% trans "There are no sections assigned to this schedule." %}</p>
 </div>
 {% endif %}

@@ -10,11 +10,7 @@ from django.conf import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii
 import hashlib
-
-try:
-    import pickle
-except:
-    import pickle
+import pickle
 
 CACHE_WARNING_SIZE = 1 * 1024**2
 MAX_KEY_LENGTH = 250
@@ -35,7 +31,7 @@ class CacheClass(BaseCache):
         if len(rawkey) <= real_max_length:
             return rawkey
         else: # We have an oversized key; hash it
-            hashkey = HASH_PREFIX + hashlib.md5(key.encode("UTF-8")).hexdigest()
+            hashkey = HASH_PREFIX + hashlib.sha256(key.encode("UTF-8")).hexdigest()
             return hashkey + '_' + rawkey[ :  real_max_length - len(hashkey) - 1 ]
 
     def _failfast_test(self, key, value):

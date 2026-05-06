@@ -62,6 +62,20 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             "choosable": 1
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if tl != "learn" or view_name != "studentreg":
+            return None
+        from esp.program.modules.admin_search import AdminSearchEntry
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="learn_studentreg",
+            url="/learn/%s/studentreg" % base,
+            title="Student Registration",
+            category="Quick Links",
+            keywords=["student registration", "signup", "enroll"],
+        )
+
     @cache_function
     def have_paid(self, user):
         """ Whether the user has paid for this program.  """
@@ -130,8 +144,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                                          user=request.user,
                                          program=prog)
 
-        if waitlist.count() <= 0:
-            Record.objects.create(event__name="waitlist", user=request.user,
+        if not waitlist.exists():
+            rt = RecordType.objects.get(name="waitlist")
+            Record.objects.create(event=rt, user=request.user,
                                   program=prog)
             already_on_list = False
         else:
@@ -193,7 +208,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             if hasattr(module, 'onConfirm'):
                 module.onConfirm(request)
-            if not module.isCompleted() and module.isRequired():
+            if not module.isCompleted(request.user) and module.isRequired():
                 completedAll = False
             context = module.prepare(context)
 
@@ -266,7 +281,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context["request"] = request
             context["program"] = prog
             return HttpResponse( Template(receipt_text).render( Context(context) ) )
-        except:
+        except Exception:
             return self.goToCore(tl)
 
     @cache_function
@@ -302,7 +317,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             # If completed all required modules so far...
             if context['completedAll']:
-                if not module.isCompleted() and module.isRequired():
+                if not module.isCompleted(request.user) and module.isRequired():
                     context['completedAll'] = False
 
             context = module.prepare(context)

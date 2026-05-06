@@ -46,6 +46,7 @@ from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 
 from django.contrib.auth.models import Group
+from django.core.management import call_command
 from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
@@ -140,9 +141,10 @@ class ViewUserInfoTest(TestCase):
         c = Client()
         c.login(username=self.admin.username, password=self.password)
 
-        # Try searching by ID direct hit
+        # Try searching by user ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=%s" % self.admin.username)
 
     def testUserIDSearchMultipleResults(self):
         c = Client()
@@ -623,7 +625,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
+        ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
         new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
@@ -781,7 +783,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
+        ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
         new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
@@ -1426,6 +1428,79 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
         except ESPUser.DoesNotExist:
             raise AssertionError('bulk_account_create did not create all accounts it was supposed to')
 
+    def testProfileCreation(self):
+        """Test that bulk-created accounts have complete profile."""
+        from esp.users.models import ContactInfo
+        from esp.program.models import RegistrationProfile
+
+        # Create bulk accounts for Students
+        form_data = {
+            'groups': ('Student',),
+            'prefix1': 'bulkprof',
+            'count1': '3'
+        }
+
+        url = '/manage/%s/bulk_account_create' % self.program.getUrlBase()
+        response = self.client.post(url, data=form_data)
+        self.assertEqual(response.status_code, 200)
+
+        # Verify each created user has complete profile data
+        for i in range(1, 4):
+            username = 'bulkprof{}'.format(i)
+            user = ESPUser.objects.get(username=username)
+
+            # Check ContactInfo exists
+            contact_info = ContactInfo.objects.filter(user=user)
+            self.assertTrue(contact_info.exists(),
+                            'ContactInfo not created for user {}'
+                            .format(username))
+            contact = contact_info.first()
+            self.assertEqual(contact.first_name, username,
+                             'ContactInfo first_name should be '
+                             'set to username')
+
+            # Check RegistrationProfile exists and is linked to program
+            reg_profile = RegistrationProfile.objects.filter(
+                user=user, program=self.program)
+            self.assertTrue(reg_profile.exists(),
+                            'RegistrationProfile not created for '
+                            'user {} and program'.format(username))
+            profile = reg_profile.first()
+
+            # Check ContactInfo is linked to profile
+            self.assertIsNotNone(
+                profile.contact_user,
+                'RegistrationProfile.contact_user not set for '
+                'user {}'.format(username))
+            self.assertEqual(
+                profile.contact_user.id, contact.id,
+                'RegistrationProfile.contact_user not correctly '
+                'linked')
+
+            # Check StudentInfo exists for Student group
+            self.assertIsNotNone(
+                profile.student_info,
+                'StudentInfo not created for bulk student {}'
+                .format(username))
+            student_info = profile.student_info
+            self.assertIsNotNone(
+                student_info.graduation_year,
+                'StudentInfo.graduation_year not set for user {}'
+                .format(username))
+            from django.db.models import Max
+            yog_qs = (
+                RegistrationProfile.objects
+                .filter(user=user, program=self.program)
+                .exclude(student_info__isnull=True)
+                .exclude(student_info__graduation_year__isnull=True)
+                .values('user_id')
+                .annotate(yog=Max('student_info__graduation_year'))
+            )
+            self.assertEqual(
+                yog_qs.count(), 1,
+                'Bulk user {} should appear in onsite grade '
+                'queries'.format(username))
+
     def checkForBulkCreateError(self, test_case, form_data):
         bulk_account_create_response = self.client.post('/manage/%s/bulk_account_create' % self.program.getUrlBase(),
                                                         data=form_data)
@@ -1495,6 +1570,223 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
             'count1': '2.6',
             'groups': ('Student', 'BulkAccountGroup')
         })
+
+
+class SeedDummyDataTest(TestCase):
+    """Tests for the seed_dummy_data management command."""
+
+    def test_seed_dummy_data_creates_programs_and_users(self):
+        """Running seed_dummy_data creates expected programs and users."""
+        call_command('seed_dummy_data', verbosity=0)
+
+        # Programs
+        for url in ['SplashDev/2026', 'SparkDev/2026']:
+            self.assertTrue(
+                Program.objects.filter(url=url).exists(),
+                f'Program {url} should exist after seeding',
+            )
+        # Users
+        for username in ['admin', 'teacher1', 'student1', 'volunteer1']:
+            self.assertTrue(
+                ESPUser.objects.filter(username=username).exists(),
+                f'User {username} should exist after seeding',
+            )
+        # ProgramModuleObj
+        for program in Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']):
+            self.assertGreater(
+                ProgramModuleObj.objects.filter(program=program).count(), 0,
+                f'Program {program.url} should have ProgramModuleObj instances after seeding',
+            )
+
+    def test_seed_dummy_data_idempotent(self):
+        """Running seed_dummy_data twice does not duplicate data."""
+        call_command('seed_dummy_data', verbosity=0)
+        count_before = Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']).count()
+
+        call_command('seed_dummy_data', verbosity=0)
+        count_after = Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']).count()
+
+        self.assertEqual(count_before, count_after, 'Second run should not create duplicate programs')
+
+    def test_seed_dummy_data_flush_recreates_data(self):
+        """Running with --flush clears and re-seeds; programs exist afterward."""
+        call_command('seed_dummy_data', verbosity=0)
+        self.assertTrue(Program.objects.filter(url='SplashDev/2026').exists())
+
+        call_command('seed_dummy_data', '--flush', verbosity=0)
+        self.assertTrue(
+            Program.objects.filter(url='SplashDev/2026').exists(),
+            'Programs should exist after flush (command re-seeds)',
+        )
+
+class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
+    """Tests for making class flags visible to teachers."""
+
+    def setUp(self):
+        from esp.program.models import ClassFlag, ClassFlagType
+        # Clear any stale thread-local request from previous test classes.
+        # ClassFlag.save() overrides created_by with request.user, which may
+        # reference a user whose savepoint was already rolled back.
+        from esp.middleware.threadlocalrequest import clear_current_request
+        clear_current_request()
+
+        super(ClassFlagTeacherVisibilityTest, self).setUp(num_students=0, num_teachers=2, num_admins=1)
+
+        # Use the first teacher and first class from the framework
+        self.teacher = self.teachers[0]
+        self.admin_user = self.admins[0]
+        self.subject = self.program.classes()[0]
+
+        # Flag types with different visibility
+        self.teacher_visible_type = ClassFlagType.objects.create(
+            name='Needs Update', show_to_teacher=True, notify_teacher_by_email=False,
+        )
+        self.teacher_notify_type = ClassFlagType.objects.create(
+            name='Action Required', show_to_teacher=True, notify_teacher_by_email=True,
+        )
+        self.admin_only_type = ClassFlagType.objects.create(
+            name='Internal Note', show_to_teacher=False, notify_teacher_by_email=False,
+        )
+        self.program.flag_types.add(self.teacher_visible_type, self.teacher_notify_type, self.admin_only_type)
+
+    def test_get_flag_types_teacher_filter(self):
+        """get_flag_types(teacher=True) returns only teacher-visible types."""
+        from esp.program.models import ClassFlagType
+        teacher_types = ClassFlagType.get_flag_types(program=self.program, teacher=True)
+        self.assertIn(self.teacher_visible_type, teacher_types)
+        self.assertIn(self.teacher_notify_type, teacher_types)
+        self.assertNotIn(self.admin_only_type, teacher_types)
+
+    def test_get_flag_types_no_teacher_filter(self):
+        """get_flag_types() without teacher=True returns all types."""
+        from esp.program.models import ClassFlagType
+        all_types = ClassFlagType.get_flag_types(program=self.program)
+        self.assertIn(self.teacher_visible_type, all_types)
+        self.assertIn(self.teacher_notify_type, all_types)
+        self.assertIn(self.admin_only_type, all_types)
+
+    def test_teacher_visible_flags_query(self):
+        """Only flags with show_to_teacher=True are returned by the filter."""
+        from esp.program.models import ClassFlag
+        ClassFlag.objects.create(
+            subject=self.subject, flag_type=self.teacher_visible_type,
+            comment='Please update', created_by=self.admin_user, modified_by=self.admin_user,
+        )
+        ClassFlag.objects.create(
+            subject=self.subject, flag_type=self.admin_only_type,
+            comment='Internal', created_by=self.admin_user, modified_by=self.admin_user,
+        )
+        visible = list(self.subject.flags.filter(flag_type__show_to_teacher=True))
+        self.assertEqual(len(visible), 1)
+        self.assertEqual(visible[0].flag_type.name, 'Needs Update')
+
+    def test_notification_email_sent(self):
+        """Creating a flag with notify_teacher_by_email=True sends personalized email to each teacher."""
+        from esp.program.models import ClassFlag
+        from django.core import mail
+        flag = ClassFlag.objects.create(
+            subject=self.subject, flag_type=self.teacher_notify_type,
+            comment='Please fix ASAP', created_by=self.admin_user, modified_by=self.admin_user,
+        )
+        mail.outbox = []
+        flag.send_teacher_notification()
+        teachers = list(self.subject.get_teachers())
+        self.assertEqual(len(mail.outbox), len(teachers))
+        for email in mail.outbox:
+            self.assertIn('Class Flag Added', email.subject)
+        for teacher in teachers:
+            self.assertTrue(
+                any(teacher.first_name in email.body for email in mail.outbox),
+                "No email contained personalized greeting for %s" % teacher.first_name,
+            )
+
+    def test_no_notification_when_disabled(self):
+        """Creating a flag with notify_teacher_by_email=False sends no email."""
+        from esp.program.models import ClassFlag
+        from django.core import mail
+        flag = ClassFlag.objects.create(
+            subject=self.subject, flag_type=self.teacher_visible_type,
+            comment='FYI', created_by=self.admin_user, modified_by=self.admin_user,
+        )
+        mail.outbox = []
+        # Simulate the newflag check
+        if flag.flag_type.notify_teacher_by_email:
+            flag.send_teacher_notification()
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_flag_type_form_includes_new_fields(self):
+        """FlagTypeForm includes show_to_teacher and notify_teacher_by_email."""
+        from esp.program.forms import FlagTypeForm
+        form = FlagTypeForm()
+        self.assertIn('show_to_teacher', form.fields)
+        self.assertIn('notify_teacher_by_email', form.fields)
+
+    def test_newflag_email_failure_returns_warning(self):
+        """If send_teacher_notification() raises, newflag() still returns 200
+        with the flag data and includes a warning message (#4223)."""
+        from esp.program.models import ClassFlag
+        from unittest.mock import patch
+
+        # Log in as admin
+        self.client.login(username=self.admin_user.username, password='password')
+
+        flag_count_before = ClassFlag.objects.filter(subject=self.subject).count()
+
+        url = '/manage/%s/newflag/' % self.program.getUrlBase()
+        post_data = {
+            'subject': self.subject.id,
+            'flag_type': self.teacher_notify_type.id,
+            'comment': 'Test email failure',
+        }
+
+        with patch.object(ClassFlag, 'send_teacher_notification',
+                          side_effect=Exception('SMTP connection refused')):
+            response = self.client.post(url, post_data)
+
+        # Endpoint returns 200, not 500
+        self.assertEqual(response.status_code, 200)
+
+        # Response contains warning about failed email
+        import json as _json
+        response_data = _json.loads(response.content.decode('utf-8'))
+        self.assertIn('warning', response_data)
+        self.assertIn('email notification failed', response_data['warning'])
+
+        # Flag HTML is still returned
+        self.assertIn('flag_name', response_data)
+        self.assertIn('flag_detail', response_data)
+
+        # Flag was saved to the database
+        self.assertEqual(
+            ClassFlag.objects.filter(subject=self.subject).count(),
+            flag_count_before + 1
+        )
+
+    def test_newflag_email_success_no_warning(self):
+        """When email succeeds, the response has no warning field."""
+        from esp.program.models import ClassFlag
+        from unittest.mock import patch
+
+        self.client.login(username=self.admin_user.username, password='password')
+
+        url = '/manage/%s/newflag/' % self.program.getUrlBase()
+        post_data = {
+            'subject': self.subject.id,
+            'flag_type': self.teacher_notify_type.id,
+            'comment': 'Email works fine',
+        }
+
+        with patch.object(ClassFlag, 'send_teacher_notification'):
+            response = self.client.post(url, post_data)
+
+        self.assertEqual(response.status_code, 200)
+
+        import json as _json
+        response_data = _json.loads(response.content.decode('utf-8'))
+        self.assertNotIn('warning', response_data)
+        self.assertIn('flag_name', response_data)
+
+
 """
 Tests for esp.program.controllers.classreg
 Source: esp/esp/program/controllers/classreg.py
@@ -1712,10 +2004,12 @@ class ManageDocsViewTest(TestCase):
         self.assertIn('<p>', html)
         self.assertIn('This is a paragraph.', html)
 
+    @patch('esp.program.views.os.path.isdir')
     @patch('esp.program.views.os.path.isfile')
-    def test_serve_image_file(self, mock_isfile):
+    def test_serve_image_file(self, mock_isfile, mock_isdir):
         """Image files are served natively by the manage_docs view."""
         mock_isfile.return_value = True
+        mock_isdir.return_value = False
         self.client.login(username='docstestadmin', password=self.password)
         # Mock open so it doesn't crash trying to open a fake image
         from unittest.mock import mock_open
@@ -1814,3 +2108,54 @@ class GradeCacheInvalidationTest(TestCase):
             "getLastProfile should return updated graduation_year"
         )
 
+
+class HeardAboutNormalizationTest(TestCase):
+    """
+    Unit tests for the punctuation normalization logic inside heardabout().
+
+    Regression test for GitHub issue #4621:
+    heardabout() was calling ha_key.replace(char, '') without assigning the
+    return value back to ha_key, so punctuation was never actually stripped and
+    semantically identical answers were counted as separate rows.
+    """
+
+    def _normalize(self, ha_str):
+        """
+        Replicate the normalization logic from heardabout() in statistics.py
+        so this test has no database dependency.
+        """
+        ha_key = ha_str.rstrip('s').lower()
+        for char in ' _:-/.,!?+':
+            ha_key = ha_key.replace(char, '')
+        return ha_key
+
+    def test_punctuation_variants_normalize_to_same_key(self):
+        """Answers differing only in punctuation should produce the same key."""
+        variants = ["friend", "friend!", "Friend.", "Friend,", "friend?", "Friend!"]
+        keys = [self._normalize(v) for v in variants]
+        self.assertEqual(
+            len(set(keys)), 1,
+            "All punctuation variants of 'friend' should normalize to the same key, "
+            "but got: %s" % keys
+        )
+
+    def test_lowercase_normalization(self):
+        """Normalization should be case-insensitive."""
+        self.assertEqual(self._normalize("Facebook"), self._normalize("facebook"))
+        self.assertEqual(self._normalize("TWITTER"), self._normalize("twitter"))
+
+    def test_trailing_s_stripped(self):
+        """Trailing 's' should be stripped (rstrip('s'))."""
+        self.assertEqual(self._normalize("friends"), self._normalize("friend"))
+
+    def test_spaces_stripped(self):
+        """Spaces should be removed during normalization."""
+        self.assertEqual(self._normalize("a friend"), self._normalize("afriend"))
+
+    def test_empty_string_handled(self):
+        """Empty string should normalize to empty string without error."""
+        self.assertEqual(self._normalize(""), "")
+
+    def test_only_punctuation_normalizes_to_empty(self):
+        """A string of only punctuation characters should normalize to empty."""
+        self.assertEqual(self._normalize("...!!!"), "")

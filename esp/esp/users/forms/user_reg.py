@@ -23,7 +23,7 @@ class ValidHostEmailField(forms.EmailField):
             try:
                 DNS.DiscoverNameServers()
                 if len(DNS.Request(qtype='a').req(email_host).answers) == 0 and len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
-                    raise forms.ValidationError('"%s" is not a valid email host' % email_host)
+                    raise forms.ValidationError(f'"{email_host}" is not a valid email host')
             except (IOError, DNS.DNSError): # (no resolv.conf, no nameservers)
                 pass
         except ImportError: # no PyDNS
@@ -100,7 +100,7 @@ class UserRegForm(forms.Form):
         #   Check for duplicate accounts, but avoid triggering for users that are:
         #   - awaiting initial activation
         #   - currently on the email list only (they can be 'upgraded' to a full account)
-        awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
+        awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
         if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).exists():
             raise forms.ValidationError('Username already in use.')
 
@@ -138,7 +138,7 @@ class AwaitingActivationEmailForm(forms.Form):
 
     def clean_username(self):
         data = self.cleaned_data['username']
-        awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
+        awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
         if not ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).exists():
             raise forms.ValidationError('That username isn\'t waiting to be activated.')
 

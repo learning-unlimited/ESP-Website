@@ -589,6 +589,13 @@ all_program_tags = {
         'category': 'manage',
         'is_setting': True,
     },
+    'separate_catalog_pages': {
+        'is_boolean': True,
+        'help_text': 'Show category-specific catalog pages instead of a single combined catalog page.',
+        'default': False,
+        'category': 'learn',
+        'is_setting': True,
+    },
     # These help_text tags are in order of the fields in TeacherClassRegForm
     'teacherreg_help_text_title': {
         'is_boolean': False,
@@ -1136,6 +1143,14 @@ all_program_tags = {
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
     },
+    'twophase_min_classes': {
+        'is_boolean': False,
+        'help_text': 'The minimum number of classes a student must select before submitting two-phase registration',
+        'default': '0',
+        'category': 'learn',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=0),
+    },
     'survey_teacher_filter': {
         'is_boolean': False,
         'help_text': 'Which sets of teachers are allowed to fill out the post-program survey? Specified as a comma-separated list of options in program.teachers().',
@@ -1333,6 +1348,17 @@ all_program_tags = {
                     you can pay the remaining balance via credit card. If your new balance is smaller \
                     than what you have already paid, we will treat the negative balance as a donation \
                     to our program (thanks!).',
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'creditcard_required_for_extracosts': {
+        'is_boolean': False,
+        'help_text': 'Make the Credit Card module required when a student selects specific extra cost items. '
+                     'Set to * to trigger on any extra cost item, or a comma-separated list of item names '
+                     '(e.g. "Meal Ticket,T-Shirt") to trigger only on those items. '
+                     'Does not trigger on program admission costs alone. '
+                     'Balances under $0.50 are ignored to avoid gateway minimum charge rejections.',
+        'default': '',
         'category': 'learn',
         'is_setting': True,
     },

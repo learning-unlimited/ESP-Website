@@ -1,4 +1,4 @@
-#   Downloaded from http://www.djangosnippets.org/snippets/391/
+#   Downloaded from https://www.djangosnippets.org/snippets/391/
 #   Modified to not force unicode
 #   - Michael P
 
@@ -40,7 +40,7 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         context.update({
-            'id': attrs['id'] if 'id' in attrs else '%s_id' % (name),
+            'id': attrs['id'] if 'id' in attrs else f'{name}_id',
             'jquerywidget': self.jquerywidget,
             'media_url': settings.MEDIA_URL,
             'date_format': self.dformat,
@@ -130,7 +130,7 @@ class SplitDateWidget(forms.MultiWidget):
             vals = super().value_from_datadict(data, files, name)
             try:
                 return date(int(vals[2]), int(vals[0]), int(vals[1]))
-            except:
+            except (ValueError, TypeError, IndexError):
                 return None
 
     #   Format output
