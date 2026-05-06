@@ -112,7 +112,7 @@ def send_email_requests():
     # .iterator() to prevent that.  Second, even when django doesn't load the
     # whole query into django objects in memory, psycopg2 still loads it all
     # internally:
-    # http://thebuild.com/blog/2010/12/13/very-large-result-sets-in-django-using-postgresql/
+    # https://thebuild.com/blog/2010/12/13/very-large-result-sets-in-django-using-postgresql/
     # So we do our own batching on top of that.
     batch_size = 1000
     for i in range(int(math.ceil(float(mailtxts.count()) / batch_size))):

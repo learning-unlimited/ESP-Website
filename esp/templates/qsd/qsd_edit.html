@@ -57,6 +57,15 @@
   </div>
   <p><input type="hidden" name="post_edit"><input type="submit" value="Save Changes!" class="btn btn-primary" /> &nbsp;| <a href="{{ target_url }}">Cancel</a> | <a href="{{ return_to_view }}">Back to Page View</a></p>
 </form>
+{% if qsdrec.id %}
+<div style="margin-top: 10px;">
+  <button type="button" class="btn btn-default" onclick="qsd_toggle_history('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}')">
+    <span class="glyphicon glyphicon-time" aria-hidden="true"></span> Version History
+  </button>
+</div>
+<div id="qsd_history_panel_{{ qsdrec.edit_id }}" class="qsd_history_panel" style="display:none;"></div>
+<div id="qsd_version_preview_{{ qsdrec.edit_id }}" style="display:none;"></div>
+{% endif %}
 <div id="divmainqsddatetimestamp">
   <p>Last modified by {{ qsdrec.author }} on {{ qsdrec.create_date }}</p>
 </div>
@@ -94,6 +103,58 @@ var editor = new Jodit("#qsd_content", {
   }
 });
 espHandleBase64Paste(editor);
+{% endif %}
+
+{% if qsdrec.id %}
+// Wrap qsd_preview_version for full-page editor: use preview panel if available,
+// otherwise fall back to the inline editor implementation from qsd.js.
+(function() {
+    var _original_preview = qsd_preview_version;
+    qsd_preview_version = function(qsd_url, edit_id, version_id, version_date) {
+        var $previewDiv = $j("#qsd_version_preview_" + edit_id);
+        if (!$previewDiv.length) {
+            // No full-page preview container; delegate to original inline behavior
+            if (typeof _original_preview === "function") {
+                return _original_preview(qsd_url, edit_id, version_id, version_date);
+            }
+            return;
+        }
+        // Track which version was last viewed (for highlighting after close)
+        var $panel = $j("#qsd_history_panel_" + edit_id);
+        $panel.data('last-viewed-version', version_id);
+
+        $j.get("/admin/ajax_qsd_version_preview", { version_id: version_id }, function(data) {
+            $previewDiv.html(
+                '<div class="alert alert-warning" style="margin-bottom:8px;">'
+                + '<span class="glyphicon glyphicon-time"></span> '
+                + 'Preview of historical version '
+                + '<button type="button" class="btn btn-xs btn-default qsd-close-preview-btn">'
+                + '<span class="glyphicon glyphicon-arrow-left"></span> Close preview</button> '
+                + '<button type="button" class="btn btn-xs btn-warning qsd-preview-restore-btn">'
+                + '<span class="glyphicon glyphicon-repeat"></span> Restore this version</button>'
+                + '</div>'
+                + '<h3>' + $j('<span>').text(data.title).html() + '</h3>'
+                + '<div style="border:1px solid #ccc; padding:12px; background:#fffff0;">'
+                + data.content_html + '</div>'
+            );
+            $previewDiv.slideDown(200);
+            $previewDiv.find('.qsd-close-preview-btn').on('click', function() {
+                $previewDiv.slideUp(200);
+                // Highlight last-viewed row
+                $panel.find('.qsd-view-btn').removeClass('qsd-last-viewed');
+                $panel.find('.qsd-last-viewed-label').remove();
+                var $btn = $panel.find('.qsd-view-btn[data-version-id="' + version_id + '"]');
+                $btn.addClass('qsd-last-viewed');
+                $btn.after('<span class="qsd-last-viewed-label"> ← last viewed</span>');
+            });
+            $previewDiv.find('.qsd-preview-restore-btn').on('click', function() {
+                qsd_restore_version(qsd_url, edit_id, version_id, version_date);
+            });
+        }).fail(function(req) {
+            alert("Error loading version preview: " + req.responseText);
+        });
+    };
+})();
 {% endif %}
 </script>
 {% endblock %}

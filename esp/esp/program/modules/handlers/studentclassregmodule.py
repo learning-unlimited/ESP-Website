@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -41,6 +40,7 @@ from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
@@ -52,7 +52,7 @@ from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
-from esp.middleware      import ESPError, AjaxError, ESPError_NoLog
+from esp.middleware      import ESPError, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission
 from esp.tagdict.models  import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
@@ -370,10 +370,13 @@ class StudentClassRegModule(ProgramModuleObj):
             except ClassSection.DoesNotExist:
                 # Section doesn't exist, skip it
                 continue
-            except Exception as inst:
-                raise AjaxError('Encountered an error retrieving updated buttons: %s' % inst)
+            except Exception:
+                return HttpResponse(
+                    json.dumps({'status': 200, 'error': 'Encountered an error retrieving updated buttons.'}),
+                    content_type='application/json'
+                )
 
-        return HttpResponse(json.dumps(json_data))
+        return HttpResponse(json.dumps(json_data), content_type='application/json')
 
     @staticmethod
     def addclass_logic(request, tl, one, two, module, extra, prog, webapp=False):
@@ -386,17 +389,17 @@ class StudentClassRegModule(ProgramModuleObj):
         if not hasattr(request.user, "onsite_local"):
             request.user.onsite_local = False
 
-        if 'class_id' in request.POST:
-            classid = request.POST['class_id']
-            sectionid = request.POST['section_id']
-        else:
+        try:
+            classid = int(request.POST['class_id'])
+            sectionid = int(request.POST['section_id'])
+        except (KeyError, ValueError, TypeError):
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
-        section = ClassSection.objects.get(id=sectionid)
+        section = get_object_or_404(ClassSection, id=sectionid, parent_class__id=classid, parent_class__parent_program=prog)
+        cobj = section.parent_class
         if not scrmi.use_priority:
             error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
         if scrmi.use_priority or not error:
-            cobj = ClassSubject.objects.get(id=classid)
             error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
 
         if scrmi.use_priority:
@@ -445,8 +448,8 @@ class StudentClassRegModule(ProgramModuleObj):
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
-            # TODO(benkraft): we shouldn't need to do this.  find a better way.
-            raise AjaxError(inst)
+            error_message = inst.args[0] if inst.args else "An error occurred."
+            return HttpResponse(json.dumps({'status' : 200, 'error': str(error_message)}), content_type='application/json')
 
     @staticmethod
     def sort_categories(classes, prog, force_sort=False):
@@ -497,12 +500,11 @@ class StudentClassRegModule(ProgramModuleObj):
 
         #   Override both grade limits and size limits during onsite registration
         #   Classes are sorted like the catalog
-        if is_onsite and not 'filter' in request.GET:
-            classes = list(ClassSubject.objects.catalog(self.program, ts))
-        else:
-            classes = [c for c in list(ClassSubject.objects.catalog(self.program, ts)) if c.grade_min <= user_grade and c.grade_max >= user_grade]
+        classes = list(ClassSubject.objects.catalog(self.program, ts))
+        should_filter_invalid = (not is_onsite) or ('filter' in request.GET)
+        if should_filter_invalid:
             if user_grade != 0:
-                classes = [c for c in classes if c.grade_min <=user_grade and c.grade_max >= user_grade]
+                classes = [c for c in classes if c.grade_min <= user_grade and c.grade_max >= user_grade]
             classes = [c for c in classes if not c.isRegClosed()]
 
         categories_sort = self.sort_categories(classes, self.program)
@@ -562,17 +564,17 @@ class StudentClassRegModule(ProgramModuleObj):
 
         category_list_href = "#top"
         if separate_catalog:
-            category_list_href = "/learn/%s/catalog" % prog.getUrlBase()
+            category_list_href = f"/learn/{prog.getUrlBase()}/catalog"
 
         category_header_str = """
-    <div class="cat_wrapper" data-category="%d">
+    <div class="cat_wrapper" data-category="{cat_id}">
       <hr size="1"/>
-      <a name="cat%d"></a>
+      <a name="cat{cat_id}"></a>
         <p style="font-size: 1.2em;" class="category">
-           %s
+           {cat_name}
         </p>
         <p class="linktop">
-           <a href="%s">[ Return to Category List ]</a>
+           <a href="{category_list_href}">[ Return to Category List ]</a>
         </p>
 """
 
@@ -582,7 +584,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 class_category_id = cls.category.id
                 if (class_category_id != None):
                     class_blobs.append('</div>')
-                class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category, category_list_href))
+                class_blobs.append(category_header_str.format(cat_id=class_category_id, cat_name=cls.category.category, category_list_href=category_list_href))
             class_blobs.append(render_class_direct(cls))
             class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)
@@ -599,7 +601,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     """@cache_control(public=True, max_age=3600)
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        """ """Return the program timeslot names for the tabs in the lottery interface""" """
+        \"\"\"Return the program timeslot names for the tabs in the lottery interface\"\"\"
         # using .extra() to select all the category text simultaneously
         timeslots = self.program.getTimeSlots()
 
@@ -609,9 +611,9 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return resp"""
 
-    @cache_control(public=True, max_age=3600)
-    @no_auth
     @aux_call
+    @no_auth
+    @cache_control(public=True, max_age=3600)
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
@@ -646,16 +648,16 @@ class StudentClassRegModule(ProgramModuleObj):
         json.dump(reg_bits_data, resp)
         return resp
 
-    @disable_csrf_cookie_update
     @aux_call
     @no_auth
+    @disable_csrf_cookie_update
     @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
-    @disable_csrf_cookie_update
     @aux_call
     @no_auth
+    @disable_csrf_cookie_update
     @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         #   Get the ProgramPrintables module for the program
