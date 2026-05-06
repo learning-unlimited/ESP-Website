@@ -110,7 +110,7 @@ Testing
 **All tests must pass before submitting a pull request.** If your changes break existing tests,
 fix them before requesting a review. When adding new functionality, add corresponding tests to the appropriate application's test module or directory.
 
-This project uses pytest, with the pytest-django plugin handling integration with Django's testing infrastructure. Tests generally live in their respective application directories, typically in a ``tests.py`` file or a ``tests/`` directory (e.g. ``esp/accounting/tests.py`` or ``esp/users/controllers/tests/test_usersearch.py``).
+This project uses pytest, with the pytest-django plugin handling integration with Django's testing infrastructure. Tests generally live in their respective application directories, either as a single ``tests.py`` file (e.g., ``esp/program/tests.py``) or as a ``tests/`` package (e.g., ``esp/accounting/tests``) when an app has grown enough tests to warrant splitting them up.
 
 Running Tests
 ~~~~~~~~~~~~~
@@ -119,11 +119,16 @@ To run all tests::
 
   docker compose exec -w /app/esp web pytest
 
-To run tests for a specific module (e.g. ``accounting``)::
+To run tests for a specific module (e.g., ``accounting``), point pytest at either the ``tests/`` directory or the ``tests.py`` file, depending on which layout the app uses::
 
-  docker compose exec -w /app/esp web pytest accounting/tests.py
+  docker compose exec -w /app/esp web pytest esp/accounting/tests
+  docker compose exec -w /app/esp web pytest esp/program/tests.py
 
-The test database is reused between runs for speed (``--reuse-db`` is set in ``pytest.ini``). After a ``git pull`` that touched migrations, or after switching to a branch with different migrations, force a rebuild once::
+If you don't remember the path, you can match by name instead::
+
+  docker compose exec -w /app/esp web pytest -k accounting
+
+The test database is reused between runs for speed. After a ``git pull`` that touched migrations, or after switching to a branch with different migrations, force a rebuild once::
 
   docker compose exec -w /app/esp web pytest --create-db
 
@@ -139,18 +144,9 @@ This is what CI uses. For running a single test or module, plain ``pytest`` is u
 Test Suite Reference
 ~~~~~~~~~~~~~~~~~~~~
 
-Many tests are located in application-specific files. Some legacy tests may still exist in ``esp.tests``. Key test locations include:
+To list all test modules currently in the codebase::
 
-* ``esp/accounting/tests.py``
-* ``esp/application/tests.py``
-* ``esp/cal/tests.py``
-* ``esp/dbmail/tests.py``
-* ``esp/formstack/tests.py``
-* ``esp/program/tests.py``
-* ``esp/survey/tests.py``
-* ``esp/varnish/tests.py``
-
-Additional tests exist in directories: ``customforms/tests.py``, ``program/tests.py``, ``users/tests.py``, ``resources/tests.py``, ``qsd/tests.py``, ``qsdmedia/tests.py``, ``tagdict/tests.py``, ``themes/tests.py``, ``utils/tests.py``, ``web/tests.py``, and autoscheduler tests in ``program/controllers/autoscheduler/tests/``.
+  docker compose exec web bash -c "find /app/esp/esp \( -name 'tests.py' -o -name 'tests_*.py' -o -name 'test_*.py' -o -name '*_tests.py' \) | sort"
 
 Code reviews
 ------------
