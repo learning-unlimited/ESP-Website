@@ -1,8 +1,6 @@
 ## Description
 
-<!-- List all changes made in this pull request and their purpose. -->
-
--
+<!-- Brief summary of the changes and their purpose. -->
 
 ## Related Issue
 
