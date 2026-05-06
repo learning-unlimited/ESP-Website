@@ -39,8 +39,26 @@ from django.utils.translation import ugettext_lazy as _
 from django.core import signing
 from os.path import normpath
 
+
+class _SafePformatList(list):
+    """
+    Subclass of list that returns a placeholder string on IndexError instead of
+    raising. Fixes a Python 3 bug in debug_toolbar 1.11.1: _store_template_info
+    appends to seen_layers but skips pformat_layers when UnicodeEncodeError
+    occurs, causing the two lists to desync and IndexError on the next render.
+    """
+    def __getitem__(self, index):
+        try:
+            return super(_SafePformatList, self).__getitem__(index)
+        except IndexError:
+            return "<<context layer>>"
+
+
 # Override the debug toolbar's TemplatesPanel to fix how it behaves with template overrides
 class TemplatesPanel(BaseTemplatesPanel):
+    def __init__(self, *args, **kwargs):
+        super(TemplatesPanel, self).__init__(*args, **kwargs)
+        self.pformat_layers = _SafePformatList()
     def generate_stats(self, request, response):
         template_context = []
         for template_data in self.templates:

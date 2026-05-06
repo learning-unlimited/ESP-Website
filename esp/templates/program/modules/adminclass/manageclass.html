@@ -23,9 +23,7 @@
 <div id="program_form">
 <center>
 <a class="btn" title="Edit Class" href="/manage/{{ program.getUrlBase }}/editclass/{{ class.id }}">Edit Class</a>
-{% if program|hasModule:"TeacherPreviewModule" %}
 <a class="btn" title="Catalog Preview" href="/teach/{{ program.getUrlBase }}/catalogpreview/{{ class.id }}">Catalog Preview</a>
-{% endif %}
 <br /><br />
 </center>
 
