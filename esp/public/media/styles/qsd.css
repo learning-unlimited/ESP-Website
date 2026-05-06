@@ -1,0 +1,104 @@
+
+.hidden {
+  display: none;
+}
+
+textarea.qsd_editor {
+    width: 550px;
+    border: 1px dashed #cccccc;
+    border-top: none;
+    margin: 8px 0 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+}
+
+textarea.qsd_editor:focus {
+    border-style: solid;
+    border-top: 0px;
+}
+
+div.qsd_header
+{
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    color: #cccccc;
+    padding: 0px;
+    border: 1px dashed #cccccc;
+    margin: 0px;
+    height: 16px;
+    text-align: center;
+}
+
+div.hidden, div.qsd_edit_hidden, div.qsd_view_hidden
+{
+    height: 0px;
+    visibility: hidden;
+}
+
+div.qsd_buttons {
+    text-align: center;
+}
+
+div.qsd_edit_visible
+{
+    visibility: visible;
+}
+
+div.qsd_view_visible
+{
+    padding: 0px;
+    border: 1px dashed #cccccc;
+    border-top: none;
+    margin: 0px;
+    visibility: visible;
+}
+
+textarea.qsd_halfsize
+{
+    height: 200px !important;
+}
+
+textarea.qsd_fullsize
+{
+    height: 450px !important;
+}
+
+/* Version history panel */
+.qsd_history_panel {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    margin: 4px 0;
+    background: #fff;
+}
+
+.qsd_history_list table {
+    font-size: 12px;
+}
+
+.qsd_history_list table td,
+.qsd_history_list table th {
+    padding: 4px 6px;
+    vertical-align: middle;
+}
+
+.qsd_history_snippet {
+    color: #777;
+    display: block;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qsd-last-viewed {
+    background-color: #d9edf7;
+    border-color: #31708f;
+    color: #31708f;
+}
+
+.qsd-last-viewed-label {
+    font-size: 11px;
+    color: #31708f;
+    font-style: italic;
+}

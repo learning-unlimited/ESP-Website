@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:14
+    image: postgres:14-alpine
     environment:
       POSTGRES_DB: devsite_django
       POSTGRES_USER: esp
@@ -9,23 +9,50 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U esp -d devsite_django"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - esp_network
 
   memcached:
     image: memcached:alpine
     ports:
       - "11211:11211"
+    restart: unless-stopped
+    networks:
+      - esp_network
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
     volumes:
-      - .:/app
+      # Mount source code for live reloading (dev only)
+      - .:/app:cached
     ports:
       - "8000:8000"
     depends_on:
-      - db
-      - memcached
+      db:
+        condition: service_healthy
+      memcached:
+        condition: service_started
     environment:
       VIRTUAL_ENV: /usr
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    networks:
+      - esp_network
 
 volumes:
   postgres_data:
+    driver: local
+
+networks:
+  esp_network:
+    driver: bridge

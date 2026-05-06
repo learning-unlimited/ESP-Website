@@ -33,17 +33,32 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.accounting.controllers import IndividualAccountingController
+from esp.accounting.controllers import IndividualAccountingController, GlobalAccountingController
 from esp.accounting.models import Account, Transfer
 from esp.program.models import Program
 from esp.utils.web import render_to_response
 from esp.users.models import admin_required, ESPUser
 from esp.users.forms.generic_search_form import StudentSearchForm
+from decimal import Decimal
 
 @admin_required
 def summary(request):
     context = {}
     context['accounts'] = Account.objects.all().order_by('id')
+
+    gac = GlobalAccountingController()
+
+    context['donation_count'], context['donation_total'] = gac.global_donation_summary()
+
+    donation_data = gac.global_donation_times()
+    if donation_data:
+        cumulative = []
+        running = Decimal('0')
+        for amount, dt in donation_data:
+            running += amount
+            cumulative.append([dt.timestamp() * 1000, float(running)]) # [timestamp_ms, value]
+        context['donation_graph_data'] = cumulative
+
     return render_to_response('accounting/summary.html', request, context)
 
 @admin_required
@@ -82,9 +97,15 @@ def user_accounting(user, progs = []):
             { 'transfer': t, 'type': iac.classify_transfer(t) }
             for t in iac.get_transfers().select_related('line_item')
         ]
-        sort_order = {"Cost (required)": 0, "Cost (optional)": 1, "Sibling discount": 2, "Financial aid": 3, "Payment": 4}
+        # Include refund transfers (excluded from get_transfers by default)
+        refund_lit = iac.default_refund_lineitemtype()
+        if refund_lit:
+            for t in Transfer.objects.filter(user=user, line_item=refund_lit, destination__isnull=True).select_related('line_item'):
+                classified_transfers.append({'transfer': t, 'type': iac.classify_transfer(t)})
+
+        sort_order = {"Cost (required)": 0, "Cost (optional)": 1, "Sibling discount": 2, "Financial aid": 3, "Payment": 4, "Refund": 5}
         classified_transfers.sort(key=lambda t: 'Program admission' not in t['transfer'].line_item.text) # put Program admission at the top
-        classified_transfers.sort(key=lambda t: sort_order[t['type']])
+        classified_transfers.sort(key=lambda t: sort_order.get(t['type'], 100))
         result = {
             'program': prog,
             'transfers': classified_transfers,
@@ -97,7 +118,7 @@ def user_accounting(user, progs = []):
             result['finaid'] = iac.amount_finaid()
             result['siblingdiscount'] = iac.amount_siblingdiscount()
             result['paid'] = iac.amount_paid()
+            result['refunded'] = iac.amount_refunded()
             result['due'] = iac.amount_due()
         results.append(result)
     return results
-
