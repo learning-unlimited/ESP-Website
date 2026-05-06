@@ -110,18 +110,30 @@ Testing
 **All tests must pass before submitting a pull request.** If your changes break existing tests,
 fix them before requesting a review. When adding new functionality, add corresponding tests to the appropriate application's test module or directory.
 
-This project uses Django's built-in test framework. Tests generally live in their respective application directories, typically in a ``tests.py`` file or a ``tests/`` directory (e.g. ``esp/accounting/tests.py`` or ``esp/users/controllers/tests/test_usersearch.py``).
+This project uses pytest, with the pytest-django plugin handling integration with Django's testing infrastructure. Tests generally live in their respective application directories, typically in a ``tests.py`` file or a ``tests/`` directory (e.g. ``esp/accounting/tests.py`` or ``esp/users/controllers/tests/test_usersearch.py``).
 
 Running Tests
 ~~~~~~~~~~~~~
 
 To run all tests::
 
-  docker compose exec web python esp/manage.py test
+  docker compose exec -w /app/esp web pytest
 
 To run tests for a specific module (e.g. ``accounting``)::
 
-  docker compose exec web python esp/manage.py test esp.accounting.tests
+  docker compose exec -w /app/esp web pytest accounting/tests.py
+
+The test database is reused between runs for speed (``--reuse-db`` is set in ``pytest.ini``). After a ``git pull`` that touched migrations, or after switching to a branch with different migrations, force a rebuild once::
+
+  docker compose exec -w /app/esp web pytest --create-db
+
+Subsequent runs will reuse the rebuilt database automatically.
+
+The full suite can be parallelized across CPU cores for faster runs::
+
+  docker compose exec -w /app/esp web pytest -n auto
+
+This is what CI uses. For running a single test or module, plain ``pytest`` is usually faster, since ``-n auto`` adds worker-startup overhead that outweighs parallelism on small runs.
 
 
 Test Suite Reference
