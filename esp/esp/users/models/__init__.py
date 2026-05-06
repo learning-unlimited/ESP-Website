@@ -2445,7 +2445,7 @@ class Record(models.Model):
             filter = filter.filter(time__year=when.year,
                                    time__month=when.month,
                                    time__day=when.day)
-        return filter
+        return filter.distinct()
 
     @classmethod
     def createBit(cls, extension, program, user):
