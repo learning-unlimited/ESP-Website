@@ -2425,6 +2425,11 @@ class Record(models.Model):
         Returns a QuerySet for all of a user's Records for a particular event,
         under various constraints.
 
+        The returned QuerySet is NOT deduplicated; the underlying joins are
+        all single forward ForeignKeys, so duplicates cannot arise from the
+        filter chain. Returning a non-distinct QuerySet allows callers to
+        chain .delete(), which Django 3.2+ forbids after .distinct().
+
         Parameters:
           user (ESPUser):              The user.
           event (unicode):             The event name.
@@ -2445,7 +2450,7 @@ class Record(models.Model):
             filter = filter.filter(time__year=when.year,
                                    time__month=when.month,
                                    time__day=when.day)
-        return filter.distinct()
+        return filter
 
     @classmethod
     def createBit(cls, extension, program, user):
