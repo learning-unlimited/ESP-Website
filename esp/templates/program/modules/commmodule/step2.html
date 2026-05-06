@@ -54,7 +54,7 @@ Both email address fields also support named "mailboxes", such as "{{ default_fr
   <strong>From:</strong>
   <small>(If blank: {{ default_from }})</small>
   </label>
-  <input type="text" size="30" name="from" id="from" value="{{from}}" pattern="(^.+@{{ current_site.domain|regexsite }}$)|(^.+<.+@{{ current_site.domain|regexsite }}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)"/>
+  <input type="text" size="30" name="from" id="from" value="{{from}}" pattern="{{ from_email_pattern }}"/>
   <br /><br />
   <label for="replyto">
   <strong>Reply-To:</strong>

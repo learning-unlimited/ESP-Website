@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
-from esp.dbmail.models import MessageRequest, PlainRedirect
+from esp.dbmail.models import MessageRequest, PlainRedirect, BARE_OR_NAMED_EMAIL_PATTERN, _EMAIL_DOMAINS
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
@@ -83,6 +83,9 @@ class CommModule(ProgramModuleObj):
         # Set From address
         if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
+            if not re.match(BARE_OR_NAMED_EMAIL_PATTERN, fromemail):
+                raise ESPError("Invalid 'From' email address. Domain must match one of: " +
+                               ", ".join(_EMAIL_DOMAINS))
         else:
             # Use the info redirect (make one for the default email address if it doesn't exist)
             prs = PlainRedirect.objects.filter(original = "info")
@@ -236,6 +239,7 @@ class CommModule(ProgramModuleObj):
         context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
                                               "info", settings.SITE_INFO[1])
         context['from'] = context['default_from']
+        context['from_email_pattern'] = BARE_OR_NAMED_EMAIL_PATTERN
 
         context['listcount'] = self.approx_num_of_recipients(filterObj, context['sendto_fn'])
         context['filterid'] = filterObj.id
@@ -285,6 +289,7 @@ class CommModule(ProgramModuleObj):
                 if not prs.exists():
                     redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
                 context['from'] = context['default_from']
+                context['from_email_pattern'] = BARE_OR_NAMED_EMAIL_PATTERN
                 return render_to_response(self.baseDir()+'step2.html', request, context)
 
             ##  Prepare a message starting from an earlier request
@@ -298,6 +303,7 @@ class CommModule(ProgramModuleObj):
                 context['subject'] = msgreq.subject
                 context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
                 context['body'] = msgreq.msgtext
+                context['from_email_pattern'] = BARE_OR_NAMED_EMAIL_PATTERN
                 return render_to_response(self.baseDir()+'step2.html', request, context)
 
             else:
@@ -332,7 +338,8 @@ class CommModule(ProgramModuleObj):
                                                'replyto': replytoemail,
                                                'subject': subject,
                                                'body': body,
-                                               'public_view': public_view})
+                                               'public_view': public_view,
+                                               'from_email_pattern': BARE_OR_NAMED_EMAIL_PATTERN})
 
     def isStep(self):
         return False

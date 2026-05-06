@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from django import forms
-from django.conf import settings
+from esp.dbmail.models import BARE_EMAIL_PATTERN
 from django.contrib import admin
 from django.template import Template, Context
 from django.template.loader import select_template
@@ -93,8 +93,7 @@ class ProgramSettingsForm(ProgramCreationForm):
             'flag_types': forms.CheckboxSelectMultiple(),
         }
         model = Program
-# TODO: review whether this @esp.mit.edu constraint is appropriate for MIT
-# ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.'))})
+ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': BARE_EMAIL_PATTERN})
 
 
 class TeacherRegSettingsForm(BetterModelForm):

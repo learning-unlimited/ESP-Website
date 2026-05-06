@@ -65,6 +65,16 @@ from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
 
+# LU: _EMAIL_DOMAINS = [settings.SITE_INFO[1].replace('.', r'\.'), r'(\w+\.)?learningu\.org']
+_EMAIL_DOMAINS = [r'esp\.mit\.edu', r'mit\.edu']
+_BARE_PARTS   = ['(^.+@{0}$)'.format(d)     for d in _EMAIL_DOMAINS]
+_NAMED_PARTS  = ['(^.+<.+@{0}>$)'.format(d) for d in _EMAIL_DOMAINS]
+
+# BARE_EMAIL_PATTERN: plain address only, e.g. splash@mit.edu
+# BARE_OR_NAMED_EMAIL_PATTERN: also allows "Name <addr>" format
+BARE_EMAIL_PATTERN          = '|'.join(_BARE_PARTS)
+BARE_OR_NAMED_EMAIL_PATTERN = '|'.join(p for pair in zip(_BARE_PARTS, _NAMED_PARTS) for p in pair)
+
 # `user` is required for marketing and subscribed messages to add unsubscribe headers
 # this includes all comm panel emails
 # https://support.google.com/a/answer/81126?visit_id=638428689824104778-3542874255&rd=1#subscriptions
@@ -72,6 +82,9 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={}, user=None,
               *args, **kwargs):
     from_email = from_email.strip()
+    if not re.match(BARE_OR_NAMED_EMAIL_PATTERN, from_email):
+        raise ESPError("Invalid 'From' email address (" + from_email + "). Domain must match one of: " +
+                       ", ".join(_EMAIL_DOMAINS))
 
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
