@@ -35,7 +35,7 @@ psycopg2==2.9.9 # Talks to postgres
 pycurl==7.45.4 # Used only in a formstack script which I think is outdated
 py3dns==3.2.1 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
 Pygments==2.10.0 # django-extensions dependency
-pylibmc==1.5.0 # Talks to memcached
+pymemcache==4.0.0 # Talks to memcached
 pytz==2023.3 # Required for timezone support
 # pywatchman # Makes dev servers auto-reload
 raven # Required for Sentry error reporting
