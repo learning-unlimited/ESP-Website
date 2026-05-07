@@ -58,7 +58,8 @@ jobs:
             }
 
             // Exempt PRs opened by GitHub Copilot
-            if (prAuthor === 'copilot[bot]') {
+            const copilotLogins = ['Copilot', 'copilot[bot]', 'copilot-swe-agent[bot]'];
+            if (copilotLogins.includes(prAuthor)) {
               console.log('PR author is Copilot — skipping check.');
               return;
             }

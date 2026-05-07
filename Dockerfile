@@ -8,6 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set the working directory
 WORKDIR /app
 
+# Skip dpkg fsync calls during package installs to speed up builder apt operations
+# (safe in a throwaway builder layer; not propagated to the runtime image)
+RUN printf '%s\n' 'force-unsafe-io' > /etc/dpkg/dpkg.cfg.d/docker-unsafe-io
+
 # Install only build-time dependencies (compilers, -dev headers)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -31,11 +35,12 @@ RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
     && rm -rf /var/lib/apt/lists/*
 RUN npm install -g --prefix /usr less@3.13.1
 
-# Install Python dependencies (Docker layer caching speeds up rebuilds)
+# Install Python dependencies
+# Docker layer caching speeds up rebuilds
+# --prefer-binary favors prebuilt wheels over slow source builds
 COPY esp/requirements.txt /tmp/requirements.txt
-RUN pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r /tmp/requirements.txt
-
+RUN python -m pip install --upgrade pip setuptools wheel && \
+    python -m pip install --prefer-binary --no-cache-dir -r /tmp/requirements.txt
 
 # Runtime stage - smaller final image
 FROM python:3.7-slim-bullseye AS runtime
@@ -89,6 +94,5 @@ RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && \
 COPY esp /app/esp
 
 EXPOSE 8000
-
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["python", "manage.py", "runserver_plus", "0.0.0.0:8000"]
