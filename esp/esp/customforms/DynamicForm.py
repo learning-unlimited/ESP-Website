@@ -653,7 +653,8 @@ class FormHandler:
         # Add in the column for link fields, if any
         if form.link_type != "-1":
             only_fkey_model = cf_cache.only_fkey_models[form.link_type]
-            response_data['questions'].append([f"link_{only_fkey_model.__name__}_id", form.link_type, 'fk'])
+            # Use field name without _id for public output
+            response_data['questions'].append([f"link_{only_fkey_model.__name__}", form.link_type, 'fk'])
         else:
             only_fkey_model = None
 
@@ -679,38 +680,49 @@ class FormHandler:
             link_instances_cache={}
 
             # Add in user if form is not anonymous
-            if not form.anonymous and response['user_id']:
+            if not form.anonymous and response.get('user_id'):
                 user = users[response['user_id']]
-                response['user_id'] = str(response['user_id'])
                 response['user_display'] = user.name()
                 response['user_email'] = user.email
                 response['username'] = user.username
+                # Keep user_id in response (as string) to match questions list
+                response['user_id'] = str(response['user_id'])
 
             # Add in links
             if only_fkey_model is not None:
-                if only_fkey_model.objects.filter(pk=response[f"link_{only_fkey_model.__name__}_id"]).exists():
-                    inst = only_fkey_model.objects.get(pk=response[f"link_{only_fkey_model.__name__}_id"])
-                else: inst = None
-                response[f"link_{only_fkey_model.__name__}_id"] = str(inst)
+                # Note: responses from .values() use the FK attname (with _id suffix) as keys.
+                # We resolve the instance, store it under the non-suffixed field name for the response payload,
+                # and remove the _id key to avoid duplicate columns (matching public field naming).
+                fk_key = f"link_{only_fkey_model.__name__}_id"
+                fk_val = response.pop(fk_key, None)
+                inst = only_fkey_model.objects.filter(pk=fk_val).first() if fk_val else None
+                response[f"link_{only_fkey_model.__name__}"] = str(inst) if inst else ''
 
             # Now, put in the additional fields in response
             for qname, data in add_fields.items():
-                if data[0].__name__ not in link_instances_cache:
-                    if data[0].objects.filter(pk=response[f"link_{data[0].__name__}_id"]).exists():
-                        link_instances_cache[data[0].__name__] = data[0].objects.get(pk=response[f"link_{data[0].__name__}_id"])
-                    else:
-                        link_instances_cache[data[0].__name__] = None
+                model_name = data[0].__name__
+                if model_name not in link_instances_cache:
+                    # Resolve linked model instance using the internal _id key from .values()
+                    fk_key = f"link_{model_name}_id"
+                    fk_val = response.get(fk_key)  # Use .get() here as multiple fields might share one FK
+                    link_instances_cache[model_name] = data[0].objects.filter(pk=fk_val).first() if fk_val else None
 
                 if cf_cache.isCompoundLinkField(data[0], data[1]):
-                    if link_instances_cache[data[0].__name__] is None:
+                    if link_instances_cache[model_name] is None:
                         response[qname] = []
                     else:
-                        response[qname] = [link_instances_cache[data[0].__name__].__dict__[x] for x in cf_cache.getCompoundLinkFields(data[0], data[1])]
+                        response[qname] = [link_instances_cache[model_name].__dict__[x] for x in cf_cache.getCompoundLinkFields(data[0], data[1])]
                 else:
-                    if link_instances_cache[data[0].__name__] is None:
-                        response[qname]=''
+                    if link_instances_cache[model_name] is None:
+                        response[qname] = ''
                     else:
-                        response[qname] = link_instances_cache[data[0].__name__].__dict__[data[1]]
+                        response[qname] = link_instances_cache[model_name].__dict__[data[1]]
+
+            # Final cleanup: Remove all internal _id keys for linked models
+            for model_name in link_instances_cache:
+                fk_key = f"link_{model_name}_id"
+                if fk_key in response:
+                    del response[fk_key]
 
         # Add responses to response_data
         response_data['answers'].extend(responses)
