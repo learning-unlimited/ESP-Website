@@ -56,7 +56,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
         self.factory = RequestFactory()
 
-        self.all_classes_csv_url = '/manage/%s/%s' % (self.program.getUrlBase(), 'all_classes_spreadsheet')
+        self.all_classes_csv_url = f'/manage/{self.program.getUrlBase()}/all_classes_spreadsheet'
 
     def _login_admin(self):
         """
@@ -71,14 +71,14 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
         #   Select users to fetch
-        response = self.client.get('/manage/%s/%s' % (self.program.getUrlBase(), view_name))
+        response = self.client.get(f'/manage/{self.program.getUrlBase()}/{view_name}')
         self.assertEqual(response.status_code, 200)
         post_data = {
             'recipient_type': user_type,
             'base_list': list_name,
             'use_checklist': 0,
         }
-        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), view_name), post_data)
+        response = self.client.post(f'/manage/{self.program.getUrlBase()}/{view_name}', post_data)
         self.assertEqual(response.status_code, 200)
         return response
 

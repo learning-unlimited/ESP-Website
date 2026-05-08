@@ -33,17 +33,32 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.accounting.controllers import IndividualAccountingController
+from esp.accounting.controllers import IndividualAccountingController, GlobalAccountingController
 from esp.accounting.models import Account, Transfer
 from esp.program.models import Program
 from esp.utils.web import render_to_response
 from esp.users.models import admin_required, ESPUser
 from esp.users.forms.generic_search_form import StudentSearchForm
+from decimal import Decimal
 
 @admin_required
 def summary(request):
     context = {}
     context['accounts'] = Account.objects.all().order_by('id')
+
+    gac = GlobalAccountingController()
+
+    context['donation_count'], context['donation_total'] = gac.global_donation_summary()
+
+    donation_data = gac.global_donation_times()
+    if donation_data:
+        cumulative = []
+        running = Decimal('0')
+        for amount, dt in donation_data:
+            running += amount
+            cumulative.append([dt.timestamp() * 1000, float(running)]) # [timestamp_ms, value]
+        context['donation_graph_data'] = cumulative
+
     return render_to_response('accounting/summary.html', request, context)
 
 @admin_required
@@ -107,4 +122,3 @@ def user_accounting(user, progs = []):
             result['due'] = iac.amount_due()
         results.append(result)
     return results
-
