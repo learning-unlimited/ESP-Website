@@ -108,10 +108,10 @@ class AdmissionsDashboard(ProgramModuleObj):
                 decision_status_lines = []
                 cls = classapp.app.admitted_to_class()
                 if cls is not None:
-                    line = 'Admitted: {0}'.format(cls.title)
+                    line = f'Admitted: {cls.title}'
                     decision_status_lines.append(line)
                 for cls in classapp.app.waitlisted_to_class():
-                    line = 'Waitlisted: {0}'.format(cls.title)
+                    line = f'Waitlisted: {cls.title}'
                     decision_status_lines.append(line)
                 result['decision_status'] = '\n'.join(decision_status_lines)
             results.append(result)
@@ -136,7 +136,15 @@ class AdmissionsDashboard(ProgramModuleObj):
         if request.method == 'POST':
             updated = []
 
-            changes = json.loads(request.POST['changes'])
+            changes_data = request.POST.get('changes')
+            if not changes_data:
+                return {'success': 0, 'error': 'Missing changes data'}
+
+            try:
+                changes = json.loads(changes_data)
+            except (ValueError, TypeError):
+                return {'success': 0, 'error': 'Invalid JSON data'}
+
             for app_id, change in changes.items():
                 try:
                     classapp = StudentClassApp.objects.get(id=app_id)

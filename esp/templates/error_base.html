@@ -1,0 +1,73 @@
+{% extends "main.html" %}
+
+{% block title %}{{ error_title|default:"Error" }}{% endblock %}
+
+{% block content %}
+
+<h1>{{ error_title|default:"An error has occurred" }}</h1>
+
+<p>{{ error_description|default:"Something went wrong. Please try again or contact us if the problem persists." }}</p>
+
+{% if error %}
+<p>{{ error|safe }}</p>
+{% endif %}
+
+<ul>
+    <li><a href="javascript:history.go(-1);" title="Go back!">Go back</a> and try again</li>
+    {% if error_type == "Http403" %}
+    <li><a href="/login/">Try logging in</a> with an account that has the required permissions</li>
+    {% endif %}
+    {% if error_type == "ESPError_NoLog" %}
+    <li>Double-check the URL or form data you submitted</li>
+    {% endif %}
+    <li>
+        Contact us at
+        <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">{{ DEFAULT_EMAIL_ADDRESSES.support }}</a>
+    </li>
+</ul>
+
+{% if error_id or error_url %}
+<p>
+    <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}?subject=Error%20Report%20{% if error_id %}[ID%3A%20{{ error_id }}]{% else %}(no%20ID){% endif %}&body=Page%3A%20{{ error_url|truncatechars:500|urlencode }}%0ATime%3A%20{{ error_time }}%0AError%20ID%3A%20{{ error_id|default:'N/A' }}{% if request.user.is_authenticated and request.user.isAdministrator %}%0AError%20Type%3A%20{{ error_type|truncatechars:200|urlencode }}%0AError%20Message%3A%20{{ error|truncatechars:500|urlencode }}%0A%0AAdmin%20notes%3A%0A{% else %}%0A%0APlease%20describe%20what%20you%20were%20doing%20when%20this%20happened%3A%0A{% endif %}"
+        aria-label="Report this error via email
+        {% if request.user.is_authenticated and request.user.isAdministrator %} (Admin){% endif %}">
+        &#128231; Report this error
+        {% if request.user.is_authenticated and request.user.isAdministrator %} (Admin){% endif %}
+    </a>
+</p>
+{% endif %}
+
+{% if request.user.is_authenticated %}
+{% if request.user.isAdministrator %}
+<hr />
+<h3>Admin Details</h3>
+<table>
+    <tr>
+        <th>Error type</th>
+        <td>{{ error_type|default:"Unknown" }}</td>
+    </tr>
+    <tr>
+        <th>Message</th>
+        <td>{{ error|safe|default:"(no message)" }}</td>
+    </tr>
+    <tr>
+        <th>URL</th>
+        <td>{{ request.path }}</td>
+    </tr>
+    {% if error_id %}
+    <tr>
+        <th>Sentry ID</th>
+        <td>{{ error_id }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <th>Time</th>
+        <td>{{ error_time }}</td>
+    </tr>
+</table>
+{% endif %}
+{% endif %}
+
+<p><em>Sorry for the inconvenience. &mdash; Web Team</em></p>
+
+{% endblock %}

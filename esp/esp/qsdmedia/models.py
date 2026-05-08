@@ -1,5 +1,4 @@
 
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -48,7 +47,6 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 # The folder that Media files are saved to
 root_file_path = "uploaded"
 
-@python_2_unicode_compatible
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
     friendly_name = models.TextField() # Human-readable description of the media
@@ -84,7 +82,7 @@ class Media(models.Model):
             allowed_extensions = ['pdf', 'odt', 'odp', 'jpg', 'jpeg', 'gif', 'png', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'txt']
 
         if not self.file_extension.lower() in allowed_extensions:
-            raise ESPError("The file extension provided is not allowed. Allowed extensions: %s." % (', '.join(allowed_extensions),), log=False)
+            raise ESPError(f"The file extension provided is not allowed. Allowed extensions: {', '.join(allowed_extensions)}.", log=False)
 
         self.mime_type = file.content_type
         self.size = file.size

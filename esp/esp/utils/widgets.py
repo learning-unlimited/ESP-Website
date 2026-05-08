@@ -1,9 +1,10 @@
-#   Downloaded from http://www.djangosnippets.org/snippets/391/
+#   Downloaded from https://www.djangosnippets.org/snippets/391/
 #   Modified to not force unicode
 #   - Michael P
 
 from django import forms
 from django.conf import settings
+from django.core.validators import EMPTY_VALUES
 from django.forms import widgets
 from django.template import Template, Context
 from django.utils.safestring import mark_safe
@@ -40,7 +41,7 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         context.update({
-            'id': attrs['id'] if 'id' in attrs else '%s_id' % (name),
+            'id': attrs['id'] if 'id' in attrs else f'{name}_id',
             'jquerywidget': self.jquerywidget,
             'media_url': settings.MEDIA_URL,
             'date_format': self.dformat,
@@ -50,7 +51,7 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
 
     def value_from_datadict(self, data, files, name):
         dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
-        empty_values = forms.fields.EMPTY_VALUES
+        empty_values = EMPTY_VALUES
 
         value = data.get(name, None)
         if value in empty_values:
@@ -130,7 +131,7 @@ class SplitDateWidget(forms.MultiWidget):
             vals = super().value_from_datadict(data, files, name)
             try:
                 return date(int(vals[2]), int(vals[0]), int(vals[1]))
-            except:
+            except (ValueError, TypeError, IndexError):
                 return None
 
     #   Format output
@@ -221,7 +222,15 @@ function {{ name }}_save()
 
 function {{ name }}_setup()
 {
-    var {{ name }}_data = JSON.parse($j("#id_{{ name }}").val());
+    var {{ name }}_data = [];
+    try {
+        var raw_data = $j("#id_{{ name }}").val();
+        if (raw_data) {
+            {{ name }}_data = JSON.parse(raw_data);
+        }
+    } catch (e) {
+        console.error("Failed to parse {{ name }} init data:", e);
+    }
     var anchor_ul = $j("#{{ name }}_entries");
     for (var i = 0; i < {{ name }}_data.length; i++)
     {
@@ -373,7 +382,15 @@ function {{ name }}_save()
 
 function {{ name }}_setup()
 {
-    var {{ name }}_data = JSON.parse($j("#id_{{ name }}").val());
+    var {{ name }}_data = [];
+    try {
+        var raw_data = $j("#id_{{ name }}").val();
+        if (raw_data) {
+            {{ name }}_data = JSON.parse(raw_data);
+        }
+    } catch (e) {
+        console.error("Failed to parse {{ name }} init data:", e);
+    }
     var anchor_ul = $j("#{{ name }}_entries");
     for (var i = 0; i < {{ name }}_data.length; i++)
     {

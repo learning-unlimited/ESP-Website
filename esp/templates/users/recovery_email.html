@@ -8,15 +8,17 @@
 {% endblock %}
 
 {% block content %}
+{% if validlink %}
 <h1>Recover your password</h1>
 
 <p>
-  Welcome back! Now that we've ensured you are who you say you are, you're almost ready to sign into {{ settings.ORGANIZATION_SHORT_NAME }}! <br />
-  Just enter in the username you started to reset your password with, and enter in the password you want to have.
+  Welcome back! You're almost ready to sign into {{ settings.ORGANIZATION_SHORT_NAME }}! <br />
+  Just enter your new password below.
 </p>
 
 <style type="text/css">th { vertical-align: top; }</style>
-<form action="{{ request.path }}" method="post" name="passreset_form_complete">
+<form action="" method="post" name="passreset_form_complete">
+{% csrf_token %}
 <table>
 <thead>
 <tr>
@@ -30,7 +32,7 @@
 <tr>
 <td colspan="2">
 <div class="errors">
-There 
+There
 {% if form.errors|length_is:1 %}is an error{% else %}
 are errors{% endif %} in the below form. Please fix and resubmit.<br />
 Note: If you are experiencing difficulties, please <a href="/contact/contact/esp-web/"
@@ -40,7 +42,7 @@ title="Contact Form">contact us</a>.
 </tr>
 {% endif %}
 
-{{ form }}
+{{ form.as_table }}
 <tr>
   <th colspan="2" class="submit">
     <input type="submit" value="Set password and login!" name="submit_btn" class="btn btn-primary" />
@@ -49,11 +51,13 @@ title="Contact Form">contact us</a>.
 </tbody>
 </table>
 </form>
-
-<script type="text/javascript">
-<!--
-  document.getElementById('id_username').focus();
-//-->
-</script>
+{% else %}
+<h1>Invalid or expired link</h1>
+<p>
+   Sorry, but the password reset link is invalid or has expired.
+   This can happen if the link has already been used, or if it has expired.
+   Please <a href="/myesp/passwdrecover/">request a new password reset</a>.
+</p>
+{% endif %}
 
 {% endblock %}

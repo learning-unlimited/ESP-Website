@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.cal.models import Event, EventType
 from esp.users.models import UserAvailability
@@ -60,6 +61,19 @@ class TeacherEventsManageModule(ProgramModuleObj):
             'seq': 5,
             'choosable': 0,
         }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "teacher_events":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_teacher_events",
+            url="/manage/%s/teacher_events" % base,
+            title="Teacher Training / Interviews",
+            category="Configure",
+            keywords=["teacher", "training", "interviews", "events"],
+        )
 
     @main_call
     @needs_admin
@@ -98,27 +112,31 @@ class TeacherEventsManageModule(ProgramModuleObj):
                     new_timeslot = Event()
 
                     # decide type
-                    event_type = "training"
-
-                    if data.get('submit_btn') == "Add Interview":
-                        event_type = "interview"
-
-                    form.save_timeslot(self.program, new_timeslot, event_type)
+                    try:
+                        event_type_id = int(data.get('event_type_id',0))
+                        event_type = EventType.objects.get(id=event_type_id, is_teacher_type=True)
+                        form.save_timeslot(self.program, new_timeslot, event_type)
+                    except (ValueError, EventType.DoesNotExist):
+                        form.add_error(None, "Please select a valid teacher event type.")
+                        context['timeslot_form'] = form
                 else:
                     context['timeslot_form'] = form
 
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
 
-        interview_times = self.program.get_teacher_event_times('interview')
-        training_times = self.program.get_teacher_event_times('training')
+        teacher_event_types = EventType.objects.filter(is_teacher_type=True)
+        context['teacher_event_types'] = teacher_event_types
+        teacher_event_times = {}
 
-        for ts in list( interview_times ) + list( training_times ):
-            ts.teachers = UserAvailability.entriesBySlot( ts )
+        for et in teacher_event_types:
+            times = self.program.get_teacher_event_times(et)
+            for ts in list(times):
+                ts.teachers = UserAvailability.entriesBySlot( ts )
+            teacher_event_times[et] = times
 
         context['prog'] = prog
-        context['interview_times'] = interview_times
-        context['training_times'] = training_times
+        context['teacher_event_times'] = teacher_event_times
 
         return render_to_response( self.baseDir()+'teacher_events.html', request, context )
 
@@ -127,8 +145,8 @@ class TeacherEventsManageModule(ProgramModuleObj):
 
     setup_title = "Set up events for teachers to attend before the program"
 
-    def isCompleted(self):
-        return Event.objects.filter(program=self.program, event_type__in=list(EventType.teacher_event_types().values())).exists()
+    def isCompleted(self, user=None):
+        return Event.objects.filter(program=self.program, event_type__is_teacher_type=True).exists()
 
     class Meta:
         proxy = True
