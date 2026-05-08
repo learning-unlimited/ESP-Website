@@ -17,7 +17,7 @@ Before using this code, a webmaster should have done all of the following:
 
 * Run migrations for the esp.application app
 * Install the new program modules (esp.program.modules.models.install)
-* Copy media/default_styles/admissions.css to media/styles/
+* Ensure media/styles/admissions.css exists
 
 Formstack Form Setup Instructions
 =================================
