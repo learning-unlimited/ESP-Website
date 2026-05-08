@@ -48,6 +48,7 @@ from esp.program.modules.tests.commpanel import CommunicationsPanelTest
 from esp.program.modules.tests.resourcemodule import ResourceModuleTest
 from esp.program.modules.tests.admincore import RegistrationTypeManagementTest, ModuleManagementConstraintsTest, ModuleManagementLinkTitleTest
 from esp.program.modules.tests.adminclass import CancelClassTest
+from esp.program.modules.tests.studentregmodules import StudentExtraCostsTest, StudentRegCoreTest, StudentRegPhaseZeroTest, StudentRegConfirmTest, LotteryStudentRegTest, StudentAcknowledgementTest, StudentLunchSelectionTest, StudentSurveyModuleTest, StudentCertModuleTest, StudentOnsiteTest, StudentClassRegModuleTest
 from esp.program.modules.tests.classsearchmodule import ClassSearchModuleTest
 from esp.program.modules.tests.auth import ProgramModuleAuthTest
 from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest
@@ -70,3 +71,4 @@ from esp.program.modules.tests.resolve_user import ResolveUserTest
 from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest
 from esp.program.modules.tests.test_enrolled_split import EnrolledSplitViewTest
 from esp.program.modules.tests.schedulingcheckmodule import SchedulingCheckModuleTest
+from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
