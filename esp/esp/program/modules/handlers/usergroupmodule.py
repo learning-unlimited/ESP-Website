@@ -119,11 +119,11 @@ class UserGroupModule(ProgramModuleObj):
 
         message = ""
         if created:
-            message += "User group '%s' has been created. " % (group.name)
+            message += f"User group '{group.name}' has been created. "
         if not created and clean:
-            message += "%i users were removed from user group '%s'. " % (diff2, group.name)
+            message += f"{diff2} users were removed from user group '{group.name}'. "
 
-        message += "%i new users have been added to user group '%s'. User group '%s' now has %i users." % (diff1, group.name, group.name, group.user_set.count())
+        message += f"{diff1} new users have been added to user group '{group.name}'. User group '{group.name}' now has {group.user_set.count()} users."
 
         return message
 

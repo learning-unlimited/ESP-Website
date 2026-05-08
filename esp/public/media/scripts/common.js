@@ -12,12 +12,12 @@ $j.ajax({
 });
 };
 
-$(document).on('focusin', 'input[type=number]', function() {
-        $(this).on('wheel mousewheel DOMMouseScroll.numberInputBlur', function() {
+$j(document).on('focusin', 'input[type=number]', function() {
+        $j(this).on('wheel mousewheel DOMMouseScroll.numberInputBlur', function() {
                 this.blur();
         });
 });
 
-$(document).on('focusout', 'input[type=number]', function() {
-        $(this).off('wheel.numberInputBlur mousewheel.numberInputBlur DOMMouseScroll.numberInputBlur');
+$j(document).on('focusout', 'input[type=number]', function() {
+        $j(this).off('wheel.numberInputBlur mousewheel.numberInputBlur DOMMouseScroll.numberInputBlur');
 });
