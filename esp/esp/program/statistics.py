@@ -116,9 +116,11 @@ def demographics(form, programs, students, profiles, result_dict=None):
     birthyear_dict = {}
     for profile in profiles:
         if profile.student_info:
-            if profile.student_info.graduation_year and profile.student_info.graduation_year not in gradyear_dict:
-                gradyear_dict[profile.student_info.graduation_year] = 0
-            gradyear_dict[profile.student_info.graduation_year] += 1
+            grad_year = profile.student_info.graduation_year
+            if grad_year is not None:
+                if grad_year not in gradyear_dict:
+                    gradyear_dict[grad_year] = 0
+                gradyear_dict[grad_year] += 1
 
             if profile.student_info.dob:
                 if profile.student_info.dob.year not in birthyear_dict:
@@ -457,7 +459,7 @@ def student_reg(form, programs, students, profiles, result_dict=None):
     for program in programs:
         stats_list = []
         # entered student lottery
-        stud_lott_num = ESPUser.objects.filter(phasezerorecord__program=program).intersection(students).distinct().count()
+        stud_lott_num = students.filter(phasezerorecord__program=program).distinct().count()
         series_data['Student Lottery'].append([program.name, stud_lott_num])
         stats_list.append(stud_lott_num)
         # set class lottery preferences
