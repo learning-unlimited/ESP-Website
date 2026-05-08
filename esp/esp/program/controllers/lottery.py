@@ -546,11 +546,19 @@ class LotteryAssignmentController(object):
             for i in range(1, self.effective_priority_limit+1):
                 stats['priority_%s_requested'%i] = priority_requested[i]
                 stats['priority_%s_assigned'%i] = priority_assigned[i]
-                stats['overall_priority_%s_ratio'%i] = float(numpy.sum(priority_assigned[i])) / numpy.sum(priority_requested[i])
+                req = numpy.sum(priority_requested[i])
+                if req > 0:
+                    stats['overall_priority_%s_ratio'%i] = float(numpy.sum(priority_assigned[i])) / req
+                else:
+                    stats['overall_priority_%s_ratio'%i] = 'NA'
         else:
             stats['priority_requested'] = priority_requested[1]
             stats['priority_assigned'] = priority_assigned[1]
-            stats['overall_priority_ratio'] = float(numpy.sum(priority_assigned[1])) / numpy.sum(priority_requested[1])
+            req = numpy.sum(priority_requested[1])
+            if req > 0:
+                stats['overall_priority_ratio'] = float(numpy.sum(priority_assigned[1])) / req
+            else:
+                stats['overall_priority_ratio'] = 'NA'
 
         if self.options['use_student_apps']:
             stats['ranks'] = self.ranks
@@ -565,7 +573,13 @@ class LotteryAssignmentController(object):
         stats['num_sections'] = self.num_sections
         stats['num_enrolled_students'] = numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
         stats['num_lottery_students'] = self.num_students
-        stats['overall_interest_ratio'] = float(numpy.sum(interest_assigned)) / numpy.sum(interest_requested)
+
+        int_req = numpy.sum(interest_requested)
+        if int_req > 0:
+            stats['overall_interest_ratio'] = float(numpy.sum(interest_assigned)) / int_req
+        else:
+            stats['overall_interest_ratio'] = 'NA'
+
         stats['num_registrations'] = numpy.sum(self.student_sections)
         stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
@@ -672,10 +686,20 @@ class LotteryAssignmentController(object):
         ratios = []
         if self.effective_priority_limit>1:
             for i in range(1, self.effective_priority_limit+1):
-                ratios.append(f'{stats[f"overall_priority_{i}_ratio"] * 100.0:2.2f}% of priority {i} classes were enrolled')
+                if stats['overall_priority_%s_ratio' % i] == 'NA':
+                    ratios.append('NA%% of priority %s classes were enrolled' % i)
+                else:
+                    ratios.append(f'{stats[f"overall_priority_{i}_ratio"] * 100.0:2.2f}% of priority {i} classes were enrolled')
         else:
-            ratios.append(f'{stats["overall_priority_ratio"] * 100.0:2.2f}% of priority classes were enrolled')
-        ratios.append(f'{stats["overall_interest_ratio"] * 100.0:2.2f}% of interested classes were enrolled')
+            if stats['overall_priority_ratio'] == 'NA':
+                ratios.append('NA%% of priority classes were enrolled')
+            else:
+                ratios.append(f'{stats["overall_priority_ratio"] * 100.0:2.2f}% of priority classes were enrolled')
+
+        if stats['overall_interest_ratio'] == 'NA':
+            ratios.append('NA%% of interested classes were enrolled')
+        else:
+            ratios.append(f'{stats["overall_interest_ratio"] * 100.0:2.2f}% of interested classes were enrolled')
         sections.append(('ratios', ratios))
 
         return sections

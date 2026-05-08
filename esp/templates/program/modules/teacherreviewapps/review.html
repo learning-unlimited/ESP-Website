@@ -46,12 +46,12 @@ Please review the student's biographical information and responses to our questi
     </td>
 </tr>
 {% for response in student.app.responses.all %}
-{% ifequal class response.question.subject %}
+{% if class == response.question.subject %}
 <tr>
   <th><label>{{ response.question.question }}</label></th>
   <td>{{ response.response }}</td>
 </tr>
-{% endifequal %}
+{% endif %}
 {% endfor %}
 </table>
 <br />

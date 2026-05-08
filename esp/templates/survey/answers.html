@@ -88,7 +88,7 @@ Expects:
 {% else %}
     <tr>
         <td width="100%" colspan="2">
-        {% ifequal q.question.question_type.name "Favorite Class" %}
+        {% if q.question.question_type.name == "Favorite Class" %}
             <ul class="favorite-classes-list">
             {% for fav in q.answers|unpack_answers|favorite_classes:20 %}
                 <li>
@@ -103,12 +103,12 @@ Expects:
         {% else %}
             <ul>
             {% for ans in q.answers|drop_empty_answers %}
-                <li><a href="/{{ tl }}/{{ survey.program.getUrlBase }}/survey{% if tl == 'manage' %}s{% endif %}/review_single?{{ ans.survey_response.id }}" title="View this person&quot;s other responses" target="_blank">{{ ans.answer }}</a></li>
+                <li>{% if tl %}<a href="/{{ tl }}/{{ survey.program.getUrlBase }}/survey{% if tl == 'manage' %}s{% endif %}/review_single?{{ ans.survey_response.id }}" title="View this person&quot;s other responses" target="_blank">{{ ans.answer }}</a>{% else %}{{ ans.answer }}{% endif %}</li>
             {% empty %}
                 <li>There are no responses to this question.</li>
             {% endfor %}
             </ul>
-        {% endifequal %}
+        {% endif %}
         </td>
     </tr>
 {% endif %}
