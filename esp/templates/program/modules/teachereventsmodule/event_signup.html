@@ -37,7 +37,7 @@
                 right: 'timeGridWeek,timeGridDay'
             },
             // Use absolute URL path to avoid fragile relative resolution
-            events: '/teach/{{ prog.getUrlBase }}calendar_data',
+            events: '/teach/{{ prog.getUrlBase }}/calendar_data',
             eventClassNames: function(arg) {
                 return ['status-' + arg.event.extendedProps.status];
             },
