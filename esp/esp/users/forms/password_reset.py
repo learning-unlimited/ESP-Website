@@ -1,6 +1,7 @@
 
 
 from django import forms
+from django.contrib.auth.password_validation import validate_password
 from esp.users.models import ESPUser
 from django.utils.html import conditional_escape, mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
@@ -42,8 +43,8 @@ class PasswordResetForm(forms.Form):
 
 class UserPasswdForm(FormWithRequiredCss):
     password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
-    newpasswd = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
-    newpasswdconfirm = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
+    newpasswd = SizedCharField(length=12, min_length=8, max_length=32, widget=forms.PasswordInput())
+    newpasswdconfirm = SizedCharField(length=12, min_length=8, max_length=32, widget=forms.PasswordInput())
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
@@ -65,4 +66,5 @@ class UserPasswdForm(FormWithRequiredCss):
 
         if self.cleaned_data['newpasswd'] != new_passwd:
             raise forms.ValidationError('Password and confirmation are not equal.')
+        validate_password(new_passwd, self.user)
         return new_passwd
