@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from esp.admin import admin_site
 from django import forms
 from django.db import models
@@ -9,6 +9,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
 import datetime
+
 
 class UserForwarderAdmin(admin.ModelAdmin):
     list_display = ('source', 'target')
@@ -42,7 +43,7 @@ class ESPUserAdmin(UserAdmin):
     #(since we don't use it)
     #See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py
 
-    from django.utils.translation import ugettext_lazy as _
+    from django.utils.translation import gettext_lazy as _
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
@@ -55,6 +56,11 @@ admin_site.register(ESPUser, ESPUserAdmin)
 class RecordTypeAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'description']
     search_fields = ['name', 'description']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('name',)
+        return self.readonly_fields
 admin_site.register(RecordType, RecordTypeAdmin)
 
 class RecordAdmin(admin.ModelAdmin):
@@ -92,8 +98,8 @@ class PermissionAdmin(admin.ModelAdmin):
         if rows_updated == 1:
             message_bit = "1 permission was"
         else:
-            message_bit = "%s permissions were" % rows_updated
-        self.message_user(request, "%s successfully expired." % message_bit)
+            message_bit = f"{rows_updated} permissions were"
+        self.message_user(request, f"{message_bit} successfully expired.")
     expire.short_description = "Expire permissions"
 
     def renew(self, request, queryset):
@@ -101,8 +107,8 @@ class PermissionAdmin(admin.ModelAdmin):
         if rows_updated == 1:
             message_bit = "1 permission was"
         else:
-            message_bit = "%s permissions were" % rows_updated
-        self.message_user(request, "%s successfully expired." % message_bit)
+            message_bit = f"{rows_updated} permissions were"
+        self.message_user(request, f"{message_bit} successfully renewed.")
     renew.short_description = "Renew permissions"
 
 admin_site.register(Permission, PermissionAdmin)
@@ -146,7 +152,7 @@ class K12SchoolAdmin(admin.ModelAdmin):
     list_filter = ['school_type']
     def contact_name(self, obj):
         if obj.contact:
-            return "%s %s" % (obj.contact.first_name, obj.contact.last_name)
+            return f"{obj.contact.first_name} {obj.contact.last_name}"
         return None
     contact_name.short_description = 'Contact name'
 
@@ -168,4 +174,3 @@ admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group
 admin_site.register(Group, GroupAdmin)
-
