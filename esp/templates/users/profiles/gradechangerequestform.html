@@ -8,11 +8,11 @@
 
 {% if messages %}
 	{% for message in messages %}
-	<div class="alert alert-{% if message.SUCCESS %}success{% else %}success{% endif %}"> <strong>{{ message.type }}{{ message }}</strong>
+	<div role="alert" class="alert alert-{% if message.SUCCESS %}success{% else %}danger{% endif %}"> <strong>{{ message.type }}{{ message }}</strong>
 	</div>
 	{% endfor %}
 {% else %}
-<div class="alert" id="id-grade-change-request-info">
+<div role="alert" class="alert" id="id-grade-change-request-info">
 	<p>
 		{% blocktrans %}
 		Send a grade change request if you feel your grade is incorrect. One of our administrators will review your request and you will be notified accordingly.

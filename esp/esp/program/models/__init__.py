@@ -2039,7 +2039,7 @@ class ScheduleMap:
     def __marinade__(self):
         import hashlib
         import pickle
-        return f'ScheduleMap_{hashlib.md5(pickle.dumps(self)).hexdigest()[:8]}'
+        return f'ScheduleMap_{hashlib.sha256(pickle.dumps(self)).hexdigest()[:8]}'
 
     def __str__(self):
         return f'{self.map}'
