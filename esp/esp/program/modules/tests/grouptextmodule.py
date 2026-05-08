@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from django.db.models import Q
 from django.test import override_settings
