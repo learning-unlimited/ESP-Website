@@ -459,7 +459,7 @@ def student_reg(form, programs, students, profiles, result_dict=None):
     for program in programs:
         stats_list = []
         # entered student lottery
-        stud_lott_num = ESPUser.objects.filter(phasezerorecord__program=program).intersection(students).distinct().count()
+        stud_lott_num = students.filter(phasezerorecord__program=program).distinct().count()
         series_data['Student Lottery'].append([program.name, stud_lott_num])
         stats_list.append(stud_lott_num)
         # set class lottery preferences
