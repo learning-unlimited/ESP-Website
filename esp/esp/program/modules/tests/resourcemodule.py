@@ -147,6 +147,33 @@ class ResourceModuleTest(ProgramFrameworkTest):
                 # nonexistent (stale) id
                 self._assert_bad_request('%s/%s' % (base, section), {'op': op, 'id': nonexistent_id})
 
+    def _assert_post_bad_request(self, url, data):
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+
+    def testStaleOrInvalidPostIds(self):
+        base = '/manage/%s/resources' % self.program.getUrlBase()
+        nonexistent_id = '999999999'
+        invalid_id = 'not-an-int'
+
+        for section in ('timeslot', 'restype', 'classroom', 'equipment'):
+            section_url = '%s/%s' % (base, section)
+            for bad_id in (nonexistent_id, invalid_id):
+                # reallyremove with tampered/stale id
+                self._assert_post_bad_request(section_url, {
+                    'command': 'reallyremove',
+                    'id': bad_id,
+                })
+                # addedit with tampered/stale id
+                self._assert_post_bad_request(section_url, {
+                    'command': 'addedit',
+                    'id': bad_id,
+                })
+            # reallyremove with missing id entirely
+            self._assert_post_bad_request(section_url, {
+                'command': 'reallyremove',
+            })
+
     def testResourceTypes(self):
         #   Check that resource types started out consistent
         self.checkDisplayedResourceTypeList()
