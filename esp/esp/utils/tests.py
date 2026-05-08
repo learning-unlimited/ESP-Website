@@ -6,10 +6,6 @@ Test cases for Django-ESP utilities
 import datetime
 import doctest
 import json
-try:
-    import pylibmc as memcache
-except ImportError:
-    import memcache
 import logging
 logger = logging.getLogger(__name__)
 import os
@@ -27,6 +23,7 @@ from esp.middleware import ESPError_Log
 from esp.users.models import ESPUser
 from esp import utils
 from esp.utils import query_builder
+from esp.utils.formats import format_lazy
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
 from unittest.mock import Mock, MagicMock
@@ -88,7 +85,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("django")  # If this fails, we lose.
         self.tryImport("PIL")  # Needed for Django Image fields, which we use for (among other things) teacher bio's
         self.tryImport("PIL._imaging")  # Internal PIL module; PIL will import without it, but it won't have a lot of the functionality that we need
-        self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
+        self.tryImport("pymemcache")  # We use pymemcache as the Python<->memcached interface library.
         self.tryImport("DNS")  # Used for validating email address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("json")  # Used for some of our AJAX magic
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
@@ -96,17 +93,17 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("form_utils")     #Used to create better forms.
         self.assertFalse(self._failed_import)
 
-        # Make sure production uses pylibmc when default cache is memcached.
+        # Make sure production uses pymemcache when default cache is memcached.
         # test_settings (and similar) use LocMemCache/DummyCache — skip then.
         from django.conf import settings
         default_backend = settings.CACHES.get('default', {}).get('BACKEND', '')
         if 'locmem' not in default_backend.lower() and 'dummy' not in default_backend.lower():
-            from pylibmc import Client
+            from pymemcache import HashClient
             from django.core.cache import cache
             if hasattr(cache, "_cache"):
-                self.assertTrue(isinstance(cache._cache, Client))
+                self.assertTrue(isinstance(cache._cache, HashClient))
             elif hasattr(cache, "_wrapped_cache") and hasattr(cache._wrapped_cache, "_cache"):
-                self.assertTrue(isinstance(cache._wrapped_cache._cache, Client))
+                self.assertTrue(isinstance(cache._wrapped_cache._cache, HashClient))
 
         self.tryExecutable("latex")  # Used for a whole pile of program printables, as well as inline LaTeX
         self.tryExecutable("dvips")  # Used to convert LaTeX output (.dvi) to .ps files
@@ -116,35 +113,6 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryExecutable("inkscape")  # Used to render LaTeX output (once converted to .pdf) to .svg image files
 
         self.assertFalse(self._exe_not_found)
-
-class MemcachedTestCase(unittest.TestCase):
-    """
-    Test-case implementation that starts and manages a few memcached processes
-    to be used by test functions.
-    Note that this is not itself a collection of test cases,
-    it's meant to be subclassed as needed.
-    """
-
-    CACHES = [ "127.0.0.1:11218" ]
-
-    def setUp(self):
-        """ Launch memcached instances for all the caches listed in CACHES """
-        caches = [ x.split(':') for x in self.CACHES ]
-        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', f'{cache[1]}'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                         for cache in caches ]
-        self.clients = [ memcache.Client([cache]) for cache in self.CACHES ]
-
-    def tearDown(self):
-        """ Terminate all the server processes that we launched with setUp() """
-        for client in self.clients:
-            client.disconnect_all()
-
-        if len(self.servers) > 0 and hasattr(self.servers[0], 'terminate'):
-            for server in self.servers:
-                server.terminate()  # Sends SIGTERM, telling the servers to terminate
-            for server in self.servers:
-                server.wait()       # After we've told all the servers to terminate, wait for them to all actually stop.
-
 
 class MemcachedKeyLengthTestCase(DjangoTestCase):
     """ Grab a ridiculous URL and make sure the status code isn't 500. """
@@ -774,6 +742,20 @@ class RunInstallTestCase(unittest.TestCase):
         sender.models_module = models_module
         # Should not raise
         run_install(sender)
+
+
+class FormatLazyTest(DjangoTestCase):
+    def test_basic_substitution(self):
+        result = format_lazy("Hello %s", "world")
+        self.assertEqual(str(result), "Hello world")
+
+    def test_returns_lazy_proxy(self):
+        result = format_lazy("Hello %s", "world")
+        self.assertNotIsInstance(result, str)
+
+    def test_integer_substitution(self):
+        result = format_lazy("Value: %d", 42)
+        self.assertEqual(str(result), "Value: 42")
 
 
 def suite():
