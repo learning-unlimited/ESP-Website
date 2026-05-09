@@ -111,7 +111,12 @@ class UserRegForm(forms.Form):
     def clean_confirm_password(self):
         if not (('confirm_password' in self.cleaned_data) and ('password' in self.cleaned_data)) or (self.cleaned_data['confirm_password'] != self.cleaned_data['password']):
             raise forms.ValidationError('Ensure the password and password confirmation are equal.')
-        validate_password(self.cleaned_data['confirm_password'])
+        user = ESPUser(
+            username=self.cleaned_data.get('username', ''),
+            first_name=self.cleaned_data.get('first_name', ''),
+            last_name=self.cleaned_data.get('last_name', ''),
+        )
+        validate_password(self.cleaned_data['confirm_password'], user)
         return self.cleaned_data['confirm_password']
 
     def clean_confirm_email(self):

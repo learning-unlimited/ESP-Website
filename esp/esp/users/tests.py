@@ -1195,3 +1195,9 @@ class PasswordValidationTest(TestCase):
     def test_password_change_accepts_strong_password(self):
         form = self._passwd_form('Str0ng!Pass')
         self.assertTrue(form.is_valid(), form.errors)
+
+    def test_registration_rejects_username_similar_password(self):
+        # UserAttributeSimilarityValidator must receive the user instance to work.
+        # 'testpwuser1' is too similar to username 'testpwuser'.
+        form = self._reg_form('testpwuser1')
+        self.assertFalse(form.is_valid())
