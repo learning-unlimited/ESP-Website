@@ -60,6 +60,7 @@ from esp.program.modules.tests.formstackappmodule import FormstackAppModuleTest
 from esp.program.modules.tests.test_creditcard_required import (
     CreditCardRequiredTest, CreditCardCybersourceRequiredTest, CreditCardSelfBlockingTest
 )
+from esp.program.modules.tests.grouptextmodule import GroupTextModuleSendMessagesTest
 from esp.program.modules.tests.test_class_creation import (
     MakeAClassViewTest,
     ClassStatusOnEditTest,

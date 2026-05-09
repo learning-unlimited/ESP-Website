@@ -52,7 +52,6 @@ TWILIO_SETTINGS = {
 def _make_filter(users):
     q = Q(id__in=[u.id for u in users])
     filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q)
-    filterObj.save()
     return filterObj
 
 
