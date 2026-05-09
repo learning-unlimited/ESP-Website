@@ -149,7 +149,7 @@ class GroupTextModule(ProgramModuleObj):
         for user in users:
 
             #   Only get contact info for the actual user (not guardians or emergency contacts)
-            contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).first()
+            contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).order_by('-id').first()
             if not contactInfo:
                 send_log.append("Could not find contact info for "+str(user))
                 continue
