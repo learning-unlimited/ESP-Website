@@ -258,6 +258,7 @@ class ViewUserInfoTest(TestCase):
         # Test to make sure we get an error when username parameter is missing
         response = c.get("/manage/userview")
         self.assertEqual(response.status_code, 500)
+        self.assertIn(b'must specify a username', response.content)
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
