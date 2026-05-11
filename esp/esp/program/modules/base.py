@@ -40,7 +40,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
-from django.utils.decorators import available_attrs
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
@@ -564,7 +563,7 @@ def user_passes_test(test_func, error_message=None, error_template=None,
         attribute (e.g., 'learn', 'teach', 'manage', 'onsite').
     """
     def decorator(view_method):
-        @wraps(view_method, assigned=available_attrs(view_method))
+        @wraps(view_method)
         def _check(moduleObj, request, tl, *args, **kwargs):
             if require_login and not_logged_in(request):
                 return _login_redirect(request)

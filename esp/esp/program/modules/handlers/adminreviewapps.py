@@ -79,7 +79,8 @@ class AdminReviewApps(ProgramModuleObj):
         students = [x for x in students if x.studentapplication_set.filter(program=self.program).count() > 0]
 
         for student in students:
-            student.added_class = student.studentregistration_set.filter(section__parent_class=cls)[0].start_date
+            reg = student.studentregistration_set.filter(section__parent_class=cls).first()
+            student.added_class = reg.start_date if reg else None
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except StudentApplication.DoesNotExist:
@@ -168,7 +169,6 @@ class AdminReviewApps(ProgramModuleObj):
             student.app = student.studentapplication_set.get(program = self.program)
         except StudentApplication.DoesNotExist:
             student.app = None
-            assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
 
         return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student, 'program': prog})
