@@ -108,9 +108,11 @@ class TeacherEventsModule(ProgramModuleObj):
                 status = 'available'
                 color = '#3788d8'  # Blue
 
+            detail = (event.description or event.name or '').strip()
+            title = ('%s: %s' % (category.capitalize(), detail)) if detail else category.capitalize()
             data.append({
                 'id': event.id,
-                'title': ('%s: %s' % (category.capitalize(), event.name or event.description)) if (event.name or event.description) else category.capitalize(),
+                'title': title,
                 'start': event.start.isoformat(),
                 'end': event.end.isoformat(),
                 'color': color,
