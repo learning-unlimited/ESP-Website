@@ -32,6 +32,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from unittest import mock
+
 from esp.program.models import FinancialAidRequest, SplashInfo
 from esp.accounting.models import FinancialAidGrant, LineItemType
 
@@ -431,6 +433,33 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), 0)
 
+    def test_finaid_uses_model_form_field_assignment(self):
+        student = self.students[0]
+        FinancialAidRequest.objects.create(user=student, program=self.program)
+        field = FinancialAidRequest._meta.get_field('household_income')
+
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+            "Couldn't log in as student %s" % student.username
+        )
+
+        form_settings = {
+            'reduced_lunch': '',
+            'household_income': '54321',
+            'extra_explaination': 'Updated',
+            'student_prepare': '',
+        }
+
+        with mock.patch.object(field, 'save_form_data', wraps=field.save_form_data) as save_form_data:
+            response = self.client.post('/learn/%s/finaid' % self.program.getUrlBase(), form_settings)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(save_form_data.called)
+
+        request = FinancialAidRequest.objects.get(user=student, program=self.program)
+        self.assertEqual(request.household_income, '54321')
+        self.assertEqual(request.extra_explaination, 'Updated')
+
     def test_extracosts(self):
         """ Verify that the "Student Extra Costs" module behaves as specified. """
 
@@ -751,4 +780,3 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
             'change_grade_form', response.context,
             "'change_grade_form' was not found in the userview template context.",
         )
-

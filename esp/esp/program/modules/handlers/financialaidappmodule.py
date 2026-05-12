@@ -110,10 +110,9 @@ class FinancialAidAppModule(ProgramModuleObj):
                     fields = '__all__'
 
         if request.method == 'POST':
-            form = Form(request.POST, initial = app.__dict__)
+            form = Form(request.POST, instance=app)
             if form.is_valid():
-                for key, value in form.cleaned_data.items():
-                    setattr(app, key, value)
+                app = form.save(commit=False)
 
                 if not 'submitform' in request.POST or request.POST['submitform'].lower() == 'complete':
                     app.done = True
@@ -123,6 +122,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                     raise ESPError("Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'.")
 
                 app.save()
+                form.save_m2m()
 
                 # Send an email announcing the application
                 date_str = str(datetime.now())
@@ -158,7 +158,7 @@ This request can be (re)viewed at:
                 return self.goToCore(tl)
 
         else:
-            form = Form(initial = app.__dict__)
+            form = Form(instance=app)
 
         return render_to_response(self.baseDir()+'application.html',
                                   request,
