@@ -39,21 +39,25 @@ from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequ
 from esp.utils.admin_user_search import default_user_search
 
 class MessageVarsAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('id', 'messagerequest', 'provider_name')
     list_filter = ('provider_name',)
     search_fields = ('messagerequest__subject',)
 admin_site.register(MessageVars, MessageVarsAdmin)
 
 class EmailListAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('description', 'regex')
 admin_site.register(EmailList, EmailListAdmin)
 
 class PlainRedirectAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('original', 'destination')
     search_fields = ('original', 'destination')
 admin_site.register(PlainRedirect, PlainRedirectAdmin)
 
 class MessageRequestAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('subject', 'creator', 'sender', 'recipients', 'created_at', 'processed_by', 'processed', 'public')
     list_filter = ('processed', 'processed_by', 'public')
     search_fields = default_user_search('creator') + ['subject', 'sender']
@@ -61,6 +65,7 @@ class MessageRequestAdmin(admin.ModelAdmin):
 admin_site.register(MessageRequest, MessageRequestAdmin)
 
 class TextOfEmailAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('id', 'send_from', 'send_to', 'subject', 'sent', 'user')
     search_fields = ('=id', 'send_from', 'send_to', 'subject', 'user')
     date_hierarchy = 'sent'

@@ -41,16 +41,19 @@ from esp.admin import admin_site
 from esp.survey.models import Survey, SurveyResponse, QuestionType, Question, Answer
 
 class SurveyAdmin(admin.ModelAdmin):
+    save_as = True
     list_filter = ('category',)
 admin_site.register(Survey, SurveyAdmin)
 
 class SurveyResponseAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('survey', 'time_filled')
     date_hierarchy = 'time_filled'
     list_filter = ('survey', 'time_filled')
 admin_site.register(SurveyResponse, SurveyResponseAdmin)
 
 class QuestionTypeAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('name', '_param_names', 'is_numeric', 'is_countable')
 
     def get_readonly_fields(self, request, obj=None):
@@ -60,6 +63,7 @@ class QuestionTypeAdmin(admin.ModelAdmin):
 admin_site.register(QuestionType, QuestionTypeAdmin)
 
 class QuestionAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ['seq', 'name', 'question_type', 'survey', 'per_class']
     list_display_links = ['name']
     list_filter = ['survey']

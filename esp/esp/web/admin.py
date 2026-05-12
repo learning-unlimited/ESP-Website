@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -38,10 +37,12 @@ from esp.admin import admin_site
 from esp.web.models import NavBarEntry, NavBarCategory
 
 class NavBarEntryAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('category', 'sort_rank', 'text', 'link')
     list_filter = ('category',)
 
 class NavBarCategoryAdmin(admin.ModelAdmin):
+    save_as = True
     list_display = ('name', 'path')
     search_fields = ['name', 'path']
 
