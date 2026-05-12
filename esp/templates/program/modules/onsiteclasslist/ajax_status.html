@@ -18,8 +18,9 @@
 <script type="text/javascript">
     var program_base_url = "/onsite/{{ program.getUrlBase }}/";
     var open_class_category = {{ open_class_category }};
+    var hide_categories = "{{ hide_categories|escapejs }}";
     {% if initial_student %}
-    set_current_student({{ initial_student }});
+    set_current_student({{ initial_student|escapejs }});
     {% endif %}
 </script>
 <style type="text/css">
@@ -49,15 +50,15 @@
 <td>
     <div id="settings_controls">
     <!-- make sure to update onsite/ajax_status.js when changing this -->
-    <div><input type="checkbox" id="hide_full_control" checked/>Show full classes</div>
-    <div><input type="checkbox" id="override_control"/>Override size limits</div>
-    <div><input type="checkbox" id="grade_limits_control"/>Show classes outside student's grade range</div>
-    <div><input type="checkbox" id="show_class_titles"/>Display class titles</div>
-    <div><input type="checkbox" id="show_class_teachers"/>Display class teachers</div>
-    <div><input type="checkbox" id="show_class_rooms"/>Display class rooms</div>
-    <div><input type="checkbox" id="show_closed_reg"/>Show sections that are closed to registration</div>
-    <div><input type="checkbox" id="hide_past_time_blocks"/>Hide past timeblocks</div>
-    <div><input type="checkbox" id="hide_conflicting"/>Show only classes that fit in student's schedule</div>
+    <div><input type="checkbox" id="hide_full_control"{% if show_full_default %} checked{% endif %}/>Show full classes</div>
+    <div><input type="checkbox" id="override_control"{% if override_default %} checked{% endif %}/>Override size limits</div>
+    <div><input type="checkbox" id="grade_limits_control"{% if grade_limits_default %} checked{% endif %}/>Show classes outside student's grade range</div>
+    <div><input type="checkbox" id="show_class_titles"{% if show_titles_default %} checked{% endif %}/>Display class titles</div>
+    <div><input type="checkbox" id="show_class_teachers"{% if show_teachers_default %} checked{% endif %}/>Display class teachers</div>
+    <div><input type="checkbox" id="show_class_rooms"{% if show_rooms_default %} checked{% endif %}/>Display class rooms</div>
+    <div><input type="checkbox" id="show_closed_reg"{% if show_closed_default %} checked{% endif %}/>Show sections that are closed to registration</div>
+    <div><input type="checkbox" id="hide_past_time_blocks"{% if hide_past_default %} checked{% endif %}/>Hide past timeblocks</div>
+    <div><input type="checkbox" id="hide_conflicting"{% if hide_conflicting_default %} checked{% endif %}/>Show only classes that fit in student's schedule</div>
     <div><input type="checkbox" id="check_in_student"{% if check_in_default %} checked{% endif %}/>Check-in student when making schedule changes</div>
     </div>
 </td>
@@ -76,10 +77,10 @@
         <b>Sort sections by:</b>
         <div>
             <select id="sort_control">
-                <option value="length" selected># of Timeblocks</option>
-                <option value="class_id">Class ID</option>
-                <option value="category">Category</option>
-                <option value="fullness">Fullness</option>
+                <option value="length"{% if sort_default == 'length' %} selected{% endif %}># of Timeblocks</option>
+                <option value="class_id"{% if sort_default == 'class_id' %} selected{% endif %}>Class ID</option>
+                <option value="category"{% if sort_default == 'category' %} selected{% endif %}>Category</option>
+                <option value="fullness"{% if sort_default == 'fullness' %} selected{% endif %}>Fullness</option>
             </select>
         </div>
     </div>
