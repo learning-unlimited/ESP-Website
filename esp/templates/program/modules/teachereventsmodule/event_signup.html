@@ -20,6 +20,15 @@
     .status-full { background-color: #dc3545 !important; border-color: #dc3545 !important; opacity: 0.6; pointer-events: none; }
     .status-past { background-color: #6c757d !important; border-color: #6c757d !important; opacity: 0.5; pointer-events: none; }
     .fc-event-title { font-weight: bold; }
+
+    /* Mobile: stack toolbar rows and shrink text */
+    @media (max-width: 768px) {
+        #calendar { padding: 10px; margin: 10px auto; }
+        .fc .fc-toolbar.fc-header-toolbar { flex-wrap: wrap; gap: 6px; }
+        .fc .fc-toolbar-chunk { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+        .fc .fc-toolbar-title { font-size: 1rem; }
+        .fc .fc-button { font-size: 0.75rem; padding: 3px 7px; }
+    }
 </style>
 {% endblock %}
 
@@ -31,10 +40,16 @@
         var calendarEl = document.getElementById('calendar');
         var allEventDates = [];  // sorted Date objects for prev/next navigation
         var initialNavDone = false;
+        var isMobile = window.innerWidth < 768;
 
         var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridWeek',
-            headerToolbar: {
+            // Switch to day view on narrow screens automatically
+            initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
+            headerToolbar: isMobile ? {
+                left: 'prevEvent,nextEvent',
+                center: 'title',
+                right: 'prev,next today'
+            } : {
                 left: 'prevEvent,nextEvent prev,next today',
                 center: 'title',
                 right: 'timeGridWeek,timeGridDay'
@@ -68,9 +83,10 @@
             eventClassNames: function(arg) {
                 return ['status-' + arg.event.extendedProps.status];
             },
-            // After all events load, auto-jump to the nearest upcoming event
+            // After all events load, auto-jump to the nearest upcoming event.
+            // Guard: skip empty-array calls that fire before the async fetch completes.
             eventsSet: function(events) {
-                if (initialNavDone) return;
+                if (initialNavDone || events.length === 0) return;
                 initialNavDone = true;
 
                 allEventDates = [];
@@ -83,11 +99,12 @@
                 });
                 allEventDates.sort(function(a, b) { return a - b; });
 
-                // Jump to earliest upcoming event (or first event if all are past)
+                // Jump to earliest upcoming event (or first event if all are past).
+                // setTimeout defers gotoDate past the current FullCalendar render cycle.
                 var now = new Date(); now.setHours(0, 0, 0, 0);
                 var target = allEventDates.find(function(d) { return d >= now; });
                 if (!target && allEventDates.length) target = allEventDates[0];
-                if (target) calendar.gotoDate(target);
+                if (target) setTimeout(function() { calendar.gotoDate(target); }, 0);
             },
             eventClick: function(info) {
                 const event = info.event;
@@ -99,11 +116,11 @@
 
                 // Logic to toggle selection in the (hidden) Django form
                 const selectEl = document.getElementById('id_event_type_' + props.event_type_id);
-                
+
                 if (selectEl) {
                     selectEl.value = event.id;
                     document.getElementById('submit-btn').disabled = false;
-                    
+
                     // Visual feedback: clear prior selection for this event type only
                     const eventTypeId = String(props.event_type_id);
                     calendar.getEvents().forEach(e => {
@@ -121,6 +138,7 @@
     });
 </script>
 {% endblock %}
+
 
 
 {% block module_content %}
