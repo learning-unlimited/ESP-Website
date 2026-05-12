@@ -87,7 +87,7 @@ Archive Viewing Options
 </td><td>
 <select name="max_num_results">
 {% for f in num_results_list %}
-<option value="{{ f }}"{% ifequal f max_num_results %}selected{% endifequal %}>{{ f }}</option>
+<option value="{{ f }}"{% if f == max_num_results %}selected{% endif %}>{{ f }}</option>
 {% endfor %}
 </select>
 </td></tr>
@@ -108,7 +108,7 @@ Archive Viewing Options
 {% endfor %}
 </td></tr>
 
-{% ifnotequal max_num_results "Show all" %}
+{% if max_num_results != "Show all" %}
 <tr><td>
 <h3>Browse current set of results</h3></td>
 <td>
@@ -122,9 +122,9 @@ Archive Viewing Options
 {% endfor %}
 {% endfor %}
 <input class="button" type="submit" value="Previous {{ max_num_results }}"
-{% ifequal results_range.start 1 %}
+{% if results_range.start == 1 %}
 disabled 
-{% endifequal %}
+{% endif %}
 />
 </form>
 <form method="post" action="{{request.path}}">
@@ -137,13 +137,13 @@ disabled
 {% endfor %}
 {% endfor %}
 <input class="button" type="submit" value="Next {{ max_num_results }}"
-{% ifequal results_range.end num_results %}
+{% if results_range.end == num_results %}
 disabled 
-{% endifequal %}
+{% endif %}
 />
 </form>
 </td></tr>
-{% endifnotequal %}
+{% endif %}
 
 </table>
 </div> <!-- div#battlescreen -->
@@ -156,7 +156,7 @@ disabled
 {% for entry in results %}
 <tr><td>
 
-{% ifequal sortorder.0 "category" %}
+{% if sortorder.0 == "category" %}
 {% ifchanged %}
 <a name="{{ entry.category|slugify }}"></a><br /><h2 align="center">Category: {{ entry.category }}</h2>
 <center><a class="returntotop" href="#top">Return to top of page</a></center>
@@ -164,9 +164,9 @@ disabled
 </td></tr>
 <tr><td>
 {% endifchanged %}
-{% endifequal %}
+{% endif %}
 
-{% ifequal sortorder.0 "title" %}
+{% if sortorder.0 == "title" %}
 {% ifchanged %}
 <a name="{{ entry.title.0|slugify }}"></a><br /><h2 align="center">Title starts with: {{ entry.title.0 }}</h2>
 <center><a class="returntotop" href="#top">Return to top of page</a></center>
@@ -174,9 +174,9 @@ disabled
 </td></tr>
 <tr><td>
 {% endifchanged %}
-{% endifequal %}
+{% endif %}
 
-{% ifequal sortorder.0 "program" %}
+{% if sortorder.0 == "program" %}
 {% ifchanged %}
 <a name="{{ entry.program|slugify }}"></a><br /><h2 align="center">Program: {{ entry.program }}</h2>
 <center><a class="returntotop" href="#top">Return to top of page</a></center>
@@ -184,9 +184,9 @@ disabled
 </td></tr>
 <tr><td>
 {% endifchanged %}
-{% endifequal %}
+{% endif %}
 
-{% ifequal sortorder.0 "year" %}
+{% if sortorder.0 == "year" %}
 {% ifchanged %}
 <a name="{{ entry.year }}"></a><br /><h2 align="center">Year: {{ entry.year }}</h2>
 <center><a class="returntotop" href="#top">Return to top of page</a></center>
@@ -194,9 +194,9 @@ disabled
 </td></tr>
 <tr><td>
 {% endifchanged %}
-{% endifequal %}
+{% endif %}
 
-{% ifequal sortorder.0 "teacher" %}
+{% if sortorder.0 == "teacher" %}
 {% ifchanged %}
 <a name="{{ entry.teacher|slugify }}"></a><br /><h2 align="center">Teacher: {{ entry.teacher }}</h2>
 <center><a class="returntotop" href="#top">Return to top of page</a></center>
@@ -204,7 +204,7 @@ disabled
 </td></tr>
 <tr><td>
 {% endifchanged %}
-{% endifequal %}
+{% endif %}
 
 <table width="100%" cellspacing="0" cellpadding="3" class="innertable">
 

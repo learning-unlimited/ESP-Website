@@ -62,10 +62,10 @@ class OnSiteCheckoutModule(ProgramModuleObj):
 
         if "checkoutall" in request.POST and "confirm" in request.POST:
             students = prog.currentlyCheckedInStudents()
+            rt = RecordType.objects.get(name="checked_out")
             for student in students:
-                rt = RecordType.objects.get(name="checked_out")
                 Record.objects.create(user=student, event=rt, program=prog)
-            context['checkout_all_message'] = "Successfully checked out %s students" % (students.count())
+            context['checkout_all_message'] = f"Successfully checked out {students.count()} students"
 
         target_id = None
         student = None
@@ -81,10 +81,10 @@ class OnSiteCheckoutModule(ProgramModuleObj):
             if target_id:
                 try:
                     student = ESPUser.objects.get(id=target_id)
-                except:
+                except (ESPUser.DoesNotExist, ValueError):
                     try:
                         student = ESPUser.objects.get(username=target_id)
-                    except:
+                    except ESPUser.DoesNotExist:
                         raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
 
         if student:
@@ -93,7 +93,7 @@ class OnSiteCheckoutModule(ProgramModuleObj):
 
             # Get most recent check-in record
             if not prog.isCheckedIn(student):
-                context['checkout_message_warning'] = "Caution: %s (%s) is not currently checked in for this program!" % (student.name(), student.username)
+                context['checkout_message_warning'] = f"Caution: {student.name()} ({student.username}) is not currently checked in for this program!"
 
             if 'checkout_student' in request.POST:
                 # Make checked_out record
@@ -104,7 +104,7 @@ class OnSiteCheckoutModule(ProgramModuleObj):
                 verbs = RTC.getVisibleRegistrationTypeNames(prog)
                 for sec in ClassSection.objects.filter(id__in=[_f for _f in request.POST.getlist('unenroll') if _f]).distinct():
                     sec.unpreregister_student(student, verbs)
-                context['checkout_message_success'] = "Successfully checked out %s (%s)" % (student.name(), student.username)
+                context['checkout_message_success'] = f"Successfully checked out {student.name()} ({student.username})"
 
             context.update(StudentClassRegModule.prepare_static(student, prog))
         else:

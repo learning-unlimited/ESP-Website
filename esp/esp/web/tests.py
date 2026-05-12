@@ -1,4 +1,4 @@
-from io import open
+﻿from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -43,12 +43,14 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.utils.models import TemplateOverride
 from esp.web.admin import NavBarCategoryAdmin
 from esp.admin import admin_site
+from django.contrib.auth.models import Group
 
 import difflib
 import logging
 logger = logging.getLogger(__name__)
 import re
 import os
+import subprocess
 import tempfile
 
 # Make sure that we can actually download the homepage
@@ -58,12 +60,11 @@ class PageTest(TestCase):
     # Util Functions
     def assertStringContains(self, string, contents):
         if not (contents in string):
-            self.fail("'%s' not in '%s'" % (contents, string))
+            self.fail(f"'{contents}' not in '{string}'")
 
     def assertNotStringContains(self, string, contents):
         if contents in string:
-            self.fail("'%s' are in '%s' and shouldn't be" % (contents, string))
-
+            self.fail(f"'{contents}' are in '{string}' and shouldn't be")
 
     def testHomePage(self):
         """ Make sure that we can actually download the homepage """
@@ -104,25 +105,25 @@ class NavbarTest(TestCase):
 
         #   Clear navbars and ensure we get nothing
         NavBarEntry.objects.all().delete()
-        self.assertTrue(self.get_navbar_titles('/') == [], 'Non-existent navbars appearing: got %s, expected %s' % (self.get_navbar_titles('/'), []))
+        self.assertTrue(self.get_navbar_titles('/') == [], f'Non-existent navbars appearing: got {self.get_navbar_titles("/")}, expected {[]}')
 
         #   Check that when you create a nav bar it shows up
         n1 = NavBarEntry(category=home_category, sort_rank=0, text='NavBar1', indent=False)
         n1.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1'], 'New navbar not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar1']))
+        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1'], f'New navbar not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar1"]}')
 
         #   Check that when you edit a nav bar it changes
         n1.text = 'NavBar1A'
         n1.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1A'], 'Changes to navbar not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar1A']))
+        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1A'], f'Changes to navbar not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar1A"]}')
 
         #   Check that you can create a navbar and reorder them
         n2 = NavBarEntry(category=home_category, sort_rank=10, text='NavBar2', indent=False)
         n2.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1A', 'NavBar2'], 'Additional navbar not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar1A', 'NavBar2']))
+        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1A', 'NavBar2'], f'Additional navbar not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar1A", "NavBar2"]}')
         n1.sort_rank = 20
         n1.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar2', 'NavBar1A'], 'Altered navbar order not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar2', 'NavBar1A']))
+        self.assertTrue(self.get_navbar_titles('/') == ['NavBar2', 'NavBar1A'], f'Altered navbar order not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar2", "NavBar1A"]}')
 
 
 class NavBarAdminDeletionTest(TestCase):
@@ -250,12 +251,12 @@ class JavascriptSyntaxTest(TestCase):
             closure_path = settings.CLOSURE_COMPILER_PATH.rstrip('/') + '/'
         else:
             closure_path = ''
-        if not os.path.exists('%scompiler.jar' % closure_path):
+        if not os.path.exists(f'{closure_path}compiler.jar'):
             if display: logger.info('Closure compiler not found.  Checked CLOSURE_COMPILER_PATH ="%s"', closure_path)
             return
 
-        closure_output_code = tempfile.gettempdir() + '/closure_output.js'
-        closure_output_file = tempfile.gettempdir() + 'closure.out'
+        closure_output_code = os.path.join(tempfile.gettempdir(), 'closure_output.js')
+        closure_output_file = os.path.join(tempfile.gettempdir(), 'closure.out')
 
         base_path = settings.MEDIA_ROOT + 'scripts/'
         exclude_names = ['yui', 'extjs', 'jquery', 'showdown']
@@ -288,14 +289,17 @@ class JavascriptSyntaxTest(TestCase):
                     if exclude:
                         continue
 
-                    file_list.append('%s/%s' % (dirpath, file))
+                    file_list.append(f'{dirpath}/{file}')
                     num_files += 1
 
-        file_args = ' '.join([('--js %s' % file) for file in file_list])
-        os.system('java -jar %s/compiler.jar %s --js_output_file %s 2> %s' % (closure_path, file_args, closure_output_code, closure_output_file))
-        checkfile = open(closure_output_file)
-
-        results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
+        cmd = ['java', '-jar', f"'{closure_path}'/compiler.jar'"]
+        for file in file_list:
+            cmd.extend(['--js', file])
+        cmd.extend(['--js_output_file', closure_output_code])
+        with open(closure_output_file, 'w') as err_file:
+            subprocess.run(cmd, stderr=err_file, stdout=subprocess.DEVNULL, check=True)
+        with open(closure_output_file) as checkfile:
+            results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
 
         if len(results) > 0:
             closure_result = results[-1].split(',')
@@ -309,3 +313,101 @@ class JavascriptSyntaxTest(TestCase):
             self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
 
 
+class TabMatchingTest(TestCase):
+    """
+    Tests the URL to tab matching logic in the extract_theme template filter,
+    ensuring directory boundary logic works and sub-links win ties over header links.
+    """
+    def test_extract_theme(self):
+        from esp.web.templatetags.main import extract_theme
+
+        # Mock settings dictionary with a structure similar to what ThemeController returns
+        settings_dict = {
+            'nav_structure': [
+                {
+                    'header_link': '/teach/splash.html',
+                    'links': [
+                        {'link': '/teach/splash.html', 'text': 'Splash'},
+                        {'link': '/teach/classes.html', 'text': 'Classes'},
+                        {'link': '/teach/ideas.html', 'text': 'Ideas'},
+                        # Additional link to test mid-segment prefix behavior:
+                        # nav link '/teach/ideas' vs URL '/teach/ideas.html'.
+                        {'link': '/teach/ideas', 'text': 'Ideas (no suffix)'},
+                    ]
+                },
+                {
+                    'header_link': '/learn/',
+                    'links': [
+                        {'link': '/learn/catalog', 'text': 'Catalog'},
+                    ]
+                }
+            ]
+        }
+
+        # Patch ThemeController to return our fixed settings_dict
+        from unittest.mock import patch
+        with patch('esp.themes.controllers.ThemeController.get_template_settings', return_value=settings_dict):
+            # Test 1: Identical URL for header and sublink. The exact sublink should win (tab_1)
+            self.assertEqual(extract_theme('/teach/splash.html'), 'tabcolor1')
+
+            # Test 2: Substring mismatch test. /teach/index.html shares the prefix '/teach/i' with
+            # /teach/ideas.html. Ensure we don't partial-match on that substring and mistakenly pick
+            # the ideas sublink; instead, we should fall back to the longest common '/teach/' prefix,
+            # which corresponds to the teach header tab (tab_0).
+            self.assertEqual(extract_theme('/teach/index.html'), 'tabcolor0')
+
+            # Test 3: Normal sublink should match
+            self.assertEqual(extract_theme('/teach/classes.html'), 'tabcolor2')
+
+            # Test 4: Another category base
+            self.assertEqual(extract_theme('/learn/index.html'), 'tabcolor0')
+
+            # Test 5: Exact match for ideas.html should map to its own tab (third sublink).
+            self.assertEqual(extract_theme('/teach/ideas.html'), 'tabcolor3')
+
+            # Test 6: Mid-segment prefix link '/teach/ideas' must not be treated as a match for
+            # URL '/teach/ideas.html'. They should resolve to different tabs.
+            self.assertNotEqual(
+                extract_theme('/teach/ideas.html'),
+                extract_theme('/teach/ideas'),
+            )
+
+
+class ProfileEditorCapitalizationTest(TestCase):
+    """
+    Test that profile_editor() handles CamelCase group names correctly.
+    Groups in the database use CamelCase (e.g. "StudentRep") but
+    profile_editor() convention is all-lowercase. This test ensures
+    no crash occurs due to capitalization mismatch.
+    """
+
+    def setUp(self):
+        # Create a CamelCase group like it exists in real DB
+        from django.contrib.auth.models import Group
+        self.group = Group.objects.get_or_create(name='StudentRep')[0]
+
+        # Create a test user
+        from esp.users.models import ESPUser
+        self.user = ESPUser.objects.create_user(
+            username='teststudentrep',
+            password='password',
+            email='teststudentrep@test.com'
+        )
+
+        # Assign ONLY the CamelCase group â€” no standard role
+        self.user.groups.add(self.group)
+        self.user.save()
+
+    def test_profile_editor_with_camelcase_group(self):
+        """
+        A user with only a CamelCase group (e.g. StudentRep) should be
+        able to visit their profile page without a ValueError crash.
+        """
+        from django.test.client import Client
+        c = Client()
+        logged_in = c.login(username='teststudentrep', password='password')
+        self.assertTrue(logged_in, "Could not log in test user 'teststudentrep'")
+        response = c.get('/myesp/profile/')
+
+        # Should load fine â€” not crash with ValueError
+        self.assertEqual(response.status_code, 200)

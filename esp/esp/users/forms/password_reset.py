@@ -1,11 +1,11 @@
 
 
 from django import forms
-from esp.users.models import ESPUser, PasswordRecoveryTicket
+from esp.users.models import ESPUser
 from django.utils.html import conditional_escape, mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
 
-__all__ = ['PasswordResetForm', 'NewPasswordSetForm', 'UserPasswdForm']
+__all__ = ['PasswordResetForm', 'UserPasswdForm']
 
 class PasswordResetForm(forms.Form):
 
@@ -27,7 +27,7 @@ class PasswordResetForm(forms.Form):
         try:
             user = ESPUser.objects.get(username=self.cleaned_data['username'])
         except ESPUser.DoesNotExist:
-            raise forms.ValidationError("User '%s' does not exist." % self.cleaned_data['username'])
+            raise forms.ValidationError(f"User '{self.cleaned_data['username']}' does not exist.")
 
         return self.cleaned_data['username'].strip()
 
@@ -38,40 +38,7 @@ class PasswordResetForm(forms.Form):
         if len(ESPUser.objects.filter(email__iexact=self.cleaned_data['email']).values('id')[:1])>0:
             return self.cleaned_data['email'].strip()
 
-        raise forms.ValidationError('No user has email %s' % self.cleaned_data['email'])
-
-
-class NewPasswordSetForm(forms.Form):
-
-    code     = forms.CharField(widget = forms.HiddenInput())
-    username = forms.CharField(max_length=128,
-                               help_text=mark_safe('(The one you used to receive the email.)<br/><br/>'))
-    password = forms.CharField(max_length=128, min_length=5, widget=forms.PasswordInput())
-    password_confirm = forms.CharField(max_length = 128, widget=forms.PasswordInput(),
-                                       label='Password Confirmation')
-
-    def clean_username(self):
-        from esp.middleware import ESPError
-        username = self.cleaned_data['username'].strip()
-        if not 'code' in self.cleaned_data:
-            raise ESPError("The form that you submitted does not contain a valid password-reset code.  If you arrived at this form from an email, are you certain that you used the entire URL from the email (including the bit after '?code=')?", log=False)
-        try:
-            ticket = PasswordRecoveryTicket.objects.get(recover_key = self.cleaned_data['code'], user__username = username)
-        except PasswordRecoveryTicket.DoesNotExist:
-            raise forms.ValidationError('Invalid username.')
-
-        return username
-
-
-    def clean_password_confirm(self):
-        new_passwd = self.cleaned_data['password_confirm'].strip()
-
-        if not 'password' in self.cleaned_data:
-            raise forms.ValidationError('Invalid password; confirmation failed')
-
-        if self.cleaned_data['password'] != new_passwd:
-            raise forms.ValidationError('Password and confirmation are not equal.')
-        return new_passwd
+        raise forms.ValidationError(f'No user has email {self.cleaned_data["email"]}')
 
 class UserPasswdForm(FormWithRequiredCss):
     password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())

@@ -1,0 +1,31 @@
+name: Update Project Tracker Sheet
+
+on:
+  schedule:
+    # Runs daily at 8:00 AM UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Allow manual triggers for testing
+
+jobs:
+  update-sheet:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r .github/scripts/project-tracker/requirements.txt
+
+      - name: Update Google Sheet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOOGLE_SA_KEY: ${{ secrets.GOOGLE_SA_KEY }}
+          SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          # Set these to your repo, or override via repository variables
+          REPO_OWNER: ${{ vars.REPO_OWNER }}
+          REPO_NAME: ${{ vars.REPO_NAME }}
+        run: python .github/scripts/project-tracker/update_project_sheet.py
