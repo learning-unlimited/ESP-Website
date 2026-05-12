@@ -10,7 +10,7 @@ class LineItemForm(forms.ModelForm):
     text = forms.CharField(label = 'Name', widget = forms.TextInput(attrs={'placeholder': '(name)'}), validators=[RegexValidator(regex = '^(' + '|'.join(exclude_line_items) + ')$', message = 'That line item name is reserved for internal operations. Please choose another name.', inverse_match = True)])
     class Meta:
         model = LineItemType
-        fields = ('text', 'amount_dec', 'required', 'max_quantity', 'for_finaid')
+        fields = ('text', 'amount_dec', 'required', 'max_quantity', 'for_finaid', 'selection_type')
         labels = {
             'amount_dec': 'Cost',
         }
@@ -18,7 +18,8 @@ class LineItemForm(forms.ModelForm):
             'required': 'Should this line item be automatically added for every student?',
             'for_finaid': 'Should financial aid cover this line item? Note that if this is checked, all quantities will be covered up to the max quantity. \
                            If you would like only one instance of this line item to be covered by financial aid, you should set the max quantity to 1 and make \
-                           a duplicate line item with a different name and higher max quantity that is not covered by financial aid.'
+                           a duplicate line item with a different name and higher max quantity that is not covered by financial aid.',
+            'selection_type': 'For line items with options: allow selecting one option (single) or multiple options (multiple).',
         }
         widgets = {
             'amount_dec': forms.NumberInput(attrs={'placeholder': '(cost)'}),
