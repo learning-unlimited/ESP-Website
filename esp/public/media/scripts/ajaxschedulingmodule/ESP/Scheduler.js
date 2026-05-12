@@ -63,17 +63,21 @@ function Scheduler(
 
         this.rooms = data.rooms;
 
+        this.historyPanel = new HistoryPanel($j("#history-container"), $j("#clear-history"));
+
         this.sections = new Sections(data.sections,
                                      data.section_details,
                                      data.categories,
                                      data.teachers,
                                      data.moderators,
                                      data.schedule_assignments,
-                                     new ApiClient());
+                                     new ApiClient(),
+                                     this.historyPanel);
 
         if(has_moderator_module === "True"){
             this.moderatorDirectory = new ModeratorDirectory(moderatorEl,
-                                                             data.moderators);
+                                                             data.moderators,
+                                                             this.historyPanel);
         } else {
             this.moderatorDirectory = null;
         }
@@ -86,7 +90,7 @@ function Scheduler(
                                              "<strong>F1</strong>: open the 'Classes' tab<br>" +
                                              "<strong>F2</strong>: open the 'Room Filters' tab<br>" +
                                              "<strong>F3</strong>: open the 'Checks' tab<br>" +
-                                             (has_moderator_module === "True" ? "<strong>F4</strong>: open the 'Moderators' tab<br>": "") +
+                                             (has_moderator_module === "True" ? "<strong>F4</strong>: open the 'Moderators' tab<br><strong>F5</strong>: open the 'History' tab<br>" : "<strong>F4</strong>: open the 'History' tab<br>") +
                                              "<strong>/</strong>: Search for a class");
         this.sectionCommentDialog = new SectionCommentDialog(sectionDialogEl, this.sections);
         this.sectionInfoPanel = new SectionInfoPanel(sectionInfoEl,
@@ -134,9 +138,12 @@ function Scheduler(
             } else if(evt.key === 'F3') { // F3 is pressed: open the third tab (scheduling checks)
                 evt.preventDefault();
                 $j("#side-panel").tabs({active: 2});
-            } else if(evt.key === 'F4') { // F4 is pressed: open the fourth tab (moderator directory)
+            } else if(evt.key === 'F4') { // F4: moderators (if enabled) or History
                 evt.preventDefault();
                 $j("#side-panel").tabs({active: 3});
+            } else if(has_moderator_module === "True" && evt.key === 'F5') {
+                evt.preventDefault();
+                $j("#side-panel").tabs({active: 4});
             }
         }.bind(this));
 
@@ -217,18 +224,17 @@ function Scheduler(
             });
         });
 
-        // set up handler for legend button
+        // set up handler for legend button (label must match #legend visibility; do not rely on
+        // string compare — Matrix uses "Show legend" while old code expected "Show Legend".)
         $j("body").on("click", "#legend_button", function(evt, ui) {
+            evt.preventDefault();
             $j("#legend").toggle();
-            if ($j("#legend_button").html() == "Show Legend") {
-                $j("#legend_button").html("Hide Legend");
-            } else {
-                $j("#legend_button").html("Show Legend");
-            }
+            var visible = $j("#legend").is(":visible");
+            $j("#legend_button").text(visible ? "Hide legend" : "Show legend");
         });
         $j("body").on("click", "#legend", function(evt, ui) {
             $j("#legend").hide();
-            $j("#legend_button").html("Show Legend");
+            $j("#legend_button").text("Show legend");
         });
     };
 
@@ -239,6 +245,7 @@ function Scheduler(
         this.directory.render();
         if(has_moderator_module === "True") this.moderatorDirectory.render();
         this.matrix.render();
+        $j("#loadingOverlay").remove();
         this.changelogFetcher.pollForChanges(update_interval);
     };
 };

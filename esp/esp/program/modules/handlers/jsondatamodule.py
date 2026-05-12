@@ -332,7 +332,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             sections.append(section)
             section['index'] = s.index()
             section['emailcode'] = s.emailcode()
-            section['length'] = float(s.duration)
+            section['length'] = float(s.duration) if s.duration is not None else 0.0
             if catalog:
                 section['times'] = s.friendly_times_with_date()
                 section['capacity'] = s.capacity
@@ -413,7 +413,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             sections.append(section)
             section['index'] = s.index()
             section['emailcode'] = s.emailcode()
-            section['length'] = float(s.duration)
+            section['length'] = float(s.duration) if s.duration is not None else 0.0
             section['moderators'] = [m.id for m in s.get_moderators()]
             class_teachers = cls.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]

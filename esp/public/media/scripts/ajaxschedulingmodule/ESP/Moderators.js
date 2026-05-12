@@ -5,9 +5,10 @@
  * @param moderators
  * @param matrix
  */
-function ModeratorDirectory(el, moderators) {
+function ModeratorDirectory(el, moderators, historyPanel) {
     this.el = el;
     this.moderators = moderators;
+    this.historyPanel = historyPanel || null;
     this.selectedModerator = null;
     this.selectedModeratorCell = null;
 
@@ -290,61 +291,115 @@ function ModeratorDirectory(el, moderators) {
     /**
      * Assign the selected moderator to the specified section
      * @param section: A section object
+     * @param isUndo: When true, do not record this action in session history
      */
-    this.assignModerator = function(section) {
+    this.assignModerator = function(section, isUndo) {
+        var moderator = this.selectedModerator;
         var override = this.matrix.sectionInfoPanel.override;
         this.matrix.sections.apiClient.assign_moderator(
             section.id,
-            this.selectedModerator.id,
+            moderator.id,
             override,
             function() {
-                // If successful, update moderator info
                 this.assignModeratorLocal(section);
+                if (!isUndo && this.historyPanel) {
+                    var self = this;
+                    var mod = moderator;
+                    var sid = section.id;
+                    this.historyPanel.addAction("Assigned " + mod.first_name + " " + mod.last_name + " to " + section.emailcode, function(endUndo) {
+                        self.unassignModeratorForUndo(self.matrix.sections.getById(sid), mod, endUndo);
+                    });
+                }
             }.bind(this),
             function(msg) {
-                // If unsuccessful, report the error message
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 this.matrix.messagePanel.show();
                 console.log(msg);
             }.bind(this)
         );
-        // Reset the availability override
         this.matrix.sectionInfoPanel.override = false;
     };
 
     this.assignModeratorLocal = function(section) {
         var moderator = this.selectedModerator;
         this.unselectModerator();
+        this.assignModeratorLocalCore(section, moderator, true);
+    };
+
+    this.assignModeratorLocalCore = function(section, moderator, showMessage) {
         if (!section.moderators.includes(moderator.id)) {
             moderator.sections.push(section.id);
             section.moderators.push(moderator.id);
             section.moderator_data.push(moderator);
             $j("body").trigger("schedule-changed");
-            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was assigned to " + section.emailcode, color = "blue")
-            // Update cell coloring
+            if (showMessage) {
+                this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was assigned to " + section.emailcode, "blue");
+            }
             this.matrix.updateCells();
         }
+    };
+
+    this.assignModeratorForUndo = function(section, moderator, endUndo) {
+        this.matrix.sections.apiClient.assign_moderator(
+            section.id,
+            moderator.id,
+            false,
+            function() {
+                this.assignModeratorLocalCore(section, moderator, false);
+                if (endUndo) endUndo();
+            }.bind(this),
+            function(msg) {
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
+                this.matrix.messagePanel.show();
+                console.log(msg);
+                if (endUndo) endUndo();
+            }.bind(this)
+        );
+    };
+
+    this.unassignModeratorForUndo = function(section, moderator, endUndo) {
+        this.matrix.sections.apiClient.unassign_moderator(
+            section.id,
+            moderator.id,
+            function() {
+                this.unassignModeratorLocalForModerator(section, moderator);
+                if (endUndo) endUndo();
+            }.bind(this),
+            function(msg) {
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
+                this.matrix.messagePanel.show();
+                console.log(msg);
+                if (endUndo) endUndo();
+            }.bind(this)
+        );
     };
 
     /**
      * Unassign the selected moderator from the specified section
      * @param section: A section object
+     * @param isUndo: When true, do not record this action in session history
      */
-    this.unassignModerator = function(section) {
+    this.unassignModerator = function(section, isUndo) {
+        var moderator = this.selectedModerator;
         this.matrix.sections.apiClient.unassign_moderator(
             section.id,
-            this.selectedModerator.id,
+            moderator.id,
             function() {
-                // If successful, update moderator info
                 this.unassignModeratorLocal(section);
+                if (!isUndo && this.historyPanel) {
+                    var self = this;
+                    var mod = moderator;
+                    var sid = section.id;
+                    this.historyPanel.addAction("Unassigned " + mod.first_name + " " + mod.last_name + " from " + section.emailcode, function(endUndo) {
+                        self.assignModeratorForUndo(self.matrix.sections.getById(sid), mod, endUndo);
+                    });
+                }
             }.bind(this),
             function(msg) {
-                // If unsuccessful, report the error message
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red")
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red")
                 console.log(msg);
             }.bind(this)
         );
-        // Reset the availability override
         this.matrix.sectionInfoPanel.override = false;
     };
 
@@ -352,12 +407,17 @@ function ModeratorDirectory(el, moderators) {
         var moderator = this.selectedModerator;
         this.unselectModerator();
         if (section.moderators.includes(moderator.id)) {
+            this.unassignModeratorLocalForModerator(section, moderator);
+            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was unassigned from " + section.emailcode, "blue");
+        }
+    };
+
+    this.unassignModeratorLocalForModerator = function(section, moderator) {
+        if (section.moderators.includes(moderator.id)) {
             moderator.sections.splice(moderator.sections.indexOf(section.id), 1);
-            section.moderators.splice(section.moderators.indexOf(moderator), 1);
+            section.moderators.splice(section.moderators.indexOf(moderator.id), 1);
             section.moderator_data.splice(section.moderator_data.indexOf(moderator), 1);
             $j("body").trigger("schedule-changed");
-            this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was unassigned from " + section.emailcode, color = "blue")
-            // Update cell coloring
             this.matrix.updateCells();
         }
     };

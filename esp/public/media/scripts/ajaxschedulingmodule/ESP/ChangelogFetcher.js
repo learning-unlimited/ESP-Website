@@ -37,6 +37,7 @@ function ChangelogFetcher(matrix, api_client){
             this.applyChangeLog.bind(this),
             function(msg) {
                 console.log(msg);
+                $j("#loadingOverlay").remove();
             }
         );
     };
@@ -47,26 +48,31 @@ function ChangelogFetcher(matrix, api_client){
      * @param data: the data to apply to the matrix
      */
     this.applyChangeLog = function(data){
-        $j.each(data.changelog, function(id, change){
-            var section = matrix.sections.getById(change.id);
-            if (change.is_scheduling) {
-                if (change.timeslots.length == 0){
-                    this.matrix.sections.unscheduleSectionLocal(section);
+        try {
+            $j.each(data.changelog, function(id, change){
+                var section = matrix.sections.getById(change.id);
+                if (change.is_scheduling) {
+                    if (change.timeslots.length == 0){
+                        this.matrix.sections.unscheduleSectionLocal(section);
+                    } else {
+                        this.matrix.sections.scheduleSectionLocal(section, parseInt(change.room_name,10), change.timeslots);
+                    }
+                } else if (change.is_moderator) {
+                    if (this.matrix.moderatorDirectory) {
+                        this.matrix.moderatorDirectory.selectModerator(this.matrix.moderatorDirectory.getById(change.moderator));
+                        if (change.assigned) {
+                            this.matrix.moderatorDirectory.assignModeratorLocal(section);
+                        } else {
+                            this.matrix.moderatorDirectory.unassignModeratorLocal(section);
+                        }
+                    }
                 } else {
-                    this.matrix.sections.scheduleSectionLocal(section, parseInt(change.room_name,10), change.timeslots);
+                    this.matrix.sections.setComment(section, change.comment, change.locked, true);
                 }
-            } else if (change.is_moderator) {
-                this.matrix.moderatorDirectory.selectModerator(this.matrix.moderatorDirectory.getById(change.moderator));
-                if (change.assigned) {
-                    this.matrix.moderatorDirectory.assignModeratorLocal(section);
-                } else {
-                    this.matrix.moderatorDirectory.unassignModeratorLocal(section);
-                }
-            } else {
-                this.matrix.sections.setComment(section, change.comment, change.locked, true);
-            }
-            this.last_applied_index = change.index;
-        }.bind(this));
-        $j("#loadingOverlay").remove(); // remove the loading overlay
+                this.last_applied_index = change.index;
+            }.bind(this));
+        } finally {
+            $j("#loadingOverlay").remove();
+        }
     };
 };

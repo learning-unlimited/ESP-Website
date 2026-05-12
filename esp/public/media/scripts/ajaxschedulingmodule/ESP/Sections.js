@@ -5,16 +5,32 @@
  *
  * @params sections_data: The raw section data
  * @params section_details_data: The AJAX section detail data
+ * @params categories_data: The raw category data for sections
  * @params teacher_data: The raw teacher data for populating the sections
+ * @params moderator_data: The raw moderator data for populating the sections
  * @params scheduleAssignments: The schedule assignments
  * @params apiClient: The object that can communicate with the server
+ * @params historyPanel: Optional HistoryPanel instance for recording actions (may be null)
  */
-function Sections(sections_data, section_details_data, categories_data, teacher_data, moderator_data, scheduleAssignments, apiClient) {
+function Sections(sections_data, section_details_data, categories_data, teacher_data, moderator_data, scheduleAssignments, apiClient, historyPanel) {
+    // Backwards compatibility: older call sites (e.g. tests) passed only 5 args:
+    // (sections_data, section_details_data, teacher_data, scheduleAssignments, apiClient)
+    // before categories_data, moderator_data, and historyPanel were added.
+    if (arguments.length <= 5) {
+        historyPanel      = null;
+        apiClient         = moderator_data;    // 5th arg was apiClient
+        scheduleAssignments = teacher_data;    // 4th arg was scheduleAssignments
+        teacher_data      = categories_data;   // 3rd arg was teacher_data
+        categories_data   = null;
+        moderator_data    = null;
+    }
     this.sections_data = sections_data;
-    this.categories_data = categories_data;
-    this.teacher_data = teacher_data;
-    this.scheduleAssignments = scheduleAssignments;
-    this.apiClient = apiClient;
+    this.categories_data = categories_data || null;
+    this.teacher_data = teacher_data || null;
+    this.moderator_data = moderator_data || null;
+    this.scheduleAssignments = scheduleAssignments || null;
+    this.apiClient = apiClient || null;
+    this.historyPanel = historyPanel || null;
 
     // The section that is currently selected
     this.selectedSection = null;
@@ -160,7 +176,40 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      */
     this.bindMatrix = function(matrix) {
         this.matrix = matrix;
-    }
+    };
+
+    /**
+     * Snapshot room/timeslots for a section (for undo), before a mutating call.
+     */
+    this.snapshotAssignment = function(sectionId) {
+        var a = this.scheduleAssignments[sectionId];
+        if (!a) {
+            return { room_id: null, timeslots: [] };
+        }
+        return { room_id: a.room_id, timeslots: a.timeslots.slice() };
+    };
+
+    /**
+     * Apply a swap from saved assignment snapshots (used for undo); hits the server like swapSections.
+     */
+    this.applySwapUndo = function(target1, target2, revert1, revert2, endUndo) {
+        this.swapSectionsLocal(target1, target2);
+        this.apiClient.swap_sections(
+            target1,
+            target2,
+            false,
+            function() {
+                this.matrix.scheduler.changelogFetcher.getChanges();
+                if (endUndo) endUndo();
+            }.bind(this),
+            function(msg) {
+                this.swapSectionsLocal(revert1, revert2);
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
+                console.log(msg);
+                if (endUndo) endUndo();
+            }.bind(this)
+        );
+    };
 
     /**
      * Get a section by its ID
@@ -450,24 +499,30 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      * @param room_id: The name of the room to schedule it in
      * @param first_timeslot_id: The ID of the first timeslot to schedule the section in
      * @param callback: A function to run upon success
+     * @param isUndo: When true, do not record this action in session history
+     * @param onComplete: Optional; called after success or error (for undo completion)
      */
-    this.scheduleSection = function(section, room_id, first_timeslot_id, callback = function() {}){
-        var old_assignment = this.scheduleAssignments[section.id];
+    this.scheduleSection = function(section, room_id, first_timeslot_id, callback, isUndo, onComplete){
+        if (callback === undefined) callback = function() {};
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(section, first_timeslot_id);
         var override = this.matrix.sectionInfoPanel.override;
 
         // Make sure the assignment is valid
         if (!this.matrix.validateAssignment(section, room_id, schedule_timeslots).valid){
+            if (onComplete) onComplete();
             return;
         }
 
         // Make sure section not locked
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", "red");
             this.unselectSection();
+            if (onComplete) onComplete();
             return;
         }
+
+        var prevSnap = this.snapshotAssignment(section.id);
 
         // Optimistically schedule the section locally before hearing back from the server
         this.scheduleSectionLocal(section, room_id, schedule_timeslots);
@@ -476,14 +531,33 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             schedule_timeslots,
             room_id,
             override,
-            callback,
+            function() {
+                callback();
+                if (!isUndo && this.historyPanel) {
+                    var self = this;
+                    var sid = section.id;
+                    var code = section.emailcode;
+                    var undoPrev = prevSnap;
+                    this.historyPanel.addAction("Scheduled " + code, function(endUndo) {
+                        var sec = self.getById(sid);
+                        var snap = undoPrev;
+                        if (snap.room_id) {
+                            self.scheduleSection(sec, snap.room_id, snap.timeslots[0], function() {}, true, endUndo);
+                        } else {
+                            self.unscheduleSection(sec, function() {}, true, endUndo);
+                        }
+                    });
+                }
+                if (onComplete) onComplete();
+            }.bind(this),
             // If there's an error, reschedule the section in its old location
             function(msg) {
                 this.scheduleSectionLocal(section,
-                    old_assignment.room_id,
-                    old_assignment.timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red")
+                    prevSnap.room_id,
+                    prevSnap.timeslots);
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red")
                 console.log(msg);
+                if (onComplete) onComplete();
             }.bind(this)
         );
         // Reset the availability override
@@ -568,29 +642,51 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      * Unschedule a section of a class.
      *
      * @param section: the section to unschedule
+     * @param isUndo: When true, do not record this action in session history
+     * @param onComplete: Optional; called after success or error (for undo completion)
      */
-    this.unscheduleSection = function(section, callback = function(){}){
+    this.unscheduleSection = function(section, callback, isUndo, onComplete){
+        if (callback === undefined) callback = function(){};
         // Make sure section not locked
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", "red");
             this.unselectSection();
+            if (onComplete) onComplete();
             return;
         }
 
-        var old_assignment = this.scheduleAssignments[section.id];
-        var old_room_id = old_assignment.room_id;
-        var old_schedule_timeslots = old_assignment.timeslots;
+        var prevSnap = this.snapshotAssignment(section.id);
+        var old_room_id = prevSnap.room_id;
+        var old_schedule_timeslots = prevSnap.timeslots;
 
         // Optimistically make local changes to unschedule the class
         this.unscheduleSectionLocal(section);
         this.apiClient.unschedule_section(
             section.id,
-            callback,
+            function(){
+                callback();
+                if (!isUndo && this.historyPanel) {
+                    var self = this;
+                    var sid = section.id;
+                    var code = section.emailcode;
+                    var undoPrev = prevSnap;
+                    this.historyPanel.addAction("Unscheduled " + code, function(endUndo) {
+                        var sec = self.getById(sid);
+                        if (undoPrev.room_id) {
+                            self.scheduleSection(sec, undoPrev.room_id, undoPrev.timeslots[0], function() {}, true, endUndo);
+                        } else {
+                            endUndo();
+                        }
+                    });
+                }
+                if (onComplete) onComplete();
+            }.bind(this),
             // If the server returns an error, put the class back in its original spot
             function(msg){
                 this.scheduleSectionLocal(section, old_room_id, old_schedule_timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
+                if (onComplete) onComplete();
             }.bind(this)
         );
     };
@@ -604,7 +700,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         this.scheduleSectionLocal(section, null, [])
     };
 
-    this.swapSections = function(section1, section2) {
+    this.swapSections = function(section1, section2, isUndo) {
         // Abort if either section is locked
         if (section1.schedulingLocked){
             this.matrix.messagePanel.addMessage("Error: the first selected section is locked (" + section1.schedulingComment + ")! Unlock it first.", color = "red");
@@ -721,7 +817,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                         var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, ignore_sections);
                         if(!valid.valid){
                             console.log(valid.reason);
-                            this.matrix.messagePanel.addMessage(valid.reason, color = "red");
+                            this.matrix.messagePanel.addMessage(valid.reason, "red");
                             this.unselectSection();
                             return;
                         }
@@ -732,6 +828,14 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                     start_slot = this.matrix.timeslots.get_by_order(start_slot.order + 1);
                 }
             }
+        }
+
+        var undoSnap1, undoSnap2, redoSnap1, redoSnap2;
+        if (!isUndo) {
+            undoSnap1 = JSON.parse(JSON.stringify(old_assignments1));
+            undoSnap2 = JSON.parse(JSON.stringify(old_assignments2));
+            redoSnap1 = JSON.parse(JSON.stringify(new_assignments1));
+            redoSnap2 = JSON.parse(JSON.stringify(new_assignments2));
         }
 
         var override = this.matrix.sectionInfoPanel.override;
@@ -745,11 +849,19 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             override,
             function() {
                 this.matrix.scheduler.changelogFetcher.getChanges();
+                if (!isUndo && this.historyPanel) {
+                    var self = this;
+                    var c1 = section1.emailcode;
+                    var c2 = section2.emailcode;
+                    this.historyPanel.addAction("Swapped " + c1 + " ↔ " + c2, function(endUndo) {
+                        self.applySwapUndo(undoSnap1, undoSnap2, redoSnap1, redoSnap2, endUndo);
+                    });
+                }
             }.bind(this),
             // If there's an error, locally reschedule the sections in their old locations
             function(msg) {
                 this.swapSectionsLocal(old_assignments1, old_assignments2);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
             }.bind(this)
         );
@@ -794,8 +906,10 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      * @param comment: a string comment to post
      * @param locked: true if this class should be locked from scheduling
      * @param remote: true if this setComment request comes from the server and not local user
+     * @param isUndo: When true, do not record this action in session history
+     * @param doneCallback: Optional; invoked after local success or after API error (e.g. undo completion)
      */
-    this.setComment = function(section, comment, locked, remote){
+    this.setComment = function(section, comment, locked, remote, isUndo, doneCallback){
         updateCells = function() {
             var assignment = this.scheduleAssignments[section.id];
             if(assignment.room_id) {
@@ -806,6 +920,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         }.bind(this);
 
         if(section.schedulingComment == comment && section.schedulingLocked == locked) {
+            if (doneCallback) doneCallback();
             return;
         }
 
@@ -820,13 +935,24 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 // if successful, update the appearance of the cells
                 updateCells();
                 this.unselectSection();
+                if (!isUndo && this.historyPanel) {
+                    var self = this;
+                    var sid = section.id;
+                    var oc = old_comment;
+                    var ol = old_locked;
+                    this.historyPanel.addAction("Updated comment/lock for " + section.emailcode, function(endUndo) {
+                        self.setComment(self.getById(sid), oc, ol, false, true, endUndo);
+                    });
+                }
+                if (doneCallback) doneCallback();
             }.bind(this), function(msg){
                 // if unsuccessful, revert the comment locked status and show an error
                 section.schedulingComment = old_comment;
                 section.schedulingLocked = old_locked;
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
                 this.unselectSection();
+                if (doneCallback) doneCallback();
             }.bind(this));
         } else {
             // if this is from the changelog, just update the appearance of the cells

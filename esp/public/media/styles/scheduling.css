@@ -274,3 +274,215 @@ button.sidetoolbar {
     text-align: center;
     background: rgba(200,200,200,0.5) url('/media/images/ajax_loader.gif') no-repeat center; /*.gif file or just div with message etc. however you like*/
 }
+
+/* --- Scheduler layout polish (matrix + session history) --- */
+
+.scheduler-matrix-workspace {
+    background: #eef1f5;
+    border-radius: 6px;
+    border: 1px solid #cfd8e3;
+    box-sizing: border-box;
+}
+
+/* Shown when the program has no timeslots and/or no classrooms */
+.scheduler-matrix-empty-state {
+    padding: 24px 28px;
+    max-width: 36em;
+    margin: 16px auto;
+    background: #fff;
+    border: 1px solid #cfd8e3;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.scheduler-matrix-empty-state p {
+    margin: 0 0 12px 0;
+    line-height: 1.5;
+    color: #37474f;
+    font-size: 0.95em;
+}
+
+.scheduler-matrix-empty-hint {
+    font-size: 0.88em !important;
+    color: #546e7a !important;
+    margin-bottom: 0 !important;
+}
+
+.scheduler-matrix-empty-toolbar {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eceff1;
+}
+
+.scheduler-matrix-toolbar-cell {
+    padding: 8px 10px !important;
+    vertical-align: middle !important;
+    background: #f7f9fc !important;
+    border-bottom: 1px solid #cfd8e3 !important;
+}
+
+.scheduler-matrix-toolbar-btn {
+    font: inherit;
+    font-size: 0.85em;
+    padding: 0.35em 0.75em;
+    margin-right: 0.5em;
+    border-radius: 4px;
+    border: 1px solid #b0bec5;
+    background: linear-gradient(to bottom, #ffffff, #eceff1);
+    color: #263238;
+    cursor: pointer;
+}
+
+.scheduler-matrix-toolbar-btn:hover {
+    border-color: #78909c;
+    background: #fff;
+}
+
+.scheduler-admin-bar {
+    width: 100%;
+    text-align: center;
+    min-height: 36px;
+    padding: 6px 8px;
+    box-sizing: border-box;
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-radius: 4px;
+    margin-bottom: 6px;
+}
+
+.scheduler-danger-btn {
+    height: auto;
+    font-size: 0.8em;
+    padding: 0.4em 0.75em;
+    border-radius: 4px;
+    border: 1px solid #e65100;
+    background: #fff;
+    color: #bf360c;
+    cursor: pointer;
+}
+
+.scheduler-danger-btn:hover {
+    background: #fff3e0;
+}
+
+/* Session history tab */
+.scheduler-history-panel {
+    padding: 2px 6px 8px 2px;
+}
+
+.scheduler-history-intro {
+    font-size: 0.82em;
+    line-height: 1.45;
+    color: #455a64;
+    margin: 0 0 12px 0;
+    padding: 10px 12px;
+    background: #eceff1;
+    border-radius: 6px;
+    border-left: 4px solid #546e7a;
+}
+
+.scheduler-history-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 42vh;
+    overflow-y: auto;
+}
+
+.scheduler-history-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fafafa;
+}
+
+.scheduler-history-row--latest {
+    border-color: #a5d6a7;
+    background: #e8f5e9;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.scheduler-history-desc {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+    font-size: 0.88em;
+    line-height: 1.4;
+    color: #37474f;
+}
+
+.scheduler-history-undo {
+    flex-shrink: 0;
+    font-size: 0.8em;
+    padding: 0.4em 0.75em;
+    border-radius: 4px;
+    border: 1px solid #2e7d32;
+    background: #fff;
+    color: #1b5e20;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.scheduler-history-undo:hover:not(:disabled) {
+    background: #c8e6c9;
+}
+
+.scheduler-history-undo:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    border-color: #bdbdbd;
+    color: #757575;
+    background: #f5f5f5;
+}
+
+.scheduler-history-empty {
+    list-style: none;
+    margin: 0;
+    padding: 14px 12px;
+    text-align: center;
+    font-size: 0.88em;
+    font-style: italic;
+    color: #607d8b;
+    border: 1px dashed #cfd8dc;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.scheduler-history-footer {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e0e0;
+    text-align: right;
+}
+
+.scheduler-history-clear-btn {
+    font: inherit;
+    font-size: 0.82em;
+    padding: 0.4em 0.85em;
+    border-radius: 4px;
+    border: 1px solid #90a4ae;
+    background: #fff;
+    color: #455a64;
+    cursor: pointer;
+}
+
+.scheduler-history-clear-btn:hover {
+    background: #eceff1;
+    border-color: #78909c;
+}
+
+/* Side panel tabs: slightly tighter, clearer labels */
+#side-panel.ui-tabs .ui-tabs-nav {
+    padding: 4px 4px 0;
+    border-radius: 4px 4px 0 0;
+}
+
+#side-panel.ui-tabs .ui-tabs-nav li a {
+    padding: 0.45em 0.9em;
+    font-size: 0.92em;
+}
