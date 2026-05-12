@@ -1,4 +1,4 @@
-{% ifequal open_section "timeslot" %}
+{% if open_section == "timeslot" %}
 <button class="dsphead active">
    <b>Step 1: Create Timeslots</b> (click to expand/contract)
 </button>
@@ -10,7 +10,7 @@
 </button>
 
 <div class="dspcont">
-{% endifequal %}
+{% endif %}
 
 <p>Timeslots represent each of the class periods for your program, at the finest scale if overlapping classes will be allowed (e.g., 1 hour).  Each resource is available for a particular range of times (resources will not become available until you select a set of times).  Please add all necessary timeslots below.</p>
 
@@ -21,7 +21,7 @@
 <table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2" class="small">Import timeslots from a previous program</th></tr>
     {{ import_timeslot_form }}
-    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Start" /></td></tr>
+    <tr><td colspan="2" align="center"><input class="btn btn-primary" type="submit" value="Start" /></td></tr>
 </table>
 </form>
 <form method="post" action="/manage/{{ prog.url }}/resources/timeslot">
@@ -29,7 +29,7 @@
 <table align="center" cellpadding="0" cellspacing="0" width="100%"> 
     <tr><th colspan="2" class="small">Add/modify a timeslot</th></tr>
     {{ timeslot_form }}
-    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Submit Timeslot" /></td></tr>
+    <tr><td colspan="2" align="center"><input class="btn btn-primary" type="submit" value="Submit Timeslot" /></td></tr>
 </table>
 </form>
 
