@@ -110,7 +110,7 @@ class TeacherEventsModule(ProgramModuleObj):
 
             data.append({
                 'id': event.id,
-                'title': '%s: %s' % (category.capitalize(), event.name),
+                'title': ('%s: %s' % (category.capitalize(), event.name or event.description)) if (event.name or event.description) else category.capitalize(),
                 'start': event.start.isoformat(),
                 'end': event.end.isoformat(),
                 'color': color,

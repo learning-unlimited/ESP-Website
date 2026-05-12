@@ -7,14 +7,15 @@
 <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 <style>
-    #calendar {
-        max-width: 900px;
-        margin: 20px auto;
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
+    #calendar-wrapper { display: flex; gap: 16px; align-items: flex-start; }
+    #calendar { flex: 1; min-width: 0; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    #event-list-panel { width: 210px; flex-shrink: 0; background: white; padding: 14px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    #event-list-panel h3 { margin: 0 0 8px; font-size: 1em; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+    .ev-item { padding: 5px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.82em; }
+    .ev-item a { text-decoration: none; color: #3788d8; display: block; line-height: 1.4; }
+    .ev-item a:hover { text-decoration: underline; }
+    .ev-item .ev-date { color: #666; font-size: 0.9em; }
+    .ev-empty { color: #999; font-size: 0.85em; font-style: italic; }
     .fc-event { cursor: pointer; }
     .status-mine { background-color: #28a745 !important; border-color: #28a745 !important; }
     .status-full { background-color: #dc3545 !important; border-color: #dc3545 !important; opacity: 0.6; pointer-events: none; }
@@ -29,6 +30,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
+        var listBuilt = false;
         var calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'timeGridWeek',
             headerToolbar: {
@@ -36,10 +38,50 @@
                 center: 'title',
                 right: 'timeGridWeek,timeGridDay'
             },
-            // Use absolute URL path to avoid fragile relative resolution
             events: '/teach/{{ prog.getUrlBase }}/calendar_data',
             eventClassNames: function(arg) {
                 return ['status-' + arg.event.extendedProps.status];
+            },
+            eventsSet: function(events) {
+                // Run once after events first load
+                if (listBuilt || events.length === 0) return;
+                listBuilt = true;
+
+                var now = new Date();
+                var sorted = events.slice().sort(function(a, b) {
+                    return new Date(a.start) - new Date(b.start);
+                });
+
+                // Auto-jump to the first upcoming event so empty weeks are skipped
+                var upcoming = sorted.filter(function(e) { return new Date(e.start) >= now; });
+                if (upcoming.length > 0) {
+                    calendar.gotoDate(upcoming[0].start);
+                }
+
+                // Build sidebar list
+                var listEl = document.getElementById('event-list');
+                listEl.innerHTML = '';
+                if (sorted.length === 0) {
+                    listEl.innerHTML = '<div class="ev-empty">No events.</div>';
+                } else {
+                    sorted.forEach(function(ev) {
+                        var d = new Date(ev.start);
+                        var dateStr = d.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+                        var item = document.createElement('div');
+                        item.className = 'ev-item';
+                        var a = document.createElement('a');
+                        a.href = '#';
+                        a.innerHTML = ev.title + '<br><span class="ev-date">' + dateStr + '</span>';
+                        (function(evStart) {
+                            a.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                calendar.gotoDate(evStart);
+                            });
+                        })(ev.start);
+                        item.appendChild(a);
+                        listEl.appendChild(item);
+                    });
+                }
             },
             eventClick: function(info) {
                 const event = info.event;
@@ -49,14 +91,11 @@
                     return;
                 }
 
-                // Logic to toggle selection in the (hidden) Django form
                 const selectEl = document.getElementById('id_event_type_' + props.event_type_id);
-                
                 if (selectEl) {
                     selectEl.value = event.id;
                     document.getElementById('submit-btn').disabled = false;
-                    
-                    // Visual feedback: clear prior selection for this event type only
+
                     const eventTypeId = String(props.event_type_id);
                     calendar.getEvents().forEach(e => {
                         if (String(e.extendedProps.event_type_id) === eventTypeId && e.extendedProps.status === 'mine') {
@@ -82,7 +121,13 @@
     {% render_inline_program_qsd prog "teach:eventsignupheader" %}
     <p>Please select your preferred timeslots from the calendar below.</p>
 
-    <div id='calendar'></div>
+    <div id="calendar-wrapper">
+        <div id='calendar'></div>
+        <div id="event-list-panel">
+            <h3>All Events</h3>
+            <div id="event-list"><div class="ev-empty">Loading&hellip;</div></div>
+        </div>
+    </div>
 
     {% comment %} Only one form is rendered here. {{ form }} only provides fields, not a <form> tag. {% endcomment %}
     <form method="post" id="signup-form" action="{{ request.path }}">
