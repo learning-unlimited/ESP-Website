@@ -42,6 +42,7 @@ from esp.users.models import ESPUser, UserAvailability
 from esp.middleware.threadlocalrequest import get_current_request
 from django.contrib.auth.models import Group
 from django.conf import settings
+from esp.tagdict.models import Tag
 
 class TeacherEventsModule(ProgramModuleObj):
     doc = """Allows teachers to sign up for one or more teacher events (e.g. interviews, training)."""
@@ -100,15 +101,31 @@ class TeacherEventsModule(ProgramModuleObj):
     # Per-user info
     def isCompleted(self, user=None):
         """
-        Return true if user has signed up for everything possible.
+        Return true if user has signed up for everything required.
         If there are teacher training timeslots, requires signing up for them.
-        If there are teacher interview timeslots, requires those too.
+        If there are teacher interview timeslots, requires those too, unless
+        the Tag 'interview_required_teachers' is set to 'first_time', in which
+        case interviews are only required for first-time teachers (those with
+        no prior 'interview' Record outside this program).
         """
+        from esp.users.models import Record
         user = self._resolve_user(user)
         entries = self.entriesByTeacher(user)
+        interview_required = Tag.getProgramTag('interview_required_teachers', self.program)
         for obj in EventType.objects.filter(is_teacher_type=True):
-            if self.getTimes(obj).exists() and not entries[obj.description].exists():
-                return False
+            if not self.getTimes(obj).exists():
+                continue
+            if entries[obj.description].exists():
+                continue
+            is_interview = 'interview' in obj.description.lower()
+            if is_interview and interview_required == 'first_time':
+                # Returning teachers have a prior interview Record from another program
+                has_prior_interview = Record.objects.filter(
+                    user=user, event__name='interview'
+                ).exclude(program=self.program).exists()
+                if has_prior_interview:
+                    continue
+            return False
         return True
 
     # Views

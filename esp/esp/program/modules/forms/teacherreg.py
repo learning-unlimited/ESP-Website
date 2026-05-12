@@ -334,9 +334,33 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
 class TeacherEventSignupForm(FormWithRequiredCss):
     """ Form for teachers to pick event times. """
 
+    def _get_coteacher_ids(self):
+        """ Return the set of user IDs who co-teach a class with the current user in this program. """
+        if not hasattr(self, '_coteacher_ids_cache'):
+            # Get IDs of all classes this user teaches in this program
+            class_ids = ClassSubject.objects.filter(
+                parent_program=self.module.program,
+                teachers=self.user,
+            ).values_list('id', flat=True)
+            # Get all teacher IDs from those classes, excluding self
+            coteacher_ids = set(
+                ClassSubject.teachers.through.objects.filter(
+                    classsubject_id__in=class_ids
+                ).exclude(
+                    espuser_id=self.user.id
+                ).values_list('espuser_id', flat=True)
+            )
+            self._coteacher_ids_cache = coteacher_ids
+        return self._coteacher_ids_cache
+
     def _slot_is_taken(self, event):
-        """ Determine whether an interview slot is taken. """
-        return UserAvailability.entriesBySlot(event).count() > 0
+        """ Determine whether an interview slot is taken by a non-co-teacher. """
+        occupants = UserAvailability.entriesBySlot(event)
+        if not occupants.exists():
+            return False
+        coteacher_ids = self._get_coteacher_ids()
+        # Slot is only truly taken if someone other than the user or their co-teachers holds it
+        return occupants.exclude(user__id__in=coteacher_ids | {self.user.id}).exists()
 
     def _slot_is_mine(self, event):
         """ Determine whether an interview slot is taken by you. """
