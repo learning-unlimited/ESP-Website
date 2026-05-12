@@ -26,7 +26,7 @@
 </tbody>
 <thead>
   <tr>
-    <th align="center"><b><a class="btn btn-primary" href="/manage/newprogram" title="Create a New Program">
+    <th align="center"><b><a class="btn btn-primary" href="{% url 'manage_newprogram' %}" title="Create a New Program">
    Create a New Program...
 </a></b></th>
   </tr>
@@ -39,7 +39,7 @@
     </div>
     <div class="button_wrapper">
         <div class="module_button">
-            <a href="/manage/pages/" title="Manage Static Pages">
+            <a href="{% url 'manage_pages' %}" title="Manage Static Pages">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Manage Static Pages</div>
                     <div class="module_link_caption">(create and manage pages with only static text)</div>
@@ -47,21 +47,21 @@
             </a>
         </div>
         <div class="module_button">
-            <a href="/myesp/makeadmin/" title="Make someone a website admin">
+            <a href="{% url 'make_admin' %}" title="Make someone a website admin">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-user"></i> Make someone a website admin</div>
                 </button>
             </a>
         </div>
         <div class="module_button">
-            <a href="/manage/mergeaccounts/" title="Merge two accounts">
+            <a href="{% url 'manage_mergeaccounts' %}" title="Merge two accounts">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Merge two accounts</div>
                 </button>
             </a>
         </div>
         <div class="module_button">
-            <a href="/customforms/" title="Manage Custom Survey Forms">
+            <a href="{% url 'customforms_landing' %}" title="Manage Custom Survey Forms">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-edit"></i> Manage Custom Forms</div>
                     <div class="module_link_caption">(create, edit, and view responses to custom form surveys)</div>
@@ -69,7 +69,7 @@
             </a>
         </div>
         <div class="module_button">
-            <a href="/manage/emails/" title="Comm Panel Email Status">
+            <a href="{% url 'manage_emails' %}" title="Comm Panel Email Status">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-envelope"></i> Email Status</div>
                     <div class="module_link_caption">(check the status of emails sent through the communications panel)</div>
@@ -77,28 +77,28 @@
             </a>
         </div>
         <div class="module_button">
-            <a href="/manage/catsflagsrecs/" title="Manage class categories, flag types, and record types">
+            <a href="{% url 'manage_catsflagsrecs' %}" title="Manage class categories, flag types, and record types">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-cog"></i> Manage class categories, flag types, and record types</div>
                 </button>
             </a>
         </div>
         <div class="module_button">
-            <a href="/manage/redirects/" title="Manage class categories, flag types, and record types">
+            <a href="{% url 'manage_redirects' %}" title="Manage class categories, flag types, and record types">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-share-alt"></i> Manage URL and email redirects</div>
                 </button>
             </a>
         </div>
 		<div class="module_button">
-            <a href="/manage/statistics/" title="Statistics">
+            <a href="{% url 'manage_statistics' %}" title="Statistics">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-stats"></i> View Statistics</div>
                 </button>
             </a>
         </div>
         <div class="module_button">
-            <a href="/manage/tags/" title="Manage class categories, flag types, and record types">
+            <a href="{% url 'manage_tags' %}" title="Manage class categories, flag types, and record types">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-wrench"></i> Modify tag settings</div>
                     <div class="module_link_caption">(generic miscellaneous settings, for experts only)</div>
@@ -106,7 +106,7 @@
             </a>
         </div>
         <div class="module_button">
-            <a href="/manage/flushcache/" title="Flush Cache">
+            <a href="{% url 'manage_flushcache' %}" title="Flush Cache">
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-refresh"></i> Flush Cache</div>
                     <div class="module_link_caption">(may fix certain visual bugs, for experts only)</div>

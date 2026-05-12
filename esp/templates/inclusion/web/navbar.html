@@ -24,7 +24,7 @@
 {% endfor %}
 {% if user.onsite_local %}
 <div id="divnav7">
-<a href="/myesp/switchback/" onmouseover="MM_swapImage('onsite','','/media/images/lev2/nav/onsite_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+<a href="{% url 'myesp_switchback' %}" onmouseover="MM_swapImage('onsite','','/media/images/lev2/nav/onsite_ro.gif',1)" onmouseout="MM_swapImgRestore()">
 <img src="/media/images/lev2/nav/onsite.gif" border="0" alt="Go Back to Onsite" title="" name="onsite" id="onsite" />
 </a>
 </div>
@@ -81,7 +81,7 @@
 
 {% if user.isAdministrator %}
 <div id="divnav7">
-   <a href="/manage/programs" onmouseover="MM_swapImage('admin','','/media/images/lev2/nav/admin_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+   <a href="{% url 'manage_programs' %}" onmouseover="MM_swapImage('admin','','/media/images/lev2/nav/admin_ro.gif',1)" onmouseout="MM_swapImgRestore()">
    <img src="/media/images/lev2/nav/admin.gif" border="0" alt="Admin" title="" name="admin" id="admin" />
    </a>
 </div>
