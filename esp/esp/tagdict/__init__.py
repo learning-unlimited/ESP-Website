@@ -584,7 +584,7 @@ all_program_tags = {
     },
     'catalog_sort_fields': {
         'is_boolean': False,
-        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'sections__meeting_times__start\', \'_num_students\', \'id\')',
+        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'earliest_start\', \'_num_students\', \'id\'). Use \'earliest_start\' for time-based sorting; legacy \'sections__meeting_times__start\' values are automatically translated.',
         'default': 'category__symbol',
         'category': 'manage',
         'is_setting': True,

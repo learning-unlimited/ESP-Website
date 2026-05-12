@@ -44,9 +44,10 @@ import re
 
 # django Util
 from django.conf import settings
+from django.apps import apps
 from django.db import models, transaction
 from django.db.models.query import Q
-from django.db.models import signals, Sum
+from django.db.models import signals, Sum, Count, Min, OuterRef, Subquery
 from django.db.models.manager import Manager
 from collections import OrderedDict
 from django.template.loader import render_to_string
@@ -192,31 +193,45 @@ class ClassManager(Manager):
         classes = classes.annotate(_num_students=Sum('sections__enrolled_students'))
         classes = classes.prefetch_related('teachers')
 
-        #   Retrieve the content type for finding class documents (generic relation)
-        content_type_id = ContentType.objects.get_for_model(ClassSubject).id
-
-        select = OrderedDict([('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."owner_id" = "program_class"."id") AND ("qsdmedia_media"."owner_type_id" = %s)'),
-                             ('_index_qsd', 'SELECT COUNT(*) FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."name" = \'learn:index\' AND "qsd_quasistaticdata"."url" LIKE %s AND "qsd_quasistaticdata"."url" SIMILAR TO %s || "program_class"."id" || %s)'),
-                             ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
-
-        select_params = [ content_type_id,
-                          '%/Classes/%',
-                          '%[A-Z]',
-                          '/%',
-                         ]
-        classes = classes.extra(select=select, select_params=select_params)
-
         #   Allow customized orderings for the catalog.
         #   These are the default ordering fields in descending order of priority.
         if order_args_override:
             order_args = order_args_override
         else:
-            order_args = ['category__symbol', 'category__category', 'sections__meeting_times__start', '_num_students', 'id']
+            order_args = ['category__symbol', 'category__category', 'earliest_start', '_num_students', 'id']
             #   First check if there is an ordering specified for the program.
             program_sort_fields = Tag.getProgramTag('catalog_sort_fields', program)
             if program_sort_fields:
                 #   If you found one, use it.
-                order_args = program_sort_fields.split(',')
+                order_args = [f.strip() for f in program_sort_fields.split(',') if f.strip()]
+
+        #   Translate legacy ordering fields to use earliest_start so that
+        #   older configurations keep working with the new stable behavior.
+        order_args = [
+            'earliest_start' if f == 'sections__meeting_times__start'
+            else '-earliest_start' if f == '-sections__meeting_times__start'
+            else f
+            for f in order_args
+        ]
+
+        #   Only add the earliest_start annotation when the ordering uses it,
+        #   to avoid unnecessary aggregate + joins for other sort configurations.
+        if any(f.lstrip('-') == 'earliest_start' for f in order_args):
+            #   Compute earliest_start via a correlated subquery so that the
+            #   sections → meeting_times join does not multiply rows and
+            #   corrupt the earlier _num_students aggregate.
+            classes = classes.annotate(
+                earliest_start=Subquery(
+                    ClassSubject.objects.filter(pk=OuterRef('pk'))
+                    .annotate(
+                        _es=Min(
+                            'sections__meeting_times__start',
+                            filter=~Q(sections__status=ClassStatus.CANCELLED),
+                        )
+                    )
+                    .values('_es')[:1]
+                )
+            )
 
         #   Order the QuerySet using the specified list.
         classes = classes.order_by(*order_args)
@@ -245,6 +260,43 @@ class ClassManager(Manager):
         # All class ID's; used by later query ugliness:
         class_ids = [x.id for x in classes]
 
+        media_counts = {}
+        studentapps_counts = {}
+        index_qsd_class_ids = set()
+
+        if class_ids:
+            content_type_id = ContentType.objects.get_for_model(ClassSubject).id
+            media_counts = dict(
+                Media.objects.filter(owner_type_id=content_type_id, owner_id__in=class_ids)
+                .values_list('owner_id')
+                .annotate(total=Count('id'))
+            )
+
+            student_app_question_model = apps.get_model('program', 'StudentAppQuestion')
+            studentapps_counts = dict(
+                student_app_question_model.objects.filter(subject_id__in=class_ids)
+                .values_list('subject_id')
+                .annotate(total=Count('id'))
+            )
+
+            qsd_url_qs = QuasiStaticData.objects.filter(
+                name='learn:index',
+                url__contains='/Classes/',
+                url__endswith='/index',
+            )
+            if program is not None:
+                qsd_url_qs = qsd_url_qs.filter(url__startswith='learn/%s/Classes/' % program.url)
+
+            for qsd_url in qsd_url_qs.values_list('url', flat=True):
+                match = re.search(r'/Classes/[^/]*?(\d+)/index$', qsd_url)
+                if match:
+                    index_qsd_class_ids.add(int(match.group(1)))
+
+        for c in classes:
+            c.media_count = media_counts.get(c.id, 0)
+            c._studentapps_count = studentapps_counts.get(c.id, 0)
+            c._index_qsd = 1 if c.id in index_qsd_class_ids else 0
+
         # Now to get the sections corresponding to these classes...
         sections = ClassSection.objects.filter(parent_class__in=class_ids)
 
@@ -270,6 +322,7 @@ class ClassManager(Manager):
         return classes
     catalog_cached.depend_on_model('program.ClassSubject')
     catalog_cached.depend_on_model('program.ClassSection')
+    catalog_cached.depend_on_model('program.StudentAppQuestion')
     catalog_cached.depend_on_model('qsdmedia.Media')
     catalog_cached.depend_on_model('tagdict.Tag')
 
