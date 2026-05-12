@@ -134,60 +134,7 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<link rel="stylesheet" href="/media/default_styles/management_v2.css" type="text/css" />
-<style>
-.dashboard-v2-container {
-    display: block !important;
-}
-
-.dashboard-main-card {
-    max-width: 1000px;
-    margin: 0 auto;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    padding: 40px;
-    background: #fff;
-    border-radius: 8px;
-}
-
-/* Collapsible styling */
-.collapsible-btn {
-    cursor: pointer;
-    padding: 15px 20px;
-    width: 100%;
-    border: 1px solid #eee;
-    text-align: left;
-    outline: none;
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    transition: background-color 0.2s, box-shadow 0.2s;
-}
-.collapsible-btn:hover { 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-.collapsible-content {
-    padding: 10px 20px 20px 20px;
-    display: none;
-    overflow: hidden;
-    background-color: white;
-    border-radius: 0 0 8px 8px;
-    margin-top: -8px;
-    margin-bottom: 20px;
-    border: 1px solid #eee;
-    border-top: none;
-}
-.collapsible-btn .glyphicon {
-    margin-right: 10px;
-    font-size: 14px;
-}
-
-.pill-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-</style>
+<link rel="stylesheet" href="/media/styles/management_v2.css" type="text/css" />
 {% endblock %}
 
 {% block content %}
@@ -197,20 +144,10 @@
 <div class="dashboard-v2-container">
     <div class="dashboard-main-card">
         
-        <div class="search-bar-wrapper" id="admin_search_wrapper" style="float: right; margin-bottom: 20px; position:relative; width: 320px;">
-            <input type="text" id="admin_search_input" placeholder="Search modules, pages..." class="dashboard-search-bar" style="width: 100%; padding-left: 35px; border-radius:30px;">
-            <i class="glyphicon glyphicon-search search-icon text-muted" style="position: absolute; left: 12px; top: 12px;"></i>
-            
-            <div id="admin_search_results" style="margin-top: 10px; display: none; position: absolute; right: 0; background: white; border: 1px solid #e0e0e0; width: 100%; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 1000; max-height: 400px; overflow-y: auto;"></div>
-            <div id="admin_search_empty" class="text-muted" style="margin-top: 10px; display: none; font-style: italic; position: absolute; right: 0; background: white; padding: 10px; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 1000;">
-                No modules found for that search. Look under <a href="#additional_modules">Additional Modules</a> at the bottom of this page for more options.
-            </div>
-        </div>
 
-        <div style="clear:both;"></div>
 
         {% inline_program_qsd_block program "manage:main_top" %}
-        Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="https://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
+        Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="/manage/docs/program_modules.rst">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
         {% end_inline_program_qsd_block %}
 
         <!-- Smart Warning Banner -->
@@ -330,97 +267,127 @@
         </div>
 
         <div style="margin: 40px 0;"><hr style="border-top: 2px dashed #eaeaea;"></div>
-        <h3 style="font-weight:bold; margin-bottom: 20px; font-size:18px;">Program Configuration Modules</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-weight:bold; margin: 0; font-size:18px;">Program Configuration Modules</h3>
+
+            <div class="search-bar-wrapper" id="admin_search_wrapper">
+                <input type="text" id="admin_search_input" placeholder="Search modules, pages..." class="dashboard-search-bar">
+                <i class="glyphicon glyphicon-search search-icon text-muted"></i>
+
+                <div id="admin_search_results" class="admin-search-results"></div>
+                <div id="admin_search_empty" class="admin-search-empty text-muted">
+                    No modules found for that search. Look under <a href="#additional_modules">Additional Modules</a> at the bottom of this page for more options.
+                </div>
+            </div>
+        </div>
 
         
-        <button class="collapsible-btn">Onsite <span class="dropdown-icon text-muted" style="float: right; font-size: 14px;">&#9660;</span></button>
+        <button class="collapsible-btn">Onsite <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_ajax_scheduling %}
-                <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" class="btn btn-primary">Scheduling <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" class="btn btn-primary">Scheduling</a>
                 {% endif %}
                 {% if manage_selectidoptions %}
-                <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="btn btn-warning">Name Tags <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="btn btn-warning">Name Tags</a>
                 {% endif %}
                 {% if onsite_main %}
-                <a href="/onsite/{{ program.getUrlBase }}/main" class="btn btn-primary">Onsite Main <span class="pill-plus">+</span></a>
+                <a href="/onsite/{{ program.getUrlBase }}/main" class="btn btn-primary">Onsite Main</a>
                 {% endif %}
             </div>
         </div>
 
-        <button class="collapsible-btn">Printables <span class="dropdown-icon text-muted" style="float: right; font-size: 14px;">&#9660;</span></button>
+        <button class="collapsible-btn">Printables <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_catalog %}
-                <a href="/manage/{{ program.getUrlBase }}/catalog" class="btn btn-primary">PDF Catalog <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/catalog" class="btn btn-primary">PDF Catalog</a>
                 {% endif %}
                 {% if manage_studentschedules %}
-                <a href="/manage/{{ program.getUrlBase }}/studentschedules" class="btn btn-warning">Student Schedules <span class="pill-plus">+</span></a>
-                <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" class="btn btn-default">Student Schedule Formatter <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/studentschedules" class="btn btn-warning">Student Schedules</a>
+                <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" class="btn btn-default">Student Schedule Formatter</a>
                 {% endif %}
                 {% if manage_printoptions %}
-                <a href="/manage/{{ program.getUrlBase }}/printoptions" class="btn btn-primary">All Printables <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/printoptions" class="btn btn-primary">All Printables</a>
                 {% endif %}
             </div>
         </div>
 
-        <button class="collapsible-btn">Teach <span class="dropdown-icon text-muted" style="float: right; font-size: 14px;">&#9660;</span></button>
+        <button class="collapsible-btn">Registration and User Management <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_teacher_events %}
-                <a href="/manage/{{ program.getUrlBase }}/teacher_events" class="btn btn-default">Teach Events <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/teacher_events" class="btn btn-default">Teach Events</a>
                 {% endif %}
                 {% if teach_teacherreg %}
-                <a href="/teach/{{ program.getUrlBase }}/teacherreg" class="btn btn-primary">Teacher Reg <span class="pill-plus">+</span></a>
+                <a href="/teach/{{ program.getUrlBase }}/teacherreg" class="btn btn-primary">Teacher Reg</a>
+                {% endif %}
+                {% if learn_studentreg %}
+                <a href="/learn/{{ program.getUrlBase }}/studentreg" class="btn btn-primary">Student Reg</a>
+                {% endif %}
+                {% if volunteer_signup %}
+                <a href="/volunteer/{{ program.getUrlBase }}/signup" class="btn btn-warning">Volunteer Reg</a>
+                {% endif %}
+                {% if manage_volunteering %}
+                <a href="/manage/{{ program.getUrlBase }}/volunteering" class="btn btn-warning">Volunteers</a>
+                {% endif %}
+                {% if manage_selectList %}
+                <a href="/manage/{{ program.getUrlBase }}/selectList" class="btn btn-primary">Arbitrary User List</a>
+                {% endif %}
+                {% if manage_refund %}
+                <a href="/accounting/refund?program={{ program.id }}" class="btn btn-default">Refunds</a>
+                {% endif %}
+                {% if manage_commpanel %}
+                <a href="/manage/{{ program.getUrlBase }}/commpanel" class="btn btn-warning">Email</a>
                 {% endif %}
             </div>
         </div>
 
-        <button class="collapsible-btn">Sched <span class="dropdown-icon text-muted" style="float: right; font-size: 14px;">&#9660;</span></button>
+        <button class="collapsible-btn">Sched <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_lunch_constraints %}
-                <a href="/manage/{{ program.getUrlBase }}/lunch_constraints" class="btn btn-primary">Lunch Rules <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/lunch_constraints" class="btn btn-primary">Lunch Rules</a>
                 {% endif %}
                 {% if manage_deadlines %}
-                <a href="/manage/{{ program.getUrlBase }}/deadlines" class="btn btn-warning">Deadlines <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/deadlines" class="btn btn-warning">Deadlines</a>
                 {% endif %}
             </div>
         </div>
 
-        <button class="collapsible-btn">Settings <span class="dropdown-icon text-muted" style="float: right; font-size: 14px;">&#9660;</span></button>
+        <button class="collapsible-btn">Program Management and Settings <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_settings %}
-                <a href="/manage/{{ program.getUrlBase }}/settings" class="btn btn-default">Settings <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/settings" class="btn btn-default">Settings</a>
                 {% endif %}
                 {% if manage_modules %}
-                <a href="/manage/{{ program.getUrlBase }}/modules" class="btn btn-primary">Modules <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/modules" class="btn btn-primary">Modules</a>
                 {% endif %}
                 {% if manage_tags %}
-                <a href="/manage/{{ program.getUrlBase }}/tags" class="btn btn-default">Tags <span class="pill-plus">+</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/tags" class="btn btn-default">Tags</a>
                 {% endif %}
                 {% if manage_registrationtype_management %}
-                <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" class="btn btn-default">Reg Types <span class="pill-plus">-</span></a>
+                <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" class="btn btn-default">Reg Types</a>
+                {% endif %}
+                {% if manage_surveys %}
+                <a href="/manage/{{ program.getUrlBase }}/surveys" class="btn btn-warning">Surveys</a>
+                {% endif %}
+                {% if manage_resources %}
+                <a href="/manage/{{ program.getUrlBase }}/resources" class="btn btn-primary">Resources</a>
+                {% endif %}
+                {% if manage_get_materials %}
+                <a href="/manage/{{ program.getUrlBase }}/get_materials" class="btn btn-primary">Documents</a>
                 {% endif %}
             </div>
         </div>
 
-        <button class="collapsible-btn">Other <span class="dropdown-icon text-muted" style="float: right; font-size: 14px;">&#9660;</span></button>
+        <button class="collapsible-btn">Other <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
-                {% if manage_resources %}<a href="/manage/{{ program.getUrlBase }}/resources" class="btn btn-primary">Resources <span class="pill-plus">+</span></a>{% endif %}
-                {% if manage_surveys %}<a href="/manage/{{ program.getUrlBase }}/surveys" class="btn btn-warning">Surveys <span class="pill-plus">+</span></a>{% endif %}
-                {% if manage_commpanel %}<a href="/manage/{{ program.getUrlBase }}/commpanel" class="btn btn-warning">Email <span class="pill-plus">+</span></a>{% endif %}
-                {% if manage_dashboard %}<a href="/manage/{{ program.getUrlBase }}/dashboard" class="btn btn-default">Dashboard <span class="pill-plus">+</span></a>{% endif %}
-                {% if manage_get_materials %}<a href="/manage/{{ program.getUrlBase }}/get_materials" class="btn btn-primary">Documents <span class="pill-plus">+</span></a>{% endif %}
-                {% if manage_volunteering %}<a href="/manage/{{ program.getUrlBase }}/volunteering" class="btn btn-warning">Volunteers <span class="pill-plus">+</span></a>{% endif %}
-                {% if learn_catalog %}<a href="/learn/{{ program.getUrlBase }}/catalog" class="btn btn-default">Catalog <span class="pill-plus">+</span></a>{% endif %}
-                {% if learn_studentreg %}<a href="/learn/{{ program.getUrlBase }}/studentreg" class="btn btn-primary">Student Reg <span class="pill-plus">+</span></a>{% endif %}
-                {% if volunteer_signup %}<a href="/volunteer/{{ program.getUrlBase }}/signup" class="btn btn-warning">Volunteer Reg <span class="pill-plus">+</span></a>{% endif %}
-                {% if manage_refund %}<a href="/accounting/refund?program={{ program.id }}" class="btn btn-default">Refunds <span class="pill-plus">+</span></a>{% endif %}
-                {% if manage_admin_morph %}<a href="/manage/{{ program.getUrlBase }}/admin_morph" class="btn btn-default">Morph into User <span class="pill-plus">+</span></a>{% endif %}
-                {% if manage_selectList %}<a href="/manage/{{ program.getUrlBase }}/selectList" class="btn btn-primary">Arbitrary User List <span class="pill-plus">+</span></a>{% endif %}
+                {% if manage_dashboard %}<a href="/manage/{{ program.getUrlBase }}/dashboard" class="btn btn-default">Dashboard</a>{% endif %}
+                {% if learn_catalog %}<a href="/learn/{{ program.getUrlBase }}/catalog" class="btn btn-default">Catalog</a>{% endif %}
+                {% if manage_admin_morph %}<a href="/manage/{{ program.getUrlBase }}/admin_morph" class="btn btn-default">Morph into User</a>{% endif %}
                 {% for module in modules_alph %}
                     {% if not module.isAdminPortalFeatured %}
                         {% if not module.useTemplate %}

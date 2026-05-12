@@ -180,7 +180,7 @@ body {
 /* Search Bar */
 .search-bar-wrapper {
     position: relative;
-    margin-bottom: 30px;
+    width: 320px;
 }
 
 .dashboard-search-bar {
@@ -288,12 +288,15 @@ body {
     display: inline-block;
     width: 50px;
     height: 26px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .switch input {
     opacity: 0;
     width: 0;
     height: 0;
+    margin: 0;
 }
 
 .slider {
@@ -305,6 +308,7 @@ body {
     bottom: 0;
     background-color: #4a90e2;
     transition: .4s;
+    outline: none;
 }
 
 .slider:before {
@@ -322,6 +326,10 @@ body {
     background-color: #4a90e2;
 }
 
+.switch input:focus+.slider {
+    box-shadow: 0 0 1px #4a90e2;
+}
+
 .switch input:checked+.slider:before {
     transform: translateX(24px);
 }
@@ -332,6 +340,85 @@ body {
 
 .slider.round:before {
     border-radius: 50%;
+}
+
+/*
+ * Styles from directory.html inline
+ */
+
+.dashboard-v2-container {
+    display: block !important;
+}
+
+.dashboard-main-card {
+    max-width: 1000px;
+    margin: 0 auto;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    padding: 40px;
+    background: #fff;
+    border-radius: 8px;
+}
+
+/* Collapsible styling */
+.collapsible-btn {
+    cursor: pointer;
+    padding: 15px 20px;
+    width: 100%;
+    border: 1px solid #eee;
+    text-align: left;
+    outline: none;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    background-color: #fff;
+}
+.collapsible-btn:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.collapsible-content {
+    padding: 10px 20px 20px 20px;
+    display: none;
+    overflow: hidden;
+    background-color: white;
+    border-radius: 0 0 8px 8px;
+    margin-top: -8px;
+    margin-bottom: 20px;
+    border: 1px solid #eee;
+    border-top: none;
+}
+.collapsible-btn .dropdown-icon {
+    float: right;
+    font-size: 14px;
+}
+
+.admin-search-results {
+    margin-top: 10px;
+    display: none;
+    position: absolute;
+    right: 0;
+    background: white;
+    border: 1px solid #e0e0e0;
+    width: 100%;
+    border-radius: 4px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 1000;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.admin-search-empty {
+    margin-top: 10px;
+    display: none;
+    font-style: italic;
+    position: absolute;
+    right: 0;
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 1000;
 }
 
 /* Task Checklist Widget */
