@@ -17,7 +17,7 @@
 <div id="program_form">
 
 {% if errors %}
-    <div class="alert alert-danger">
+    <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
             Please correct the form below before continuing.
     </div>
@@ -31,7 +31,7 @@
 
 {% if messages %}
 {% for msg in messages %}
-    <div class="alert alert-danger">
+    <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
             {{ msg }}
     </div>
