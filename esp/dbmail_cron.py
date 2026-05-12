@@ -1,45 +1,46 @@
 #!/usr/bin/env python
+"""Cron script: process queued ESP dbmail messages and send email requests.
+
+Acquires an exclusive lock so only one instance runs at a time.
+"""
 
 import sys
 import os
+
+# ---------------------------------------------------------------------------
+# Bootstrap: add the project root to sys.path so esp_setup can be found, then
+# let it configure the virtualenv and Django.  This replaces the old manual
+# path-munging / virtualenv-activation / django.setup() block.
+# ---------------------------------------------------------------------------
+_project = os.path.dirname(os.path.realpath(__file__))
+if _project not in sys.path:
+    sys.path.insert(0, _project)
+
+import esp_setup  # noqa: F401 — imported for side-effects
+
+# ---------------------------------------------------------------------------
+# Regular script imports (must come after Django is configured).
+# ---------------------------------------------------------------------------
 import fcntl
 import logging
-from io import open
-logger = logging.getLogger('esp.dbmail_cron')   # __name__ is not very useful
-os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
-import os.path
-project = os.path.dirname(os.path.realpath(__file__))
-
-# Path for ESP code
-sys.path.insert(0, project)
-
-# Check if a virtualenv has been installed and activated from elsewhere.
-# If this has happened, then the VIRTUAL_ENV environment variable should be
-# defined.
-# If the variable isn't defined, then activate our own virtualenv.
-if os.environ.get('VIRTUAL_ENV') is None:
-    root = os.path.dirname(project)
-    activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
-
-import django
-django.setup()
-from esp.dbmail.cronmail import process_messages, send_email_requests
-
-# This import must be after the evaluation of the Django settings, because
+# This import must be after Django settings are evaluated because
 # esp.settings modifies tempfile to avoid collisions between sites.
 import tempfile
 
+from esp.dbmail.cronmail import process_messages, send_email_requests
+
+logger = logging.getLogger('esp.dbmail_cron')
+
 logger.info('dbmail_cron: starting!')
 
-# lock to ensure only one cron instance runs at a time
+# Lock to ensure only one cron instance runs at a time.
 lock_file_path = os.path.join(tempfile.gettempdir(), 'espweb.dbmailcron.lock')
 lock_file_handle = open(lock_file_path, 'w')
 try:
     fcntl.lockf(lock_file_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
 except IOError:
-    # another instance has the lock
+    # Another instance has the lock.
     logger.info('dbmail_cron: exiting because another instance has the lock.')
     sys.exit(0)
 

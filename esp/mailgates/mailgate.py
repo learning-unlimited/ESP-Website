@@ -3,34 +3,32 @@
 # Main mailgate
 # Handles incoming messages etc.
 
-import sys, os, email, re, smtplib, socket, hashlib, random
-from io import open
-new_path = '/'.join(sys.path[0].split('/')[:-1])
-sys.path += [new_path]
-sys.path.insert(0, "/usr/sbin/")
-os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
+import sys
+import os
+
+# ---------------------------------------------------------------------------
+# Bootstrap: locate the project root (the esp/ directory that sits one level
+# above this file's mailgates/ directory), add it to sys.path, then delegate
+# all virtualenv activation, DJANGO_SETTINGS_MODULE configuration, and
+# django.setup() to the shared esp_setup module.
+# ---------------------------------------------------------------------------
+_project = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+if _project not in sys.path:
+    sys.path.insert(0, _project)
+
+import esp_setup  # noqa: F401 — imported for side-effects
 
 import logging
 # Make sure we end up in our logger even though this file is outside esp/esp/
 logger = logging.getLogger('esp.mailgate')
 
-import os.path
-project = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+import email
+import re
+import smtplib
+import socket
+import hashlib
+import random
 
-# Path for site code
-sys.path.insert(0, project)
-
-# Check if a virtualenv has been installed and activated from elsewhere.
-# If this has happened, then the VIRTUAL_ENV environment variable should be
-# defined.
-# If the variable isn't defined, then activate our own virtualenv.
-if os.environ.get('VIRTUAL_ENV') is None:
-    root = os.path.dirname(project)
-    activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
-
-import django
-django.setup()
 from esp.dbmail.models import EmailList
 from django.conf import settings
 
