@@ -234,16 +234,108 @@ class ClassSearchModule(ProgramModuleObj):
             english_name="classes",
             filters=filters)
 
+    def simple_search_context(self, request, prog):
+        """
+        Build context for the simple search form and, if simple search params
+        are present, return a filtered queryset.
+
+        Simple search ANDs together any combination of:
+          s_title      - title contains (case-insensitive)
+          s_category   - category id (exact)
+          s_status     - class status (exact integer)
+          s_grade_min  - grade_max >= value  (class is open to at least this grade)
+          s_grade_max  - grade_min <= value  (class is open to at most this grade)
+          s_teacher    - teacher username contains (case-insensitive)
+        """
+        categories = list(prog.class_categories.all())
+        if prog.open_class_registration:
+            categories.append(prog.open_class_category)
+        grades = prog.classregmoduleinfo.getClassGrades()
+
+        simple_ctx = {
+            'simple_categories': categories,
+            'simple_status_choices': STATUS_CHOICES,
+            'simple_grades': grades,
+            # echo back submitted values so the form stays filled in
+            's_title': request.GET.get('s_title', ''),
+            's_category': request.GET.get('s_category', ''),
+            's_status': request.GET.get('s_status', ''),
+            's_grade_min': request.GET.get('s_grade_min', ''),
+            's_grade_max': request.GET.get('s_grade_max', ''),
+            's_teacher': request.GET.get('s_teacher', ''),
+        }
+
+        # Only run the simple search if at least one param is provided
+        simple_params = [request.GET.get(k) for k in
+                         ('s_title', 's_category', 's_status',
+                          's_grade_min', 's_grade_max', 's_teacher')]
+        if not any(simple_params):
+            return simple_ctx, None
+
+        qs = ClassSubject.objects.filter(parent_program=prog)
+        s_title = request.GET.get('s_title', '').strip()
+        if s_title:
+            qs = qs.filter(title__icontains=s_title)
+        s_category = request.GET.get('s_category', '').strip()
+        if s_category:
+            try:
+                qs = qs.filter(category__id=int(s_category))
+            except ValueError:
+                pass
+        s_status = request.GET.get('s_status', '').strip()
+        if s_status:
+            try:
+                qs = qs.filter(status=int(s_status))
+            except ValueError:
+                pass
+        s_grade_min = request.GET.get('s_grade_min', '').strip()
+        if s_grade_min:
+            try:
+                qs = qs.filter(grade_max__gte=int(s_grade_min))
+            except ValueError:
+                pass
+        s_grade_max = request.GET.get('s_grade_max', '').strip()
+        if s_grade_max:
+            try:
+                qs = qs.filter(grade_min__lte=int(s_grade_max))
+            except ValueError:
+                pass
+        s_teacher = request.GET.get('s_teacher', '').strip()
+        if s_teacher:
+            qs = qs.filter(teachers__username__icontains=s_teacher)
+
+        qs = qs.distinct().order_by('id').prefetch_related(
+            'flags', 'flags__flag_type', 'teachers', 'category',
+            'sections', 'sections__resourcerequest_set')
+        return simple_ctx, qs
+
     @main_call
     @needs_admin
     def classsearch(self, request, tl, one, two, module, extra, prog):
         data = request.GET.get('query')
         query_builder = self.query_builder()
+
+        simple_ctx, simple_queryset = self.simple_search_context(request, prog)
+
         context = {
             'query_builder': query_builder,
             'program': self.program,
             'query': None,
         }
+        context.update(simple_ctx)
+
+        # If simple search returned results, use those directly
+        if simple_queryset is not None:
+            context['queryset'] = simple_queryset
+            context['IDs'] = [cls.id for cls in simple_queryset]
+            context['flag_types'] = self.program.flag_types.all()
+            context['regtypes'] = sorted(RegistrationType.objects.all(), key=lambda a: str(a))
+            context['simple_search_active'] = True
+            # Ensure the template sees a truthy `query` so the empty-state message can render
+            context['query'] = simple_ctx.get('query') or {'simple_search': True}
+            return render_to_response(self.baseDir()+'class_search.html',
+                                      request, context)
+
         namequery = request.GET.get('namequery')
         decoded = None
         if data is not None:
