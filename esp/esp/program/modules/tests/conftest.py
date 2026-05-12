@@ -22,8 +22,6 @@ def pytest_collect_file(parent, file_path):
     test_*.py naming convention. Scoped to this directory only to avoid
     accidentally collecting non-test .py files elsewhere in the project.
     """
-    # ajaxstudentreg.py imports django_selenium which is not installed.
-    # It must be skipped at collection time to avoid a ModuleNotFoundError.
     _SKIP = {"__init__.py", "conftest.py", "ajaxstudentreg.py"}
     if (
         file_path.suffix == ".py"
