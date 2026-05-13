@@ -283,6 +283,7 @@ CSRF_FAILURE_VIEW = 'esp.web.views.csrf.csrf_failure'
 
 # no i18n
 USE_I18N = False
+USE_TZ = False
 
 FORCE_SCRIPT_NAME = ''
 
@@ -397,7 +398,14 @@ FILEBROWSER_SELECT_FORMATS = {
 
 # Custom file storage backend that lowercases file extensions
 # This ensures consistent handling of file extensions regardless of upload method
-DEFAULT_FILE_STORAGE = 'esp.web.storage.LowercaseExtensionStorage'
+STORAGES = {
+    'default': {
+        'BACKEND': 'esp.web.storage.LowercaseExtensionStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
 
 #   Default imports for shell_plus, for convenience.
 SHELL_PLUS_POST_IMPORTS = (

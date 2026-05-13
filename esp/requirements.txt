@@ -1,17 +1,17 @@
 # Django
-Django==3.2.25
+Django==4.2.30
 
 # Django-specific packages
-git+https://github.com/learning-unlimited/django-argcache.git@django3 # Handles caching
-django-debug-toolbar==3.2.4 # Provides the debug toolbar
-django-extensions==3.1.5 # Provides shell_plus, runserver_plus, and other utilities
-django-filebrowser-no-grappelli==3.8.0 # Provides admin panel interface for files
+git+https://github.com/learning-unlimited/django-argcache.git@django4 # Handles caching
+django-debug-toolbar==6.3.0 # Provides the debug toolbar
+django-extensions==4.1 # Provides shell_plus, runserver_plus, and other utilities
+django-filebrowser-no-grappelli==4.0.2 # Provides admin panel interface for files
 git+https://github.com/learning-unlimited/django-form-utils.git@master # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
 django-formtools==2.4 # Used once in customforms
 django-localflavor==3.1 # Provides address fields
 django-phonenumber-field[phonenumbers]==6.3.0 # Provides phone number fields
 django-recaptcha==3.0.0 # Provides support for Google reCAPTCHA
-django-reversion==5.0.2 # Handles versioning, currently for QSD and TemplateOverrides
+django-reversion==6.2.0 # Handles versioning, currently for QSD and TemplateOverrides
 django-sendgrid-v5==1.2.4 # Provides support for using SendGrid as the EmailBackend
 django-vanilla-views==3.0.0 # Provides simpler generic views, currently used only for grade change requests
 git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends Django Admin
@@ -47,4 +47,3 @@ twilio==6.63.2 # Required for text messaging support
 wheel==0.38.4  # For building modern packages
 werkzeug==2.0.3 # Required for runserver_plus (alternative to runserver provided by django-extensions)
 openpyxl==3.1.2 # Does form and survey exporting
-
