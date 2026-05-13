@@ -119,7 +119,7 @@
     {{ cls_cancel_form }}
     <tr>
         <th class="smaller" colspan="2" align="center">
-        <input type="submit" class="fancybutton" value="Cancel Class">
+        <input type="submit" class="btn btn-primary" value="Cancel Class">
         </th>
     </tr>
 </table>
@@ -148,7 +148,7 @@
     {{ sec_cancel_forms }}
     <tr>
         <th class="smaller" colspan="2" align="center">
-        <input type="submit" class="fancybutton" value="Cancel Section(s)">
+        <input type="submit" class="btn btn-primary" value="Cancel Section(s)">
         </th>
     </tr>
     </table>
@@ -176,12 +176,12 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
 
 <tr>
     <td colspan="2" align="center">
-        <a href="/manage/{{ module.program.getUrlBase }}/addsection/{{ class.id }}" class="fancybutton">Add a new section</a>
+        <a href="/manage/{{ module.program.getUrlBase }}/addsection/{{ class.id }}" class="btn btn-primary">Add a new section</a>
     </td>
 </tr>
 <tr>
     <td colspan="2" align="center">
-        <input type="submit" class="fancybutton" value="Save">
+        <input type="submit" class="btn btn-primary" value="Save">
     </td>
 </tr>
 
@@ -229,12 +229,12 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
 
 <tr>
     <td colspan="2" align="center">
-        <a href="/manage/{{ module.program.getUrlBase }}/deletesection/{{ class.id }}?sec_id={{ form.sec.id }}" class="fancybutton">Delete this section</a>
+        <a href="/manage/{{ module.program.getUrlBase }}/deletesection/{{ class.id }}?sec_id={{ form.sec.id }}" class="btn btn-primary">Delete this section</a>
     </td>
 </tr>
 <tr>
     <td colspan="2" align="center">
-        <input type="submit" class="fancybutton" value="Save">
+        <input type="submit" class="btn btn-primary" value="Save">
     </td>
 </tr>
 </table>

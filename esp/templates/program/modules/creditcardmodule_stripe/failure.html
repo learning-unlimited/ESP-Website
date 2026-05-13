@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{program.niceName}} Payment Failure{% endblock %}
 
@@ -10,9 +10,9 @@
 {% block xtrajs %}
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <div class="error_background">
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
     <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         Credit Card Payment for {{ program.niceName }} FAILED.
 </div>

@@ -102,7 +102,7 @@ def intrange(min_val, max_val):
 
 @register.filter
 def field_width(min_val, max_val):
-    return '%d%%' % (70 // (int(max_val) - int(min_val) + 1))
+    return f'{70 // (int(max_val) - int(min_val) + 1)}%'
 
 @register.filter
 def substitute(input_str, item):
@@ -137,7 +137,7 @@ def average(lst):
         for l in lst:
             sum += float(l)
         return str(round(sum // len(lst), 2))
-    except:
+    except (ValueError, TypeError):
         return 'N/A'
 
 @register.filter
@@ -153,7 +153,7 @@ def stdev(lst):
         for l in lst:
             std_sum += abs(float(l) - mean)
         return str(round(std_sum // len(lst), 2))
-    except:
+    except (ValueError, TypeError):
         return 'N/A'
 
 @register.filter
@@ -187,17 +187,21 @@ def histogram(answer_list, args='format=html'):
         context['results'] = [{'value': str(x), 'freq': 0} for x in args_dict.get('opts').split("|")]
     else:
         context['results'] = []
-    max_answer_length = 0
+
     for ans in answer_list:
         try:
             i = [r['value'] for r in context['results']].index(str(ans))
             context['results'][i]['freq'] += 1
         except ValueError:
             context['results'].append({'value': ans, 'freq': 1})
-        if len(ans) > max_answer_length:
-            max_answer_length = len(ans)
 
-    context['results'].sort(key=lambda x: x['value'])
+    # sorting key to handle text & number labels
+    def sort_key(x):
+        try:
+            return (0, float(x['value']), '')
+        except ValueError:
+            return (1, 0, x['value'])
+    context['results'].sort(key=sort_key)
 
     #   Compute simple stats so postscript doesn't have to
     max_freq = 0
@@ -207,11 +211,89 @@ def histogram(answer_list, args='format=html'):
             max_freq = item['freq']
             context['max_freq'] = max_freq
 
-    #   Might we have trouble making text not overlap? 36 is an arbitrary limit.
-    if context['num_keys'] * max_answer_length > 36:
-        context['crowded'] = True
+    max_label_length = max([len(r['value']) for r in context['results']], default=1)
+
+    def decide_label_rotate(bar_width_pts, num_keys, max_label_length):
+        if bar_width_pts < 9:
+            return 90
+        elif bar_width_pts < 12 or (num_keys * max_label_length > 36):
+            return 45
+        else:
+            return 0
+
+    num_keys_safe = max(context['num_keys'], 1)
+
+    bar_width_pts = 180 / num_keys_safe
+    context['label_rotate'] = decide_label_rotate(bar_width_pts, context['num_keys'], max_label_length)
+
+    # second pass for crowded (rotated) layouts: use 168pt, which matches the EPS width when crowded
+    if context['label_rotate'] > 0:
+        bar_width_pts = 168 / num_keys_safe
+        context['label_rotate'] = decide_label_rotate(bar_width_pts, context['num_keys'], max_label_length)
+
+    context['crowded'] = context['label_rotate'] > 0
+
+    # Compute font size based on bars number
+    if context['num_keys'] > 15:
+        context['font_size'] = 7
+    elif context['num_keys'] > 10:
+        context['font_size'] = 8
     else:
-        context['crowded'] = False
+        context['font_size'] = 10
+
+    # Dynamically avoiding label overlap
+    # Arial average width is ~0.55 * font_size
+    max_label_width_pts = max_label_length * context['font_size'] * 0.55
+    context['yspaceneg'] = -12
+
+    if context['label_rotate'] == 45:
+        # 45 deg rotation (counter-clockwise), right-aligned, labels extend to the left and down from the tick.
+        left_extent = max_label_width_pts * 0.707 # label_width * cos(45)
+        label_descent = max_label_width_pts * 0.707 # label_width * sin(45)
+    elif context['label_rotate'] == 90:
+        # Straight down (-90 deg clockwise, anchored at start)
+        label_descent = max_label_width_pts
+        left_extent = context['font_size']
+    else:
+        # Horizontal (centered)
+        label_descent = 0
+        left_extent = max_label_width_pts / 2
+
+    # Spacing for axis labels and title
+    RESPONSE_TITLE_HEIGHT = 12
+    PADDING = 10
+
+    PLOT_WIDTH, PLOT_HEIGHT = 180, 100
+    MIN_LEFT_MARGIN, MIN_BOTTOM_MARGIN = 18, 36
+    MARGIN_TOP, MARGIN_RIGHT = 20, 18
+    # offsety (space below the x-axis)
+    # The label descent starts from y_tick_label_base (abs val of yspaceneg)
+    context['offsety'] = int(max(MIN_BOTTOM_MARGIN,
+        abs(context['yspaceneg']) + label_descent + RESPONSE_TITLE_HEIGHT + PADDING))
+
+    # Calculate response_label_y (relative to the axis origin, so negative)
+    # Place at the bottom-most possible position within offsety
+    context['response_label_y'] = - (context['offsety'] - PADDING)
+
+    # Calculate horizontal geometry (offsetx and pX, bb_width)
+    num_keys_safe = max(context['num_keys'], 1)
+    context['pX'] = PLOT_WIDTH
+    sectionwidth = context['pX'] / num_keys_safe
+    xlabel0 = sectionwidth / 2
+
+    # offsetx: needed space to the left of the axis start
+    context['offsetx'] = int(max(MIN_LEFT_MARGIN,
+        left_extent - xlabel0 + PADDING))
+
+    # Calculate pY (bar height) and bb dimensions
+    context['pY'] = PLOT_HEIGHT
+    context['bb_height'] = context['offsety'] + context['pY'] + MARGIN_TOP
+    context['bb_width'] = context['offsetx'] + context['pX'] + MARGIN_RIGHT
+
+    # Ghostscript parameters
+    HISTOGRAM_DPI = 192
+    HISTOGRAM_HTML_DOWNSCALE_FACTOR = 2
+    HISTOGRAM_HTML_WIDTH_PX = int((context['bb_width'] * HISTOGRAM_DPI / 72) / HISTOGRAM_HTML_DOWNSCALE_FACTOR) # to achieve Nx downscale ratio -> (DEVICE_WIDTH_PT * DPI / 72) / N
 
     import hashlib
     file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
@@ -229,20 +311,26 @@ def histogram(answer_list, args='format=html'):
 
     #   We have the necessary EPS file, now we do any necessary conversions and include
     #   it into the output.
-    png_filename = "%s.png" % file_base
+    png_filename = f"{file_base}.png"
     if args_dict.get('format') == 'tex':
         image_path = os.path.join(tempfile.gettempdir(), png_filename)
     elif args_dict.get('format') == 'html':
         image_path = os.path.join(HISTOGRAM_DIR, png_filename)
     if not os.path.exists(image_path):
-        subprocess.call(['gs', '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
-                         '-dDEVICEWIDTHPOINTS=216', '-dDEVICEHEIGHTPOINTS=162',
-                         '-sDEVICE=png16m', '-R96',
-                         '-sOutputFile=' + image_path, file_name])
+        subprocess.call([
+            'gs',
+            '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
+            f"-dDEVICEWIDTHPOINTS={context['bb_width']}",
+            f"-dDEVICEHEIGHTPOINTS={context['bb_height']}",
+            '-sDEVICE=png16m',
+            f'-r{HISTOGRAM_DPI}',
+            '-sOutputFile=' + image_path,
+            file_name
+        ])
     if args_dict.get('format') == 'tex':
-        return '\includegraphics[width=%fin]{%s}' % (image_width, image_path)
+        return f'\\includegraphics[width={image_width}in]{{{image_path}}}'
     if args_dict.get('format') == 'html':
-        return '<img src="%s" />' % ('/media/' + HISTOGRAM_PATH + png_filename)
+        return f'<img src="/media/{HISTOGRAM_PATH}{png_filename}" style="width: {HISTOGRAM_HTML_WIDTH_PX}px; max-width: 100%; height: auto;"/>'
 
 @register.filter
 def answer_to_list(ans):
@@ -283,7 +371,7 @@ def favorite_classes(answer_list, limit=20):
     for key in key_list[:max_count]:
         cl = ClassSubject.objects.filter(id=key)
         if cl.count() == 1:
-            result_list.append({'title': '%s: %s' % (cl[0].emailcode(), cl[0].title), 'votes': class_dict[key]})
+            result_list.append({'title': f'{cl[0].emailcode()}: {cl[0].title}', 'votes': class_dict[key]})
 
     return result_list
 

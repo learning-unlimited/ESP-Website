@@ -43,6 +43,9 @@ from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
 
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ClassFlagModule(ProgramModuleObj):
     doc = """Flag classes, such as for further review."""
@@ -113,11 +116,22 @@ class ClassFlagModule(ProgramModuleObj):
         form = ClassFlagForm(request.POST)
         if form.is_valid():
             flag = form.save()
+            email_warning = None
+            if flag.flag_type.notify_teacher_by_email:
+                try:
+                    flag.send_teacher_notification()
+                except Exception:
+                    logger.error("Failed to send teacher notification for flag %s on class %s",
+                                 flag.id, flag.subject_id, exc_info=True)
+                    email_warning = "Flag saved, but the teacher email notification failed. Please notify the teacher manually."
             context = { 'flag' : flag }
-            response = json.dumps({
+            response_data = {
                 'flag_name': render_to_string(self.baseDir()+'flag_name.html', context = context, request = request),
                 'flag_detail': render_to_string(self.baseDir()+'flag_detail.html', context = context, request = request),
-            })
+            }
+            if email_warning:
+                response_data['warning'] = email_warning
+            response = json.dumps(response_data)
             return HttpResponse(response, content_type='application/json')
         else:
             # The user shouldn't be able to get here unless they're doing something really weird, so let's not bother to try to tell them where the error was; since this is asynchronous that would be a bit tricky.
