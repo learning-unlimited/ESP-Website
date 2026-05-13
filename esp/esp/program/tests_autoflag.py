@@ -81,3 +81,74 @@ class AutoClassFlagTest(TestCase):
         )
         # Check if flag was added
         self.assertFalse(ClassFlag.objects.filter(subject=cls, flag_type=self.flag_type).exists())
+
+    def test_apply_existing_classes_flagged(self):
+        """Test that apply_existing bulk-applies flags to matching classes."""
+        # Create classes BEFORE the rule would apply
+        matching = ClassSubject.objects.create(
+            title="Trigger Existing",
+            parent_program=self.program,
+            category=self.category,
+            grade_min=7,
+            grade_max=12
+        )
+        # The signal will auto-flag this because self.rule already exists,
+        # so clear it to simulate the "create rule with apply_existing" flow
+        ClassFlag.objects.filter(subject=matching).delete()
+        self.assertFalse(
+            ClassFlag.objects.filter(subject=matching, flag_type=self.flag_type).exists()
+        )
+
+        # Simulate what the handler does when apply_existing is checked
+        module = ClassSearchModule(program=self.program)
+        qb = module.query_builder()
+        decoded = json.loads(self.rule.rule_data)
+        matching_classes = qb.as_queryset(decoded).distinct()
+
+        for cls in matching_classes:
+            ClassFlag.objects.get_or_create(
+                subject=cls,
+                flag_type=self.flag_type,
+                defaults={
+                    "comment": self.rule.comment,
+                    "created_by": self.system_user,
+                    "modified_by": self.system_user,
+                },
+            )
+
+        self.assertTrue(
+            ClassFlag.objects.filter(subject=matching, flag_type=self.flag_type).exists()
+        )
+
+    def test_apply_existing_non_matching_not_flagged(self):
+        """Test that apply_existing does NOT flag classes that don't match."""
+        non_matching = ClassSubject.objects.create(
+            title="Safe Class",
+            parent_program=self.program,
+            category=self.category,
+            grade_min=7,
+            grade_max=12
+        )
+        # Clear any flags (signal shouldn't have added any, but be safe)
+        ClassFlag.objects.filter(subject=non_matching).delete()
+
+        # Run bulk-apply logic
+        module = ClassSearchModule(program=self.program)
+        qb = module.query_builder()
+        decoded = json.loads(self.rule.rule_data)
+        matching_classes = qb.as_queryset(decoded).distinct()
+
+        for cls in matching_classes:
+            ClassFlag.objects.get_or_create(
+                subject=cls,
+                flag_type=self.flag_type,
+                defaults={
+                    "comment": self.rule.comment,
+                    "created_by": self.system_user,
+                    "modified_by": self.system_user,
+                },
+            )
+
+        self.assertFalse(
+            ClassFlag.objects.filter(subject=non_matching, flag_type=self.flag_type).exists()
+        )

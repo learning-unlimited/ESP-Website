@@ -70,6 +70,10 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
         </select>
         <label for="rule_comment">Comment (optional):</label>
         <textarea name="comment" id="rule_comment" placeholder="Automatically added by rule."></textarea>
+        <label style="display:block; margin-top:10px;">
+            <input type="checkbox" name="apply_existing" value="1" checked>
+            Also apply this flag to all existing classes matching the current query
+        </label>
     </form>
   </div>
   <div class="modal-footer">

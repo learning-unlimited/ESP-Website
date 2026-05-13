@@ -241,10 +241,11 @@ class ClassSearchModule(ProgramModuleObj):
     @needs_admin
     def create_autorule(self, request, tl, one, two, module, extra, prog):
         """Create an AutoClassFlagRule from a query."""
-        from esp.program.models.flags import AutoClassFlagRule, ClassFlagType
+        from esp.program.models.flags import AutoClassFlagRule, ClassFlag, ClassFlagType
         query_data = request.POST.get('query_data')
         flag_type_id = request.POST.get('flag_type_id')
         comment = request.POST.get('comment', '')
+        apply_existing = request.POST.get('apply_existing')
 
         if not query_data or not flag_type_id:
             return HttpResponseRedirect(request.META.get('HTTP_REFERER', './classsearch'))
@@ -252,17 +253,42 @@ class ClassSearchModule(ProgramModuleObj):
         try:
             flag_type = self.program.flag_types.get(id=flag_type_id)
             # Create the rule
-            AutoClassFlagRule.objects.create(
+            rule = AutoClassFlagRule.objects.create(
                 program=self.program,
                 flag_type=flag_type,
                 rule_data=query_data,
                 comment=comment
             )
-            # Proactively run the rule once for existing classes?
-            # The signal handles future saves, but we might want to flag existing classes.
-            # For now, let's keep it simple as requested: "specifying that when a class is added or edited..."
+
+            # If checkbox is checked, apply flag to all existing matching classes
+            if apply_existing:
+                qb = self.query_builder()
+                decoded = json.loads(query_data)
+                matching_classes = qb.as_queryset(decoded).distinct()
+
+                defaults = {
+                    "comment": comment or "Automatically added by rule.",
+                    "created_by": request.user,
+                    "modified_by": request.user,
+                }
+
+                for cls in matching_classes:
+                    flag, created = ClassFlag.objects.get_or_create(
+                        subject=cls,
+                        flag_type=flag_type,
+                        defaults=defaults,
+                    )
+                    if created and flag_type.notify_teacher_by_email:
+                        try:
+                            flag.send_teacher_notification()
+                        except Exception as e:
+                            logger.error(
+                                "Auto-flag bulk apply: Failed to notify "
+                                "teachers for flag %s on class %s: %s",
+                                flag.id, cls.id, e
+                            )
+
         except Exception as e:
-            # We should probably show an error, but for now redirect back
             logger.error("Error creating AutoClassFlagRule: %s", e)
 
         return HttpResponseRedirect('./classsearch?query=' + urllib.parse.quote(query_data))
