@@ -42,6 +42,7 @@ from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
@@ -613,7 +614,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=3600)
+    @method_decorator(cache_control(public=True, max_age=3600))
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
@@ -633,7 +634,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_student_in_grade
-    @vary_on_cookie
+    @method_decorator(vary_on_cookie)
     def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         reg_bits = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog).select_related()
 
@@ -651,14 +652,14 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
+    @method_decorator(cache_control(public=True, max_age=120))
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
+    @method_decorator(cache_control(public=True, max_age=120))
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         #   Get the ProgramPrintables module for the program
         from esp.program.modules.handlers.programprintables import ProgramPrintables
