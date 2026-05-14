@@ -109,10 +109,10 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         self.assertContains(response, '<div class="classtitle">', count=len(self.program.classes()))
 
     def testSchedules(self):
-        response = self.get_response('studentschedules/log', 'students', 'enrolled')
+        response = self.get_response('studentschedules/log', 'students', 'enrolled_non_lunch')
         print(response)
         #   Check that our Latex->PDF schedule generation code runs without error
-        response = self.get_response('studentschedules', 'students', 'enrolled')
+        response = self.get_response('studentschedules', 'students', 'enrolled_non_lunch')
 
         #   Check that the output is an actual PDF file
         print((response['Content-Type']))

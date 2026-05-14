@@ -362,7 +362,7 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
             title='Lunch Period', category=self.lunch_category, grade_min=7, grade_max=12,
             parent_program=self.program, class_size_max=100, class_info='Lunch break')
         self.lunch_class.accept()
-        section = self.lunch_class.add_section(duration=1.0)
+        section = self.lunch_class.add_section(duration=50 / 60.0)
         if self.program.getTimeSlots():
             section.meeting_times.add(self.program.getTimeSlots()[0])
         RecordType.objects.get_or_create(name='lunch_selected')
@@ -451,9 +451,44 @@ class StudentClassRegModuleTest(ProgramFrameworkTest):
         module = self.program.getModule('StudentClassRegModule')
         students = module.students(QObject=False)
         self.assertIn('enrolled', students)
+        self.assertIn('enrolled_non_lunch', students)
         self.assertIn('classreg', students)
 
     def test_student_desc(self):
         module = self.program.getModule('StudentClassRegModule')
         desc = module.studentDesc()
         self.assertIn('enrolled', desc)
+        self.assertIn('enrolled_non_lunch', desc)
+
+    def test_enrolled_non_lunch_excludes_lunch_only_students(self):
+        module = self.program.getModule('StudentClassRegModule')
+
+        lunch_category, _ = ClassCategories.objects.get_or_create(category='Lunch', symbol='L')
+        lunch_class = ClassSubject.objects.create(
+            title='Lunch Period',
+            category=lunch_category,
+            grade_min=7,
+            grade_max=12,
+            parent_program=self.program,
+            class_size_max=100,
+            class_info='Lunch break',
+        )
+        lunch_class.makeTeacher(self.teachers[0])
+        lunch_class.accept()
+        lunch_section = lunch_class.add_section(duration=50 / 60.0)
+        if self.program.getTimeSlots():
+            lunch_section.meeting_times.add(self.program.getTimeSlots()[0])
+
+        regular_section = self.program.sections().exclude(parent_class__category__category='Lunch').first()
+        self.assertIsNotNone(regular_section, 'Expected at least one non-lunch section in the test program')
+
+        lunch_only_student = self.students[0]
+        regular_student = self.students[1]
+
+        lunch_section.preregister_student(lunch_only_student, fast_force_create=True)
+        regular_section.preregister_student(regular_student, fast_force_create=True)
+
+        students = module.students(QObject=False)
+        self.assertIn('enrolled_non_lunch', students)
+        self.assertNotIn(lunch_only_student, students['enrolled_non_lunch'])
+        self.assertIn(regular_student, students['enrolled_non_lunch'])
