@@ -133,8 +133,8 @@ def add_list_members(list_name, members):
     members = '\n'.join(members)
 
     # encode as iso-8859-1 to match Mailman's daft Unicode handling, see:
-    # http://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Defaults.py.in#L1584
-    # http://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Utils.py#L822
+    # https://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Defaults.py.in#L1584
+    # https://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Utils.py#L822
     # this is probably fine since non-ASCII mostly happens in real names,
     # for which it doesn't matter much if we lose a few chars
     members = members.encode('iso-8859-1', 'replace')

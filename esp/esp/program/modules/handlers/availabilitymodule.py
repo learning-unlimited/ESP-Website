@@ -73,11 +73,7 @@ class AvailabilityModule(ProgramModuleObj):
 
     def isCompleted(self, user = None):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
-        if user is None:
-            if hasattr(self, 'user'):
-                user = self.user
-            else:
-                user = get_current_request().user
+        user = self._resolve_user(user)
         available_slots = user.getAvailableTimes(self.program, ignore_classes=True, ignore_moderation=True)
 
         #   Check number of timeslots against Tag-specified minimum
@@ -119,7 +115,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         if tl == "manage":
             # They probably want to check or edit someone's availability instead
-            return HttpResponseRedirect( '/manage/%s/%s/edit_availability' % (one, two) )
+            return HttpResponseRedirect( f'/manage/{one}/{two}/edit_availability' )
         else:
             return self.availabilityForm(request, tl, one, two, prog, request.user, False)
 
@@ -199,7 +195,7 @@ class AvailabilityModule(ProgramModuleObj):
 
                 if isAdmin:
                     #   Return to the relevant edit_availability page
-                    return HttpResponseRedirect( '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.id) )
+                    return HttpResponseRedirect( f'/manage/{one}/{two}/edit_availability?user={teacher.id}' )
                 else:
                     #   Return to the main registration page
                     return self.goToCore(tl)
