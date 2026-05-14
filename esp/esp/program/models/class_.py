@@ -2200,56 +2200,21 @@ def install():
 def handle_auto_class_flags(sender, instance, **kwargs):
     """Automatically add flags to a class if it satisfies certain conditions."""
     import json
-    from esp.program.models.flags import AutoClassFlagRule, ClassFlag
+    from esp.program.models.flags import AutoClassFlagRule
     from esp.program.modules.handlers.classsearchmodule import ClassSearchModule
-    from esp.middleware.threadlocalrequest import get_current_request
-    from esp.users.models import ESPUser
 
-    # Get the rules for this program
     rules = list(AutoClassFlagRule.objects.filter(program=instance.parent_program))
     if not rules:
         return
 
-    # Use ClassSearchModule to get a QueryBuilder instance for this program
     module = ClassSearchModule(program=instance.parent_program)
     qb = module.query_builder()
-
-    current_request = get_current_request()
 
     for rule in rules:
         try:
             decoded_rule = json.loads(rule.rule_data)
-            # Evaluate if the instance matches the rule
             qs = qb.as_queryset(decoded_rule)
             if qs.filter(pk=instance.pk).exists():
-                # Build defaults for get_or_create
-                defaults = {
-                    "comment": rule.comment or "Automatically added by rule.",
-                }
-
-                if current_request is None:
-                    # Fallback for background tasks/scripts: use the first superuser or staff
-                    system_user = ESPUser.objects.filter(is_superuser=True).first() or \
-                                  ESPUser.objects.filter(is_staff=True).first()
-                    if system_user:
-                        defaults["created_by"] = system_user
-                        defaults["modified_by"] = system_user
-                    else:
-                        # If no user found, we can't save ClassFlag due to non-null constraints
-                        logger.warning("AutoClassFlagRule: Could not find a system user to attribute flag creation for class %s", instance.id)
-                        continue
-
-                flag, created = ClassFlag.objects.get_or_create(
-                    subject=instance,
-                    flag_type=rule.flag_type,
-                    defaults=defaults,
-                )
-
-                if created and rule.flag_type.notify_teacher_by_email:
-                    try:
-                        flag.send_teacher_notification()
-                    except Exception as e:
-                        logger.error("AutoClassFlagRule: Failed to send teacher notification for flag %s on class %s: %s",
-                                     flag.id, instance.id, e)
+                rule.apply_to_class(instance)
         except Exception as e:
             logger.error("Error evaluating AutoClassFlagRule %s: %s", rule.id, e)

@@ -167,3 +167,74 @@ class AutoClassFlagRule(models.Model):
 
     def __str__(self):
         return "Auto-flag rule for %s in %s" % (self.flag_type, self.program)
+
+    def apply_to_class(self, cls, user=None):
+        """Apply this auto-flag rule to a single class, if not already flagged.
+
+        Creates a ClassFlag on ``cls`` for this rule's flag_type. If ``user``
+        is None, falls back to the current request user (via ClassFlag.save),
+        or the first superuser/staff for background tasks. Returns the
+        (flag, created) tuple from get_or_create, or None if no user could be
+        determined.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        defaults = {
+            "comment": self.comment or "Automatically added by rule.",
+        }
+
+        if user is not None:
+            defaults["created_by"] = user
+            defaults["modified_by"] = user
+        else:
+            # Fallback for background tasks where there is no request user
+            request = get_current_request()
+            if request is None:
+                from esp.users.models import ESPUser as _ESPUser
+                system_user = (
+                    _ESPUser.objects.filter(is_superuser=True).first()
+                    or _ESPUser.objects.filter(is_staff=True).first()
+                )
+                if system_user:
+                    defaults["created_by"] = system_user
+                    defaults["modified_by"] = system_user
+                else:
+                    logger.warning(
+                        "AutoClassFlagRule: Could not find a system user to "
+                        "attribute flag creation for class %s", cls.id
+                    )
+                    return None
+
+        flag, created = ClassFlag.objects.get_or_create(
+            subject=cls,
+            flag_type=self.flag_type,
+            defaults=defaults,
+        )
+
+        if created and self.flag_type.notify_teacher_by_email:
+            try:
+                flag.send_teacher_notification()
+            except Exception as e:
+                logger.error(
+                    "AutoClassFlagRule: Failed to send teacher notification "
+                    "for flag %s on class %s: %s",
+                    flag.id, cls.id, e
+                )
+
+        return flag, created
+
+    def apply_to_queryset(self, queryset, user=None):
+        """Apply this auto-flag rule to all classes in ``queryset``.
+
+        Calls ``apply_to_class`` for each class. Returns the number of newly
+        created flags.
+        """
+        created_count = 0
+        for cls in queryset:
+            result = self.apply_to_class(cls, user=user)
+            if result is not None:
+                _, created = result
+                if created:
+                    created_count += 1
+        return created_count

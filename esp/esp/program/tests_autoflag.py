@@ -56,6 +56,13 @@ class AutoClassFlagTest(TestCase):
             comment="Automatically flagged!"
         )
 
+    def _get_matching_queryset(self):
+        """Return the queryset of classes matching self.rule."""
+        module = ClassSearchModule(program=self.program)
+        qb = module.query_builder()
+        decoded = json.loads(self.rule.rule_data)
+        return qb.as_queryset(decoded).distinct()
+
     def test_auto_flag_triggered(self):
         """Test that the flag is added when the class matches the rule."""
         cls = ClassSubject.objects.create(
@@ -99,22 +106,7 @@ class AutoClassFlagTest(TestCase):
             ClassFlag.objects.filter(subject=matching, flag_type=self.flag_type).exists()
         )
 
-        # Simulate what the handler does when apply_existing is checked
-        module = ClassSearchModule(program=self.program)
-        qb = module.query_builder()
-        decoded = json.loads(self.rule.rule_data)
-        matching_classes = qb.as_queryset(decoded).distinct()
-
-        for cls in matching_classes:
-            ClassFlag.objects.get_or_create(
-                subject=cls,
-                flag_type=self.flag_type,
-                defaults={
-                    "comment": self.rule.comment,
-                    "created_by": self.system_user,
-                    "modified_by": self.system_user,
-                },
-            )
+        self.rule.apply_to_queryset(self._get_matching_queryset(), user=self.system_user)
 
         self.assertTrue(
             ClassFlag.objects.filter(subject=matching, flag_type=self.flag_type).exists()
@@ -132,22 +124,7 @@ class AutoClassFlagTest(TestCase):
         # Clear any flags (signal shouldn't have added any, but be safe)
         ClassFlag.objects.filter(subject=non_matching).delete()
 
-        # Run bulk-apply logic
-        module = ClassSearchModule(program=self.program)
-        qb = module.query_builder()
-        decoded = json.loads(self.rule.rule_data)
-        matching_classes = qb.as_queryset(decoded).distinct()
-
-        for cls in matching_classes:
-            ClassFlag.objects.get_or_create(
-                subject=cls,
-                flag_type=self.flag_type,
-                defaults={
-                    "comment": self.rule.comment,
-                    "created_by": self.system_user,
-                    "modified_by": self.system_user,
-                },
-            )
+        self.rule.apply_to_queryset(self._get_matching_queryset(), user=self.system_user)
 
         self.assertFalse(
             ClassFlag.objects.filter(subject=non_matching, flag_type=self.flag_type).exists()
