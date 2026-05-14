@@ -94,7 +94,7 @@
     <tr>
         <td colspan="2">&nbsp;</td>
     </tr>
-    {% if not isopenclass and not formset.forms|length_is:0 %}
+    {% if not isopenclass and not formset.forms|length == 0 %}
     <tr>
         <th colspan="2">Classroom Requests</th>
     </tr>

@@ -162,7 +162,7 @@
         {% if when %} as of {{ when }} {% endif %}
     </th>
 </tr>
-{% if sections|length_is:0 %}
+{% if sections|length == 0 %}
 <tr>
     <td colspan="5">
         There are no class sections

@@ -1,5 +1,5 @@
 from django import template
-from django.utils.http import urlquote as urlencode
+from urllib.parse import quote as urlencode
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 register = template.Library()
 
