@@ -118,7 +118,7 @@ def format_stacktrace_simple(trace):
 class SafeCachePanel(CachePanel):
     """Cache panel that prevents recursion when cache calls trigger template loading."""
 
-    def _store_call_info(self, sender, name, time_taken, return_value, args, kwargs, trace, template_info, backend, **kw):
+    def _store_call_info(self, name, time_taken, return_value, args, kwargs, trace, template_info, backend):
         depth = getattr(_cache_panel_depth, 'depth', 0)
         _cache_panel_depth.depth = depth + 1
 
@@ -136,8 +136,8 @@ class SafeCachePanel(CachePanel):
                 })
             else:
                 super()._store_call_info(
-                    sender, name, time_taken, return_value,
-                    args, kwargs, trace, template_info, backend, **kw
+                    name, time_taken, return_value,
+                    args, kwargs, trace, template_info, backend
                 )
         finally:
             _cache_panel_depth.depth = depth
