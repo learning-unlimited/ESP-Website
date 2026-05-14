@@ -1,4 +1,6 @@
 
+import logging
+
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,6 +48,8 @@ from esp.middleware.threadlocalrequest import get_current_request
 from django.core.exceptions import SuspiciousOperation
 from django.http import HttpResponseRedirect
 from django.db.models.query import Q
+
+logger = logging.getLogger(__name__)
 
 class StudentCustomComboForm(ComboForm):
     template_name = "program/modules/customformmodule/custom_form.html"
@@ -112,6 +116,7 @@ class StudentCustomFormModule(ProgramModuleObj):
                     **kwargs,
                 )
             except SuspiciousOperation:
+                logger.warning('Invalid or missing wizard ManagementForm in StudentCustomFormModule.extraform', exc_info=True)
                 return HttpResponseRedirect(request.path)
 
         custom_form_id = Tag.getProgramTag('learn_extraform_id', prog)
