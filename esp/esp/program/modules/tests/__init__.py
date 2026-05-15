@@ -37,7 +37,7 @@ from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleT
 from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
 from esp.program.modules.tests.onsitecheckinmodule import OnSiteCheckinModuleTest
 from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest
-from esp.program.modules.tests.studentreg import StudentRegTest
+from esp.program.modules.tests.studentreg import StudentRegTest, RegistrationTypeVisibilityTest
 from esp.program.modules.tests.survey import SurveyTest
 from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest
 from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
@@ -55,6 +55,7 @@ from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest
 from esp.program.modules.tests.testallviews import AllViewsTest
 from esp.program.modules.tests.equityoutreach import EquityOutreachTest
 from esp.program.modules.tests.admintestingmodule import AdminTestingModuleTest
+from esp.program.modules.tests.test_get_hours import GetHoursQueryCountTest, GetHoursApprovedFilterTest, GetHoursScheduledFilterTest, StaticHoursTest
 from esp.program.modules.tests.batchclassregmodule import BatchClassRegModuleTest
 from esp.program.modules.tests.formstackappmodule import FormstackAppModuleTest
 from esp.program.modules.tests.test_creditcard_required import (

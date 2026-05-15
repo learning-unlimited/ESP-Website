@@ -274,3 +274,15 @@ button.sidetoolbar {
     text-align: center;
     background: rgba(200,200,200,0.5) url('/media/images/ajax_loader.gif') no-repeat center; /*.gif file or just div with message etc. however you like*/
 }
+
+#clear-change-log-wrapper {
+    width: 100%;
+    text-align: center;
+    min-height: 30px;
+    position: relative;
+    z-index: 10000; /* above #loadingOverlay (9999) so it stays clickable during overlay AND after removal */
+}
+
+#clear-change-log-wrapper button {
+    cursor: pointer;
+}
