@@ -13,6 +13,9 @@ class InstallConfig(AppConfig):
     Base class for app configs of modules that use install() for initial
     data. Don't use this on its own, subclass it to provide a name.
     """
+    # Prevent Django 3.2+ from auto-selecting this base class as the
+    # default AppConfig for esp.utils (it has no name of its own).
+    default = False
 
     def ready(self):
         signals.post_migrate.connect(run_install, sender=self)
