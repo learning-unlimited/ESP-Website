@@ -1,5 +1,9 @@
 from django.contrib import admin
-from django.utils.translation import ugettext_lazy as _
+try:
+    from django.utils.translation import gettext_lazy as _
+except ImportError:
+    from django.utils.translation import ugettext_lazy as _
+
 from esp.admin import admin_site
 from django import forms
 from django.db import models
@@ -43,7 +47,10 @@ class ESPUserAdmin(UserAdmin):
     #(since we don't use it)
     #See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py
 
-    from django.utils.translation import ugettext_lazy as _
+    try:
+        from django.utils.translation import gettext_lazy as _
+    except ImportError:
+        from django.utils.translation import ugettext_lazy as _
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),

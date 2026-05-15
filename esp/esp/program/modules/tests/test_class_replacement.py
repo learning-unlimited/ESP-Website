@@ -2,7 +2,7 @@ from esp.program.tests import ProgramFrameworkTest
 
 import json
 
-class Issue561Test(ProgramFrameworkTest):
+class ClassReplacementTest(ProgramFrameworkTest):
     def setUp(self):
         super().setUp()
         self.add_user_profiles()
@@ -41,10 +41,10 @@ class Issue561Test(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         resp_json = json.loads(response.content)
 
-        # Verify it returns a script with a confirmation message
-        self.assertIn('script', resp_json)
-        self.assertIn('confirm', resp_json['script'])
-        self.assertIn(str(self.class1.title), resp_json['script'])
+        # Verify it returns structured conflict JSON with a confirmation message
+        self.assertTrue(resp_json.get('conflict'))
+        self.assertIn('confirm_msg', resp_json)
+        self.assertIn(str(self.class1.title), resp_json['confirm_msg'])
 
         # 3. Simulate confirmation by sending force_replace=true
         data['force_replace'] = 'true'

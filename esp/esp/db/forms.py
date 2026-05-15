@@ -177,6 +177,8 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         # IntegerField to error when its __init__ is called
         if 'limit_choices_to' in kwargs:
             del kwargs['limit_choices_to']
+        if 'blank' in kwargs:
+            del kwargs['blank']
 
         super().__init__(*args, **kwargs)
 

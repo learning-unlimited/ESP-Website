@@ -481,23 +481,12 @@ class StudentClassRegModule(ProgramModuleObj):
                             confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
 
                             form_selector = '#prereg_%s' % sectionid
-                            force_replace_input = '<input type="hidden" name="force_replace" value="true">'
-                            js_script = (
-                                'if (confirm(%s)) {'
-                                '  var form = $j(%s);'
-                                '  if (form.length > 0) {'
-                                '    form.append(%s);'
-                                '    form.submit();'
-                                '    form.find(\'input[name="force_replace"]\').remove();'
-                                '  }'
-                                '}'
-                            ) % (
-                                json.dumps(confirm_msg),
-                                json.dumps(form_selector),
-                                json.dumps(force_replace_input),
-                            )
                             resp = HttpResponse(content_type='application/json')
-                            resp.content = json.dumps({'script': js_script})
+                            resp.content = json.dumps({
+                                'conflict': True,
+                                'confirm_msg': confirm_msg,
+                                'form_selector': form_selector
+                            })
                             return resp
                     except (ClassSection.DoesNotExist, ValueError):
                         pass

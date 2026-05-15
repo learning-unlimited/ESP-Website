@@ -34,7 +34,10 @@ Learning Unlimited, Inc.
 """
 
 from debug_toolbar.panels.templates import TemplatesPanel as BaseTemplatesPanel
-from django.utils.translation import ugettext_lazy as _
+try:
+    from django.utils.translation import gettext_lazy as _
+except ImportError:
+    from django.utils.translation import ugettext_lazy as _
 from django.core import signing
 from os.path import normpath
 

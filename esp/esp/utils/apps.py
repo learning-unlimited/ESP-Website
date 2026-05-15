@@ -16,3 +16,7 @@ class InstallConfig(AppConfig):
 
     def ready(self):
         signals.post_migrate.connect(run_install, sender=self)
+
+class UtilsConfig(AppConfig):
+    name = 'esp.utils'
+

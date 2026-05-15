@@ -906,7 +906,7 @@ class ClassSection(models.Model):
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
 
         # check to see if there's a conflict:
-        my_timeslots = self.timeslot_ids()
+        my_timeslots = set(self.timeslot_ids())
         for sec in section_list:
             if sec.parent_class == self.parent_class:
                 return 'You are already signed up for a section of this class!'

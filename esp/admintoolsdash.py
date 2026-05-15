@@ -10,7 +10,10 @@ And to activate the app index dashboard::
     ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 """
 
-from django.utils.translation import ugettext as _
+try:
+    from django.utils.translation import gettext as _
+except ImportError:
+    from django.utils.translation import ugettext as _
 from django.urls import reverse
 
 from admin_tools.dashboard import modules, Dashboard, AppIndexDashboard
