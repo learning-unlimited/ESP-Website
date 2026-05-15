@@ -10,7 +10,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0026_paid_records_to_transfers'),
+        ('users', '0027_merge_20260422'),
     ]
 
     operations = [

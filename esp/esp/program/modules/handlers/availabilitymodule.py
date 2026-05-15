@@ -109,7 +109,7 @@ class AvailabilityModule(ProgramModuleObj):
                 return False
 
         # Round durations of both classes and timeslots to nearest 30 minutes
-        total_time = get_current_request().user.getTaughtTime(
+        total_time = user.getTaughtTime(
             self.program, include_scheduled=True, round_to=0.5
         )
         available_time = timedelta()

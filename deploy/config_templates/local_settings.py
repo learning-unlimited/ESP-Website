@@ -3,7 +3,7 @@
 from __future__ import absolute_import
 import os
 
-SITE_INFO = (1, 'devsite.learningu.org', 'LU Dev Site')
+SITE_INFO = (1, 'esp-dev.mit.edu', 'MIT ESP Dev Site')
 CACHE_PREFIX = "ludev"
 PROJECT_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 USE_MAILMAN = False
@@ -23,7 +23,8 @@ DATABASES = {'default':
 
 MIDDLEWARE_LOCAL = []
 
-EMAIL_HOST_SENDER = 'devsite.learningu.org'
+EMAIL_HOST_SENDER = 'esp.mit.edu'
+ALLOWED_SENDER_EMAIL_DOMAINS = [r'esp\.mit\.edu', r'mit\.edu', r'esp-dev\.mit\.edu']
 VARNISH_HOST = None
 DEBUG_TOOLBAR = True
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

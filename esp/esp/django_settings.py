@@ -122,6 +122,7 @@ SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
 EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
+ALLOWED_SENDER_EMAIL_DOMAINS = [r'esp\.mit\.edu', r'mit\.edu']
 
 # Default addresses to send archive/bounce info to - should probably be overridden in local_settings
 DEFAULT_EMAIL_ADDRESSES = {

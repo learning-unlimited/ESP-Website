@@ -65,8 +65,9 @@ from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
 
-# LU: _EMAIL_DOMAINS = [settings.SITE_INFO[1].replace('.', r'\.'), r'(\w+\.)?learningu\.org']
-_EMAIL_DOMAINS = [r'esp\.mit\.edu', r'mit\.edu']
+# LU uses: [settings.SITE_INFO[1].replace('.', r'\.'), r'(\w+\.)?learningu\.org']
+# MIT overrides this via ALLOWED_SENDER_EMAIL_DOMAINS in django_settings.py / local_settings.py
+_EMAIL_DOMAINS = settings.ALLOWED_SENDER_EMAIL_DOMAINS
 _BARE_PARTS   = ['(^.+@{0}$)'.format(d)     for d in _EMAIL_DOMAINS]
 _NAMED_PARTS  = ['(^.+<.+@{0}>$)'.format(d) for d in _EMAIL_DOMAINS]
 

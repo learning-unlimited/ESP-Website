@@ -231,7 +231,7 @@ class StudentRegTest(ProgramFrameworkTest):
         fg.delete()
         self.assertEqual(iac.amount_due(), program_cost)
 
-        #   Check that the 'free/reduced lunch' option on the finaid results in zero amount due
+        #   MIT: reduced lunch does not auto-approve; amount due unchanged
         form_settings = {
             'reduced_lunch': 'checked',
             'household_income': '12345',
@@ -241,7 +241,7 @@ class StudentRegTest(ProgramFrameworkTest):
         response = self.client.post('/learn/%s/finaid' % self.program.getUrlBase(), form_settings)
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
-        self.assertEqual(iac.amount_due(), 0)
+        self.assertEqual(iac.amount_due(), program_cost)
 
     def test_extracosts(self):
         """ Verify that the "Student Extra Costs" module behaves as specified. """

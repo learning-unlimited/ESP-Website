@@ -96,8 +96,8 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         post_data = {
             'subject': 'Test Subject 123',
             'body': 'Test Body 123',
-            'from': 'info@testserver.learningu.org',
-            'replyto': 'replyto@testserver.learningu.org',
+            'from': 'info@esp.mit.edu',
+            'replyto': 'replyto@esp.mit.edu',
             'filterid': filterid,
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commfinal'), post_data)
@@ -118,8 +118,8 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         #   Check that the emails matched the entered information
         msg = mail.outbox[0]
         self.assertEqual(msg.subject, 'Test Subject 123')
-        self.assertEqual(msg.from_email, 'info@testserver.learningu.org')
-        self.assertEqual(msg.extra_headers.get('Reply-To', ''), 'replyto@testserver.learningu.org')
+        self.assertEqual(msg.from_email, 'info@esp.mit.edu')
+        self.assertEqual(msg.extra_headers.get('Reply-To', ''), 'replyto@esp.mit.edu')
 
         #   Check that the HTML-templated email renders correctly
         context_dict = {'user'   : ActionHandler(self.students[0], self.students[0]),

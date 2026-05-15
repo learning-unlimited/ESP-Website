@@ -394,7 +394,8 @@ class AccountCreationTest(TestCase):
                                          "last_name":"last",
                                          "email":"tsutton125@gmail.com",
                                          "confirm_email":"tsutton125@gmail.com",
-                                         "initial_role":"Teacher"})
+                                         "initial_role":"Teacher",
+                                         "referral_source":"search"})
 
         #test that the user was created properly
         try:
