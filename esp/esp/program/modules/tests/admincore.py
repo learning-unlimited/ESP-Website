@@ -54,13 +54,13 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         self.client.login(username=student.username, password='password')
 
         # Initially, delete the tag
-        Tag.objects.filter(key='display_registration_names').delete()
+        Tag.objects.filter(key='display_registration_names', content_type__isnull=True, object_id__isnull=True).delete()
         # Check the displayed types
         r = self.client.get("/learn/"+self.program.url+"/studentreg")
         self.assertNotContains(r, self.testRT, status_code=200)
 
         # Then set the tag
-        Tag.objects.get_or_create(key='display_registration_names', value='["Enrolled", "'+self.testRT+'"]')
+        Tag.setTag(key='display_registration_names', target=None, value='["Enrolled", "'+self.testRT+'"]')
         # Check the displayed types again
         r = self.client.get("/learn/"+self.program.url+"/studentreg")
         self.assertContains(r, self.testRT, status_code=200)
