@@ -4,10 +4,11 @@
  */
 
 var connect = require('connect')
+  , serveStatic = require('serve-static')
   , http = require('http')
   , fs   = require('fs')
   , app = connect()
-      .use(connect.static(__dirname + '/../../'));
+      .use(serveStatic(__dirname + '/../../'));
 
 http.createServer(app).listen(3000);
 

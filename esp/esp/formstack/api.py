@@ -120,4 +120,4 @@ class Formstack(object):
 
 class APIError(Exception):
     def __str__(self):
-        return 'Formstack API error: {0}'.format(self.message)
+        return f'Formstack API error: {self.message}'

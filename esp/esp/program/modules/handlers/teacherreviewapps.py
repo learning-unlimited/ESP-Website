@@ -36,7 +36,7 @@ from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration
+from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
 from datetime import datetime
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
@@ -65,10 +65,10 @@ class TeacherReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError('Cannot find class with ID {}).'.format(extra), log=False)
+            raise ESPError(f'Cannot find class with ID {extra}.', log=False)
 
         if not request.user.canEdit(cls):
-            raise ESPError('You cannot edit class "%s"' % cls, log=False)
+            raise ESPError(f'You cannot edit class "{cls}"', log=False)
 
         #   Fetch any student even remotely related to the class.
         students_dict = cls.students_dict()
@@ -78,10 +78,11 @@ class TeacherReviewApps(ProgramModuleObj):
 
         for student in students:
             now = datetime.now()
-            student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
+            reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
+            student.added_class = reg.start_date if reg else None
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
-            except:
+            except StudentApplication.DoesNotExist:
                 student.app = None
 
             if student.app:
@@ -103,7 +104,7 @@ class TeacherReviewApps(ProgramModuleObj):
                         student.app_completed = True
 
         students = list(students)
-        students.sort(key=lambda s: s.added_class)
+        students.sort(key=lambda s: s.added_class or datetime.min)
 
         if 'prev' in request.GET:
             prev_id = int(request.GET.get('prev'))
@@ -112,7 +113,7 @@ class TeacherReviewApps(ProgramModuleObj):
             for current in students[1:]:
                 if prev.id == prev_id and current.app_completed:
                     from django.shortcuts import redirect
-                    url = "/%s/%s/%s/review_student/%s/?student=%s" % (tl, one, two, extra, current.id)
+                    url = f"/{tl}/{one}/{two}/review_student/{extra}/?student={current.id}"
                     return redirect(url)
                 if prev.id != prev_id:
                     prev = current
@@ -162,13 +163,14 @@ class TeacherReviewApps(ProgramModuleObj):
                 q = f.app_question
                 form = f.app_question.get_form(data, form_prefix=f.prefix)
 
-                #   If the form is valid, save the question.  If not, delete it.
-                if form.is_valid():
+                #   If the form is valid and has question text, save the question.
+                #   Otherwise, if it's an existing question (with an ID), delete it.
+                #   This prevents empty records for unfilled classes and deletes cleared questions.
+                if form.is_valid() and form.cleaned_data.get('question', '').strip():
                     q.update(form)
                     q.save()
-                else:
-                    if hasattr(q, 'id') and q.id:
-                        q.delete()
+                elif hasattr(q, 'id') and q.id:
+                    q.delete()
 
             return self.goToCore(tl)
 
@@ -191,7 +193,7 @@ class TeacherReviewApps(ProgramModuleObj):
             raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
-            raise ESPError('You cannot edit class "%s"' % cls, log=False)
+            raise ESPError(f'You cannot edit class "{cls}"', log=False)
 
         student = request.GET.get('student', None)
         if not student:
@@ -200,7 +202,7 @@ class TeacherReviewApps(ProgramModuleObj):
         try:
             student = ESPUser.objects.get(id = int(student))
         except ESPUser.DoesNotExist:
-            raise ESPError('Cannot find student, %s' % student, log=False)
+            raise ESPError(f'Cannot find student, {student}', log=False)
 
         not_registered = not StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student).exists()
         if not_registered:
@@ -208,11 +210,12 @@ class TeacherReviewApps(ProgramModuleObj):
 
         try:
             student.app = student.studentapplication_set.get(program = self.program)
-        except:
+        except StudentApplication.DoesNotExist:
             student.app = None
             raise ESPError('Error: Student did not start an application.', log=False)
 
-        student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
+        reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
+        student.added_class = reg.start_date if reg else None
 
         teacher_reviews = student.app.reviews.all().filter(reviewer=request.user)
         if teacher_reviews.count() > 0:
@@ -227,9 +230,9 @@ class TeacherReviewApps(ProgramModuleObj):
             if form.is_valid():
                 form.target.update(form)
                 if 'submit_next' in request.POST or 'submit_return' in request.POST:
-                    url = '/%s/%s/%s/review_students/%s/' % (tl, one, two, extra)
+                    url = f'/{tl}/{one}/{two}/review_students/{extra}/'
                     if 'submit_next' in request.POST:
-                        url += '?prev=%s' % student.id
+                        url += f'?prev={student.id}'
                     from django.shortcuts import redirect
                     return redirect(url) # self.review_students(request, tl, one, two, module, extra, prog)
 
