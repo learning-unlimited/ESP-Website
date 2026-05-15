@@ -3,6 +3,7 @@ Tests for the StudentRegTwoPhase module, specifically the confirmation
 button (#1166) and minimum class requirement (#2535) features.
 """
 
+import json
 import random
 
 from django.core import mail
@@ -192,12 +193,58 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Send Me a Confirmation Email')
 
+    def post_ajax_validate_class(self, post_data):
+        try:
+            response = self.client.post(
+                '/learn/%s/ajax_validate_class' % self.program.getUrlBase(),
+                post_data,
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        except Exception as inst:
+            return None, str(inst)
+
+        response_dict = json.loads(str(response.content, encoding='UTF-8'))
+        return response_dict, response_dict.get('error')
+
+    def test_ajax_validate_class_contract(self):
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        cls = random.choice(self.program.classes())
+        response_dict, error_msg = self.post_ajax_validate_class({'class_id': cls.id})
+
+        self.assertTrue('error' in response_dict)
+        self.assertTrue(error_msg is None or isinstance(error_msg, str))
+
+    def test_ajax_validate_class_missing_id(self):
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        _, error_msg = self.post_ajax_validate_class({})
+        self.assertEqual(error_msg, 'No class specified.')
+
+    def test_ajax_validate_class_invalid_id(self):
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        _, error_msg = self.post_ajax_validate_class({'class_id': 'not-an-int'})
+        self.assertEqual(error_msg, 'Class not found.')
+
+    def test_ajax_validate_class_nonexistent_id(self):
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        _, error_msg = self.post_ajax_validate_class({'class_id': 999999999})
+        self.assertEqual(error_msg, 'Class not found.')
+
     # ---------------------------------------------------------------
     # Tests: Minimum class requirement (twophase_min_classes tag)
     # ---------------------------------------------------------------
     def test_min_classes_rejects(self):
         """With min_classes set, confirmation should be rejected if too few classes starred."""
-        # Use update_or_create to ensure the value is set correctly
         Tag.objects.update_or_create(
             key='twophase_min_classes',
             content_type=self.program_content_type,
@@ -216,7 +263,6 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 302,
                          "Expected redirect when below min_classes")
 
-        # Check error message was set in the session
         from django.contrib.messages import get_messages
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 1)
@@ -285,6 +331,11 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertTrue(
             self.client.login(username=student.username, password='password'))
 
+        self._star_classes(student, 1)
+
+        response = self.client.post(
+            '/learn/%s/confirm_registration' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
         self._star_classes(student, 1)
 
         response = self.client.post(

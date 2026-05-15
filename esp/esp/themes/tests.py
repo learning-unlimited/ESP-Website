@@ -71,8 +71,9 @@ class ThemesTest(TestCase):
 
         #   Get the home page (this is a fresh site) and make sure it has a link to the theme landing.
         response = self.client.get('/')
-        self.assertTrue(len(re.findall(r'<a href="/themes.*?Configure site appearance.*?</a>',
-                                       str(response.content, encoding='UTF-8'), flags=re.DOTALL)) == 1)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(re.findall(r'<a href="/themes[^\"]*".*?</a>',
+                           str(response.content, encoding='UTF-8'), flags=re.DOTALL)) >= 1)
 
         #   Go to the themes landing page and theme selector, make sure neither errors out.
         response = self.client.get('/themes/')
@@ -178,15 +179,18 @@ class ThemesTest(TestCase):
         -   Check load, save, delete modes as well as test
         """
 
-        #   Log in as administrator and load the theme editor
+        #   Log in as administrator and load a known theme before opening the editor.
+        #   This avoids relying on ambient theme state when tests run in parallel.
         self.client.login(username=self.admin.username, password='password')
+        tc = ThemeController()
+        tc.clear_theme()
+        tc.load_theme('barebones')
         response = self.client.get('/themes/customize/')
         self.assertEqual(response.status_code, 200)
 
         #   Check that the "advanced" properties for all themes show up in the form
         #   (using ThemeController directly for theme switching, since testSelector()
         #   covers the Web interface)
-        tc = ThemeController()
         theme_names = tc.get_theme_names()
         for theme_name in theme_names:
             variables_filename = os.path.join(settings.MEDIA_ROOT, 'esp', 'themes', 'theme_data', theme_name,

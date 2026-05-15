@@ -61,4 +61,9 @@ Below is the class listing for {{program.niceName}}. If you have trouble viewing
 {% endblock %}
 
 {% block class_action %}
+<div class="class-validation-error"
+     data-bind="text: validationError, visible: validationError"
+     style="color:red; display:none;"></div>
+<button class="btn btn-sm btn-primary"
+        data-bind="click: $root.validateClass">Select</button>
 {% endblock %}

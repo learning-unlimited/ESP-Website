@@ -16,6 +16,7 @@ var ClassSubject = function (data) {
     self.prereqs     = data.prereqs;
     self.interested  = ko.observable(false);
     self.interested_saved = ko.observable(false);
+    self.validationError = ko.observable(null);
 
     self.fulltitle = data.emailcode + ": " + data.title;
     if (!increment_grade) {
@@ -246,6 +247,38 @@ var CatalogViewModel = function () {
 
     self.showClass = function (cls) {
         return self.searchPredicate(cls) && self.filterPredicate(cls);
+    }
+
+    // validate class selection (view_classes catalog only)
+    if (catalog_type === 'view') {
+        self.validateClass = function (classData) {
+            var learn_url = program_base_url.replace(/^\/json/, '/learn');
+            var url = learn_url + 'ajax_validate_class';
+            $j.ajax({
+                type: 'POST',
+                url: url,
+                dataType: 'json',
+                data: {
+                    csrfmiddlewaretoken: csrf_token(),
+                    class_id: classData.id
+                },
+                success: function (resp) {
+                    if (typeof resp === 'string') {
+                        try {
+                            resp = JSON.parse(resp);
+                        } catch (e) {
+                            resp = {};
+                        }
+                    }
+                    classData.validationError(resp.error || null);
+                },
+                error: function (xhr) {
+                    var msg = 'Validation failed.';
+                    try { msg = JSON.parse(xhr.responseText).error || msg; } catch (e) {}
+                    classData.validationError(msg);
+                }
+            });
+        };
     }
 
     self.classesShowing = function () {
