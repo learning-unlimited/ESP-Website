@@ -54,13 +54,13 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         self.client.login(username=student.username, password='password')
 
         # Initially, delete the tag
-        Tag.objects.filter(key='display_registration_names').delete()
+        Tag.objects.filter(key='display_registration_names', content_type__isnull=True, object_id__isnull=True).delete()
         # Check the displayed types
         r = self.client.get("/learn/"+self.program.url+"/studentreg")
         self.assertNotContains(r, self.testRT, status_code=200)
 
         # Then set the tag
-        Tag.objects.get_or_create(key='display_registration_names', value='["Enrolled", "'+self.testRT+'"]')
+        Tag.setTag(key='display_registration_names', target=None, value='["Enrolled", "'+self.testRT+'"]')
         # Check the displayed types again
         r = self.client.get("/learn/"+self.program.url+"/studentreg")
         self.assertContains(r, self.testRT, status_code=200)
@@ -78,7 +78,7 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         modules.append(ProgramModule.objects.get(handler='AvailabilityModule'))
         modules.append(ProgramModule.objects.get(handler='StudentRegConfirm'))
 
-        super(ModuleManagementConstraintsTest, self).setUp(modules=modules)
+        super().setUp(modules=modules)
 
         self.adminUser, created = ESPUser.objects.get_or_create(username='admin_constraints')
         self.adminUser.set_password('password')
@@ -219,7 +219,7 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
         modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule'))
         modules.append(ProgramModule.objects.get(handler='AdminCore'))
 
-        super(ModuleManagementLinkTitleTest, self).setUp(modules=modules)
+        super().setUp(modules=modules)
 
         # Force lazy creation of ProgramModuleObj rows so they exist
         # before individual tests query for them.
