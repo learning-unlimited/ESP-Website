@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite
 from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record, RecordType
-from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.models  import ClassSubject, ClassSection, StudentRegistration, PrintableJob
 from esp.program.models  import ClassFlagType
 from esp.program.class_status import ClassStatus
 from esp.users.views     import search_for_user
@@ -48,6 +48,15 @@ from esp.cal.models import Event
 from esp.middleware import ESPError
 from esp.utils.query_utils import nest_Q
 from esp.utils import cmp
+import collections
+import json
+import csv
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
+# Define a thread pool for background PDF generation jobs
+# Throttling to 4 concurrent jobs to avoid exhausting server resources
+printable_job_executor = ThreadPoolExecutor(max_workers=4)
 from esp.program.models import VolunteerOffer
 
 from django import forms
@@ -1243,8 +1252,6 @@ class ProgramPrintables(ProgramModuleObj):
 
         students.sort()
         if len(students) > 1 and file_type == 'pdf' and not onsite:
-            from esp.program.models.printable_job import PrintableJob
-            import threading
             from django.http import HttpResponseRedirect
             from django.db import connection
 
@@ -1294,9 +1301,7 @@ class ProgramPrintables(ProgramModuleObj):
                     connection.close()
 
             student_ids = [s.id for s in students]
-            thread = threading.Thread(target=run_job, args=(job.id, student_ids, prog.id, file_type))
-            thread.daemon = True
-            thread.start()
+            printable_job_executor.submit(run_job, job.id, student_ids, prog.id, file_type)
             return HttpResponseRedirect('/manage/%s/%s/printable_job_status/%s/' % (prog.url, module, job.id))
 
         return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
@@ -1488,7 +1493,6 @@ class ProgramPrintables(ProgramModuleObj):
         import os
         from wsgiref.util import FileWrapper
         from django.core.exceptions import ValidationError
-        from esp.program.models.printable_job import PrintableJob
         from django.http import HttpResponse, HttpResponseRedirect
         try:
             job = PrintableJob.objects.get(id=extra, program=prog)
