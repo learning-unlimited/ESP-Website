@@ -271,6 +271,7 @@ class Transfer(models.Model):
     paid_in = models.ForeignKey(
         'self', blank=True, null=True, on_delete=models.PROTECT,
         help_text='If this transfer is for a fee that has been paid, references the transfer for the payment transaction.')
+
     def set_amount(self, amount):
         if self.paid_in:
             raise Exception('Cannot change the amount of this transfer since it was already paid')
