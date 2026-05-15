@@ -72,6 +72,28 @@ import random
 import re
 import unicodedata
 
+
+class _StatsDummy(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+class DemographicsStatisticsTest(TestCase):
+    def test_null_graduation_year_is_ignored(self):
+        from esp.program.statistics import demographics
+
+        form = _StatsDummy(cleaned_data={})
+        profiles = [
+            _StatsDummy(student_info=_StatsDummy(graduation_year=None, dob=None)),
+            _StatsDummy(student_info=_StatsDummy(graduation_year=2030, dob=None)),
+        ]
+        result_dict = {}
+
+        demographics(form, [], [], profiles, result_dict)
+
+        self.assertEqual(result_dict['gradyear_data'], [(2030, 1)])
+
+
 class ViewUserInfoTest(TestCase):
     def setUp(self):
 
@@ -145,9 +167,10 @@ class ViewUserInfoTest(TestCase):
         c = Client()
         c.login(username=self.admin.username, password=self.password)
 
-        # Try searching by ID direct hit
+        # Try searching by user ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=%s" % self.admin.username)
 
     def testUserIDSearchMultipleResults(self):
         c = Client()
@@ -1350,7 +1373,11 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             hours_priority = numpy.sum([len(sec.get_meeting_times()) for sec in sections_priority_and_enrolled])
             student_utility = (hours_interested + 1.5 * hours_priority) ** 0.5
 
-            student_weight = (len(sections_interested) + len(sections_priority)) ** 0.5
+            # Weight is total hours of registered sections, matching student_utility_weights
+            # (interest and priority are summed independently, mirroring the controller's matrix multiply)
+            weight_hours_interested = numpy.sum([len(sec.get_meeting_times()) for sec in sections_interested])
+            weight_hours_priority = numpy.sum([len(sec.get_meeting_times()) for sec in sections_priority])
+            student_weight = (weight_hours_interested + weight_hours_priority) ** 0.5
             student_screwed_val = (1.0 + student_utility) / (1.0 + student_weight)
 
             #   Compare against the value in the stats dict (allow for floating-point error)
