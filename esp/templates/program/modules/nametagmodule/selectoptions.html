@@ -67,8 +67,7 @@ To have good quality IDs:<br />
             </li>
             {% if program|hasModule:"TeacherModeratorModule" %}
             <li><input type="radio" name="type" value="teachermoderators" id="teachermoderators" />
-                <label for="teachermoderators">Teachers with an approved class and {{ program.getModeratorTitle|lower
-                    }}s assigned to a class</label>
+                <label for="teachermoderators">Teachers with an approved class and {{ program.getModeratorTitle|lower }}s assigned to a class</label>
             </li>
             <li><input type="radio" name="type" value="moderators" id="moderators" />
                 <label for="moderators">{{ program.getModeratorTitle }}s assigned to a class</label>
@@ -140,8 +139,7 @@ To have good quality IDs:<br />
             <br />
             <br />
             <input type="checkbox" name="barcodes" id="barcodes" />
-            <label for="barcodes"> Display barcodes for user ID numbers{% if self_checkin %} and self checkin codes{%
-                endif %} on back of nametags</label>
+            <label for="barcodes"> Display barcodes for user ID numbers{% if self_checkin %} and self checkin codes{% endif %} on back of nametags</label>
             <br />
             <br />
         </div>

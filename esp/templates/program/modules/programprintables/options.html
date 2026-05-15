@@ -167,8 +167,7 @@
             <a href="./classrostersbymoderator?recipient_type=Teacher&base_list=assigned_moderator"
                 title="Class Rosters by {{ program.getModeratorTitle }}s">
                 <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Class Rosters by {{
-                        program.getModeratorTitle }}s</div>
+                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Class Rosters by {{ program.getModeratorTitle }}s</div>
                 </button>
             </a>
         </div>
@@ -187,8 +186,7 @@
             <a href="./classrostersbymoderator/attendance?recipient_type=Teacher&base_list=assigned_moderator"
                 title="Attendance Sheets by {{ program.getModeratorTitle }}s">
                 <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Attendance Sheets by {{
-                        program.getModeratorTitle }}s</div>
+                    <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Attendance Sheets by {{ program.getModeratorTitle }}s</div>
                 </button>
             </a>
         </div>
@@ -280,8 +278,7 @@
         Teacher{% if program|hasModule:"TeacherModeratorModule" %} and/or {{ program.getModeratorTitle }}{% endif %}
         List
     </div>
-    <h4 style="line-height:normal;">(filtered to Teachers{% if program|hasModule:"TeacherModeratorModule" %}/{{
-        program.getModeratorTitle }}s{% endif %} of approved and scheduled classes)</h4>
+    <h4 style="line-height:normal;">(filtered to Teachers{% if program|hasModule:"TeacherModeratorModule" %}/{{ program.getModeratorTitle }}s{% endif %} of approved and scheduled classes)</h4>
     <div style="padding-left: 10px; padding-right: 10px;">
         <div id="teacher_list_wrapper">
             <div id="teacher_list_options">

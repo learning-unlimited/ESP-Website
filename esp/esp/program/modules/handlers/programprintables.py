@@ -882,6 +882,9 @@ class ProgramPrintables(ProgramModuleObj):
             else:
                 class_objects = teacher.getModeratingSectionsFromProgram(self.program)
 
+            # Prefetch meeting_times to avoid N+1 queries during sort-by-time
+            class_objects = class_objects.prefetch_related('meeting_times')
+
             classes = sorted([cls for cls in class_objects
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
