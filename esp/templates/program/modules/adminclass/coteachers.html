@@ -27,19 +27,19 @@
 <p>Please list all teachers that will be helping teach this class.  They will need to create accounts and mark their available times through the teacher registration page (for scheduling purposes).</p>
 
 {% if conflict %}
-    <div class="alert alert-danger">
+    <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
             {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ conflict.username }}">{{ conflict.name }}</a>{% else %}{{ conflict.name }}{% endif %} has a conflicting schedule.</b></font><br />
     </div>
 {% elif unavailableuser %}
-    <div class="alert alert-danger">
+    <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
             {% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ unavailableuser.username }}">{{ unavailableuser.name }}</a>{% else %}{{ unavailableuser.name }}{% endif %} is not available when this class is scheduled ({{ unavailabletimes|join:", " }}).</b></font><br />
     </div>
 {% endif %}
 
 {% if error %}
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
     <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         {{ error }}
 </div>
@@ -58,7 +58,6 @@
         <td width="50%">
             <input type="hidden" name="op" value="del" />
             <input type="hidden" name="clsid" value="{{ class.id }}" />
-            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
 
             <select id="current_coteachers"
                     class="coteachers" name="delete_coteachers" 
@@ -90,7 +89,6 @@
         <td width="50%">
             <input type="hidden" name="clsid" value="{{ class.id }}" />
             <input type="hidden" name="op" value="add" />
-            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
 
 	    <input type="text" name="teacher_name" id="teacher_name" />
 	    <input type="hidden" name="teacher_selected" id="teacher_id" />

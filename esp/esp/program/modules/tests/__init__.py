@@ -55,6 +55,7 @@ from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest
 from esp.program.modules.tests.testallviews import AllViewsTest
 from esp.program.modules.tests.equityoutreach import EquityOutreachTest
 from esp.program.modules.tests.admintestingmodule import AdminTestingModuleTest
+from esp.program.modules.tests.test_get_hours import GetHoursQueryCountTest, GetHoursApprovedFilterTest, GetHoursScheduledFilterTest, StaticHoursTest
 from esp.program.modules.tests.batchclassregmodule import BatchClassRegModuleTest
 from esp.program.modules.tests.formstackappmodule import FormstackAppModuleTest
 from esp.program.modules.tests.test_creditcard_required import (
@@ -71,3 +72,5 @@ from esp.program.modules.tests.resolve_user import ResolveUserTest
 from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest
 from esp.program.modules.tests.test_enrolled_split import EnrolledSplitViewTest
 from esp.program.modules.tests.schedulingcheckmodule import SchedulingCheckModuleTest
+from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
+from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
