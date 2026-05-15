@@ -14,7 +14,7 @@ django-reversion==1.10.0 # Handles versioning, currently for QSD and TemplateOve
 django-sendgrid-v5==0.9.0 # Provides support for using SendGrid as the EmailBackend
 sendgrid<6 # sendgrid 6+ dropped Python 2 support; cap to avoid pulling in cryptography>=45
 django-vanilla-views==1.0.4 # Provides simpler generic views, currently used only for grade change requests
-git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends Django Admin
+git+https://github.com/learning-unlimited/django-admin-tools.git@bf62857 # Extends Django Admin
 
 
 # Non-Django-specific packages
