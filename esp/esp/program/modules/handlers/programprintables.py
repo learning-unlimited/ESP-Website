@@ -48,15 +48,6 @@ from esp.cal.models import Event
 from esp.middleware import ESPError
 from esp.utils.query_utils import nest_Q
 from esp.utils import cmp
-import collections
-import json
-import csv
-import threading
-from concurrent.futures import ThreadPoolExecutor
-
-# Define a thread pool for background PDF generation jobs
-# Throttling to 4 concurrent jobs to avoid exhausting server resources
-printable_job_executor = ThreadPoolExecutor(max_workers=4)
 from esp.program.models import VolunteerOffer
 
 from django import forms
@@ -74,8 +65,23 @@ import collections
 import copy
 import csv
 import json
+import traceback
+import sys
+import os
+import zipfile
+import tempfile
+import mimetypes
+import math
+from itertools import groupby
+from PIL import Image
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from numpy import array_split
+
+# Define a thread pool for background PDF generation jobs
+# Throttling to 4 concurrent jobs to avoid exhausting server resources
+printable_job_executor = ThreadPoolExecutor(max_workers=4)
 
 class ProgramPrintables(ProgramModuleObj):
     doc = """A wide variety of printable documents that are useful for a program."""
