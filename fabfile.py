@@ -124,6 +124,7 @@ def setup():
 
     # Automatically activate virtualenv. We rely on this so that we don't have
     # to activate the virtualenv as part of every fab command.
+    files.append("~/.bash_login", "source ~/.profile")
     files.append("~/.bash_login", "source %sbin/activate" % env.venv)
 
     # Configure memcached item size
