@@ -232,9 +232,8 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         self.client.login(username=student.username, password='password')
         response = self.client.post(self.student_profile_url, self._valid_student_post(grade=9))
 
-        # Redirect on success (or 200 if the module re-renders)
-        self.assertIn(response.status_code, (200, 302),
-                      "Expected 200 or 302 after valid profile POST")
+        # Redirect on success
+        self.assertEqual(response.status_code, 302)
 
         # A profile with student_info must now exist
         profiles = RegistrationProfile.objects.filter(user=student, student_info__isnull=False)
@@ -296,17 +295,17 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         updated.update({'first_name': 'Updated', 'address_city': 'Somerville'})
         response = self.client.post(self.student_profile_url, updated)
 
-        self.assertIn(response.status_code, (200, 302))
+        self.assertEqual(response.status_code, 302)
 
         # User's first_name should reflect the edited submission
         student.refresh_from_db()
         self.assertEqual(student.first_name, 'Updated',
                          "User first_name should be updated after editing the profile")
 
-        # Profile count should remain bounded (no runaway duplicates)
+        # Profile count should not grow when editing
         profile_count = RegistrationProfile.objects.filter(user=student).count()
-        self.assertLessEqual(profile_count, 3,
-                             "Editing a profile must not create unbounded duplicates")
+        self.assertEqual(profile_count, 1,
+                 "Editing a profile must not create duplicate profiles")
 
     # ------------------------------------------------------------------
     # 6. GET profile page – teacher
@@ -332,7 +331,7 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         self.client.login(username=teacher.username, password='password')
         response = self.client.post(self.teacher_profile_url, self._valid_teacher_post())
 
-        self.assertIn(response.status_code, (200, 302))
+        self.assertEqual(response.status_code, 302)
         self.assertTrue(
             RegistrationProfile.objects.filter(user=teacher, teacher_info__isnull=False).exists(),
             "A RegistrationProfile with teacher_info should be created after valid teacher POST",
@@ -416,19 +415,10 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         response = self.client.post(self.student_profile_url,
                                     {'graduation_year': '', 'profile_page': ''})
 
-        if response.status_code in (301, 302):
-            # If a redirect happened, the grade stored must NOT be the smallest grade
-            smallest_yog = ESPUser.YOGFromGrade(min(ESPUser.grade_options()))
-            prof = RegistrationProfile.objects.filter(
-                user=student, student_info__isnull=False
-            ).order_by('-last_ts').first()
-            if prof is not None:
-                self.assertNotEqual(
-                    prof.student_info.graduation_year,
-                    smallest_yog,
-                    "graduation_year must not auto-default to the smallest grade (PR #193)",
-                )
-        else:
-            # Expected path: 200 with a form error, nothing persisted
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, 'This field is required.')
+        # Expected path: 200 with a form error, nothing persisted
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'This field is required.')
+        self.assertFalse(
+            RegistrationProfile.objects.filter(user=student, student_info__isnull=False).exists(),
+            "No profile with student_info should be created when graduation_year is missing",
+        )
