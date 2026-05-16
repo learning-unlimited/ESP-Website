@@ -46,21 +46,21 @@ from esp.utils.query_utils import nest_Q
 from django import forms
 from django.http import HttpResponseRedirect
 
-def extract_request_rank(self, registration):
+def _extract_rank_from_registration(registration):
     reg_name = registration.relationship_name
     try:
         if '/' in reg_name:
             return int(reg_name.split('/')[1])
-    except ValueError as e:
+    except ValueError:
         pass
     return 1
 
-def extract_request_rank(self, user, section):
+def extract_request_rank(user, section):
     regs = StudentRegistration.valid_objects().filter(
             user=user, section=section, relationship__name__startswith="Request")
     if regs:
         # there should be at most one; should we fail if there are more than one?
-        return extract_request_rank(regs[0])
+        return _extract_rank_from_registration(regs[0])
     else:
         return 0
 
