@@ -312,7 +312,7 @@ def loaddb(filename=None, load_db_only=False):
 
     Automatically detects the dump format and proper username.
 
-    If load_db_only=True, skip update_deps and manage update — only load the
+    If load_db_only=True, skip update_deps and manage update - only load the
     DB and run migrations. Useful for quick iteration.
     """
     env.db_running = True
