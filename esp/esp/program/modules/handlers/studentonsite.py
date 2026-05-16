@@ -41,7 +41,7 @@ from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from esp.users.models    import Record, RecordType, Permission
 from esp.cal.models import Event
-from esp.middleware   import ESPError
+from esp.middleware   import ESPError, ESPError_NoLog
 from esp.survey.views   import survey_view
 from esp.tagdict.models  import Tag
 from django.http import HttpResponseRedirect
@@ -64,7 +64,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
     @main_call
     @needs_student_in_grade
-    @meets_deadline('/Webapp')
+    # @meets_deadline('/Webapp')
     @meets_cap
     def studentonsite(self, request, tl, one, two, module, extra, prog):
         """ Display the landing page for the student onsite webapp """
@@ -83,7 +83,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Webapp')
+    # @meets_deadline('/Webapp')
     @meets_cap
     def onsitedetails(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
@@ -161,8 +161,56 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @needs_student_in_grade
     @meets_deadline('/Webapp')
     def onsiteaddclass(self, request, tl, one, two, module, extra, prog):
-        if StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True):
-            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+        from django.db import transaction
+        from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+        
+        try:
+            if request.POST.get('force_replace') == 'true':
+                with transaction.atomic():
+                    sectionid = request.POST.get('section_id')
+                    if sectionid:
+                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        if section:
+                            conflicts = section.get_conflicts(request.user)
+                            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            for conflict in conflicts:
+                                error = conflict.cannotRemove(request.user)
+                                if error and not getattr(request.user, "onsite_local", False):
+                                    raise ESPError(error, log=False)
+                                conflict.unpreregister_student(request.user, verbs)
+                    success = StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True)
+                    if not success:
+                        transaction.set_rollback(True)
+            else:
+                success = StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True)
+
+            if success:
+                return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+        except ESPError_NoLog as inst:
+            error_message = inst.args[0] if inst.args else "An error occurred."
+            if "conflicts with your schedule" in error_message:
+                try:
+                    sectionid = request.POST.get('section_id')
+                    classid = request.POST.get('class_id')
+                    if sectionid:
+                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        if section:
+                            conflicts = section.get_conflicts(request.user)
+                            conflict_titles = ", ".join([c.emailcode() for c in conflicts])
+                            confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
+
+                            context = self.onsitecontext(request, tl, one, two, prog)
+                            context['webapp_page'] = 'catalog'
+                            context['confirm_msg'] = confirm_msg
+                            context['section_id'] = sectionid
+                            context['class_id'] = classid
+                            context['prereg_url'] = prog.get_learn_url() + 'onsiteaddclass'
+                            from django.template.context_processors import csrf
+                            context.update(csrf(request))
+                            return render_to_response(self.baseDir()+'conflict_confirm.html', request, context)
+                except (ClassSection.DoesNotExist, ValueError):
+                    pass
+            raise ESPError(error_message, log=False)
 
     @aux_call
     @needs_student_in_grade

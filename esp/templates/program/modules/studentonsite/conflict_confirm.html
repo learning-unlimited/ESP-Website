@@ -1,0 +1,38 @@
+{% extends "program/modules/studentonsite/webapp.html" %}
+
+{% block head %}
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-migrate-3.3.2.{% if not settings.DEBUG %}min.{% endif %}js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
+<script type="text/javascript" src="/media/scripts/common.js"></script>
+<script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
+{% endblock %}
+
+{% block body %}
+<center>
+  <div class="main">
+    <table class="studentschedule">
+        <tbody>
+            <tr class="catalog">
+                <th colspan="2">
+                    <span>Class Conflict</span>
+                </th>
+            </tr>
+            <tr class="class_row">
+                <td colspan="2" style="padding: 20px; text-align: center;">
+                    <p style="font-size: 1.2em;"><b>{{ confirm_msg }}</b></p>
+                    <form method="post" action="{{ prereg_url }}" style="margin-top: 20px; display: inline-block;">
+                        {% csrf_token %}
+                        <input type="hidden" name="class_id" value="{{ class_id }}" />
+                        <input type="hidden" name="section_id" value="{{ section_id }}" />
+                        <input type="hidden" name="force_replace" value="true" />
+                        <button type="submit" class="btn" style="background-color: #d9534f; color: white; margin-right: 10px;">Yes, replace class</button>
+                        <a href="{{ program.get_learn_url }}studentonsite" class="btn" style="background-color: #5bc0de; color: white; text-decoration: none; padding: 10px 15px; border-radius: 5px;">Cancel</a>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+  </div>
+</center>
+{% endblock %}
