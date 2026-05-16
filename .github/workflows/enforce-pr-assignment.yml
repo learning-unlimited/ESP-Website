@@ -57,6 +57,13 @@ jobs:
               return;
             }
 
+            // Exempt PRs opened by GitHub Copilot
+            const copilotLogins = ['Copilot', 'copilot[bot]', 'copilot-swe-agent[bot]'];
+            if (copilotLogins.includes(prAuthor)) {
+              console.log('PR author is Copilot — skipping check.');
+              return;
+            }
+
             // Extract issue numbers from the PR body
             // Matches: Closes #123, Fixes #456, Resolves #789 (case-insensitive)
             const issuePattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
