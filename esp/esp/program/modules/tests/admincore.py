@@ -431,7 +431,7 @@ class ModuleManagementCsrfTest(ProgramFrameworkTest):
         post_data['csrfmiddlewaretoken'] = token
 
         response = self.csrf_client.post(self._modules_url(), post_data)
-        self.assertIn(response.status_code, [200, 302])
+        self.assertEqual(response.status_code, 200)
 
     def test_module_management_reset_post_with_csrf_succeeds(self):
         token = self._get_csrf_token_from_modules_page()
@@ -439,4 +439,4 @@ class ModuleManagementCsrfTest(ProgramFrameworkTest):
             self._modules_url(),
             {'default_link_title': 'on', 'csrfmiddlewaretoken': token},
         )
-        self.assertIn(response.status_code, [200, 302])
+        self.assertEqual(response.status_code, 200)
