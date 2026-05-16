@@ -302,7 +302,7 @@ def emptydb(owner="esp", interactive=True):
         manage("createsuperuser")
 
 @task
-def loaddb(filename=None):
+def loaddb(filename=None, load_db_only=False):
     """
     If filename is given, load the (decrypted, uncompressed) database dump at
     that local path into the Postgres database.
@@ -311,6 +311,9 @@ def loaddb(filename=None):
     for the URL if one has not been previously provided.
 
     Automatically detects the dump format and proper username.
+
+    If load_db_only=True, skip update_deps and manage update — only load the
+    DB and run migrations. Useful for quick iteration.
     """
     env.db_running = True
     ensure_environment()
@@ -383,7 +386,10 @@ def loaddb(filename=None):
              user="postgres")
 
     # Run Django migrations, etc.
-    refresh()
+    if load_db_only:
+        manage("migrate")
+    else:
+        refresh()
 
     # Cleanup
     run("rm -f " + env.encfab + "dbdump")
