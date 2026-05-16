@@ -140,7 +140,6 @@ class ClassCreationController(object):
                 # Ignore crafted updates after directors have made a final decision.
                 continue
             elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title', 'extended_budget_requested') and not k.startswith('section_'):
-            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] != 'section_':
                 cls.__dict__[k] = v
 
         if not has_final_extended_budget_decision:
