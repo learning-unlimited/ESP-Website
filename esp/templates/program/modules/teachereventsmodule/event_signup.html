@@ -21,12 +21,20 @@
     .status-past { background-color: #6c757d !important; border-color: #6c757d !important; opacity: 0.5; pointer-events: none; }
     .fc-event-title { font-weight: bold; }
 
-    /* Mobile: stack toolbar rows and shrink text */
-    @media (max-width: 768px) {
+    /* Tablet & Mobile responsiveness */
+    .fc .fc-toolbar-chunk { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .fc .fc-button { white-space: nowrap; }
+
+    @media (max-width: 992px) {
         #calendar { padding: 10px; margin: 10px auto; }
-        .fc .fc-toolbar.fc-header-toolbar { flex-wrap: wrap; gap: 6px; }
-        .fc .fc-toolbar-chunk { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
-        .fc .fc-toolbar-title { font-size: 1rem; }
+        .fc .fc-toolbar.fc-header-toolbar { flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .fc .fc-toolbar-chunk { justify-content: center; width: 100%; margin-bottom: 4px; }
+        .fc .fc-toolbar-title { font-size: 1.2rem; text-align: center; width: 100%; }
+        .fc .fc-button { font-size: 0.85rem; padding: 4px 8px; }
+    }
+    
+    @media (max-width: 768px) {
+        .fc .fc-toolbar-title { font-size: 1.1rem; }
         .fc .fc-button { font-size: 0.75rem; padding: 3px 7px; }
     }
 </style>
@@ -40,10 +48,10 @@
         var calendarEl = document.getElementById('calendar');
         var allEventDates = [];  // sorted Date objects for prev/next navigation
         var initialNavDone = false;
-        var isMobile = window.innerWidth < 768;
+        var isMobile = window.innerWidth <= 992; // Bumped to 992px for better tablet layout
 
         var calendar = new FullCalendar.Calendar(calendarEl, {
-            // Switch to day view on narrow screens automatically
+            // Switch to day view on narrow screens/tablets automatically
             initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
             headerToolbar: isMobile ? {
                 left: 'prevEvent,nextEvent',
