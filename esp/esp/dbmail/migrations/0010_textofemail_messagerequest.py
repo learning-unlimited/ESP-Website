@@ -9,12 +9,18 @@ import math
 def fill_requests(apps, schema_editor):
     TextOfEmail = apps.get_model('dbmail', 'TextOfEmail')
     MessageRequest = apps.get_model('dbmail', 'MessageRequest')
-    requests = MessageRequest.objects.all()
-    for req in requests:
-        toes = TextOfEmail.objects.filter(created_at=req.created_at,
-                                          subject = req.subject,
-                                          send_from = req.sender)
-        toes.update(messagerequest=req, msgtext="")
+    toe_table = TextOfEmail._meta.db_table
+    mr_table = MessageRequest._meta.db_table
+    schema_editor.execute(
+        """
+        UPDATE {toe} AS toe
+        SET messagerequest_id = mr.id, msgtext = ''
+        FROM {mr} AS mr
+        WHERE toe.created_at = mr.created_at
+          AND toe.subject = mr.subject
+          AND toe.send_from = mr.sender
+        """.format(toe=toe_table, mr=mr_table)
+    )
 
 class Migration(migrations.Migration):
 

@@ -1734,11 +1734,11 @@ class GuardianInfo(models.Model):
 
         for value in values:
             value['user'] = ESPUser.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (value['user'].ajax_str(), value['year_finished'], value['num_kids'])
+            value['ajax_str'] = '%s - %s %s' % (value['user'].ajax_str(), value['year_finished'], value['num_kids'])
         return values
 
     def ajax_str(self):
-        return "%s - %s %d" % (self.user.ajax_str(), self.year_finished, self.num_kids)
+        return "%s - %s %s" % (self.user.ajax_str(), self.year_finished, self.num_kids)
 
     def updateForm(self, form_dict):
         form_dict['year_finished'] = self.year_finished
@@ -2482,10 +2482,14 @@ class Record(models.Model):
         if cls.user_completed(user, extension.lower(), program):
             return False
         else:
+            event_type, _ = RecordType.objects.get_or_create(
+                name=extension.lower(),
+                defaults={'description': extension.lower()},
+            )
             cls.objects.create(
-                user = user,
-                event = extension.lower(),
-                program = program
+                user=user,
+                event=event_type,
+                program=program,
             )
             return True
 

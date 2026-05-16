@@ -8,6 +8,7 @@ from django.db import migrations
 def set_my_defaults(apps, schema_editor):
     ContactInfo = apps.get_model('users', 'ContactInfo')
     RegistrationProfile = apps.get_model('program', 'RegistrationProfile')
+    K12School = apps.get_model('users', 'K12School')
 
     # Pre-fetch the latest RP user for each CI for each relationship type.
     # Returns {ci_id: user_id} mapping the latest (by last_ts) RP per CI.
@@ -65,16 +66,37 @@ def set_my_defaults(apps, schema_editor):
             )
 
     # Bulk delete emergency contacts without names: clear FK first so we don't
-    # accidentally delete the RegistrationProfile when we delete the ContactInfo
+    # accidentally delete the RegistrationProfile when we delete the ContactInfo.
+    # K12School.contact also FKs to ContactInfo (CASCADE), and StudentInfo.k12school
+    # FKs to K12School (CASCADE), and RP.student_info FKs to StudentInfo (CASCADE),
+    # so we must null K12School.contact too or the chain deletes RPs via student_info.
     if delete_emergency_ids:
         RegistrationProfile.objects.filter(
             contact_emergency_id__in=delete_emergency_ids
         ).update(contact_emergency=None)
+        K12School.objects.filter(
+            contact_id__in=delete_emergency_ids
+        ).update(contact=None)
         ContactInfo.objects.filter(id__in=delete_emergency_ids).delete()
 
-    # Delete all remaining user=None CIs (orphans not referenced by any RP).
-    # After the bulk update above, only true orphans still have user_id IS NULL.
-    ContactInfo.objects.filter(user=None).delete()
+    # Delete all remaining user=None CIs. Clear all RP FK references first so
+    # we don't accidentally cascade-delete RegistrationProfiles (same pattern
+    # as the emergency-contact block above, including the K12School chain).
+    remaining_null_ids = list(ContactInfo.objects.filter(user=None).values_list('id', flat=True))
+    if remaining_null_ids:
+        RegistrationProfile.objects.filter(
+            contact_user_id__in=remaining_null_ids
+        ).update(contact_user=None)
+        RegistrationProfile.objects.filter(
+            contact_guardian_id__in=remaining_null_ids
+        ).update(contact_guardian=None)
+        RegistrationProfile.objects.filter(
+            contact_emergency_id__in=remaining_null_ids
+        ).update(contact_emergency=None)
+        K12School.objects.filter(
+            contact_id__in=remaining_null_ids
+        ).update(contact=None)
+        ContactInfo.objects.filter(user=None).delete()
 
 def reverse_func(apps, schema_editor):
     return

@@ -15,6 +15,8 @@ def set_my_defaults(apps, schema_editor):
     LineItemType = apps.get_model('accounting', 'LineItemType')
     Account = apps.get_model('accounting', 'Account')
     recs = Record.objects.filter(event="paid", program__isnull=False, user__isnull=False)
+    target_account = Account.objects.get(name='receivable')
+    transfers_to_create = []
     for rec in recs:
         # Use normal imports to get amount_due
         prog = Program.objects.get(id=rec.program.id)
@@ -25,13 +27,13 @@ def set_my_defaults(apps, schema_editor):
         if amount_due:
             # Use migration imports to create payment
             payments_lit = LineItemType.objects.filter(program__id=rec.program.id, for_payments=True).order_by('-id')[0]
-            target_account = Account.objects.get(name='receivable')
-            Transfer.objects.create(source=None,
-                                    destination=target_account,
-                                    user=rec.user,
-                                    line_item=payments_lit,
-                                    amount_dec=amount_due,
-                                    transaction_id="created from deprecated paid records")
+            transfers_to_create.append(Transfer(source=None,
+                                                destination=target_account,
+                                                user=rec.user,
+                                                line_item=payments_lit,
+                                                amount_dec=amount_due,
+                                                transaction_id="created from deprecated paid records"))
+    Transfer.objects.bulk_create(transfers_to_create)
     recs.delete()
 
 def reverse_func(apps, schema_editor):

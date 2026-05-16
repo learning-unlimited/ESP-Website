@@ -8,25 +8,30 @@ from django.db import migrations
 def link_event(apps, schema_editor):
     Record = apps.get_model('users', 'Record')
     RecordType = apps.get_model('users', 'RecordType')
-    for rec in Record.objects.all():
-        if rec.event not in [None, ""]:
-            if rec.event == "medical":
-                rec.event = "med"
-                rec.save()
-            if rec.event == "liability":
-                rec.event = "liab"
-                rec.save()
-            event = RecordType.objects.get_or_create(name=rec.event, defaults={'description': rec.event})[0]
-            rec.event_link = event
-            rec.save()
+
+    # Normalize legacy names before creating RecordTypes
+    Record.objects.filter(event="medical").update(event="med")
+    Record.objects.filter(event="liability").update(event="liab")
+
+    # Collect unique non-empty event names
+    event_names = set(
+        Record.objects.exclude(event="").exclude(event__isnull=True)
+        .values_list("event", flat=True)
+    )
+
+    # Ensure a RecordType exists for each name (small set, ~20 entries)
+    for name in event_names:
+        RecordType.objects.get_or_create(name=name, defaults={"description": name})
+
+    # Bulk-link records by event name — one UPDATE per unique event name
+    for rt in RecordType.objects.filter(name__in=event_names):
+        Record.objects.filter(event=rt.name).update(event_link=rt)
 
 def unlink_event(apps, schema_editor):
     Record = apps.get_model('users', 'Record')
     RecordType = apps.get_model('users', 'RecordType')
-    for rec in Record.objects.all():
-        if rec.event_link is not None:
-            rec.event = rec.event_link.name
-            rec.save()
+    for rt in RecordType.objects.all():
+        Record.objects.filter(event_link=rt).update(event=rt.name)
 
 class Migration(migrations.Migration):
 
