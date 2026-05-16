@@ -163,7 +163,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     def onsiteaddclass(self, request, tl, one, two, module, extra, prog):
         from django.db import transaction
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-        
+
         try:
             if request.POST.get('force_replace') == 'true':
                 with transaction.atomic():
