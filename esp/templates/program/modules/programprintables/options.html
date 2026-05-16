@@ -128,9 +128,9 @@
         </div>
         {% if program|hasModule:"TeacherModeratorModule" %}
         <div class="module_button">
-            <a href="./moderator_rooms_spr" title="Complete Moderator Schedule by Room">
+            <a href="./moderator_rooms_spr" title="Complete {{ program.getModeratorTitle }} Schedule by Room">
                 <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Complete Moderator Schedule by
+                    <div class="module_link_main"><i class="glyphicon glyphicon-th"></i> Complete {{ program.getModeratorTitle }} Schedule by
                         Room</div>
                     <div class="module_link_caption">(CSV format)</div>
                 </button>
