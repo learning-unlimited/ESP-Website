@@ -26,6 +26,7 @@ function ChangelogFetcher(matrix, api_client){
     this.pollForChanges = function(interval){
         if (this.pollInterval) {
             window.clearInterval(this.pollInterval);
+            this.pollInterval = null;
         }
         // run getChanges() immediately, then set up the recurring call
         this.getChanges();
@@ -93,29 +94,28 @@ function ChangelogFetcher(matrix, api_client){
      * Stops polling and lets the user decide when to reload.
      */
     this.showReloadNotification = function(){
-        // Only show once — don't spam every 5 seconds
         if ($j("#changelog-reload-notice").length > 0) {
             return;
         }
 
-        var notice = $j(
-            '<div id="changelog-reload-notice" style="' +
-                'position: fixed; top: 0; left: 0; right: 0; z-index: 10001; ' +
-                'background: #d9534f; color: white; padding: 12px 20px; ' +
-                'text-align: center; font-size: 14px; font-weight: bold; ' +
-                'box-shadow: 0 2px 8px rgba(0,0,0,0.3);">' +
-                'The schedule data is out of sync. ' +
-                '<a href="#" onclick="window.location.reload(); return false;" ' +
-                    'style="color: white; text-decoration: underline; margin-left: 10px;">' +
-                    'Reload now</a>' +
-            '</div>'
-        );
+        var reloadLink = $j("<a>", {
+            "class": "reload-link",
+            href: "#",
+            text: "Reload now"
+        }).on("click", function(event) {
+            event.preventDefault();
+            window.location.reload();
+        });
+
+        var notice = $j("<div>", { id: "changelog-reload-notice" })
+            .append(document.createTextNode("The schedule data is out of sync. "))
+            .append(reloadLink);
 
         $j("body").prepend(notice);
 
-        // Stop further changelog polling — data is stale
         if (this.pollInterval) {
             window.clearInterval(this.pollInterval);
+            this.pollInterval = null;
         }
     };
 };
