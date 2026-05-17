@@ -12,7 +12,7 @@ other host dependencies or specific Python versions needed.
 
 The Docker setup runs three containers:
 
-- **web**: The Django application (Python 3.7)
+- **web**: The Django application (Python 3.10)
 - **db**: PostgreSQL 14 database
 - **memcached**: Memcached caching layer
 
@@ -113,7 +113,9 @@ Run any ``manage.py`` command::
 
     docker compose exec web python esp/manage.py <command>
 
-Examples::
+Examples:
+
+.. parsed-literal::
 
     # Open a Django shell
     docker compose exec web python esp/manage.py shell_plus
@@ -121,8 +123,8 @@ Examples::
     # Run migrations
     docker compose exec web python esp/manage.py migrate
 
-    # Run tests
-    docker compose exec web python esp/manage.py test
+    # Run tests (see `contributing.rst <contributing.rst>`_ for full options)
+    docker compose exec -w /app/esp web pytest
 
     # Open a bash shell inside the container
     docker compose exec web bash
