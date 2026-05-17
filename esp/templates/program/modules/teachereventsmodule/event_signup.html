@@ -47,7 +47,7 @@
         var calendarEl = document.getElementById('calendar');
         var allEventDates = [];  // sorted Date objects for prev/next navigation
         var initialNavDone = false;
-        var isMobile = window.innerWidth < 768; // Kept at original 768px
+        var isMobile = window.innerWidth < 768;
 
         var calendar = new FullCalendar.Calendar(calendarEl, {
             // Switch to day view on narrow screens automatically
