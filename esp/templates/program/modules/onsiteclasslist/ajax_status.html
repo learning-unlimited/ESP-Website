@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html>
+<html lang="en">
 <head>
 <title>Live Registration Status</title>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
@@ -105,6 +105,7 @@
 <div id="student_selector_area" class="ui-widget">Select a student:
 <input type="text" id="student_selector"/> 
 <input id="schedule_print" class="control_button" type="button" value="Print schedule"/>
+<input id="schedule_pdf" class="control_button" type="button" value="Download schedule PDF" disabled="disabled"/>
 <input id="status_switch" class="control_button" type="button" value="Return to status view"/>
 <input id="reload_button" class="control_button" type="button" value="Refresh data" onclick="refresh_counts();"/>
 <br />Select a printer:

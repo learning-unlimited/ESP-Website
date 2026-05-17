@@ -92,14 +92,14 @@ class Event(models.Model):
         return self.start - buffer
 
     def end_w_buffer(self, buffer = timedelta(minutes=15)):
-        #Adds a buffer to the start time
+        #Adds a buffer to the end time
         return self.end + buffer
 
     def duration_str(self):
         dur = self.end - self.start
         hours = int(dur.seconds // 3600)
         minutes = int(dur.seconds // 60) - hours * 60
-        return '%d hr %d min' % (hours, minutes)
+        return f'{hours} hr {minutes} min'
 
     def __str__(self):
         return self.start.strftime('%a %b %d: ') + self.short_time()
@@ -111,14 +111,13 @@ class Event(models.Model):
         end_minutes = ''
         start_ampm = ''
         if self.start.minute != 0:
-            start_minutes = ':%02d' % self.start.minute
+            start_minutes = f':{self.start.minute:02d}'
         if self.end.minute != 0:
-            end_minutes = ':%02d' % self.end.minute
+            end_minutes = f':{self.end.minute:02d}'
         if (self.start.hour < 12) != (self.end.hour < 12):
             start_ampm = self.start.strftime(' %p')
 
-        return '%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
-            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p') )
+        return f'{(self.start.hour % 12) or 12}{start_minutes}{start_ampm} to {(self.end.hour % 12) or 12}{end_minutes} {self.end.strftime("%p")}'
 
     @staticmethod
     def total_length(event_list):
@@ -214,7 +213,7 @@ class Event(models.Model):
     def __cmp__(self, other):
         try:
             return cmp(self.start, other.start)
-        except:
+        except AttributeError:
             return 0
     def __lt__(self, other):
         return self.__cmp__(other) < 0

@@ -1,9 +1,18 @@
 name: Label High-Volume PR Contributors
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, closed]
   workflow_dispatch:
+    inputs:
+      author:
+        description: 'GitHub username to check'
+        required: true
+        type: string
+
+permissions:
+  issues: write
+  pull-requests: write
 
 jobs:
   label-high-volume-prs:
@@ -36,10 +45,12 @@ jobs:
               core.info(`Created label "${labelName}"`);
             }
 
-            // Only check the author who triggered the event
-            const author = context.payload.pull_request.user.login;
+            // Get the author from the event context
+            const author = context.eventName === 'workflow_dispatch'
+              ? context.payload.inputs.author.trim()
+              : context.payload.pull_request.user.login;
 
-            // Fetch all open PRs by this author
+            // Fetch all open PRs
             const openPRs = await github.paginate(github.rest.pulls.list, {
               owner: context.repo.owner,
               repo: context.repo.repo,

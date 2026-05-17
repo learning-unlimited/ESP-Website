@@ -23,13 +23,13 @@ Flushing the cache may patch the bug for now, but it'll very likely come up
 later, possibly in a more annoying way.)</p>
 
 {% if error %}
-    <div class="alert alert-danger">
+    <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         {{ error }}
     </div>
 {% endif %}
 {% if success %}
-    <div class="alert alert-success">
+    <div role="alert" class="alert alert-success">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         {{ success }}
     </div>
