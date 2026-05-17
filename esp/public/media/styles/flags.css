@@ -125,3 +125,54 @@ input.flag-submit-new {
 .flag-remove:hover {
     color: white;
 }
+
+.flag-warning-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flag-warning-box {
+    background: #fff;
+    border-left: 6px solid #cc3300;
+    padding: 24px 32px;
+    border-radius: 8px;
+    max-width: 500px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+.flag-warning-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+}
+
+.flag-warning-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #cc3300;
+    margin-bottom: 8px;
+}
+
+.flag-warning-message {
+    font-size: 14px;
+    color: #333;
+}
+
+.flag-warning-dismiss {
+    margin-top: 16px;
+    padding: 8px 24px;
+    background: #cc3300;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}

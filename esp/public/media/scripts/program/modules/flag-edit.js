@@ -1,6 +1,20 @@
+function showFlagWarning(message) {
+    var overlay = $j('<div>', { "class": "flag-warning-overlay" });
+    var box = $j('<div>', { "class": "flag-warning-box" });
+
+    $j('<div>', { "class": "flag-warning-icon", html: "&#9888;" }).appendTo(box);
+    $j('<div>', { "class": "flag-warning-title", text: "Email Notification Failed" }).appendTo(box);
+    $j('<div>', { "class": "flag-warning-message", text: message }).appendTo(box);
+    $j('<button>', { "class": "flag-warning-dismiss", text: "OK" }).appendTo(box);
+
+    overlay.append(box).appendTo('body');
+    overlay.on('click', '.flag-warning-dismiss', function() {
+        overlay.fadeOut(300, function() { overlay.remove(); });
+    });
+}
+
 function submitFlagForm (event) {
-    console.log("submit");
-    var form = $j(this)
+    var form = $j(this);
     var data = form.serialize();
     var $oldDetail = form.parents("div.flag-detail");
     var wasVisible = $oldDetail.is(":visible");
@@ -12,40 +26,9 @@ function submitFlagForm (event) {
         if (wasVisible) { $newDetail.show(); }
         $oldDetail.replaceWith($newDetail);
         if (data.warning) {
-            var overlay = $j('<div class="flag-warning-overlay"></div>')
-                .css({
-                    'position': 'fixed',
-                    'top': '0',
-                    'left': '0',
-                    'right': '0',
-                    'bottom': '0',
-                    'background': 'rgba(0,0,0,0.5)',
-                    'z-index': '99998',
-                    'display': 'flex',
-                    'align-items': 'center',
-                    'justify-content': 'center'
-                });
-            var box = $j('<div></div>')
-                .css({
-                    'background': '#fff',
-                    'border-left': '6px solid #cc3300',
-                    'padding': '24px 32px',
-                    'border-radius': '8px',
-                    'max-width': '500px',
-                    'box-shadow': '0 8px 32px rgba(0,0,0,0.3)',
-                    'text-align': 'center'
-                })
-                .html('<div style="font-size:36px;margin-bottom:12px;">&#9888;</div>' +
-                       '<div style="font-size:16px;font-weight:bold;color:#cc3300;margin-bottom:8px;">Email Notification Failed</div>' +
-                       '<div style="font-size:14px;color:#333;">' + data.warning + '</div>' +
-                       '<button class="flag-warning-dismiss" style="margin-top:16px;padding:8px 24px;background:#cc3300;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;">OK</button>');
-            overlay.append(box);
-            $j('body').append(overlay);
-            overlay.find('.flag-warning-dismiss').on('click', function() {
-                overlay.fadeOut(300, function() { overlay.remove(); });
-            });
+            showFlagWarning(data.warning);
         }
-    }, 'json')
+    }, 'json');
     event.preventDefault();
 }
 

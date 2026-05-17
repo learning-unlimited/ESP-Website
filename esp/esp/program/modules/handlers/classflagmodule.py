@@ -37,7 +37,6 @@ from django.template.loader import render_to_string
 from django.utils.timezone import now
 
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, needs_admin
-from esp.utils.web import render_to_response
 
 from esp.program.models import ClassFlag, ClassFlagType
 from esp.program.forms import ClassFlagForm
@@ -94,23 +93,36 @@ class ClassFlagModule(ProgramModuleObj):
         """Deprecated, use the ClassSearchModule instead."""
         return HttpResponseRedirect('classsearch')
 
+    def _flag_json_response(self, request, flag, include_header=False, extra=None):
+        '''Render a flag as a JSON response payload.
+
+        include_header=True adds flag_name (used when the header text may have changed,
+        e.g. after a resolve/unresolve that toggles the "(Resolved)" suffix).
+        '''
+        context = {'flag': flag}
+        payload = {
+            'flag_detail': render_to_string(
+                self.baseDir() + 'flag_detail.html', context=context, request=request),
+        }
+        if include_header:
+            payload['flag_name'] = render_to_string(
+                self.baseDir() + 'flag_name.html', context=context, request=request)
+        if extra:
+            payload.update(extra)
+        return HttpResponse(json.dumps(payload), content_type='application/json')
+
     @aux_call
     @needs_admin
     def editflag(self, request, tl, one, two, module, extra, prog):
         '''Given a post request, take extra as the id of the flag, update its comment using the post data, and return its new detail display.'''
         if not extra or request.method != 'POST' or 'comment' not in request.POST:
             return HttpResponseBadRequest('')
-        results = ClassFlag.objects.filter(id=extra, subject__parent_program=prog)
-        if not len(results): #Use len() since we will evaluate it anyway
+        flag = ClassFlag.objects.filter(id=extra, subject__parent_program=prog).first()
+        if flag is None:
             return HttpResponseBadRequest('')
-        flag = results[0]
         flag.comment = request.POST['comment']
         flag.save(update_fields=['comment', 'modified_by', 'modified_time'])
-        context = { 'flag' : flag }
-        response = json.dumps({
-            'flag_detail': render_to_string(self.baseDir()+'flag_detail.html', context=context, request=request),
-        })
-        return HttpResponse(response, content_type='application/json')
+        return self._flag_json_response(request, flag)
 
     @aux_call
     @needs_admin
@@ -127,23 +139,18 @@ class ClassFlagModule(ProgramModuleObj):
             if not prog.flag_types.filter(pk=form.cleaned_data['flag_type'].pk).exists():
                 return HttpResponseBadRequest('')
             flag = form.save()
-            email_warning = None
+            extra_payload = None
             if flag.flag_type.notify_teacher_by_email:
                 try:
                     flag.send_teacher_notification()
                 except Exception:
                     logger.error("Failed to send teacher notification for flag %s on class %s",
                                  flag.id, flag.subject_id, exc_info=True)
-                    email_warning = "Flag saved, but the teacher email notification failed. Please notify the teacher manually."
-            context = { 'flag' : flag }
-            response_data = {
-                'flag_name': render_to_string(self.baseDir()+'flag_name.html', context = context, request = request),
-                'flag_detail': render_to_string(self.baseDir()+'flag_detail.html', context = context, request = request),
-            }
-            if email_warning:
-                response_data['warning'] = email_warning
-            response = json.dumps(response_data)
-            return HttpResponse(response, content_type='application/json')
+                    extra_payload = {
+                        'warning': "Flag saved, but the teacher email notification failed. "
+                                   "Please notify the teacher manually."
+                    }
+            return self._flag_json_response(request, flag, include_header=True, extra=extra_payload)
         else:
             # The user shouldn't be able to get here unless they're doing something really weird, so let's not bother to try to tell them where the error was; since this is asynchronous that would be a bit tricky.
             return HttpResponseBadRequest('')
@@ -154,12 +161,14 @@ class ClassFlagModule(ProgramModuleObj):
         '''Given a post request with the ID, delete the flag.'''
         if request.method != 'POST' or 'id' not in request.POST:
             return HttpResponseBadRequest('')
-        results = ClassFlag.objects.filter(id=request.POST['id'], subject__parent_program=prog)
-        if not len(results): #Use len() since we will evaluate it anyway
+        flag = ClassFlag.objects.filter(id=request.POST['id'], subject__parent_program=prog).first()
+        if flag is None:
             return HttpResponseBadRequest('')
-        flag = results[0]
         flag.delete()
         return HttpResponse('')
+
+    RESOLVE_UPDATE_FIELDS = ['resolved', 'resolved_by', 'resolved_time',
+                             'modified_by', 'modified_time']
 
     @aux_call
     @needs_admin
@@ -171,27 +180,19 @@ class ClassFlagModule(ProgramModuleObj):
         action = request.POST.get('action', '')
         if action not in ('resolve', 'unresolve'):
             return HttpResponseBadRequest('')
-        results = ClassFlag.objects.filter(id=extra, subject__parent_program=prog)
-        if not len(results):
+        flag = ClassFlag.objects.filter(id=extra, subject__parent_program=prog).first()
+        if flag is None:
             return HttpResponseBadRequest('')
-        flag = results[0]
         want_resolved = (action == 'resolve')
         if want_resolved and not flag.resolved:
             flag.resolved = True
             flag.resolved_by = request.user
             flag.resolved_time = now()
-            flag.save(update_fields=['resolved', 'resolved_by', 'resolved_time',
-                                     'modified_by', 'modified_time'])
+            flag.save(update_fields=self.RESOLVE_UPDATE_FIELDS)
         elif not want_resolved and flag.resolved:
             flag.resolved = False
             flag.resolved_by = None
             flag.resolved_time = None
-            flag.save(update_fields=['resolved', 'resolved_by', 'resolved_time',
-                                     'modified_by', 'modified_time'])
+            flag.save(update_fields=self.RESOLVE_UPDATE_FIELDS)
         # If already in desired state, no-op (idempotent)
-        context = { 'flag' : flag }
-        response = json.dumps({
-            'flag_name': render_to_string(self.baseDir()+'flag_name.html', context=context, request=request),
-            'flag_detail': render_to_string(self.baseDir()+'flag_detail.html', context=context, request=request),
-        })
-        return HttpResponse(response, content_type='application/json')
+        return self._flag_json_response(request, flag, include_header=True)
