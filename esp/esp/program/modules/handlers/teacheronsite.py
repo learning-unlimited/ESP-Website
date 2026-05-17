@@ -37,6 +37,8 @@ from esp.tagdict.models  import Tag
 from datetime import datetime
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 from django.db.models import Count
+from esp.users.models import TeacherInfo
+from esp.program.models import RegistrationProfile
 
 class TeacherOnsite(ProgramModuleObj, CoreModule):
     doc = """Provides a mobile-friendly interface for common onsite functions for teachers."""
@@ -79,24 +81,44 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def teacheronsite(self, request, tl, one, two, module, extra, prog):
         """ Display the landing page for the teacher onsite webapp """
+
         user = request.user
         now = datetime.now()
 
+        teacher_profile = RegistrationProfile.getLastForProgram(user, prog, tl='teach')
+        teacher = teacher_profile.teacher_info if teacher_profile else None
+
         context = self.onsitecontext(request, tl, one, two, prog)
-
-        classes = sorted([cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program = prog)
-                   if cls.meeting_times.all().exists()
-                   and cls.resourceassignment_set.all().exists()
-                   and cls.status > 0])
-        # now we sort them by time/title
-
-        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog)
         context['webapp_page'] = 'schedule'
-        context['crmi'] = prog.classregmoduleinfo
-        context['classes'] = classes
-        context['checked_in'] = Record.objects.filter(program=prog, event__name='teacher_checked_in', user=user, time__year=now.year, time__month=now.month, time__day=now.day).exists()
 
-        return render_to_response(self.baseDir()+'schedule.html', request, context)
+        context['checked_in'] = Record.objects.filter(
+            program=prog,
+            event__name='teacher_checked_in',
+            user=user,
+            time__year=now.year,
+            time__month=now.month,
+            time__day=now.day
+        ).exists()
+
+        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program=prog)
+        context['crmi'] = prog.classregmoduleinfo
+
+        # If schedule is hidden → early return
+        if teacher and not teacher.can_view_schedule:
+            context['error'] = 'Schedule is temporarily hidden'
+            context['classes'] = []
+            return render_to_response(self.baseDir() + 'schedule.html', request, context)
+
+        classes = sorted([
+            cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program=prog)
+            if cls.meeting_times.all().exists()
+            and cls.resourceassignment_set.all().exists()
+            and cls.status > 0
+        ])
+
+        context['classes'] = classes
+
+        return render_to_response(self.baseDir() + 'schedule.html', request, context)
 
     @aux_call
     @needs_teacher
@@ -130,6 +152,17 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
                 num_meeting_times__gt=0, status__gt=0)
         context['sections'] = sections
 
+        teacher_profile = RegistrationProfile.getLastForProgram(
+            request.user,
+            prog,
+            tl='teach'
+        )
+
+        teacher = teacher_profile.teacher_info if teacher_profile else None
+
+        context['can_view_schedule'] = (
+            teacher.can_view_schedule if teacher else True
+        )
         return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
 
     @aux_call
