@@ -64,7 +64,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
     @main_call
     @needs_student_in_grade
-    # @meets_deadline('/Webapp')
+    @meets_deadline('/Webapp')
     @meets_cap
     def studentonsite(self, request, tl, one, two, module, extra, prog):
         """ Display the landing page for the student onsite webapp """
@@ -83,7 +83,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
     @aux_call
     @needs_student_in_grade
-    # @meets_deadline('/Webapp')
+    @meets_deadline('/Webapp')
     @meets_cap
     def onsitedetails(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
@@ -196,7 +196,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                         section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
                         if section:
                             conflicts = section.get_conflicts(request.user)
-                            conflict_titles = ", ".join([c.emailcode() for c in conflicts])
+                            conflict_titles = ", ".join([str(c.title()) for c in conflicts])
                             confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
 
                             context = self.onsitecontext(request, tl, one, two, prog)
