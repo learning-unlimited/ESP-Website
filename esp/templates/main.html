@@ -26,6 +26,7 @@
         </aside>
 
         <main id="main" class="span12 resizable" tabindex="-1">
+          {% if 'esp_testing_role' in request.COOKIES %}
           {% if request.COOKIES.esp_testing_role %}
           <div
            style="background: #fbf0b3; border: 1px solid #c09852; color: #c09852; padding: 0px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
@@ -34,6 +35,7 @@
            <a href="/myesp/stop_testing/" style="color: #a1702c; text-decoration: underline;">Stop testing &mdash; Return to
              Admin</a>
           </div>
+          {% endif %}
           {% endif %}
           {% if messages %}
           {% for message in messages %}
