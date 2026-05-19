@@ -48,6 +48,7 @@ from django.db import models, transaction
 from django.db.models.query import Q
 from django.db.models import Min, OuterRef, Subquery, signals, Sum
 from django.db.models.manager import Manager
+from django.dispatch import receiver
 from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
@@ -73,7 +74,6 @@ from esp.dbmail.models import send_mail
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission, PersistentQueryFilter
-from esp.program.models import Program
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
@@ -110,7 +110,7 @@ REGISTRATION_CHOICES = (
 class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
     range_max = models.IntegerField(null=False)
-    program   = models.ForeignKey(Program, blank=True, null=True, on_delete=models.CASCADE)
+    program   = models.ForeignKey('program.Program', blank=True, null=True, on_delete=models.CASCADE)
 
     @classmethod
     def get_ranges_for_program(cls, prog):
@@ -283,8 +283,8 @@ class ClassManager(Manager):
         # Now, to combine all of the above
 
         if len(classes) >= 1:
+            from esp.program.models import Program
             p = Program.objects.get(id=classes[0].parent_program_id)
-
         for c in classes:
             c._teachers = list(c.teachers.all())
             c._teachers.sort(key=lambda t: t.last_name)
@@ -1466,7 +1466,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     form_link_name='Course'
 
     title = models.TextField()
-    parent_program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    parent_program = models.ForeignKey('program.Program', on_delete=models.CASCADE)
     category = models.ForeignKey('ClassCategories', related_name = 'cls', on_delete=models.CASCADE)
     class_info = models.TextField(blank=True)
     teachers = models.ManyToManyField(ESPUser)
@@ -2222,3 +2222,27 @@ def install():
     if not ClassCategories.objects.exists():
         for key in category_dict:
             ClassCategories.objects.create(symbol=key, category=category_dict[key])
+
+
+@receiver(signals.post_save, sender=ClassSubject)
+def handle_auto_class_flags(sender, instance, **kwargs):
+    """Automatically add flags to a class if it satisfies certain conditions."""
+    import json
+    from esp.program.models.flags import AutoClassFlagRule
+    from esp.program.modules.handlers.classsearchmodule import ClassSearchModule
+
+    rules = list(AutoClassFlagRule.objects.filter(program=instance.parent_program))
+    if not rules:
+        return
+
+    module = ClassSearchModule(program=instance.parent_program)
+    qb = module.query_builder()
+
+    for rule in rules:
+        try:
+            decoded_rule = json.loads(rule.rule_data)
+            qs = qb.as_queryset(decoded_rule)
+            if qs.filter(pk=instance.pk).exists():
+                rule.apply_to_class(instance)
+        except Exception as e:
+            logger.error("Error evaluating AutoClassFlagRule %s: %s", rule.id, e)
