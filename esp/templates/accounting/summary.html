@@ -2,8 +2,38 @@
 
 {% block title %}Accounting{% endblock %}
 
+{% block xtrajs %}
+    <script src="https://cdn.learningu.org/highcharts/highcharts.js"></script>
+{% endblock %}
 {% block content %}
 
+{# Donation Ticker #}
+<div style="margin-bottom: 20px; padding: 15px 20px; background: #f0f8ff; border-left: 4px solid #49afcd; border-radius: 4px;">
+    <h2 style="margin: 0 0 5px 0;">Global Donations</h2>
+    <p style="margin: 0; font-size: 1.3em;">
+        <strong>${{ donation_total|floatformat:"2" }}</strong>
+        from <strong>{{ donation_count }}</strong> donation{{ donation_count|pluralize }}
+    </p>
+</div>
+
+{# Donation line graph #}
+{% if donation_graph_data %}
+    <div id="donation-chart" style="width:100%; height:400px;"></div>
+    <script>
+    $j(document).ready(function() {
+        Highcharts.chart('donation-chart', {
+            title: { text: 'Cumulative Donations Over Time' },
+            xAxis: { type: 'datetime', minRange: 24*60*60*1000 },
+            yAxis: { title: { text: '$' }, min: 0 },
+            series: [{
+                name: 'Donations',
+                step: 'left',
+                data: {{ donation_graph_data|safe }},
+            }],
+        });
+    });
+    </script>
+{% endif %}
 <h1>Accounts Summary</h1>
 
 <ul>
@@ -14,12 +44,12 @@
     {{ account.description_contents|linebreaksbr }}
     <ul>
     {% with account.balance_breakdown as breakdown %}
-    
+
     {% if not breakdown.0|length_is:0 %}<li>Outbound transfers ({{ breakdown.0|length }})</li><ul>
     {% for transfer in breakdown.0 %}
     	<li>Transferred to {{ transfer.target_title }} ({{ transfer.target_name }}): -${{ transfer.amount }}</li>
     {% endfor %}</ul>{% endif %}
-    
+
     {% if not breakdown.1|length_is:0 %}<li>Inbound transfers ({{ breakdown.1|length }})</li><ul>
     {% for transfer in breakdown.1 %}
         <li>Transferred from {{ transfer.target_title }} ({{ transfer.target_name }}): +${{ transfer.amount }}</li>
