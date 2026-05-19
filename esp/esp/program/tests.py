@@ -40,12 +40,17 @@ from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
-from esp.resources.models import Resource, ResourceType
+from esp.resources.models import Resource, ResourceRequest, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 
 from django.contrib.auth.models import Group
+
+from django.db.models import ProtectedError
+
+from django.core.management import call_command
+
 from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
@@ -66,6 +71,28 @@ import numpy
 import random
 import re
 import unicodedata
+
+
+class _StatsDummy(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+class DemographicsStatisticsTest(TestCase):
+    def test_null_graduation_year_is_ignored(self):
+        from esp.program.statistics import demographics
+
+        form = _StatsDummy(cleaned_data={})
+        profiles = [
+            _StatsDummy(student_info=_StatsDummy(graduation_year=None, dob=None)),
+            _StatsDummy(student_info=_StatsDummy(graduation_year=2030, dob=None)),
+        ]
+        result_dict = {}
+
+        demographics(form, [], [], profiles, result_dict)
+
+        self.assertEqual(result_dict['gradyear_data'], [(2030, 1)])
+
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
@@ -140,9 +167,10 @@ class ViewUserInfoTest(TestCase):
         c = Client()
         c.login(username=self.admin.username, password=self.password)
 
-        # Try searching by ID direct hit
+        # Try searching by user ID direct hit
         response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+        self.assertEqual(response.status_code, 302)
+        self.assertStringContains(response['location'], "/manage/userview?username=%s" % self.admin.username)
 
     def testUserIDSearchMultipleResults(self):
         c = Client()
@@ -623,7 +651,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
+        ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
         new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
@@ -781,7 +809,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
+        ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
         new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
@@ -904,6 +932,45 @@ class ProgramCapTest(ProgramFrameworkTest):
         StudentRegistration.objects.filter(
             section__parent_class__parent_program=self.program).delete()
         Tag.objects.filter(key='program_size_by_grade').delete()
+
+
+class ProgramDeleteResourceCleanupTest(ProgramFrameworkTest):
+    """Program deletion cleans up program-scoped resource data without leaving
+    protected resource relations behind."""
+
+    def test_delete_program_with_program_resource_type(self):
+        restype = ResourceType.objects.create(
+            name='Program-only resource type',
+            description='',
+            program=self.program,
+        )
+        resource = Resource.objects.create(
+            name='Program classroom',
+            num_students=30,
+            res_type=restype,
+            event=self.timeslots[0],
+        )
+        request = ResourceRequest.objects.create(
+            desired_value='Projector',
+            res_type=restype,
+            target=self.program.sections()[0],
+        )
+
+        program_id = self.program.id
+        restype_id = restype.id
+        resource_id = resource.id
+        request_id = request.id
+
+        try:
+            self.program.delete()
+        except ProtectedError:
+            self.fail('Program deletion should not fail due to protected resource relations.')
+
+        self.assertFalse(Program.objects.filter(id=program_id).exists())
+        self.assertFalse(ResourceType.objects.filter(id=restype_id).exists())
+        self.assertFalse(Resource.objects.filter(id=resource_id).exists())
+        self.assertFalse(ResourceRequest.objects.filter(id=request_id).exists())
+
 
 def randomized_attrs(program):
     section_list = list(program.sections())
@@ -1306,7 +1373,11 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             hours_priority = numpy.sum([len(sec.get_meeting_times()) for sec in sections_priority_and_enrolled])
             student_utility = (hours_interested + 1.5 * hours_priority) ** 0.5
 
-            student_weight = (len(sections_interested) + len(sections_priority)) ** 0.5
+            # Weight is total hours of registered sections, matching student_utility_weights
+            # (interest and priority are summed independently, mirroring the controller's matrix multiply)
+            weight_hours_interested = numpy.sum([len(sec.get_meeting_times()) for sec in sections_interested])
+            weight_hours_priority = numpy.sum([len(sec.get_meeting_times()) for sec in sections_priority])
+            student_weight = (weight_hours_interested + weight_hours_priority) ** 0.5
             student_screwed_val = (1.0 + student_utility) / (1.0 + student_weight)
 
             #   Compare against the value in the stats dict (allow for floating-point error)
@@ -1426,6 +1497,79 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
         except ESPUser.DoesNotExist:
             raise AssertionError('bulk_account_create did not create all accounts it was supposed to')
 
+    def testProfileCreation(self):
+        """Test that bulk-created accounts have complete profile."""
+        from esp.users.models import ContactInfo
+        from esp.program.models import RegistrationProfile
+
+        # Create bulk accounts for Students
+        form_data = {
+            'groups': ('Student',),
+            'prefix1': 'bulkprof',
+            'count1': '3'
+        }
+
+        url = '/manage/%s/bulk_account_create' % self.program.getUrlBase()
+        response = self.client.post(url, data=form_data)
+        self.assertEqual(response.status_code, 200)
+
+        # Verify each created user has complete profile data
+        for i in range(1, 4):
+            username = 'bulkprof{}'.format(i)
+            user = ESPUser.objects.get(username=username)
+
+            # Check ContactInfo exists
+            contact_info = ContactInfo.objects.filter(user=user)
+            self.assertTrue(contact_info.exists(),
+                            'ContactInfo not created for user {}'
+                            .format(username))
+            contact = contact_info.first()
+            self.assertEqual(contact.first_name, username,
+                             'ContactInfo first_name should be '
+                             'set to username')
+
+            # Check RegistrationProfile exists and is linked to program
+            reg_profile = RegistrationProfile.objects.filter(
+                user=user, program=self.program)
+            self.assertTrue(reg_profile.exists(),
+                            'RegistrationProfile not created for '
+                            'user {} and program'.format(username))
+            profile = reg_profile.first()
+
+            # Check ContactInfo is linked to profile
+            self.assertIsNotNone(
+                profile.contact_user,
+                'RegistrationProfile.contact_user not set for '
+                'user {}'.format(username))
+            self.assertEqual(
+                profile.contact_user.id, contact.id,
+                'RegistrationProfile.contact_user not correctly '
+                'linked')
+
+            # Check StudentInfo exists for Student group
+            self.assertIsNotNone(
+                profile.student_info,
+                'StudentInfo not created for bulk student {}'
+                .format(username))
+            student_info = profile.student_info
+            self.assertIsNotNone(
+                student_info.graduation_year,
+                'StudentInfo.graduation_year not set for user {}'
+                .format(username))
+            from django.db.models import Max
+            yog_qs = (
+                RegistrationProfile.objects
+                .filter(user=user, program=self.program)
+                .exclude(student_info__isnull=True)
+                .exclude(student_info__graduation_year__isnull=True)
+                .values('user_id')
+                .annotate(yog=Max('student_info__graduation_year'))
+            )
+            self.assertEqual(
+                yog_qs.count(), 1,
+                'Bulk user {} should appear in onsite grade '
+                'queries'.format(username))
+
     def checkForBulkCreateError(self, test_case, form_data):
         bulk_account_create_response = self.client.post('/manage/%s/bulk_account_create' % self.program.getUrlBase(),
                                                         data=form_data)
@@ -1496,6 +1640,53 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
             'groups': ('Student', 'BulkAccountGroup')
         })
 
+
+class SeedDummyDataTest(TestCase):
+    """Tests for the seed_dummy_data management command."""
+
+    def test_seed_dummy_data_creates_programs_and_users(self):
+        """Running seed_dummy_data creates expected programs and users."""
+        call_command('seed_dummy_data', verbosity=0)
+
+        # Programs
+        for url in ['SplashDev/2026', 'SparkDev/2026']:
+            self.assertTrue(
+                Program.objects.filter(url=url).exists(),
+                f'Program {url} should exist after seeding',
+            )
+        # Users
+        for username in ['admin', 'teacher1', 'student1', 'volunteer1']:
+            self.assertTrue(
+                ESPUser.objects.filter(username=username).exists(),
+                f'User {username} should exist after seeding',
+            )
+        # ProgramModuleObj
+        for program in Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']):
+            self.assertGreater(
+                ProgramModuleObj.objects.filter(program=program).count(), 0,
+                f'Program {program.url} should have ProgramModuleObj instances after seeding',
+            )
+
+    def test_seed_dummy_data_idempotent(self):
+        """Running seed_dummy_data twice does not duplicate data."""
+        call_command('seed_dummy_data', verbosity=0)
+        count_before = Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']).count()
+
+        call_command('seed_dummy_data', verbosity=0)
+        count_after = Program.objects.filter(url__in=['SplashDev/2026', 'SparkDev/2026']).count()
+
+        self.assertEqual(count_before, count_after, 'Second run should not create duplicate programs')
+
+    def test_seed_dummy_data_flush_recreates_data(self):
+        """Running with --flush clears and re-seeds; programs exist afterward."""
+        call_command('seed_dummy_data', verbosity=0)
+        self.assertTrue(Program.objects.filter(url='SplashDev/2026').exists())
+
+        call_command('seed_dummy_data', '--flush', verbosity=0)
+        self.assertTrue(
+            Program.objects.filter(url='SplashDev/2026').exists(),
+            'Programs should exist after flush (command re-seeds)',
+        )
 
 class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     """Tests for making class flags visible to teachers."""
