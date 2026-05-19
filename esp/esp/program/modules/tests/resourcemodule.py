@@ -153,37 +153,6 @@ class ResourceModuleTest(ProgramFrameworkTest):
                 # nonexistent (stale) id
                 self._assert_bad_request(section_url, {'op': op, 'id': nonexistent_id})
 
-            # POST edit with missing/tampered hidden id
-            self._assert_post_bad_request(section_url, {
-                'command': 'addedit',
-                'id': '',
-            })
-            self._assert_post_bad_request(section_url, {
-                'command': 'addedit',
-                'id': invalid_id,
-            })
-            self._assert_post_bad_request(section_url, {
-                'command': 'addedit',
-                'id': nonexistent_id,
-            })
-
-            # POST delete confirmation with missing/invalid/stale id
-            self._assert_post_bad_request(section_url, {
-                'command': 'reallyremove',
-                'id': '',
-            })
-            self._assert_post_bad_request(section_url, {
-                'command': 'reallyremove',
-                'id': invalid_id,
-            })
-            self._assert_post_bad_request(section_url, {
-                'command': 'reallyremove',
-                'id': nonexistent_id,
-            })
-    def _assert_post_bad_request(self, url, data):
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, 400)
-
     def testStaleOrInvalidPostIds(self):
         base = '/manage/%s/resources' % self.program.getUrlBase()
         nonexistent_id = '999999999'
