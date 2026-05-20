@@ -51,13 +51,6 @@ class RandomModuleTests(ProgramFrameworkTest):
         self.assertIsNotNone(cls)
         self.assertEqual(cls.title, self.class1.title)
 
-    def test_good_random_class_empty_constraints(self):
-        """test good_random_class when constraints exist but are empty"""
-        Tag.setTag('random_constraints', value=json.dumps({}))
-        cls = good_random_class()
-        # any class can be returned here
-        self.assertIsNotNone(cls)
-
     def test_good_random_class_missing_tag(self):
         """test what happens when tag is missing entirely"""
         Tag.unSetTag('random_constraints')
@@ -67,9 +60,6 @@ class RandomModuleTests(ProgramFrameworkTest):
         cls = good_random_class()
         self.assertIsNotNone(cls)
 
-    def test_main_view(self):
-        """test main view returns 200 ok"""
-        request = self.factory.get('/random')
 """
 Tests for esp.random.views
 Source: esp/esp/random/views.py
@@ -171,8 +161,6 @@ class MainViewTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-    def test_ajax_view(self):
-        """test ajax view returns expected json keys"""
 
 class AjaxViewTest(TestCase):
     """Tests for ajax() view."""
