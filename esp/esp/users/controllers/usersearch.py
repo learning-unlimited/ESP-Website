@@ -470,6 +470,8 @@ class UserSearchController(object):
 
         if template is None:
             template = 'users/usersearch/usersearch_default.html'
+        if add_to_context is None:
+            add_to_context = {}
 
         if request.method == 'POST':
             data = ListGenModule.processPost(request)
