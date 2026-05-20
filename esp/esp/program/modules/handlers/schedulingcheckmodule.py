@@ -365,7 +365,7 @@ class SchedulingCheckRunner:
                     if open_class_cat.id not in [c.category.id for c in classes]:
                         #converts the list of class section objects to a single string
                         str1 = ', '
-                        classes = str1.join([unicode(c) for c in classes])
+                        classes = str1.join([str(c) for c in classes])
                         bads.append({
                             'Username': t,
                             'Teacher Name': t.name(),
