@@ -24,8 +24,11 @@ def main(request):
 
 def ajax(request):
     cls = good_random_class()
-    data = {'title': cls.title,
-            'program': cls.parent_program.niceName(),
-            'info': cls.class_info,
-            }
+    if cls is None:
+        data = {'title': '', 'program': '', 'info': 'No classes available right now.'}
+    else:
+        data = {'title': cls.title,
+                'program': cls.parent_program.niceName(),
+                'info': cls.class_info,
+                }
     return HttpResponse(json.dumps(data))
