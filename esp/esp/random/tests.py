@@ -60,6 +60,22 @@ class RandomModuleTests(ProgramFrameworkTest):
         cls = good_random_class()
         self.assertIsNotNone(cls)
 
+    def test_ajax_view_no_available_classes(self):
+        """test ajax view when good_random_class returns None (no classes available)"""
+        # Configure constraints so that all classes are excluded for this program
+        constraints = {
+            "bad_program_names": [self.program_name],  # block all programs, so no classes are returned
+            "bad_titles": [],
+        }
+        Tag.setTag('random_constraints', value=json.dumps(constraints))
+        request = self.factory.get('/random/ajax')
+        response = ajax(request)
+        # ajax view should handle the absence of a class gracefully (no crash)
+        self.assertEqual(response.status_code, 200)
+        # Response should still be valid JSON
+        response_data = json.loads(response.content.decode('utf-8'))
+        self.assertIsInstance(response_data, dict)
+
 """
 Tests for esp.random.views
 Source: esp/esp/random/views.py
