@@ -14,19 +14,20 @@ import string
 #python manage.py test users.controllers.tests.test_usersearch:TestUserSearchController.test_overlap_bug
 
 from esp.users.controllers.usersearch import UserSearchController
+from esp.cal.models import install as install_cal
 
 
 class TestUserSearchController(ProgramFrameworkTest):
 
     def setUp(self):
         super(TestUserSearchController, self).setUp()
+        install_cal()
         self.add_user_profiles()
         self.controller = UserSearchController()
 
     def _get_combination_post_data(self, list_a, list_b):
         return {
             'username': '',
-            'checkbox_and_confirmed': '',
             'first_name': '',
             'last_name': '',
             'school': '',
@@ -40,7 +41,6 @@ class TestUserSearchController(ProgramFrameworkTest):
             'zipdistance': '',
             'grade_min': '',
             'gradyear_min': '',
-            'checkbox_and_attended': '',
             'grade_max': '',
             'student_sendto_self': '1',
             'zipdistance_exclude': '',
@@ -53,7 +53,7 @@ class TestUserSearchController(ProgramFrameworkTest):
         self.assertGreaterEqual(query_result.count(), 0)
 
     def test_teacher_interview(self):
-        post_data = self._get_combination_post_data('Teacher', 'interview')
+        post_data = self._get_combination_post_data('Teacher', 'Teacher Interview')
         query_result = self.controller.filter_from_postdata(self.program, post_data).getList(ESPUser)
         self.assertEqual(query_result.model, ESPUser)
         self.assertGreaterEqual(query_result.count(), 0)
@@ -62,6 +62,6 @@ class TestUserSearchController(ProgramFrameworkTest):
         post_data = self._get_combination_post_data('Teacher', 'all')
         query = self.controller.query_from_postdata(self.program, post_data)
         self.assertIsNotNone(query)
-        result = query.getList(ESPUser)
+        result = ESPUser.objects.filter(query)
         self.assertEqual(result.model, ESPUser)
         self.assertGreater(result.count(), 0)
