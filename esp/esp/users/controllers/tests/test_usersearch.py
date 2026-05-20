@@ -14,20 +14,19 @@ import string
 #python manage.py test users.controllers.tests.test_usersearch:TestUserSearchController.test_overlap_bug
 
 from esp.users.controllers.usersearch import UserSearchController
-from esp.cal.models import install as install_cal
 
 
 class TestUserSearchController(ProgramFrameworkTest):
 
     def setUp(self):
         super(TestUserSearchController, self).setUp()
-        install_cal()
         self.add_user_profiles()
         self.controller = UserSearchController()
 
     def _get_combination_post_data(self, list_a, list_b):
         return {
             'username': '',
+            'checkbox_and_teacher_profile': '',
             'first_name': '',
             'last_name': '',
             'school': '',
@@ -41,6 +40,7 @@ class TestUserSearchController(ProgramFrameworkTest):
             'zipdistance': '',
             'grade_min': '',
             'gradyear_min': '',
+            'checkbox_and_class_approved': '',
             'grade_max': '',
             'student_sendto_self': '1',
             'zipdistance_exclude': '',
@@ -59,7 +59,7 @@ class TestUserSearchController(ProgramFrameworkTest):
         self.assertGreaterEqual(query_result.count(), 0)
 
     def test_teacher_classroom_tables_query_from_post(self):
-        post_data = self._get_combination_post_data('Teacher', 'all')
+        post_data = self._get_combination_post_data('Teacher', 'allTeacher')
         query = self.controller.query_from_postdata(self.program, post_data)
         self.assertIsNotNone(query)
         result = ESPUser.objects.filter(query)
