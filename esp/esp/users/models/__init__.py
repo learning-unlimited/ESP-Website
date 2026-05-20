@@ -139,6 +139,19 @@ class UserAvailability(models.Model):
         return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
 
 
+
+DBLISTCOUNT_VERSION_KEY = 'DBListCount_version'
+
+
+def get_dblistcount_version():
+    """Get the current cache version for DBListCount keys."""
+    version = cache.get(DBLISTCOUNT_VERSION_KEY)
+    if version is None:
+        cache.set(DBLISTCOUNT_VERSION_KEY, 1)
+        return 1
+    return version
+
+
 class ESPUserManager(UserManager):
     pass
 
@@ -185,6 +198,23 @@ class BaseESPUser(object):
             return list(range(7, 13))
         else:
             return json.loads(tag_val)
+
+    @staticmethod
+    def graduation_year_choices(include_blank=True, schoolyear=None):
+        choices = [
+            (str(ESPUser.YOGFromGrade(grade, schoolyear=schoolyear)), str(grade))
+            for grade in ESPUser.grade_options()
+        ]
+        if include_blank:
+            return [('', '')] + choices
+        return choices
+
+    @staticmethod
+    def valid_graduation_years(schoolyear=None):
+        return set(
+            ESPUser.YOGFromGrade(grade, schoolyear=schoolyear)
+            for grade in ESPUser.grade_options()
+        )
 
     @staticmethod
     def onsite_user():
@@ -1195,7 +1225,7 @@ class BaseESPUser(object):
 
         return schoolyear + 12 - grade
 
-    def set_student_grad_year(self, grad_year):
+    def set_student_grad_year(self, grad_year, validate=True):
         """ Update the user's graduation year if they are a student. """
 
         #   Check that the user is a student.
@@ -1204,21 +1234,35 @@ class BaseESPUser(object):
         if not self.isStudent():
             return
 
+        #   Guard against non-numeric input (e.g. a typo in the GET parameter)
+        #   so the view degrades gracefully instead of returning a 500.
+        try:
+            parsed_year = int(grad_year)
+        except (ValueError, TypeError):
+            return
+
+        if validate:
+            #   Only allow years corresponding to configured grade options.
+            valid_grad_years = ESPUser.valid_graduation_years()
+            if parsed_year not in valid_grad_years:
+                return
+
         #   Retrieve the user's most recent registration profile and create a StudentInfo if needed.
         profile = self.getLastProfile()
-        if profile.student_info is None:
-            profile.student_info = StudentInfo(user=self)
-            profile.save()
-
-        #   Update the graduation year.
         student_info = profile.student_info
-        student_info.graduation_year = int(grad_year)
+        if student_info is None:
+            student_info = StudentInfo(user=self)
+
+        student_info.graduation_year = parsed_year
         student_info.save()
+        if profile.student_info_id is None:
+            profile.student_info = student_info
+            profile.save()
 
     def set_grade(self, grade):
         """ Convenience function for setting a student's grade based on the
             current school year. """
-        self.set_student_grad_year(ESPUser.YOGFromGrade(int(grade)))
+        self.set_student_grad_year(ESPUser.YOGFromGrade(int(grade)), validate=False)
 
     @staticmethod
     def getRankInClass(student, subject, default=10):
@@ -1324,6 +1368,25 @@ def update_email_save(**kwargs):
 def update_email_delete(**kwargs):
     kwargs['deleted']=True
     return update_email(**kwargs)
+
+
+# Invalidate DBListCount cache on user changes.
+# Register both ESPUser (proxy model) and User senders so cache invalidation
+# works regardless of which model class was used to persist the change.
+@dispatch.receiver(signals.post_save, sender=ESPUser,
+                   dispatch_uid='invalidate_dblistcount_cache_espuser_post_save')
+@dispatch.receiver(signals.post_delete, sender=ESPUser,
+                   dispatch_uid='invalidate_dblistcount_cache_espuser_post_delete')
+@dispatch.receiver(signals.post_save, sender=User,
+                   dispatch_uid='invalidate_dblistcount_cache_user_post_save')
+@dispatch.receiver(signals.post_delete, sender=User,
+                   dispatch_uid='invalidate_dblistcount_cache_user_post_delete')
+def invalidate_dblistcount_cache(sender, **kwargs):
+    """Bump the version so all existing DBListCount cache entries become stale."""
+    try:
+        cache.incr(DBLISTCOUNT_VERSION_KEY)
+    except ValueError:
+        cache.set(DBLISTCOUNT_VERSION_KEY, 1)
 
 
 @enable_with_setting(settings.USE_MAILMAN)
@@ -2262,7 +2325,8 @@ class DBList(object):
             If override is true, it will not retrieve the number from cache
             or from this instance. If it's true, it will try.
         """
-        cache_id = urlencode(f'DBListCount: {self.key}')
+        version = get_dblistcount_version()
+        cache_id = urlencode(f'DBListCount: {self.key}: {version}')
 
         retVal   = cache.get(cache_id) # get the cached result
         if self.QObject: # if there is a q object we can just
@@ -2316,7 +2380,7 @@ class RecordType(models.Model):
         "student_survey", "teacher_survey", "reg_confirmed", "attended", "checked_out", "conf_email", "teacher_quiz_done",
         "paid", "med", "med_bypass", "liab", "onsite", "schedule_printed", "teacheracknowledgement", "studentacknowledgement",
         "lunch_selected", "student_extra_form_done", "teacher_extra_form_done", "extra_costs_done", "donation_done", "waitlist",
-        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done",
+        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done", "opt_out_paper_schedule",
     ]
 
     @classmethod
@@ -2361,6 +2425,11 @@ class Record(models.Model):
         Returns a QuerySet for all of a user's Records for a particular event,
         under various constraints.
 
+        The returned QuerySet is NOT deduplicated; the underlying joins are
+        all single forward ForeignKeys, so duplicates cannot arise from the
+        filter chain. Returning a non-distinct QuerySet allows callers to
+        chain .delete(), which Django 3.2+ forbids after .distinct().
+
         Parameters:
           user (ESPUser):              The user.
           event (unicode):             The event name.
@@ -2381,7 +2450,7 @@ class Record(models.Model):
             filter = filter.filter(time__year=when.year,
                                    time__month=when.month,
                                    time__day=when.day)
-        return filter.distinct()
+        return filter
 
     @classmethod
     def createBit(cls, extension, program, user):
@@ -2753,7 +2822,7 @@ class Permission(ExpirableModel):
         #  -teachers of a class with emailcode x (eg x=T1993) can edit
         #      /section/<Program.url>/Classes/<x>/<any url>.html
         if url.endswith(".html"):
-            url = url[-5]
+            url = url[:-5]
         if user is None or isinstance(user, AnonymousESPUser):
             return False
         if user.isAdmin():

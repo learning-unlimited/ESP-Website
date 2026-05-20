@@ -163,6 +163,15 @@ def render_to_response(template, request, context, content_type=None, use_reques
 
     _inject_active_program_tags(request, context)
 
+    # Shared base templates reference these optional values directly.
+    # Default them here so pages that don't populate them don't emit
+    # VariableDoesNotExist DEBUG noise during tests or local development.
+    context.setdefault('login_result', '')
+    context.setdefault('active_program_tags', [])
+    context.setdefault('active_program_tags_url', '')
+    context.setdefault('active_global_tags', [])
+    context.setdefault('active_global_tags_url', '')
+
     # create nav bar list
     if not 'navbar_list' in context:
         category = None
@@ -236,10 +245,12 @@ def secure_required(view_fn):
         return view_fn(request, *args, **kwargs)
     return _wrapped_view
 
-def zip_download(files = [], zipname = 'files'):
+def zip_download(files = None, zipname = 'files'):
     """
     Zips a list of files together and returns it as a download
     """
+    if files is None:
+        files = []
     file_like = StringIO()
     zf = zipfile.ZipFile(file_like, 'w')
     for file in files:
