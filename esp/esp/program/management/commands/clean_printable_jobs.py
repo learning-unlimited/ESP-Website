@@ -17,7 +17,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         hours = options['hours']
         cutoff = timezone.now() - timedelta(hours=hours)
-        
+
         # Query for jobs that have a file and were updated before the cutoff
         jobs = PrintableJob.objects.filter(updated_at__lt=cutoff).exclude(file=None).exclude(file='')
         count = 0
@@ -27,5 +27,5 @@ class Command(BaseCommand):
                 # Deletes the file from storage and saves the model (nulling/clearing the FileField)
                 job.file.delete(save=True)
                 count += 1
-                
+
         self.stdout.write(self.style.SUCCESS(f"Successfully cleaned up files and cleared FileField for {count} jobs."))
