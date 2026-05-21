@@ -1,6 +1,3 @@
-// Default to empty array if theme template did not define toolbarLinks
-if (typeof toolbarLinks === 'undefined') { var toolbarLinks = []; }
-
 ESP = (function(){
   var loaded = false;
   var queued_modules = [];
