@@ -80,7 +80,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         }
         response = self.client.post(f'/manage/{self.program.getUrlBase()}/{view_name}', post_data)
         if allow_redirect:
-            self.assertIn(response.status_code, [200, 302])
+            self.assertEqual(response.status_code, 302)
         else:
             self.assertEqual(response.status_code, 200)
         return response
@@ -115,7 +115,11 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         response = self.get_response('studentschedules/log', 'students', 'enrolled')
         #   Check that our view returns successfully (or redirects to job status for batch PDF)
         response = self.get_response('studentschedules', 'students', 'enrolled', allow_redirect=True)
-        self.assertIn(response.status_code, [200, 302])
+        self.assertEqual(response.status_code, 302)
+        from esp.program.models import PrintableJob
+        job = PrintableJob.objects.filter(program=self.program, job_type='studentschedules').first()
+        self.assertIsNotNone(job)
+        self.assertEqual(response['Location'], f'/manage/{self.program.getUrlBase()}/printable_job_status/{job.id}/')
         #   Check that the actual Latex->PDF schedule generation code runs without error
         students = getattr(self, 'students', [])
         if students:

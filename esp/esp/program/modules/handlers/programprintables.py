@@ -1259,14 +1259,14 @@ class ProgramPrintables(ProgramModuleObj):
         students.sort()
         if len(students) > 1 and file_type == 'pdf' and not onsite:
             from django.http import HttpResponseRedirect
-            from django.db import connection
+            from django.db import close_old_connections
 
             active_jobs = PrintableJob.objects.filter(
                 program=prog, user=request.user, job_type='studentschedules',
                 status__in=['PENDING', 'PROCESSING']
             )
             if active_jobs.exists():
-                return HttpResponseRedirect('/manage/%s/%s/printable_job_status/%s/' % (prog.url, module, active_jobs.first().id))
+                return HttpResponseRedirect('/manage/%s/printable_job_status/%s/' % (prog.url, active_jobs.first().id))
 
             job = PrintableJob.objects.create(
                 program=prog,
@@ -1274,7 +1274,7 @@ class ProgramPrintables(ProgramModuleObj):
                 job_type='studentschedules'
             )
             def run_job(job_id, student_ids, prog_id, file_type):
-                connection.close()
+                close_old_connections()
                 try:
                     job = PrintableJob.objects.get(id=job_id)
                     job.status = 'PROCESSING'
@@ -1304,11 +1304,11 @@ class ProgramPrintables(ProgramModuleObj):
                     job.error_message = traceback.format_exc()
                     job.save()
                 finally:
-                    connection.close()
+                    close_old_connections()
 
             student_ids = [s.id for s in students]
             printable_job_executor.submit(run_job, job.id, student_ids, prog.id, file_type)
-            return HttpResponseRedirect('/manage/%s/%s/printable_job_status/%s/' % (prog.url, module, job.id))
+            return HttpResponseRedirect('/manage/%s/printable_job_status/%s/' % (prog.url, job.id))
 
         return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
 
