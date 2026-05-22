@@ -410,7 +410,7 @@ class ProgramPrintables(ProgramModuleObj):
         flag_types = ClassFlagType.get_flag_types(program=prog).order_by("seq")
 
         for cls in classes:
-            flags = cls.flags.all()
+            flags = cls.flags.filter(resolved=False)
             type_dict = {}
             for flag in flags:
                 if flag.flag_type in type_dict:
