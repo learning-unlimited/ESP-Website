@@ -1262,7 +1262,7 @@ class ProgramPrintables(ProgramModuleObj):
             from django.db import close_old_connections
 
             active_jobs = PrintableJob.objects.filter(
-                program=prog, user=request.user, job_type='studentschedules',
+                program=prog, user=request.user, job_type='student schedules',
                 status__in=['PENDING', 'PROCESSING']
             )
             if active_jobs.exists():
@@ -1271,7 +1271,7 @@ class ProgramPrintables(ProgramModuleObj):
             job = PrintableJob.objects.create(
                 program=prog,
                 user=request.user,
-                job_type='studentschedules'
+                job_type='student schedules'
             )
             def run_job(job_id, student_ids, prog_id, file_type):
                 close_old_connections()
