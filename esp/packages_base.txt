@@ -20,5 +20,4 @@ libssl-dev
 libjpeg-dev
 git
 libfreetype6-dev
-python3.11-distutils
 python3-pip
