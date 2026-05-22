@@ -117,7 +117,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         response = self.get_response('studentschedules', 'students', 'enrolled', allow_redirect=True)
         self.assertEqual(response.status_code, 302)
         from esp.program.models import PrintableJob
-        job = PrintableJob.objects.filter(program=self.program, job_type='studentschedules').first()
+        job = PrintableJob.objects.filter(program=self.program, job_type='student schedules').first()
         self.assertIsNotNone(job)
         self.assertEqual(response['Location'], f'/manage/{self.program.getUrlBase()}/printable_job_status/{job.id}/')
         #   Check that the actual Latex->PDF schedule generation code runs without error
