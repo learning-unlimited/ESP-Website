@@ -45,9 +45,10 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
-from phonenumber_field.modelfields import PhoneNumberField
-from django.core import validators
+
 from django.core.cache import cache
+from django.core import validators
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Count
 from django.db.models import Q, F
@@ -69,7 +70,8 @@ from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
-from django.core.exceptions import ValidationError
+
+from phonenumber_field.modelfields import PhoneNumberField
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -2376,6 +2378,7 @@ def maybe_create_module_ext(handler, ext):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
+from esp.program.models.printable_job import PrintableJob
 
 def install():
     from esp.program.models.class_ import install as install_class
