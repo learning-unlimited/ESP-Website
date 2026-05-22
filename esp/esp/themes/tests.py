@@ -9,6 +9,7 @@ import shutil
 import tempfile
 
 from django.conf import settings
+from django.core.exceptions import SuspiciousFileOperation
 
 from esp.users.models import ESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -287,18 +288,15 @@ class SafeCustomizationPathTest(TestCase):
 
     def test_traversal_with_dotdot_raises(self):
         """Names containing '..' that escape themes_dir must raise."""
-        from django.core.exceptions import SuspiciousFileOperation
         with self.assertRaises(SuspiciousFileOperation):
             self.tc._safe_customization_path('../../etc/passwd')
 
     def test_absolute_path_raises(self):
         """An absolute path like '/tmp/evil' must raise."""
-        from django.core.exceptions import SuspiciousFileOperation
         with self.assertRaises(SuspiciousFileOperation):
             self.tc._safe_customization_path('/tmp/evil')
 
     def test_name_with_slash_raises(self):
         """A name with embedded slashes that escapes themes_dir must raise."""
-        from django.core.exceptions import SuspiciousFileOperation
         with self.assertRaises(SuspiciousFileOperation):
             self.tc._safe_customization_path('subdir/../../../etc/shadow')
