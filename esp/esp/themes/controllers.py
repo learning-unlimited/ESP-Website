@@ -45,7 +45,6 @@ import re
 import subprocess
 import tempfile
 import textwrap
-import distutils.dir_util
 import json
 import hashlib
 import copy
@@ -388,10 +387,12 @@ class ThemeController(object):
         #   This is much easier than writing new functions for removing and
         #   copying directory trees.
         backup_info = self.backup_files(settings.MEDIA_ROOT, keep_files)
-        if os.path.exists(settings.MEDIA_ROOT + 'images/theme'):
-            distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'images/theme')
-        if os.path.exists(settings.MEDIA_ROOT + 'scripts/theme'):
-            distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'scripts/theme')
+        images_theme_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
+        scripts_theme_dir = os.path.join(settings.MEDIA_ROOT, 'scripts', 'theme')
+        if os.path.exists(images_theme_dir):
+            shutil.rmtree(images_theme_dir, ignore_errors=True)
+        if os.path.exists(scripts_theme_dir):
+            shutil.rmtree(scripts_theme_dir, ignore_errors=True)
 
         #   Remove compiled CSS file
         if os.path.exists(self.css_filename):
@@ -490,15 +491,17 @@ class ThemeController(object):
         #   Collect LESS files from appropriate sources and compile CSS
         self.compile_css(theme_name, {}, self.css_filename)
 
+        theme_base_dir = self.base_dir(theme_name)
+
         #   Copy images and script files to the active theme directory
-        img_src_dir = os.path.join(self.base_dir(theme_name), 'images')
+        img_src_dir = os.path.join(theme_base_dir, 'images')
         if os.path.exists(img_src_dir):
             img_dest_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
-            distutils.dir_util.copy_tree(img_src_dir, img_dest_dir)
-        script_src_dir = os.path.join(self.base_dir(theme_name), 'scripts')
+            shutil.copytree(img_src_dir, img_dest_dir, dirs_exist_ok=True)
+        script_src_dir = os.path.join(theme_base_dir, 'scripts')
         if os.path.exists(script_src_dir):
             script_dest_dir = os.path.join(settings.MEDIA_ROOT, 'scripts', 'theme')
-            distutils.dir_util.copy_tree(script_src_dir, script_dest_dir)
+            shutil.copytree(script_src_dir, script_dest_dir, dirs_exist_ok=True)
 
         #   If files need to be restored, copy them back to the desired locations.
         if kwargs.get('backup_info', None) is not None:
