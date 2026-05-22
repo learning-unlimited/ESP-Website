@@ -705,9 +705,7 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
 
         self.controller.set_class_data(self.subject, mock_form)
 
-        assert not hasattr(self.subject, 'section_grade_min')
-
-        self.subject.refresh_from_db()
+        self.assertFalse(hasattr(self.subject, 'section_grade_min'))
 
     # ------------------------------------------------------------------
     # update_class_sections
