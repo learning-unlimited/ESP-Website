@@ -38,7 +38,7 @@ Use this page to manage site-wide files such as team photos, campus maps, and po
     <tr>
         <td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
         <td class="clsmiddle">
-            <form method="post" action="/manage/site_media/" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs }}?');">
+            <form method="post" action="{% url 'manage_site_media' %}" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs }}?');">
                 {% csrf_token %}
                 <input type="hidden" name="docid" value="{{ doc.id }}">
                 <input type="hidden" name="command" value="delete">
@@ -46,7 +46,7 @@ Use this page to manage site-wide files such as team photos, campus maps, and po
             </form>
         </td>
         <td class="clsmiddle" width="60%">
-            <form method="post" action="/manage/site_media/" enctype="multipart/form-data">
+            <form method="post" action="{% url 'manage_site_media' %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" name="docid" value="{{ doc.id }}">
                 <input type="hidden" name="command" value="rename">
@@ -66,7 +66,7 @@ Use this page to manage site-wide files such as team photos, campus maps, and po
 <br />
 <br />
 
-<form method="post" action="/manage/site_media/" enctype="multipart/form-data">
+<form method="post" action="{% url 'manage_site_media' %}" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="command" value="add">
     <table cellpadding="12" cellspacing="0" align="center" width="70%">

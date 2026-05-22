@@ -38,6 +38,7 @@ from esp.users.models import ESPUser
 
 from django.core.files.uploadhandler import MemoryFileUploadHandler, StopFutureHandlers
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import reverse
 
 class QSDMediaTest(TestCase):
     def test_upload(self):
@@ -82,29 +83,29 @@ class SiteMediaTest(TestCase):
 
     def test_admin_access_required(self):
         # Unauthenticated: should redirect to login
-        response = self.client.get('/manage/site_media/')
-        self.assertRedirects(response, '/accounts/login/?next=/manage/site_media/')
+        response = self.client.get(reverse('manage_site_media'))
+        self.assertRedirects(response, '/accounts/login/?next=' + reverse('manage_site_media'))
 
         # Student: should not have access
         self.client.login(username='student_user', password='password')
-        response = self.client.get('/manage/site_media/')
+        response = self.client.get(reverse('manage_site_media'))
         self.assertEqual(response.status_code, 403)
 
         # Admin: should be able to access
         self.client.login(username='admin_user', password='password')
-        response = self.client.get('/manage/site_media/')
+        response = self.client.get(reverse('manage_site_media'))
         self.assertEqual(response.status_code, 200)
 
     def test_add_site_media(self):
         self.client.login(username='admin_user', password='password')
 
         test_file = SimpleUploadedFile("test_add.txt", b"site media content")
-        response = self.client.post('/manage/site_media/', {
+        response = self.client.post(reverse('manage_site_media'), {
             'command': 'add',
             'title': 'New Site Media',
             'uploadedfile': test_file
         }, follow=False)
-        self.assertRedirects(response, '/manage/site_media/')
+        self.assertRedirects(response, reverse('manage_site_media'))
 
         # Verify it was created as site media
         media = Media.objects.get(friendly_name='New Site Media')
@@ -117,12 +118,12 @@ class SiteMediaTest(TestCase):
         media = Media(friendly_name='Old Title')
         media.save()
 
-        response = self.client.post('/manage/site_media/', {
+        response = self.client.post(reverse('manage_site_media'), {
             'command': 'rename',
             'docid': media.id,
             'title': 'Renamed Title'
         }, follow=False)
-        self.assertRedirects(response, '/manage/site_media/')
+        self.assertRedirects(response, reverse('manage_site_media'))
 
         media.refresh_from_db()
         self.assertEqual(media.friendly_name, 'Renamed Title')
@@ -134,11 +135,11 @@ class SiteMediaTest(TestCase):
         media.save()
 
         self.assertEqual(Media.objects.count(), 1)
-        response = self.client.post('/manage/site_media/', {
+        response = self.client.post(reverse('manage_site_media'), {
             'command': 'delete',
             'docid': media.id
         }, follow=False)
-        self.assertRedirects(response, '/manage/site_media/')
+        self.assertRedirects(response, reverse('manage_site_media'))
 
         self.assertEqual(Media.objects.count(), 0)
 
@@ -154,7 +155,7 @@ class SiteMediaTest(TestCase):
         non_site_media.save()
 
         # Try to rename — should fail silently (not site media)
-        self.client.post('/manage/site_media/', {
+        self.client.post(reverse('manage_site_media'), {
             'command': 'rename',
             'docid': non_site_media.id,
             'title': 'Trying to Rename'
@@ -164,7 +165,7 @@ class SiteMediaTest(TestCase):
         self.assertEqual(non_site_media.friendly_name, 'Not Site Media')
 
         # Try to delete — should fail silently (not site media)
-        self.client.post('/manage/site_media/', {
+        self.client.post(reverse('manage_site_media'), {
             'command': 'delete',
             'docid': non_site_media.id
         }, follow=False)

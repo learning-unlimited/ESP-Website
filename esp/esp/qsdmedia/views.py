@@ -40,6 +40,7 @@ from esp.web.forms.fileupload_form import FileUploadForm, FileRenameForm
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.core.exceptions import MultipleObjectsReturned
 from django.conf import settings
+from django.urls import reverse
 import fnmatch
 
 
@@ -57,7 +58,7 @@ def site_media(request):
                 media.delete()
             except Media.DoesNotExist:
                 pass
-            return HttpResponseRedirect('/manage/site_media/')
+            return HttpResponseRedirect(reverse('manage_site_media'))
         if request.POST.get('command') == 'add':
             form = FileUploadForm(request.POST, request.FILES)
             if form.is_valid():
@@ -70,7 +71,7 @@ def site_media(request):
                 media.handle_file(ufile, ufile.name)
                 media.format = ''
                 media.save()
-                return HttpResponseRedirect('/manage/site_media/')
+                return HttpResponseRedirect(reverse('manage_site_media'))
             uploadform = form
         elif request.POST.get('command') == 'rename':
             form = FileRenameForm(request.POST, request.FILES)
@@ -80,7 +81,7 @@ def site_media(request):
                     media = Media.objects.get(id=docid, owner_type__isnull=True, owner_id__isnull=True)
                     media.rename(form.cleaned_data['title'])
                     media.save()
-                    return HttpResponseRedirect('/manage/site_media/')
+                    return HttpResponseRedirect(reverse('manage_site_media'))
                 except Media.DoesNotExist:
                     pass
             renameform = form
