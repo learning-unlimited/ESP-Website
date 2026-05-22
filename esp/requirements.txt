@@ -42,7 +42,7 @@ raven # Required for Sentry error reporting
 setuptools==70.3.0 # For building packages from source on Python 3.12 (distutils removed from stdlib)
 selenium>=4.9,<5 # Runs selenium tests
 shortuuid==0.4.2 # django-extensions dependency
-stripe==10.12.0 # 2.x fails to import on Python 3.12 (missing stripe.six.moves)
+stripe==7.5.0 # Required for credit card processing
 twilio==6.63.2 # Required for text messaging support
 wheel==0.38.4  # For building modern packages
 werkzeug==2.0.3 # Required for runserver_plus (alternative to runserver provided by django-extensions)
