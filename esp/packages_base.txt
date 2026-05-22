@@ -4,10 +4,10 @@ texlive-latex-extra
 imagemagick
 ghostscript
 dvipng
-python3.11
+python3.12
 postgresql
 libevent-dev
-python3.11-dev
+python3.12-dev
 zlib1g-dev
 inkscape
 wamerican-large
