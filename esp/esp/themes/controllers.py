@@ -486,10 +486,7 @@ class ThemeController(object):
         #   Collect LESS files from appropriate sources and compile CSS
         self.compile_css(theme_name, {}, self.css_filename)
 
-        themes_root = os.path.realpath(THEME_PATH)
-        theme_base_dir = os.path.realpath(self.base_dir(theme_name))
-        if os.path.commonpath([themes_root, theme_base_dir]) != themes_root:
-            raise ESPError('Invalid theme path', log=True)
+        theme_base_dir = self.base_dir(theme_name)
 
         #   Copy images and script files to the active theme directory
         img_src_dir = os.path.join(theme_base_dir, 'images')
