@@ -49,8 +49,8 @@ This function is overloaded to handle either one or two phase reg"""
             try:
                 #there is an inactive account with that username
                 user = ESPUser.objects.filter(
-                    username = form.cleaned_data['username'],
-                    is_active = False).latest('date_joined')
+                    username__iexact=form.cleaned_data['username'],
+                    awaiting_activation=True).first()
 
             except ESPUser.DoesNotExist:
                 user = ESPUser.objects.create_user(username=form.cleaned_data['username'],
@@ -197,8 +197,15 @@ def resend_activation_view(request):
         if not form.is_valid():
             return render_to_response('registration/resend.html', request,
                                       {'form':form, 'site': Site.objects.get_current()})
-        user=ESPUser.objects.get(username=form.cleaned_data['username'])
-        userkey=user.password[user.password.rfind("_")+1:]
+        user = ESPUser.objects.filter(
+            username__iexact=form.cleaned_data['username'],
+            awaiting_activation=True
+        ).first()
+
+        if user is None:
+            raise ESPError("User not found.", log=False)
+
+        userkey = user.password[user.password.rfind("_")+1:]
         send_activation_email(user, userkey)
         return render_to_response('registration/resend_done.html', request,
                                   {'form':form, 'site': Site.objects.get_current()})
@@ -235,5 +242,3 @@ class GradeChangeRequestView(CreateView):
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
-
-
