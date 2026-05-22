@@ -93,17 +93,7 @@ var apply_fragment_changes = function(data)
             eval(data[key]);
         }
 
-        if (key == 'conflict' && data['conflict'] === true)
-        {
-            if (confirm(data['confirm_msg'])) {
-                var form = $j(data['form_selector']);
-                if (form.length > 0) {
-                    form.append('<input type="hidden" name="force_replace" value="true">');
-                    form.submit();
-                    form.find('input[name="force_replace"]').remove();
-                }
-            }
-        }
+
     }
 }
 

@@ -516,28 +516,6 @@ class StudentClassRegModule(ProgramModuleObj):
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
         except ESPError_NoLog as inst:
-            # Check for schedule conflicts
-            error_msg = str(inst)
-            if 'conflict' in error_msg.lower():
-                sectionid = request.POST.get('section_id')
-                if sectionid:
-                    try:
-                        section = ClassSection.objects.get(id=sectionid, parent_class__parent_program=prog)
-                        conflicts = section.get_conflicts(request.user)
-                        if conflicts:
-                            conflict_titles = ", ".join([str(c.title()) for c in conflicts])
-                            confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
-
-                            form_selector = '#prereg_%s' % sectionid
-                            resp = HttpResponse(content_type='application/json')
-                            resp.content = json.dumps({
-                                'conflict': True,
-                                'confirm_msg': confirm_msg,
-                                'form_selector': form_selector
-                            })
-                            return resp
-                    except (ClassSection.DoesNotExist, ValueError):
-                        pass
             error_message = inst.args[0] if inst.args else "An error occurred."
             return HttpResponse(json.dumps({'status' : 200, 'error': str(error_message)}), content_type='application/json')
 
