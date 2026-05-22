@@ -38,7 +38,7 @@ from django.contrib.auth.models import Group
 from django.core.files.storage import default_storage
 from django.db.models.query import Q
 
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.listgenmodule import ListGenModule
@@ -155,7 +155,17 @@ class NameTagModule(ProgramModuleObj):
             user_title = request.POST['blanktitle']
             data = ListGenModule.processPost(request)
             usc = UserSearchController()
-            filterObj = usc.filter_from_postdata(prog, data)
+            try:
+                filterObj = usc.filter_from_postdata(prog, data)
+            except (ESPError_Log, ESPError_NoLog) as e:
+                context = {'module': self}
+                context['groups'] = Group.objects.all()
+                context.update(usc.prepare_context(prog, target_path=request.path))
+                context['combo_form'] = False
+                context['include_continue'] = False
+                context['self_checkin'] = Tag.getProgramTag('student_self_checkin', program = prog) == 'code'
+                context['error'] = str(e)
+                return render_to_response(self.baseDir()+'selectoptions.html', request, context)
             users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'students':

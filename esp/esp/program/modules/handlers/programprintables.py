@@ -410,7 +410,7 @@ class ProgramPrintables(ProgramModuleObj):
         flag_types = ClassFlagType.get_flag_types(program=prog).order_by("seq")
 
         for cls in classes:
-            flags = cls.flags.all()
+            flags = cls.flags.filter(resolved=False)
             type_dict = {}
             for flag in flags:
                 if flag.flag_type in type_dict:
@@ -1283,6 +1283,21 @@ class ProgramPrintables(ProgramModuleObj):
             # PNG anyway.  So don't let people do that.
             raise ESPError("Generating multi-page schedules in PNG format is "
                            "not supported.")
+
+        # When printing schedules for multiple students (batch print), exclude
+        # those who have opted out of paper schedule printing.  Individual
+        # admin-driven prints (len == 1) are never filtered, so an admin can
+        # still print a single schedule on request.
+        if len(students) > 1:
+            opted_out_ids = set(
+                Record.objects.filter(
+                    event__name='opt_out_paper_schedule',
+                    program=prog,
+                    user__in=students,
+                ).values_list('user_id', flat=True)
+            )
+            if opted_out_ids:
+                students = [s for s in students if s.id not in opted_out_ids]
 
         # to avoid a query per student, get all the classes and SRs upfront
         all_classes = ClassSection.objects.filter(
