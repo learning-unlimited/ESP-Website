@@ -38,6 +38,7 @@ from collections import defaultdict
 from datetime import datetime
 import operator
 
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
@@ -623,7 +624,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=300)
+    @method_decorator(cache_control(public=True, max_age=300))
     @json_response()
     @cached_module_view
     def class_info(self, request, tl, one, two, module, extra, prog):
@@ -685,7 +686,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=300)
+    @method_decorator(cache_control(public=True, max_age=300))
     @json_response()
     def class_size_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
@@ -733,7 +734,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     # This is separate from class_info because students shouldn't see it
     @aux_call
-    @cache_control(public=True, max_age=30)
+    @method_decorator(cache_control(public=True, max_age=30))
     @json_response()
     @needs_admin
     def class_admin_info(self, request, tl, one, two, module, extra, prog):

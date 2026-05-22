@@ -1,12 +1,12 @@
 # Django
-Django==3.2.25
+Django==4.2.30
 
 # Django-specific packages
-git+https://github.com/learning-unlimited/django-argcache.git@django3 # Handles caching
-django-debug-toolbar==3.2.4 # Provides the debug toolbar
-django-extensions==3.1.5 # Provides shell_plus, runserver_plus, and other utilities
-django-filebrowser-no-grappelli==3.8.0 # Provides admin panel interface for files
-git+https://github.com/learning-unlimited/django-form-utils.git@master # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
+git+https://github.com/learning-unlimited/django-argcache.git@v0.4 # Handles caching
+django-debug-toolbar==4.4.0 # Provides the debug toolbar
+django-extensions==3.2.3 # Provides shell_plus, runserver_plus, and other utilities
+django-filebrowser-no-grappelli==4.0.0 # Provides admin panel interface for files
+git+https://github.com/learning-unlimited/django-form-utils.git@v1.1.0 # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
 django-formtools==2.4 # Used once in customforms
 django-localflavor==3.1 # Provides address fields
 django-phonenumber-field[phonenumbers]==6.3.0 # Provides phone number fields
@@ -14,7 +14,7 @@ django-recaptcha==3.0.0 # Provides support for Google reCAPTCHA
 django-reversion==5.0.2 # Handles versioning, currently for QSD and TemplateOverrides
 django-sendgrid-v5==1.2.4 # Provides support for using SendGrid as the EmailBackend
 django-vanilla-views==3.0.0 # Provides simpler generic views, currently used only for grade change requests
-git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends Django Admin
+git+https://github.com/learning-unlimited/django-admin-tools.git@v0.9.4+esp.1 # Extends Django Admin
 
 
 # Non-Django-specific packages
