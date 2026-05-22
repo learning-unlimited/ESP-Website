@@ -21,7 +21,7 @@
     </td>
 </tr>
 {% for timeslot in timeslots %}
-    {% if not timeslot.1|length_is:0 %}
+    {% if not timeslot.1|length == 0 %}
 
     {% ifchanged timeslot.0.start.day %}
         <tr><th class='program_form_small' colspan='3' style='text-align: center;'>{{ timeslot.0.pretty_date }}</th></tr>
@@ -43,7 +43,7 @@
         {% for cls in timeslot.1 %}
 	{% comment %}{% if use_priority %}{% endcomment %}
             <!-- Commented out for simplicity (Splash Fall 2009)
-            {% if not cls.section.verbs|length_is:0 %}
+            {% if not cls.section.verbs|length == 0 %}
                 <i>{% for v in cls.section.verbs %}{{ v.friendly_name }}{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
             {% endif %}
             -->
@@ -55,12 +55,12 @@
             {% endif %}
             {% if not forloop.last %}<br />{% endif %}
         {% endfor %}
-        {% if timeslot.1|length_is:0 %}
+        {% if timeslot.1|length == 0 %}
             No classes
         {% endif %}
         </td>
         
-        {% if not timeslot.1|length_is:0 %}
+        {% if not timeslot.1|length == 0 %}
             {% if module.deadline_met %}
             <td width='20%' align='center' style='vertical-align: top !important;'>
             {% for cls in timeslot.1 %}
@@ -72,7 +72,7 @@
             {% endfor %}
             {% if timeslot.3 %}
                 <a href='/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}'>[add class]</a>
-                {% if not timeslot.1|length_is:1 %}
+                {% if not timeslot.1|length == 1 %}
                     <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}' href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}'>[clear slot]</a>
                     {% comment %}<a id='clearslotlink' href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}'>[clear slot]</a>{% endcomment %}
                 {% endif %}
