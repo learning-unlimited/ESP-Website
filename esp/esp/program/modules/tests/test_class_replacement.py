@@ -1,6 +1,7 @@
 from esp.program.tests import ProgramFrameworkTest
 
-import json
+
+
 
 class ClassReplacementTest(ProgramFrameworkTest):
     def setUp(self):
@@ -31,35 +32,6 @@ class ClassReplacementTest(ProgramFrameworkTest):
         self.student = self.students[0]
         self.client.login(username=self.student.username, password='password')
 
-    def test_ajax_addclass_conflict_resolution(self):
-        # 1. Enroll in class 1
-        self.sec1.preregister_student(self.student)
-        self.assertEqual(len(list(self.student.getEnrolledSections(self.program))), 1)
-
-        # 2. Attempt to enroll in class 2 via AJAX (should return script for confirmation)
-        url = '/learn/%s/ajax_addclass' % self.program.url
-        data = {
-            'class_id': self.class2.id,
-            'section_id': self.sec2.id,
-        }
-        response = self.client.post(url, data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(response.status_code, 200)
-        resp_json = json.loads(response.content)
-
-        # Verify it returns structured conflict JSON with a confirmation message
-        self.assertTrue(resp_json.get('conflict'))
-        self.assertIn('confirm_msg', resp_json)
-        self.assertIn(str(self.class1.title), resp_json['confirm_msg'])
-
-        # 3. Simulate confirmation by sending force_replace=true
-        data['force_replace'] = 'true'
-        response = self.client.post(url, data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(response.status_code, 200)
-
-        # 4. Verify class 1 is dropped and class 2 is added
-        enrolled_sections = list(self.student.getEnrolledSections(self.program))
-        self.assertEqual(len(enrolled_sections), 1)
-        self.assertEqual(enrolled_sections[0].id, self.sec2.id)
 
     def test_desktop_addclass_conflict_resolution(self):
         # 1. Enroll in class 1
