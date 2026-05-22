@@ -318,15 +318,30 @@ class ThemeController(object):
             customization_name = self.get_current_customization()
         if theme_name is None:
             theme_name = self.get_current_theme()
+
+        # Save current parameters and palette before they are cleared
+        current_vars = self.get_current_params()
+        current_palette = json.loads(Tag.getTag('current_theme_palette', default='[]'))
+
         backup_info = self.clear_theme(keep_files=keep_files)
         self.load_theme(theme_name, backup_info=backup_info)
         self.update_template_settings()
+
+        vars = current_vars
+        palette = current_palette
+
         if customization_name is not None and customization_name != "None":
-            (vars, palette) = self.load_customizations(customization_name)
-            if vars:
-                self.customize_theme(vars)
-            if palette:
-                self.set_palette(palette)
+            try:
+                (vars, palette) = self.load_customizations(customization_name)
+            except FileNotFoundError:
+                logger.warning("Customization file for %s missing. Initializing with parameters from database.", customization_name)
+                self.save_customizations(customization_name, theme_name=theme_name, vars=current_vars, palette=current_palette)
+                (vars, palette) = self.load_customizations(customization_name)
+
+        if vars:
+            self.customize_theme(vars)
+        if palette:
+            self.set_palette(palette)
 
     def backup_files(self, dir, keep_files=None):
         """ Copy the files specified in keep_files (relative to directory dir)

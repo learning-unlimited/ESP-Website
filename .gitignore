@@ -9,12 +9,10 @@ esp/public/media/latex/*
 esp/public/media/latex_media/letterhead.*
 esp/public/media/email_images/*
 esp/public/media/uploaded/*
-esp/public/media/styles
-esp/public/media/images
-esp/public/media/default_images/backups
-esp/public/media/default_images/histograms
-esp/public/media/default_images/theme
-esp/public/media/default_images/favicon.ico
+esp/public/media/images/backups
+esp/public/media/images/histograms
+esp/public/media/images/theme
+esp/public/media/images/favicon.ico
 esp/public/media/theme_editor/themes
 esp/public/media/scripts/theme
 esp/public/static

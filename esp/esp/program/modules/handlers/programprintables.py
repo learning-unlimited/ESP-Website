@@ -334,7 +334,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         group_name = Tag.getTag('full_group_name')
         if not group_name:
-            group_name = '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+            group_name = f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
         context['group_name'] = group_name
 
         #   Hack for timeblock sorting (sorting by category is the default)
@@ -410,7 +410,7 @@ class ProgramPrintables(ProgramModuleObj):
         flag_types = ClassFlagType.get_flag_types(program=prog).order_by("seq")
 
         for cls in classes:
-            flags = cls.flags.all()
+            flags = cls.flags.filter(resolved=False)
             type_dict = {}
             for flag in flags:
                 if flag.flag_type in type_dict:
@@ -718,13 +718,13 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def teachermoderatorlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=True, moderating=True, display_name = 'Teacher and %s List' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=True, moderating=True, display_name = f'Teacher and {prog.getModeratorTitle()} List')
 
     @aux_call
     @needs_admin
     def moderatorlist(self, request, tl, one, two, module, extra, prog):
         """ default list of teachers; function left in for compatibility """
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True, display_name = '%s List' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, teaching=False, moderating=True, display_name = f'{prog.getModeratorTitle()} List')
 
     @staticmethod
     def cmpsorttime(one, other):
@@ -754,12 +754,12 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def teachermoderatorsbytime(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = True, display_name = 'Teacher and %s List by Time' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = True, moderating = True, display_name = f'Teacher and {prog.getModeratorTitle()} List by Time')
 
     @aux_call
     @needs_admin
     def moderatorsbytime(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = False, moderating = True, display_name = '%s List by Time' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsorttime, teaching = False, moderating = True, display_name = f'{prog.getModeratorTitle()} List by Time')
 
     @staticmethod
     def cmpsortname(one, other):
@@ -780,12 +780,12 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def teachermoderatorsbyname(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = True, display_name = 'Teacher and %s List by Name' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = True, moderating = True, display_name = f'Teacher and {prog.getModeratorTitle()} List by Name')
 
     @aux_call
     @needs_admin
     def moderatorsbyname(self, request, tl, one, two, module, extra, prog):
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True, display_name = '%s List by Name' % (prog.getModeratorTitle()))
+        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, self.cmpsortname, teaching = False, moderating = True, display_name = f'{prog.getModeratorTitle()} List by Name')
 
     @needs_admin
     def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x, y: cmp(x, y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
@@ -859,106 +859,123 @@ class ProgramPrintables(ProgramModuleObj):
 
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff, display_name = 'Student Emergency Contact List')
 
-    @aux_call
-    @needs_admin
-    def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
-        """ generate teacher/moderator schedules """
+    def _generate_schedules(self, request, prog, role_teachers=False, role_moderators=False, sort_by='name', title='Schedules'):
+        from esp.users.controllers.usersearch import UserSearchController
+        from esp.users.models import ESPUser
+        import datetime
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Teacher and %s Schedules' % (prog.getModeratorTitle())})
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context={'module': title})
         if not found:
             return filterObj
 
-        context = {'module': self     }
+        context = {'module': self}
         teachers = sorted(filterObj.getList(ESPUser).distinct())
 
         scheditems = []
 
         for teacher in teachers:
             # get list of valid classes
-            classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
+            if role_teachers and role_moderators:
+                class_objects = teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
+            elif role_teachers:
+                class_objects = teacher.getTaughtSectionsFromProgram(self.program)
+            else:
+                class_objects = teacher.getModeratingSectionsFromProgram(self.program)
+
+            # Prefetch meeting_times to avoid N+1 queries during sort-by-time
+            class_objects = class_objects.prefetch_related('meeting_times')
+
+            classes = sorted([cls for cls in class_objects
                     if cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.status > 0])
+
             # now we sort them by time/title
             for cls in classes:
-                if teacher in cls.parent_class.get_teachers():
-                    role = 'Teacher'
+                if role_teachers and role_moderators:
+                    if teacher in cls.parent_class.get_teachers():
+                        role = 'Teacher'
+                    else:
+                        role = self.program.getModeratorTitle()
+                    scheditems.append({'name': teacher.name(),
+                                       'teacher': teacher,
+                                       'cls': cls,
+                                       'role': role})
                 else:
-                    role = self.program.getModeratorTitle()
-                scheditems.append({'name': teacher.name(),
-                                   'teacher': teacher,
-                                   'cls': cls,
-                                   'role': role})
+                    scheditems.append({'name': teacher.name(),
+                                       'teacher': teacher,
+                                       'cls': cls})
+
+        if sort_by == 'time':
+            teacher_starts = {}
+            for item in scheditems:
+                teacher = item['teacher']
+                if teacher.id not in teacher_starts:
+                    earliest = datetime.datetime.max
+                    # Look at all this teacher's classes in scheditems
+                    teacher_classes = [i['cls'] for i in scheditems if i['teacher'].id == teacher.id]
+                    for cls in teacher_classes:
+                        cls_earliest = min((mt.start for mt in cls.meeting_times.all()), default=datetime.datetime.max)
+                        if cls_earliest < earliest:
+                            earliest = cls_earliest
+                    teacher_starts[teacher.id] = earliest
+
+            # Sort by teacher's earliest class time, then teacher name, then specific class time
+            scheditems.sort(key=lambda item: (
+                teacher_starts[item['teacher'].id],
+                item['teacher'].last_name.lower(),
+                item['teacher'].first_name.lower(),
+                min((mt.start for mt in item['cls'].meeting_times.all()), default=datetime.datetime.max)
+            ))
 
         context['scheditems'] = scheditems
-        context['moderators'] = True
-        context['teachers'] = True
+        context['moderators'] = role_moderators
+        context['teachers'] = role_teachers
 
-        return render_to_response(self.baseDir()+'teachermoderatorschedule.html', request, context)
+        if role_teachers and role_moderators:
+            template = 'teachermoderatorschedule.html'
+        elif role_teachers:
+            template = 'teacherschedule.html'
+        else:
+            template = 'moderatorschedule.html'
+
+        return render_to_response(self.baseDir() + template, request, context)
+
+    @aux_call
+    @needs_admin
+    def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
+        """ generate teacher/moderator schedules """
+        return self._generate_schedules(request, prog, role_teachers=True, role_moderators=True, sort_by='name', title='Teacher and %s Schedules' % (prog.getModeratorTitle()))
+
+    @aux_call
+    @needs_admin
+    def teachermoderatorschedulesbytime(self, request, tl, one, two, module, extra, prog):
+        """ generate teacher/moderator schedules sorted by first class start time """
+        return self._generate_schedules(request, prog, role_teachers=True, role_moderators=True, sort_by='time', title='Teacher and %s Schedules by Time' % (prog.getModeratorTitle()))
 
     @aux_call
     @needs_admin
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
+        return self._generate_schedules(request, prog, role_teachers=True, role_moderators=False, sort_by='name', title='Teacher Schedules')
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Teacher Schedules'})
-        if not found:
-            return filterObj
-
-        context = {'module': self     }
-        teachers = sorted(filterObj.getList(ESPUser).distinct())
-
-        scheditems = []
-
-        for teacher in teachers:
-            # get list of valid classes
-            classes = sorted([cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-            # now we sort them by time/title
-            for cls in classes:
-                scheditems.append({'name': teacher.name(),
-                                   'teacher': teacher,
-                                   'cls': cls})
-
-        context['scheditems'] = scheditems
-        context['moderators'] = False
-        context['teachers'] = True
-
-        return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
+    @aux_call
+    @needs_admin
+    def teacherschedulesbytime(self, request, tl, one, two, module, extra, prog):
+        """ generate teacher schedules sorted by first class start time """
+        return self._generate_schedules(request, prog, role_teachers=True, role_moderators=False, sort_by='time', title='Teacher Schedules by Time')
 
     @aux_call
     @needs_admin
     def moderatorschedules(self, request, tl, one, two, module, extra, prog):
         """ generate moderator schedules """
+        return self._generate_schedules(request, prog, role_teachers=False, role_moderators=True, sort_by='name', title='%s Schedules' % (prog.getModeratorTitle()))
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': '%s Schedules' % (prog.getModeratorTitle())})
-        if not found:
-            return filterObj
-
-        context = {'module': self     }
-        teachers = sorted(filterObj.getList(ESPUser).distinct())
-
-        scheditems = []
-
-        for teacher in teachers:
-            # get list of valid classes
-            classes = sorted([cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-            # now we sort them by time/title
-            for cls in classes:
-                scheditems.append({'name': teacher.name(),
-                                   'teacher': teacher,
-                                   'cls': cls})
-
-        context['scheditems'] = scheditems
-        context['moderators'] = True
-        context['teachers'] = False
-
-        return render_to_response(self.baseDir()+'moderatorschedule.html', request, context)
+    @aux_call
+    @needs_admin
+    def moderatorschedulesbytime(self, request, tl, one, two, module, extra, prog):
+        """ generate moderator schedules sorted by first class start time """
+        return self._generate_schedules(request, prog, role_teachers=False, role_moderators=True, sort_by='time', title='%s Schedules by Time' % (prog.getModeratorTitle()))
 
     @aux_call
     @needs_admin
@@ -1266,6 +1283,21 @@ class ProgramPrintables(ProgramModuleObj):
             # PNG anyway.  So don't let people do that.
             raise ESPError("Generating multi-page schedules in PNG format is "
                            "not supported.")
+
+        # When printing schedules for multiple students (batch print), exclude
+        # those who have opted out of paper schedule printing.  Individual
+        # admin-driven prints (len == 1) are never filtered, so an admin can
+        # still print a single schedule on request.
+        if len(students) > 1:
+            opted_out_ids = set(
+                Record.objects.filter(
+                    event__name='opt_out_paper_schedule',
+                    program=prog,
+                    user__in=students,
+                ).values_list('user_id', flat=True)
+            )
+            if opted_out_ids:
+                students = [s for s in students if s.id not in opted_out_ids]
 
         # to avoid a query per student, get all the classes and SRs upfront
         all_classes = ClassSection.objects.filter(
@@ -1576,7 +1608,7 @@ class ProgramPrintables(ProgramModuleObj):
     def classrostersbymoderator(self, request, tl, one, two, module, extra, prog):
         """ generate class rosters by moderator"""
 
-        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Class Rosters by %s' % (prog.getModeratorTitle())})
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': f'Class Rosters by {prog.getModeratorTitle()}'})
         if not found:
             return filterObj
 
@@ -1796,10 +1828,10 @@ class ProgramPrintables(ProgramModuleObj):
                                [smart_str(section.parent_class.pretty_teachers())] + \
                                [needs_resource('LCD Projector', section)] + \
                                [needs_resource('Computer Lab', section)] + \
-                               [', '.join(['%s: %s' % (r.res_type.name, r.desired_value) for r in section.getResourceRequests()])] + \
+                               [', '.join([f'{r.res_type.name}: {r.desired_value}' for r in section.getResourceRequests()])] + \
                                [section.parent_class.class_size_optimal] + \
                                [section.parent_class.class_size_max] + \
-                               ['%d--%d' %(section.parent_class.grade_min, section.parent_class.grade_max)] +\
+                               [f'{section.parent_class.grade_min}--{section.parent_class.grade_max}'] +\
                                [smart_str(section.parent_class.message_for_directors)] + \
                                [", ".join(section.friendly_times())] + [", ".join(section.prettyrooms())] + \
                                time_values)
@@ -2007,7 +2039,7 @@ class AllClassesFieldConverter(object):
         elif hasattr(class_subject, fieldname):
             fieldvalue = getattr(class_subject, fieldname)
         else:
-            raise ValueError('Invalid fieldname supplied {0}'.format(fieldname))
+            raise ValueError(f'Invalid fieldname supplied {fieldname}')
         return fieldvalue
 
 class AllClassesSelectionForm(forms.Form):
