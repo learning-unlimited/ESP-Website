@@ -39,12 +39,11 @@ pymemcache==4.0.0 # Talks to memcached
 pytz==2023.3 # Required for timezone support
 # pywatchman # Makes dev servers auto-reload
 raven # Required for Sentry error reporting
-setuptools==57.5.0 # For building packages from source; stripe and a few others don't work with v58+
+setuptools==57.5.0 # For building packages from source; some deps don't work with v58+
 selenium>=4.9,<5 # Runs selenium tests
 shortuuid==0.4.2 # django-extensions dependency
-stripe==2.60.0 # Required for credit card processing
+stripe==7.5.0 # Required for credit card processing
 twilio==6.63.2 # Required for text messaging support
 wheel==0.38.4  # For building modern packages
 werkzeug==2.0.3 # Required for runserver_plus (alternative to runserver provided by django-extensions)
 openpyxl==3.1.2 # Does form and survey exporting
-
