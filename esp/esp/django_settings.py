@@ -1,5 +1,4 @@
 """ Django settings for ESP website. """
-from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -398,7 +397,20 @@ FILEBROWSER_SELECT_FORMATS = {
 
 # Custom file storage backend that lowercases file extensions
 # This ensures consistent handling of file extensions regardless of upload method
-DEFAULT_FILE_STORAGE = 'esp.web.storage.LowercaseExtensionStorage'
+# Replaces Django 4.2-deprecated DEFAULT_FILE_STORAGE scalar setting.
+# The staticfiles backend is explicitly set to preserve the existing default
+# (StaticFilesStorage); do not silently change it when adding new environments.
+STORAGES = {
+    "default": {"BACKEND": "esp.web.storage.LowercaseExtensionStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+
+# TODO: Django 5.0 changed the default for USE_TZ from False to True.  This
+# pin preserves the current behaviour (naive datetimes throughout the codebase)
+# until a dedicated timezone-aware migration effort is undertaken.  Do not
+# remove this line without first auditing every datetime field and making the
+# codebase timezone-aware.
+USE_TZ = False
 
 #   Default imports for shell_plus, for convenience.
 SHELL_PLUS_POST_IMPORTS = (
@@ -422,7 +434,7 @@ ADMIN_TOOLS_MENU = 'admintoolsmenu.CustomMenu'
 ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
 ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
-ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
+ADMIN_TOOLS_THEMING_CSS = '/media/styles/admin_theme.css'
 
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']

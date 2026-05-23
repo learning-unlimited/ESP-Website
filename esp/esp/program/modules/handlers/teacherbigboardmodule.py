@@ -3,10 +3,10 @@ import subprocess
 
 from django.db.models.aggregates import Min
 from django.db.models.query import Q
-from django.db.models import Count, Sum
+from django.db.models import Count, Prefetch, Sum
 
 from argcache import cache_function_for
-from esp.program.models import ClassSubject, ModeratorRecord
+from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.web import render_to_response
@@ -203,14 +203,20 @@ class TeacherBigBoardModule(ProgramModuleObj):
     def get_hours(prog, approved = False, scheduled = False, teachers = None):
         classes = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)
         ).annotate(num_sections=Count('sections')).filter(num_sections__gt=0
-        ).exclude(category__category__iexact="Lunch")
+        ).exclude(category__category__iexact="Lunch"
+        ).prefetch_related(
+            Prefetch('sections',
+                     queryset=ClassSection.objects.order_by('id')
+                         .prefetch_related('meeting_times'),
+                     to_attr='prefetched_sections'),
+        )
         for cls in classes:
             cls.section_sum = 0
-            for sec in cls.get_sections():
-                if approved and not sec.isAccepted():
-                    pass
-                if scheduled and sec.meeting_times.count() == 0:
-                    pass
+            for sec in cls.prefetched_sections:
+                if approved and sec.status <= 0:
+                    continue
+                if scheduled and len(sec.meeting_times.all()) == 0:
+                    continue
                 cls.section_sum += sec.duration
         hours = [[cls.timestamp, cls.class_size_max, cls.section_sum] for cls in classes]
         # use mindate if a class is missing a timestamp so we can still calculate static stats

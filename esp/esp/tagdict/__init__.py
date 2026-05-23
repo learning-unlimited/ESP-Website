@@ -584,9 +584,16 @@ all_program_tags = {
     },
     'catalog_sort_fields': {
         'is_boolean': False,
-        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'sections__meeting_times__start\', \'_num_students\', \'id\')',
+        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'earliest_start\', \'_num_students\', \'id\')',
         'default': 'category__symbol',
         'category': 'manage',
+        'is_setting': True,
+    },
+    'separate_catalog_pages': {
+        'is_boolean': True,
+        'help_text': 'Show category-specific catalog pages instead of a single combined catalog page.',
+        'default': False,
+        'category': 'learn',
         'is_setting': True,
     },
     # These help_text tags are in order of the fields in TeacherClassRegForm
