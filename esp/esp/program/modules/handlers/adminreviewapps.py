@@ -37,7 +37,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, a
 from esp.middleware.esperrormiddleware import ESPError
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject, StudentRegistration, RegistrationType
+from esp.program.models import ClassSubject, StudentRegistration, RegistrationType, StudentApplication
 from django.db.models.query import Q
 
 __all__ = ['AdminReviewApps']
@@ -54,17 +54,6 @@ class AdminReviewApps(ProgramModuleObj):
             "seq": 1000,
             "choosable": 0,
             }
-
-    def students(self, QObject=False):
-        Q_accepted = Q(studentregistration__relationship__name='Accepted', studentregistration__section__parent_class__parent_program=self.program)
-
-        if QObject:
-            return {'app_accepted_to_one_program': Q_accepted}
-        else:
-            return {'app_accepted_to_one_program': ESPUser.objects.filter(Q_accepted).distinct()}
-
-    def studentDesc(self):
-        return {'app_accepted_to_one_program': """Students who are accepted to at least one class"""}
 
     @main_call
     @needs_admin
@@ -90,10 +79,11 @@ class AdminReviewApps(ProgramModuleObj):
         students = [x for x in students if x.studentapplication_set.filter(program=self.program).count() > 0]
 
         for student in students:
-            student.added_class = student.studentregistration_set.filter(section__parent_class=cls)[0].start_date
+            reg = student.studentregistration_set.filter(section__parent_class=cls).first()
+            student.added_class = reg.start_date if reg else None
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
-            except:
+            except StudentApplication.DoesNotExist:
                 student.app = None
 
             if student.app:
@@ -122,7 +112,7 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
             student = ESPUser.objects.get(id = request.GET.get('student', ''))
-        except:
+        except (ValueError, TypeError, ClassSubject.DoesNotExist, ESPUser.DoesNotExist):
             raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
@@ -140,7 +130,7 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
             student = ESPUser.objects.get(id = request.GET.get('student', ''))
-        except:
+        except (ClassSubject.DoesNotExist, ESPUser.DoesNotExist):
             raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
@@ -177,9 +167,8 @@ class AdminReviewApps(ProgramModuleObj):
 
         try:
             student.app = student.studentapplication_set.get(program = self.program)
-        except:
+        except StudentApplication.DoesNotExist:
             student.app = None
-            assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
 
         return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student, 'program': prog})
@@ -198,10 +187,10 @@ class AdminReviewApps(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
 
-        schedule = """
-Student schedule for %s:
+        schedule = f"""
+Student schedule for {student.name()}:
 
- Time               | Class                   | Room""" % student.name()
+ Time               | Class                   | Room"""
 
         regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted')
         classes = sorted([x.section.parent_class for x in regs])
@@ -215,10 +204,8 @@ Student schedule for %s:
             else:
                 rooms = ", ".join(rooms)
 
-            schedule += """
-%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
-               cls.title.ljust(25),
-               rooms)
+            schedule += f"""
+{",".join(cls.friendly_times()).ljust(20)}|{cls.title.ljust(25)}|{rooms}"""
 
         return schedule
 

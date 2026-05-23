@@ -15,7 +15,7 @@ body:
       description: A clear and concise description of the bug.
       placeholder: Describe the bug...
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: steps
@@ -28,7 +28,7 @@ body:
         3. Scroll down to '...'
         4. See error
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: expected
@@ -37,7 +37,7 @@ body:
       description: What did you expect to happen?
       placeholder: Describe what you expected...
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: actual
@@ -46,7 +46,7 @@ body:
       description: What actually happened?
       placeholder: Describe what actually happened...
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: screenshots
