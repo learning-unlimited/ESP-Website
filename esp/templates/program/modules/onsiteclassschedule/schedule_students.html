@@ -36,7 +36,7 @@
         });
 
         // Clear the hidden ID if the user edits the input text manually
-        $j(".student_search").on("input change", function() {
+        $j(".student_search").on("input", function() {
             $j(this).next(".student_selected").val("");
         });
     });
