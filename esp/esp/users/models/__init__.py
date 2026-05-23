@@ -2380,7 +2380,7 @@ class RecordType(models.Model):
         "student_survey", "teacher_survey", "reg_confirmed", "attended", "checked_out", "conf_email", "teacher_quiz_done",
         "paid", "med", "med_bypass", "liab", "onsite", "schedule_printed", "teacheracknowledgement", "studentacknowledgement",
         "lunch_selected", "student_extra_form_done", "teacher_extra_form_done", "extra_costs_done", "donation_done", "waitlist",
-        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done",
+        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done", "opt_out_paper_schedule",
     ]
 
     @classmethod
@@ -2425,6 +2425,11 @@ class Record(models.Model):
         Returns a QuerySet for all of a user's Records for a particular event,
         under various constraints.
 
+        The returned QuerySet is NOT deduplicated; the underlying joins are
+        all single forward ForeignKeys, so duplicates cannot arise from the
+        filter chain. Returning a non-distinct QuerySet allows callers to
+        chain .delete(), which Django 3.2+ forbids after .distinct().
+
         Parameters:
           user (ESPUser):              The user.
           event (unicode):             The event name.
@@ -2445,7 +2450,7 @@ class Record(models.Model):
             filter = filter.filter(time__year=when.year,
                                    time__month=when.month,
                                    time__day=when.day)
-        return filter.distinct()
+        return filter
 
     @classmethod
     def createBit(cls, extension, program, user):
@@ -2817,7 +2822,7 @@ class Permission(ExpirableModel):
         #  -teachers of a class with emailcode x (eg x=T1993) can edit
         #      /section/<Program.url>/Classes/<x>/<any url>.html
         if url.endswith(".html"):
-            url = url[-5]
+            url = url[:-5]
         if user is None or isinstance(user, AnonymousESPUser):
             return False
         if user.isAdmin():
