@@ -22,12 +22,15 @@ td, th {
 }
 </style>
 <a name="top"></a><h1>Survey Responses for {{ program.niceName }} </h1>
+{% if tl == "teach" %}
+<p>To view your survey results across all programs, <a href="/myesp/survey_responses">go here</a>.</p>
+{% endif %}
 
 {% if teacher_form %}
 <form method="POST" action="{{ request.get_full_path }}">
 <h2>Search for a teacher to retrieve their specific survey results:</h2>
 {% for error in teacher_form.target_user.errors %}
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
     <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
         {{ error|escape }}
 </div>

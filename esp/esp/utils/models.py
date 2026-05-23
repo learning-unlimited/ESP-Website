@@ -50,7 +50,7 @@ class TemplateOverride(models.Model):
         unique_together = (('name', 'version'), )
 
     def __str__(self):
-        return 'Ver. %d of %s' % (self.version, self.name)
+        return f'Ver. {self.version} of {self.name}'
 
     def next_version(self):
         max_version = TemplateOverride.objects.filter(name=self.name).aggregate(max_version=Max('version'))['max_version']

@@ -1,3 +1,9 @@
+<div class="class_search_data" style="display: none;"
+     data-class-id="{{ class.emailcode }}"
+     data-class-title="{{ class.title }}"
+     data-class-description="{{ class.class_info|escape }}"
+     data-class-teacher="{% for teacher in class.get_teachers %}{{ teacher.first_name }} {{ teacher.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+</div>
 <div class="class_title">
     <b>{{ class.emailcode }}: {{ class.title }}</b>
 </div>
@@ -27,7 +33,7 @@
 <div class="class_meeting_times">
     {% if not section %}
         {% for sec in class.get_sections %}
-           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}}<b><font color="#990000">{% if sec.isFullWebapp %} (Full!){% elif sec.isRegClosed %} (Closed!){% elif sec.isCancelled %} (Cancelled!){% endif %}</font></b><br />{% endif %}
+           {% if not sec.friendly_times|length == 0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}}<b><font color="#990000">{% if sec.isFullWebapp %} (Full!){% elif sec.isRegClosed %} (Closed!){% elif sec.isCancelled %} (Cancelled!){% endif %}</font></b><br />{% endif %}
         {% endfor %}
     {% else %}
         Section {{ section.index }}: {{ section.friendly_times|join:", "}}<b><font color="#990000">{% if section.isFullWebapp %} (Full!){% elif section.isRegClosed %} (Closed!){% endif %}</font></b>
