@@ -530,13 +530,9 @@ class DeactivateBouncingEmailsTest(TestCase):
 
     # --- Missing API key / error handling ---
 
-    @override_settings()
+    @override_settings(SENDGRID_API_KEY=None)
     def test_no_api_key_exits_gracefully(self):
-        """Command should exit without error when SENDGRID_API_KEY is missing."""
-        from django.conf import settings
-        # Remove SENDGRID_API_KEY from settings if present
-        if hasattr(settings, 'SENDGRID_API_KEY'):
-            delattr(settings, 'SENDGRID_API_KEY')
+        """Command should exit without error when SENDGRID_API_KEY is missing/None."""
         # Should not raise
         call_command('deactivate_bouncing_emails')
         # Users should remain unchanged

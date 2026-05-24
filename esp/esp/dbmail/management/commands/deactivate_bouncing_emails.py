@@ -39,6 +39,11 @@ from django.conf import settings
 from django.db import transaction
 from esp.users.models import ESPUser
 
+try:
+    from sendgrid import SendGridAPIClient
+except ImportError:
+    SendGridAPIClient = None
+
 logger = logging.getLogger(__name__)
 
 # Typical exact string matches for permanent failures,
@@ -60,9 +65,7 @@ class Command(BaseCommand):
             logger.info("deactivate_bouncing_emails: No SENDGRID_API_KEY found in settings. Exiting.")
             return
 
-        try:
-            from sendgrid import SendGridAPIClient
-        except ImportError:
+        if SendGridAPIClient is None:
             logger.warning("deactivate_bouncing_emails: sendgrid package is not installed. Exiting.")
             return
 
