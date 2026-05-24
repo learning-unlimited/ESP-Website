@@ -67,10 +67,10 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            sections_qs = teacher.getTaughtSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times')
+            sections_qs = teacher.getTaughtSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
             classes = [cls for cls in sections_qs
                     if cls.meeting_times.all()
-                    and cls.resourceassignment_set.all().exists()
+                    and cls.resourceassignment_set.all()
                     and cls.status > 0]
             classes.sort(key=lambda s: s._sort_key())
             for cls in classes:
@@ -102,10 +102,10 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            sections_qs = teacher.getTaughtOrModeratingSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times')
+            sections_qs = teacher.getTaughtOrModeratingSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
             classes = [cls for cls in sections_qs
                     if cls.meeting_times.all()
-                    and cls.resourceassignment_set.all().exists()
+                    and cls.resourceassignment_set.all()
                     and cls.status > 0]
             classes.sort(key=lambda s: s._sort_key())
             for cls in classes:
@@ -142,10 +142,10 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            sections_qs = teacher.getModeratingSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times')
+            sections_qs = teacher.getModeratingSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
             classes = [cls for cls in sections_qs
                     if cls.meeting_times.all()
-                    and cls.resourceassignment_set.all().exists()
+                    and cls.resourceassignment_set.all()
                     and cls.status > 0]
             classes.sort(key=lambda s: s._sort_key())
             for cls in classes:
