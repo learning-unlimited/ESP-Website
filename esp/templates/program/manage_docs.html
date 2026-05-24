@@ -1,0 +1,70 @@
+{% extends "main.html" %}
+
+{% block title %}
+    {% if not doc_path %}Overview &mdash; Admin Documentation
+    {% else %}{{ doc_title }} &mdash; Admin Documentation{% endif %}
+{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/management.css" type="text/css">
+    <link rel="stylesheet" href="/media/styles/manage_docs.css" type="text/css">
+{% endblock %}
+
+{% block content %}
+<h2>Admin Documentation</h2>
+
+<div class="docs-layout">
+
+    {# ---- Sidebar nav ---- #}
+    <nav class="docs-sidebar">
+        <h3>Contents</h3>
+        <ul>
+            <li><a href="/manage/docs/"{% if not doc_path %} class="active"{% endif %}>Overview</a></li>
+            {% for item in doc_nav %}
+            <li>
+                <a href="/manage/docs/{{ item.url_path }}"
+                   {% if doc_path == item.url_path %}class="active"{% endif %}>
+                    {{ item.title }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+
+    {# ---- Main content area ---- #}
+    <div class="docs-main">
+
+        {% if not doc_html %}
+            {# Index page: show release notes banner then a welcome blurb #}
+            {% if latest_release_html %}
+            <div class="release-notes-banner">
+                <div class="release-notes-heading">
+                    &#9733; Latest Release &mdash; {{ latest_release_label }}
+                </div>
+                <div class="release-notes-body">
+                    {{ latest_release_html|safe }}
+                </div>
+            </div>
+            {% endif %}
+
+            <p class="docs-index-intro">
+                Welcome to the website admin documentation. Use the sidebar
+                to browse documentation pages, or click a link above to jump
+                directly to a topic.
+            </p>
+
+        {% else %}
+            {# Individual doc page #}
+            <div class="doc-body">
+                {% if doc_title and doc_title != 'Admin Documentation' %}
+                    <h1>{{ doc_title }}</h1>
+                {% endif %}
+                {{ doc_html|safe }}
+            </div>
+        {% endif %}
+
+    </div>{# .docs-main #}
+
+</div>{# .docs-layout #}
+{% endblock %}

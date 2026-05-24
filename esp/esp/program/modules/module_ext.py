@@ -1,5 +1,4 @@
 
-from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -54,7 +53,6 @@ from esp.users.models import ESPUser
 # when the corresponding program modules get added to a program (see
 # esp.program.models.maybe_create_module_ext), but that's about it.
 # TODO(benkraft): rename this to "program settings" or something.
-@python_2_unicode_compatible
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
@@ -63,9 +61,8 @@ class DBReceipt(models.Model):
     receipt = models.TextField()
 
     def __str__(self):
-        return 'Registration (%s) receipt for %s' % (self.action, self.program)
+        return f'Registration ({self.action}) receipt for {self.program}'
 
-@python_2_unicode_compatible
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
@@ -134,7 +131,7 @@ class StudentClassRegModuleInfo(models.Model):
 
         if self.use_priority:
             for i in range(0, self.priority_limit):
-                name = 'Priority/%d' % (i + 1)
+                name = f'Priority/{i + 1}'
                 verb_list.append(RegistrationType.get_map(include=[name], category='student')[name])
 
         #   Require that the /Applied bit is in the list, since students cannot enroll
@@ -148,7 +145,6 @@ class StudentClassRegModuleInfo(models.Model):
     def __str__(self):
         return 'Student Class Reg Ext. for %s' % str(self.module)
 
-@python_2_unicode_compatible
 class ClassRegModuleInfo(models.Model):
     program = models.OneToOneField(Program, on_delete=models.CASCADE)
 
@@ -280,13 +276,13 @@ class AJAXChangeLogEntry(models.Model):
     moderator = models.IntegerField(blank=True, null=True)
 
     # moderator entry: add or remove moderator?
-    assigned = models.NullBooleanField()
+    assigned = models.BooleanField(null=True)
 
     # comment entry: comment text
     comment = models.CharField(max_length=256)
 
     # comment entry: is locked
-    locked = models.NullBooleanField()
+    locked = models.BooleanField(null=True)
 
     # ClassSection ID to update
     cls_id = models.IntegerField()

@@ -11,6 +11,11 @@ Remove ``--global`` if you don't want it to apply to other git repos on your com
   git config --global user.name "Your Name"
   git config --global user.email you@something.edu
 
+Set up pre-commit hooks to automatically lint staged files before each commit: ::
+
+  pip install pre-commit
+  pre-commit install
+
 Other git config you might find useful: ::
 
   git config --global push.default simple # makes git only push the current branch, which is useful for not accidentally messing things up
@@ -29,38 +34,45 @@ The following workflow applies if you've already been added as a collaborator to
 
 From the directory ``/esp``: ::
 
-  git checkout main  # for historical reasons we use 'main' instead of 'master'
+  git checkout main
   git pull
-  ./update_deps.sh # if using Docker: docker compose up --build; no need to bother if deps haven’t changed
-  ./manage.py update # if using Docker: docker compose exec web python esp/manage.py update
   git checkout -b new-branch-name
 
+If you've changed dependencies (for example, ``requirements.txt``) or modified the Dockerfile, rebuild first::
+
+  docker compose up --build
+
+Otherwise, you don't need to rebuild, just start the server::
+
+  docker compose up
+
 Write some code!
+(the server will automatically reload when you save changes to Python files, but you might need to refresh the page in your browser to see changes to HTML/CSS/JS files).
 Test your code!
 
-Look at what you’ve changed (``git status`` and/or ``git diff``), and then run ``git commit -a -m``, and type a commit message (see `<http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>` for good commit message style), like so: ::
+Look at what you've changed (``git status`` and/or ``git diff``), and then run ``git commit -a -m``, and type a commit message (see `<https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>` for good commit message style), like so: ::
 
   git commit -a -m "Hello world"
 
-Repeat a few times from “Write some code!” if you want to make multiple commits.
+Repeat a few times from "Write some code!" if you want to make multiple commits.
 
-When you’re ready to make a pull request, or want other people to be able to pull your code: ::
+When you're ready to make a pull request, or want other people to be able to pull your code: ::
 
   git push --set-upstream origin new-branch-name
 
-Now go to `<https://github.com/learning-unlimited/ESP-Website>`_. If you’re logged in, you should see a banner near the top suggesting that you make a pull request. Click the button, write up a summary of your pull request, and submit it.
+Now go to `<https://github.com/learning-unlimited/ESP-Website>`_. If you're logged in, you should see a banner near the top suggesting that you make a pull request. Click the button, write up a summary of your pull request, and submit it.
 
 Now wait for someone to review your pull request. If it takes a long time, poke a friend to review it.
 
-When someone reviews your pull request, they will probably have some comments. If they have a lot to say, or suggest some major changes, don’t feel bad! This is a normal part of the code review process. Now you need to address their comments. If you disagree with what they’ve said, or want to discuss more, feel free to do that on the pull request. To change your code: ::
+When someone reviews your pull request, they will probably have some comments. If they have a lot to say, or suggest some major changes, don't feel bad! This is a normal part of the code review process. Now you need to address their comments. If you disagree with what they've said, or want to discuss more, feel free to do that on the pull request. To change your code: ::
 
-  git checkout new-branch-name # only if you’d switched to another branch while waiting
+  git checkout new-branch-name # only if you'd switched to another branch while waiting
   Make some changes
   Test your changes
   git commit -a -m "Fixed foo, bar, and baz"
   git push
 
-The reviewer will look at your changes. In some cases, you might go through a few more cycles of this. Once everything is resolved, they’ll merge your pull request. Congratulations!
+The reviewer will look at your changes. In some cases, you might go through a few more cycles of this. Once everything is resolved, they'll merge your pull request. Congratulations!
 
 For urgent features and fixes
 -----------------------------
@@ -72,7 +84,7 @@ The following is MIT-specific, although by using a different prod branch a simil
   git checkout -b urgent-branch-name
 
 Write some code!
-Test your code! Be careful, since you’re putting this on our live server without full review. ::
+Test your code! Be careful, since you're putting this on our live server without full review. ::
 
   git commit -a -m "Did something important"
   git push --set-upstream origin urgent-branch-name
@@ -98,44 +110,43 @@ Testing
 **All tests must pass before submitting a pull request.** If your changes break existing tests,
 fix them before requesting a review. When adding new functionality, add corresponding tests to the appropriate application's test module or directory.
 
-This project uses Django's built-in test framework. Tests generally live in their respective application directories, typically in a ``tests.py`` file or a ``tests/`` directory (e.g. ``esp/accounting/tests.py`` or ``esp/users/controllers/tests/test_usersearch.py``).
+This project uses pytest, with the pytest-django plugin handling integration with Django's testing infrastructure. Tests generally live in their respective application directories, either as a single ``tests.py`` file (e.g., ``esp/program/tests.py``) or as a ``tests/`` package (e.g., ``esp/accounting/tests``) when an app has grown enough tests to warrant splitting them up.
 
 Running Tests
 ~~~~~~~~~~~~~
 
-**Using Docker (recommended):**
-
 To run all tests::
 
-  docker compose exec web python esp/manage.py test
+  docker compose exec -w /app/esp web pytest
 
-To run tests for a specific module (e.g. ``accounting``)::
+To run tests for a specific module (e.g., ``accounting``), point pytest at either the ``tests/`` directory or the ``tests.py`` file, depending on which layout the app uses::
 
-  docker compose exec web python esp/manage.py test esp.accounting.tests
+  docker compose exec -w /app/esp web pytest esp/accounting/tests
+  docker compose exec -w /app/esp web pytest esp/program/tests.py
 
-**Without Docker:**
+If you don't remember the path, you can match by name instead::
 
-If you are running the server natively without Docker::
+  docker compose exec -w /app/esp web pytest -k accounting
 
-  cd esp
-  python manage.py test --settings=esp.settings
+The test database is reused between runs for speed. After a ``git pull`` that touched migrations, or after switching to a branch with different migrations, force a rebuild once::
+
+  docker compose exec -w /app/esp web pytest --create-db
+
+Subsequent runs will reuse the rebuilt database automatically.
+
+The full suite can be parallelized across CPU cores for faster runs::
+
+  docker compose exec -w /app/esp web pytest -n auto
+
+This is what CI uses. For running a single test or module, plain ``pytest`` is usually faster, since ``-n auto`` adds worker-startup overhead that outweighs parallelism on small runs.
+
 
 Test Suite Reference
 ~~~~~~~~~~~~~~~~~~~~
 
-Many tests are located in application-specific files. Some legacy tests may still exist in ``esp.tests``. Key test locations include:
+To list all test modules currently in the codebase::
 
-* ``esp/accounting/tests.py``
-* ``esp/application/tests.py``
-* ``esp/cal/tests.py``
-* ``esp/dbmail/tests.py``
-* ``esp/formstack/tests.py``
-* ``esp/miniblog/tests.py``
-* ``esp/program/tests.py``
-* ``esp/survey/tests.py``
-* ``esp/varnish/tests.py``
-
-Additional tests exist in directories: ``customforms/tests.py``, ``program/tests.py``, ``users/tests.py``, ``resources/tests.py``, ``qsd/tests.py``, ``qsdmedia/tests.py``, ``tagdict/tests.py``, ``themes/tests.py``, ``utils/tests.py``, ``web/tests.py``, and autoscheduler tests in ``program/controllers/autoscheduler/tests/``.
+  docker compose exec web bash -c "find /app/esp/esp \( -name 'tests.py' -o -name 'tests_*.py' -o -name 'test_*.py' -o -name '*_tests.py' \) | sort"
 
 Code reviews
 ------------

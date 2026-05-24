@@ -4,7 +4,6 @@ A somewhat higher-level interface to the Formstack API.
 Employs caching to avoid hitting Formstack's API more than necessary.
 """
 
-from django.utils.encoding import python_2_unicode_compatible
 from argcache import cache_function
 from esp.formstack.api import Formstack
 
@@ -18,7 +17,6 @@ def get_form_by_id(form_id, api_key):
     """ Shortcut function that returns a FormstackForm from a form ID. """
     return FormstackForm(form_id, Formstack(api_key))
 
-@python_2_unicode_compatible
 class FormstackForm(object):
     """
     A Formstack form.
@@ -44,10 +42,10 @@ class FormstackForm(object):
 
 
     def __str__(self):
-        return '{0}'.format(self.id)
+        return str(self.id)
 
     def __repr__(self):
-        return '<FormstackForm: {0}>'.format(self)
+        return f'<FormstackForm: {self}>'
 
     @cache_function
     def info(self):
@@ -95,7 +93,6 @@ class FormstackForm(object):
         return submissions
     submissions.timeout_seconds = CACHE_TIMEOUT
 
-@python_2_unicode_compatible
 class FormstackSubmission(object):
     """
     A Formstack form submission.
@@ -109,7 +106,7 @@ class FormstackSubmission(object):
         return str(self.id)
 
     def __repr__(self):
-        return '<FormstackSubmission: {0}>'.format(self)
+        return f'<FormstackSubmission: {self}>'
 
     @cache_function
     def data(self):

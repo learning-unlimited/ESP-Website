@@ -19,7 +19,7 @@ Expects:
 {% if q.question.question_type.is_countable %}
     <tr>
         <td {% if q.question.question_type.is_numeric %}width="50%"{% else %}colspan="2"{% endif %}>
-            {% if not q.answers|length_is:0 %}
+            {% if not q.answers|length == 0 %}
                 {% with q.question.get_params as params %}
                     {% if q.question.question_type.is_numeric and params.number_of_ratings %}
                         {% comment %}Labeled Numeric Rating and Numeric Rating{% endcomment %}
@@ -59,7 +59,7 @@ Expects:
             <!-- Creates a key that provides details about the Histogram Labeling-->
             <b>Response Labels:</b>
                 {% with q.question.get_params as params %}
-                    {% if not params.list|length_is:0 %}
+                    {% if not params.list|length == 0 %}
                     <ul>
                     {% for label in params.list %}
                         <li> <b> {{ forloop.counter }}: </b>{{ label }} </li>
@@ -88,23 +88,27 @@ Expects:
 {% else %}
     <tr>
         <td width="100%" colspan="2">
-        {% ifequal q.question.question_type.name "Favorite Class" %}
-            <ol>
+        {% if q.question.question_type.name == "Favorite Class" %}
+            <ul class="favorite-classes-list">
             {% for fav in q.answers|unpack_answers|favorite_classes:20 %}
-                <li>{{ fav.title }} ({{fav.votes}} votes)</li>
-            {% empty %}
-                <li>There are no responses to this question.</li>
-            {% endfor %}
-            </ol>
-        {% else %}
-            <ul>
-            {% for ans in q.answers|drop_empty_answers %}
-                <li><a href="/{{ tl }}/{{ survey.program.getUrlBase }}/survey{% if tl == 'manage' %}s{% endif %}/review_single?{{ ans.survey_response.id }}" title="View this person&quot;s other responses" target="_blank">{{ ans.answer }}</a></li>
+                <li>
+                    <span class="rank-badge">{{ forloop.counter }}</span>
+                    <span class="class-title">{{ fav.title }}</span>
+                    <span class="label label-primary vote-badge">{{ fav.votes }} vote{{ fav.votes|pluralize }}</span>
+                </li>
             {% empty %}
                 <li>There are no responses to this question.</li>
             {% endfor %}
             </ul>
-        {% endifequal %}
+        {% else %}
+            <ul>
+            {% for ans in q.answers|drop_empty_answers %}
+                <li>{% if tl %}<a href="/{{ tl }}/{{ survey.program.getUrlBase }}/survey{% if tl == 'manage' %}s{% endif %}/review_single?{{ ans.survey_response.id }}" title="View this person&quot;s other responses" target="_blank">{{ ans.answer }}</a>{% else %}{{ ans.answer }}{% endif %}</li>
+            {% empty %}
+                <li>There are no responses to this question.</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
         </td>
     </tr>
 {% endif %}

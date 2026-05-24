@@ -35,9 +35,11 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.forms.onsite import OnsiteBarcodeCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
+from esp.program.modules.forms.rapidcheckin import RapidCheckinStudentWidget
 from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.models  import RegistrationProfile, StudentRegistration
 from django.db.models    import Max, Min
@@ -62,9 +64,25 @@ class OnSiteCheckinModule(ProgramModuleObj):
             "choosable": 1,
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Only list the main check-in page; AJAX/aux views (ajax_status, ajaxbarcodecheckin,
+        # checkin, barcodecheckin as aux) are not meant for direct admin navigation.
+        if view_name != "rapidcheckin":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="onsite_rapidcheckin",
+            url="/onsite/%s/rapidcheckin" % base,
+            title="Student Check-In",
+            category="Other",
+            keywords=["student", "check-in", "onsite", "payments", "forms"],
+        )
+
     def updatePaid(self, paid=True):
         IndividualAccountingController.updatePaid(self.program, self.student, paid, in_full=True)
 
+    @transaction.atomic
     def create_record(self, event):
         created = False
         if event=="attended":
@@ -82,6 +100,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                                                          program=self.program)
         return created
 
+    @transaction.atomic
     def delete_record(self, event):
         if event=="attended":
             if self.program.isCheckedIn(self.student):
@@ -225,17 +244,19 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         rt = RecordType.objects.get(name="attended")
                         rec = Record(user=student, event=rt, program=prog)
                         rec.save()
-                    context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
-                    if request.is_ajax():
+                    context['message'] = f'{student.first_name} {student.last_name} marked as attended.'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
                 else:
-                    context['message'] = '%s %s is not a student and has not been checked in' % (student.first_name, student.last_name)
-                    if request.is_ajax():
+                    context['message'] = f'{student.first_name} {student.last_name} is not a student and has not been checked in'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
                 form = StudentSearchForm(initial={'target_user': student.id})
         else:
             form = StudentSearchForm()
 
+        # Use widget that does not inject autocomplete script; template sets up filter-aware autocomplete
+        form.fields['target_user'].widget = RapidCheckinStudentWidget()
         context['module'] = self
         context['form'] = form
         return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
@@ -304,26 +325,30 @@ class OnSiteCheckinModule(ProgramModuleObj):
         json_data = {}
         if request.method == 'POST' and 'code' in request.POST:
             code = request.POST['code']
-            students = ESPUser.objects.filter(id=code)
-            if not students.exists():
+            try:
+                student = ESPUser.objects.get(id=code)
+            except ValueError:
+                json_data['message'] = '%s is not a valid user ID (must be numeric)!' % code
+                return HttpResponse(json.dumps(json_data), content_type='text/json')
+            except ESPUser.DoesNotExist:
                 json_data['message'] = '%s is not a user!' % code
             else:
-                student = students[0]
                 info_string = student.name() + " (" + str(code) + ")"
                 if student.isStudent():
                     self.student = student
                     messages = []
-                    for key in ['attended', 'paid', 'liab', 'med']:
-                        if request.POST.get(key) == "true":
-                            if key == "attended":
-                                if prog.isCheckedIn(student):
-                                    messages.append('%s is already checked in!' % info_string)
+                    with transaction.atomic():
+                        for key in ['attended', 'paid', 'liab', 'med']:
+                            if request.POST.get(key) == "true":
+                                if key == "attended":
+                                    if prog.isCheckedIn(student):
+                                        messages.append('%s is already checked in!' % info_string)
+                                    else:
+                                        self.create_record(key)
+                                        messages.append('%s is now checked in!' % info_string)
                                 else:
                                     self.create_record(key)
-                                    messages.append('%s is now checked in!' % info_string)
-                            else:
-                                self.create_record(key)
-                                messages.append('%s record set for %s' % (key, info_string))
+                                    messages.append(f'{key} record set for {info_string}')
                     json_data['message'] = "\n".join(messages)
                 else:
                     json_data['message'] = '%s is not a student!' % info_string

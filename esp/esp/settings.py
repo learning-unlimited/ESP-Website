@@ -51,6 +51,20 @@ from .django_settings import *
 # Import system-specific settings
 from .local_settings import *
 
+# Allow env to override DB settings (CI sets these to match the PostgreSQL service)
+if os.environ.get('DATABASE_USER'):
+    DATABASE_USER = os.environ.get('DATABASE_USER')
+if os.environ.get('DATABASE_PASSWORD'):
+    DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD')
+if os.environ.get('DATABASE_NAME'):
+    DATABASE_NAME = os.environ.get('DATABASE_NAME')
+
+# Preserve the pre-Django-3.2 AutoField behaviour to silence models.W042
+# warnings. Explicitly locking this in prevents unintended schema changes if
+# Django's default evolves further. Revisit when migrating to BigAutoField
+# as part of the Django upgrade
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 # Do this here so we have access to PROJECT_ROOT
 TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
 TEMPLATES[0]['DIRS'].append(django.__path__[0] + '/forms/templates')
@@ -60,17 +74,17 @@ TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 if len(DATABASES['default']['USER']) == 0:
     try:
         DATABASES['default']['USER'] = DATABASE_USER
-    except:
+    except NameError:
         raise Exception("You need to supply either DATABASES['default']['USER'] or DATABASE_USER in database_settings.py")
 if len(DATABASES['default']['PASSWORD']) == 0:
     try:
         DATABASES['default']['PASSWORD'] = DATABASE_PASSWORD
-    except:
+    except NameError:
         raise Exception("You need to supply either DATABASES['default']['PASSWORD'] or DATABASE_PASSWORD in database_settings.py")
 if len(DATABASES['default']['NAME']) == 0:
     try:
         DATABASES['default']['NAME'] = DATABASE_NAME
-    except:
+    except NameError:
         raise Exception("You need to supply either DATABASES['default']['NAME'] or DATABASE_NAME in local_settings.py")
 
 SERVER_EMAIL = 'server@%s' % EMAIL_HOST_SENDER
@@ -238,16 +252,23 @@ if 'CACHES' not in locals():
 MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 
 # set tempdir so that we don't have to worry about collision
+# Use a per-UID subdirectory so that different OS users (e.g. www-data vs the
+# developer running tests) each get their own directory.  This prevents the
+# [Errno 13] Permission denied failures described in issue #234 that occurred
+# when runserver (owned by www-data) created the shared tempdir first.
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
-    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX)
-    if not os.path.exists(tempdir):
-        os.makedirs(tempdir)
+    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(os.getuid()))
+    os.makedirs(tempdir, mode=0o700, exist_ok=True)
+    try:
+        os.chmod(tempdir, 0o700)
+    except OSError:
+        # If we cannot change permissions, proceed but keep the directory as-is.
+        pass
     tempfile.tempdir = tempdir
     tempfile.alreadytwiddled = True
 
 # change csrf cookie name from default to prevent collisions with misbehaving sites
 # that set a cookie on the top-level domain
-# NOTE: don't change this value; it's hard coded into various JavaScript files
 CSRF_COOKIE_NAME = 'esp_csrftoken'
 
 if SENTRY_DSN:
@@ -263,4 +284,3 @@ if SENTRY_DSN:
         'dsn': SENTRY_DSN,
         'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
     }
-

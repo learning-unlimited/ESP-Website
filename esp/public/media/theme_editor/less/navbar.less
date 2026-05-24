@@ -196,7 +196,7 @@
 .navbar-static-top .container,
 .navbar-fixed-top .container,
 .navbar-fixed-bottom .container {
-  #grid > .core > .span(@gridColumns);
+  width: @gridRowWidth;
 }
 
 // Fixed to top
@@ -486,7 +486,6 @@
         background-color: @navbarInverseSearchBackgroundFocus;
         border: 0;
         .box-shadow(0 0 3px rgba(0,0,0,.15));
-        outline: 0;
       }
     }
   }

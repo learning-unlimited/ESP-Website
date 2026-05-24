@@ -6,8 +6,10 @@ import os
 import random
 import re
 import shutil
+import tempfile
 
 from django.conf import settings
+from django.core.exceptions import SuspiciousFileOperation
 
 from esp.users.models import ESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -52,7 +54,7 @@ class ThemesTest(TestCase):
 
         for url in urls:
             response = self.client.get(url)
-            self.assertRedirects(response, '/accounts/login/?next=%s' % url)
+            self.assertRedirects(response, f'/accounts/login/?next={url}')
 
         self.client.login(username=self.admin.username, password='password')
         for url in urls:
@@ -158,7 +160,7 @@ class ThemesTest(TestCase):
                 self.assertTrue(len(open(css_filename).read()) > 1000)  #   Hacky way to check that content is substantial
 
                 #   Check that the template override is marked with the theme name.
-                self.assertTrue(('<!-- Theme: %s -->' % theme_name) in str(response.content, encoding='UTF-8'))
+                self.assertTrue((f'<!-- Theme: {theme_name} -->') in str(response.content, encoding='UTF-8'))
 
             self.client.logout()
 
@@ -204,7 +206,7 @@ class ThemesTest(TestCase):
         #   Test that we can change a parameter and the right value appears in the stylesheet
         def verify_linkcolor(color_str):
             css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
-            regexp = r'\n\s*?a\s*?{.*?color:\s*?%s;.*?}' % color_str
+            regexp = rf'\n\s*?a\s*?{{.*?color:\s*?{color_str};.*?}}'
             with open(css_filename) as f:
                 self.assertEqual(len(re.findall(regexp, f.read(), flags=(re.DOTALL | re.I))), 1)
 
@@ -232,3 +234,69 @@ class ThemesTest(TestCase):
 
         #   We're done.  Log out.
         self.client.logout()
+
+    def testRecompileThemeCreatesMissingCustomization(self):
+        """ Check that recompile_theme does not crash and leaves the system in a consistent state
+            by creating the customization file if it is missing. """
+        import tempfile
+        import uuid
+
+        tc = ThemeController()
+        tc.clear_theme()
+        tc.load_theme('barebones')
+
+        # Use a temporary directory + unique filename to avoid dirtying the working tree
+        original_themes_dir = themes_settings.themes_dir
+        themes_settings.themes_dir = tempfile.mkdtemp()
+        fake_customization_name = f'test_missing_{uuid.uuid4().hex}'
+        customization_file = os.path.join(themes_settings.themes_dir, f'{fake_customization_name}.less')
+
+        tc.set_current_customization(fake_customization_name)
+
+        try:
+            # This shouldn't raise FileNotFoundError; it should catch it and create the file
+            tc.recompile_theme(customization_name=fake_customization_name)
+
+            # The file should be created now
+            self.assertTrue(os.path.exists(customization_file))
+        finally:
+            # Cleanup tag and temporary files
+            tc.unset_current_customization()
+            shutil.rmtree(themes_settings.themes_dir, ignore_errors=True)
+            themes_settings.themes_dir = original_themes_dir
+
+
+class SafeCustomizationPathTest(TestCase):
+    """Tests for the _safe_customization_path security helper."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+        # Use a temporary directory so tests don't touch working tree
+        self._original_themes_dir = themes_settings.themes_dir
+        self._tmpdir = tempfile.mkdtemp()
+        themes_settings.themes_dir = self._tmpdir
+
+    def tearDown(self):
+        themes_settings.themes_dir = self._original_themes_dir
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def test_normal_name_returns_path_inside_themes_dir(self):
+        """A simple alphanumeric name should resolve inside themes_dir."""
+        path = self.tc._safe_customization_path('my_theme')
+        self.assertTrue(path.startswith(os.path.realpath(self._tmpdir) + os.sep))
+        self.assertTrue(path.endswith('.less'))
+
+    def test_traversal_with_dotdot_raises(self):
+        """Names containing '..' that escape themes_dir must raise."""
+        with self.assertRaises(SuspiciousFileOperation):
+            self.tc._safe_customization_path('../../etc/passwd')
+
+    def test_absolute_path_raises(self):
+        """An absolute path like '/tmp/evil' must raise."""
+        with self.assertRaises(SuspiciousFileOperation):
+            self.tc._safe_customization_path('/tmp/evil')
+
+    def test_name_with_slash_raises(self):
+        """A name with embedded slashes that escapes themes_dir must raise."""
+        with self.assertRaises(SuspiciousFileOperation):
+            self.tc._safe_customization_path('subdir/../../../etc/shadow')
