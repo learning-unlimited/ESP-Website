@@ -5,7 +5,7 @@ Django==4.2.30
 git+https://github.com/learning-unlimited/django-argcache.git@v0.4 # Handles caching
 django-debug-toolbar==4.4.0 # Provides the debug toolbar
 django-extensions==3.2.3 # Provides shell_plus, runserver_plus, and other utilities
-django-filebrowser-no-grappelli==4.0.0 # Provides admin panel interface for files
+django-filebrowser-no-grappelli==4.0.2 # Provides admin panel interface for files
 git+https://github.com/learning-unlimited/django-form-utils.git@v1.1.0 # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
 django-formtools==2.4 # Used once in customforms
 django-localflavor==3.1 # Provides address fields
