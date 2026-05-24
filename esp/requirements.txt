@@ -34,7 +34,7 @@ pillow==12.2.0 # Required for ImageField, which we use in teacher bios
 psycopg2==2.9.9 # Talks to postgres
 pycurl==7.45.4 # Used only in a formstack script which I think is outdated
 py3dns==4.0.2 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
-Pygments==2.10.0 # django-extensions dependency
+Pygments==2.20.0 # django-extensions dependency
 pymemcache==4.0.0 # Talks to memcached
 pytz==2023.3 # Required for timezone support
 # pywatchman # Makes dev servers auto-reload
