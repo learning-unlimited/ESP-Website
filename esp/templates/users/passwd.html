@@ -3,10 +3,49 @@
 {% block title %}Change Account Password{% endblock %}
 
 {% block content %}
+<style>
+    .password-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .password-wrapper input {
+        padding-right: 35px !important;
+    }
+    .toggle-password {
+        position: absolute;
+        right: 8px;
+        cursor: pointer;
+        color: #888;
+        background: none;
+        border: none;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        transition: color 0.2s;
+        outline: none !important;
+    }
+    .toggle-password:hover {
+        color: #444;
+    }
+    .toggle-password svg {
+        width: 18px;
+        height: 18px;
+    }
+    .form_error {
+        color: #d9534f;
+        font-size: 0.9em;
+        margin-top: 4px;
+        display: block;
+    }
+</style>
+
 <h1>Account Management &ndash; Change Password </h1>
 {% if Success %}
 
-<h2>Congratulations!<h2>
+<h2>Congratulations!</h2>
 <br />
 <br />
 <p>
@@ -30,24 +69,45 @@ Your password has been successfully changed.
 
 <tr>
  <td><label for="password"><strong>Current Password:</strong></label></td>
- <td>{{ form.password }} {% if form.password.errors %}
-   <br /><span class="form_error" role="alert">{{ form.password.errors|join:", " }}</span>
+ <td>
+   <div class="password-wrapper">
+     {{ form.password }}
+     <button type="button" class="toggle-password" tabindex="-1" aria-label="Toggle password visibility">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+     </button>
+   </div>
+   {% if form.password.errors %}
+     <span class="form_error">{{ form.password.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 <tr>
  <td><label for="newpasswd"><strong>New Password:</strong></label></td>
- <td>{{ form.newpasswd }} {% if form.newpasswd.errors %}
-   <br /><span class="form_error" role="alert">{{ form.newpasswd.errors|join:", " }}</span>
+ <td>
+   <div class="password-wrapper">
+     {{ form.newpasswd }}
+     <button type="button" class="toggle-password" tabindex="-1" aria-label="Toggle password visibility">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+     </button>
+   </div>
+   {% if form.newpasswd.errors %}
+     <span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 <tr>
  <td><label for="newpasswdconfirm"><strong>New password confirm:</strong></label></td>
- <td>{{ form.newpasswdconfirm }} {% if form.newpasswdconfirm.errors %}
-   <br /><span class="form_error" role="alert">{{ form.newpasswdconfirm.errors|join:", " }}</span>
+ <td>
+   <div class="password-wrapper">
+     {{ form.newpasswdconfirm }}
+     <button type="button" class="toggle-password" tabindex="-1" aria-label="Toggle password visibility">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+     </button>
+   </div>
+   {% if form.newpasswdconfirm.errors %}
+     <span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -56,5 +116,22 @@ Your password has been successfully changed.
 
 <p style="text-align: center"><input type='submit' value='-  Change My Password  -' class='btn btn-primary'></p>
 </form>
+
+<script>
+document.querySelectorAll('.toggle-password').forEach(button => {
+    button.addEventListener('click', function() {
+        const input = this.previousElementSibling;
+        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+        input.setAttribute('type', type);
+        
+        // Update SVG icon
+        if (type === 'text') {
+            this.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+        } else {
+            this.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        }
+    });
+});
+</script>
 {% endif %}
 {% endblock %}
