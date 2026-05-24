@@ -659,8 +659,9 @@ class ProgramPrintables(ProgramModuleObj):
                 class_objects = teacher.getTaughtSections(self.program)
             else:
                 class_objects = teacher.getModeratingSectionsFromProgram(self.program)
-            classes = sorted([ cls for cls in class_objects
-                    if cls.isAccepted() and cls.meeting_times.exists() ])
+            classes = [ cls for cls in class_objects.select_related('parent_class').prefetch_related('meeting_times')
+                    if cls.isAccepted() and cls.meeting_times.all() ]
+            classes.sort(key=lambda s: s._sort_key())
             # now we sort them by time/title
 
             if  extra and 'secondday' in extra:
@@ -898,13 +899,13 @@ class ProgramPrintables(ProgramModuleObj):
                 class_objects = teacher.getModeratingSectionsFromProgram(self.program)
 
             # Prefetch meeting_times to avoid N+1 queries during sort-by-time
-            class_objects = class_objects.prefetch_related('meeting_times')
+            class_objects = class_objects.select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
 
-            classes = sorted([cls for cls in class_objects
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-
+            classes = [cls for cls in class_objects
+                    if cls.meeting_times.all()
+                    and cls.resourceassignment_set.all()
+                    and cls.status > 0]
+            classes.sort(key=lambda s: s._sort_key())
             # now we sort them by time/title
             for cls in classes:
                 if role_teachers and role_moderators:
@@ -1096,8 +1097,9 @@ class ProgramPrintables(ProgramModuleObj):
     @staticmethod
     def get_student_classlist(program, student, verbs = ['Enrolled'], valid_only = True):
         # get list of valid classes
-        classes = [ cls for cls in student.getSections(program = program, verbs = verbs, valid_only = valid_only)]
-        classes = sorted([ cls for cls in classes if cls.isAccepted() ])
+        classes = [ cls for cls in student.getSections(program = program, verbs = verbs, valid_only = valid_only).select_related('parent_class').prefetch_related('meeting_times')]
+        classes = [ cls for cls in classes if cls.isAccepted() ]
+        classes.sort(key=lambda s: s._sort_key())
         return classes
 
     @staticmethod
@@ -1105,12 +1107,13 @@ class ProgramPrintables(ProgramModuleObj):
         # get list of valid classes
         classes = []
         if teaching:
-            classes += [ cls for cls in teacher.getTaughtSectionsFromProgram(program)]
+            classes += [ cls for cls in teacher.getTaughtSectionsFromProgram(program).select_related('parent_class').prefetch_related('meeting_times')]
         if moderating:
-            classes += [ cls for cls in teacher.getModeratingSectionsFromProgram(program)]
-        classes = sorted([ cls for cls in classes
-                    if cls.meeting_times.exists()
-                    and cls.status >= 0 ])
+            classes += [ cls for cls in teacher.getModeratingSectionsFromProgram(program).select_related('parent_class').prefetch_related('meeting_times')]
+        classes = [ cls for cls in classes
+                    if cls.meeting_times.all()
+                    and cls.status >= 0 ]
+        classes.sort(key=lambda s: s._sort_key())
 
         scheditems = []
         for cls in classes:
@@ -1507,9 +1510,10 @@ class ProgramPrintables(ProgramModuleObj):
 
         for student in students:
             # get list of valid classes
-            classes = sorted([ cls for cls in student.getEnrolledSections()
+            classes = [ cls for cls in student.getEnrolledSections().select_related('parent_class__parent_program').prefetch_related('meeting_times')
                     if cls.parent_program == self.program
-                    and cls.isAccepted()                       ])
+                    and cls.isAccepted()                       ]
+            classes.sort(key=lambda s: s._sort_key())
             # now we sort them by time/title
 
             for cls in classes:
@@ -2023,7 +2027,11 @@ class ProgramPrintables(ProgramModuleObj):
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
-        sections = sorted(self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED))
+        sections = list(self.program.sections().filter(
+            status=ClassStatus.ACCEPTED,
+            parent_class__status=ClassStatus.ACCEPTED,
+        ).select_related('parent_class').prefetch_related('meeting_times'))
+        sections.sort(key=lambda s: s._sort_key())
 
         rooms = {}
 
