@@ -17,6 +17,32 @@
      }
      return false;
   }
+
+  function toggle_paper_schedule_optout(checkbox) {
+     // Toggle paper schedule opt-out preference via AJAX
+     var opt_out = checkbox.checked;
+     refresh_csrf_cookie();
+     $j.post(
+        '/learn/{{one}}/{{two}}/optout_paper_schedule',
+        { opt_out: opt_out, csrfmiddlewaretoken: csrf_token() },
+        function(data) {
+           var label = $j('#paper-schedule-optout-label');
+           if (data.opted_out) {
+              label.text('You have opted out of paper schedule printing.');
+           } else {
+              label.text('I do not need a paper schedule printed for me.');
+           }
+           // Reload so server-rendered conditional content (for example, the barcode block)
+           // stays in sync with the saved preference.
+           window.location.reload();
+        },
+        'json'
+     ).fail(function() {
+        // Revert checkbox on failure
+        checkbox.checked = !opt_out;
+        alert('Could not save your preference. Please try again.');
+     });
+  }
 //-->
 </script>
 {% endblock %}
@@ -45,17 +71,17 @@
 {% end_inline_program_qsd_block %}
 
 {% render_inline_program_qsd program "learn:studentregheader" %}
-<div class="alert alert-block">
+<div role="alert" class="alert alert-block">
 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
 <big><b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.</big>
 </div>
 
-{% ifequal scrmi.progress_mode 1 %}
+{% if scrmi.progress_mode == 1 %}
     {% include "program/modules/checkboxes.html" %}
-{% endifequal %}
-{% ifequal scrmi.progress_mode 2 %}
+{% endif %}
+{% if scrmi.progress_mode == 2 %}
     {% include "program/modules/progressbar.html" %}
-{% endifequal %}
+{% endif %}
 
 {% if records %}
 {% render_inline_program_qsd program record_steps %}
@@ -157,6 +183,32 @@
                 {% endif %}
 
             {% endif %}
+
+            {# Paper schedule opt-out toggle #}
+            <div style="margin-top: 12px;">
+                <label>
+                    <input type="checkbox" id="paper-schedule-optout" {% if opt_out_paper_schedule %}checked{% endif %}
+                        onchange="toggle_paper_schedule_optout(this)" />
+                    <span id="paper-schedule-optout-label">
+                        {% if opt_out_paper_schedule %}
+                        You have opted out of paper schedule printing.
+                        {% else %}
+                        I do not need a paper schedule printed for me.
+                        {% endif %}
+                    </span>
+                </label>
+            </div>
+
+            {# Barcode fallback for students who opt out of a paper schedule #}
+            {% if opt_out_paper_schedule and invoice_id %}
+            <div style="margin-top: 12px;">
+                <p><strong>Your check-in barcode:</strong></p>
+                <img src="https://esp.scripts.mit.edu/barcodegen/html/image.php?code=code39&amp;o=1&amp;t=50&amp;r=1&amp;text={{ invoice_id }}&amp;f1=Arial.ttf&amp;f2=8&amp;a1=&amp;a2=&amp;a3="
+                    alt="Check-in barcode for {{ invoice_id }}" />
+                <p><small>Show this barcode to check in on-site if you do not have a printed schedule.</small></p>
+            </div>
+            {% endif %}
+
         {% endif %}
     {% endif %}
     </center>
