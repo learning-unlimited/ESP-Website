@@ -102,7 +102,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
             except (TypeError, ValueError, ESPUser.DoesNotExist):
                 return render_to_response('program/modules/onsiteclassschedule/schedule_students.html', request, {'program': self.program, 'error': 'Invalid student selected.'})
 
-        if 'advanced' in request.GET or (request.method == 'POST' and 'base_list' in request.POST):
+        if 'advanced' in request.GET or request.GET.get('op') == 'usersearch' or (request.method == 'POST' and 'base_list' in request.POST):
             user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
             if not found:
                 return user
