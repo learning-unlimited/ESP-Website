@@ -40,7 +40,9 @@ from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
@@ -388,17 +390,17 @@ class StudentClassRegModule(ProgramModuleObj):
         if not hasattr(request.user, "onsite_local"):
             request.user.onsite_local = False
 
-        if 'class_id' in request.POST:
-            classid = request.POST['class_id']
-            sectionid = request.POST['section_id']
-        else:
+        try:
+            classid = int(request.POST['class_id'])
+            sectionid = int(request.POST['section_id'])
+        except (KeyError, ValueError, TypeError):
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
-        section = ClassSection.objects.get(id=sectionid)
+        section = get_object_or_404(ClassSection, id=sectionid, parent_class__id=classid, parent_class__parent_program=prog)
+        cobj = section.parent_class
         if not scrmi.use_priority:
             error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
         if scrmi.use_priority or not error:
-            cobj = ClassSubject.objects.get(id=classid)
             error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
 
         if scrmi.use_priority:
@@ -612,7 +614,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=3600)
+    @method_decorator(cache_control(public=True, max_age=3600))
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
@@ -632,7 +634,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_student_in_grade
-    @vary_on_cookie
+    @method_decorator(vary_on_cookie)
     def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         reg_bits = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog).select_related()
 
@@ -650,14 +652,14 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
+    @method_decorator(cache_control(public=True, max_age=120))
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
+    @method_decorator(cache_control(public=True, max_age=120))
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         #   Get the ProgramPrintables module for the program
         from esp.program.modules.handlers.programprintables import ProgramPrintables
@@ -781,7 +783,13 @@ class StudentClassRegModule(ProgramModuleObj):
 
         module = prog.getModule('OnSiteClassList')
         if module:
-            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options={}, template_name='allclass_fragment.html')
+            # Forward only supported public filtering params to avoid exposing
+            # internal classList options.
+            options = {}
+            for key in ('start', 'end', 'sorting'):
+                if key in request.GET:
+                    options[key] = request.GET.get(key)
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options=options, template_name='openclasses.html')
 
         #  Otherwise this will be a 404
         return None
