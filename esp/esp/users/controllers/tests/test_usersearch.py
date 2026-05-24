@@ -80,7 +80,7 @@ class TestUserSearchController(ProgramFrameworkTest):
         post_data['checkbox_and_confirmed'] = '1'
 
         # Create test user
-        test_user = self.user  # Use existing test user from ProgramFrameworkTest
+        test_user = self.students[0]  # Use existing test student from ProgramFrameworkTest
 
         # Setup RecordTypes
         rt_attended, _ = RecordType.objects.get_or_create(name='attended', defaults={'description': 'Attended'})
@@ -92,7 +92,9 @@ class TestUserSearchController(ProgramFrameworkTest):
 
         # Create another user with only ONE record to ensure exclusion
         other_user = ESPUser.objects.create_user(username='otheruser', email='other@example.com', password='password')
-        RegistrationProfile.objects.create(user=other_user)
+        other_user.makeRole("Student")
+        student_info = StudentInfo.objects.create(user=other_user, graduation_year=ESPUser.program_schoolyear(self.program)+2)
+        RegistrationProfile.objects.create(user=other_user, program=self.program, student_info=student_info, most_recent_profile=True)
         Record.objects.create(user=other_user, event=rt_attended, program=self.program)
 
         query = self.controller.query_from_postdata(self.program, post_data)
