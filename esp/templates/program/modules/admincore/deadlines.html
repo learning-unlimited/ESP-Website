@@ -76,8 +76,8 @@
                 <th></th>
             </tr>
             {% endif %}
-            <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
-                <th class="{% if details.is_open %}is_open{% else %}is_closed{% endif %}" rowspan = "{% if details.perms|length_is:0 %}1{% else %}{{ details.perms|length }}{% endif %}">
+            <tr style="border-top: 1px solid grey;{% if details.perms|length == 1 %}border-bottom: 1px solid grey;{% endif %}">
+                <th class="{% if details.is_open %}is_open{% else %}is_closed{% endif %}" rowspan = "{% if details.perms|length == 0 %}1{% else %}{{ details.perms|length }}{% endif %}">
                     {{ perm_type|perm_nice_name }}{% if details.recursive %}<br /><span style="color: royalblue;">(recursive)</span>{% endif %}<br>
                     <span class="bituri">{{ perm_type }}</span>
                     <br /><br />
@@ -168,7 +168,7 @@
         <th></th>
     </tr>
     {% endif %}
-    <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
+    <tr style="border-top: 1px solid grey;{% if details.perms|length == 1 %}border-bottom: 1px solid grey;{% endif %}">
         <th>{{ perm.user }}</th>
         <th class="{% if perm.is_valid %}is_open{% else %}is_closed{% endif %}">
             {{ perm.permission_type|perm_nice_name }}<br>
