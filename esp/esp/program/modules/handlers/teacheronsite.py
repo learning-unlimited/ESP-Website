@@ -84,9 +84,9 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
 
         context = self.onsitecontext(request, tl, one, two, prog)
 
-        sections_qs = user.getTaughtOrModeratingSectionsFromProgram(program = prog).prefetch_related('meeting_times')
+        sections_qs = user.getTaughtOrModeratingSectionsFromProgram(program = prog).select_related('parent_class').prefetch_related('meeting_times')
         classes = [cls for cls in sections_qs
-                   if cls.meeting_times.all().exists()
+                if cls.meeting_times.all()
                    and cls.resourceassignment_set.all().exists()
                    and cls.status > 0]
         classes.sort(key=lambda s: s._sort_key())
