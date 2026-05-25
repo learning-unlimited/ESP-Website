@@ -125,13 +125,13 @@ class RegProfileModuleTest(ProgramFrameworkTest):
 
 class RegistrationProfileFlowTest(ProgramFrameworkTest):
     """
-    Comprehensive tests for the RegistrationProfile workflow (issue #225).
+    Comprehensive tests for the RegistrationProfile workflow.
 
     Covers:
       - First-time profile creation for students and teachers
       - Editing / updating an existing profile
       - Invalid POST data (missing required fields)
-      - Default grade behaviour from PR #193 (empty option must be pre-selected,
+      - Default grade behaviour (empty option must be pre-selected,
         not the smallest grade)
       - Grade remains null / produces an error when omitted from POST
     """
@@ -338,13 +338,13 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         )
 
     # ------------------------------------------------------------------
-    # 8. Default grade NOT auto-selected (PR #193)
+    # 8. Default grade NOT auto-selected
     # ------------------------------------------------------------------
 
     def test_default_grade_not_auto_selected(self):
         """
         On a fresh profile page the graduation_year <select> must have the empty
-        option pre-selected, never the smallest available grade (PR #193).
+        option pre-selected, never the smallest available grade.
         """
         from esp.program.models import RegistrationProfile
         from esp.users.models import ESPUser
@@ -383,7 +383,7 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         self.assertTrue(
             '<option value="" selected>' in select_html or
             '<option value="" selected></option>' in select_html,
-            "The empty option must be pre-selected for graduation_year on a new profile (PR #193)",
+            "The empty option must be pre-selected for graduation_year on a new profile",
         )
 
         # The smallest grade option must NOT be shown as selected
@@ -392,11 +392,11 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         self.assertNotIn(
             'value="%s" selected' % smallest_yog,
             select_html,
-            "The smallest grade must NOT be auto-selected on the profile page (PR #193)",
+            "The smallest grade must NOT be auto-selected on the profile page",
         )
 
     # ------------------------------------------------------------------
-    # 9. Grade null / error when omitted from POST (PR #193)
+    # 9. Grade null / error when omitted from POST
     # ------------------------------------------------------------------
 
     def test_grade_null_when_omitted(self):
