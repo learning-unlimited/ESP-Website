@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 import logging
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from django.db import transaction
 from esp.users.models import ESPUser
 
 try:
@@ -57,7 +56,6 @@ HARD_BOUNCE_INDICATORS = [
 class Command(BaseCommand):
     help = 'Deactivates ESPUser accounts that have hard-bounced via SendGrid'
 
-    @transaction.atomic
     def handle(self, *args, **options):
         # Gracefully exit if no SendGrid API key is configured
         api_key = getattr(settings, 'SENDGRID_API_KEY', None)
