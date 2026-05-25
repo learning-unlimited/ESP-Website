@@ -112,9 +112,9 @@ Student Schedule for \\
 {% endfor %}\hline
 {% else %}
 {% for cls in student.classes %}\hline
-{% if cls.friendly_times|length_is:"0" %}N/A{% endif %}{{ cls.friendly_times|join:", " }} \newline
-\footnotesize{ {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms.0|texescape }}{% endif %} } &
-{% if cls.event_type.description == "Compulsory" %}{{ cls.description }}{% elif cls.title|length_is:"0" %}N/A{% else %}{{ cls.title|truncatewords_char:45|texescape }}{% endif %}{% if cls.parent_class.getTeacherNames %} \newline
+{% if cls.friendly_times|length == 0 %}N/A{% endif %}{{ cls.friendly_times|join:", " }} \newline
+\footnotesize{ {% if cls.initial_rooms|length == 0 %}N/A{% else %}{{ cls.prettyrooms.0|texescape }}{% endif %} } &
+{% if cls.event_type.description == "Compulsory" %}{{ cls.description }}{% elif cls.title|length == 0 %}N/A{% else %}{{ cls.title|truncatewords_char:45|texescape }}{% endif %}{% if cls.parent_class.getTeacherNames %} \newline
 {% if "teacher_profile_pronoun_field"|getBooleanTag %}
 \footnotesize{ {{ cls.parent_class.getTeacherNamesWithPronouns|join:", "|truncatewords_char:50|texescape }} }
 {% else %}

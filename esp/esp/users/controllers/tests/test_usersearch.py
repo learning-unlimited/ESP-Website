@@ -26,7 +26,7 @@ class TestUserSearchController(ProgramFrameworkTest):
     def _get_combination_post_data(self, list_a, list_b):
         return {
             'username': '',
-            'checkbox_and_confirmed': '',
+            'checkbox_and_teacher_profile': '',
             'first_name': '',
             'last_name': '',
             'school': '',
@@ -40,7 +40,7 @@ class TestUserSearchController(ProgramFrameworkTest):
             'zipdistance': '',
             'grade_min': '',
             'gradyear_min': '',
-            'checkbox_and_attended': '',
+            'checkbox_and_class_approved': '',
             'grade_max': '',
             'student_sendto_self': '1',
             'zipdistance_exclude': '',
@@ -53,15 +53,15 @@ class TestUserSearchController(ProgramFrameworkTest):
         self.assertGreaterEqual(query_result.count(), 0)
 
     def test_teacher_interview(self):
-        post_data = self._get_combination_post_data('Teacher', 'interview')
+        post_data = self._get_combination_post_data('Teacher', 'Teacher Interview')
         query_result = self.controller.filter_from_postdata(self.program, post_data).getList(ESPUser)
         self.assertEqual(query_result.model, ESPUser)
         self.assertGreaterEqual(query_result.count(), 0)
 
     def test_teacher_classroom_tables_query_from_post(self):
-        post_data = self._get_combination_post_data('Teacher', 'all')
+        post_data = self._get_combination_post_data('Teacher', 'allTeacher')
         query = self.controller.query_from_postdata(self.program, post_data)
         self.assertIsNotNone(query)
-        result = query.getList(ESPUser)
+        result = ESPUser.objects.filter(query)
         self.assertEqual(result.model, ESPUser)
         self.assertGreater(result.count(), 0)

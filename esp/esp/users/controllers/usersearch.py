@@ -35,7 +35,7 @@ from collections import defaultdict
 from collections.abc import Hashable
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
 from esp.users.forms.generic_search_form import StudentSearchForm
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.utils.web import render_to_response
 from esp.program.models import Program, RegistrationType, StudentRegistration
 from esp.dbmail.models import MessageRequest
@@ -470,14 +470,19 @@ class UserSearchController(object):
 
         if template is None:
             template = 'users/usersearch/usersearch_default.html'
+        if add_to_context is None:
+            add_to_context = {}
 
         if request.method == 'POST':
             data = ListGenModule.processPost(request)
 
             #   Look for signs that this request contains user search options and act accordingly
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
-                filterObj = self.filter_from_postdata(program, data)
-                return (filterObj, True)
+                try:
+                    filterObj = self.filter_from_postdata(program, data)
+                    return (filterObj, True)
+                except (ESPError_Log, ESPError_NoLog) as e:
+                    add_to_context['error'] = str(e)
 
         if target_path is None:
             target_path = request.path
