@@ -15,7 +15,9 @@
               id="submitbutton{{ section.id }}" />
               </form>
           {% endif %}
-      {% else %}
+      {% endif %}
+
+      {% if not errormsg or "conflicts with your schedule" in errormsg %}
           {% if section %}
               {% if section.isAccepted and not section.isRegClosed %}
                   <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
