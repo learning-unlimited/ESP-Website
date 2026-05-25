@@ -89,6 +89,8 @@ const apply_fragment_changes = function(data)
             //  this only if you explicitly need those semantics and fully trust the server-provided script content.
             new Function(data[key])();
         }
+
+
     }
 }
 

@@ -265,6 +265,64 @@ function Scheduler(
         }
       }.bind(this),
     );
+        // set up handler for selecting moderators from section info panel
+        $j("body").on("click", "a.moderator-link", function(evt, ui) {
+            var modID = $j(evt.currentTarget).data("moderator");
+            this.moderatorDirectory.selectModerator(this.moderatorDirectory.moderators[modID]);
+        }.bind(this));
+
+        // set up handlers for selecting/scheduling classes and assigning/unassigning moderators
+        $j("body").on("click", "td.matrix-cell > a", function(evt, ui) {
+            var cell = $j(evt.currentTarget.parentElement).data("cell");
+            if((evt.ctrlKey || evt.metaKey) && this.sections.selectedSection){
+                // attempt to swap the previously selected section with the section in the newly clicked cell
+                this.sections.swapSections(this.sections.selectedSection, cell.section);
+            } else if((evt.ctrlKey || evt.metaKey) && has_moderator_module === "True" && this.moderatorDirectory.selectedModerator) {
+                if(this.moderatorDirectory.selectedModerator.sections.includes(cell.section.id)) {
+                    this.moderatorDirectory.unassignModerator(cell.section);
+                } else {
+                    this.moderatorDirectory.assignModerator(cell.section);
+                }
+            } else {
+                this.sections.selectSection(cell.section);
+            }
+        }.bind(this));
+
+        $j("body").on("click", "td.teacher-available-cell", function(evt, ui) {
+            var cell = $j(evt.currentTarget).data("cell");
+            if(this.sections.selectedSection) {
+                this.sections.scheduleSection(this.sections.selectedSection,
+                                              cell.room_id, cell.timeslot_id);
+            }
+        }.bind(this));
+
+        $j("body").on("click", "td.disabled-cell", function(evt, ui) {
+            this.sections.unselectSection();
+        }.bind(this));
+
+        // set up handlers to schedule and unschedule ghost sections while hovering over empty cells
+        $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
+            if(this.sections.selectedSection){
+                var cell = $j(evt.currentTarget).data("cell");
+                this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
+            }
+        }.bind(this));
+
+        $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
+            this.sections.unscheduleAsGhost();
+        }.bind(this));
+
+        // set up handler from print button
+        $j("body").on("click", "#print_button", function(evt, ui) {
+            printJS({
+                printable: "matrix-div",
+                type: 'html',
+                css: ["/media/styles/scheduling.css", "/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css", "https://ajax.aspnetcdn.com/ajax/jquery.ui/" + jqueryui_version + "/themes/base/jquery-ui.css"],
+                targetStyles: ['*'],
+                maxWidth: 5000,
+                ignoreElements: ['print_button', 'legend_button']
+            });
+        });
 
     $j("body").on(
       "mouseleave click",
