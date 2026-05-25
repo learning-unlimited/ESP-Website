@@ -361,7 +361,7 @@ class StudentInfoFormProfileTest(CacheFlushTestCase):
 class RegistrationProfileViewTest(CacheFlushTestCase):
     """
     test the /myesp/profile/ view for student,
-    teacher, guardian (parent), educator, and volunteer account types — both GET and POST.
+    teacher, guardian, educator, and volunteer account types — both GET and POST.
     Test admin grade-change via userview URL.
     """
 
@@ -413,10 +413,10 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
         response = self.client.get('/myesp/profile/')
         self.assertEqual(response.status_code, 200)
 
-    # --- Guardian/Parent profile view ------------------------------------------
+    # --- Guardian profile view ------------------------------------------
 
     def test_guardian_profile_page_loads(self):
-        """GET /myesp/profile/ for a guardian (parent) should return 200."""
+        """GET /myesp/profile/ for a guardian should return 200."""
         self._login(self.guardian)
         response = self.client.get('/myesp/profile/')
         self.assertEqual(response.status_code, 200)
