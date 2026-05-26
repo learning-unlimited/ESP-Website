@@ -150,6 +150,13 @@ def make_program(
     """
     user_role_setup()
 
+    # Reset the ResourceType cache before creating resources.
+    # Django TestCase resets the DB between tests but this class-level cache
+    # persists, which can cause subsequent tests to reuse a cached
+    # ResourceType whose DB row no longer exists and then fail FK inserts.
+    # ProgramFrameworkTest.setUp() does the same reset explicitly.
+    ResourceType._get_or_create_cache = {}
+
     if admin is None:
         admin = make_user('Administrator', username='factory_admin')
 
@@ -236,9 +243,12 @@ def make_program(
             defaults={'description': slot_start.strftime('%H:%M %m/%d/%Y')},
         )
 
-    # Create classroom resources
+    # Create classroom resources.
+    # Cache timeslots once (same pattern as ProgramFrameworkTest) to avoid
+    # re-querying the DB once per room when num_rooms is large.
+    timeslots = list(new_prog.getTimeSlots())
     for i in range(num_rooms):
-        for ts in new_prog.getTimeSlots():
+        for ts in timeslots:
             Resource.objects.get_or_create(
                 name='Room %d' % i,
                 num_students=room_capacity,
@@ -255,10 +265,13 @@ def make_program(
 
 def make_class(program, teacher, title=None, category=None,
                grade_min=7, grade_max=12, class_size_max=30,
-               duration=None):
+               duration=None, accept=False):
     """Create and return a ClassSubject with one ClassSection.
 
-    Mirrors the class-creation loop in ProgramFrameworkTest.setUp().
+    Note: unlike ProgramFrameworkTest.setUp() which calls cls.accept() on
+    every class it creates, this factory leaves the class unreviewed/unaccepted
+    by default. Pass accept=True if your test requires an accepted class.
+
     Uses get_or_create so it is safe to call multiple times.
 
     Args:
@@ -273,6 +286,9 @@ def make_class(program, teacher, title=None, category=None,
         class_size_max (int):       Maximum class size. Defaults to 30.
         duration (float|None):      Section duration in hours. Derived from
                                     program timeslot length if None.
+        accept (bool):              If True, call cls.accept() so the class
+                                    starts in accepted/approved status.
+                                    Defaults to False (unreviewed).
 
     Returns:
         ClassSubject: The created (or retrieved) class, with one section
@@ -282,7 +298,7 @@ def make_class(program, teacher, title=None, category=None,
         teacher = make_user('Teacher')
         program = make_program()
         cls     = make_class(program, teacher)
-        cls     = make_class(program, teacher, title='Advanced Python')
+        cls     = make_class(program, teacher, title='Advanced Python', accept=True)
     """
     if title is None:
         title = 'Factory Class for %s' % teacher.username
@@ -320,5 +336,8 @@ def make_class(program, teacher, title=None, category=None,
     # Add a section if none exists yet
     if cls.get_sections().count() == 0:
         cls.add_section(duration=duration)
+
+    if accept:
+        cls.accept()
 
     return cls
