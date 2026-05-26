@@ -418,3 +418,156 @@ class MessageRequestAdminTest(TestCase):
         mr = MessageRequest.objects.filter(subject='Test subject').first()
         self.assertIsNotNone(mr)
         self.assertIsNone(mr.processed_by)
+
+
+# ---------------------------------------------------------------------------
+# Tests for issue #3850: SendGrid hard bounce account deactivation
+# ---------------------------------------------------------------------------
+import json
+from unittest.mock import MagicMock
+
+from django.core.management import call_command
+from django.test import override_settings
+
+
+class DeactivateBouncingEmailsTest(TestCase):
+    """Tests for the deactivate_bouncing_emails management command."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.user_hard = ESPUser.objects.create_user(
+            username='hardbounce',
+            email='hardbounce@example.com',
+            password='password',
+        )
+        self.user_soft = ESPUser.objects.create_user(
+            username='softbounce',
+            email='softbounce@example.com',
+            password='password',
+        )
+
+    def _make_bounce(self, email, status, reason=''):
+        return {'email': email, 'status': status, 'reason': reason}
+
+    def _mock_sendgrid(self, bounces_list):
+        """Build a mock SendGridAPIClient that returns the given bounce list."""
+        mock_sg = MagicMock()
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.body = json.dumps(bounces_list).encode('utf-8')
+        mock_sg.client.suppression.bounces.get.return_value = mock_response
+        return mock_sg
+
+    # --- Core bounce classification ---
+
+    @override_settings(SENDGRID_API_KEY='test-key')
+    @patch('esp.dbmail.management.commands.deactivate_bouncing_emails.SendGridAPIClient')
+    def test_hard_bounce_deactivates_user(self, MockSGClient):
+        """A 5.x.x status code should deactivate the matching account."""
+        bounces = [self._make_bounce('hardbounce@example.com', '5.1.1', 'user unknown')]
+        MockSGClient.return_value = self._mock_sendgrid(bounces)
+        call_command('deactivate_bouncing_emails')
+        self.user_hard.refresh_from_db()
+        self.assertFalse(self.user_hard.is_active)
+
+    @override_settings(SENDGRID_API_KEY='test-key')
+    @patch('esp.dbmail.management.commands.deactivate_bouncing_emails.SendGridAPIClient')
+    def test_soft_bounce_does_not_deactivate(self, MockSGClient):
+        """A 4.x.x status code (soft bounce) should NOT deactivate the account."""
+        bounces = [self._make_bounce('softbounce@example.com', '4.2.2', 'mailbox full')]
+        MockSGClient.return_value = self._mock_sendgrid(bounces)
+        call_command('deactivate_bouncing_emails')
+        self.user_soft.refresh_from_db()
+        self.assertTrue(self.user_soft.is_active)
+
+    @override_settings(SENDGRID_API_KEY='test-key')
+    @patch('esp.dbmail.management.commands.deactivate_bouncing_emails.SendGridAPIClient')
+    def test_keyword_fallback_deactivates(self, MockSGClient):
+        """When status is empty, keyword indicators should still trigger deactivation."""
+        bounces = [self._make_bounce('hardbounce@example.com', '', 'User unknown in virtual mailbox')]
+        MockSGClient.return_value = self._mock_sendgrid(bounces)
+        call_command('deactivate_bouncing_emails')
+        self.user_hard.refresh_from_db()
+        self.assertFalse(self.user_hard.is_active)
+
+    # --- Edge cases ---
+
+    @override_settings(SENDGRID_API_KEY='test-key')
+    @patch('esp.dbmail.management.commands.deactivate_bouncing_emails.SendGridAPIClient')
+    def test_duplicate_emails_processed_once(self, MockSGClient):
+        """Duplicate email entries in the bounce list should only be processed once."""
+        bounces = [
+            self._make_bounce('hardbounce@example.com', '5.1.1'),
+            self._make_bounce('hardbounce@example.com', '5.1.1'),
+        ]
+        MockSGClient.return_value = self._mock_sendgrid(bounces)
+        call_command('deactivate_bouncing_emails')
+        self.user_hard.refresh_from_db()
+        self.assertFalse(self.user_hard.is_active)
+
+    @override_settings(SENDGRID_API_KEY='test-key')
+    @patch('esp.dbmail.management.commands.deactivate_bouncing_emails.SendGridAPIClient')
+    def test_case_insensitive_email_match(self, MockSGClient):
+        """Email matching should be case-insensitive."""
+        bounces = [self._make_bounce('HardBounce@Example.COM', '5.1.1')]
+        MockSGClient.return_value = self._mock_sendgrid(bounces)
+        call_command('deactivate_bouncing_emails')
+        self.user_hard.refresh_from_db()
+        self.assertFalse(self.user_hard.is_active)
+
+    @override_settings(SENDGRID_API_KEY='test-key')
+    @patch('esp.dbmail.management.commands.deactivate_bouncing_emails.SendGridAPIClient')
+    def test_unmatched_email_does_not_affect_others(self, MockSGClient):
+        """A hard bounce for an unknown email should not affect any accounts."""
+        bounces = [self._make_bounce('nobody@nowhere.com', '5.1.1')]
+        MockSGClient.return_value = self._mock_sendgrid(bounces)
+        call_command('deactivate_bouncing_emails')
+        self.user_hard.refresh_from_db()
+        self.user_soft.refresh_from_db()
+        self.assertTrue(self.user_hard.is_active)
+        self.assertTrue(self.user_soft.is_active)
+
+    # --- Missing API key / error handling ---
+
+    @override_settings(SENDGRID_API_KEY=None)
+    def test_no_api_key_exits_gracefully(self):
+        """Command should exit without error when SENDGRID_API_KEY is missing/None."""
+        # Should not raise
+        call_command('deactivate_bouncing_emails')
+        # Users should remain unchanged
+        self.user_hard.refresh_from_db()
+        self.assertTrue(self.user_hard.is_active)
+
+    @override_settings(SENDGRID_API_KEY='test-key')
+    @patch('esp.dbmail.management.commands.deactivate_bouncing_emails.SendGridAPIClient')
+    def test_api_error_exits_gracefully(self, MockSGClient):
+        """A non-200 response from SendGrid should exit without deactivating anyone."""
+        mock_sg = MagicMock()
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_sg.client.suppression.bounces.get.return_value = mock_response
+        MockSGClient.return_value = mock_sg
+        call_command('deactivate_bouncing_emails')
+        self.user_hard.refresh_from_db()
+        self.assertTrue(self.user_hard.is_active)
+
+    @override_settings(SENDGRID_API_KEY='test-key')
+    @patch('esp.dbmail.management.commands.deactivate_bouncing_emails.SendGridAPIClient')
+    def test_api_exception_exits_gracefully(self, MockSGClient):
+        """An exception during the SendGrid API call should exit without deactivating anyone."""
+        mock_sg = MagicMock()
+        mock_sg.client.suppression.bounces.get.side_effect = Exception('Connection refused')
+        MockSGClient.return_value = mock_sg
+        call_command('deactivate_bouncing_emails')
+        self.user_hard.refresh_from_db()
+        self.assertTrue(self.user_hard.is_active)
+
+    @override_settings(SENDGRID_API_KEY='test-key')
+    @patch('esp.dbmail.management.commands.deactivate_bouncing_emails.SendGridAPIClient')
+    def test_empty_bounce_list_exits_gracefully(self, MockSGClient):
+        """An empty bounce list should exit without error."""
+        MockSGClient.return_value = self._mock_sendgrid([])
+        call_command('deactivate_bouncing_emails')
+        self.user_hard.refresh_from_db()
+        self.assertTrue(self.user_hard.is_active)

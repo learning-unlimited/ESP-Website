@@ -423,8 +423,55 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_cap
     def addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
-        if self.addclass_logic(request, tl, one, two, module, extra, prog):
-            return self.goToCore(tl)
+        from django.db import transaction
+        try:
+            if request.POST.get('force_replace') == 'true':
+                with transaction.atomic():
+                    sectionid = request.POST.get('section_id')
+                    if sectionid:
+                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        if section:
+                            conflicts = section.get_conflicts(request.user)
+                            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            for conflict in conflicts:
+                                error = conflict.cannotRemove(request.user)
+                                if error and not getattr(request.user, "onsite_local", False):
+                                    raise ESPError(error, log=False)
+                                conflict.unpreregister_student(request.user, verbs)
+                    success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+                    if not success:
+                        transaction.set_rollback(True)
+            else:
+                success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+
+            if success:
+                return self.goToCore(tl)
+
+        except ESPError_NoLog as inst:
+            # Check for schedule conflicts
+            error_msg = str(inst)
+            if 'conflict' in error_msg.lower():
+                sectionid = request.POST.get('section_id')
+                classid = request.POST.get('class_id')
+                if sectionid:
+                    try:
+                        section = ClassSection.objects.get(id=sectionid, parent_class__parent_program=prog)
+                        conflicts = section.get_conflicts(request.user)
+                        if conflicts:
+                            conflict_titles = ", ".join([str(c.title()) for c in conflicts])
+                            confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
+
+                            context = {'program': prog, 'user': request.user, 'one': one, 'two': two}
+                            context['confirm_msg'] = confirm_msg
+                            context['section_id'] = sectionid
+                            context['class_id'] = classid
+                            context['prereg_url'] = prog.get_learn_url() + 'addclass'
+                            from django.template.context_processors import csrf
+                            context.update(csrf(request))
+                            return render_to_response(self.baseDir()+'conflict_confirm.html', request, context)
+                    except (ClassSection.DoesNotExist, ValueError):
+                        pass
+            raise
 
     @aux_call
     @needs_student_in_grade
@@ -435,7 +482,28 @@ class StudentClassRegModule(ProgramModuleObj):
         if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.addclass(request, tl, one, two, module, extra, prog)
         try:
-            success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+            from django.db import transaction
+            # Handle force replace atomically so conflicting classes are only dropped
+            # if the replacement registration succeeds.
+            if request.POST.get('force_replace') == 'true':
+                with transaction.atomic():
+                    sectionid = request.POST.get('section_id')
+                    if sectionid:
+                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        if section:
+                            conflicts = section.get_conflicts(request.user)
+                            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            for conflict in conflicts:
+                                error = conflict.cannotRemove(request.user)
+                                if error and not getattr(request.user, "onsite_local", False):
+                                    raise ESPError(error, log=False)
+                                conflict.unpreregister_student(request.user, verbs)
+                    success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+                    if not success:
+                        transaction.set_rollback(True)
+            else:
+                success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+
             if 'no_schedule' in request.POST:
                 resp = HttpResponse(content_type='application/json')
                 json.dump({'status': success}, resp)
