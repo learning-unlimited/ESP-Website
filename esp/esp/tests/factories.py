@@ -1,38 +1,17 @@
 """
 Test factories for the ESP test suite.
 
-WHY THIS EXISTS
----------------
-ProgramFrameworkTest is a full integration harness — it creates a complete
-program with timeslots, rooms, teachers, students, and classes. That is
-exactly what you want for integration tests.
-
-But for unit tests (e.g. ClassCreationController, LotteryAssignmentController)
-you often need just one user, or just one class, without spinning up an entire
-program. The copy-paste pattern for doing this is scattered across 8+ test
-files with no shared abstraction.
-
-These factories provide the minimal building blocks:
+Provides minimal building blocks for unit tests:
   - make_user(role)                  — one ESPUser with the right Group
   - make_program(**kwargs)           — one Program with sensible defaults
   - make_class(program, teacher)     — one ClassSubject + ClassSection + category
 
-They are intentionally thin wrappers around the same model calls that
-ProgramFrameworkTest uses internally, so behaviour is consistent.
-
-USAGE
------
+Usage:
     from esp.tests.factories import make_user, make_program, make_class
 
-    # In a CacheFlushTestCase or ProgramFrameworkTest subclass:
     teacher = make_user('Teacher')
     program = make_program()
     cls     = make_class(program, teacher)
-
-ADDRESSES
----------
-  Issue #3780 — Expand test coverage
-  Issue #4480 — Improve test coverage properly
 """
 
 import re

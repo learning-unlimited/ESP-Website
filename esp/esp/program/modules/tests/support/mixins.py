@@ -1,48 +1,8 @@
 """
-ModuleHandlerTestMixin — shared test infrastructure for program module handler tests.
+ModuleHandlerTestMixin — shared helpers for program module handler tests.
 
-WHY THIS EXISTS
----------------
-Writing a test for any module handler currently requires:
-  1. Reading ProgramFrameworkTest to understand setUp parameters
-  2. Copy-pasting _setup_roles() (duplicated in 8+ test files)
-  3. Manually building the module URL string
-  4. Logging in as the right user
-  5. Making the GET/POST request
-
-This takes 30-60 minutes of boilerplate before writing a single assertion.
-That friction is the primary reason high-consequence handlers like
-finaidapprovemodule.py and adminreviewapps.py have 0% coverage today.
-
-This mixin reduces handler test setup from ~10 lines to 2-3 lines —
-permanently, for every future contributor, not just for this GSoC project.
-
-USAGE
------
-    class MyHandlerTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
-        def setUp(self):
-            super().setUp()
-            # optional: self.add_user_profiles(), self.schedule_randomly()
-
-        def test_get_returns_200(self):
-            self.login_as('admin')
-            url = self.get_module_url('manage', 'finaidapprove')
-            self.assert_view_ok(url)
-
-        def test_non_admin_is_forbidden(self):
-            self.login_as('student')
-            url = self.get_module_url('manage', 'finaidapprove')
-            self.assert_view_forbidden(url)
-
-        def test_post_creates_record(self):
-            self.login_as('admin')
-            response = self.post_to_module('manage', 'finaidapprove', {'key': 'value'})
-            self.assertEqual(response.status_code, 200)
-
-ADDRESSES
----------
-  Issue #3780 — Expand test coverage
-  Issue #4480 — Improve test coverage properly
+Provides login, URL building, assertion, and request helpers so that
+handler test setup is reduced from ~10 lines of boilerplate to 2-3 lines.
 """
 
 from esp.program.models import ProgramModule
