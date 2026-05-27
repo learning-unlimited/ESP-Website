@@ -69,6 +69,8 @@ class CoreModule(object):
     pass
 
 class ProgramModuleObj(ExpirableModel):
+    start_date = models.DateTimeField(blank=True, null=True, default=None,
+                                      help_text="If blank, has always started.")
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
