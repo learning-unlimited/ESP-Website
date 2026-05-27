@@ -165,7 +165,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   and followed by a 24 character base64-encoded string.
         valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
         valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
-        if not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
+        if not self.settings.get('publishable_key') or not self.settings.get('secret_key') or not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
             return False
         return True
 
@@ -250,7 +250,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['postdata'] = request.POST.copy()
         domain_name = Site.objects.get_current().domain
         msg_content = render_to_string(self.baseDir() + 'error_email.txt', context)
-        msg_subject = '[ ESP CC ] Credit card error on %s: %d %s' % (domain_name, request.user.id, request.user.name())
+        msg_subject = f'[ ESP CC ] Credit card error on {domain_name}: {request.user.id} {request.user.name()}'
         # This message could contain sensitive information.  Send to the
         # confidential messages address, and don't bcc the archive list.
         send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [self.program.getDirectorConfidentialEmail()], bcc=None)
@@ -264,7 +264,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         context = {'postdata': request.POST.copy()}
 
-        group_name = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+        group_name = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
 
         iac = IndividualAccountingController(self.program, request.user)
 
@@ -288,8 +288,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Set Stripe key based on settings.  Also require the API version
         #   which our code is designed for.
         stripe.api_key = self.settings['secret_key']
-        # We are using the 2014-03-13 version of the Stripe API, which is
-        # v1.12.2.
+        # Keep the API version pinned so charge/refund response fields match
+        # our legacy payment code.
         stripe.api_version = '2014-03-13'
 
         if request.POST.get('ponumber', '') != iac.get_id():
@@ -332,8 +332,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     charge = stripe.Charge.create(
                         amount=amount_cents_post,
                         currency="usd",
-                        card=request.POST['stripeToken'],
-                        description="Payment for %s %s - %s" % (group_name, prog.niceName(), request.user.name()),
+                        source=request.POST['stripeToken'],
+                        description=f"Payment for {group_name} {prog.niceName()} - {request.user.name()}",
                         statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
                         metadata={
                             'ponumber': request.POST['ponumber'],

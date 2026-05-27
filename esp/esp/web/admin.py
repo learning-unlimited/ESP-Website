@@ -42,6 +42,14 @@ class NavBarEntryAdmin(admin.ModelAdmin):
     list_filter = ('category',)
 
 class NavBarCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'path')
+    search_fields = ['name', 'path']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('name',)
+        return self.readonly_fields
+
     def delete_model(self, request, obj):
         if obj.name == "default":
             self.message_user(
@@ -50,7 +58,8 @@ class NavBarCategoryAdmin(admin.ModelAdmin):
                 level = messages.ERROR,
             )
         return super().delete_model(request, obj)
-    def has_delete_permission(self, request, obj = None):
+
+    def has_delete_permission(self, request, obj=None):
         if obj and obj.name == "default":
             return False
         return super().has_delete_permission(request, obj)
