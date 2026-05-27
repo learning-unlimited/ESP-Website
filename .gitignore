@@ -25,6 +25,7 @@ venv/
 venv
 useful_logs
 theme_compiled.css
+theme_compiled_test.css
 /.vagrant/*
 *_admin_thumbnail.gif
 *_admin_thumbnail.jpg

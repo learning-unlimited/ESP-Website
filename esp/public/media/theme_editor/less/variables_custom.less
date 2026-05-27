@@ -19,6 +19,9 @@
 @titleColor:                #333;
 @linkColor:                 #08c;
 @linkColorHover:            #07a;
+// Bridge to Bootstrap 3 kebab-case variables so @linkColor controls a { color }
+@link-color:                @linkColor;
+@link-hover-color:          @linkColorHover;
 @baseFontSize:              13px;
 @sansFontFamily:            "Helvetica Neue", Helvetica, Arial, sans-serif;
 @navbarBackground:          #222;
@@ -30,6 +33,7 @@
 @navbarInverseBackgroundHighlight:       #222222;
 @navbarInverseText:                      #999;
 @navbarInverseLinkColor:                 #999;
+@navbarInverseLinkColorHover:            #fff;
 @navbarInverseBrandColor:                @navbarInverseLinkColor;
 @navbarBrandFontSize:       24px;
 @sidebarText:               #999;
