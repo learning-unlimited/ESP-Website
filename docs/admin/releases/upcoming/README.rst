@@ -17,3 +17,5 @@ Developer Notes
 - Updated dependencies for Django 5.1 compatibility: ``django-debug-toolbar`` 5.0.1 → 5.1.0 and ``django-extensions`` 3.2.3 → 4.1.
 - Replaced deprecated ``ESPUser.objects.make_random_password()`` usage with ``django.utils.crypto.get_random_string()`` in ``esp/mailman/__init__.py``.
 - Updated ``models.CheckConstraint`` in ``esp/program/models/__init__.py`` from ``check=`` to ``condition=``.
+- Upgraded Django from 5.1.15 to 5.2.14 (LTS).
+- Updated dependencies for Django 5.2 compatibility: ``django-debug-toolbar`` 5.1.0 → 5.2.0.

@@ -12,6 +12,7 @@ class CacheFlushTestCase(TestCase):
     """ Flush the cache at the start and end of this test case """
     def setUp(self):
         super().setUp()
+        self._flush_cache()
         # Populate the thread-local request so that get_current_request()
         # never returns None during tests.  Tests using RequestFactory bypass
         # the ThreadLocals middleware, so we prime it here instead.
@@ -27,6 +28,7 @@ class CacheFlushTestCase(TestCase):
         # Clear the thread-local after every test to avoid state leaking
         # between tests run in the same thread.
         clear_current_request()
+        self._flush_cache()
         super().tearDown()
 
     def _flush_cache(self):
@@ -46,14 +48,6 @@ class CacheFlushTestCase(TestCase):
             settings.CACHE_PREFIX = ''.join( random.sample( string.ascii_letters + string.digits, 16 ) )
             from django.conf import settings as django_settings
             django_settings.CACHE_PREFIX = settings.CACHE_PREFIX
-
-    def _fixture_setup(self):
-        self._flush_cache()
-        super()._fixture_setup()
-
-    def _fixture_teardown(self):
-        self._flush_cache()
-        super()._fixture_teardown()
 
 def user_role_setup(names=['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']):
     from django.contrib.auth.models import Group
