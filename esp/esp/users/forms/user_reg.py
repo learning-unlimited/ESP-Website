@@ -25,7 +25,7 @@ class ValidHostEmailField(forms.EmailField):
                 DNS.DiscoverNameServers()
                 if len(DNS.Request(qtype='a').req(email_host).answers) == 0 and len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
                     raise forms.ValidationError(f'"{email_host}" is not a valid email host')
-            except (IOError, DNS.DNSError): # (no resolv.conf, no nameservers)
+            except (IOError, DNS.DNSError, Exception): # (no resolv.conf, no nameservers, transient DNS lookup failure)
                 pass
         except ImportError: # no PyDNS
             pass
