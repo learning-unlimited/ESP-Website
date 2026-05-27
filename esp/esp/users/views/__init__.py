@@ -214,23 +214,22 @@ def unsubscribe(request, username, token, oneclick = False):
             raise ESPError("User " + users[0].username + " is already unsubscribed.")
     else:
         raise ESPError("No user matching that unsubscribe request.")
-
+    
+    # if they are logged into a different account
+    # tell them to log out and try again
+    if request.user.is_authenticated and request.user != user:
+        raise ESPError("You are logged into a different account than the one you are trying to unsubscribe. Please log out and try your request again.")
     # if POSTing, they clicked the confirm button
     # if oneclick=True, then they came here from an email client
-    if request.POST.get("List-Unsubscribe") == "One-Click" or oneclick == True:
+    elif request.POST.get("List-Unsubscribe") == "One-Click" or oneclick == True:
         # "unsubscribe" them (deactivate their account)
         user.is_active = False
         user.save()
         return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
-
     # otherwise show them a confirmation button
     # if they are logged into the correct account or the token is valid
-    if ( (request.user.is_authenticated and request.user == user) and request.user.check_token(token)):
+    elif ( (request.user.is_authenticated and request.user == user) and user.check_token(token)):
         return render_to_response('users/unsubscribe.html', request, context = {'user': user})
-    # if they are logged into a different account
-    # tell them to log out and try again
-    elif request.user.is_authenticated and request.user != user:
-        raise ESPError("You are logged into a different account than the one you are trying to unsubscribe. Please log out and try your request again.")
     # otherwise they will need to log in (or find a more recent link)
     # so show the login page (with a custom alert message)
     else:
