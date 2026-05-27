@@ -13,3 +13,7 @@ Developer Notes
 - Upgraded Django from 4.2.30 to 5.0.14.
 - Updated dependencies for Django 5.0 compatibility: ``django-debug-toolbar`` 4.4.0 → 5.0.1.
 - Updated deprecated ``assertFormError`` test usage to Django 5.0-compatible form-object assertions in ``esp/program/modules/tests/programprintables.py`` and ``esp/users/tests.py``.
+- Upgraded Django from 5.0.14 to 5.1.15.
+- Updated dependencies for Django 5.1 compatibility: ``django-debug-toolbar`` 5.0.1 → 5.1.0 and ``django-extensions`` 3.2.3 → 4.1.
+- Replaced deprecated ``ESPUser.objects.make_random_password()`` usage with ``django.utils.crypto.get_random_string()`` in ``esp/mailman/__init__.py``.
+- Updated ``models.CheckConstraint`` in ``esp/program/models/__init__.py`` from ``check=`` to ``condition=``.
