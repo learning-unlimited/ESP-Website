@@ -45,13 +45,13 @@ import re
 import subprocess
 import tempfile
 import textwrap
-import distutils.dir_util
 import json
 import hashlib
 import copy
 from urllib.parse import quote, unquote
 
 from django.conf import settings
+from django.core.exceptions import SuspiciousFileOperation
 from django.template.loader import render_to_string
 
 from esp.utils.models import TemplateOverride
@@ -297,7 +297,11 @@ class ThemeController(object):
 
         #   Replace all variable declarations for which we have a value defined
         for (variable_name, variable_value) in variable_data.items():
-            less_data = re.sub(rf'@{variable_name}:(\s*)(.*?);', f'@{variable_name}: {variable_value};', less_data)
+            less_data = re.sub(
+                rf'@{re.escape(variable_name)}:(\s*)(.*?);',
+                lambda match, vn=variable_name, vv=variable_value: f'@{vn}: {vv};',
+                less_data,
+            )
 
         #   Compile to CSS
         css_data = self.compile_less(less_data)
@@ -318,15 +322,30 @@ class ThemeController(object):
             customization_name = self.get_current_customization()
         if theme_name is None:
             theme_name = self.get_current_theme()
+
+        # Save current parameters and palette before they are cleared
+        current_vars = self.get_current_params()
+        current_palette = json.loads(Tag.getTag('current_theme_palette', default='[]'))
+
         backup_info = self.clear_theme(keep_files=keep_files)
         self.load_theme(theme_name, backup_info=backup_info)
         self.update_template_settings()
+
+        vars = current_vars
+        palette = current_palette
+
         if customization_name is not None and customization_name != "None":
-            (vars, palette) = self.load_customizations(customization_name)
-            if vars:
-                self.customize_theme(vars)
-            if palette:
-                self.set_palette(palette)
+            try:
+                (vars, palette) = self.load_customizations(customization_name)
+            except FileNotFoundError:
+                logger.warning("Customization file for %s missing. Initializing with parameters from database.", customization_name)
+                self.save_customizations(customization_name, theme_name=theme_name, vars=current_vars, palette=current_palette)
+                (vars, palette) = self.load_customizations(customization_name)
+
+        if vars:
+            self.customize_theme(vars)
+        if palette:
+            self.set_palette(palette)
 
     def backup_files(self, dir, keep_files=None):
         """ Copy the files specified in keep_files (relative to directory dir)
@@ -368,10 +387,12 @@ class ThemeController(object):
         #   This is much easier than writing new functions for removing and
         #   copying directory trees.
         backup_info = self.backup_files(settings.MEDIA_ROOT, keep_files)
-        if os.path.exists(settings.MEDIA_ROOT + 'images/theme'):
-            distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'images/theme')
-        if os.path.exists(settings.MEDIA_ROOT + 'scripts/theme'):
-            distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'scripts/theme')
+        images_theme_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
+        scripts_theme_dir = os.path.join(settings.MEDIA_ROOT, 'scripts', 'theme')
+        if os.path.exists(images_theme_dir):
+            shutil.rmtree(images_theme_dir, ignore_errors=True)
+        if os.path.exists(scripts_theme_dir):
+            shutil.rmtree(scripts_theme_dir, ignore_errors=True)
 
         #   Remove compiled CSS file
         if os.path.exists(self.css_filename):
@@ -470,15 +491,17 @@ class ThemeController(object):
         #   Collect LESS files from appropriate sources and compile CSS
         self.compile_css(theme_name, {}, self.css_filename)
 
+        theme_base_dir = self.base_dir(theme_name)
+
         #   Copy images and script files to the active theme directory
-        img_src_dir = os.path.join(self.base_dir(theme_name), 'images')
+        img_src_dir = os.path.join(theme_base_dir, 'images')
         if os.path.exists(img_src_dir):
             img_dest_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
-            distutils.dir_util.copy_tree(img_src_dir, img_dest_dir)
-        script_src_dir = os.path.join(self.base_dir(theme_name), 'scripts')
+            shutil.copytree(img_src_dir, img_dest_dir, dirs_exist_ok=True)
+        script_src_dir = os.path.join(theme_base_dir, 'scripts')
         if os.path.exists(script_src_dir):
             script_dest_dir = os.path.join(settings.MEDIA_ROOT, 'scripts', 'theme')
-            distutils.dir_util.copy_tree(script_src_dir, script_dest_dir)
+            shutil.copytree(script_src_dir, script_dest_dir, dirs_exist_ok=True)
 
         #   If files need to be restored, copy them back to the desired locations.
         if kwargs.get('backup_info', None) is not None:
@@ -509,6 +532,24 @@ class ThemeController(object):
 
     ##  Customizations - stored as LESS files with modified variables only; palette is included
 
+    def _safe_customization_path(self, save_name):
+        """Return a validated absolute path for a customization file.
+
+        Raises SuspiciousFileOperation if the resolved path escapes themes_dir.
+        """
+        safe_dir = os.path.realpath(themes_settings.themes_dir)
+        # Validate the raw name BEFORE quoting — quote() would encode '/' and
+        # '..' into harmless percent-encoded literals, hiding real traversal.
+        raw_path = os.path.realpath(os.path.join(themes_settings.themes_dir, f'{save_name}.less'))
+        if not raw_path.startswith(f'{safe_dir}{os.sep}'):
+            raise SuspiciousFileOperation(f'Attempted path traversal in theme save name: {save_name!r}')
+        # Build the final path with URL-quoted name and validate it too so
+        # that CodeQL's taint analysis sees the returned value as sanitized.
+        path = os.path.realpath(os.path.join(safe_dir, f'{quote(save_name, safe="")}.less'))
+        if not path.startswith(f'{safe_dir}{os.sep}'):
+            raise SuspiciousFileOperation(f'Attempted path traversal in theme save name: {save_name!r}')
+        return path
+
     def save_customizations(self, save_name, theme_name=None, vars=None, palette=None):
         if theme_name is None:
             theme_name = self.get_current_theme()
@@ -529,15 +570,13 @@ class ThemeController(object):
         context['save_name'] = save_name
         context['palette'] = palette
 
-        f = open(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe = "")}.less'), 'w')
-        f.write(render_to_string('themes/custom_vars.less', context))
-        f.close()
+        with open(self._safe_customization_path(save_name), 'w') as f:
+            f.write(render_to_string('themes/custom_vars.less', context))
 
     def load_customizations(self, save_name):
 
-        f = open(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe = "")}.less'), 'r')
-        data = f.read()
-        f.close()
+        with open(self._safe_customization_path(save_name), 'r') as f:
+            data = f.read()
 
         #   Collect LESS variables
         vars = {}
@@ -569,7 +608,7 @@ class ThemeController(object):
         return (vars, palette)
 
     def delete_customizations(self, save_name):
-        os.remove(os.path.join(themes_settings.themes_dir, f'{quote(save_name, safe = "")}.less'))
+        os.remove(self._safe_customization_path(save_name))
 
     def get_customization_names(self):
         result = []

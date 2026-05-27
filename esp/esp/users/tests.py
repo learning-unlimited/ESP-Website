@@ -5,6 +5,7 @@ from django import forms
 from django.core import mail
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import Group
+from django.db.models import Q
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
@@ -17,7 +18,7 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
+from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType, DBList
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -62,18 +63,18 @@ class ESPUserTest(TestCase):
         self.basic_user.backend = request.backend
 
         login(request, self.user)
-        self.assertEqual(request.user, self.user, "Failed to log in as '%s'" % self.user)
+        self.assertEqual(request.user, self.user, f"Failed to log in as '{self.user}'")
 
         request.user.switch_to_user(request, self.basic_user, None, None)
-        self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
+        self.assertEqual(request.user, self.basic_user, f"Failed to morph into '{self.basic_user}'")
 
         request.user.switch_back(request)
-        self.assertEqual(request.user, self.user, "Failed to morph back into '%s'" % self.user)
+        self.assertEqual(request.user, self.user, f"Failed to morph back into '{self.user}'")
 
         blocked_illegal_morph = True
         try:
             request.user.switch_to_user(request, self.basic_user, None, None)
-            self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
+            self.assertEqual(request.user, self.basic_user, f"Failed to morph into '{self.basic_user}'")
         except ESPError():
             blocked_illegal_morph = True
 
@@ -103,7 +104,7 @@ class ESPUserTest(TestCase):
         curYear = ESPUser.current_schoolyear()
         gradYear = curYear + (12 - testGrade)
         self.client.get("/manage/userview?username=student&graduation_year="+str(gradYear))
-        self.assertTrue(studentUser.getGrade() == testGrade, "Grades don't match: %s %s" % (studentUser.getGrade(), testGrade))
+        self.assertTrue(studentUser.getGrade() == testGrade, f"Grades don't match: {studentUser.getGrade()} {testGrade}")
 
         # Clean up
         if (c1):
@@ -138,6 +139,19 @@ class ESPUserTest(TestCase):
                                 f"Token check failed for username: {username}")
             finally:
                 user.delete()
+
+    def test_db_list_count_cache_invalidated_on_user_save(self):
+        ESPUser.objects.create(username='dblist_before_1')
+        ESPUser.objects.create(username='dblist_before_2')
+
+        baseline = DBList(key='all-users', QObject=Q(id__gt=0)).count()
+
+        ESPUser.objects.create(username='dblist_after_3')
+
+        # Use a fresh DBList instance so the result must come from cache or DB.
+        refreshed = DBList(key='all-users', QObject=Q(id__gt=0)).count()
+
+        self.assertEqual(refreshed, baseline + 1)
 
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
@@ -288,7 +302,7 @@ class ValidHostEmailFieldTest(TestCase):
         # Hardcoding 'esp.mit.edu' here might be a bad idea
         # But at least it verifies that A records work in place of MX
         for domain in [ 'esp.mit.edu', 'gmail.com', 'yahoo.com' ]:
-            self.assertTrue( ValidHostEmailField().clean( 'fakeaddress@%s' % domain ) == 'fakeaddress@%s' % domain )
+            self.assertTrue( ValidHostEmailField().clean( f'fakeaddress@{domain}' ) == f'fakeaddress@{domain}' )
     def testFakeDomain(self):
         # If we have an internet connection, bad domains raise ValidationError.
         # This should be the *only* kind of error we ever raise!
@@ -305,7 +319,7 @@ class UserForwarderTest(TestCase):
         self.users = [self.ua, self.ub, self.uc]
     def test_run(self):
         def fwd_info(user):
-            return '%s forwards by: %s' % (user.username, user.forwarders_out.all())
+            return f'{user.username} forwards by: {user.forwarders_out.all()}'
         # Ensure that users have no forwarders by default
         for user in self.users:
             self.assertTrue(UserForwarder.follow(user) == (user, False), fwd_info(user))
@@ -388,11 +402,11 @@ class AjaxExistenceChecker(TestCase):
 
         response = self.client.get(self.path)
         for key in self.keys:
-            self.assertContains(response, key, msg_prefix="Key %s missing from Ajax response to %s" % (key, self.path), status_code=200)
+            self.assertContains(response, key, msg_prefix=f"Key {key} missing from Ajax response to {self.path}", status_code=200)
 
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def test_run(self):
-        self.path = '/learn/%s/ajax_schedule' % self.program.getUrlBase()
+        self.path = f'/learn/{self.program.getUrlBase()}/ajax_schedule'
         self.keys = ['student_schedule_html']
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
@@ -460,8 +474,8 @@ class AccountCreationTest(TestCase):
             url+="information/"
         response = self.client.post(url,
                                    data={"username":"username",
-                                         "password":"passw",
-                                         "confirm_password":"passw",
+                                         "password":"Str0ng!Pass",
+                                         "confirm_password":"Str0ng!Pass",
                                          "first_name":"first",
                                          "last_name":"last",
                                          "email":"tsutton125@gmail.com",
@@ -554,7 +568,7 @@ class TestChangeRequestView(TestCase):
         self.password = "pass1234"
 
         #   May fail once in a while, but it's not critical.
-        self.unique_name = 'Test_UNIQUE%06d' % random.randint(0, 999999)
+        self.unique_name = f'Test_UNIQUE{random.randint(0, 999999):06d}'
         self.user, created = ESPUser.objects.get_or_create(first_name=self.unique_name, last_name="User", username="testuser123543", email="server@esp.mit.edu")
         if created:
             self.user.set_password(self.password)
@@ -926,7 +940,7 @@ class StudentInfoFormGradeTest(TestCase):
         errors = form.errors.get('graduation_year', [])
         self.assertTrue(
             any('required' in e.lower() for e in errors),
-            "Expected a 'required' error for graduation_year, got: %s" % errors,
+            f"Expected a 'required' error for graduation_year, got: {errors}",
         )
 
     def test_no_auto_default_to_lowest_grade(self):
@@ -1105,3 +1119,85 @@ class StudentProfileForm__emailvalidationtest(TestCase):
         email_errors = [e for e in form.non_field_errors()
                         if 'email' in e.lower()]
         self.assertEqual(email_errors, [])
+
+
+class PasswordValidationTest(TestCase):
+    """Ensure password strength rules are enforced on registration and password change."""
+
+    REG_BASE = {
+        'first_name': 'Test',
+        'last_name': 'User',
+        'username': 'testpwuser',
+        'initial_role': 'Student',
+        'email': 'test@example.com',
+        'confirm_email': 'test@example.com',
+    }
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user, _ = ESPUser.objects.get_or_create(username='pwchangeuser')
+        cls.user.set_password('ValidPass1!')
+        cls.user.save()
+
+    def _reg_form(self, password, confirm=None):
+        from esp.users.forms.user_reg import UserRegForm
+        if confirm is None:
+            confirm = password
+        data = dict(self.REG_BASE, password=password, confirm_password=confirm)
+        return UserRegForm(data=data)
+
+    def _passwd_form(self, new_password, confirm=None):
+        from esp.users.forms.password_reset import UserPasswdForm
+        if confirm is None:
+            confirm = new_password
+        data = {
+            'password': 'ValidPass1!',
+            'newpasswd': new_password,
+            'newpasswdconfirm': confirm,
+        }
+        return UserPasswdForm(user=self.user, data=data)
+
+    def test_registration_rejects_short_password(self):
+        form = self._reg_form('abc123')
+        self.assertFalse(form.is_valid())
+        self.assertIn('password', form.errors)
+
+    def test_registration_rejects_common_password(self):
+        form = self._reg_form('password')
+        self.assertFalse(form.is_valid())
+
+    def test_registration_rejects_numeric_only_password(self):
+        form = self._reg_form('12345678')
+        self.assertFalse(form.is_valid())
+
+    def test_registration_accepts_strong_password(self):
+        form = self._reg_form('Str0ng!Pass')
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_registration_rejects_mismatched_passwords(self):
+        form = self._reg_form('Str0ng!Pass', confirm='Different!1')
+        self.assertFalse(form.is_valid())
+        self.assertIn('confirm_password', form.errors)
+
+    def test_password_change_rejects_short_password(self):
+        form = self._passwd_form('abc123')
+        self.assertFalse(form.is_valid())
+        self.assertIn('newpasswd', form.errors)
+
+    def test_password_change_rejects_common_password(self):
+        form = self._passwd_form('password1')
+        self.assertFalse(form.is_valid())
+
+    def test_password_change_rejects_numeric_only_password(self):
+        form = self._passwd_form('12345678')
+        self.assertFalse(form.is_valid())
+
+    def test_password_change_accepts_strong_password(self):
+        form = self._passwd_form('Str0ng!Pass')
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_registration_rejects_username_similar_password(self):
+        # UserAttributeSimilarityValidator must receive the user instance to work.
+        # 'testpwuser1' is too similar to username 'testpwuser'.
+        form = self._reg_form('testpwuser1')
+        self.assertFalse(form.is_valid())
