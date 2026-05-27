@@ -214,7 +214,7 @@ def unsubscribe(request, username, token, oneclick = False):
             raise ESPError("User " + users[0].username + " is already unsubscribed.")
     else:
         raise ESPError("No user matching that unsubscribe request.")
-    
+
     # if they are logged into a different account
     # tell them to log out and try again
     if request.user.is_authenticated and request.user != user:
