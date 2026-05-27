@@ -49,6 +49,7 @@ from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
+from django.utils import timezone
 from datetime import datetime, timedelta
 import json
 
@@ -76,7 +77,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
-                                        help_text=mark_safe('<span class="tex2jax_ignore">Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)</span>'))
+                                        help_text=mark_safe('<span class="tex2jax_ignore">Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\\pi$$ to mention &pi;)</span>'))
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
 
@@ -356,7 +357,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
     def _slot_too_late(self, event):
         """ Determine whether it is too late to register for a time slot. """
         # Don't allow signing up for a spot insuficiently far in advance
-        return event.start - datetime.now() < timedelta(days=0)
+        return event.start - timezone.now() < timedelta(days=0)
 
     def _slot_is_available(self, event):
         """ Determine whether a time slot is available. """

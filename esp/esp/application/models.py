@@ -114,7 +114,7 @@ class StudentProgramApp(models.Model):
     submission_id = models.IntegerField(null=True, unique=True)
 
     def __str__(self):
-        return "{}'s app for {}".format(self.user, self.program)
+        return f"{self.user}'s app for {self.program}"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -183,7 +183,7 @@ class StudentClassApp(models.Model):
             ])
 
     def __str__(self):
-        return "{}'s app for {}".format(self.app.user, self.subject)
+        return f"{self.app.user}'s app for {self.subject}"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -225,7 +225,7 @@ class FormstackStudentProgramAppManager(models.Manager):
         try:
             user = ESPUser.objects.get(username=username)
         except ESPUser.DoesNotExist:
-            raise LookupError("no matching user {0}".format(username))
+            raise LookupError(f"no matching user {username}")
 
         # define mapping from string to class subject
         def get_subject(s):

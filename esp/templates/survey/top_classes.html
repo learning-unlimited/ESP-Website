@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}{{ program.niceName }} Top-Rated Classes{% endblock %}
+{% block title %}{{ program.niceName }} {% if is_favorite_class %}Most Common Favorite Classes{% else %}Top-Rated Classes{% endif %}{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -29,7 +29,7 @@
 
 {% block content %}
 
-<h1>{{ program.niceName }} Top-Rated Classes</h1>
+<h1>{{ program.niceName }} {% if is_favorite_class %}Most Common Favorite Classes{% else %}Top-Rated Classes{% endif %}</h1>
 
 {% if perclass_data %}
 
@@ -41,10 +41,12 @@
         </div>
         <div class="panel-body">
             <form action="" method="get" class="form-inline">
+                {% if not is_favorite_class %}
                 <div class="form-group">
                     <label for="rating_cut">Minimum rating</label>
                     <input type="text" class="form-control input-sm" size="4" name="rating_cut" id="rating_cut" value="{{ rating_cut }}" />
                 </div>
+                {% endif %}
                 <div class="form-group" style="margin-left:12px;">
                     <label for="num_cut">Min. number of ratings</label>
                     <input type="text" class="form-control input-sm" size="4" name="num_cut" id="num_cut" value="{{ num_cut }}" />
@@ -84,8 +86,9 @@
             <tr>
                 <th>Class ID</th>
                 <th>Class Name</th>
-                <th>Rating</th>
-                <th>Num. Ratings</th>
+                {% if not is_favorite_class %}<th>Rating</th>{% endif %}
+                <th>{% if is_favorite_class %}Number of Votes{% else %}Num. Ratings{% endif %}</th>
+                {% if is_favorite_class %}<th>Enrollment</th>{% endif %}
                 <th>Teacher First Name</th>
                 <th>Teacher Last Name</th>
                 <th>Teacher Email</th>
@@ -97,8 +100,9 @@
             <tr>
                 <td rowspan="{{ c.numteachers }}">{{ c.class.emailcode }}</td>
                 <td rowspan="{{ c.numteachers }}">{{ c.class.title }}</td>
-                <td rowspan="{{ c.numteachers }}" class="rating-cell">{{ c.avg|floatformat:2 }}</td>
+                {% if not is_favorite_class %}<td rowspan="{{ c.numteachers }}" class="rating-cell">{{ c.avg|floatformat:2 }}</td>{% endif %}
                 <td rowspan="{{ c.numteachers }}">{{ c.numratings }}</td>
+                {% if is_favorite_class %}<td rowspan="{{ c.numteachers }}">{{ c.enrollment }}</td>{% endif %}
                 <td>{{ c.teacher.first_name }}</td>
                 <td>{{ c.teacher.last_name }}</td>
                 <td>{{ c.teacher.email }}</td>
