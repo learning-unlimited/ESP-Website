@@ -33,6 +33,16 @@ class Migration(migrations.Migration):
                 help_text='If blank, has always started.',
             ),
         ),
+        migrations.AlterField(
+            model_name='programmoduleobj',
+            name='start_date',
+            field=models.DateTimeField(
+                blank=True,
+                null=True,
+                default=datetime.datetime.now,
+                help_text='If blank, has always started.',
+            ),
+        ),
         migrations.AddField(
             model_name='programmoduleobj',
             name='end_date',
