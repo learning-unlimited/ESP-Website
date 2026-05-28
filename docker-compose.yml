@@ -34,6 +34,9 @@ services:
     volumes:
       # Mount source code for live reloading (dev only)
       - .:/app:cached
+      # Named volume keeps image-baked node_modules visible even under the
+      # source mount — prevents FileNotFoundError on fresh clones/builds.
+      - theme_node_modules:/app/esp/public/media/theme_editor/node_modules
     ports:
       - "8000:8000"
     depends_on:
@@ -51,6 +54,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  theme_node_modules:
     driver: local
 
 networks:
