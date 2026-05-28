@@ -20,6 +20,16 @@ except psycopg2.OperationalError:
 done
 echo ">>> PostgreSQL is ready!"
 
+# Install npm theme dependencies if missing (Bootstrap 3 + Bootswatch LESS sources).
+# node_modules is gitignored, so a fresh clone/build needs this step.
+NPM_MARKER="/app/esp/public/media/theme_editor/node_modules/bootstrap/less/bootstrap.less"
+if [ ! -f "$NPM_MARKER" ]; then
+    echo ">>> Installing npm theme dependencies (Bootstrap 3 / Bootswatch)..."
+    (cd /app/esp/public/media/theme_editor && npm ci)
+else
+    echo ">>> npm theme dependencies already installed."
+fi
+
 # Always run migrations on container start so new migrations
 # are applied automatically when switching branches or pulling code.
 echo ">>> Running migrations..."
