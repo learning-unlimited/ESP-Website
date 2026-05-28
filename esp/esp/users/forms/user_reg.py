@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.password_validation import validate_password
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
+import socket
 
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import StrippedCharField
@@ -25,7 +26,7 @@ class ValidHostEmailField(forms.EmailField):
                 DNS.DiscoverNameServers()
                 if len(DNS.Request(qtype='a').req(email_host).answers) == 0 and len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
                     raise forms.ValidationError(f'"{email_host}" is not a valid email host')
-            except (IOError, DNS.DNSError, Exception): # (no resolv.conf, no nameservers, transient DNS lookup failure)
+            except (DNS.DNSError, FileNotFoundError, socket.gaierror):  # (no resolv.conf, no nameservers, transient socket.gaierror lookup failure)
                 pass
         except ImportError: # no PyDNS
             pass
