@@ -2,7 +2,7 @@
 Django==5.2.14
 
 # Django-specific packages
-git+https://github.com/learning-unlimited/django-argcache.git@v0.4 # Handles caching
+git+https://github.com/learning-unlimited/django-argcache.git@v0.5 # Handles caching
 django-debug-toolbar==5.2.0 # Provides the debug toolbar
 django-extensions==4.1 # Provides shell_plus, runserver_plus, and other utilities
 django-filebrowser-no-grappelli==4.0.2 # Provides admin panel interface for files
