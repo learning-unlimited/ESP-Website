@@ -86,7 +86,10 @@ mlist.password = sha.new('%s').hexdigest()
 del sha
 """
     if not password:
-        password = get_random_string()
+        password = get_random_string(
+            length=10,
+            allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',
+        )
 
     data_str = data_str_template % (password)
 
@@ -106,7 +109,10 @@ mlist.mod_password = sha.new('%s').hexdigest()
 del sha
 """
     if not password:
-        password = get_random_string()
+        password = get_random_string(
+            length=10,
+            allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',
+        )
 
     data_str = data_str_template % (password)
 
