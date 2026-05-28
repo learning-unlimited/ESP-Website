@@ -28,10 +28,13 @@ class CacheFlushTestCase(TestCase):
         # Clear the thread-local after every test to avoid state leaking
         # between tests run in the same thread.
         clear_current_request()
-        self._flush_cache()
         super().tearDown()
 
     def _flush_cache(self):
+        self.__class__._flush_cache_class()
+
+    @classmethod
+    def _flush_cache_class(cls):
         """ Don't do any actual fancy deletions; just change the cache prefix """
         if hasattr(cache, "flush_all"):
             cache.flush_all()
@@ -48,6 +51,15 @@ class CacheFlushTestCase(TestCase):
             settings.CACHE_PREFIX = ''.join( random.sample( string.ascii_letters + string.digits, 16 ) )
             from django.conf import settings as django_settings
             django_settings.CACHE_PREFIX = settings.CACHE_PREFIX
+
+    @classmethod
+    def _fixture_setup(cls):
+        super()._fixture_setup()
+        cls._flush_cache_class()
+
+    def _fixture_teardown(self):
+        self._flush_cache()
+        super()._fixture_teardown()
 
 def user_role_setup(names=['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']):
     from django.contrib.auth.models import Group
