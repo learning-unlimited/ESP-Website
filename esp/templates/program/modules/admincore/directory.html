@@ -83,8 +83,8 @@ $j(document).ready(function() {
 Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="https://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
 {% end_inline_program_qsd_block %}
 
-<div class="row-fluid">
-    <div class="span10 offset1">
+<div class="row">
+    <div class="col-md-10 col-md-offset-1">
         <table class="table table-condensed" align="center" width="400">
             <tr class="well"><th width="85%">Steps to Set Up This Program</th><th>Done?</th></tr>
             {% for module in modules %}

@@ -3,8 +3,8 @@
 {% block content %}
 
   {% block heading %}
-    <div class="row-fluid" style="margin-top: 20px;">
-      <div class="span12">
+    <div class="row" style="margin-top: 20px;">
+      <div class="col-md-12">
         <div class="well">
           <h1>New Site</h1>
           <h3>You've just set up a Web site for {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}!</h3>
@@ -19,23 +19,23 @@
   {% load render_qsd %}
 
   {% inline_qsd_block "homepage_qsdpart" %}
-    <div class="row-fluid" style="margin-top:30px; text-align:center;">
+    <div class="row" style="margin-top:30px; text-align:center;">
 
-      <div class="span4">
+      <div class="col-md-4">
         <div class="well" style="padding:30px; min-height:160px;">
           <a href="/learn/index.html"><h2>Learn</h2></a>
           <p>Edit this page to serve as a starting point for your students.</p>
         </div>
       </div>
 
-      <div class="span4">
+      <div class="col-md-4">
         <div class="well" style="padding:30px; min-height:160px;">
           <a href="/teach/index.html"><h2>Teach</h2></a>
           <p>Edit this page to serve as a starting point for your teachers.</p>
         </div>
       </div>
 
-      <div class="span4">
+      <div class="col-md-4">
         <div class="well" style="padding:30px; min-height:160px;">
           <a href="/volunteer/index.html"><h2>Volunteer</h2></a>
           <p>Edit this page to serve as a starting point for your volunteers.</p>
