@@ -466,15 +466,21 @@ class ThemeController(object):
             For comparing the state of directories that are copied
             from the theme data.    """
 
+        real_dir = os.path.realpath(dir)
         result = []
         for filename in os.listdir(dir):
             if filename == '__pycache__':
                 continue
             full_filename = os.path.join(dir, filename)
+            # Resolve symlinks and verify the path stays inside dir to
+            # prevent traversal via symlinks in theme or media directories.
+            if not os.path.realpath(full_filename).startswith(real_dir + os.sep):
+                continue
             if os.path.isdir(full_filename):
                 result += self.get_file_summaries(full_filename)
             else:
-                file_data = open(full_filename, 'rb').read()
+                with open(full_filename, 'rb') as f:
+                    file_data = f.read()
                 result.append((full_filename, os.path.getsize(full_filename), hashlib.sha1(file_data).hexdigest()))
         return result
 
