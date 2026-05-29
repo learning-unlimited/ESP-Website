@@ -34,55 +34,27 @@ Learning Unlimited, Inc.
 """
 
 from debug_toolbar.panels.templates import TemplatesPanel as BaseTemplatesPanel
-from django.utils.translation import gettext_lazy as _
 from django.core import signing
-from os.path import normpath
 
 # Override the debug toolbar's TemplatesPanel to fix how it behaves with template overrides
 class TemplatesPanel(BaseTemplatesPanel):
     def generate_stats(self, request, response):
-        template_context = []
+        # Delegate the heavy lifting (context processing, template_dirs,
+        # record_stats) to the parent. We only need to override behavior
+        # for templates marked with our custom "(template override)" origin
+        # marker: the parent would sign template.origin.name, but for these
+        # we sign template.origin.template_name so the template-source view
+        # can locate the underlying file.
+        result = super().generate_stats(request, response)
         for template_data in self.templates:
-            info = {}
-            # Clean up some info about templates
-            template = template_data.get("template", None)
-            if hasattr(template, "origin") and template.origin and template.origin.name:
-                template.origin_name = template.origin.name
-                if template.origin.name == "(template override)":
-                    template.origin_hash = signing.dumps(template.origin.template_name)
-                else:
-                    template.origin_hash = signing.dumps(template.origin.name)
-            else:
-                template.origin_name = _("No origin")
-                template.origin_hash = ""
-            info["template"] = template
-            # Clean up context for better readability
-            if self.toolbar.config["SHOW_TEMPLATE_CONTEXT"]:
-                context_list = template_data.get("context", [])
-                info["context"] = "\n".join(context_list)
-            template_context.append(info)
-
-        # Fetch context_processors/template_dirs from any template
-        if self.templates:
-            context_processors = self.templates[0]["context_processors"]
-            template = self.templates[0]["template"]
-            # django templates have the 'engine' attribute, while jinja
-            # templates use 'backend'
-            engine_backend = getattr(template, "engine", None) or getattr(
-                template, "backend"
-            )
-            template_dirs = engine_backend.dirs
-        else:
-            context_processors = None
-            template_dirs = []
-
-        self.record_stats(
-            {
-                "templates": template_context,
-                "template_dirs": [normpath(x) for x in template_dirs],
-                "context_processors": context_processors,
-            }
-        )
+            template = template_data.get("template")
+            if (
+                hasattr(template, "origin")
+                and template.origin
+                and template.origin.name == "(template override)"
+            ):
+                template.origin_hash = signing.dumps(template.origin.template_name)
+        return result
 
 import os
 import threading
@@ -118,7 +90,7 @@ def format_stacktrace_simple(trace):
 class SafeCachePanel(CachePanel):
     """Cache panel that prevents recursion when cache calls trigger template loading."""
 
-    def _store_call_info(self, sender, name, time_taken, return_value, args, kwargs, trace, template_info, backend, **kw):
+    def _store_call_info(self, name, time_taken, return_value, args, kwargs, trace, template_info, backend):
         depth = getattr(_cache_panel_depth, 'depth', 0)
         _cache_panel_depth.depth = depth + 1
 
@@ -136,8 +108,8 @@ class SafeCachePanel(CachePanel):
                 })
             else:
                 super()._store_call_info(
-                    sender, name, time_taken, return_value,
-                    args, kwargs, trace, template_info, backend, **kw
+                    name, time_taken, return_value,
+                    args, kwargs, trace, template_info, backend
                 )
         finally:
             _cache_panel_depth.depth = depth
