@@ -461,27 +461,35 @@ class ThemeController(object):
 
         return backup_info
 
-    def get_file_summaries(self, dir):
-        """ Retrieve a list of (filename, size, hash of contents) tuples.
-            For comparing the state of directories that are copied
-            from the theme data.    """
+    def get_file_summaries(self, base_dir, current_dir=None):
+        """ Retrieve a list of (relative_path, size, hash of contents) tuples
+            for all files under base_dir.
 
-        real_dir = os.path.realpath(dir)
+            Returns relative paths so callers never use an absolute
+            user-influenced path in a path expression.  Uses os.path.realpath
+            to resolve symlinks and verify every entry stays inside base_dir.
+        """
+        if current_dir is None:
+            current_dir = base_dir
+        real_base = os.path.realpath(base_dir)
         result = []
-        for filename in os.listdir(dir):
-            if filename == '__pycache__':
+        for entry in os.listdir(current_dir):
+            if entry == '__pycache__':
                 continue
-            full_filename = os.path.join(dir, filename)
-            # Resolve symlinks and verify the path stays inside dir to
-            # prevent traversal via symlinks in theme or media directories.
-            if not os.path.realpath(full_filename).startswith(real_dir + os.sep):
+            full_path = os.path.join(current_dir, entry)
+            real_path = os.path.realpath(full_path)
+            # Skip anything that resolves outside base_dir (symlink traversal guard).
+            if not real_path.startswith(real_base + os.sep):
                 continue
-            if os.path.isdir(full_filename):
-                result += self.get_file_summaries(full_filename)
+            # Derive the relative path purely from the verified real paths —
+            # the slice never carries user-controlled directory prefixes.
+            rel_path = real_path[len(real_base) + 1:]
+            if os.path.isdir(real_path):
+                result += self.get_file_summaries(base_dir, real_path)
             else:
-                with open(full_filename, 'rb') as f:
+                with open(real_path, 'rb') as f:
                     file_data = f.read()
-                result.append((full_filename, os.path.getsize(full_filename), hashlib.sha1(file_data).hexdigest()))
+                result.append((rel_path, os.path.getsize(real_path), hashlib.sha1(file_data).hexdigest()))
         return result
 
     def get_directory_differences(self, src_dir, dest_dir):
@@ -489,25 +497,17 @@ class ThemeController(object):
             and dest_dir but with different file contents.  """
 
         differences = []
-        summaries_src = self.get_file_summaries(src_dir)
-        summaries_dest = self.get_file_summaries(dest_dir)
+        # get_file_summaries already returns relative paths, so no further
+        # path manipulation on user-influenced values is needed here.
+        index_src = {rel: (sz, h) for (rel, sz, h) in self.get_file_summaries(src_dir)}
 
-        #   Build an index of the source files.
-        index_src = {}
-        for (filename, filesize, hash) in summaries_src:
-            rel_filename_src = os.path.relpath(filename, src_dir)
-            index_src[rel_filename_src] = (filesize, hash)
-
-        #   Iterate over destination files and see which ones match.
-        #   Compare the hashes of those files.
-        for (filename, filesize_dest, hash_dest) in summaries_dest:
-            rel_filename_dest = os.path.relpath(filename, dest_dir)
-            if rel_filename_dest in index_src:
-                (filesize_src, hash_src) = index_src[rel_filename_dest]
+        for (rel_path, filesize_dest, hash_dest) in self.get_file_summaries(dest_dir):
+            if rel_path in index_src:
+                (filesize_src, hash_src) = index_src[rel_path]
                 if hash_src != hash_dest:
                     differences.append({
-                        'filename': rel_filename_dest,
-                        'filename_hash': hashlib.sha1(rel_filename_dest.encode("UTF-8")).hexdigest(),
+                        'filename': rel_path,
+                        'filename_hash': hashlib.sha1(rel_path.encode("UTF-8")).hexdigest(),
                         'source_size': filesize_src,
                         'dest_size': filesize_dest,
                     })
