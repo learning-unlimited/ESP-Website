@@ -110,7 +110,11 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
             if encoding is None:
                 encoding = settings.DEFAULT_CHARSET
 
-            has_qsd_bits = user.isAdministrator()
+            from esp.dbmail.models import EmailBounceRecord
+            bouncing = EmailBounceRecord.objects.filter(
+                email__iexact=user.email,
+                disabled=True
+            ).exists()
 
             new_values = {'cur_username': user.username,
                           'cur_userid': user.id,
@@ -124,6 +128,7 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
                           'cur_yog': user.getYOG(),
                           'cur_grade': user.getGrade(),
                           'cur_roles': urllib.parse.quote(",".join(user.getUserTypes())),
+                          'cur_bouncing_email_disabled': '1' if bouncing else '0',
                           }
 
             for key, value in new_values.items():
@@ -142,7 +147,8 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
                                          'cur_other_user', 'cur_retTitle',
                                          'cur_admin', 'cur_roles',
                                          'cur_yog', 'cur_grade',
-                                         'cur_qsd_bits') if request.COOKIES.get(x, False)]
+                                         'cur_qsd_bits',
+                                         'cur_bouncing_email_disabled') if request.COOKIES.get(x, False)]
 
             list(map(response.delete_cookie, cookies_to_delete))
             modified_cookies = (len(cookies_to_delete) > 0)

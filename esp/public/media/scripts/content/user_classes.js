@@ -53,6 +53,12 @@ function update_user_classes() {
 
     $j("#user_username").text(username);
     $j("#user_userid").text(esp_user.cur_userid);
+
+    if (esp_user.cur_bouncing_email_disabled === "1") {
+        $j(".bouncing-alert").removeClass("hidden");
+    } else {
+        $j(".bouncing-alert").addClass("hidden");
+    }
 }
 
 $j(document).ready(update_user_classes);

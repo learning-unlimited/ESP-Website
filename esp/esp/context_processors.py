@@ -11,22 +11,7 @@ def espuserified_request(request):
     return {'request': request, 'user': None, 'messages': None, 'perms': None}
 
 def esp_user(request):
-    def get_bouncing():
-        if request.user.is_authenticated:
-            try:
-                from esp.dbmail.models import EmailBounceRecord
-                return EmailBounceRecord.objects.filter(
-                    email__iexact=request.user.email,
-                    disabled=True
-                ).exists()
-            except Exception:
-                pass
-        return False
-
-    return {
-        'user': lambda: request.user,
-        'bouncing_email_disabled': get_bouncing
-    }
+    return {'user': lambda: request.user}
 
 def email_settings(request):
     context = {}
