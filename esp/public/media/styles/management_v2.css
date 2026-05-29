@@ -327,8 +327,8 @@ div.dashboard-v2-container {
 }
 
 /* Custom dashboard button base styles */
-html body div#main .dashboard-main-card .pill-grid a.dashboard-btn,
-html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a {
+html body .dashboard-v2-container .dashboard-main-card .pill-grid a.dashboard-btn,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid .other-module-wrapper a {
     border-radius: 20px;
     font-weight: normal;
     font-size: 13px;
@@ -346,18 +346,18 @@ html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a {
     line-height: 1.42857143;
 }
 
-html body div#main .dashboard-main-card .pill-grid a.dashboard-btn i,
-html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a i {
+html body .dashboard-v2-container .dashboard-main-card .pill-grid a.dashboard-btn i,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid .other-module-wrapper a i {
     color: #ffffff;
     margin-right: 4px;
 }
 
-html body div#main .dashboard-main-card .pill-grid a.dashboard-btn:hover,
-html body div#main .dashboard-main-card .pill-grid a.dashboard-btn:focus,
-html body div#main .dashboard-main-card .pill-grid a.dashboard-btn:active,
-html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a:hover,
-html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a:focus,
-html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a:active {
+html body .dashboard-v2-container .dashboard-main-card .pill-grid a.dashboard-btn:hover,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid a.dashboard-btn:focus,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid a.dashboard-btn:active,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid .other-module-wrapper a:hover,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid .other-module-wrapper a:focus,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid .other-module-wrapper a:active {
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
     text-decoration: none;
@@ -365,48 +365,48 @@ html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a:activ
 }
 
 /* 4-color cycling: blue, green, orange, purple */
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+1),
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+1):hover,
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+1):focus,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+1) a,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+1) a:hover,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+1) a:focus,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+1),
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+1):hover,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+1):focus,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+1) a,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+1) a:hover,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+1) a:focus,
 #setup_timeline .timeline-step-icon:nth-child(4n+1) .step-icon-inner {
     background-color: #5b9bd5;
     border-color: #5b9bd5;
     color: #ffffff;
 }
 
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+2),
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+2):hover,
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+2):focus,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+2) a,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+2) a:hover,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+2) a:focus,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+2),
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+2):hover,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+2):focus,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+2) a,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+2) a:hover,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+2) a:focus,
 #setup_timeline .timeline-step-icon:nth-child(4n+2) .step-icon-inner {
     background-color: #70ad47;
     border-color: #70ad47;
     color: #ffffff;
 }
 
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+3),
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+3):hover,
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+3):focus,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+3) a,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+3) a:hover,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+3) a:focus,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+3),
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+3):hover,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+3):focus,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+3) a,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+3) a:hover,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+3) a:focus,
 #setup_timeline .timeline-step-icon:nth-child(4n+3) .step-icon-inner {
     background-color: #ed7d31;
     border-color: #ed7d31;
     color: #ffffff;
 }
 
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+4),
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+4):hover,
-html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+4):focus,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+4) a,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+4) a:hover,
-html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+4) a:focus,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+4),
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+4):hover,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+4):focus,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+4) a,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+4) a:hover,
+html body .dashboard-v2-container .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+4) a:focus,
 #setup_timeline .timeline-step-icon:nth-child(4n+4) .step-icon-inner {
     background-color: #7c5cbf;
     border-color: #7c5cbf;
