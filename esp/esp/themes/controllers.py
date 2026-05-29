@@ -150,7 +150,12 @@ class ThemeController(object):
         self.set_template_settings(self.get_template_settings())
 
     def base_dir(self, theme_name):
-        return os.path.join(THEME_PATH, theme_name)
+        # Resolve and verify the path stays inside THEME_PATH to prevent traversal.
+        resolved = os.path.realpath(os.path.join(THEME_PATH, theme_name))
+        theme_root = os.path.realpath(THEME_PATH)
+        if not resolved.startswith(theme_root + os.sep) and resolved != theme_root:
+            raise ValueError(f'Invalid theme name: {theme_name!r}')
+        return resolved
 
     def list_filenames(self, dir, file_regexp, mask_base=False):
         """ Quick search for files in the specified directory (dir) which match
