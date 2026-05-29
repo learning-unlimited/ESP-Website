@@ -45,6 +45,9 @@ No classes have yet been approved and scheduled!
 \textit{Maximum Size: {{ sec.capacity }} } \\
 \textbf{% templatetag openbrace %}{{ sec.friendly_times|join:"} \\ \textbf{" }} } 
 {% if sec.isFull %}\textbf{(FULL)}{% endif %}
+{% if show_rooms and sec.prettyrooms %}
+\\ \textit{Room: {{ sec.prettyrooms|join:", "|texescape }} }
+{% endif %}
 %\end{tabular}
 \vspace{.1in}
 {% endwith %}
