@@ -55,6 +55,10 @@ services:
 volumes:
   postgres_data:
     driver: local
+  # theme_node_modules persists the image-baked Bootstrap/Bootswatch node_modules
+  # across source-code mounts. Named volumes are NOT updated by `docker compose build`
+  # alone — if package.json changes, run:
+  #   docker volume rm <project>_theme_node_modules && docker compose up --build
   theme_node_modules:
     driver: local
 

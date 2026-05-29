@@ -207,6 +207,9 @@ class ThemeController(object):
             result += self.global_less()
 
             if bootswatch_theme:
+                valid_bootswatch = self.get_bootswatch_themes()
+                if bootswatch_theme not in valid_bootswatch:
+                    raise ValueError(f'Unknown Bootswatch theme: {bootswatch_theme!r}')
                 # Bootswatch variables must precede bootstrap.less to override its defaults.
                 # Wrong order = Bootswatch colors have zero effect.
                 result.append(os.path.normpath(os.path.join(
@@ -340,14 +343,9 @@ class ThemeController(object):
         #   Load LESS files in order of search path
         less_data = ''
         for filename in self.get_less_names(theme_name, bootswatch_theme=bootswatch_theme):
-            less_file = open(filename)
-            logger.debug('Including LESS source %s', filename)
-            less_data += '\n' + less_file.read()
-            less_file.close()
-
-        #   Make icon image path load from the CDN by default
-        if 'iconSpritePath' not in variable_data:
-            variable_data['iconSpritePath'] = f'"{settings.CDN_ADDRESS}/bootstrap/img/glyphicons-halflings.png"'
+            with open(filename) as less_file:
+                logger.debug('Including LESS source %s', filename)
+                less_data += '\n' + less_file.read()
 
         #   Replace all variable declarations for which we have a value defined
         for (variable_name, variable_value) in variable_data.items():

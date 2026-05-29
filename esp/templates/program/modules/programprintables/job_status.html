@@ -44,7 +44,7 @@
             <h4>Success!</h4>
             <p>Your document has been generated.</p>
             {% if job.file %}
-            <a href="?download=1" class="btn btn-primary btn-large"><span class="glyphicon glyphicon-download-alt"></span> Download {{ job.job_type|title }}</a>
+            <a href="?download=1" class="btn btn-primary btn-lg"><span class="glyphicon glyphicon-download-alt"></span> Download {{ job.job_type|title }}</a>
             {% endif %}
 
             {% elif job.status == 'FAILED' %}
