@@ -44,6 +44,11 @@
           </div>
           {% endfor %}
           {% endif %}
+          {% if bouncing_email_disabled %}
+          <div class="alert alert-danger">
+            <strong>Action Required:</strong> We couldn't deliver emails to your address. Please <a href="{% url 'myesp_profile' %}">verify or update your email address</a> in your profile.
+          </div>
+          {% endif %}
           {% if active_program_tags %}
           <div class="alert alert-info alert-dismissible" role="alert">
             <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>

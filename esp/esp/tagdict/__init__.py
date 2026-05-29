@@ -554,6 +554,13 @@ all_global_tags = {
         'category': 'manage',
         'is_setting': True,
     },
+    'last_sendgrid_bounce_poll_time': {
+        'is_boolean': False,
+        'help_text': 'Unix timestamp (as a string) of the last time the SendGrid Bounces API was polled for hard bounces. Used by the deactivate_bouncing_emails management command.',
+        'default': None,
+        'category': 'manage',
+        'is_setting': False,
+    },
 }
 
 # Any tag used with Tag.getProgramTag()

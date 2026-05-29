@@ -44,6 +44,14 @@ except IOError:
     sys.exit(0)
 
 try:
+    from django.core.management import call_command
+    try:
+        logger.info('dbmail_cron: fetching bounces from SendGrid.')
+        call_command('deactivate_bouncing_emails')
+    except Exception as e:
+        logger.error('dbmail_cron: failed to fetch bounces, proceeding with mail delivery.')
+        logger.exception(e)
+
     logger.info('dbmail_cron: beginning to process messages.')
 
     # Try to deactivate bouncing emails via SendGrid before queuing more emails

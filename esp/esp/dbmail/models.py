@@ -371,6 +371,11 @@ class MessageRequest(models.Model):
             # For each user, create an EmailRequest and a TextOfEmail
             # for each address given by the output of the sendto function.
             for address_pair in sendto_fn(user):
+                raw_email = address_pair[0]
+                if EmailBounceRecord.objects.filter(email__iexact=raw_email, disabled=True).exists():
+                    logger.info(f"Skipping bouncing email address: {raw_email}")
+                    continue
+
                 newemailrequest = {'target': user, 'msgreq': self}
                 send_to = ESPUser.email_sendto_address(*address_pair)
                 newtxt = {
@@ -679,3 +684,33 @@ class CustomSMTPBackend(SMTPEmailBackend):
                 raise
             return False
         return True
+
+class EmailBounceRecord(models.Model):
+    """ Record of a hard bounce from SendGrid for a particular email address """
+    email = models.EmailField(unique=True)
+    bounce_count = models.IntegerField(default=1)
+    last_bounced_at = models.DateTimeField(null=True, blank=True)
+    status_code = models.CharField(max_length=10, blank=True, null=True)
+    reason = models.TextField(blank=True, null=True)
+    disabled = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.email} (Disabled: {self.disabled})"
+
+from django.db.models import signals
+from django import dispatch
+
+@dispatch.receiver(signals.pre_save, sender=ESPUser, dispatch_uid='reset_email_bounce_record_save')
+def reset_email_bounce_record_save(sender, instance, **kwargs):
+    """When a user updates their email address, clear any bounce record for their OLD address
+    so that the new address is not pre-blocked from receiving emails."""
+    if instance.id is None:
+        return
+    try:
+        old_user = ESPUser.objects.get(id=instance.id)
+    except ESPUser.DoesNotExist:
+        return
+    if old_user.email != instance.email:
+        # Delete the bounce record for the OLD email, not the new one.
+        # The old address had the bounce; we want to allow fresh delivery to the new one.
+        EmailBounceRecord.objects.filter(email__iexact=old_user.email).delete()
