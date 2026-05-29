@@ -419,6 +419,7 @@ class MessageRequestAdminTest(TestCase):
         self.assertIsNotNone(mr)
         self.assertIsNone(mr.processed_by)
 
+
 class EmailBounceRecordTest(TestCase):
     def setUp(self):
         super().setUp()
@@ -430,10 +431,14 @@ class EmailBounceRecordTest(TestCase):
         )
 
     def test_bouncing_email_skipped_in_process(self):
-        from esp.dbmail.models import EmailBounceRecord, MessageRequest, EmailRequest, TextOfEmail
-        
-        EmailBounceRecord.objects.create(email='bounce@example.com', disabled=True)
-        
+        from esp.dbmail.models import (
+            EmailBounceRecord, MessageRequest, EmailRequest, TextOfEmail
+        )
+
+        EmailBounceRecord.objects.create(
+            email='bounce@example.com', disabled=True
+        )
+
         recipients = PersistentQueryFilter.create_from_Q(
             item_model=ESPUser,
             q_filter=Q(id=self.user.id),
@@ -446,30 +451,42 @@ class EmailBounceRecordTest(TestCase):
             creator=self.user
         )
         msg_req.process()
-        
-        self.assertEqual(EmailRequest.objects.filter(msgreq=msg_req).count(), 0)
-        self.assertEqual(TextOfEmail.objects.filter(messagerequest=msg_req).count(), 0)
-        
+
+        self.assertEqual(
+            EmailRequest.objects.filter(msgreq=msg_req).count(), 0
+        )
+        self.assertEqual(
+            TextOfEmail.objects.filter(messagerequest=msg_req).count(), 0
+        )
+
     def test_reset_bounce_record_on_email_update(self):
         from esp.dbmail.models import EmailBounceRecord
-        
+
         # Mark the user's CURRENT email as bouncing
-        EmailBounceRecord.objects.create(email='bounce@example.com', disabled=True)
-        
+        EmailBounceRecord.objects.create(
+            email='bounce@example.com', disabled=True
+        )
+
         # Change to a new email
         self.user.email = 'new@example.com'
         self.user.save()
-        
-        # The OLD email's bounce record should be cleared (not the new one)
-        self.assertFalse(EmailBounceRecord.objects.filter(email='bounce@example.com').exists())
 
-    @patch('esp.dbmail.management.commands.deactivate_bouncing_emails.SendGridAPIClient')
+        # The OLD email's bounce record should be cleared (not the new one)
+        self.assertFalse(
+            EmailBounceRecord.objects.filter(email='bounce@example.com').exists()
+        )
+
+    @patch(
+        'esp.dbmail.management.commands.'
+        'deactivate_bouncing_emails.SendGridAPIClient'
+    )
     def test_management_command(self, MockSendGrid):
         from django.core.management import call_command
         from esp.dbmail.models import EmailBounceRecord
         import json
-        
+
         mock_sg = MockSendGrid.return_value
+
         class MockResponse:
             status_code = 200
             body = json.dumps([
@@ -481,13 +498,14 @@ class EmailBounceRecordTest(TestCase):
                 }
             ]).encode('utf-8')
         mock_sg.client.suppression.bounces.get.return_value = MockResponse()
-        
-        with patch('esp.dbmail.management.commands.deactivate_bouncing_emails.settings') as mock_settings:
+
+        mock_path = (
+            'esp.dbmail.management.commands.deactivate_bouncing_emails.settings'
+        )
+        with patch(mock_path) as mock_settings:
             mock_settings.SENDGRID_API_KEY = 'dummy'
             call_command('deactivate_bouncing_emails')
-        
+
         record = EmailBounceRecord.objects.get(email='bounce@example.com')
         self.assertTrue(record.disabled)
         self.assertEqual(record.status_code, "5.1.1")
-
-

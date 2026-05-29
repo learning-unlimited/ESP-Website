@@ -700,10 +700,17 @@ class EmailBounceRecord(models.Model):
 from django.db.models import signals
 from django import dispatch
 
-@dispatch.receiver(signals.pre_save, sender=ESPUser, dispatch_uid='reset_email_bounce_record_save')
+@dispatch.receiver(
+    signals.pre_save,
+    sender=ESPUser,
+    dispatch_uid='reset_email_bounce_record_save'
+)
 def reset_email_bounce_record_save(sender, instance, **kwargs):
-    """When a user updates their email address, clear any bounce record for their OLD address
-    so that the new address is not pre-blocked from receiving emails."""
+    """
+    When a user updates their email address, clear any bounce record
+    for their OLD address so that the new address is not pre-blocked
+    from receiving emails.
+    """
     if instance.id is None:
         return
     try:
@@ -712,5 +719,6 @@ def reset_email_bounce_record_save(sender, instance, **kwargs):
         return
     if old_user.email != instance.email:
         # Delete the bounce record for the OLD email, not the new one.
-        # The old address had the bounce; we want to allow fresh delivery to the new one.
+        # The old address had the bounce; we want to allow fresh
+        # delivery to the new one.
         EmailBounceRecord.objects.filter(email__iexact=old_user.email).delete()

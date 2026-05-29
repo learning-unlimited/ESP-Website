@@ -49,19 +49,12 @@ try:
         logger.info('dbmail_cron: fetching bounces from SendGrid.')
         call_command('deactivate_bouncing_emails')
     except Exception as e:
-        logger.error('dbmail_cron: failed to fetch bounces, proceeding with mail delivery.')
+        logger.error(
+            'dbmail_cron: failed to fetch bounces, proceeding with mail delivery.'
+        )
         logger.exception(e)
 
     logger.info('dbmail_cron: beginning to process messages.')
-
-    # Try to deactivate bouncing emails via SendGrid before queuing more emails
-    from django.core.management import call_command
-    try:
-        logger.info('dbmail_cron: checking for hard bouncing emails to deactivate.')
-        call_command('deactivate_bouncing_emails')
-    except Exception as e:
-        logger.exception(f'dbmail_cron: ignored error during deactivate_bouncing_emails: {e}')
-
     process_messages()
     logger.info('dbmail_cron: message processing complete; sending emails.')
     send_email_requests()
