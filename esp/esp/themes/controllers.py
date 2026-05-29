@@ -343,9 +343,14 @@ class ThemeController(object):
         #   Load LESS files in order of search path
         less_data = ''
         for filename in self.get_less_names(theme_name, bootswatch_theme=bootswatch_theme):
-            with open(filename) as less_file:
-                logger.debug('Including LESS source %s', filename)
-                less_data += '\n' + less_file.read()
+            less_file = open(filename)
+            logger.debug('Including LESS source %s', filename)
+            less_data += '\n' + less_file.read()
+            less_file.close()
+
+        #   Make icon image path load from the CDN by default
+        if 'iconSpritePath' not in variable_data:
+            variable_data['iconSpritePath'] = f'"{settings.CDN_ADDRESS}/bootstrap/img/glyphicons-halflings.png"'
 
         #   Replace all variable declarations for which we have a value defined
         for (variable_name, variable_value) in variable_data.items():
@@ -461,35 +466,21 @@ class ThemeController(object):
 
         return backup_info
 
-    def get_file_summaries(self, base_dir, current_dir=None):
-        """ Retrieve a list of (relative_path, size, hash of contents) tuples
-            for all files under base_dir.
+    def get_file_summaries(self, dir):
+        """ Retrieve a list of (filename, size, hash of contents) tuples.
+            For comparing the state of directories that are copied
+            from the theme data.    """
 
-            Returns relative paths so callers never use an absolute
-            user-influenced path in a path expression.  Uses os.path.realpath
-            to resolve symlinks and verify every entry stays inside base_dir.
-        """
-        if current_dir is None:
-            current_dir = base_dir
-        real_base = os.path.realpath(base_dir)
         result = []
-        for entry in os.listdir(current_dir):
-            if entry == '__pycache__':
+        for filename in os.listdir(dir):
+            if filename == '__pycache__':
                 continue
-            full_path = os.path.join(current_dir, entry)
-            real_path = os.path.realpath(full_path)
-            # Skip anything that resolves outside base_dir (symlink traversal guard).
-            if not real_path.startswith(real_base + os.sep):
-                continue
-            # Derive the relative path purely from the verified real paths —
-            # the slice never carries user-controlled directory prefixes.
-            rel_path = real_path[len(real_base) + 1:]
-            if os.path.isdir(real_path):
-                result += self.get_file_summaries(base_dir, real_path)
+            full_filename = os.path.join(dir, filename)
+            if os.path.isdir(full_filename):
+                result += self.get_file_summaries(full_filename)
             else:
-                with open(real_path, 'rb') as f:
-                    file_data = f.read()
-                result.append((rel_path, os.path.getsize(real_path), hashlib.sha1(file_data).hexdigest()))
+                file_data = open(full_filename, 'rb').read()
+                result.append((full_filename, os.path.getsize(full_filename), hashlib.sha1(file_data).hexdigest()))
         return result
 
     def get_directory_differences(self, src_dir, dest_dir):
@@ -497,17 +488,25 @@ class ThemeController(object):
             and dest_dir but with different file contents.  """
 
         differences = []
-        # get_file_summaries already returns relative paths, so no further
-        # path manipulation on user-influenced values is needed here.
-        index_src = {rel: (sz, h) for (rel, sz, h) in self.get_file_summaries(src_dir)}
+        summaries_src = self.get_file_summaries(src_dir)
+        summaries_dest = self.get_file_summaries(dest_dir)
 
-        for (rel_path, filesize_dest, hash_dest) in self.get_file_summaries(dest_dir):
-            if rel_path in index_src:
-                (filesize_src, hash_src) = index_src[rel_path]
+        #   Build an index of the source files.
+        index_src = {}
+        for (filename, filesize, hash) in summaries_src:
+            rel_filename_src = os.path.relpath(filename, src_dir)
+            index_src[rel_filename_src] = (filesize, hash)
+
+        #   Iterate over destination files and see which ones match.
+        #   Compare the hashes of those files.
+        for (filename, filesize_dest, hash_dest) in summaries_dest:
+            rel_filename_dest = os.path.relpath(filename, dest_dir)
+            if rel_filename_dest in index_src:
+                (filesize_src, hash_src) = index_src[rel_filename_dest]
                 if hash_src != hash_dest:
                     differences.append({
-                        'filename': rel_path,
-                        'filename_hash': hashlib.sha1(rel_path.encode("UTF-8")).hexdigest(),
+                        'filename': rel_filename_dest,
+                        'filename_hash': hashlib.sha1(rel_filename_dest.encode("UTF-8")).hexdigest(),
                         'source_size': filesize_src,
                         'dest_size': filesize_dest,
                     })
