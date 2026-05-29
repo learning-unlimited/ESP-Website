@@ -35,7 +35,7 @@
             {% if job.status == 'PENDING' or job.status == 'PROCESSING' %}
             <span class="glyphicon glyphicon-refresh glyphicon-spin" style="font-size: 4em; margin: 20px 0; color: #3a87ad; display: inline-block;"></span>
             <h4>Your document is currently being generated.</h4>
-            <p class="muted">This process may take up to 15 minutes for large programs. This page will refresh
+            <p class="text-muted">This process may take up to 15 minutes for large programs. This page will refresh
                 automatically every 5 seconds.</p>
             <p><strong>Status:</strong> {{ job.status }}</p>
 
