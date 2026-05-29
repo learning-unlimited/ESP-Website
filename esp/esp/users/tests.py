@@ -580,8 +580,8 @@ class TestChangeRequestView(TestCase):
 
         response = c.post("/myesp/grade_change_request", { "reason": '', 'claimed_grade': 483 })
 
-        self.assertFormError(response, 'form', 'reason', 'This field is required.')
-        self.assertFormError(response, 'form', 'claimed_grade', 'Value 483 is not a valid choice.')
+        self.assertFormError(response.context['form'], 'reason', 'This field is required.')
+        self.assertFormError(response.context['form'], 'claimed_grade', 'Value 483 is not a valid choice.')
 
     def test_send_request_email(self):
         c = Client()
