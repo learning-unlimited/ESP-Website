@@ -110,6 +110,8 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
             if encoding is None:
                 encoding = settings.DEFAULT_CHARSET
 
+            has_qsd_bits = user.isAdministrator()
+
             from esp.dbmail.models import EmailBounceRecord
             bouncing = EmailBounceRecord.objects.filter(
                 email__iexact=user.email,
