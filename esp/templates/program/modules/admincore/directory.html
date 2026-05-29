@@ -6,15 +6,6 @@
 {{ block.super }}
 <script type="text/javascript">
     function initialize() {
-        // Timeline Zoom Slider
-        $j(".zoom-slider").on("input", function () {
-            var scale = $j(this).val() / 50;
-            $j(".horizontal-timeline").css({
-                "transform": "scale(" + scale + ")",
-                "transform-origin": "left center"
-            });
-        });
-
         // Timeline/Checklist Toggle
         $j(".switch input").on("change", function () {
             if ($j(this).is(":checked")) {
@@ -163,15 +154,8 @@
             <div id="banner-msg" class="banner-msg">Your program is fully configured and ready!</div>
         </div>
 
-        <!-- Inline Controls: Zoom & Toggle -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; margin-top:20px;">
-            <div class="gantt-widget" style="width: 250px; text-align: left; background: none; box-shadow: none; padding: 0;">
-                <p class="text-muted" style="margin:0 0 5px 0; font-weight:bold;">Power Zoom:</p>
-                <div class="slider-container" style="margin:0;">
-                    <input type="range" min="1" max="100" value="50" class="zoom-slider">
-                </div>
-            </div>
-            
+        <!-- Toggle: Timeline / Checklist -->
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 30px; margin-top: 20px;">
             <div class="toggle-switch-wrapper well well-sm" style="margin: 0; padding: 10px 15px; border-radius: 30px; display: flex; align-items: center;">
                 <span class="toggle-label text-muted" style="font-weight:600;">Timeline</span>
                 <label class="switch" style="margin:0 10px;">
@@ -281,18 +265,23 @@
             </div>
         </div>
 
-        
-        <button class="collapsible-btn">Onsite <span class="dropdown-icon text-muted">&#9660;</span></button>
+        <button class="collapsible-btn">Class Management and Scheduling <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_ajax_scheduling %}
-                <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" class="btn btn-primary">Scheduling</a>
+                <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" class="dashboard-btn"><i class="glyphicon glyphicon-calendar"></i> Scheduling</a>
                 {% endif %}
-                {% if manage_selectidoptions %}
-                <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="btn btn-warning">Name Tags</a>
+                {% if manage_dashboard %}
+                <a href="/manage/{{ program.getUrlBase }}/dashboard" class="dashboard-btn"><i class="glyphicon glyphicon-dashboard"></i> Dashboard</a>
                 {% endif %}
-                {% if onsite_main %}
-                <a href="/onsite/{{ program.getUrlBase }}/main" class="btn btn-primary">Onsite Main</a>
+                {% if learn_catalog %}
+                <a href="/learn/{{ program.getUrlBase }}/catalog" class="dashboard-btn"><i class="glyphicon glyphicon-book"></i> Catalog</a>
+                {% endif %}
+                {% if manage_lunch_constraints %}
+                <a href="/manage/{{ program.getUrlBase }}/lunch_constraints" class="dashboard-btn"><i class="glyphicon glyphicon-cutlery"></i> Lunch Rules</a>
+                {% endif %}
+                {% if manage_deadlines %}
+                <a href="/manage/{{ program.getUrlBase }}/deadlines" class="dashboard-btn"><i class="glyphicon glyphicon-time"></i> Deadlines</a>
                 {% endif %}
             </div>
         </div>
@@ -301,14 +290,17 @@
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_catalog %}
-                <a href="/manage/{{ program.getUrlBase }}/catalog" class="btn btn-primary">PDF Catalog</a>
+                <a href="/manage/{{ program.getUrlBase }}/catalog" class="dashboard-btn"><i class="glyphicon glyphicon-book"></i> PDF Catalog</a>
                 {% endif %}
                 {% if manage_studentschedules %}
-                <a href="/manage/{{ program.getUrlBase }}/studentschedules" class="btn btn-warning">Student Schedules</a>
-                <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" class="btn btn-default">Student Schedule Formatter</a>
+                <a href="/manage/{{ program.getUrlBase }}/studentschedules" class="dashboard-btn"><i class="glyphicon glyphicon-calendar"></i> Student Schedules</a>
+                <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" class="dashboard-btn"><i class="glyphicon glyphicon-th-list"></i> Student Schedule Formatter</a>
                 {% endif %}
                 {% if manage_printoptions %}
-                <a href="/manage/{{ program.getUrlBase }}/printoptions" class="btn btn-primary">All Printables</a>
+                <a href="/manage/{{ program.getUrlBase }}/printoptions" class="dashboard-btn"><i class="glyphicon glyphicon-print"></i> All Printables</a>
+                {% endif %}
+                {% if manage_selectidoptions %}
+                <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="dashboard-btn"><i class="glyphicon glyphicon-tags"></i> Name Tags</a>
                 {% endif %}
             </div>
         </div>
@@ -317,40 +309,28 @@
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_teacher_events %}
-                <a href="/manage/{{ program.getUrlBase }}/teacher_events" class="btn btn-default">Teach Events</a>
+                <a href="/manage/{{ program.getUrlBase }}/teacher_events" class="dashboard-btn"><i class="glyphicon glyphicon-comment"></i> Teach Events</a>
                 {% endif %}
                 {% if teach_teacherreg %}
-                <a href="/teach/{{ program.getUrlBase }}/teacherreg" class="btn btn-primary">Teacher Reg</a>
+                <a href="/teach/{{ program.getUrlBase }}/teacherreg" class="dashboard-btn"><i class="glyphicon glyphicon-education"></i> Teacher Reg</a>
                 {% endif %}
                 {% if learn_studentreg %}
-                <a href="/learn/{{ program.getUrlBase }}/studentreg" class="btn btn-primary">Student Reg</a>
+                <a href="/learn/{{ program.getUrlBase }}/studentreg" class="dashboard-btn"><i class="glyphicon glyphicon-user"></i> Student Reg</a>
                 {% endif %}
                 {% if volunteer_signup %}
-                <a href="/volunteer/{{ program.getUrlBase }}/signup" class="btn btn-warning">Volunteer Reg</a>
+                <a href="/volunteer/{{ program.getUrlBase }}/signup" class="dashboard-btn"><i class="glyphicon glyphicon-heart"></i> Volunteer Reg</a>
                 {% endif %}
                 {% if manage_volunteering %}
-                <a href="/manage/{{ program.getUrlBase }}/volunteering" class="btn btn-warning">Volunteers</a>
+                <a href="/manage/{{ program.getUrlBase }}/volunteering" class="dashboard-btn"><i class="glyphicon glyphicon-bullhorn"></i> Volunteers</a>
                 {% endif %}
                 {% if manage_selectList %}
-                <a href="/manage/{{ program.getUrlBase }}/selectList" class="btn btn-primary">Arbitrary User List</a>
+                <a href="/manage/{{ program.getUrlBase }}/selectList" class="dashboard-btn"><i class="glyphicon glyphicon-list-alt"></i> Arbitrary User List</a>
                 {% endif %}
                 {% if manage_refund %}
-                <a href="/accounting/refund?program={{ program.id }}" class="btn btn-default">Refunds</a>
+                <a href="/accounting/refund?program={{ program.id }}" class="dashboard-btn"><i class="glyphicon glyphicon-usd"></i> Refunds</a>
                 {% endif %}
                 {% if manage_commpanel %}
-                <a href="/manage/{{ program.getUrlBase }}/commpanel" class="btn btn-warning">Email</a>
-                {% endif %}
-            </div>
-        </div>
-
-        <button class="collapsible-btn">Sched <span class="dropdown-icon text-muted">&#9660;</span></button>
-        <div class="collapsible-content">
-            <div class="pill-grid" style="padding: 15px 0 5px 0;">
-                {% if manage_lunch_constraints %}
-                <a href="/manage/{{ program.getUrlBase }}/lunch_constraints" class="btn btn-primary">Lunch Rules</a>
-                {% endif %}
-                {% if manage_deadlines %}
-                <a href="/manage/{{ program.getUrlBase }}/deadlines" class="btn btn-warning">Deadlines</a>
+                <a href="/manage/{{ program.getUrlBase }}/commpanel" class="dashboard-btn"><i class="glyphicon glyphicon-envelope"></i> Email</a>
                 {% endif %}
             </div>
         </div>
@@ -359,25 +339,28 @@
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_settings %}
-                <a href="/manage/{{ program.getUrlBase }}/settings" class="btn btn-default">Settings</a>
+                <a href="/manage/{{ program.getUrlBase }}/settings" class="dashboard-btn"><i class="glyphicon glyphicon-wrench"></i> Settings</a>
                 {% endif %}
                 {% if manage_modules %}
-                <a href="/manage/{{ program.getUrlBase }}/modules" class="btn btn-primary">Modules</a>
+                <a href="/manage/{{ program.getUrlBase }}/modules" class="dashboard-btn"><i class="glyphicon glyphicon-list"></i> Modules</a>
                 {% endif %}
                 {% if manage_tags %}
-                <a href="/manage/{{ program.getUrlBase }}/tags" class="btn btn-default">Tags</a>
+                <a href="/manage/{{ program.getUrlBase }}/tags" class="dashboard-btn"><i class="glyphicon glyphicon-cog"></i> Tags</a>
                 {% endif %}
                 {% if manage_registrationtype_management %}
-                <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" class="btn btn-default">Reg Types</a>
+                <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" class="dashboard-btn"><i class="glyphicon glyphicon-blackboard"></i> Reg Types</a>
                 {% endif %}
                 {% if manage_surveys %}
-                <a href="/manage/{{ program.getUrlBase }}/surveys" class="btn btn-warning">Surveys</a>
+                <a href="/manage/{{ program.getUrlBase }}/surveys" class="dashboard-btn"><i class="glyphicon glyphicon-edit"></i> Surveys</a>
                 {% endif %}
                 {% if manage_resources %}
-                <a href="/manage/{{ program.getUrlBase }}/resources" class="btn btn-primary">Resources</a>
+                <a href="/manage/{{ program.getUrlBase }}/resources" class="dashboard-btn"><i class="glyphicon glyphicon-th"></i> Resources</a>
                 {% endif %}
                 {% if manage_get_materials %}
-                <a href="/manage/{{ program.getUrlBase }}/get_materials" class="btn btn-primary">Documents</a>
+                <a href="/manage/{{ program.getUrlBase }}/get_materials" class="dashboard-btn"><i class="glyphicon glyphicon-duplicate"></i> Documents</a>
+                {% endif %}
+                {% if onsite_main %}
+                <a href="/onsite/{{ program.getUrlBase }}/main" class="dashboard-btn"><i class="glyphicon glyphicon-home"></i> Onsite Main</a>
                 {% endif %}
             </div>
         </div>
@@ -385,13 +368,10 @@
         <button class="collapsible-btn">Other <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
-                {% if manage_dashboard %}<a href="/manage/{{ program.getUrlBase }}/dashboard" class="btn btn-default">Dashboard</a>{% endif %}
-                {% if learn_catalog %}<a href="/learn/{{ program.getUrlBase }}/catalog" class="btn btn-default">Catalog</a>{% endif %}
-                {% if manage_admin_morph %}<a href="/manage/{{ program.getUrlBase }}/admin_morph" class="btn btn-default">Morph into User</a>{% endif %}
                 {% for module in modules_alph %}
                     {% if not module.isAdminPortalFeatured %}
                         {% if not module.useTemplate %}
-                            <div style="background:#eee; padding:5px 15px; border-radius:20px; font-weight:bold; font-size:12px; display:inline-block;">
+                            <div class="other-module-wrapper">
                             {% autoescape off %}
                             {{ module.makeLink }}
                             {% endautoescape %}
@@ -403,7 +383,7 @@
         </div>
 
         <div style="margin-top: 40px; text-align: center;">
-            <a href="https://wiki.learningu.org/Main_Page" target="_blank" style="color: #999; font-size: 1.5em;" title="Help & Documentation"><i class="glyphicon glyphicon-question-sign"></i></a>
+            <a href="/manage/docs/program_modules.rst" style="color: #999; font-size: 1.5em;" title="Help & Documentation"><i class="glyphicon glyphicon-question-sign"></i></a>
         </div>
     </div>
 </div>

@@ -1,6 +1,6 @@
 /* V2 Dashboard Overhaul Styles */
-body {
-    background-color: #eef2f6 !important;
+html body {
+    background-color: #eef2f6;
     /* Soft light-blue background */
     font-family: 'Inter', 'Roboto', sans-serif;
 }
@@ -117,30 +117,6 @@ body {
     position: relative;
 }
 
-/* Timeline connecting line */
-.horizontal-timeline::before {
-    content: '';
-    position: absolute;
-    top: 35px;
-    left: 40px;
-    right: 40px;
-    height: 6px;
-    background-color: #79a6b5;
-    /* Teal line */
-    z-index: 1;
-}
-
-.horizontal-timeline::after {
-    content: '';
-    position: absolute;
-    top: 29px;
-    right: 15px;
-    border-top: 9px solid transparent;
-    border-bottom: 9px solid transparent;
-    border-left: 15px solid #79a6b5;
-    z-index: 1;
-}
-
 .timeline-step-icon {
     display: flex;
     flex-direction: column;
@@ -196,10 +172,10 @@ body {
 .search-icon {
     position: absolute;
     right: 20px;
-    top: 50%;
+    top: 35%;
     transform: translateY(-50%);
     color: #888;
-    font-size: 18px;
+    font-size: 13px;
 }
 
 /* Pill Grid */
@@ -211,7 +187,7 @@ body {
     margin-bottom: 40px;
 }
 
-.pill-btn {
+#content .pill-btn {
     display: inline-flex;
     justify-content: space-between;
     align-items: center;
@@ -219,7 +195,7 @@ body {
     border-radius: 30px;
     font-weight: 600;
     text-decoration: none;
-    color: white !important;
+    color: white;
     min-width: 140px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s, box-shadow 0.2s;
@@ -244,7 +220,7 @@ body {
     gap: 20px;
 }
 
-.large-pill-btn {
+#content .large-pill-btn {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -253,7 +229,7 @@ body {
     font-weight: bold;
     font-size: 18px;
     text-decoration: none;
-    color: white !important;
+    color: white;
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
     transition: transform 0.2s;
 }
@@ -346,14 +322,114 @@ body {
  * Styles from directory.html inline
  */
 
-.dashboard-v2-container {
-    display: block !important;
+div.dashboard-v2-container {
+    display: block;
+}
+
+/* Custom dashboard button base styles */
+html body div#main .dashboard-main-card .pill-grid a.dashboard-btn,
+html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a {
+    border-radius: 20px;
+    font-weight: normal;
+    font-size: 13px;
+    padding: 8px 18px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+    background-image: none;
+    color: #ffffff;
+    border: 1px solid transparent;
+    display: inline-block;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    white-space: nowrap;
+    line-height: 1.42857143;
+}
+
+html body div#main .dashboard-main-card .pill-grid a.dashboard-btn i,
+html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a i {
+    color: #ffffff;
+    margin-right: 4px;
+}
+
+html body div#main .dashboard-main-card .pill-grid a.dashboard-btn:hover,
+html body div#main .dashboard-main-card .pill-grid a.dashboard-btn:focus,
+html body div#main .dashboard-main-card .pill-grid a.dashboard-btn:active,
+html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a:hover,
+html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a:focus,
+html body div#main .dashboard-main-card .pill-grid .other-module-wrapper a:active {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    text-decoration: none;
+    color: #ffffff;
+}
+
+/* 4-color cycling: blue, green, orange, purple */
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+1),
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+1):hover,
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+1):focus,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+1) a,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+1) a:hover,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+1) a:focus,
+#setup_timeline .timeline-step-icon:nth-child(4n+1) .step-icon-inner {
+    background-color: #5b9bd5;
+    border-color: #5b9bd5;
+    color: #ffffff;
+}
+
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+2),
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+2):hover,
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+2):focus,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+2) a,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+2) a:hover,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+2) a:focus,
+#setup_timeline .timeline-step-icon:nth-child(4n+2) .step-icon-inner {
+    background-color: #70ad47;
+    border-color: #70ad47;
+    color: #ffffff;
+}
+
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+3),
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+3):hover,
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+3):focus,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+3) a,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+3) a:hover,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+3) a:focus,
+#setup_timeline .timeline-step-icon:nth-child(4n+3) .step-icon-inner {
+    background-color: #ed7d31;
+    border-color: #ed7d31;
+    color: #ffffff;
+}
+
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+4),
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+4):hover,
+html body div#main .dashboard-main-card .pill-grid>a.dashboard-btn:nth-child(4n+4):focus,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+4) a,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+4) a:hover,
+html body div#main .dashboard-main-card .pill-grid>.other-module-wrapper:nth-child(4n+4) a:focus,
+#setup_timeline .timeline-step-icon:nth-child(4n+4) .step-icon-inner {
+    background-color: #7c5cbf;
+    border-color: #7c5cbf;
+    color: #ffffff;
+}
+
+#setup_timeline .timeline-step-icon .step-icon-inner i {
+    color: #ffffff;
+}
+
+/* Non-featured module links in Other section */
+.dashboard-main-card .pill-grid a {
+    text-decoration: none;
+}
+
+.dashboard-main-card .pill-grid a:hover {
+    text-decoration: none;
 }
 
 .dashboard-main-card {
     max-width: 1000px;
     margin: 0 auto;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     padding: 40px;
     background: #fff;
     border-radius: 8px;
@@ -374,9 +450,11 @@ body {
     transition: background-color 0.2s, box-shadow 0.2s;
     background-color: #fff;
 }
+
 .collapsible-btn:hover {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
+
 .collapsible-content {
     padding: 10px 20px 20px 20px;
     display: none;
@@ -388,6 +466,7 @@ body {
     border: 1px solid #eee;
     border-top: none;
 }
+
 .collapsible-btn .dropdown-icon {
     float: right;
     font-size: 14px;
@@ -402,7 +481,7 @@ body {
     border: 1px solid #e0e0e0;
     width: 100%;
     border-radius: 4px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     max-height: 400px;
     overflow-y: auto;
@@ -417,7 +496,7 @@ body {
     background: white;
     padding: 10px;
     border-radius: 4px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     z-index: 1000;
 }
 
@@ -534,5 +613,3 @@ body {
     font-weight: bold;
     text-decoration: none;
 }
-
-
