@@ -1,6 +1,10 @@
 // "Base" variables that can be modified using the theme editor
 // ------------------------------------------------------------
 
+// Override Bootstrap 3's relative font path so glyphicons resolve correctly
+// when CSS is served from /media/styles/ (../fonts/ would be /media/fonts/).
+@icon-font-path: "/media/theme_editor/fonts/";
+
 // Gray scale (these were in Bootstrap 2's variables.less; kept here for
 // backward compatibility with theme LESS files that reference them)
 @black:                 #000;
