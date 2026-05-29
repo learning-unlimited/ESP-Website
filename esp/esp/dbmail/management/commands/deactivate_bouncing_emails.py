@@ -80,7 +80,7 @@ class Command(BaseCommand):
                 'invalid' in reason or
                 'inactive' in reason
             )
-            
+
             if is_hard_bounce:
                 record, created = EmailBounceRecord.objects.get_or_create(
                     email=email
