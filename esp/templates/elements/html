@@ -116,6 +116,13 @@
           }
         });
       });
+
+      <!-- re-enable submit buttons when restored from bfcache (back button after submit) -->
+      window.addEventListener('pageshow', function(e) {
+        if (e.persisted) {
+          $j('[type=submit]').prop('disabled', false);
+        }
+      });
     </script>
 
     <script type="text/javascript" src="/media/scripts/json2.js"></script>
