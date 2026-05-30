@@ -6,80 +6,11 @@ html body {
 }
 
 .dashboard-v2-container {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 30px;
     padding: 20px;
     margin-top: 20px;
     max-width: 1400px;
     margin-left: auto;
     margin-right: auto;
-}
-
-/* Left Sidebar Widget */
-.dashboard-sidebar-left {
-    width: 200px;
-    flex-shrink: 0;
-}
-
-.gantt-widget {
-    background: white;
-    border-radius: 20px;
-    padding: 30px 20px;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-}
-
-.gantt-icon i {
-    font-size: 35px;
-    color: #4a90e2;
-}
-
-.slider-container {
-    margin: 20px 0;
-}
-
-.zoom-slider {
-    width: 100%;
-    -webkit-appearance: none;
-    height: 6px;
-    background: #e0e5ec;
-    border-radius: 3px;
-    outline: none;
-}
-
-.zoom-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #4a90e2;
-    cursor: pointer;
-}
-
-.zoom-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #888;
-    font-weight: bold;
-    font-size: 14px;
-}
-
-.zoom-label {
-    font-size: 12px;
-}
-
-/* Main Card */
-.dashboard-main-card {
-    flex-grow: 1;
-    background: white;
-    border-radius: 30px;
-    padding: 40px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.06);
-    max-width: 800px;
 }
 
 /* Smart Banner Status Indicator */
@@ -185,67 +116,6 @@ html body {
     justify-content: center;
     gap: 15px;
     margin-bottom: 40px;
-}
-
-#content .pill-btn {
-    display: inline-flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-weight: 600;
-    text-decoration: none;
-    color: white;
-    min-width: 140px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.pill-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-    text-decoration: none;
-}
-
-.pill-plus {
-    font-size: 16px;
-    font-weight: bold;
-    opacity: 0.8;
-}
-
-/* Bottom Large Pills */
-.bottom-action-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-}
-
-#content .large-pill-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 15px 35px;
-    border-radius: 40px;
-    font-weight: bold;
-    font-size: 18px;
-    text-decoration: none;
-    color: white;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-    transition: transform 0.2s;
-}
-
-.large-pill-btn:hover {
-    transform: translateY(-3px);
-    text-decoration: none;
-}
-
-/* Right Sidebar Widget */
-.dashboard-sidebar-right {
-    width: 260px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
 }
 
 /* Toggle Switch */
@@ -545,75 +415,4 @@ div.dashboard-v2-container {
 
 .mock-line-text a:hover {
     text-decoration: underline;
-}
-
-/* Ranked By Dropdown */
-.ranked-by-dropdown {
-    position: relative;
-}
-
-.ranked-by-label {
-    font-size: 12px;
-    color: #888;
-    margin-bottom: 5px;
-    margin-left: 10px;
-}
-
-.ranked-by-btn-group {
-    display: flex;
-    gap: 10px;
-}
-
-.ranked-by-btn {
-    flex-grow: 1;
-    background: white;
-    border: none;
-    padding: 12px 15px;
-    border-radius: 12px;
-    font-weight: 600;
-    color: #555;
-    text-align: left;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-
-.filter-btn {
-    background: white;
-    border: none;
-    width: 42px;
-    border-radius: 12px;
-    color: #555;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-
-.ranked-by-menu {
-    background: white;
-    margin-top: 10px;
-    border-radius: 15px;
-    padding: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.ranked-by-menu label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 500;
-    color: #444;
-    margin: 0;
-}
-
-.ranked-link {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #eee;
-    text-align: center;
-}
-
-.ranked-link a {
-    color: #4a90e2;
-    font-weight: bold;
-    text-decoration: none;
 }
