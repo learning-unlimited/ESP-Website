@@ -1360,6 +1360,13 @@ all_program_tags = {
         'category': 'manage',
         'is_setting': False,
     },
+    'show_request_cancel_class_button': {
+        'is_boolean': True,
+        'help_text': 'Show a "request cancellation" button on the main teacher reg page when /Classes/CancelReq deadline is open',
+        'default': False,
+        'category': 'teach',
+        'is_setting': True,
+    },
     'student_schedule_posttext': {
         'is_boolean': False,
         'help_text': 'The text that is included right below the schedule in PDF student schedules (LaTeX is supported).',

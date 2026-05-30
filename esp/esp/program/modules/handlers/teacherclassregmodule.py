@@ -94,7 +94,10 @@ class TeacherClassRegModule(ProgramModuleObj):
         context["can_create"] = self.any_reg_is_open()
         context["can_create_class"] = self.class_reg_is_open()
         context["can_create_open_class"] = self.open_class_reg_is_open()
-        context["can_req_cancel"] = self.deadline_met("/Classes/CancelReq")
+        context["can_req_cancel"] = (
+            Tag.getBooleanTag("show_request_cancel_class_button", self.program)
+            and self.deadline_met("/Classes/CancelReq")
+        )
         context["survey_results"] = (
             self.program.getSurveys()
             .filter(category="learn", questions__per_class=True)

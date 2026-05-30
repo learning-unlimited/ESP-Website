@@ -985,8 +985,8 @@ class LotteryAssignmentController(object):
         student_distribution_labels = []
         student_distribution_values = []
         for i, count in stats['hist_timeslots_filled'].items():
-            student_distribution_labels.append(i)
-            student_distribution_values.append(count)
+            student_distribution_labels.append(int(i))
+            student_distribution_values.append(int(count))
         charts.append(self.chart_constructor(student_distribution_labels,student_distribution_values,'num filled slots in schedule','num students w/ this many filled slots', 'student schedule-filledness distribution'))
 
         section_distribution_labels=[]

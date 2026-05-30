@@ -15,6 +15,7 @@
 </style>
 
 {% block xtrajs %}
+{% if can_req_cancel %}
 <script type="text/javascript">
 function requestCancel(cls) {
     $j('#request_' + cls).dialog({
@@ -37,6 +38,7 @@ function requestCancel(cls) {
 }
 
 </script>
+{% endif %}
 {% endblock %}
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
