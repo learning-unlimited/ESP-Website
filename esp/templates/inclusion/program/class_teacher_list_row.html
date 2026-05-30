@@ -119,8 +119,6 @@
 </tr>
 {% endif %}
 
-
-{% if not cls.isRejected %}
 {% for sec in cls.sections.all %}
 <tr>
   <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
@@ -147,4 +145,3 @@
   </td>
 </tr>
 {% endfor %}
-{% endif %}

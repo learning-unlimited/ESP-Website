@@ -394,14 +394,14 @@ all_global_tags = {
     'student_profile_pronoun_field': {
         'is_boolean': True,
         'help_text': "Ask about student's preferred pronouns in profile form (and display their pronouns in various printables)?",
-        'default': False,
+        'default': True,
         'category': 'learn',
         'is_setting': True,
     },
     'teacher_profile_pronoun_field': {
         'is_boolean': True,
         'help_text': "Ask about teacher's preferred pronouns in profile form (and display their pronouns in various printables)?",
-        'default': False,
+        'default': True,
         'category': 'teach',
         'is_setting': True,
     },
