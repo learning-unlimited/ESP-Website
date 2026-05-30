@@ -351,6 +351,29 @@ class Resource(models.Model):
             collision = ResourceAssignment.objects.filter(resource=self)
             return (collision.count() > 0)
 
+    @property
+    def mit_building_num(self):
+        """MIT building number parsed from the room name: '13' from '13-1143', 'W20' from
+        'W20-401', '6C' from '6C-120', '14N' from '14N-132'.  The name is stripped, then
+        split on '-'; the first piece is accepted as a building number only if it is
+        alphanumeric, at most 6 characters, and contains at least one digit (rejects names
+        like 'Lobby 10', 'TBA', or overly long/special-character strings).
+        Returns '' if no valid building number can be parsed."""
+        candidate = self.name.strip().split('-')[0]
+        if (candidate and len(candidate) <= 6
+                and candidate.isalnum()
+                and any(c.isdigit() for c in candidate)):
+            return candidate
+        return ''
+
+    @property
+    def mit_whereis_url(self):
+        """Link to the MIT campus map (whereis.mit.edu) for this room's building.
+        Falls back to the general campus map if no valid building number can be parsed."""
+        if self.mit_building_num:
+            return 'https://whereis.mit.edu/?go=%s' % self.mit_building_num
+        return 'https://whereis.mit.edu/'
+
 @python_2_unicode_compatible
 class AssignmentGroup(models.Model):
     """ A hack to make the database handle assignment group ID creation """

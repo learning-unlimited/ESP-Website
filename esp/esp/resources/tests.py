@@ -2,12 +2,40 @@ from __future__ import absolute_import
 from datetime import datetime
 
 from django.db.models import ProtectedError
+from django.test import SimpleTestCase
 
 from esp.cal.models import Event, EventType
 from esp.program.models import Program
 from esp.program.models.class_ import ClassSubject, ClassSection, ClassCategories
 from esp.resources.models import Resource, ResourceType, ResourceRequest
 from esp.tests.util import CacheFlushTestCase as TestCase
+
+
+class MitBuildingNumTest(SimpleTestCase):
+    def testParsing(self):
+        cases = {
+            '13-1143':    '13',   # pure-number building
+            'W20-401':    'W20',  # letter-prefixed
+            '6C-120':     '6C',   # digit+letter
+            '14N-132':    '14N',
+            '  13-1143 ': '13',   # surrounding whitespace stripped
+            'Lobby 10':   '',     # space in candidate -> not a building number
+            'TBA':        '',     # no digit
+            '':           '',     # empty
+            'TOOLONG-1':  '',     # > 6 chars
+            'AB!-1':      '',     # non-alphanumeric char
+        }
+        for name, expected in cases.items():
+            self.assertEqual(Resource(name=name).mit_building_num, expected,
+                             msg='name={!r}'.format(name))
+
+    def testWhereisUrl(self):
+        self.assertEqual(Resource(name='13-1143').mit_whereis_url,
+                         'https://whereis.mit.edu/?go=13')
+        self.assertEqual(Resource(name='W20-401').mit_whereis_url,
+                         'https://whereis.mit.edu/?go=W20')
+        self.assertEqual(Resource(name='TBA').mit_whereis_url,
+                         'https://whereis.mit.edu/')
 
 class ResourceTypeTest(TestCase):
 

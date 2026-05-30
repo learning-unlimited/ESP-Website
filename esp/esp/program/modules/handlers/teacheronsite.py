@@ -164,7 +164,9 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
-        context['map_tab'] = bool(Tag.getTag('google_cloud_api_key').strip())
+        provider = Tag.getTag('onsite_map_provider')
+        context['map_provider'] = provider
+        context['map_tab'] = (provider == 'google') and bool(Tag.getTag('google_cloud_api_key').strip())
         return context
 
     def isStep(self):

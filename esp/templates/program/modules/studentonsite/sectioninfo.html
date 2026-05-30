@@ -19,7 +19,23 @@
             <tr>
                 <td>Room:</td>
                 <td>
-                    {% if checked_in %}{% if section.initial_rooms %}{% for r in section.initial_rooms %}{{ r.name }} (<a href="/learn/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>){% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}{% else %}You are not checked in{% endif %}
+                    {% if checked_in %}
+                        {% if section.initial_rooms %}
+                            {% for r in section.initial_rooms %}
+                                {{ r.name }}
+                                {% if map_provider == 'whereis.mit.edu' %}
+                                    (<a href="{{ r.mit_whereis_url }}" target="_blank">map</a>)
+                                {% elif map_provider == 'google' %}
+                                    (<a href="/learn/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>)
+                                {% endif %}
+                                {% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            Unassigned
+                        {% endif %}
+                    {% else %}
+                        You are not checked in
+                    {% endif %}
                 </td>
             </tr>
                 <td>Time:</td>

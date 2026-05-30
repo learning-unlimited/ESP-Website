@@ -15,6 +15,8 @@ def set_my_defaults(apps, schema_editor):
     LineItemType = apps.get_model('accounting', 'LineItemType')
     Account = apps.get_model('accounting', 'Account')
     recs = Record.objects.filter(event="paid", program__isnull=False, user__isnull=False)
+    if not recs.exists():
+        return
     target_account = Account.objects.get(name='receivable')
     transfers_to_create = []
     for rec in recs:

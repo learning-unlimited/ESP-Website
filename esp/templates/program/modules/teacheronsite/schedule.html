@@ -109,7 +109,7 @@ setInterval(write_updated_time,1000);
                 <td class="time">{{ cls.time_blocks.0.short_time }} ET</td>
                 <td class="cls">
                     <b>{{ cls.parent_class.title }}</b>{% if request.user in cls.get_moderators %}</br>({{ program.getModeratorTitle }}){% endif %}
-                    <br>{{ cls.prettyrooms|join:", " }}&nbsp;<a class="no-dec" title="Directions" href="/teach/{{one}}/{{two}}/onsitemap/{{ cls.initial_rooms.0.id }}"><i class="material-icons md-3">directions</i></a>
+                    <br>{% if map_provider == 'whereis.mit.edu' %}{% if cls.initial_rooms %}<a class="no-dec" title="Directions" target="_blank" href="{{ cls.initial_rooms.0.mit_whereis_url }}">{{ cls.prettyrooms|join:", " }}&nbsp;<i class="material-icons md-3">directions</i></a>{% else %}{{ cls.prettyrooms|join:", " }}{% endif %}{% elif map_provider == 'google' %}{{ cls.prettyrooms|join:", " }}&nbsp;<a class="no-dec" title="Directions" href="/teach/{{one}}/{{two}}/onsitemap/{{ cls.initial_rooms.0.id }}"><i class="material-icons md-3">directions</i></a>{% else %}{{ cls.prettyrooms|join:", " }}{% endif %}
                 </td>
                 {% if request.user in cls.get_moderators %}
                     <td class="list">

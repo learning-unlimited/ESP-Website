@@ -15,7 +15,19 @@
                 <tr>
                     <td style="width:35%">Room:</td>
                     <td>
-                        {% if section.initial_rooms %}{% for r in section.initial_rooms %}{{ r.name }} (<a href="/teach/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>){% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}
+                        {% if section.initial_rooms %}
+                            {% for r in section.initial_rooms %}
+                                {{ r.name }}
+                                {% if map_provider == 'whereis.mit.edu' %}
+                                    (<a href="{{ r.mit_whereis_url }}" target="_blank">map</a>)
+                                {% elif map_provider == 'google' %}
+                                    (<a href="/teach/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>)
+                                {% endif %}
+                                {% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            Unassigned
+                        {% endif %}
                     </td>
                 </tr>
                     <td>Time:</td>

@@ -492,6 +492,23 @@ all_global_tags = {
         'category': 'manage',
         'is_setting': True,
     },
+    # MIT default: 'whereis.mit.edu'.  LU upstream or non-MIT sites may prefer 'google' or 'none'.
+    'onsite_map_provider': {
+        'is_boolean': False,
+        'help_text': 'Which map service the student/teacher onsite webapps use for room '
+                     'directions. "whereis.mit.edu" links each room to the MIT campus map '
+                     '(whereis.mit.edu) by building number; "google" uses an embedded Google '
+                     'map (requires google_cloud_api_key) plus lat/long directions links; '
+                     '"none" disables maps.',
+        'default': 'whereis.mit.edu',
+        'field': forms.ChoiceField(choices=[
+            ('whereis.mit.edu', 'MIT campus map (whereis.mit.edu)'),
+            ('google',          'Google Maps'),
+            ('none',            'No maps'),
+        ]),
+        'category': 'onsite',
+        'is_setting': True,
+    },
     'google_analytics_id': {
         'is_boolean': False,
         'help_text': 'A <a href="https://support.google.com/analytics/answer/12270356?hl=en" target="_blank">measurement ID</a> for a <a href="https://developers.google.com/analytics" target="_blank">Google Analytics</a> property. The format of a measurement ID in Google Analytics 4 is "G-" followed by a combination of numbers and letters, such as "G-PSW1MY7HB4". Setting this value will enable the passing of traffic data to Google Analytics.',
