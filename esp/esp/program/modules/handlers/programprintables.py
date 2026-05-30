@@ -1884,7 +1884,7 @@ class ProgramPrintables(ProgramModuleObj):
 
             write_csv.writerow(row)
 
-        response['Content-Disposition'] = 'attachment; filename=master_moderator_schedule.csv'
+        response['Content-Disposition'] = 'attachment; filename=master_%s_schedule.csv' % prog.getModeratorTitle().lower()
         return response
 
     @aux_call
