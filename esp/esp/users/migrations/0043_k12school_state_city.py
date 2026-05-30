@@ -25,4 +25,9 @@ class Migration(migrations.Migration):
             name='name',
             field=models.TextField(blank=True, db_index=True, null=True),
         ),
+        migrations.AlterField(
+            model_name='k12school',
+            name='school_id',
+            field=models.CharField(blank=True, db_index=True, help_text='An 8-digit ID number.', max_length=128, null=True),
+        ),
     ]

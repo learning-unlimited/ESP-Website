@@ -2158,7 +2158,7 @@ class K12School(models.Model):
         help_text='i.e. Public, Private, Charter, Magnet, ...')
     grades      = models.TextField(blank=True, null=True,
         help_text='i.e. "PK, K, 1, 2, 3"')
-    school_id   = models.CharField(max_length=128, blank=True, null=True,
+    school_id   = models.CharField(max_length=128, blank=True, null=True, db_index=True,
         help_text='An 8-digit ID number.')
     contact_title = models.TextField(blank=True, null=True)
     name          = models.TextField(blank=True, null=True, db_index=True)
