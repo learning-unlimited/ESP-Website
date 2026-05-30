@@ -76,7 +76,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         m = ProgramModule.objects.get(handler='CommModule', module_type='manage')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
-    def test_basic_comm_flow(self):
+    def runTest(self):
         #   Log in an administrator
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
