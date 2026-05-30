@@ -282,6 +282,16 @@ class LotteryAssignmentController(object):
         -   Timeslots (incl. lunch periods for each day)
         """
 
+        if self.num_sections == 0:
+            raise LotteryException(
+                "No eligible sections found for this program. "
+                "Sections must be approved, open to registration, and scheduled."
+            )
+        if self.num_students == 0:
+            raise LotteryException(
+                "No students have signed up for the lottery for this program."
+            )
+
         self.interest = numpy.zeros(
             (self.num_students, self.num_sections), dtype=numpy.bool
         )
