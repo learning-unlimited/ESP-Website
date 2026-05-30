@@ -17,10 +17,10 @@
 	<li class="unavailable"><i class="glyphicon glyphicon-ban-circle"></i> The teacher is not available.</li>
 	<li class="available"><i class="glyphicon glyphicon-asterisk"></i> The teacher is available.</li>
 	<li class="teaching"><i class="glyphicon glyphicon-ok"></i> The teacher is available and scheduled to teach.</li>
-	<li class="observing"><i class="glyphicon glyphicon-ok-circle"></i> The teacher is available and scheduled to observe.</li>
+	<li class="observing"><i class="glyphicon glyphicon-ok-circle"></i> The teacher is available and scheduled to {{ program.getModeratorInfinitive|lower }}.</li>
 	<li class="teaching-unavailable"><i class="glyphicon glyphicon-alert"></i> The teacher is scheduled to teach, but not marked as available.</li>
-	<li class="observing-unavailable"><i class="glyphicon glyphicon-exclamation-sign"></i> The teacher is scheduled to observe, but not marked as available.</li>
-	<li class="conflict"><i class="glyphicon glyphicon-fire"></i> The teacher is scheduled to teach or observe more than one section.</li>
+	<li class="observing-unavailable"><i class="glyphicon glyphicon-exclamation-sign"></i> The teacher is scheduled to {{ program.getModeratorInfinitive|lower }}, but not marked as available.</li>
+	<li class="conflict"><i class="glyphicon glyphicon-fire"></i> The teacher is scheduled to teach or {{ program.getModeratorInfinitive|lower }} more than one section.</li>
 </ul>
 <p><a href="{{ edit_path }}">Click here to edit teacher availability.</a></p>
 
@@ -51,7 +51,7 @@
 		<dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ sec.class_id }}">{{ sec.emailcode }}: {{ sec.class_title }} ({{ sec.rooms }})</a></dd>
 	{% endfor %}
 	{% for sec in t.observing %}
-		<dd>Observing <a href="/manage/{{ program.getUrlBase }}/manageclass/{{ sec.class_id }}">{{ sec.emailcode }}: {{ sec.class_title }} ({{ sec.rooms }})</a></dd>
+		<dd>{{ program.getModeratorGerund }} <a href="/manage/{{ program.getUrlBase }}/manageclass/{{ sec.class_id }}">{{ sec.emailcode }}: {{ sec.class_title }} ({{ sec.rooms }})</a></dd>
 	{% endfor %}
 {% endfor %}
 </dl>
@@ -63,7 +63,7 @@
 	{% for sec in unscheduled_teaching %}
 		<dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ sec.class_id }}">{{ sec.emailcode }}: {{ sec.class_title }} ({{ sec.duration }})</a></dd>
 	{% endfor %}
-	<dt>Unscheduled class sections {{ teacher_name }} is observing</dt>
+	<dt>Unscheduled class sections {{ teacher_name }} is {{ program.getModeratorGerund|lower }}</dt>
 	{% for sec in unscheduled_observing %}
 		<dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ sec.class_id }}">{{ sec.emailcode }}: {{ sec.class_title }} ({{ sec.duration }})</a></dd>
 	{% endfor %}

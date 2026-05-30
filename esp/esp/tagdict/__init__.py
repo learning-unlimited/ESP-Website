@@ -1301,6 +1301,20 @@ all_program_tags = {
         'category': 'moderate',
         'is_setting': True,
     },
+    'moderator_title_gerund': {
+        'is_boolean': False,
+        'help_text': 'The gerund form used to describe the act of moderating a section (e.g. "Observing" or "Moderating").',
+        'default': 'Observing',
+        'category': 'moderate',
+        'is_setting': True,
+    },
+    'moderator_title_infinitive': {
+        'is_boolean': False,
+        'help_text': 'The infinitive form used to describe the act of moderating a section (e.g. "Observe" or "Moderate").',
+        'default': 'Observe',
+        'category': 'moderate',
+        'is_setting': True,
+    },
     # For the next two, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
     'student_reg_records': {
         'is_boolean': False,

@@ -1101,6 +1101,12 @@ class Program(models.Model, CustomFormsLinkModel):
     def getModeratorTitle(self):
         return Tag.getProgramTag('moderator_title', program = self)
 
+    def getModeratorGerund(self):
+        return Tag.getProgramTag('moderator_title_gerund', program = self)
+
+    def getModeratorInfinitive(self):
+        return Tag.getProgramTag('moderator_title_infinitive', program = self)
+
     def getLineItemTypes(self, user=None, required=True):
         from esp.accounting.controllers import ProgramAccountingController
         pac = ProgramAccountingController(self)

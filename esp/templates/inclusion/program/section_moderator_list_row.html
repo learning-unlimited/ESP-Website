@@ -2,7 +2,7 @@
 
 <tr{% if not sec.isReviewed %} style="color: gray"{% endif %}{% if sec.isRejected or sec.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft bordertop2" colspan="7">
-    <em>Observing</em> {{ sec.parent_class }}
+    <em>{{ program.getModeratorGerund }}</em> {{ sec.parent_class }}
   </td>
 </tr>
 <tr>
