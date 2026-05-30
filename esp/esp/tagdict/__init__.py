@@ -1254,6 +1254,13 @@ all_program_tags = {
         'category': 'onsite',
         'is_setting': True,
     },
+    'default_full_teacher_availability': {
+        'is_boolean': True,
+        'help_text': 'Should the teacher availability form default to all timeslots available? (Otherwise, default to none available.)',
+        'default': True,
+        'category': 'teach',
+        'is_setting': True,
+    },
     'availability_group_tolerance': {
         'is_boolean': False,
         'help_text': 'Time blocks must be less than this many minutes apart to be shown as contiguous for the availability module(s). This will not impact the calculation of possible class durations (see the "Timeblock contiguous tolerance" tag below).',

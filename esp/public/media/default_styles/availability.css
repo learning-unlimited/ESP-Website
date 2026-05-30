@@ -72,6 +72,11 @@ td.group, table.group {
   padding: 3px !important;
   height: 25px !important;
   width: 90px !important;
+  cursor: pointer;
+}
+
+.proposed:not(.teaching), .canDo:not(.teaching) {
+  cursor: pointer;
 }
 
 .label {
