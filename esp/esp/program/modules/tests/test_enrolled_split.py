@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import datetime
+from django.utils import timezone
 
 from esp.tests.util import CacheFlushTestCase
 from esp.program.tests import ProgramFrameworkTest
@@ -54,8 +55,8 @@ class EnrolledSplitViewTest(ProgramFrameworkTest, CacheFlushTestCase):
         Event.objects.create(
             program=other_prog,
             event_type=et,
-            start=datetime.datetime(2020, 7, 7, 7, 5),
-            end=datetime.datetime(2020, 7, 7, 8, 0),
+            start=timezone.make_aware(datetime.datetime(2020, 7, 7, 7, 5)),
+            end=timezone.make_aware(datetime.datetime(2020, 7, 7, 8, 0)),
             short_description='Other Slot 0',
             description='07:05 07/07/2020',
         )

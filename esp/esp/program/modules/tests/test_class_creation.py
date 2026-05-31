@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 import datetime
+from django.utils import timezone
 from decimal import Decimal
 
 from django.test import Client
@@ -46,7 +47,7 @@ class ClassCreationTestMixin(object):
         'program_type': 'TestProgram',
         'program_instance_name': '2222_Summer',
         'program_instance_label': 'Summer 2222',
-        'start_time': datetime.datetime(2222, 7, 7, 7, 5),
+        'start_time': timezone.make_aware(datetime.datetime(2222, 7, 7, 7, 5)),
     }
 
     def setUp(self):
