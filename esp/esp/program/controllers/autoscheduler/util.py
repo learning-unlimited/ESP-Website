@@ -112,7 +112,7 @@ def datetimedump(dt):
 
 def datetimeloads(dt_tuple):
     """Turns a json-like datetime dump into a datetime object."""
-    return timezone.make_aware(datetime(*dt_tuple))
+    return timezone.make_aware(datetime(*dt_tuple), timezone.utc)
 
 
 def memoize(f):

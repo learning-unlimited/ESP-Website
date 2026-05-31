@@ -8,6 +8,8 @@ import bisect
 from functools import total_ordering
 import json
 
+from django.utils import timezone
+
 import esp.program.controllers.autoscheduler.config as config
 from esp.program.controllers.autoscheduler.consistency_checks import \
         ConsistencyChecker
@@ -154,11 +156,18 @@ class AS_ClassSection(object):
         """Creates a unique string based on the timeslots and rooms assigned to
         this section. It's not actually a hash anymore, but renaming sounds
         like a pain"""
-        meeting_times = sorted([(str(e.timeslot.start), str(e.timeslot.end))
-                                for e in self.assigned_roomslots])
+        meeting_times = sorted([
+            (str(_as_utc(e.timeslot.start)), str(_as_utc(e.timeslot.end)))
+            for e in self.assigned_roomslots])
         rooms = sorted(list(set(r.room.name for r in
                                 self.assigned_roomslots)))
         return json.dumps([meeting_times, rooms])
+
+
+def _as_utc(dt):
+    if dt.tzinfo is None:
+        dt = timezone.make_aware(dt)
+    return dt.astimezone(timezone.utc)
 
 
 class AS_Teacher(object):
