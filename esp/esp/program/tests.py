@@ -54,7 +54,6 @@ from django.core.management import call_command
 from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
-from django.utils import timezone
 
 from esp.program.controllers.classreg import get_custom_fields
 from esp.program.controllers.lottery import LotteryAssignmentController
@@ -356,12 +355,12 @@ class ProgramHappenTest(TestCase):
                 'program_modules': [x.id for x in ProgramModule.objects.all()],
                 'class_categories': [x.id for x in ClassCategories.objects.all()],
                 'admins': self.admin.id,
-                'teacher_reg_start': timezone.make_aware(2000, 1, 1, 0, 0, 0),
-                'teacher_reg_end':   timezone.make_aware(3001, 1, 1, 0, 0, 0),
-                'student_reg_start': timezone.make_aware(2000, 1, 1, 0, 0, 0),
-                'student_reg_end':   timezone.make_aware(3001, 1, 1, 0, 0, 0),
-                'publish_start':     timezone.make_aware(2000, 1, 1, 0, 0, 0),
-                'publish_end':       timezone.make_aware(3001, 1, 1, 0, 0, 0),
+                'teacher_reg_start': timezone.make_aware(datetime.datetime(2000, 1, 1, 0, 0, 0)),
+                'teacher_reg_end':   timezone.make_aware(datetime.datetime(3001, 1, 1, 0, 0, 0)),
+                'student_reg_start': timezone.make_aware(datetime.datetime(2000, 1, 1, 0, 0, 0)),
+                'student_reg_end':   timezone.make_aware(datetime.datetime(3001, 1, 1, 0, 0, 0)),
+                'publish_start':     timezone.make_aware(datetime.datetime(2000, 1, 1, 0, 0, 0)),
+                'publish_end':       timezone.make_aware(datetime.datetime(3001, 1, 1, 0, 0, 0)),
                 'base_cost':         '666',
             }
         self.client.post('/manage/newprogram', prog_dict)
@@ -790,10 +789,10 @@ class ProgramFrameworkTest(TestCase):
                 'program_modules': [x.id for x in ProgramModule.objects.all()],
                 'class_categories': [x.id for x in self.categories],
                 'admins': [x.id for x in self.admins],
-                'teacher_reg_start': timezone.make_aware(1901, 1, 1, 0, 0, 0),
-                'teacher_reg_end':   timezone.make_aware(2000, 1, 1, 0, 0, 0),
-                'student_reg_start': timezone.make_aware(1901, 1, 1, 0, 0, 0),
-                'student_reg_end':   timezone.make_aware(2000, 1, 1, 0, 0, 0),
+                'teacher_reg_start': timezone.make_aware(datetime.datetime(1901, 1, 1, 0, 0, 0)),
+                'teacher_reg_end':   timezone.make_aware(datetime.datetime(2000, 1, 1, 0, 0, 0)),
+                'student_reg_start': timezone.make_aware(datetime.datetime(1901, 1, 1, 0, 0, 0)),
+                'student_reg_end':   timezone.make_aware(datetime.datetime(2000, 1, 1, 0, 0, 0)),
                 'base_cost':         '666',
                 'finaid_cost':       '37',
             }
