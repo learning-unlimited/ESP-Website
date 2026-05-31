@@ -285,8 +285,8 @@ class ProgramModuleObj(ExpirableModel):
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 (self.get_full_path(), title, title)
         else:
-            link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
 
         return mark_safe(link)
 
@@ -318,8 +318,8 @@ class ProgramModuleObj(ExpirableModel):
                                 </button></a>
                             </div>"""
         else:
-            link = '<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
 
