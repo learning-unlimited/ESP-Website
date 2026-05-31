@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bullseye AS builder
+FROM python:3.12-slim-bullseye AS builder
 
 # Build-time environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -43,7 +43,7 @@ RUN python -m pip install --upgrade pip setuptools wheel && \
     python -m pip install --prefer-binary --no-cache-dir -r /tmp/requirements.txt
 
 # Runtime stage - smaller final image
-FROM python:3.10-slim-bullseye AS runtime
+FROM python:3.12-slim-bullseye AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -82,7 +82,7 @@ COPY --from=builder /usr/lib/node_modules /usr/lib/node_modules
 RUN ln -s /usr/lib/node_modules/less/bin/lessc /usr/local/bin/lessc
 
 # Copy Python packages from builder
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy entrypoint script
