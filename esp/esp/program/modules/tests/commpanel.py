@@ -47,6 +47,7 @@ from django.template import Context as DjangoContext
 from django.template import Template
 from django.template.loader import render_to_string
 from django.test import SimpleTestCase
+from django.utils import timezone
 
 from datetime import datetime
 import re
