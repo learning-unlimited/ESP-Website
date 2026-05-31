@@ -265,6 +265,36 @@
             </div>
         </div>
 
+        <button class="collapsible-btn">Program Management and Settings <span class="dropdown-icon text-muted">&#9660;</span></button>
+        <div class="collapsible-content">
+            <div class="pill-grid" style="padding: 15px 0 5px 0;">
+                {% if manage_settings %}
+                <a href="/manage/{{ program.getUrlBase }}/settings" class="dashboard-btn"><i class="glyphicon glyphicon-wrench"></i> Settings</a>
+                {% endif %}
+                {% if manage_modules %}
+                <a href="/manage/{{ program.getUrlBase }}/modules" class="dashboard-btn"><i class="glyphicon glyphicon-list"></i> Modules</a>
+                {% endif %}
+                {% if manage_tags %}
+                <a href="/manage/{{ program.getUrlBase }}/tags" class="dashboard-btn"><i class="glyphicon glyphicon-cog"></i> Tags</a>
+                {% endif %}
+                {% if manage_registrationtype_management %}
+                <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" class="dashboard-btn"><i class="glyphicon glyphicon-blackboard"></i> Reg Types</a>
+                {% endif %}
+                {% if manage_surveys %}
+                <a href="/manage/{{ program.getUrlBase }}/surveys" class="dashboard-btn"><i class="glyphicon glyphicon-edit"></i> Surveys</a>
+                {% endif %}
+                {% if manage_resources %}
+                <a href="/manage/{{ program.getUrlBase }}/resources" class="dashboard-btn"><i class="glyphicon glyphicon-th"></i> Resources</a>
+                {% endif %}
+                {% if manage_get_materials %}
+                <a href="/manage/{{ program.getUrlBase }}/get_materials" class="dashboard-btn"><i class="glyphicon glyphicon-duplicate"></i> Documents</a>
+                {% endif %}
+                {% if onsite_main %}
+                <a href="/onsite/{{ program.getUrlBase }}/main" class="dashboard-btn"><i class="glyphicon glyphicon-home"></i> Onsite Main</a>
+                {% endif %}
+            </div>
+        </div>
+
         <button class="collapsible-btn">Class Management and Scheduling <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
@@ -282,25 +312,6 @@
                 {% endif %}
                 {% if manage_deadlines %}
                 <a href="/manage/{{ program.getUrlBase }}/deadlines" class="dashboard-btn"><i class="glyphicon glyphicon-time"></i> Deadlines</a>
-                {% endif %}
-            </div>
-        </div>
-
-        <button class="collapsible-btn">Printables <span class="dropdown-icon text-muted">&#9660;</span></button>
-        <div class="collapsible-content">
-            <div class="pill-grid" style="padding: 15px 0 5px 0;">
-                {% if manage_catalog %}
-                <a href="/manage/{{ program.getUrlBase }}/catalog" class="dashboard-btn"><i class="glyphicon glyphicon-book"></i> PDF Catalog</a>
-                {% endif %}
-                {% if manage_studentschedules %}
-                <a href="/manage/{{ program.getUrlBase }}/studentschedules" class="dashboard-btn"><i class="glyphicon glyphicon-calendar"></i> Student Schedules</a>
-                <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" class="dashboard-btn"><i class="glyphicon glyphicon-th-list"></i> Student Schedule Formatter</a>
-                {% endif %}
-                {% if manage_printoptions %}
-                <a href="/manage/{{ program.getUrlBase }}/printoptions" class="dashboard-btn"><i class="glyphicon glyphicon-print"></i> All Printables</a>
-                {% endif %}
-                {% if manage_selectidoptions %}
-                <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="dashboard-btn"><i class="glyphicon glyphicon-tags"></i> Name Tags</a>
                 {% endif %}
             </div>
         </div>
@@ -335,32 +346,21 @@
             </div>
         </div>
 
-        <button class="collapsible-btn">Program Management and Settings <span class="dropdown-icon text-muted">&#9660;</span></button>
+        <button class="collapsible-btn">Printables <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
-                {% if manage_settings %}
-                <a href="/manage/{{ program.getUrlBase }}/settings" class="dashboard-btn"><i class="glyphicon glyphicon-wrench"></i> Settings</a>
+                {% if manage_catalog %}
+                <a href="/manage/{{ program.getUrlBase }}/catalog" class="dashboard-btn"><i class="glyphicon glyphicon-book"></i> PDF Catalog</a>
                 {% endif %}
-                {% if manage_modules %}
-                <a href="/manage/{{ program.getUrlBase }}/modules" class="dashboard-btn"><i class="glyphicon glyphicon-list"></i> Modules</a>
+                {% if manage_studentschedules %}
+                <a href="/manage/{{ program.getUrlBase }}/studentschedules" class="dashboard-btn"><i class="glyphicon glyphicon-calendar"></i> Student Schedules</a>
+                <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" class="dashboard-btn"><i class="glyphicon glyphicon-th-list"></i> Student Schedule Formatter</a>
                 {% endif %}
-                {% if manage_tags %}
-                <a href="/manage/{{ program.getUrlBase }}/tags" class="dashboard-btn"><i class="glyphicon glyphicon-cog"></i> Tags</a>
+                {% if manage_printoptions %}
+                <a href="/manage/{{ program.getUrlBase }}/printoptions" class="dashboard-btn"><i class="glyphicon glyphicon-print"></i> All Printables</a>
                 {% endif %}
-                {% if manage_registrationtype_management %}
-                <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" class="dashboard-btn"><i class="glyphicon glyphicon-blackboard"></i> Reg Types</a>
-                {% endif %}
-                {% if manage_surveys %}
-                <a href="/manage/{{ program.getUrlBase }}/surveys" class="dashboard-btn"><i class="glyphicon glyphicon-edit"></i> Surveys</a>
-                {% endif %}
-                {% if manage_resources %}
-                <a href="/manage/{{ program.getUrlBase }}/resources" class="dashboard-btn"><i class="glyphicon glyphicon-th"></i> Resources</a>
-                {% endif %}
-                {% if manage_get_materials %}
-                <a href="/manage/{{ program.getUrlBase }}/get_materials" class="dashboard-btn"><i class="glyphicon glyphicon-duplicate"></i> Documents</a>
-                {% endif %}
-                {% if onsite_main %}
-                <a href="/onsite/{{ program.getUrlBase }}/main" class="dashboard-btn"><i class="glyphicon glyphicon-home"></i> Onsite Main</a>
+                {% if manage_selectidoptions %}
+                <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="dashboard-btn"><i class="glyphicon glyphicon-tags"></i> Name Tags</a>
                 {% endif %}
             </div>
         </div>
