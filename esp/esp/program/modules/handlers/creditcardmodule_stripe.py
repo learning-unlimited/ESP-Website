@@ -288,8 +288,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Set Stripe key based on settings.  Also require the API version
         #   which our code is designed for.
         stripe.api_key = self.settings['secret_key']
-        # We are using the 2014-03-13 version of the Stripe API, which is
-        # v1.12.2.
+        # Keep the API version pinned so charge/refund response fields match
+        # our legacy payment code.
         stripe.api_version = '2014-03-13'
 
         if request.POST.get('ponumber', '') != iac.get_id():
@@ -332,7 +332,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     charge = stripe.Charge.create(
                         amount=amount_cents_post,
                         currency="usd",
-                        card=request.POST['stripeToken'],
+                        source=request.POST['stripeToken'],
                         description=f"Payment for {group_name} {prog.niceName()} - {request.user.name()}",
                         statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
                         metadata={
