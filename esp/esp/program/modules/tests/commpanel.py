@@ -48,6 +48,7 @@ from django.template import Template
 from django.template.loader import render_to_string
 from django.test import SimpleTestCase
 from django.utils.html import strip_tags
+from django.utils import timezone
 
 from datetime import datetime, timedelta
 import re
@@ -148,7 +149,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         expected_date_range = 'Jul. 07, 2222'
 
         # Add Teacher/Classes/Create permission with known end_date so we can assert on teacher_reg_deadline
-        teacher_reg_deadline_dt = datetime(2222, 6, 15, 23, 59)
+        teacher_reg_deadline_dt = timezone.make_aware(datetime(2222, 6, 15, 23, 59))
         expected_teacher_reg_deadline = 'June 15, 2222 11:59 PM'
         Permission.objects.update_or_create(
             program=self.program,

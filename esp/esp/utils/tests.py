@@ -838,8 +838,8 @@ class ExpirableModelBoundaryTest(DjangoTestCase):
         from esp.users.models import Permission
 
         # 1. Setup specific boundaries
-        start_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
-        end_time = datetime.datetime(2026, 1, 31, 12, 0, 0)
+        start_time = timezone.make_aware(datetime.datetime(2026, 1, 1, 12, 0, 0))
+        end_time = timezone.make_aware(datetime.datetime(2026, 1, 31, 12, 0, 0))
 
         # Create a Permission (a concrete subclass of ExpirableModel)
         perm = Permission.objects.create(

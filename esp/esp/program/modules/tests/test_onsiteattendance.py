@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 import datetime
-
+from django.utils import timezone
 from esp.cal.models import Event, EventType
 from esp.program.models import ClassSection, RegistrationType, StudentRegistration
 from esp.program.modules.handlers.onsiteattendance import OnSiteAttendance
@@ -71,7 +71,7 @@ class _OnSiteAttendanceBase(ProgramFrameworkTest):
             program_type="TestProgram",
             program_instance_name="2222_Summer",
             program_instance_label="Summer 2222",
-            start_time=datetime.datetime(2026, 3, 20, 9, 0, 0),
+            start_time=timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 0, 0)),
         )
 
         self.module = OnSiteAttendance()
@@ -145,7 +145,7 @@ class _OnSiteAttendanceBase(ProgramFrameworkTest):
             program_type=program_type,
             program_instance_name=instance_name,
             program_instance_label=instance_label,
-            start_time=datetime.datetime(2026, 3, 20, 9, 0, 0),
+            start_time=timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 0, 0)),
         )
         return other
 
@@ -226,7 +226,7 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
     def test_single_student_appears_in_all_buckets_until_section_end(self):
         """Student marked at 09:15 appears in 09:00, 10:00, 11:00 (section ends 11:00)."""
         student = self.students[0]
-        when = datetime.datetime(2026, 3, 20, 9, 15, 0)
+        when = timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 15, 0))
         self._make_sr(student, when)
 
         result = self.module.times_attending_class(self.program)
@@ -239,9 +239,9 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
     def test_result_keys_are_chronologically_ordered(self):
         """Dict keys must be ascending — the BigBoard graph depends on this."""
         s0, s1, s2 = self.students
-        self._make_sr(s0, datetime.datetime(2026, 3, 20, 9, 5, 0))
-        self._make_sr(s1, datetime.datetime(2026, 3, 20, 10, 5, 0))
-        self._make_sr(s2, datetime.datetime(2026, 3, 20, 11, 5, 0))
+        self._make_sr(s0, timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 5, 0)))
+        self._make_sr(s1, timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 5, 0)))
+        self._make_sr(s2, timezone.make_aware(datetime.datetime(2026, 3, 20, 11, 5, 0)))
 
         self.assertBucketsOrdered(self.module.times_attending_class(self.program))
 
@@ -254,16 +254,16 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         11:00 → {s0, s1, s2}
         """
         s0, s1, s2 = self.students
-        self._make_sr(s0, datetime.datetime(2026, 3, 20, 9, 15, 0))
-        self._make_sr(s1, datetime.datetime(2026, 3, 20, 9, 45, 0))
-        self._make_sr(s2, datetime.datetime(2026, 3, 20, 10, 5, 0))
+        self._make_sr(s0, timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 15, 0)))
+        self._make_sr(s1, timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 45, 0)))
+        self._make_sr(s2, timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 5, 0)))
 
         result = self.module.times_attending_class(self.program)
         self.assertBucketsOrdered(result)
 
-        b9  = datetime.datetime(2026, 3, 20, 9, 0, 0)
-        b10 = datetime.datetime(2026, 3, 20, 10, 0, 0)
-        b11 = datetime.datetime(2026, 3, 20, 11, 0, 0)
+        b9  = timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 0, 0))
+        b10 = timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 0, 0))
+        b11 = timezone.make_aware(datetime.datetime(2026, 3, 20, 11, 0, 0))
 
         self.assertEqual({u.id for u in result[b9]},  {s0.id, s1.id})
         self.assertEqual({u.id for u in result[b10]}, {s0.id, s1.id, s2.id})
@@ -272,27 +272,27 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
     def test_deduplicates_same_student_same_hour(self):
         """Two SRs for the same student within one hour → counted once per bucket."""
         student = self.students[0]
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 10, 0))
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 55, 0))
+        self._make_sr(student, timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 10, 0)))
+        self._make_sr(student, timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 55, 0)))
 
         result = self.module.times_attending_class(self.program)
         self.assertNoDuplicatesInBuckets(result)
         # Student must still appear — dedup must not silently drop them.
         self.assertUserInBuckets(student, self._expected_buckets(
-            datetime.datetime(2026, 3, 20, 9, 10, 0)
+            timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 10, 0))
         ), result)
 
     def test_deduplicates_same_student_across_different_hours(self):
         """Two SRs in different hours → carry-forward, but still once per bucket."""
         student = self.students[0]
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 5, 0))
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 10, 5, 0))
+        self._make_sr(student, timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 5, 0)))
+        self._make_sr(student, timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 5, 0)))
 
         result = self.module.times_attending_class(self.program)
         self.assertNoDuplicatesInBuckets(result)
         # Student must appear from their earliest SR onward.
         self.assertUserInBuckets(student, self._expected_buckets(
-            datetime.datetime(2026, 3, 20, 9, 5, 0)
+            timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 5, 0))
         ), result)
 
     def test_excludes_sr_for_unscheduled_section(self):
@@ -311,7 +311,7 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         unscheduled.clear_meeting_times()
 
         student = self.students[0]
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 0, 0),
+        self._make_sr(student, timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 0, 0)),
                       section=unscheduled)
 
         self.assertUserNotInResult(
@@ -333,7 +333,7 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
             user=self.students[0],
             section=other_section,
             relationship=self.attended_sr_type,
-            start_date=datetime.datetime(2026, 3, 20, 9, 0, 0),
+            start_date=timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 0, 0)),
         )
 
         # self.program has no SRs of its own → must be empty.
@@ -356,8 +356,8 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         late_slot, _ = Event.objects.get_or_create(
             program=self.program,
             event_type=event_type,
-            start=datetime.datetime(2026, 3, 20, 23, 0, 0),
-            end=datetime.datetime(2026, 3, 21, 1, 0, 0),
+            start=timezone.make_aware(datetime.datetime(2026, 3, 20, 23, 0, 0)),
+            end=timezone.make_aware(datetime.datetime(2026, 3, 21, 1, 0, 0)),
             short_description="Late Slot",
             description="23:00 03/20/2026",
         )
@@ -370,15 +370,15 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         night_section.assign_meeting_times([late_slot])
 
         student = self.students[0]
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 23, 30, 0),
+        self._make_sr(student, timezone.make_aware(datetime.datetime(2026, 3, 20, 23, 30, 0)),
                       section=night_section)
 
         result = self.module.times_attending_class(self.program)
 
         self.assertUserInBuckets(student, [
-            datetime.datetime(2026, 3, 20, 23, 0, 0),
-            datetime.datetime(2026, 3, 21, 0, 0, 0),
-            datetime.datetime(2026, 3, 21, 1, 0, 0),
+            timezone.make_aware(datetime.datetime(2026, 3, 20, 23, 0, 0)),
+            timezone.make_aware(datetime.datetime(2026, 3, 21, 0, 0, 0)),
+            timezone.make_aware(datetime.datetime(2026, 3, 21, 1, 0, 0)),
         ], result)
 
     def test_normal_same_day_sr_produces_correct_buckets(self):
@@ -395,14 +395,14 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         path and confirms no crash occurs.
         """
         student = self.students[0]
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 30, 0))
+        self._make_sr(student, timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 30, 0)))
 
         result = self.module.times_attending_class(self.program)
 
         self.assertUserInBuckets(student, [
-            datetime.datetime(2026, 3, 20, 9, 0, 0),
-            datetime.datetime(2026, 3, 20, 10, 0, 0),
-            datetime.datetime(2026, 3, 20, 11, 0, 0),
+            timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 0, 0)),
+            timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 0, 0)),
+            timezone.make_aware(datetime.datetime(2026, 3, 20, 11, 0, 0)),
         ], result)
 
 
@@ -425,7 +425,7 @@ class TestTimesCheckedIn(_OnSiteAttendanceBase):
 
     def test_single_record_returns_that_timestamp(self):
         """One check-in record → list containing exactly that timestamp."""
-        when = datetime.datetime(2026, 3, 20, 9, 5, 0)
+        when = timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 5, 0))
         self._make_record(self.students[0], when)
 
         self.assertEqual(self.module.times_checked_in(self.program), [when])
@@ -433,8 +433,8 @@ class TestTimesCheckedIn(_OnSiteAttendanceBase):
     def test_uses_earliest_checkin_per_user(self):
         """Multiple records for one user → only the minimum time is kept."""
         student = self.students[0]
-        earlier = datetime.datetime(2026, 3, 20, 9, 5, 0)
-        later   = datetime.datetime(2026, 3, 20, 9, 30, 0)
+        earlier = timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 5, 0))
+        later   = timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 30, 0))
         self._make_record(student, later)
         self._make_record(student, earlier)
 
@@ -445,9 +445,9 @@ class TestTimesCheckedIn(_OnSiteAttendanceBase):
     def test_result_is_sorted_ascending(self):
         """Result must be chronologically sorted regardless of insertion order."""
         s0, s1, s2 = self.students
-        self._make_record(s2, datetime.datetime(2026, 3, 20, 11, 0, 0))
-        self._make_record(s0, datetime.datetime(2026, 3, 20, 9, 5, 0))
-        self._make_record(s1, datetime.datetime(2026, 3, 20, 10, 0, 5))
+        self._make_record(s2, timezone.make_aware(datetime.datetime(2026, 3, 20, 11, 0, 0)))
+        self._make_record(s0, timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 5, 0)))
+        self._make_record(s1, timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 0, 5)))
 
         result = self.module.times_checked_in(self.program)
         self.assertEqual(result, sorted(result))
@@ -455,13 +455,13 @@ class TestTimesCheckedIn(_OnSiteAttendanceBase):
     def test_one_entry_per_user_regardless_of_record_count(self):
         """s0×2, s1×1, s2×3 records → exactly 3 entries in result."""
         s0, s1, s2 = self.students
-        for t in [datetime.datetime(2026, 3, 20, 9, 5, 0),
-                  datetime.datetime(2026, 3, 20, 9, 20, 0)]:
+        for t in [timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 5, 0)),
+                  timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 20, 0))]:
             self._make_record(s0, t)
-        self._make_record(s1, datetime.datetime(2026, 3, 20, 10, 0, 0))
-        for t in [datetime.datetime(2026, 3, 20, 10, 30, 0),
-                  datetime.datetime(2026, 3, 20, 10, 45, 0),
-                  datetime.datetime(2026, 3, 20, 11, 0, 0)]:
+        self._make_record(s1, timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 0, 0)))
+        for t in [timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 30, 0)),
+                  timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 45, 0)),
+                  timezone.make_aware(datetime.datetime(2026, 3, 20, 11, 0, 0))]:
             self._make_record(s2, t)
 
         self.assertEqual(len(self.module.times_checked_in(self.program)), 3)
@@ -470,11 +470,11 @@ class TestTimesCheckedIn(_OnSiteAttendanceBase):
         """End-to-end: each user's minimum time, sorted ascending."""
         s0, s1, s2 = self.students
         records = {
-            s0: [datetime.datetime(2026, 3, 20, 9, 12, 30),
-                 datetime.datetime(2026, 3, 20, 9, 5, 10)],
-            s1: [datetime.datetime(2026, 3, 20, 10, 0, 5)],
-            s2: [datetime.datetime(2026, 3, 20, 10, 59, 59),
-                 datetime.datetime(2026, 3, 20, 11, 0, 0)],
+            s0: [timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 12, 30)),
+                 timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 5, 10))],
+            s1: [timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 0, 5))],
+            s2: [timezone.make_aware(datetime.datetime(2026, 3, 20, 10, 59, 59)),
+                 timezone.make_aware(datetime.datetime(2026, 3, 20, 11, 0, 0))],
         }
         for user, times in records.items():
             for t in times:
@@ -490,7 +490,7 @@ class TestTimesCheckedIn(_OnSiteAttendanceBase):
             event=self.attended_record_type,
             program=other.program,
             user=self.students[0],
-            time=datetime.datetime(2026, 3, 20, 9, 0, 0),
+            time=timezone.make_aware(datetime.datetime(2026, 3, 20, 9, 0, 0)),
         )
 
         self.assertEqual(
