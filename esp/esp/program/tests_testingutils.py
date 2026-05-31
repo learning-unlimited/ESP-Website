@@ -7,6 +7,7 @@ These tests verify:
 3. That it does NOT delete objects from other programs.
 """
 
+from django.utils import timezone
 from esp.program.controllers.testingutils import DataCleanupController
 from esp.program.models import (
     RegistrationType, StudentRegistration, StudentSubjectInterest,
@@ -58,10 +59,10 @@ class TestDataCleanupTest(TestCase):
                 'program_modules': ProgramModule.objects.all(),
                 'class_categories': [cat.id for cat in categories],
                 'admins': [admin.id],
-                'teacher_reg_start': '2000-01-01 00:00:00',
-                'teacher_reg_end': '3001-01-01 00:00:00',
-                'student_reg_start': '2000-01-01 00:00:00',
-                'student_reg_end': '3001-01-01 00:00:00',
+                'teacher_reg_start': timezone.make_aware(2000, 1, 1, 0, 0, 0),
+                'teacher_reg_end': timezone.make_aware(3001, 1, 1, 0, 0, 0),
+                'student_reg_start': timezone.make_aware(2000, 1, 1, 0, 0, 0),
+                'student_reg_end': timezone.make_aware(3001, 1, 1, 0, 0, 0),
                 'base_cost': '0',
                 'sibling_discount': '0',
             }

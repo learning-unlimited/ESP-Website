@@ -416,7 +416,7 @@ class Command(BaseCommand):
 
     def _create_timeslots(self, program):
         et = EventType.objects.get(description='Class Time Block')
-        base = datetime(2026, 3, 21, 9, 0)
+        base = timezone.make_aware(datetime(2026, 3, 21, 9, 0))
         slots = []
         for i in range(5):
             start = base + timedelta(hours=i)
