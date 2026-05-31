@@ -24,7 +24,7 @@ def get_filter(prog, approved = False, scheduled = False, teachers = None):
     return filt
 
 # this is the date we added timestamps
-mindate = datetime.datetime(2016, 1, 30)
+mindate = timezone.make_aware(datetime.datetime(2016, 1, 30))
 
 class TeacherBigBoardModule(ProgramModuleObj):
     doc = """Shows lots of statistics for teacher registration that are updated automatically."""

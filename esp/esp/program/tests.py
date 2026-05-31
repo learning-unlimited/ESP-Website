@@ -499,7 +499,7 @@ class ProgramHappenTest(TestCase):
         thisyear = ESPUser.program_schoolyear(self.prog)
         prof = RegistrationProfile.getLastForProgram(self.student, self.prog)
         prof.contact_user = ContactInfo.objects.create( user=self.student, first_name=self.student.first_name, last_name=self.student.last_name, e_mail=self.student.email )
-        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.prog)), dob=datetime(thisyear-15, 1, 1) )
+        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.prog)), dob=timezone.make_aware(datetime(thisyear-15, 1, 1)) )
         prof.save()
 
         # Student logs in and signs up for classes

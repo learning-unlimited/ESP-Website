@@ -1,14 +1,15 @@
 """Tools for running tests."""
 
 from datetime import datetime
+from django.utils import timezone
 
 import esp.program.controllers.autoscheduler.data_model as data_model
 
 
 def create_test_schedule_1():
     timeslots = [data_model.AS_Timeslot(
-        datetime(2017, 2, 2, 10+i, 5),
-        datetime(2017, 2, 2, 10+i, 55),
+        timezone.make_aware(datetime(2017, 2, 2, 10+i, 5)),
+        timezone.make_aware(datetime(2017, 2, 2, 10+i, 55)),
         i + 1) for i in range(6)]
     restype = data_model.AS_ResourceType("Projector", 0, "Yes")
     classrooms = {
@@ -41,8 +42,8 @@ def create_test_schedule_2():
 def create_test_schedule_3():
     sched = create_test_schedule_1()
     timeslots_extra = [data_model.AS_Timeslot(
-        datetime(2017, 2, 3, 10+i, 5),
-        datetime(2017, 2, 3, 10+i, 55),
+        timezone.make_aware(datetime(2017, 2, 3, 10+i, 5)),
+        timezone.make_aware(datetime(2017, 2, 3, 10+i, 55)),
         i + 7) for i in range(6)]
     sched.timeslots += timeslots_extra
     sched.timeslot_dict = sched.build_timeslot_dict()

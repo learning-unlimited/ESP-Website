@@ -7,6 +7,7 @@ from django.conf import settings
 from django.core.validators import EMPTY_VALUES
 from django.forms import widgets
 from django.template import Template, Context
+from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from collections import OrderedDict
@@ -59,10 +60,10 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
         if isinstance(value, datetime.datetime):
             return value
         if isinstance(value, datetime.date):
-            return datetime.datetime(value.year, value.month, value.day)
+            return timezone.make_aware(datetime.datetime(value.year, value.month, value.day))
         for format in dtf:
             try:
-                return datetime.datetime(*(time.strptime(value, format)[:6]))
+                return timezone.make_aware(datetime.datetime(*(time.strptime(value, format)[:6])))
             except ValueError:
                 continue
         return None
