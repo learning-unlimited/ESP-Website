@@ -62,8 +62,8 @@ class ExpirableModel(models.Model):
     def is_valid(self, when=None):
         if when is None:
             when = timezone.now()
-        return (self.start_date is None or self.start_date < when) and \
-               (self.end_date is None or self.end_date > when)
+        return (self.start_date is None or self.start_date <= when) and \
+               (self.end_date is None or self.end_date >= when)
 
     @classmethod
     def valid_objects(cls, when=None):

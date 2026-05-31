@@ -358,7 +358,7 @@ class Program(models.Model, CustomFormsLinkModel):
         ordering = ('-id',)
         constraints = [
             models.CheckConstraint(
-                check=Q(grade_min__lte=F('grade_max')),
+                condition=Q(grade_min__lte=F('grade_max')),
                 name='program_grade_min_lte_grade_max'
          ),
         ]
