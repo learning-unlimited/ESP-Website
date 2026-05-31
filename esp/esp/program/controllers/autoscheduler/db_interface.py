@@ -6,6 +6,7 @@ database interaction happens.
 
 import json
 import logging
+import datetime
 
 from django.db.models import Count
 from django.db import transaction
@@ -624,7 +625,7 @@ def scheduling_hash_of(
 def _as_utc(dt):
     if dt.tzinfo is None:
         dt = timezone.make_aware(dt)
-    return dt.astimezone(timezone.utc)
+    return dt.astimezone(datetime.timezone.utc)
 
 
 @util.timed_func("db_interface_convert_classroom_resources")

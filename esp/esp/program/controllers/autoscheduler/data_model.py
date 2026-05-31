@@ -8,6 +8,7 @@ import bisect
 from functools import total_ordering
 import json
 
+import datetime
 from django.utils import timezone
 
 import esp.program.controllers.autoscheduler.config as config
@@ -167,7 +168,7 @@ class AS_ClassSection(object):
 def _as_utc(dt):
     if dt.tzinfo is None:
         dt = timezone.make_aware(dt)
-    return dt.astimezone(timezone.utc)
+    return dt.astimezone(datetime.timezone.utc)
 
 
 class AS_Teacher(object):
