@@ -134,7 +134,7 @@ class QuasiStaticData(models.Model):
 
         Note that this method maintains the author and created date.
         Client code should probably reset the author to request.user
-        and date to datetime.now (possibly with load_cur_user_time)"""
+        and date to timezone.now (possibly with load_cur_user_time)"""
         qsd_new = QuasiStaticData()
         qsd_new.url    = self.url
         qsd_new.author  = self.author
