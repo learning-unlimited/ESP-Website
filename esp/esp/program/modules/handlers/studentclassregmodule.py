@@ -42,6 +42,7 @@ from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
@@ -422,8 +423,55 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_cap
     def addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
-        if self.addclass_logic(request, tl, one, two, module, extra, prog):
-            return self.goToCore(tl)
+        from django.db import transaction
+        try:
+            if request.POST.get('force_replace') == 'true':
+                with transaction.atomic():
+                    sectionid = request.POST.get('section_id')
+                    if sectionid:
+                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        if section:
+                            conflicts = section.get_conflicts(request.user)
+                            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            for conflict in conflicts:
+                                error = conflict.cannotRemove(request.user)
+                                if error and not getattr(request.user, "onsite_local", False):
+                                    raise ESPError(error, log=False)
+                                conflict.unpreregister_student(request.user, verbs)
+                    success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+                    if not success:
+                        transaction.set_rollback(True)
+            else:
+                success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+
+            if success:
+                return self.goToCore(tl)
+
+        except ESPError_NoLog as inst:
+            # Check for schedule conflicts
+            error_msg = str(inst)
+            if 'conflict' in error_msg.lower():
+                sectionid = request.POST.get('section_id')
+                classid = request.POST.get('class_id')
+                if sectionid:
+                    try:
+                        section = ClassSection.objects.get(id=sectionid, parent_class__parent_program=prog)
+                        conflicts = section.get_conflicts(request.user)
+                        if conflicts:
+                            conflict_titles = ", ".join([str(c.title()) for c in conflicts])
+                            confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
+
+                            context = {'program': prog, 'user': request.user, 'one': one, 'two': two}
+                            context['confirm_msg'] = confirm_msg
+                            context['section_id'] = sectionid
+                            context['class_id'] = classid
+                            context['prereg_url'] = prog.get_learn_url() + 'addclass'
+                            from django.template.context_processors import csrf
+                            context.update(csrf(request))
+                            return render_to_response(self.baseDir()+'conflict_confirm.html', request, context)
+                    except (ClassSection.DoesNotExist, ValueError):
+                        pass
+            raise
 
     @aux_call
     @needs_student_in_grade
@@ -434,7 +482,28 @@ class StudentClassRegModule(ProgramModuleObj):
         if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.addclass(request, tl, one, two, module, extra, prog)
         try:
-            success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+            from django.db import transaction
+            # Handle force replace atomically so conflicting classes are only dropped
+            # if the replacement registration succeeds.
+            if request.POST.get('force_replace') == 'true':
+                with transaction.atomic():
+                    sectionid = request.POST.get('section_id')
+                    if sectionid:
+                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        if section:
+                            conflicts = section.get_conflicts(request.user)
+                            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            for conflict in conflicts:
+                                error = conflict.cannotRemove(request.user)
+                                if error and not getattr(request.user, "onsite_local", False):
+                                    raise ESPError(error, log=False)
+                                conflict.unpreregister_student(request.user, verbs)
+                    success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+                    if not success:
+                        transaction.set_rollback(True)
+            else:
+                success = self.addclass_logic(request, tl, one, two, module, extra, prog)
+
             if 'no_schedule' in request.POST:
                 resp = HttpResponse(content_type='application/json')
                 json.dump({'status': success}, resp)
@@ -613,7 +682,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=3600)
+    @method_decorator(cache_control(public=True, max_age=3600))
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
@@ -633,7 +702,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_student_in_grade
-    @vary_on_cookie
+    @method_decorator(vary_on_cookie)
     def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         reg_bits = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog).select_related()
 
@@ -651,14 +720,14 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
+    @method_decorator(cache_control(public=True, max_age=120))
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
 
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @cache_control(public=True, max_age=120)
+    @method_decorator(cache_control(public=True, max_age=120))
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         #   Get the ProgramPrintables module for the program
         from esp.program.modules.handlers.programprintables import ProgramPrintables
@@ -782,7 +851,13 @@ class StudentClassRegModule(ProgramModuleObj):
 
         module = prog.getModule('OnSiteClassList')
         if module:
-            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options={}, template_name='allclass_fragment.html')
+            # Forward only supported public filtering params to avoid exposing
+            # internal classList options.
+            options = {}
+            for key in ('start', 'end', 'sorting'):
+                if key in request.GET:
+                    options[key] = request.GET.get(key)
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options=options, template_name='openclasses.html')
 
         #  Otherwise this will be a 404
         return None
