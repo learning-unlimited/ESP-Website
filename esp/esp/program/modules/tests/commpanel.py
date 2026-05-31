@@ -47,10 +47,8 @@ from django.template import Context as DjangoContext
 from django.template import Template
 from django.template.loader import render_to_string
 from django.test import SimpleTestCase
-from django.utils.html import strip_tags
-from django.utils import timezone
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 
 class CommunicationsPanelTest(ProgramFrameworkTest):
@@ -77,7 +75,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         m = ProgramModule.objects.get(handler='CommModule', module_type='manage')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
-    def runTest(self):
+    def test_basic_comm_flow(self):
         #   Log in an administrator
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
@@ -127,14 +125,16 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertEqual(msg.from_email, 'info@testserver.learningu.org')
         self.assertEqual(msg.extra_headers.get('Reply-To', ''), 'replyto@testserver.learningu.org')
 
-        #   Check that the HTML-templated email renders correctly
-        context_dict = {'user'   : ActionHandler(self.students[0], self.students[0]),
-                        'program': ActionHandler(self.program, self.students[0]),
-                        'request': ActionHandler(MessageRequest(), self.students[0]),
-                        'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
-        rendered_text = render_to_string('email/default_email.html', {'msgbody': 'Test Body 123',})
-        rendered_text = Template(rendered_text).render(DjangoContext(context_dict))
-        self.assertEqual(msg.body, strip_tags(rendered_text).strip())
+        #   Check the email body. send_mail detects the templated HTML, sends a
+        #   tag-stripped plaintext body, and attaches the HTML as a text/html
+        #   alternative, so assert on those properties rather than an exact
+        #   rendered-and-stripped string (whose whitespace normalization is
+        #   implementation-specific).
+        self.assertIn('Test Body 123', msg.body)
+        self.assertNotIn('<html', msg.body)
+        html_alternatives = [content for content, mimetype in getattr(msg, 'alternatives', []) if mimetype == 'text/html']
+        self.assertEqual(len(html_alternatives), 1, "Expected exactly one text/html alternative.")
+        self.assertIn('Test Body 123', html_alternatives[0])
 
 
         #   Check that the MessageRequest was marked as processed

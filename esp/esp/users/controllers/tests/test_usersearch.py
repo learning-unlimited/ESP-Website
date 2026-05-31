@@ -1,30 +1,6 @@
-from __future__ import absolute_import
-import logging
-logger = logging.getLogger(__name__)
-
-from django import forms
-from django.contrib.auth import logout, login, authenticate
-from django.contrib.auth.models import Group
-from django.core import mail
-from django.conf import settings
-from django.test.client import Client
-
-from esp.middleware import ESPError
-from esp.program.models import RegistrationProfile, Program
 from esp.program.tests import ProgramFrameworkTest
-from esp.tagdict.models import Tag
-from esp.tests.util import user_role_setup
-from esp.users.forms.user_reg import ValidHostEmailField
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
-from django.test import TestCase
-import esp.users.views as views
-from esp.program.models import Program, RegistrationProfile
-
-import random
-import string
-
-#python manage.py test users.controllers.tests.test_usersearch:TestUserSearchController.test_overlap_bug
-
+from esp.users.models import ESPUser, StudentInfo, Record, RecordType
+from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
 
 
