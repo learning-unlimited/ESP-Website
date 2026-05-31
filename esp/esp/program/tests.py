@@ -355,12 +355,12 @@ class ProgramHappenTest(TestCase):
                 'program_modules': [x.id for x in ProgramModule.objects.all()],
                 'class_categories': [x.id for x in ClassCategories.objects.all()],
                 'admins': self.admin.id,
-                'teacher_reg_start': timezone.make_aware(datetime(2000, 1, 1, 0, 0, 0)),
-                'teacher_reg_end':   timezone.make_aware(datetime(3001, 1, 1, 0, 0, 0)),
-                'student_reg_start': timezone.make_aware(datetime(2000, 1, 1, 0, 0, 0)),
-                'student_reg_end':   timezone.make_aware(datetime(3001, 1, 1, 0, 0, 0)),
-                'publish_start':     timezone.make_aware(datetime(2000, 1, 1, 0, 0, 0)),
-                'publish_end':       timezone.make_aware(datetime(3001, 1, 1, 0, 0, 0)),
+                'teacher_reg_start': '2000-01-01 00:00:00',  # these go through form(request.POST) so must be string, cannot use timezone.make_aware
+                'teacher_reg_end':   '3001-01-01 00:00:00',
+                'student_reg_start': '2000-01-01 00:00:00',
+                'student_reg_end':   '3001-01-01 00:00:00',
+                'publish_start':     '2000-01-01 00:00:00',
+                'publish_end':       '3001-01-01 00:00:00',
                 'base_cost':         '666',
             }
         self.client.post('/manage/newprogram', prog_dict)
