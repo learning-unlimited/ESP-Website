@@ -1,22 +1,23 @@
 {% extends "main.html" %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/default_styles/homepage.css" />
+{% endblock stylesheets %}
+
 {% block content %}
 
-  {% block heading %}
-    <div class="row-fluid" style="margin-top: 20px;">
-      <div class="span12">
-        <div class="well">
-          <h1>New Site</h1>
-          <h3>You've just set up a Web site for {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}!</h3>
-          <a href="/themes/">
-            <button class="btn btn-large btn-block btn-primary" type="button" style="width: 75%; font-size: 1.5em;">Configure site appearance</button>
-          </a>
-        </div>
-      </div>
-    </div>
-  {% endblock heading %}
+  <div class="homepage-container">
 
-  {% load render_qsd %}
+    {% block heading %}
+      <div class="homepage-hero homepage-card">
+        <h1>New Site</h1>
+        <h3>You've just set up a Web site for {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}!</h3>
+        <a href="/themes/" class="btn btn-large btn-primary">Configure site appearance</a>
+      </div>
+    {% endblock heading %}
+
+    {% load render_qsd %}
 
   {% inline_qsd_block "homepage_qsdpart" %}
     <div class="row-fluid" style="margin-top:30px; text-align:center;">
