@@ -830,6 +830,70 @@ class ChooseProgramTestCase(unittest.TestCase):
         self.assertIs(result, selected)
 
 
+class ExpirableModelBoundaryTest(DjangoTestCase):
+    """Tests if ExpirableModel bounds have consistent logic (#5815)."""
+
+    def test_boundary_consistency(self):
+        from esp.users.models import Permission
+
+        # 1. Setup specific boundaries
+        start_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
+        end_time = datetime.datetime(2026, 1, 31, 12, 0, 0)
+
+        # Create a Permission (a concrete subclass of ExpirableModel)
+        perm = Permission.objects.create(
+            permission_type='Administer',
+            start_date=start_time,
+            end_date=end_time
+        )
+
+        # 2. Test exact start boundary (should be valid/included)
+        self.assertTrue(
+            perm.is_valid(when=start_time),
+            "is_valid() should be True at exact start_date"
+        )
+        self.assertIn(
+            perm,
+            Permission.valid_objects(when=start_time),
+            "valid_objects() should include exact start_date"
+        )
+
+        # 3. Test exact end boundary (should be valid/included)
+        self.assertTrue(
+            perm.is_valid(when=end_time),
+            "is_valid() should be True at exact end_date"
+        )
+        self.assertIn(
+            perm,
+            Permission.valid_objects(when=end_time),
+            "valid_objects() should include exact end_date"
+        )
+
+        # 4. Test just before start boundary (should be invalid/excluded)
+        just_before = start_time - datetime.timedelta(microseconds=1)
+        self.assertFalse(
+            perm.is_valid(when=just_before),
+            "is_valid() should be False just before start_date"
+        )
+        self.assertNotIn(
+            perm,
+            Permission.valid_objects(when=just_before),
+            "valid_objects() should exclude just before start_date"
+        )
+
+        # 5. Test just after end boundary (should be invalid/excluded)
+        just_after = end_time + datetime.timedelta(microseconds=1)
+        self.assertFalse(
+            perm.is_valid(when=just_after),
+            "is_valid() should be False just after end_date"
+        )
+        self.assertNotIn(
+            perm,
+            Permission.valid_objects(when=just_after),
+            "valid_objects() should exclude just after end_date"
+        )
+
+
 def suite():
     """Choose tests to expose to the Django tester."""
     s = unittest.TestSuite()
