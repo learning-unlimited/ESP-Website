@@ -56,6 +56,15 @@
 @btnInverseLinkColor:       #fff;
 @navbarCollapseWidth:             979px;
 
+// Bridge BS2 button variable names to the BS3 equivalents so the theme
+// editor's button color pickers actually affect rendered buttons.
+@btn-default-bg:            @btnBackground;
+@btn-default-color:         @btnLinkColor;
+@btn-default-border:        darken(@btnBackground, 12%);
+@btn-primary-bg:            @btnPrimaryBackground;
+@btn-primary-color:         @btnPrimaryLinkColor;
+@btn-primary-border:        darken(@btnPrimaryBackground, 5%);
+
 // Bootstrap 2 variables that are not in Bootstrap 3 but are used in theme
 // LESS files; defined here so themes continue to compile under Bootstrap 3.
 @navbarCollapseDesktopWidth:      980px;

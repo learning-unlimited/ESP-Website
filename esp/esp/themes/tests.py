@@ -30,7 +30,8 @@ class ThemesTest(TestCase):
 
         #   Redirect compiled CSS output to avoid disturbing installed setup
         self._css_file = themes_settings.COMPILED_CSS_FILE
-        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'main')
+        themes_settings.COMPILED_CSS_FILE = f'theme_compiled_test_{worker_id}.css'
 
     def tearDown(self):
 
