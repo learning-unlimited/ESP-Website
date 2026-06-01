@@ -367,9 +367,6 @@
                 {% if manage_selectList %}
                 <a href="/manage/{{ program.getUrlBase }}/selectList" title="get a list of users" class="dashboard-btn"><i class="glyphicon glyphicon-list-alt"></i> Arbitrary User List</a>
                 {% endif %}
-                {% if manage_refund %}
-                <a href="/accounting/refund?program={{ program.id }}" class="dashboard-btn"><i class="glyphicon glyphicon-usd"></i> Refunds</a>
-                {% endif %}
                 {% if manage_deactivate %}
                 <a href="/manage/{{ program.getUrlBase }}/deactivate" title="mass-deactivate a set of users" class="dashboard-btn"><i class="glyphicon glyphicon-ban-circle"></i> Deactivate Users</a>
                 {% endif %}
@@ -384,6 +381,27 @@
                 {% endif %}
                 {% if manage_edit_availability %}
                 <a href="/manage/{{ program.getUrlBase }}/edit_availability" title="check or edit a teacher's availability" class="dashboard-btn"><i class="glyphicon glyphicon-ok-sign"></i> Check Availability</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <button class="collapsible-btn">Financial and Accounting <span class="dropdown-icon text-muted">&#9660;</span></button>
+        <div class="collapsible-content">
+            <div class="pill-grid" style="padding: 15px 0 5px 0;">
+                {% if manage_accounting %}
+                <a href="/manage/{{ program.getUrlBase }}/accounting" title="view payment/accounting details for a student" class="dashboard-btn"><i class="glyphicon glyphicon-stats"></i> Accounting</a>
+                {% endif %}
+                {% if manage_finaidapprove %}
+                <a href="/manage/{{ program.getUrlBase }}/finaidapprove" title="review and approve financial aid requests" class="dashboard-btn"><i class="glyphicon glyphicon-gift"></i> Financial Aid Requests</a>
+                {% endif %}
+                {% if manage_lineitems %}
+                <a href="/manage/{{ program.getUrlBase }}/lineitems" title="create/edit custom costs and purchasable items" class="dashboard-btn"><i class="glyphicon glyphicon-list-alt"></i> Line Items Management</a>
+                {% endif %}
+                {% if manage_viewpay %}
+                <a href="/manage/{{ program.getUrlBase }}/viewpay" title="list credit card payments for the program" class="dashboard-btn"><i class="glyphicon glyphicon-credit-card"></i> View Credit Card Transactions</a>
+                {% endif %}
+                {% if manage_refund %}
+                <a href="/accounting/refund?program={{ program.id }}" title="issue refunds for credit card payments" class="dashboard-btn"><i class="glyphicon glyphicon-usd"></i> Refunds</a>
                 {% endif %}
             </div>
         </div>

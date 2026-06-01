@@ -338,7 +338,9 @@ class ProgramModuleObj(ExpirableModel):
                                        'AdminTestingModule', 'BatchClassRegModule', 'BigBoardModule',
                                        'CheckAvailabilityModule', 'ClassSearchModule', 'DeactivationModule',
                                        'GroupTextModule', 'MapGenModule', 'SchedulingCheckModule',
-                                       'TeacherBigBoardModule', 'UserGroupModule', 'UserRecordsModule']
+                                       'TeacherBigBoardModule', 'UserGroupModule', 'UserRecordsModule',
+                                       'AccountingModule', 'FinAidApproveModule', 'LineItemsModule',
+                                       'CreditCardViewer']
     def isOnSiteFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""

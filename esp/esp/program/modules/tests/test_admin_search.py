@@ -89,6 +89,7 @@ class FeaturedModuleSearchEntryTest(ProgramFrameworkTest):
         'Class Management and Scheduling',
         'Registration',
         'Participants and Communication',
+        'Financial and Accounting',
         'Printables',
     ])
     # 'Other' is for manage tools that are searchable but not featured on the

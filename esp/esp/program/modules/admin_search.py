@@ -11,6 +11,7 @@ SEARCH_CATEGORY_CLASSES = "Class Management and Scheduling"
 SEARCH_CATEGORY_REGISTRATION = "Registration"
 SEARCH_CATEGORY_PARTICIPANTS = "Participants and Communication"
 SEARCH_CATEGORY_PRINTABLES = "Printables"
+SEARCH_CATEGORY_FINANCIAL = "Financial and Accounting"
 
 # Views that require a class ID or extra path segment; linking to /tl/prog/view
 # would not open a valid page. Excluded from admin search so users don't get
