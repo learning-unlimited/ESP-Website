@@ -1,4 +1,4 @@
-import pytz
+from zoneinfo import ZoneInfo
 from django.utils import timezone
 from esp.program.models import Program
 
@@ -47,7 +47,7 @@ class TimezoneMiddleware:
         if tzname:
             try:
                 # Activate the timezone for the duration of the request
-                timezone.activate(pytz.timezone(tzname))
+                timezone.activate(ZoneInfo(tzname))
             except Exception:
                 timezone.deactivate()
         else:
