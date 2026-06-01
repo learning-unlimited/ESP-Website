@@ -255,7 +255,10 @@ class ThemeController(object):
         if theme_name is None:
             theme_name = self.get_current_theme()
 
-        less_data = ''
+        # Import global bootstrap variable definitions and custom overrides first so
+        # theme variables that reference them (e.g. @navbarInverseBackground) resolve
+        # correctly during the isolated compilation below.
+        less_data = '@import "variables.less";\n@import "variables_custom.less";\n'
         # load variable LESS from files
         for filename in self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables.*\.less$'):
             less_file = open(filename)
