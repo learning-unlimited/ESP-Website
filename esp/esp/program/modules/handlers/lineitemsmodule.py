@@ -61,7 +61,9 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             id="manage_lineitems",
             url="/manage/%s/lineitems" % base,
             title="Line Items Management",
-            category="Configure",
+            # Not a featured dashboard button, so it groups under "Other" in search
+            # (the old "Configure" label is not a current dashboard section).
+            category="Other",
             keywords=["line items", "extra costs", "fees", "payments", "accounting"],
         )
 

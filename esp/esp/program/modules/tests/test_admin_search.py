@@ -76,9 +76,9 @@ class FeaturedModuleSearchEntryTest(ProgramFrameworkTest):
 
     This guarantees:
       1. every featured module contributes at least one search entry, so
-        featuring a module also makes it findable
-      2. each of those entries is categorized under a real dashboard section,
-        which catches stale labels
+         featuring a module also makes it findable
+      2. every search entry uses a known category, which
+         catches stale labels that would create bogus search groups
     """
 
     # Dashboard section headers from directory.html; a featured module's search
@@ -91,7 +91,8 @@ class FeaturedModuleSearchEntryTest(ProgramFrameworkTest):
         'Participants and Communication',
         'Printables',
     ])
-    # 'Other' is also a valid category for legacy entries
+    # 'Other' is for manage tools that are searchable but not featured on the
+    # dashboard
     _OTHER = 'Other'
 
     # Featured modules that intentionally produce no search entry
@@ -125,23 +126,15 @@ class FeaturedModuleSearchEntryTest(ProgramFrameworkTest):
                 "(views checked: %s)" % (pmo.module.handler, sorted(pmo.views)),
             )
 
-    def test_featured_entries_use_a_known_section(self):
-        """No featured entry uses a stale/unknown category.
-
-        Catches labels like the old "Configure"/"Coordinate"/"Logistics" that do
-        not match any current dashboard section.
+    def test_all_entries_use_a_known_category(self):
+        """Every search entry must use a known category.
         """
         allowed = self._KNOWN_SECTIONS | {self._OTHER}
-        featured_ids = set()
-        for pmo in self._featured_modules():
-            featured_ids |= self._entry_ids_for(pmo)
         entries = get_admin_search_entries(self.program)
         for entry in entries:
-            if entry.id not in featured_ids:
-                continue
             self.assertIn(
                 entry.category, allowed,
-                "%s uses category %r, which is not a current dashboard section"
+                "%s uses category %r, which is not a valid search category"
                 % (entry.id, entry.category),
             )
 
