@@ -67,7 +67,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             title="Volunteer Signup",
             # Grouped under the dashboard section where the "Volunteer Reg" button appears in directory.html.
             category=SEARCH_CATEGORY_REGISTRATION,
-            keywords=["volunteer", "signup", "shifts"],
+            keywords=["volunteer", "signup", "shifts", "registration"],
         )
 
     def require_auth(self):
