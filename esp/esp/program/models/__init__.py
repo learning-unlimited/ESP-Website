@@ -357,7 +357,7 @@ class Program(models.Model, CustomFormsLinkModel):
         ordering = ('-id',)
         constraints = [
             models.CheckConstraint(
-                check=Q(grade_min__lte=F('grade_max')),
+                condition=Q(grade_min__lte=F('grade_max')),
                 name='program_grade_min_lte_grade_max'
          ),
         ]
@@ -2378,6 +2378,7 @@ def maybe_create_module_ext(handler, ext):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
+from esp.program.models.printable_job import PrintableJob
 
 def install():
     from esp.program.models.class_ import install as install_class

@@ -55,7 +55,7 @@
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
         {% for sec in class.get_sections %}
-           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}} <br />{% endif %}
+           {% if not sec.friendly_times|length == 0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}} <br />{% endif %}
           {% endfor %}
         <br />
         {% endif %}
@@ -86,7 +86,7 @@
            {% for sec in class.get_sections %}
               {% with sec.isRegClosed as is_closed %}
               {% if is_closed %}<font color="#999999">(Closed) {% endif %}
-              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull or is_closed %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% if sec.num_apps %} ({{ sec.num_apps }} applied){% endif %}{% endif %} (max {{ sec.capacity }})<br />{% endif %} 
+              {% if not sec.friendly_times|length == 0 %}Section {{ sec.index }}: {% if sec.isFull or is_closed %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% if sec.num_apps %} ({{ sec.num_apps }} applied){% endif %}{% endif %} (max {{ sec.capacity }})<br />{% endif %} 
               {% if is_closed %}</font>{% endif %}
               {% endwith %}
            {% endfor %}
