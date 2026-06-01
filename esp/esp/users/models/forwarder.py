@@ -2,6 +2,7 @@
 from django.db import models, transaction
 
 # esp dependencies
+from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
 
 MAX_DEPTH = 5
