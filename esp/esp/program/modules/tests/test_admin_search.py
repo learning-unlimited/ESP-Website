@@ -69,3 +69,96 @@ class AdminSearchEntriesTest(ProgramFrameworkTest):
         self.assertEqual(_humanize_view_name("some_aux_view"), "Some Aux View")
         self.assertEqual(_humanize_view_name("selfcheckin"), "Selfcheckin")
         self.assertEqual(_humanize_view_name(""), "")
+
+
+class FeaturedModuleSearchEntryTest(ProgramFrameworkTest):
+    """Featured dashboard modules should be discoverable via the admin search.
+
+    This guarantees:
+      1. every featured module contributes at least one search entry, so
+        featuring a module also makes it findable
+      2. each of those entries is categorized under a real dashboard section,
+        which catches stale labels
+    """
+
+    # Dashboard section headers from directory.html; a featured module's search
+    # entry must be categorized under one of these. The same strings live in
+    # admin_search.py as the SEARCH_CATEGORY_* constants.
+    _KNOWN_SECTIONS = frozenset([
+        'Program Management and Settings',
+        'Class Management and Scheduling',
+        'Registration',
+        'Participants and Communication',
+        'Printables',
+    ])
+    # 'Other' is also a valid category for legacy entries
+    _OTHER = 'Other'
+
+    # Featured modules that intentionally produce no search entry
+    _FEATURED_NOT_SEARCHABLE = frozenset(['ClassFlagModule'])
+
+    def _featured_modules(self):
+        """Featured modules we expect to be searchable: the isAdminPortalFeatured()
+        whitelist as instantiated for this program, minus documented exceptions."""
+        return [
+            pmo for pmo in self.program.getModules()
+            if pmo.isAdminPortalFeatured()
+            and pmo.module.handler not in self._FEATURED_NOT_SEARCHABLE
+        ]
+
+    def _entry_ids_for(self, pmo):
+        """Entry ids a module could produce, as `<module_type>_<view>` over all of
+        its views. Mirrors how get_admin_search_entries() forms ids, so these can
+        be matched against actual entry ids."""
+        return {'%s_%s' % (pmo.module.module_type, v) for v in pmo.views}
+
+    def test_every_featured_module_is_searchable(self):
+        """Each featured module contributes at least one search entry."""
+        entries = get_admin_search_entries(self.program)
+        entry_ids = {e.id for e in entries}
+        for pmo in self._featured_modules():
+            # Searchable if any of the module's views produced an entry.
+            module_ids = self._entry_ids_for(pmo)
+            self.assertTrue(
+                module_ids & entry_ids,
+                "Featured module %s should contribute at least one search entry "
+                "(views checked: %s)" % (pmo.module.handler, sorted(pmo.views)),
+            )
+
+    def test_featured_entries_use_a_known_section(self):
+        """No featured entry uses a stale/unknown category.
+
+        Catches labels like the old "Configure"/"Coordinate"/"Logistics" that do
+        not match any current dashboard section.
+        """
+        allowed = self._KNOWN_SECTIONS | {self._OTHER}
+        featured_ids = set()
+        for pmo in self._featured_modules():
+            featured_ids |= self._entry_ids_for(pmo)
+        entries = get_admin_search_entries(self.program)
+        for entry in entries:
+            if entry.id not in featured_ids:
+                continue
+            self.assertIn(
+                entry.category, allowed,
+                "%s uses category %r, which is not a current dashboard section"
+                % (entry.id, entry.category),
+            )
+
+    def test_aux_endpoints_do_not_produce_entries(self):
+        """Aux endpoints of featured modules must not appear as search results.
+
+        get_admin_search_entry is called for every (tl, view) pair the module
+        exposes, so each handler must return None for its non-main views to
+        avoid broken search links (e.g. /manage/<prog>/grouptextfinal).
+        """
+        aux_views = [
+            'create_autorule', 'batchclassregfinal', 'grouptextfinal',
+            'deactivatefinal', 'usergroupfinal', 'userrecordsfinal',
+            'start_testing', 'reset_testing', 'survey_manage',
+        ]
+        entries = get_admin_search_entries(self.program)
+        entry_ids = {e.id for e in entries}
+        for aux in aux_views:
+            self.assertNotIn('manage_%s' % aux, entry_ids,
+                             "Aux endpoint %r should not produce a search entry" % aux)
