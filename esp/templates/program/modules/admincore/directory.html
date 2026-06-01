@@ -286,6 +286,9 @@
                 {% if onsite_main %}
                 <a href="/onsite/{{ program.getUrlBase }}/main" class="dashboard-btn"><i class="glyphicon glyphicon-home"></i> Onsite Main</a>
                 {% endif %}
+                {% if manage_admin_testing %}
+                <a href="/manage/{{ program.getUrlBase }}/admin_testing" title="test student/teacher registration with sandboxed accounts" class="dashboard-btn"><i class="glyphicon glyphicon-console"></i> Testing Mode</a>
+                {% endif %}
             </div>
         </div>
 
@@ -301,8 +304,14 @@
                 {% if manage_ajax_scheduling %}
                 <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" title="assign rooms and times" class="dashboard-btn"><i class="glyphicon glyphicon-calendar"></i> Scheduling</a>
                 {% endif %}
+                {% if manage_scheduling_checks %}
+                <a href="/manage/{{ program.getUrlBase }}/scheduling_checks" title="diagnostics for invalid schedule assignments" class="dashboard-btn"><i class="glyphicon glyphicon-check"></i> Scheduling Diagnostics</a>
+                {% endif %}
                 {% if learn_catalog %}
                 <a href="/learn/{{ program.getUrlBase }}/catalog" class="dashboard-btn"><i class="glyphicon glyphicon-book"></i> Catalog</a>
+                {% endif %}
+                {% if manage_classsearch %}
+                <a href="/manage/{{ program.getUrlBase }}/classsearch" title="search for classes matching criteria" class="dashboard-btn"><i class="glyphicon glyphicon-search"></i> Class Search</a>
                 {% endif %}
             </div>
         </div>
@@ -319,14 +328,23 @@
                 {% if manage_teacher_events %}
                 <a href="/manage/{{ program.getUrlBase }}/teacher_events" title="edit/monitor teacher events" class="dashboard-btn"><i class="glyphicon glyphicon-comment"></i> Teacher Events</a>
                 {% endif %}
+                {% if manage_teacherbigboard %}
+                <a href="/manage/{{ program.getUrlBase }}/teacherbigboard" title="live teacher registration statistics" class="dashboard-btn"><i class="glyphicon glyphicon-eye-open"></i> Teacher Big Board</a>
+                {% endif %}
                 {% if learn_studentreg %}
                 <a href="/learn/{{ program.getUrlBase }}/studentreg" class="dashboard-btn"><i class="glyphicon glyphicon-user"></i> Student Reg</a>
+                {% endif %}
+                {% if manage_batchclassreg %}
+                <a href="/manage/{{ program.getUrlBase }}/batchclassreg" title="register a group of students to a class section" class="dashboard-btn"><i class="glyphicon glyphicon-import"></i> Batch Class Reg</a>
                 {% endif %}
                 {% if manage_lunch_constraints %}
                 <a href="/manage/{{ program.getUrlBase }}/lunch_constraints" title="rules for your students' schedules" class="dashboard-btn"><i class="glyphicon glyphicon-cutlery"></i> Lunch Rules</a>
                 {% endif %}
                 {% if manage_registrationtype_management %}
                 <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" title="what classes students see on their schedule" class="dashboard-btn"><i class="glyphicon glyphicon-blackboard"></i> Reg Types</a>
+                {% endif %}
+                {% if manage_bigboard %}
+                <a href="/manage/{{ program.getUrlBase }}/bigboard" title="live student registration statistics" class="dashboard-btn"><i class="glyphicon glyphicon-eye-open"></i> Student Big Board</a>
                 {% endif %}
                 {% if volunteer_signup %}
                 <a href="/volunteer/{{ program.getUrlBase }}/signup" class="dashboard-btn"><i class="glyphicon glyphicon-heart"></i> Volunteer Reg</a>
@@ -343,11 +361,29 @@
                 {% if manage_commpanel %}
                 <a href="/manage/{{ program.getUrlBase }}/commpanel" title="communications panel" class="dashboard-btn"><i class="glyphicon glyphicon-envelope"></i> Email</a>
                 {% endif %}
+                {% if manage_grouptextpanel %}
+                <a href="/manage/{{ program.getUrlBase }}/grouptextpanel" title="send text messages to users" class="dashboard-btn"><i class="glyphicon glyphicon-phone"></i> Group Text</a>
+                {% endif %}
                 {% if manage_selectList %}
                 <a href="/manage/{{ program.getUrlBase }}/selectList" title="get a list of users" class="dashboard-btn"><i class="glyphicon glyphicon-list-alt"></i> Arbitrary User List</a>
                 {% endif %}
                 {% if manage_refund %}
                 <a href="/accounting/refund?program={{ program.id }}" class="dashboard-btn"><i class="glyphicon glyphicon-usd"></i> Refunds</a>
+                {% endif %}
+                {% if manage_deactivate %}
+                <a href="/manage/{{ program.getUrlBase }}/deactivate" title="mass-deactivate a set of users" class="dashboard-btn"><i class="glyphicon glyphicon-ban-circle"></i> Deactivate Users</a>
+                {% endif %}
+                {% if manage_usergroup %}
+                <a href="/manage/{{ program.getUrlBase }}/usergroup" title="manage which users are in which groups" class="dashboard-btn"><i class="glyphicon glyphicon-th-large"></i> User Groups</a>
+                {% endif %}
+                {% if manage_userrecords %}
+                <a href="/manage/{{ program.getUrlBase }}/userrecords" title="set records for a list of users" class="dashboard-btn"><i class="glyphicon glyphicon-folder-open"></i> User Records</a>
+                {% endif %}
+                {% if manage_usermap %}
+                <a href="/manage/{{ program.getUrlBase }}/usermap" title="map the geographic distribution of users" class="dashboard-btn"><i class="glyphicon glyphicon-map-marker"></i> User Map</a>
+                {% endif %}
+                {% if manage_edit_availability %}
+                <a href="/manage/{{ program.getUrlBase }}/edit_availability" title="check or edit a teacher's availability" class="dashboard-btn"><i class="glyphicon glyphicon-ok-sign"></i> Check Availability</a>
                 {% endif %}
             </div>
         </div>
