@@ -2,7 +2,6 @@
 from django.db import models, transaction
 
 # esp dependencies
-from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
 
 MAX_DEPTH = 5
@@ -12,7 +11,7 @@ class UserForwarder(models.Model):
     Links source user to target user, to make all login sessions under target.
 
     """
-    source = AjaxForeignKey(ESPUser, related_name='forwarders_out', unique=True, on_delete=models.CASCADE)
+    source = models.OneToOneField(ESPUser, related_name='forwarders_out', on_delete=models.CASCADE)
     target = AjaxForeignKey(ESPUser, related_name='forwarders_in', on_delete=models.CASCADE)
 
     # Django tries to figure out the correct app label by going one level up.
