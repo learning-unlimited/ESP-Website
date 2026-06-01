@@ -502,7 +502,7 @@ class AccountCreationTest(TestCase):
         self.assertEqual(mail.outbox[0].to[0], u.email)
         #note: will break if the activation email is changed too much
         import re
-        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
+        match = re.search(r"\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
         self.assertEqual(match.group("user"), u.username)
         self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
 
@@ -580,8 +580,8 @@ class TestChangeRequestView(TestCase):
 
         response = c.post("/myesp/grade_change_request", { "reason": '', 'claimed_grade': 483 })
 
-        self.assertFormError(response, 'form', 'reason', 'This field is required.')
-        self.assertFormError(response, 'form', 'claimed_grade', 'Value 483 is not a valid choice.')
+        self.assertFormError(response.context['form'], 'reason', 'This field is required.')
+        self.assertFormError(response.context['form'], 'claimed_grade', 'Value 483 is not a valid choice.')
 
     def test_send_request_email(self):
         c = Client()

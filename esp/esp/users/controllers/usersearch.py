@@ -303,7 +303,10 @@ class UserSearchController(object):
             #   Apply Boolean filters
             #   Base list will be intersected with any lists marked 'AND', and then unioned
             #   with any lists marked 'OR'.
-            checkbox_keys = [x[9:] for x in [x for x in list(data.keys()) if x.startswith('checkbox_')]]
+            #   Only treat a checkbox as active when it has a truthy value;
+            #   unchecked boxes can still appear in the POST data with an empty
+            #   value, and must not be applied as list filters.
+            checkbox_keys = [x[9:] for x in list(data.keys()) if x.startswith('checkbox_') and data.get(x)]
             and_keys = [x[4:] for x in [x for x in checkbox_keys if x.startswith('and_')]]
             or_keys = [x[3:] for x in [x for x in checkbox_keys if x.startswith('or_')]]
             not_keys = [x[4:] for x in [x for x in checkbox_keys if x.startswith('not_')]]
