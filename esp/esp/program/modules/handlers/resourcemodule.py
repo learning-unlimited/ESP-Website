@@ -49,7 +49,7 @@ from esp.program.models import ClassSection
 from esp.middleware import ESPError
 
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_SETTINGS
 
 from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, FurnishingFormForProgram, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm
 
@@ -79,7 +79,7 @@ class ResourceModule(ProgramModuleObj):
             id="manage_resources",
             url="/manage/%s/resources" % base,
             title="Resources",
-            category=SEARCH_CATEGORY_CLASSES,
+            category=SEARCH_CATEGORY_SETTINGS,
             keywords=["rooms", "classrooms", "spaces", "timeslots", "resources"],
         )
 

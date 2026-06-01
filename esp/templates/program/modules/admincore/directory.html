@@ -274,6 +274,12 @@
                 {% if manage_modules %}
                 <a href="/manage/{{ program.getUrlBase }}/modules" title="sequence/requiredness of student/teacher modules" class="dashboard-btn"><i class="glyphicon glyphicon-list"></i> Modules</a>
                 {% endif %}
+                {% if manage_resources %}
+                <a href="/manage/{{ program.getUrlBase }}/resources" title="timeslots, classrooms" class="dashboard-btn"><i class="glyphicon glyphicon-th"></i> Resources</a>
+                {% endif %}
+                {% if manage_deadlines %}
+                <a href="/manage/{{ program.getUrlBase }}/deadlines" title="open/close registration" class="dashboard-btn"><i class="glyphicon glyphicon-time"></i> Deadlines</a>
+                {% endif %}
                 {% if manage_surveys %}
                 <a href="/manage/{{ program.getUrlBase }}/surveys" title="create/edit surveys; review results" class="dashboard-btn"><i class="glyphicon glyphicon-edit"></i> Surveys</a>
                 {% endif %}
@@ -295,9 +301,6 @@
         <button class="collapsible-btn">Class Management and Scheduling <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
-                {% if manage_resources %}
-                <a href="/manage/{{ program.getUrlBase }}/resources" title="timeslots, classrooms" class="dashboard-btn"><i class="glyphicon glyphicon-th"></i> Resources</a>
-                {% endif %}
                 {% if manage_dashboard %}
                 <a href="/manage/{{ program.getUrlBase }}/dashboard" title="review classes and stats" class="dashboard-btn"><i class="glyphicon glyphicon-dashboard"></i> Dashboard</a>
                 {% endif %}
@@ -319,9 +322,6 @@
         <button class="collapsible-btn">Registration <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
-                {% if manage_deadlines %}
-                <a href="/manage/{{ program.getUrlBase }}/deadlines" title="open/close registration" class="dashboard-btn"><i class="glyphicon glyphicon-time"></i> Deadlines</a>
-                {% endif %}
                 {% if teach_teacherreg %}
                 <a href="/teach/{{ program.getUrlBase }}/teacherreg" class="dashboard-btn"><i class="glyphicon glyphicon-education"></i> Teacher Reg</a>
                 {% endif %}

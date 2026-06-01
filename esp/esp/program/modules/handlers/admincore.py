@@ -114,7 +114,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             "dashboard": ("Dashboard", SEARCH_CATEGORY_CLASSES, ["classes", "stats", "overview", "enrollment", "logistics"]),
             "registrationtype_management": ("Student Registration Types", SEARCH_CATEGORY_REGISTRATION, ["registration", "types", "student", "sections", "schedule", "reg types"]),
             "lunch_constraints": ("Lunch Constraints", SEARCH_CATEGORY_REGISTRATION, ["lunch", "constraints", "schedule", "availability"]),
-            "deadlines": ("Deadlines", SEARCH_CATEGORY_REGISTRATION, ["registration", "open", "close", "dates", "deadlines"]),
+            "deadlines": ("Deadlines", SEARCH_CATEGORY_SETTINGS, ["registration", "open", "close", "dates", "deadlines"]),
             "modules": ("Manage Modules", SEARCH_CATEGORY_SETTINGS, ["modules", "required", "sequence", "student registration", "teacher registration"]),
         }
         if view_name not in entries:
