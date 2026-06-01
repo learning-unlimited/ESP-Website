@@ -53,7 +53,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
             url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
             title="Teacher Registration Big Board",
             category=SEARCH_CATEGORY_REGISTRATION,
-            keywords=["big board", "teacher", "registration", "stats", "statistics", "live"],
+            keywords=["big board", "teacher", "registration", "stats", "statistics", "live", "teacher big board"],
         )
 
     @main_call

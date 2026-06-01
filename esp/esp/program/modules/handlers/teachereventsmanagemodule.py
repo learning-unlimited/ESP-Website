@@ -72,7 +72,7 @@ class TeacherEventsManageModule(ProgramModuleObj):
             url="/manage/%s/teacher_events" % base,
             title="Teacher Training / Interviews",
             category=SEARCH_CATEGORY_REGISTRATION,
-            keywords=["teacher", "training", "interviews", "events"],
+            keywords=["teacher", "training", "interviews", "events", "teacher events"],
         )
 
     @main_call

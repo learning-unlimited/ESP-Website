@@ -112,7 +112,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             "settings": ("Program Settings", SEARCH_CATEGORY_SETTINGS, ["settings", "program", "registration", "options"]),
             "tags": ("Tag Settings", SEARCH_CATEGORY_SETTINGS, ["tags", "advanced", "experts", "settings"]),
             "dashboard": ("Dashboard", SEARCH_CATEGORY_CLASSES, ["classes", "stats", "overview", "enrollment", "logistics"]),
-            "registrationtype_management": ("Student Registration Types", SEARCH_CATEGORY_REGISTRATION, ["registration", "types", "student", "sections", "schedule"]),
+            "registrationtype_management": ("Student Registration Types", SEARCH_CATEGORY_REGISTRATION, ["registration", "types", "student", "sections", "schedule", "reg types"]),
             "lunch_constraints": ("Lunch Constraints", SEARCH_CATEGORY_REGISTRATION, ["lunch", "constraints", "schedule", "availability"]),
             "deadlines": ("Deadlines", SEARCH_CATEGORY_REGISTRATION, ["registration", "open", "close", "dates", "deadlines"]),
             "modules": ("Manage Modules", SEARCH_CATEGORY_SETTINGS, ["modules", "required", "sequence", "student registration", "teacher registration"]),

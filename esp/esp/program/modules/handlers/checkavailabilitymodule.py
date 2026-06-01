@@ -64,7 +64,7 @@ class CheckAvailabilityModule(ProgramModuleObj):
             url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
             title="Check Teacher Availability",
             category=SEARCH_CATEGORY_PARTICIPANTS,
-            keywords=["availability", "teacher", "check", "edit", "schedule"],
+            keywords=["availability", "teacher", "check", "edit", "schedule", "check availability"],
         )
 
     @main_call

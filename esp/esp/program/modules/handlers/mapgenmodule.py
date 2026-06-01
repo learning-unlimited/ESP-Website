@@ -69,7 +69,7 @@ class MapGenModule(ProgramModuleObj):
             url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
             title="Generate Map of Users",
             category=SEARCH_CATEGORY_PARTICIPANTS,
-            keywords=["map", "users", "geographic", "distribution", "location"],
+            keywords=["map", "users", "geographic", "distribution", "location", "user map"],
         )
 
     @main_call
