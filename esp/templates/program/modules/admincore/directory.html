@@ -280,6 +280,9 @@
                 {% if manage_deadlines %}
                 <a href="/manage/{{ program.getUrlBase }}/deadlines" title="open/close registration" class="dashboard-btn"><i class="glyphicon glyphicon-time"></i> Deadlines</a>
                 {% endif %}
+                {% if manage_lineitems %}
+                <a href="/manage/{{ program.getUrlBase }}/lineitems" title="create/edit custom costs and purchasable items" class="dashboard-btn"><i class="glyphicon glyphicon-list-alt"></i> Line Items Management</a>
+                {% endif %}
                 {% if manage_surveys %}
                 <a href="/manage/{{ program.getUrlBase }}/surveys" title="create/edit surveys; review results" class="dashboard-btn"><i class="glyphicon glyphicon-edit"></i> Surveys</a>
                 {% endif %}
@@ -350,7 +353,7 @@
                 <a href="/volunteer/{{ program.getUrlBase }}/signup" class="dashboard-btn"><i class="glyphicon glyphicon-heart"></i> Volunteer Reg</a>
                 {% endif %}
                 {% if manage_volunteering %}
-                <a href="/manage/{{ program.getUrlBase }}/volunteering" title="create shifts, view signups" class="dashboard-btn"><i class="glyphicon glyphicon-bullhorn"></i> Volunteers</a>
+                <a href="/manage/{{ program.getUrlBase }}/volunteering" title="create shifts, view signups" class="dashboard-btn"><i class="glyphicon glyphicon-bullhorn"></i> Manage Volunteers</a>
                 {% endif %}
             </div>
         </div>
@@ -393,9 +396,6 @@
                 {% endif %}
                 {% if manage_finaidapprove %}
                 <a href="/manage/{{ program.getUrlBase }}/finaidapprove" title="review and approve financial aid requests" class="dashboard-btn"><i class="glyphicon glyphicon-gift"></i> Financial Aid Requests</a>
-                {% endif %}
-                {% if manage_lineitems %}
-                <a href="/manage/{{ program.getUrlBase }}/lineitems" title="create/edit custom costs and purchasable items" class="dashboard-btn"><i class="glyphicon glyphicon-list-alt"></i> Line Items Management</a>
                 {% endif %}
                 {% if manage_viewpay %}
                 <a href="/manage/{{ program.getUrlBase }}/viewpay" title="list credit card payments for the program" class="dashboard-btn"><i class="glyphicon glyphicon-credit-card"></i> View Credit Card Transactions</a>

@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.accounting.models import LineItemType, LineItemOptions
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_FINANCIAL
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_SETTINGS
 from esp.program.modules.forms.lineitems import OptionFormset, LineItemForm, LineItemImportForm, exclude_line_items
 from esp.utils.web import render_to_response
 
@@ -62,7 +62,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             url="/manage/%s/lineitems" % base,
             title="Line Items Management",
             # Grouped under the dashboard section where the "Line Items Management" button appears in directory.html.
-            category=SEARCH_CATEGORY_FINANCIAL,
+            category=SEARCH_CATEGORY_SETTINGS,
             keywords=["line items", "extra costs", "fees", "payments", "accounting"],
         )
 
