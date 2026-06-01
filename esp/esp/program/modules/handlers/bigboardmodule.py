@@ -8,6 +8,7 @@ from argcache import cache_function_for, cache_function
 from esp.program.models import ClassSection
 from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.users.models import Record
 from esp.utils.web import render_to_response
 
@@ -28,6 +29,19 @@ class BigBoardModule(ProgramModuleObj):
     class Meta:
         proxy = True
         app_label = 'modules'
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the student registration big board in the admin dashboard search dropdown.
+        if view_name != "bigboard":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Student Registration Big Board",
+            category=SEARCH_CATEGORY_REGISTRATION,
+            keywords=["big board", "student", "registration", "stats", "statistics", "live"],
+        )
 
     @main_call
     @needs_admin

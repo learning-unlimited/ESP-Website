@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, ContactInfo
@@ -57,6 +58,19 @@ class MapGenModule(ProgramModuleObj):
             "seq": 500,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the user map generator in the admin dashboard search dropdown.
+        if view_name != "usermap":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Generate Map of Users",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
+            keywords=["map", "users", "geographic", "distribution", "location"],
+        )
 
     @main_call
     @needs_admin

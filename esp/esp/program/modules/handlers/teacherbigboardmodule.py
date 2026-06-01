@@ -8,6 +8,7 @@ from django.db.models import Count, Prefetch, Sum
 from argcache import cache_function_for
 from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.users.models import Record
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
@@ -41,6 +42,19 @@ class TeacherBigBoardModule(ProgramModuleObj):
     class Meta:
         proxy = True
         app_label = 'modules'
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the teacher registration big board in the admin dashboard search dropdown.
+        if view_name != "teacherbigboard":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Teacher Registration Big Board",
+            category=SEARCH_CATEGORY_REGISTRATION,
+            keywords=["big board", "teacher", "registration", "stats", "statistics", "live"],
+        )
 
     @main_call
     @needs_admin
