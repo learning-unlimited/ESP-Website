@@ -21,6 +21,14 @@ class UserForwarder(models.Model):
     class Meta:
         app_label = 'users'
 
+    @staticmethod
+    def _get_forwarder(user):
+        """Return the UserForwarder for user, or None if none exists."""
+        try:
+            return user.forwarders_out
+        except UserForwarder.DoesNotExist:
+            return None
+
     def updateTarget(self, target, flatten = True, save = True):
         """
         Updates target, avoiding circularity.
@@ -44,7 +52,6 @@ class UserForwarder(models.Model):
         """
         # Prepare rewrites
         rewrites = []
-        deletes = []
         if not save:
             flatten = False
         if flatten:
@@ -53,9 +60,9 @@ class UserForwarder(models.Model):
         original_target = target
         for i in range(MAX_DEPTH):
             # Get the next forwarder if it exists
-            if not target.forwarders_out.exists():
+            f = UserForwarder._get_forwarder(target)
+            if f is None:
                 break
-            f = target.forwarders_out.get()
             # Check for circular references
             if f.target == self.source:
                 target = original_target
@@ -80,9 +87,8 @@ class UserForwarder(models.Model):
     @staticmethod
     def forward(source, target):
         """Forward from source to target, creating a forwarder if needed."""
-        if source.forwarders_out.exists():
-            f = source.forwarders_out.get()
-        else:
+        f = UserForwarder._get_forwarder(source)
+        if f is None:
             f = UserForwarder()
             f.source = source
         f.updateTarget(target)
@@ -98,8 +104,9 @@ class UserForwarder(models.Model):
         (with forward() or updateTarget()), to save computation.
 
         """
-        if user.forwarders_out.exists():
-            ans = user.forwarders_out.get().target
+        f = UserForwarder._get_forwarder(user)
+        if f is not None:
+            ans = f.target
             for extra in ['backend']:
                 if hasattr(user, extra):
                     ans.__dict__[extra] = user.__dict__[extra]
