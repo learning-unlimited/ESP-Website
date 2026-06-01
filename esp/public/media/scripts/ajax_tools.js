@@ -92,8 +92,6 @@ var apply_fragment_changes = function(data)
             //  console.log("Evaluating: " + data[key]);
             eval(data[key]);
         }
-
-
     }
 }
 

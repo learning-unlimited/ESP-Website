@@ -36,7 +36,6 @@ import datetime
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.middleware import AuthenticationMiddleware
-from django.contrib.auth.models import AnonymousUser
 from django.utils.cache import patch_vary_headers
 from django.utils.functional import SimpleLazyObject
 
@@ -92,10 +91,7 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
                 expires = None
             else:
                 max_age = settings.SESSION_COOKIE_AGE
-                expires = datetime.datetime.strftime(
-                    datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE),
-                    "%a, %d-%b-%Y %H:%M:%S GMT"
-                )
+                expires = datetime.datetime.strftime(datetime.datetime.utcnow() + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE), "%a, %d-%b-%Y %H:%M:%S GMT")
             ret_title = ''
             try:
                 ret_title = request.session['user_morph']['retTitle']
@@ -153,3 +149,4 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
             patch_vary_headers(response, ('Cookie',))
 
         return response
+

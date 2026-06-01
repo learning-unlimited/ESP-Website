@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.models import Program, ClassSection, ClassSubject
 from esp.users.models import ESPUser, Record, RecordType
 from esp.program.modules.module_ext import DBReceipt
 from esp.program.modules.forms.admincore import get_template_source

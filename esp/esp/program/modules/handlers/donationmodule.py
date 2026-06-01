@@ -51,9 +51,6 @@ from django.http import HttpResponseRedirect
 from decimal import Decimal
 import json
 
-import logging
-logger = logging.getLogger(__name__)
-
 
 class DonationForm(forms.Form):
     amount_donation = forms.ChoiceField(widget=forms.RadioSelect())
@@ -105,17 +102,7 @@ class DonationModule(ProgramModuleObj):
             'donation_options': [10, 20, 50],
         }
 
-        raw = Tag.getProgramTag('donation_settings', self.program, default='{}')
-        try:
-            tag_data = json.loads(raw) if raw else {}
-        except (TypeError, ValueError):
-            logger.warning("Invalid donation_settings tag for program %s: %s", self.program, raw)
-            tag_data = {}
-
-        if not isinstance(tag_data, dict):
-            logger.warning("Non-dict donation_settings tag for program %s: %s", self.program, tag_data)
-            tag_data = {}
-
+        tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings

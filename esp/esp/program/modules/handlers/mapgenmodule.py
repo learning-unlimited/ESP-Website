@@ -38,7 +38,6 @@ from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
-from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from django.conf import settings
 
 import csv
@@ -69,12 +68,7 @@ class MapGenModule(ProgramModuleObj):
 
         if request.method == 'POST':
             data = ListGenModule.processPost(request)
-            try:
-                filterObj = usc.filter_from_postdata(prog, data)
-            except (ESPError_Log, ESPError_NoLog) as e:
-                context.update(usc.prepare_context(prog, target_path=request.path))
-                context['error'] = str(e)
-                return render_to_response(self.baseDir()+'search.html', request, context)
+            filterObj = usc.filter_from_postdata(prog, data)
 
             users = ESPUser.objects.filter(filterObj.get_Q()).distinct()
             context['num_users'] = users.count()
@@ -109,7 +103,7 @@ class MapGenModule(ProgramModuleObj):
             return render_to_response(self.baseDir()+'map.html', request, context)
 
         #   Render a page that shows the list selection options
-        context.update(usc.prepare_context(prog, target_path=request.path))
+        context.update(usc.prepare_context(prog, target_path='/manage/%s/usermap' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     def isStep(self):

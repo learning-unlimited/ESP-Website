@@ -110,43 +110,35 @@ Testing
 **All tests must pass before submitting a pull request.** If your changes break existing tests,
 fix them before requesting a review. When adding new functionality, add corresponding tests to the appropriate application's test module or directory.
 
-This project uses pytest, with the pytest-django plugin handling integration with Django's testing infrastructure. Tests generally live in their respective application directories, either as a single ``tests.py`` file (e.g., ``esp/program/tests.py``) or as a ``tests/`` package (e.g., ``esp/accounting/tests``) when an app has grown enough tests to warrant splitting them up.
+This project uses Django's built-in test framework. Tests generally live in their respective application directories, typically in a ``tests.py`` file or a ``tests/`` directory (e.g. ``esp/accounting/tests.py`` or ``esp/users/controllers/tests/test_usersearch.py``).
 
 Running Tests
 ~~~~~~~~~~~~~
 
 To run all tests::
 
-  docker compose exec -w /app/esp web pytest
+  docker compose exec web python esp/manage.py test
 
-To run tests for a specific module (e.g., ``accounting``), point pytest at either the ``tests/`` directory or the ``tests.py`` file, depending on which layout the app uses::
+To run tests for a specific module (e.g. ``accounting``)::
 
-  docker compose exec -w /app/esp web pytest esp/accounting/tests
-  docker compose exec -w /app/esp web pytest esp/program/tests.py
-
-If you don't remember the path, you can match by name instead::
-
-  docker compose exec -w /app/esp web pytest -k accounting
-
-The test database is reused between runs for speed. After a ``git pull`` that touched migrations, or after switching to a branch with different migrations, force a rebuild once::
-
-  docker compose exec -w /app/esp web pytest --create-db
-
-Subsequent runs will reuse the rebuilt database automatically.
-
-The full suite can be parallelized across CPU cores for faster runs::
-
-  docker compose exec -w /app/esp web pytest -n auto
-
-This is what CI uses. For running a single test or module, plain ``pytest`` is usually faster, since ``-n auto`` adds worker-startup overhead that outweighs parallelism on small runs.
+  docker compose exec web python esp/manage.py test esp.accounting.tests
 
 
 Test Suite Reference
 ~~~~~~~~~~~~~~~~~~~~
 
-To list all test modules currently in the codebase::
+Many tests are located in application-specific files. Some legacy tests may still exist in ``esp.tests``. Key test locations include:
 
-  docker compose exec web bash -c "find /app/esp/esp \( -name 'tests.py' -o -name 'tests_*.py' -o -name 'test_*.py' -o -name '*_tests.py' \) | sort"
+* ``esp/accounting/tests.py``
+* ``esp/application/tests.py``
+* ``esp/cal/tests.py``
+* ``esp/dbmail/tests.py``
+* ``esp/formstack/tests.py``
+* ``esp/program/tests.py``
+* ``esp/survey/tests.py``
+* ``esp/varnish/tests.py``
+
+Additional tests exist in directories: ``customforms/tests.py``, ``program/tests.py``, ``users/tests.py``, ``resources/tests.py``, ``qsd/tests.py``, ``qsdmedia/tests.py``, ``tagdict/tests.py``, ``themes/tests.py``, ``utils/tests.py``, ``web/tests.py``, and autoscheduler tests in ``program/controllers/autoscheduler/tests/``.
 
 Code reviews
 ------------

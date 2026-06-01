@@ -11,7 +11,7 @@ Your profile has now been successfully completed.
 </p>
 
 {% if userrole and progs %}
-{% if not progs|length == 0 %}
+{% if not progs|length_is:0 %}
 <p>
 Continue on to:<br />
 {% for prog in progs %}

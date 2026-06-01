@@ -9,8 +9,7 @@ import json
 # { "bad_program_names": ["Delve", "SATPrep", "9001", "Test"],
 #   "bad_titles": ["Lunch Period"] }
 def good_random_class():
-    tag_val = Tag.getTag('random_constraints')
-    constraints = json.loads(tag_val) if tag_val else {}
+    constraints = json.loads(Tag.getTag('random_constraints'))
     q = Q()
     for bad_program_name in constraints.get('bad_program_names', []):
         q = q & ~Q(parent_program__name__icontains=bad_program_name)
@@ -24,11 +23,8 @@ def main(request):
 
 def ajax(request):
     cls = good_random_class()
-    if cls is None:
-        data = {'title': '', 'program': '', 'info': 'No classes available right now.'}
-    else:
-        data = {'title': cls.title,
-                'program': cls.parent_program.niceName(),
-                'info': cls.class_info,
-                }
+    data = {'title': cls.title,
+            'program': cls.parent_program.niceName(),
+            'info': cls.class_info,
+            }
     return HttpResponse(json.dumps(data))

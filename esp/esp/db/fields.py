@@ -1,5 +1,4 @@
-from django.db.models import ForeignKey, Field
-from django.conf import settings
+from django.db.models import ForeignKey
 from esp.db.forms import AjaxForeignKeyNewformField
 
 

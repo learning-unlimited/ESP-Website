@@ -14,13 +14,6 @@
 
 <h1>{% if module %}{{ module }}{% else %}Search For User{% endif %}</h1>
 
-{% if module == "Scheduling and Class Changes" %}
-<div class="alert alert-info">
-    <p>Use the advanced search options below to find a student and access their registration schedule page. To perform a simpler search,
-        use the <a href="?">Simple Search</a>.</p>
-</div>
-{% endif %}
-
 <center>
 <p>
 Please search for a user: <br />
@@ -28,9 +21,9 @@ Please search for a user: <br />
 </p>
 
 {% if error %}
-<div align="center" role="alert" class="alert alert-warning" id="user-search-error">
+<div align="center" role="alert" class="alert alert-warning">
   <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-  {% if error == True %}Error: No user found by that criteria.{% else %}Error: {{ error }}{% endif %}
+  Error: No user found by that criteria.
 </div>
 {% endif %}
 

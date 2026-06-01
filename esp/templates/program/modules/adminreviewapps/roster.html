@@ -76,7 +76,7 @@ table.roster {
     {{student.added_class|date:"M d, Y" }}
     </td>
     <td>
-    {% if student.app.reviews.all|length == 0 %}
+    {% if student.app.reviews.all|length_is:0 %}
         No reviews yet
     {% else %}
         {% for review in student.app.reviews.all %}

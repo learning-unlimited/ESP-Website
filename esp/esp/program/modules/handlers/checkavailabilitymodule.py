@@ -75,7 +75,7 @@ class CheckAvailabilityModule(ProgramModuleObj):
 
         try:
             teacher = ESPUser.objects.get(id=target_id)
-        except (ESPUser.DoesNotExist, ValueError):
+        except ESPUser.DoesNotExist:
             try:
                 teacher = ESPUser.objects.get(username=target_id)
             except ESPUser.DoesNotExist:

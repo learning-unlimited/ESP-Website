@@ -151,7 +151,7 @@ function scrollFunction() {
                 {% endif %}
             {% endif %}
 
-            {% if classes|length == 0 %}
+            {% if classes|length_is:0 %}
                 <tr class="no_classes">
                     <td colspan="2">
                         <i>There are no available classes during this time block for students of your grade level!</i>

@@ -28,7 +28,7 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
 <b>There are currently {{ num_vol }} distinct volunteers registered for this program.</b>
 </td>
 </tr>
-{% if requests|length == 0 %}
+{% if requests|length_is:0 %}
     <tr><td colspan="3">No requests at this time.  Please add some using one of the forms below.</td></tr>
 {% else %}
     {% for vr in requests %}

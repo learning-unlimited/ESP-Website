@@ -6,7 +6,6 @@ from django.db import models, transaction, connection
 from django.db.utils import DatabaseError, ProgrammingError
 from django.core.exceptions import ValidationError
 from esp.users.models import ESPUser
-from esp.program.models import Program
 
 class Form(models.Model):
     title = models.CharField(max_length=40, blank=False)
@@ -80,8 +79,6 @@ class Attribute(models.Model):
     attr_type = models.CharField(max_length=80)
     value = models.TextField()
 
-from esp.customforms.DynamicForm import *
-from esp.customforms.DynamicModel import *
 
 def install():
     logger.info("Creating customforms schema...")

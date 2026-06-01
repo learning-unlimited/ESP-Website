@@ -369,39 +369,39 @@ class EmailTextTest(ClassChangeTestBase):
         # Student at index 0 in the controller's student list.
         self.student_idx = 0
 
-    def test_get_student_schedule_returns_str(self):
-        """get_student_schedule encodes its output to a string."""
+    def test_get_student_schedule_returns_bytes(self):
+        """get_student_schedule encodes its output to ASCII bytes."""
         schedule = self.ctrl.get_student_schedule(self.student_idx)
-        self.assertIsInstance(schedule, str)
+        self.assertIsInstance(schedule, bytes)
 
     def test_get_student_schedule_contains_table_tag(self):
         schedule = self.ctrl.get_student_schedule(self.student_idx)
-        self.assertIn("<table", schedule)
+        self.assertIn(b"<table", schedule)
 
-    def test_get_changed_student_email_text_returns_str(self):
+    def test_get_changed_student_email_text_returns_bytes(self):
         text = self.ctrl.get_changed_student_email_text(self.student_idx)
-        self.assertIsInstance(text, str)
+        self.assertIsInstance(text, bytes)
 
     def test_get_changed_student_email_text_contains_html(self):
         text = self.ctrl.get_changed_student_email_text(self.student_idx)
-        self.assertIn("<html>", text)
+        self.assertIn(b"<html>", text)
 
     def test_get_changed_student_email_text_mentions_program(self):
         text = self.ctrl.get_changed_student_email_text(self.student_idx)
-        program_name = self.program.niceName()
+        program_name = self.program.niceName().encode("ascii", "ignore")
         self.assertIn(program_name, text)
 
-    def test_get_unchanged_student_email_text_returns_str(self):
+    def test_get_unchanged_student_email_text_returns_bytes(self):
         text = self.ctrl.get_unchanged_student_email_text(self.student_idx)
-        self.assertIsInstance(text, str)
+        self.assertIsInstance(text, bytes)
 
     def test_get_unchanged_student_email_text_contains_html(self):
         text = self.ctrl.get_unchanged_student_email_text(self.student_idx)
-        self.assertIn("<html>", text)
+        self.assertIn(b"<html>", text)
 
     def test_get_unchanged_student_email_text_mentions_program(self):
         text = self.ctrl.get_unchanged_student_email_text(self.student_idx)
-        program_name = self.program.niceName()
+        program_name = self.program.niceName().encode("ascii", "ignore")
         self.assertIn(program_name, text)
 
     def test_changed_and_unchanged_emails_differ(self):

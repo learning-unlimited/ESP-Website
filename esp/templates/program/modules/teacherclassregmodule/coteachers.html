@@ -33,28 +33,15 @@
 <li>Finally, return to this co-teachers page and add your co-teacher using the tool below.</li>
 </ol>
 
-{% if noavailuser %}
-	<div class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {{ noavailuser.name }} has not yet indicated any availability!
-    </div>
-{% endif %}
-{% if unavailableuser %}
-    <div class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {{ unavailableuser.name }} is not listed as available for the following blocks ({{ unavailabletimes|join:", " }}).
-    </div>
-{% endif %}
 {% if conflict %}
     <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {{ conflict.name }} is teaching or moderating another class section at one or more blocks when this class is meeting ({{ unavailabletimesWithClass|join:", " }}).
+            {{ conflict.name }} has a conflicting schedule.
     </div>
-{% endif %}
-{% if fullybookeduser %}
-    <div class="alert alert-danger">
+{% elif unavailableuser %}
+    <div role="alert" class="alert alert-danger">
         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-            {{ fullybookeduser.name }} does not have enough free blocks available to register as a coteacher.
+            {{ unavailableuser.name }}</font> is not available when this class is scheduled ({{ unavailabletimes|join:", " }}).
     </div>
 {% endif %}
 
@@ -77,6 +64,7 @@ You currently have no coteachers for this class.
         <td width="50%">
             <input type="hidden" name="op" value="del" />
             <input type="hidden" name="clsid" value="{{ class.id }}" />
+            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
 
             <select id="current_coteachers"
                     class="coteachers" name="delete_coteachers" 
@@ -108,6 +96,7 @@ You currently have no coteachers for this class.
         <td width="70%">
             <input type="hidden" name="clsid" value="{{ class.id }}" />
             <input type="hidden" name="op" value="add" />
+            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
 
 	    <input type="text" name="teacher_name" id="teacher_name" />
 	    <input type="hidden" name="teacher_selected" id="teacher_id" />

@@ -23,7 +23,7 @@
                 </td>
             </tr>
                 <td>Time:</td>
-                <td>{% if section.friendly_times|length == 0 %}Unassigned{% else %}{% for f in section.friendly_times_with_date %}{{ f }}{% endfor %}{% endif %}</td>
+                <td>{% if section.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in section.friendly_times_with_date %}{{ f }}{% endfor %}{% endif %}</td>
             </tr>
             <tr>
                 <td>Teacher(s):</td>

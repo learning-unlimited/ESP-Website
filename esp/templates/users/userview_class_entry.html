@@ -19,7 +19,7 @@
         Rejected
     {% elif sec.isCancelled %}
         Cancelled
-    {% elif sec.friendly_times|length == 0 %}
+    {% elif sec.friendly_times|length_is:0 %}
         Not scheduled
     {% else %}
         {% if sec.isHidden %}(Hidden) {% endif %}{% for time in sec.friendly_times %}{{ time }}{% if not forloop.last %}, {% endif %}{% endfor %} in {% for room in sec.prettyrooms %}{{ room }}{% if not forloop.last %} and{% endif %}{% endfor %}
@@ -30,7 +30,7 @@
 {# This is a ClassSection #}
     <br />
     {% with class as sec %}
-    {% if sec.friendly_times|length == 0 %}
+    {% if sec.friendly_times|length_is:0 %}
         Not scheduled
     {% else %}
         {% for time in sec.friendly_times %}{{ time }}{% if not forloop.last %}, {% endif %}{% endfor %} in {% for room in sec.prettyrooms %}{{ room }}{% if not forloop.last %} and{% endif %}{% endfor %}

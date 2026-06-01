@@ -4,10 +4,10 @@ texlive-latex-extra
 imagemagick
 ghostscript
 dvipng
-python3.12
+python3.7
 postgresql
 libevent-dev
-python3.12-dev
+python3.7-dev
 zlib1g-dev
 inkscape
 wamerican-large
@@ -20,4 +20,5 @@ libssl-dev
 libjpeg-dev
 git
 libfreetype6-dev
+python3.7-distutils
 python3-pip

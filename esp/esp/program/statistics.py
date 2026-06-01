@@ -34,13 +34,12 @@ Learning Unlimited, Inc.
 """
 import json
 from collections import Counter, OrderedDict, defaultdict
-from numpy import mean
 
 from django.db.models import Count, Sum, F, DecimalField, Min, Max
 from django.template.loader import render_to_string
 
 from esp.accounting.models import FinancialAidGrant
-from esp.program.models import ClassSection, FinancialAidRequest, Program, StudentRegistration
+from esp.program.models import ClassSection, FinancialAidRequest, StudentRegistration
 from esp.cal.models import Event
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
@@ -116,17 +115,14 @@ def demographics(form, programs, students, profiles, result_dict=None):
     birthyear_dict = {}
     for profile in profiles:
         if profile.student_info:
-            grad_year = profile.student_info.graduation_year
-            if grad_year is not None:
-                if grad_year not in gradyear_dict:
-                    gradyear_dict[grad_year] = 0
-                gradyear_dict[grad_year] += 1
+            if profile.student_info.graduation_year and profile.student_info.graduation_year not in gradyear_dict:
+                gradyear_dict[profile.student_info.graduation_year] = 0
+            gradyear_dict[profile.student_info.graduation_year] += 1
 
             if profile.student_info.dob:
-                birth_year = profile.student_info.dob.year
-                if birth_year not in birthyear_dict:
-                    birthyear_dict[birth_year] = 0
-                birthyear_dict[birth_year] += 1
+                if profile.student_info.dob.year not in birthyear_dict:
+                    birthyear_dict[profile.student_info.dob.year] = 0
+                birthyear_dict[profile.student_info.dob.year] += 1
 
     #   Get financial aid info using bulk queries instead of per-student loops.
 
@@ -457,33 +453,22 @@ def student_reg(form, programs, students, profiles, result_dict=None):
     prog_stats = []
     # ordered dictionary so the legend is in order
     series_data = OrderedDict((stat, []) for stat in stat_names)
-    student_id_set = {p.user_id for p in profiles if p.user_id}
-    # Bulk-fetch phase-zero (program_id, user_id) pairs across all programs in
-    # one query, replacing one SQL INTERSECT query per program inside the loop.
-    phasezero_by_program = defaultdict(set)
-    for program_id, user_id in (
-        ESPUser.objects
-        .filter(phasezerorecord__program__in=programs)
-        .values_list('phasezerorecord__program_id', 'id')
-        .distinct()
-    ):
-        phasezero_by_program[program_id].add(user_id)
     for program in programs:
         stats_list = []
         # entered student lottery
-        stud_lott_num = len(phasezero_by_program.get(program.id, set()) & student_id_set)
+        stud_lott_num = ESPUser.objects.filter(phasezerorecord__program=program).intersection(students).distinct().count()
         series_data['Student Lottery'].append([program.name, stud_lott_num])
         stats_list.append(stud_lott_num)
         # set class lottery preferences
-        class_lott_num = len(BigBoardModule.users_with_lottery(program) & student_id_set)
+        class_lott_num = len(BigBoardModule.users_with_lottery(program) & set(students.values_list('id', flat = True)))
         series_data['Class Lottery'].append([program.name, class_lott_num])
         stats_list.append(class_lott_num)
         # enrolled in at least one class
-        enroll_num = len(set(BigBoardModule.users_enrolled(program)) & student_id_set)
+        enroll_num = len(set(BigBoardModule.users_enrolled(program)) & set(students.values_list('id', flat = True)))
         series_data['Enrolled'].append([program.name, enroll_num])
         stats_list.append(enroll_num)
         # students checked in
-        checked_num = len(set(BigBoardModule.checked_in_users(program)) & student_id_set)
+        checked_num = len(set(BigBoardModule.checked_in_users(program)) & set(students.values_list('id', flat = True)))
         series_data['Checked In'].append([program.name, checked_num])
         stats_list.append(checked_num)
         prog_stats.append(stats_list)

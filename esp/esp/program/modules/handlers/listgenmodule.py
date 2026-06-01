@@ -38,7 +38,7 @@ from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.forms.generic_search_form import StudentSearchForm
-from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
+from esp.middleware import ESPError
 from esp.program.models import StudentRegistration, PhaseZeroRecord, SplashInfo
 from django import forms
 
@@ -441,12 +441,7 @@ class ListGenModule(ProgramModuleObj):
         if request.method == 'POST':
             data = self.processPost(request)
 
-            try:
-                filterObj = usc.filter_from_postdata(prog, data)
-            except (ESPError_Log, ESPError_NoLog) as e:
-                context.update(usc.prepare_context(prog, target_path=request.path))
-                context['error'] = str(e)
-                return render_to_response(self.baseDir()+'search.html', request, context)
+            filterObj = usc.filter_from_postdata(prog, data)
 
             #   Display list generation options filtered by recipient type
             #   If there is no receipient_type, we submitted a combo list
@@ -461,7 +456,7 @@ class ListGenModule(ProgramModuleObj):
             return render_to_response(self.baseDir()+'options.html', request, context)
 
         #   Otherwise, render a page that shows the list selection options
-        context.update(usc.prepare_context(prog, target_path=request.path))
+        context.update(usc.prepare_context(prog, target_path='/manage/%s/selectList' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     @aux_call

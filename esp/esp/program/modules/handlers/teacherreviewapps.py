@@ -38,7 +38,6 @@ from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
 from datetime import datetime
-from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -61,7 +60,7 @@ class TeacherReviewApps(ProgramModuleObj):
     @aux_call
     @needs_teacher
     @meets_deadline("/AppReview")
-    @method_decorator(never_cache)
+    @never_cache
     def review_students(self, request, tl, one, two, module, extra, prog):
         try:
             cls = ClassSubject.objects.get(id = extra)
@@ -79,8 +78,7 @@ class TeacherReviewApps(ProgramModuleObj):
 
         for student in students:
             now = datetime.now()
-            reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
-            student.added_class = reg.start_date if reg else None
+            student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except StudentApplication.DoesNotExist:
@@ -105,7 +103,7 @@ class TeacherReviewApps(ProgramModuleObj):
                         student.app_completed = True
 
         students = list(students)
-        students.sort(key=lambda s: s.added_class or datetime.min)
+        students.sort(key=lambda s: s.added_class)
 
         if 'prev' in request.GET:
             prev_id = int(request.GET.get('prev'))
@@ -215,8 +213,7 @@ class TeacherReviewApps(ProgramModuleObj):
             student.app = None
             raise ESPError('Error: Student did not start an application.', log=False)
 
-        reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
-        student.added_class = reg.start_date if reg else None
+        student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
 
         teacher_reviews = student.app.reviews.all().filter(reviewer=request.user)
         if teacher_reviews.count() > 0:

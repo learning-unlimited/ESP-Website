@@ -65,7 +65,7 @@ img.biophoto { border: 1px solid black; }
   <span>(Clicking a class title will bring you to the course's section of the corresponding course catalog)</span>
   <br />
   <br />
-  {% if classes|length == 0 %}{% if recent_classes|length == 0 %}
+  {% if classes|length_is:0 %}{% if recent_classes|length_is:0 %}
    None found.
   {% endif %}{% endif %}
 

@@ -210,7 +210,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
 <tr>
     <th>Resources requested:</th>
     <td>
-        {% if form.sec.getResourceRequests|length == 0 %}
+        {% if form.sec.getResourceRequests|length_is:0 %}
             None requested
         {% else %}
         {% for rr in form.sec.getResourceRequests %}

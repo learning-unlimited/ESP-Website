@@ -33,7 +33,7 @@ class SchedulingCheckModuleTest(ProgramFrameworkTest):
         super().setUp(*args, **kwargs)
 
         request = RequestFactory().get('/manage/%s/scheduling_checks' % self.program.getUrlBase())
-        ThreadLocals(get_response=lambda request: None).process_request(request)
+        ThreadLocals().process_request(request)
 
         self.timeslots = list(self.program.getTimeSlots().order_by('start'))
 

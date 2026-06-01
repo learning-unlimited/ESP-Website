@@ -1,16 +1,14 @@
 """
 conftest.py — pytest-django configuration for ESP-Website.
 
-pytest-django integration:
-- DJANGO_SETTINGS_MODULE is set in pytest.ini.
-- pytest-django's auto-detection of the Django project (django_find_project)
-  is disabled in pytest.ini because our triple-`esp` directory layout
-  (/app/esp outer dir, /app/esp/esp inner package) causes the parent-walk
-  heuristic to add the wrong directory to sys.path when pytest is invoked
-  with a positional file argument.
-- Instead, pytest.ini's `pythonpath = .` puts /app/esp on sys.path during
-  pytest's early config init — before pytest-django's initial-conftest hook
-  runs, which is the timing it needs.
+Known compatibility issues:
+- esp/users/controllers/tests/test_usersearch.py: has a class-level
+  `Program.objects.get(id=88)` call that runs at import/collection time.
+  This requires a specific DB fixture with that exact program ID, making it
+  unsuitable for the standard test DB. Excluded via collect_ignore below.
+
+pytest-django requires a Django settings module to be configured before
+tests run. This is set via pytest.ini (DJANGO_SETTINGS_MODULE).
 
 The @pytest.mark.django_db decorator (or django_db fixture) is required
 on any test that needs database access; existing TestCase subclasses that
@@ -26,31 +24,42 @@ Notes on xdist compatibility:
 - Tests that share global state or write to the filesystem may need
   the @pytest.mark.xdist_group decorator to pin them to one worker
 """
+import os
 import django
 import pytest
 
-collect_ignore = []
+
+collect_ignore = [
+    # These tests query Program.objects.get(id=88) at class level, which fires
+    # at import time before the test DB exists. More importantly, the tests
+    # depend on a specific live database with real students/teachers registered
+    # to that program — they cannot run against a clean test DB regardless of
+    # where the query is placed. One test also contains an unconditional
+    # `assert False` (marked TODO by a prior developer). These are integration
+    # tests for a specific deployment, not portable unit tests.
+    "esp/users/controllers/tests/test_usersearch.py",
+]
 
 
 def pytest_configure(config):
     """
-    Call django.setup() so the app registry is ready before pytest starts
-    importing test modules during collection.
+    Ensure manage.py-style virtualenv activation is skipped under pytest,
+    and call django.setup() so apps are ready before test collection begins.
 
     Without this, any test module that imports Django models at the top level
     (e.g. test_db_interface.py) raises AppRegistryNotReady during collection.
     """
+    # Prevent manage.py from trying to load activate_this.py which is absent
+    # in venv-based environments (it's a virtualenv-only file).
+    os.environ.setdefault("VIRTUAL_ENV", "1")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "esp.settings")
+
+    # Call django.setup() here so the app registry is ready before pytest
+    # starts importing test modules during collection.
     from django.apps import apps
     if not apps.ready:
         django.setup()
 
-def pytest_addoption(parser):
-    parser.addoption(
-        "--selenium",
-        action="store_true",
-        default=False,
-        help="Run selenium integration tests",
-    )
 
 def pytest_collection_modifyitems(config, items):
     """
@@ -65,3 +74,11 @@ def pytest_collection_modifyitems(config, items):
             if not run_selenium:
                 item.add_marker(skip_selenium)
 
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--selenium",
+        action="store_true",
+        default=False,
+        help="Run selenium integration tests",
+    )

@@ -139,19 +139,6 @@ class UserAvailability(models.Model):
         return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
 
 
-
-DBLISTCOUNT_VERSION_KEY = 'DBListCount_version'
-
-
-def get_dblistcount_version():
-    """Get the current cache version for DBListCount keys."""
-    version = cache.get(DBLISTCOUNT_VERSION_KEY)
-    if version is None:
-        cache.set(DBLISTCOUNT_VERSION_KEY, 1)
-        return 1
-    return version
-
-
 class ESPUserManager(UserManager):
     pass
 
@@ -1370,25 +1357,6 @@ def update_email_delete(**kwargs):
     return update_email(**kwargs)
 
 
-# Invalidate DBListCount cache on user changes.
-# Register both ESPUser (proxy model) and User senders so cache invalidation
-# works regardless of which model class was used to persist the change.
-@dispatch.receiver(signals.post_save, sender=ESPUser,
-                   dispatch_uid='invalidate_dblistcount_cache_espuser_post_save')
-@dispatch.receiver(signals.post_delete, sender=ESPUser,
-                   dispatch_uid='invalidate_dblistcount_cache_espuser_post_delete')
-@dispatch.receiver(signals.post_save, sender=User,
-                   dispatch_uid='invalidate_dblistcount_cache_user_post_save')
-@dispatch.receiver(signals.post_delete, sender=User,
-                   dispatch_uid='invalidate_dblistcount_cache_user_post_delete')
-def invalidate_dblistcount_cache(sender, **kwargs):
-    """Bump the version so all existing DBListCount cache entries become stale."""
-    try:
-        cache.incr(DBLISTCOUNT_VERSION_KEY)
-    except ValueError:
-        cache.set(DBLISTCOUNT_VERSION_KEY, 1)
-
-
 @enable_with_setting(settings.USE_MAILMAN)
 def update_email(**kwargs):
     """Update a user if they changed their email.
@@ -2325,8 +2293,7 @@ class DBList(object):
             If override is true, it will not retrieve the number from cache
             or from this instance. If it's true, it will try.
         """
-        version = get_dblistcount_version()
-        cache_id = urlencode(f'DBListCount: {self.key}: {version}')
+        cache_id = urlencode(f'DBListCount: {self.key}')
 
         retVal   = cache.get(cache_id) # get the cached result
         if self.QObject: # if there is a q object we can just
@@ -2380,7 +2347,7 @@ class RecordType(models.Model):
         "student_survey", "teacher_survey", "reg_confirmed", "attended", "checked_out", "conf_email", "teacher_quiz_done",
         "paid", "med", "med_bypass", "liab", "onsite", "schedule_printed", "teacheracknowledgement", "studentacknowledgement",
         "lunch_selected", "student_extra_form_done", "teacher_extra_form_done", "extra_costs_done", "donation_done", "waitlist",
-        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done", "opt_out_paper_schedule",
+        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done",
     ]
 
     @classmethod
@@ -2425,11 +2392,6 @@ class Record(models.Model):
         Returns a QuerySet for all of a user's Records for a particular event,
         under various constraints.
 
-        The returned QuerySet is NOT deduplicated; the underlying joins are
-        all single forward ForeignKeys, so duplicates cannot arise from the
-        filter chain. Returning a non-distinct QuerySet allows callers to
-        chain .delete(), which Django 3.2+ forbids after .distinct().
-
         Parameters:
           user (ESPUser):              The user.
           event (unicode):             The event name.
@@ -2450,7 +2412,7 @@ class Record(models.Model):
             filter = filter.filter(time__year=when.year,
                                    time__month=when.month,
                                    time__day=when.day)
-        return filter
+        return filter.distinct()
 
     @classmethod
     def createBit(cls, extension, program, user):
@@ -2822,7 +2784,7 @@ class Permission(ExpirableModel):
         #  -teachers of a class with emailcode x (eg x=T1993) can edit
         #      /section/<Program.url>/Classes/<x>/<any url>.html
         if url.endswith(".html"):
-            url = url[:-5]
+            url = url[-5]
         if user is None or isinstance(user, AnonymousESPUser):
             return False
         if user.isAdmin():

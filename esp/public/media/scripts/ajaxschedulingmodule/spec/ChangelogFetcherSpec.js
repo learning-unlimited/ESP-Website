@@ -75,49 +75,5 @@ describe("ChangelogFetcher", function() {
             c.applyChangeLog(changelog);
             expect(c.last_applied_index).toEqual(3);
         });
-
-        describe("when the server commands a reload", function(){
-            var reload_response = {
-                other: [{ command: "reload", earliest_index: 99, latest_index: 105, time: 1234567890 }]
-            };
-
-            afterEach(function(){
-                $j("#changelog-reload-notice").remove();
-            });
-
-            it("invokes showReloadNotification", function(){
-                spyOn(c, "showReloadNotification");
-                c.applyChangeLog(reload_response);
-                expect(c.showReloadNotification).toHaveBeenCalled();
-            });
-
-            it("does not process changelog entries on reload", function(){
-                spyOn(c.matrix.sections, "scheduleSectionLocal");
-                spyOn(c.matrix.sections, "unscheduleSectionLocal");
-                c.applyChangeLog(reload_response);
-                expect(c.matrix.sections.scheduleSectionLocal).not.toHaveBeenCalled();
-                expect(c.matrix.sections.unscheduleSectionLocal).not.toHaveBeenCalled();
-            });
-
-            it("does not throw when changelog key is missing", function(){
-                expect(function(){
-                    c.applyChangeLog({ other: [{ time: 1234567890 }] });
-                }).not.toThrow();
-            });
-
-            it("stops polling when reload is requested", function(){
-                spyOn(window, "clearInterval");
-                c.pollInterval = 4242;
-                c.showReloadNotification();
-                expect(window.clearInterval).toHaveBeenCalledWith(4242);
-                expect(c.pollInterval).toBeNull();
-            });
-
-            it("only shows the notification banner once", function(){
-                c.showReloadNotification();
-                c.showReloadNotification();
-                expect($j("#changelog-reload-notice").length).toEqual(1);
-            });
-        });
     });
 });

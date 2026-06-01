@@ -64,7 +64,7 @@
 {% if contact_form.errors %}
 <div class="errors">
   There
-  {% if contact_form.errors|length == 1 %}is an error{% else %}are errors{% endif %}
+  {% if contact_form.errors|length_is:1 %}is an error{% else %}are errors{% endif %}
   in the below form. Please fix and resubmit.
 </div>
 {% endif %}

@@ -38,7 +38,7 @@ from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter, Record, RecordType
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist, get_user_list
-from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
+from esp.middleware import ESPError
 
 class UserRecordsModule(ProgramModuleObj):
     doc = """Set arbitrary records for an arbitrary list of users"""
@@ -70,15 +70,7 @@ class UserRecordsModule(ProgramModuleObj):
             raise ESPError()("Your query did not match any users")
 
         records = request.POST.getlist('records')
-        record_type_map = {
-            rt.name: rt for rt in RecordType.objects.filter(name__in=set(records))
-        }
-
-        Record.objects.bulk_create([
-            Record(event=record_type_map[rec], program=prog, user=user)
-            for user in users
-            for rec in records
-        ])
+        Record.objects.bulk_create([Record(event=RecordType.objects.get(name=rec), program = prog, user=user) for rec in records for user in users])
 
         context = {'num_users': users.count(), 'records': records}
 
@@ -99,12 +91,7 @@ class UserRecordsModule(ProgramModuleObj):
                 filterObj, found = get_user_list(request, self.program.getLists(True))
                 selected = usc.selected_list_from_postdata(data)
             else:
-                try:
-                    filterObj = usc.filter_from_postdata(prog, data)
-                except (ESPError_Log, ESPError_NoLog) as e:
-                    context.update(usc.prepare_context(prog, target_path=request.path))
-                    context['error'] = str(e)
-                    return render_to_response(self.baseDir()+'search.html', request, context)
+                filterObj = UserSearchController().filter_from_postdata(prog, data)
 
             if data.get('use_checklist') == '1':
                 (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/userrecords' % prog.getUrlBase(), extra_context = {'module': "User Records Portal"})
@@ -115,7 +102,7 @@ class UserRecordsModule(ProgramModuleObj):
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             return render_to_response(self.baseDir()+'options.html', request, context)
 
-        context.update(usc.prepare_context(prog, target_path=request.path))
+        context.update(usc.prepare_context(prog, target_path='/manage/%s/userrecords' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     def isStep(self):

@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.class_status import ClassStatus
-from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ClassCategories
+from esp.program.models import ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ClassCategories
 
 import datetime
 

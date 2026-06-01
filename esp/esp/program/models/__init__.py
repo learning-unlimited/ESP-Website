@@ -33,22 +33,21 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import copy
+import copy # noqa: F401
 import re
 from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
-import random
+import random # noqa: F401
 import json
 import logging
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
-
-from django.core.cache import cache
+from phonenumber_field.modelfields import PhoneNumberField
 from django.core import validators
-from django.core.exceptions import ValidationError
+from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
 from django.db.models import Q, F
@@ -60,7 +59,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from argcache import cache_function, cache_function_for, wildcard
-from esp.cal.models import Event, EventType
+from esp.cal.models import Event, EventType # noqa: F401
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
@@ -68,10 +67,9 @@ from esp.middleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
-from esp.utils.formats import format_lazy
+from esp.utils.formats import format_lazy # noqa: F401
 from esp.qsdmedia.models import Media
-
-from phonenumber_field.modelfields import PhoneNumberField
+from django.core.exceptions import ValidationError
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -357,7 +355,7 @@ class Program(models.Model, CustomFormsLinkModel):
         ordering = ('-id',)
         constraints = [
             models.CheckConstraint(
-                condition=Q(grade_min__lte=F('grade_max')),
+                check=Q(grade_min__lte=F('grade_max')),
                 name='program_grade_min_lte_grade_max'
          ),
         ]
@@ -1163,7 +1161,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
-        from esp.program.modules.module_ext import ClassRegModuleInfo
+        from esp.program.modules.module_ext import ClassRegModuleInfo # noqa: F401
         from decimal import Decimal
 
         times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
@@ -2378,7 +2376,6 @@ def maybe_create_module_ext(handler, ext):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
-from esp.program.models.printable_job import PrintableJob
 
 def install():
     from esp.program.models.class_ import install as install_class
@@ -2389,5 +2386,5 @@ def install():
 
 # The following are only so that we can refer to them in caching
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-from esp.resources.models import ResourceType
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo # noqa: F401
+from esp.resources.models import ResourceType # noqa: F401

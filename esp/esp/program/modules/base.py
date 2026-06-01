@@ -40,19 +40,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
+from django.utils.decorators import available_attrs
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
-from esp.utils.expirable_model import ExpirableModel
 from esp.utils.web import render_to_response
 from argcache import cache_function
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
 from urllib.parse import quote
-from django.template.loader import get_template
-from django.template import TemplateDoesNotExist
 
 from django.core.exceptions import ImproperlyConfigured
 from esp.middleware import ESPError
@@ -68,9 +66,7 @@ class CoreModule(object):
     """
     pass
 
-class ProgramModuleObj(ExpirableModel):
-    start_date = models.DateTimeField(blank=True, null=True, default=None,
-                                      help_text="If blank, has always started.")
+class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
@@ -136,7 +132,6 @@ class ProgramModuleObj(ExpirableModel):
         return None
 
     def getCoreURL(self, tl):
-        import esp.program.modules.models
         modules = self.program.getModules(get_current_request().user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
@@ -212,7 +207,6 @@ class ProgramModuleObj(ExpirableModel):
 
     @staticmethod
     def getFromProgModule(prog, mod, old_prog = None):
-        import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
 
@@ -285,8 +279,8 @@ class ProgramModuleObj(ExpirableModel):
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 (self.get_full_path(), title, title)
         else:
-            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
+            link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
 
         return mark_safe(link)
 
@@ -318,8 +312,8 @@ class ProgramModuleObj(ExpirableModel):
                                 </button></a>
                             </div>"""
         else:
-            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
+            link = '<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
 
         return mark_safe(link)
 
@@ -566,7 +560,7 @@ def user_passes_test(test_func, error_message=None, error_template=None,
         attribute (e.g., 'learn', 'teach', 'manage', 'onsite').
     """
     def decorator(view_method):
-        @wraps(view_method)
+        @wraps(view_method, assigned=available_attrs(view_method))
         def _check(moduleObj, request, tl, *args, **kwargs):
             if require_login and not_logged_in(request):
                 return _login_redirect(request)

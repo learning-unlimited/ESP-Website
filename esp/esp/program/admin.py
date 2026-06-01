@@ -48,7 +48,7 @@ from esp.program.models import RegistrationType, StudentRegistration, StudentSub
 from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
-from esp.program.models import ClassFlag, ClassFlagType, AutoClassFlagRule
+from esp.program.models import ClassFlag, ClassFlagType
 
 from esp.accounting.models import FinancialAidGrant
 
@@ -69,7 +69,6 @@ admin_site.register(ProgramModule, ProgramModuleAdmin)
 class ArchiveClassAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
     search_fields = ['id', 'description', 'title', 'program', 'teacher', 'category']
-    pass
 admin_site.register(ArchiveClass, ArchiveClassAdmin)
 
 class ProgramAdmin(admin.ModelAdmin):
@@ -388,17 +387,11 @@ class ClassFlagTypeAdmin(admin.ModelAdmin):
 admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
 
 class ClassFlagAdmin(admin.ModelAdmin):
-    list_display = ('flag_type', 'subject', 'comment', 'resolved', 'created_by', 'modified_by')
-    readonly_fields = ['resolved', 'modified_by', 'modified_time', 'created_by', 'created_time',
-                       'resolved_by', 'resolved_time']
+    list_display = ('flag_type', 'subject', 'comment', 'created_by', 'modified_by')
+    readonly_fields = ['modified_by', 'modified_time', 'created_by', 'created_time']
     search_fields = default_user_search('modified_by') + default_user_search('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
-    list_filter = ['subject__parent_program', 'flag_type', 'resolved']
+    list_filter = ['subject__parent_program', 'flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
-
-class AutoClassFlagRuleAdmin(admin.ModelAdmin):
-    list_display = ('flag_type', 'program', 'comment')
-    list_filter = ['program', 'flag_type']
-admin_site.register(AutoClassFlagRule, AutoClassFlagRuleAdmin)
 
 class PhaseZeroRecordAdmin(admin.ModelAdmin):
     list_display = ('id', 'display_user', 'program')

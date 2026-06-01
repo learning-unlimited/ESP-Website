@@ -42,7 +42,6 @@ import sys
 
 from django.db import models, transaction
 from django.db.models import Q
-from argcache import cache_function
 from esp.middleware import ESPError
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
@@ -108,11 +107,8 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
     connection = get_connection(fail_silently=fail_silently, return_path=return_path)
 
-    #   Detect HTML tags in message and change content-type if they are found.
-    #   Match the opening <html> tag whether or not it carries attributes (e.g.
-    #   <html lang="en">), so attribute-bearing templates are still recognized
-    #   as HTML and sent with a stripped plaintext part plus an HTML alternative.
-    if re.search(r'<html[\s>]', message, re.IGNORECASE):
+    #   Detect HTML tags in message and change content-type if they are found
+    if '<html>' in message:
         # Generate a plaintext version of the email
         # Remove html tags and continuous whitespaces
         text_only = re.sub('[ \t]+', ' ', strip_tags(message))

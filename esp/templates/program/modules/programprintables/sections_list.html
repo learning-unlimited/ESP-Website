@@ -74,8 +74,8 @@ table.sortable thead {
  <td>{{ sec.getModeratorNamesLast|join:"; " }}</td>
  <td>{% for moderator in sec.get_moderators %}{% if moderator.getLastProfile.contact_user.phone_cell %}{{ moderator.getLastProfile.contact_user.phone_cell }}{% else %}{{ moderator.getLastProfile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
  {% endif %}
- <td>{% if sec.prettyrooms|length == 0 %}Unassigned{% else %}{{ sec.prettyrooms|join:"<br />"}}{% endif %}</td>
- <td>{% if sec.friendly_times|length == 0 %}Unassigned{% else %}{{ sec.friendly_times|join:"<br />"}}{% endif %}</td>
+ <td>{% if sec.prettyrooms|length_is:0 %}Unassigned{% else %}{{ sec.prettyrooms|join:"<br />"}}{% endif %}</td>
+ <td>{% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{{ sec.friendly_times|join:"<br />"}}{% endif %}</td>
  <td>{{ sec.status_str|capfirst }}</td>
  <td>{% if sec.parent_class.allow_lateness %} Y {% else %} N {% endif %}</td>
 </tr>

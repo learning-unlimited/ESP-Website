@@ -663,9 +663,9 @@ class TagRegistrationTest(SimpleTestCase):
             if self._is_tag_call(node) and node.args:
                 first_arg = node.args[0]
                 tag_key = None
-                if isinstance(first_arg, ast.Str):  # legacy AST node compat
+                if isinstance(first_arg, ast.Str):  # Python 3.7 compat
                     tag_key = first_arg.s
-                elif isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):  # modern AST node compat
+                elif isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):  # Python 3.8+ compat
                     tag_key = first_arg.value
                 if tag_key is not None:
                     self.found.append((tag_key, node.lineno))

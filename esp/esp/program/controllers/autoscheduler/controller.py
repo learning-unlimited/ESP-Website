@@ -224,7 +224,7 @@ class AutoschedulerController(object):
             resources += "</li>"
         info.append(f"<b>Resource requests:</b><ul>{resources}</ul>")
         cls = ClassSection.objects.get(id=section.id).parent_class
-        info.append(f"<b>Class Flags: </b>{', '.join(cls.flags.filter(resolved=False).values_list('flag_type__name', flat=True))}")
+        info.append(f"<b>Class Flags: </b>{', '.join(cls.flags.values_list('flag_type__name', flat=True))}")
         return info
 
     def roomslot_identifier(self, roomslot):

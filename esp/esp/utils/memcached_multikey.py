@@ -4,7 +4,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.core.cache.backends.base import BaseCache
-from django.core.cache.backends.memcached import PyMemcacheCache as PymemcacheCacheClass
+import pylibmc
+from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
 from django.conf import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii
@@ -19,7 +20,7 @@ HASH_PREFIX = "H_"
 class CacheClass(BaseCache):
     def __init__(self, server, params):
         BaseCache.__init__(self, params)
-        self._wrapped_cache = PymemcacheCacheClass(server, params)
+        self._wrapped_cache = PylibmcCacheClass(server, params)
         if not hasattr(settings, 'CACHE_PREFIX'):
             settings.CACHE_PREFIX = ''
 

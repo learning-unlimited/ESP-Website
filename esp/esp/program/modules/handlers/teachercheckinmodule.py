@@ -113,7 +113,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             when = datetime.now()
         records = Record.filter(teacher, 'teacher_checked_in', prog, when, only_today=True)
         if records:
-            Record.objects.filter(pk__in=records).delete()
+            records.delete()
             return '%s is no longer checked in.' % teacher.name()
         else:
             return f'{teacher.name()} was not checked in for {prog.niceName()}.'

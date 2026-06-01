@@ -65,3 +65,4 @@ class EquityOutreachTest(ProgramFrameworkTest):
             self.assertIn(list_name, lists)
             self.assertIn(list_name, descs)
             self.assertEqual(descs[list_name], EquityOutreachCohorts.cohort_label(key))
+

@@ -37,7 +37,7 @@ from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
-from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
+from esp.middleware import ESPError
 
 from django.contrib.auth.models import Group
 
@@ -83,19 +83,14 @@ class UserGroupModule(ProgramModuleObj):
 
         if request.method == "POST":
             data = ListGenModule.processPost(request)
-            try:
-                filterObj = usc.filter_from_postdata(prog, data)
-            except (ESPError_Log, ESPError_NoLog) as e:
-                context.update(usc.prepare_context(prog, target_path=request.path))
-                context['error'] = str(e)
-                return render_to_response(self.baseDir()+'search.html', request, context)
+            filterObj = UserSearchController().filter_from_postdata(prog, data)
 
             context['filterid'] = filterObj.id
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             context['groups'] = Group.objects.all().values_list('name', flat=True)
             return render_to_response(self.baseDir()+'options.html', request, context)
 
-        context.update(usc.prepare_context(prog, target_path=request.path))
+        context.update(usc.prepare_context(prog, target_path='/manage/%s/usergroup' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     @staticmethod

@@ -1,14 +1,13 @@
 from esp.mailman import add_list_member
-from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
+from esp.program.models import ClassSubject, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.resources.forms import ResourceRequestFormSet
-from esp.resources.models import ResourceType, ResourceRequest
+from esp.resources.models import ResourceRequest
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 
 from esp.dbmail.models import send_mail
-from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from collections import OrderedDict
 from django.db import transaction
@@ -118,7 +117,7 @@ class ClassCreationController(object):
         for k, v in reg_form.cleaned_data.items():
             if k in custom_fields:
                 custom_data[k] = v
-            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] != 'section_':
+            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] is not 'section_':
                 cls.__dict__[k] = v
 
         cls.custom_form_data = custom_data

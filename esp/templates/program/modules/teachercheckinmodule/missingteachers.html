@@ -162,7 +162,7 @@
         {% if when %} as of {{ when }} {% endif %}
     </th>
 </tr>
-{% if sections|length == 0 %}
+{% if sections|length_is:0 %}
 <tr>
     <td colspan="5">
         There are no class sections
@@ -304,9 +304,7 @@
             {% if show_flags %}
                 <div class="flag-name-list fqr-class-flags">
                     {% for flag in section.parent_class.flags.all %}
-                        {% if not flag.resolved %}
-                            {% include "program/modules/classflagmodule/flag_name.html" %}
-                        {% endif %}
+                        {% include "program/modules/classflagmodule/flag_name.html" %}
                     {% endfor %}
                 </div>
                 <br />
@@ -327,9 +325,7 @@
             {% if show_flags %}
                 <div class="fqr-class-flags-detail">
                     {% for flag in section.parent_class.flags.all %}
-                        {% if not flag.resolved %}
-                            {% include "program/modules/classflagmodule/flag_detail.html" %}
-                        {% endif %}
+                        {% include "program/modules/classflagmodule/flag_detail.html" %}
                     {% endfor %}
                     {% with section.parent_class as class %}
                         {% include "program/modules/classflagmodule/new_flag_form.html" %}

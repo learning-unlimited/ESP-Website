@@ -32,46 +32,30 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.contrib.admin.sites import AdminSite
-from django.contrib.redirects.models import Redirect
-from django.contrib.sites.models import Site
-from django.utils.decorators import method_decorator
-from django.utils.module_loading import autodiscover_modules
-from django.views.decorators.cache import never_cache
-
 from esp.users.views import signout
 
+from django.contrib.admin.sites import AdminSite
+from django.views.decorators.cache import never_cache
 
+#   Override the logout view on the admin site to use our own code
 class ESPAdminSite(AdminSite):
-    """
-    Custom AdminSite for ESP project.
 
-    Overrides the default logout behavior to use the project's
-    custom signout view.
-    """
-
-    @method_decorator(never_cache)
+    #   Log out using our view so that cookies are deleted correctly.
+    @never_cache
     def logout(self, request, extra_context=None):
-        """
-        Log out using custom signout view to ensure cookies are cleared properly.
-        """
         return signout(request)
 
-
-# Instantiate custom admin site
 admin_site = ESPAdminSite()
 
-
+#   A copy of Django's autodiscover function that accepts a site instance.
 def autodiscover(site):
-    """
-    Discover admin modules and register them to the provided site instance.
+    from django.utils.module_loading import autodiscover_modules
 
-    This is a wrapper around Django's autodiscover_modules that allows
-    passing a custom admin site instance.
-    """
-    autodiscover_modules("admin", register_to=site)
+    autodiscover_modules('admin', register_to=site)
 
-
-# Register default Django models with custom admin site
+#   Properly add needed contrib modules to the Admin site
+from django.contrib.sites.models import Site
 admin_site.register(Site)
+
+from django.contrib.redirects.models import Redirect
 admin_site.register(Redirect)

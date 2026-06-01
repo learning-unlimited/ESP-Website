@@ -50,15 +50,17 @@ from esp.users.models            import ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
-from django.http                 import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http                 import HttpResponse, HttpResponseRedirect
 from django.db                   import models
 from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
+
 from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
+
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
 
@@ -502,6 +504,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         from django.contrib.contenttypes.models import ContentType
         import os
         from django.core.files import File
+
         clsid = 0
         if 'clsid' in request.POST:
             clsid = request.POST['clsid']
@@ -613,11 +616,20 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @staticmethod
     def coteachers_logic(cls, request, prog, template, ajax, is_admin = False):
-        # set txtTeachers and coteachers from the database, never from POST.
-        coteachers = list(cls.get_teachers())
-        if not is_admin:
-            coteachers = [user for user in coteachers if user.id != request.user.id]
-        txtTeachers = ",".join([str(user.id) for user in coteachers])
+        # set txtTeachers and coteachers....
+        if not 'coteachers' in request.POST:
+            coteachers = cls.get_teachers()
+            if not is_admin:
+                coteachers = [user for user in coteachers if user.id != request.user.id]
+            txtTeachers = ",".join([str(user.id) for user in coteachers ])
+
+        else:
+            txtTeachers = request.POST['coteachers']
+            coteachers = txtTeachers.split(',')
+            coteachers = [ x for x in coteachers if x != '' ]
+            coteachers = [ ESPUser.objects.get(id=userid)
+                           for userid in coteachers                ]
+            add_list_members(f"{prog.program_type}_{prog.program_instance}-teachers", coteachers)
 
         op = ''
         if 'op' in request.POST:
@@ -630,10 +642,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         conflictinguser = None
         unavailableuser = None
-        noavailuser = None
-        fullybookeduser = None
         unavailabletimes = []
-        unavailabletimesWithClass = []
 
         if op == 'add':
             if len(request.POST['teacher_selected'].strip()) == 0:
@@ -653,33 +662,19 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
-            # ignores classes because that's what the conflicts logic does!
-            availability = teacher.getAvailableTimes(prog, ignore_classes=True, ignore_moderation=True)
-            #checks that the teacher has listed any availability
-            if not availability:
-                noavailuser = teacher
-            else:
-                # determines if the teacher is already booked even if the current class is not yet scheduled
-                availabilityWithClass = teacher.getAvailableTimes(prog)
-                if not availabilityWithClass:
-                    fullybookeduser = teacher
-                # check that the teacher is available for all meeting_times
-                for sec in cls.sections.all():
-                    for time in sec.meeting_times.all():
-                        if time not in availability:
-                            unavailabletimes.append(time)
-                        if time not in availabilityWithClass and time in availability:
-                            unavailabletimesWithClass.append(time)
-                if unavailabletimes:
-                    unavailableuser = teacher
-                # check that the teacher doesn't have a conflicting schedule, provided the class is scheduled
-                if unavailabletimesWithClass:
-                    conflictinguser = teacher
-                # uses conflicts logic to check if the teacher is overbooked
-                if not conflictinguser and not unavailableuser and not noavailuser and not fullybookeduser and cls.conflicts(teacher):
-                    fullybookeduser = teacher
+            availability = teacher.getAvailableTimes(prog)
+            # check that the teacher doesn't have a conflicting schedule
+            if cls.conflicts(teacher):
+                conflictinguser = teacher
+            # check that the teacher is available for all meeting_times
+            for sec in cls.sections.all():
+                for time in sec.meeting_times.all():
+                    if time not in availability:
+                        unavailabletimes.append(time)
+            if unavailabletimes:
+                unavailableuser = teacher
             # make them a coteacher
-            if not conflictinguser and not unavailableuser and not noavailuser and not fullybookeduser:
+            if not conflictinguser and not unavailableuser:
                 lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
                 if not lastProf.teacher_info:
                     anyInfo = teacher.getLastProfile().teacher_info
@@ -786,21 +781,13 @@ class TeacherClassRegModule(ProgramModuleObj):
                 section.moderators.remove(moderator)
             # should we send the moderator or directors an email?
 
-        # Ensure all current teachers are present on the program-level teacher list
-        # using server-side teacher data.
-        if request.POST and op in ('add', 'del'):
-            add_list_members("%s_%s-teachers" % (prog.program_type, prog.program_instance), cls.get_teachers())
-
         return render_to_response(template, request, {'class': cls,
                                                       'ajax': ajax,
                                                       'txtTeachers': txtTeachers,
                                                       'coteachers': coteachers,
                                                       'conflict': conflictinguser,
                                                       'unavailableuser': unavailableuser,
-                                                      'unavailabletimes': unavailabletimes,
-                                                      'unavailabletimesWithClass': unavailabletimesWithClass,
-                                                      'noavailuser': noavailuser,
-                                                      'fullybookeduser': fullybookeduser})
+                                                      'unavailabletimes': unavailabletimes})
 
     @aux_call
     @needs_teacher
@@ -1090,8 +1077,6 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         context['manage'] = False
         context['sectionNums'] = prog.countTimeSlots()
-        context['no_durations'] = len(context['sectionNums']) == 0
-        context['is_admin'] = request.user.isAdministrator()
 
         if ((request.method == "POST" and request.POST.get('manage') == 'manage') or
             (request.method == "GET" and request.GET.get('manage') == 'manage') or
@@ -1116,6 +1101,8 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
+        from django.http import JsonResponse
+
         Q_teacher = Q(groups__name="Teacher")
 
         queryset = ESPUser.objects.filter(Q_teacher)

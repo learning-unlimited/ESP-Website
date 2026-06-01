@@ -35,19 +35,15 @@ Learning Unlimited, Inc.
 
 from django import forms
 from django.core import validators
-from django.core.exceptions import ObjectDoesNotExist
 from django.utils.safestring import mark_safe
-from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
-from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
-import re
-from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
-from esp.program.modules.module_ext import ClassRegModuleInfo
+from esp.utils.forms import StrippedCharField, FormWithRequiredCss
+from esp.utils.widgets import BlankSelectWidget
+from esp.program.models import ClassSizeRange
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
-from django.utils import timezone
 from datetime import datetime, timedelta
 import json
 
@@ -346,7 +342,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
     def _slot_too_late(self, event):
         """ Determine whether it is too late to register for a time slot. """
         # Don't allow signing up for a spot insuficiently far in advance
-        return event.start - timezone.now() < timedelta(days=0)
+        return event.start - datetime.now() < timedelta(days=0)
 
     def _slot_is_available(self, event):
         """ Determine whether a time slot is available. """

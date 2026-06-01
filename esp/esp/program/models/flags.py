@@ -39,6 +39,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from argcache import cache_function
 
 from esp.users.models import ESPUser
+
 class ClassFlagType(models.Model):
     name = models.CharField(max_length=255, unique=True, help_text='The name of the flag type')
     show_in_scheduler = models.BooleanField(default=False, help_text='Should this flag type be shown in the scheduler?')
@@ -93,17 +94,10 @@ class ClassFlag(models.Model):
     flag_type = models.ForeignKey(ClassFlagType, on_delete=models.CASCADE)
     comment = models.TextField(blank=True)
 
-    resolved = models.BooleanField(default=False)
-    resolved_by = AjaxForeignKey(ESPUser, blank=True, null=True,
-        related_name='classflags_resolved', on_delete=models.SET_NULL)
-    resolved_time = models.DateTimeField(blank=True, null=True)
-
     #The following will normally be set automagically, but if you create a Flag via the shell or a script, you will need to set them manually.
-    modified_by = AjaxForeignKey(ESPUser, blank=True, null=True,
-        related_name='classflags_modified', on_delete=models.SET_NULL)
+    modified_by = AjaxForeignKey(ESPUser, related_name='classflags_modified', on_delete=models.CASCADE)
     modified_time = models.DateTimeField(auto_now=True)
-    created_by = AjaxForeignKey(ESPUser, blank=True, null=True,
-        related_name='classflags_created', on_delete=models.SET_NULL)
+    created_by = AjaxForeignKey(ESPUser, related_name='classflags_created', on_delete=models.CASCADE)
     created_time = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -122,10 +116,6 @@ class ClassFlag(models.Model):
             if self.id is None:
                 #We are creating, rather than modifying, so we don't yet have an id.
                 self.created_by = request.user
-        # Ensure audit fields are always persisted when update_fields is used
-        if 'update_fields' in kwargs and kwargs['update_fields'] is not None:
-            kwargs['update_fields'] = list(
-                set(kwargs['update_fields']) | {'modified_by', 'modified_time'})
         super().save(*args, **kwargs)
 
     def send_teacher_notification(self):
@@ -166,86 +156,3 @@ class ClassFlag(models.Model):
         if failures:
             raise RuntimeError("Failed to email %d teacher(s): %s" % (len(failures), ', '.join(failures)))
 
-
-class AutoClassFlagRule(models.Model):
-    program = models.ForeignKey('Program', on_delete=models.CASCADE, related_name='autoflag_rules')
-    flag_type = models.ForeignKey(ClassFlagType, on_delete=models.CASCADE)
-    rule_data = models.TextField(help_text='JSON representation of the QueryBuilder rule')
-    comment = models.TextField(blank=True, help_text='Annotation/comment to add to the flag')
-
-    class Meta:
-        app_label = 'program'
-
-    def __str__(self):
-        return "Auto-flag rule for %s in %s" % (self.flag_type, self.program)
-
-    def apply_to_class(self, cls, user=None):
-        """Apply this auto-flag rule to a single class, if not already flagged.
-
-        Creates a ClassFlag on ``cls`` for this rule's flag_type. If ``user``
-        is None, falls back to the current request user (via ClassFlag.save),
-        or the first superuser/staff for background tasks. Returns the
-        (flag, created) tuple from get_or_create, or None if no user could be
-        determined.
-        """
-        import logging
-        logger = logging.getLogger(__name__)
-
-        defaults = {
-            "comment": self.comment or "Automatically added by rule.",
-        }
-
-        if user is not None:
-            defaults["created_by"] = user
-            defaults["modified_by"] = user
-        else:
-            # Fallback for background tasks where there is no request user
-            request = get_current_request()
-            if request is None:
-                from esp.users.models import ESPUser as _ESPUser
-                system_user = (
-                    _ESPUser.objects.filter(is_superuser=True).first()
-                    or _ESPUser.objects.filter(is_staff=True).first()
-                )
-                if system_user:
-                    defaults["created_by"] = system_user
-                    defaults["modified_by"] = system_user
-                else:
-                    logger.warning(
-                        "AutoClassFlagRule: Could not find a system user to "
-                        "attribute flag creation for class %s", cls.id
-                    )
-                    return None
-
-        flag, created = ClassFlag.objects.get_or_create(
-            subject=cls,
-            flag_type=self.flag_type,
-            defaults=defaults,
-        )
-
-        if created and self.flag_type.notify_teacher_by_email:
-            try:
-                flag.send_teacher_notification()
-            except Exception as e:
-                logger.error(
-                    "AutoClassFlagRule: Failed to send teacher notification "
-                    "for flag %s on class %s: %s",
-                    flag.id, cls.id, e
-                )
-
-        return flag, created
-
-    def apply_to_queryset(self, queryset, user=None):
-        """Apply this auto-flag rule to all classes in ``queryset``.
-
-        Calls ``apply_to_class`` for each class. Returns the number of newly
-        created flags.
-        """
-        created_count = 0
-        for cls in queryset:
-            result = self.apply_to_class(cls, user=user)
-            if result is not None:
-                _, created = result
-                if created:
-                    created_count += 1
-        return created_count

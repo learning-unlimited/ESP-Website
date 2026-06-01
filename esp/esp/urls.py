@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 from django.urls import include, path, re_path
-from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
 from django.conf.urls.static import static
@@ -125,7 +124,7 @@ urlpatterns += [
 
 urlpatterns += [
     # bios
-    re_path(r'^(?P<tl>teach)/teachers/', include('esp.web.urls')),
+    re_path(r'^(?P<tl>teach|learn)/teachers/', include('esp.web.urls')),
 ]
 
 # Specific .html pages that have defaults
@@ -168,5 +167,3 @@ urlpatterns += [
     re_path(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
         esp.utils.views.diff_templateoverride, name='diff_templateoverride'),
 ]
-
-

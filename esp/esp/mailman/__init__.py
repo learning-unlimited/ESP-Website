@@ -2,7 +2,6 @@
 import os
 from subprocess import call, Popen, PIPE
 from django.conf import settings
-from django.utils.crypto import get_random_string
 from esp.utils.decorators import enable_with_setting
 from esp.users.models import ESPUser
 from tempfile import NamedTemporaryFile
@@ -86,10 +85,7 @@ mlist.password = sha.new('%s').hexdigest()
 del sha
 """
     if not password:
-        password = get_random_string(
-            length=10,
-            allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',
-        )
+        password = ESPUser.objects.make_random_password()
 
     data_str = data_str_template % (password)
 
@@ -109,10 +105,7 @@ mlist.mod_password = sha.new('%s').hexdigest()
 del sha
 """
     if not password:
-        password = get_random_string(
-            length=10,
-            allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',
-        )
+        password = ESPUser.objects.make_random_password()
 
     data_str = data_str_template % (password)
 

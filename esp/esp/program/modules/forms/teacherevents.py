@@ -3,9 +3,7 @@ from django.utils.safestring import mark_safe
 
 from datetime import timedelta
 
-from esp.resources.models import ResourceType, Resource, ResourceAssignment
-from esp.cal.models import EventType, Event
-from esp.program.models import Program
+from esp.cal.models import EventType
 from esp.utils.widgets import DateTimeWidget
 
 
