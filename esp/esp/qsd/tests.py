@@ -902,8 +902,9 @@ class HTMLCommentSanitizationTest(TestCase):
         from esp.utils.sanitize import sanitize_html_comments
         content = "<!-- outer <!-- inner --> -->"
         result = sanitize_html_comments(content)
-        self.assertIn("<!--", result)
         self.assertEqual(result.count("<!--"), 1)
+        self.assertEqual(result.count("-->"), 1)
+        self.assertEqual(result, "<!-- outer  inner  -->")
 
     def test_comment_with_blank_lines(self):
         from esp.utils.sanitize import sanitize_html_comments

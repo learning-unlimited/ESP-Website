@@ -118,11 +118,35 @@ def sanitize_html_comments(value):
             result.append(value[i:])
             break
         result.append(value[i:start])
-        end = value.find('-->', start + 4)
-        if end == -1:
-            result.append(value[start:])
-            break
-        content = value[start + 4:end].replace('<!--', '').replace('-->', '')
-        result.append('<!--' + content + '-->')
-        i = end + 3
+        
+        depth = 1
+        pos = start + 4
+        while depth > 0 and pos < len(value):
+            next_open = value.find('<!--', pos)
+            next_close = value.find('-->', pos)
+            
+            if next_close == -1:
+                pos = len(value)
+                break
+                
+            if next_open != -1 and next_open < next_close:
+                depth += 1
+                pos = next_open + 4
+            else:
+                depth -= 1
+                pos = next_close + 3
+                
+        raw_comment = value[start:pos]
+        if raw_comment.endswith('-->'):
+            inner = raw_comment[4:-3]
+        else:
+            inner = raw_comment[4:]
+            
+        inner_clean = inner.replace('<!--', '').replace('-->', '')
+        if raw_comment.endswith('-->'):
+            result.append('<!--' + inner_clean + '-->')
+        else:
+            result.append('<!--' + inner_clean)
+            
+        i = pos
     return ''.join(result)
