@@ -99,7 +99,7 @@
                     {% else %}
                         <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
                         {% if details.perms|length > 1 %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline"><button type="button" class="btn btn-danger btn-sm">Delete</button></a>
                         {% endif %}
                     {% endif %}
                 </td>
@@ -187,7 +187,7 @@
         </td>
         <td align="center" valign="center">
             <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
-            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission"><button type="button" class="btn btn-danger btn-sm">Delete</button></a>
         </td>
     </tr>
     {% empty %}

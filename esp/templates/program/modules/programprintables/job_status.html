@@ -27,15 +27,15 @@
 {% endblock stylesheets %}
 
 {% block content %}
-<div class="row-fluid">
-    <div class="span8 offset2">
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
         <div class="well" style="margin-top: 50px; text-align: center;">
             <h3>Generating Printables</h3>
             <hr />
             {% if job.status == 'PENDING' or job.status == 'PROCESSING' %}
             <span class="glyphicon glyphicon-refresh glyphicon-spin" style="font-size: 4em; margin: 20px 0; color: #3a87ad; display: inline-block;"></span>
             <h4>Your document is currently being generated.</h4>
-            <p class="muted">This process may take up to 15 minutes for large programs. This page will refresh
+            <p class="text-muted">This process may take up to 15 minutes for large programs. This page will refresh
                 automatically every 5 seconds.</p>
             <p><strong>Status:</strong> {{ job.status }}</p>
 
@@ -44,7 +44,7 @@
             <h4>Success!</h4>
             <p>Your document has been generated.</p>
             {% if job.file %}
-            <a href="?download=1" class="btn btn-primary btn-large"><span class="glyphicon glyphicon-download-alt"></span> Download {{ job.job_type|title }}</a>
+            <a href="?download=1" class="btn btn-primary btn-lg"><span class="glyphicon glyphicon-download-alt"></span> Download {{ job.job_type|title }}</a>
             {% endif %}
 
             {% elif job.status == 'FAILED' %}
