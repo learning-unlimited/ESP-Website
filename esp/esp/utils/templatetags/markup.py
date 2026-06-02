@@ -11,7 +11,7 @@ pin to a given version of markdown, and don't use markdown extensions.
 """
 
 from django import template
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
 
 # Can't conflict with the `markdown` filter name.
@@ -23,11 +23,11 @@ register = template.Library()
 @register.filter(is_safe=True)
 def markdown(value):
     """Runs Markdown over a given value."""
-    return mark_safe(md.markdown(force_text(value)))
+    return mark_safe(md.markdown(force_str(value)))
 
 
 @register.filter(is_safe=True)
 def markdown_safe(value):
     """Runs Markdown with HTML comment sanitization."""
-    sanitized = sanitize_html_comments(force_text(value))
+    sanitized = sanitize_html_comments(force_str(value))
     return mark_safe(md.markdown(sanitized))
