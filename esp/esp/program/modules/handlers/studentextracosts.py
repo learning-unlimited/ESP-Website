@@ -37,7 +37,6 @@ from django.db.models.query import Q
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.accounting.models import LineItemOptions
 from esp.middleware      import ESPError
-from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models  import SplashInfo
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, meets_cap
 from esp.program.modules.forms.splashinfo import SiblingDiscountForm

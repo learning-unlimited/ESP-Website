@@ -3,7 +3,6 @@ from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, Record, RecordType
 from django import forms
 from django.db.models.query import Q
-from esp.middleware.threadlocalrequest import get_current_request
 
 def teacheracknowledgementform_factory(prog):
     name = "TeacherAcknowledgementForm"

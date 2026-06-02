@@ -36,7 +36,7 @@ import ast
 from pathlib import Path
 import warnings
 from unittest.mock import MagicMock, patch
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase
 
 from esp.program.modules.base import user_passes_test
 from esp.program.tests import ProgramFrameworkTest

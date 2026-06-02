@@ -44,7 +44,6 @@ from django.http import HttpResponse, HttpResponseBadRequest, Http404
 from django.template.loader import render_to_string
 
 from esp.cal.models import Event
-from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
 from esp.users.models import Record, RecordType, ESPUser

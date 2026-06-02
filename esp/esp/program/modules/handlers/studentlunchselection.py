@@ -38,7 +38,6 @@ from esp.program.models          import ClassSection, StudentRegistration
 from esp.users.models            import Record, RecordType
 from esp.cal.models              import Event
 
-from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response
 
 from django                      import forms

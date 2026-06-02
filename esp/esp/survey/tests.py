@@ -3,7 +3,6 @@ Tests for esp.survey
 - Model tests: ListField descriptor, Survey, SurveyResponse, QuestionType, Question, Answer
 - View tests: Cross-program teacher survey responses page
 """
-import datetime
 
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
@@ -14,7 +13,6 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModuleObj
 from esp.survey.models import (
     Answer,
-    ListField,
     Question,
     QuestionType,
     Survey,

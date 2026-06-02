@@ -41,7 +41,6 @@ from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.tagdict.models import Tag
 
 from esp.middleware import ESPError
-from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
 from django.db.models.query import Q

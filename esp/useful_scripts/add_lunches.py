@@ -3,7 +3,7 @@
 # Adds lunches in an empty block for users who don't have one.  Chooses the
 # lunch randomly for users with both lunch blocks free.
 
-from script_setup import *
+from script_setup import *  # noqa: F401
 
 import random
 

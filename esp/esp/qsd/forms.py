@@ -2,9 +2,6 @@ from django import forms
 
 from esp.web.models import NavBarCategory
 from esp.qsd.models import QuasiStaticData
-from esp.program.models import Program
-from esp.db.fields import AjaxForeignKey
-from esp.db.forms import AjaxForeignKeyNewformField
 
 import os.path
 

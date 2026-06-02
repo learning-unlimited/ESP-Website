@@ -7,7 +7,7 @@
 # PROGRAM_ID before running.
 #
 
-from script_setup import *
+from script_setup import *  # noqa: F401
 from esp.program.models import FinancialAidRequest
 
 # CONFIGURATION

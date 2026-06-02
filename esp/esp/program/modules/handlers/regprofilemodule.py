@@ -36,7 +36,6 @@ from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, main_cal
 from esp.program.models import FinancialAidRequest, RegistrationProfile, StudentRegistration
 from esp.users.models   import ESPUser
 from django.db.models.query import Q
-from esp.middleware.threadlocalrequest import get_current_request
 
 
 class _EquityOutreachCohorts(object):

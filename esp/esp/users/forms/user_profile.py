@@ -4,11 +4,10 @@ from esp.tagdict.models import Tag
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues, StrippedCharField
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
-from esp.users.models import ESPUser, K12School, StudentInfo, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
+from esp.users.models import ESPUser, K12School, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
 from datetime import datetime
 from esp.program.models import RegistrationProfile
 from django.conf import settings
-import json
 from pytz import country_names
 from phonenumber_field.formfields import PhoneNumberField
 

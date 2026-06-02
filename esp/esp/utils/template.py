@@ -43,7 +43,6 @@ from esp.utils.models import TemplateOverride
 from argcache import cache_function
 
 import hashlib
-import errno
 from os.path import join
 
 DEFAULT_ORIGIN = 'esp.utils.template cached loader'

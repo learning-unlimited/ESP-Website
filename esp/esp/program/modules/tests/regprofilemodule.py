@@ -38,7 +38,6 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 class RegProfileModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        from esp.program.models import Program
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
         # Set up the program -- we want to be sure of these parameters

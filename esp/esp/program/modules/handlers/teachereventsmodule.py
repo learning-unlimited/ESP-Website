@@ -39,7 +39,6 @@ from django.db.models.query import Q
 from esp.dbmail.models import send_mail
 from esp.cal.models import Event, EventType
 from esp.users.models import ESPUser, UserAvailability
-from esp.middleware.threadlocalrequest import get_current_request
 from django.contrib.auth.models import Group
 from django.conf import settings
 

@@ -49,7 +49,7 @@ from django.template.loader import render_to_string
 from django.test import SimpleTestCase
 from django.utils.html import strip_tags
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 
 class CommunicationsPanelTest(ProgramFrameworkTest):
@@ -61,7 +61,6 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
     """
 
     def setUp(self, *args, **kwargs):
-        from esp.program.models import Program
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
         # Set up the program -- we want to be sure of these parameters

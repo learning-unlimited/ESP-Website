@@ -2,9 +2,6 @@
 
 from django import template
 
-import os.path
-import json
-
 register = template.Library()
 
 def count_matching_chars(url, link):

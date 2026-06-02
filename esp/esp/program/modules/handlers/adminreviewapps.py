@@ -38,7 +38,6 @@ from esp.middleware.esperrormiddleware import ESPError
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentRegistration, RegistrationType, StudentApplication
-from django.db.models.query import Q
 
 __all__ = ['AdminReviewApps']
 

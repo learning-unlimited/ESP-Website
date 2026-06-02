@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from django.test import TestCase
 from esp.users.models import ESPUser, StudentInfo
 from django.contrib.auth.models import Group
-from django.db.models import Q
 
 class AutocompleteTest(TestCase):
     def setUp(self):

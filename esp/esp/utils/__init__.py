@@ -8,7 +8,6 @@ The functions in this file are globally relevant, too annoying to inline,
     and too small to merit their own modules.
 """
 
-import sys
 from urllib.parse import quote_plus
 
 def force_str(x):

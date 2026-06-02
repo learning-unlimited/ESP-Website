@@ -36,7 +36,7 @@ import os
 import re
 import zipfile
 from io import BytesIO as StringIO
-from django.template import Template, loader, RequestContext
+from django.template import loader, RequestContext
 from django.conf import settings
 from django import http
 from django.http import HttpResponse, HttpResponseRedirect
@@ -49,7 +49,6 @@ import django.shortcuts
 
 def get_from_id(id, module, strtype = 'object', error = True):
     """ This function will get an object from its id, and return an appropriate error if need be. """
-    from esp.users.models import ESPUser
 
     try:
         newid    = int(id)

@@ -38,7 +38,6 @@ from esp.survey.models import Survey, Question, QuestionType, SurveyResponse, An
 from esp.users.models import Record
 
 import random
-import re
 
 class SurveyTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):

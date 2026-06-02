@@ -40,7 +40,6 @@ from esp.tagdict.models import Tag
 from esp.accounting.models import LineItemType
 from esp.accounting.controllers import IndividualAccountingController
 from esp.middleware import ESPError
-from esp.middleware.threadlocalrequest import get_current_request
 
 
 from django import forms

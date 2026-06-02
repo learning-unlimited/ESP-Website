@@ -2,7 +2,7 @@
 
 from django import forms
 from esp.users.models import ESPUser
-from django.utils.html import conditional_escape, mark_safe
+from django.utils.html import mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
 
 __all__ = ['PasswordResetForm', 'UserPasswdForm']

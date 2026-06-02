@@ -42,7 +42,6 @@ from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
 from esp.users.models            import ESPUser
 from datetime                    import timedelta
-from esp.middleware.threadlocalrequest import get_current_request
 from esp.users.forms.generic_search_form import TeacherSearchForm
 
 class AvailabilityModule(ProgramModuleObj):

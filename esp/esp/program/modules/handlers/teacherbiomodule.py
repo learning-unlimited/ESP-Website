@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call
 from esp.program.models import TeacherBio
 from esp.users.models   import ESPUser
-from esp.middleware.threadlocalrequest import get_current_request
 from django.db.models.query   import Q
 
 # reg profile module

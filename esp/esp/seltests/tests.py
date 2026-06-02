@@ -1,1 +1,1 @@
-from esp.seltests.seltests import CsrfTestCase  # Run Selenium tests with regular tests
+from esp.seltests.seltests import CsrfTestCase  # noqa: F401  # Run Selenium tests with regular tests

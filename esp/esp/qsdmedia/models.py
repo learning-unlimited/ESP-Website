@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from django.db import models
 
 from django.conf import settings
-from esp.db.fields import AjaxForeignKey
 import os.path
 from esp.middleware import ESPError
 

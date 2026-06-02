@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.contrib import admin
 from esp.admin import admin_site
 from esp.qsd.models import QuasiStaticData
 from reversion.admin import VersionAdmin

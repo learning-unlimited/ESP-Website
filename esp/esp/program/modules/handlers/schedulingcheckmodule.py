@@ -11,8 +11,6 @@ from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 
-from esp.middleware.threadlocalrequest import get_current_request
-
 import json
 import re
 

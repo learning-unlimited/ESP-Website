@@ -36,7 +36,6 @@ from django.conf import settings
 
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.models import Form
-from esp.middleware import ESPError
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj

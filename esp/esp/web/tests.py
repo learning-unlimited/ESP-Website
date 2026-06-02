@@ -43,7 +43,6 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.utils.models import TemplateOverride
 from esp.web.admin import NavBarCategoryAdmin
 from esp.admin import admin_site
-from django.contrib.auth.models import Group
 
 import difflib
 import logging
@@ -229,7 +228,6 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
 
         #   Create a QSD page associated with the program
         from esp.qsd.models import QuasiStaticData
-        from esp.web.models import NavBarCategory
 
         qsd_rec_new = QuasiStaticData()
         qsd_rec_new.name = "learn:index"

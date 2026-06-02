@@ -1,7 +1,7 @@
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
-from esp.program.models import RegistrationType, StudentRegistration, RegistrationProfile, ProgramModule
+from esp.program.models import RegistrationType, StudentRegistration, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
 
 

@@ -37,7 +37,6 @@ from esp.utils.web import render_to_response
 from esp.users.models import ESPUser, Record, RecordType
 from esp.tagdict.models import Tag
 from django.db.models.query import Q
-from esp.middleware.threadlocalrequest import get_current_request
 
 # hackish solution for Splash 2012
 class FormstackMedliabModule(ProgramModuleObj):

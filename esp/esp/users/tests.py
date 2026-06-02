@@ -3,12 +3,10 @@ import json
 
 from django import forms
 from django.core import mail
-from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth import login
 from django.contrib.auth.models import Group
 from django.test.client import Client, RequestFactory
-from django.http import HttpRequest
 from django.conf import settings
-from django.utils.functional import SimpleLazyObject
 
 from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program
@@ -161,7 +159,7 @@ class PasswordRecoveryTest(TestCase):
 
     def test_run(self):
         from django.contrib.auth.tokens import default_token_generator
-        from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+        from django.utils.http import urlsafe_base64_encode
         from django.utils.encoding import force_bytes
 
         # Both users can log in

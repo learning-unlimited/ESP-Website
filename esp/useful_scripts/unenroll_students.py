@@ -6,7 +6,7 @@ Kick students out of their classes (or only next hour's classes, if the
 
 import argparse
 
-from script_setup import *
+from script_setup import *  # noqa: F401
 
 from esp.program.class_status import ClassStatus
 from esp.program.models import Program, StudentRegistration, RegistrationType

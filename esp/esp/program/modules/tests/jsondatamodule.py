@@ -35,12 +35,9 @@ Learning Unlimited, Inc.
 import json
 from collections import Counter
 
-from django.utils.html import escape
-
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject
-from esp.resources.models import ResourceType
 
 class JSONDataModuleTest(ProgramFrameworkTest):
     ## This test is very incomplete.

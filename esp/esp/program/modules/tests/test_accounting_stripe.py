@@ -2,12 +2,9 @@ from django.test import TestCase
 from unittest.mock import patch, MagicMock
 from decimal import Decimal
 import json
-from io import BytesIO
-from urllib.error import HTTPError
 import datetime
 
 from esp.program.models import Program
-from esp.tagdict.models import Tag
 from esp.program.modules.handlers.accountingmodule import AccountingModule
 from esp.accounting.models import Transfer, LineItemType, Account
 from esp.users.models import ESPUser

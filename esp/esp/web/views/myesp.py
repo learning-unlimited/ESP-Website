@@ -33,16 +33,13 @@ Learning Unlimited, Inc.
 """
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import Group
 from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
-from esp.program.models import Program, RegistrationProfile, ClassSubject
+from esp.program.models import RegistrationProfile
 from esp.tagdict.models import Tag
-from django.http import Http404, HttpResponseRedirect
-import datetime
+from django.http import HttpResponseRedirect
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
 from esp.utils.web import render_to_response
-from django.db.models.query import Q
 
 @login_required
 def myesp_passwd(request):
@@ -142,7 +139,6 @@ def edit_profile(request):
 def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
     """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
-    from esp.users.models import K12School
     from esp.web.views.main import registration_redirect
 
     if prog_input is None:

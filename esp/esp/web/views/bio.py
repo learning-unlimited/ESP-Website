@@ -32,8 +32,6 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from django.core.files.base import ContentFile
-
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response

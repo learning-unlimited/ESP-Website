@@ -54,8 +54,6 @@ from urllib.parse import quote, unquote
 from django.conf import settings
 from django.template.loader import render_to_string
 
-from esp.utils.models import TemplateOverride
-from esp.utils.template import Loader as TemplateOverrideLoader
 from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
 from esp.varnish import varnish

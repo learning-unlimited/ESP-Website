@@ -1,6 +1,5 @@
 from collections import OrderedDict
 from django import forms
-from django.forms import widgets
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal

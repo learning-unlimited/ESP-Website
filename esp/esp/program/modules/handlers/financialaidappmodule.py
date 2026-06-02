@@ -42,7 +42,6 @@ from django.utils.decorators import method_decorator
 from esp.program.models  import FinancialAidRequest
 from esp.tagdict.models import Tag
 from django.conf import settings
-from esp.middleware.threadlocalrequest import get_current_request
 from django              import forms
 
 

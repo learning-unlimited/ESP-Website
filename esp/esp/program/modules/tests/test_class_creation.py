@@ -5,7 +5,6 @@ import datetime
 from decimal import Decimal
 
 from django.test import Client
-from django.test import TestCase
 
 # CORRECT import - ProgramFrameworkTest is in tests.py (the file, not folder)
 from esp.program.tests import ProgramFrameworkTest

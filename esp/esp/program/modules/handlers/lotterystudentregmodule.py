@@ -44,7 +44,6 @@ from esp.program.models          import StudentRegistration
 from esp.program.views           import lsr_submit as lsr_view_submit
 from esp.utils.web               import render_to_response
 from esp.users.models            import ESPUser
-from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
 
 

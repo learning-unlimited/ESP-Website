@@ -48,7 +48,7 @@ from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_onsite_no_switchback, needs_student_in_grade, main_call, aux_call
-from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
+from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function

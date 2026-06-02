@@ -1,6 +1,6 @@
 """Script to check which programs have modified their ProgramModules."""
 
-from script_setup import *
+from script_setup import *  # noqa: F401
 from esp.program.models import ProgramModule
 
 print()

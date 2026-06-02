@@ -1,15 +1,6 @@
 from __future__ import absolute_import
 from esp.program.tests import ProgramFrameworkTest
-from esp.tagdict.models import Tag
-from esp.tests.util import user_role_setup
-from esp.users.forms.user_reg import ValidHostEmailField
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission
-from django.test import TestCase
-import esp.users.views as views
-from esp.program.models import Program
-
-import random
-import string
+from esp.users.models import ESPUser
 
 #python manage.py test users.controllers.tests.test_usersearch:TestUserSearchController.test_overlap_bug
 

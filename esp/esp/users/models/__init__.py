@@ -55,15 +55,12 @@ from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import signals, Min
-from django.db.models.base import ModelState
-from django.db.models.manager import Manager
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
 from django.template import loader
 from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
-from django.utils.functional import SimpleLazyObject
 from django.utils.safestring import mark_safe
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.urls import reverse
@@ -79,7 +76,7 @@ from esp.middleware.threadlocalrequest import get_current_request, AutoRequestCo
 from esp.tagdict.models import Tag
 from esp.utils.decorators import enable_with_setting
 from esp.utils.expirable_model import ExpirableModel
-from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
+from esp.utils.widgets import NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
 from esp.program.class_status import ClassStatus
 from esp.utils import cmp
@@ -2942,6 +2939,6 @@ class GradeChangeRequest(TimeStampedModel):
         return  f"{self.requesting_student} requests a grade change to {self.claimed_grade}" + (" (Approved)" if self.approved else "")
 
 # We can't import these earlier because of circular stuff...
-from esp.users.models.forwarder import UserForwarder # Don't delete, needed for app loading
+from esp.users.models.forwarder import UserForwarder  # noqa: F401  # Don't delete, needed for app loading
 from esp.cal.models import Event
-from esp.resources.models import Resource
+from esp.resources.models import Resource  # noqa: F401

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from django.db import migrations, models
+from django.db import migrations
 
 def migrate_answers(apps, schema_editor):
     Answer = apps.get_model('survey', 'Answer')

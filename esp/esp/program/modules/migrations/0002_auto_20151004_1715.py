@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models, migrations
-import esp.program.modules.module_ext
 
 
 class Migration(migrations.Migration):

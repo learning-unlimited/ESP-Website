@@ -42,7 +42,7 @@ from decimal import Decimal
 import json
 import urllib.request
 from urllib.parse import urlencode
-from urllib.error import HTTPError, URLError
+from urllib.error import URLError
 from esp.tagdict.models import Tag
 from esp.accounting.models import Transfer
 from esp.accounting.controllers import ProgramAccountingController

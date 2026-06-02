@@ -1013,7 +1013,6 @@ class ProgramPrintables(ProgramModuleObj):
             return ''
         if key == 'receipt':
             #   Take the user's most recent registration profile.
-            from django.conf import settings
             prof = user.getLastProfile()
 
             iac = IndividualAccountingController(self.program, user)
@@ -1093,8 +1092,6 @@ class ProgramPrintables(ProgramModuleObj):
 
     @staticmethod
     def getTranscript(program, student, format='text', verbs = ['Enrolled'], valid_only = True):
-        from django.template import Template
-
         template_keys = {   'text': 'program/modules/programprintables/transcript.txt',
                             'latex': 'program/modules/programprintables/transcript.tex',
                             'html': 'program/modules/programprintables/transcript.html',

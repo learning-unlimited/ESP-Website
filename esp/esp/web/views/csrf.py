@@ -1,7 +1,6 @@
 import re
 
 from django.http import HttpResponseForbidden
-from django.template import Context, Template
 from django.conf import settings
 from django.views.csrf import csrf_failure as django_csrf_failure
 

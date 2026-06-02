@@ -32,7 +32,6 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-import os
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.core.files.storage import default_storage

@@ -38,7 +38,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from esp.cal.models import Event
-from esp.users.models import User, ESPUser
+from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from argcache import cache_function
@@ -46,7 +46,6 @@ from esp.tagdict.models          import Tag
 
 from django.db import models
 from django.db.models.query import Q
-from django.core.cache import cache
 
 import json
 

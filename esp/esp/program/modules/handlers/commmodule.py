@@ -37,7 +37,7 @@ from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest, PlainRedirect
-from esp.users.models   import ESPUser, PersistentQueryFilter
+from esp.users.models   import ESPUser
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
 from esp.dbmail.models import ActionHandler
