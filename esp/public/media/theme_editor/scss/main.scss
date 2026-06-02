@@ -1,0 +1,35 @@
+/*
+ * theme_editor/scss/main.scss - SCSS stylesheet included by all themes
+ *
+ * Overrides Bootstrap styles and sets global (cross-theme) styles.
+ */
+
+input[type="radio"] + label, input[type="checkbox"] + label {
+    display: inline;
+}
+
+.fullwidth {
+    width: 100%;
+}
+
+.form_error {
+    list-style-type: none;
+    padding: 0; margin: 0;
+    font-style: italic;
+    color: red;
+    font-weight: bold;
+}
+
+.error_background {
+    background-color: #D3D3D3;
+}
+
+// datepicker
+input.hasDatepicker {
+    max-width: 10em;
+}
+
+:focus-visible {
+    outline: 3px solid #005fcc;
+    outline-offset: 2px;
+}

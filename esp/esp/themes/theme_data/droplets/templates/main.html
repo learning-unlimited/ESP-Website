@@ -17,22 +17,17 @@
 
 {% block navbar %}
 <div class="container navbar-container">
-  <nav class="navbar navbar-fixed-top navbar-inverse">
+  <nav class="navbar navbar-dark bg-dark navbar-expand-md navbar-fixed-top">
     <div id="navbar" class="container-fluid">
-      <div class="navbar-header">
-        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse" aria-expanded="false">
-          <span class="sr-only">Toggle navigation</span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
-        {% if theme.show_logo_navbar %}
-        <a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo nav"></a>
-        {% endif %}
-        {% if theme.show_group_name %}
-        <a class="navbar-brand" href="/">{{ theme.full_group_name }}</a>
-        {% endif %}
-      </div>
+      {% if theme.show_logo_navbar %}
+      <a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo nav"></a>
+      {% endif %}
+      {% if theme.show_group_name %}
+      <a class="navbar-brand" href="/">{{ theme.full_group_name }}</a>
+      {% endif %}
+      <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
       <div class="collapse navbar-collapse" id="navbar-collapse">
         {% include "navbar/admin.html" %}
         {% include "navbar/nav.html" %}
@@ -78,13 +73,13 @@
     {% endif %}
     {% if request.mod_required %}
     <div class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
         This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
     </div>
     {% endif %}
     {% if request.show_perm_info %}
     <div class="alert alert-info">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
         <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
         <br />
         {% if request.roles_with_perm %}
@@ -157,7 +152,7 @@
 
 {% block footer %}
 <div class="container footer-container">
-  <nav class="navbar navbar-fixed-bottom navbar-inverse">
+  <nav class="navbar navbar-dark bg-dark navbar-fixed-bottom">
     <div id="footer">
       {% if theme.show_footer_textbox %}
       <div>
