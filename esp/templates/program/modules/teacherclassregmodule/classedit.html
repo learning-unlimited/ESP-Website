@@ -94,7 +94,7 @@
     <tr>
         <td colspan="2">&nbsp;</td>
     </tr>
-    {% if not isopenclass and not formset.forms|length_is:0 %}
+    {% if not isopenclass and not formset.forms|length == 0 %}
     <tr>
         <th colspan="2">Classroom Requests</th>
     </tr>
@@ -137,7 +137,7 @@
                 <button class="button" type="submit" name="manage_submit" value="main">Save, then load the {{ program.niceName }} admin portal</button><br />
             {% else %}
                 {% if module.deadline_met %}
-                    <button type="submit" class="btn btn-primary btn-large">
+                    <button type="submit" class="btn btn-primary btn-lg">
                     {% if class.id %}
                         <span class="glyphicon glyphicon-floppy-saved"></span>
                         Save course!
