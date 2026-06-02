@@ -37,9 +37,9 @@
         {% elif entry.status == "skip" %}
             <span class="label label-warning">Skipped</span>
         {% elif entry.status == "conflict" %}
-            <span class="label label-important">Conflict</span>
+            <span class="label label-danger">Conflict</span>
         {% elif entry.status == "full" %}
-            <span class="label label-important">Full</span>
+            <span class="label label-danger">Full</span>
         {% endif %}
     </td>
     <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ entry.detail }}</td>
