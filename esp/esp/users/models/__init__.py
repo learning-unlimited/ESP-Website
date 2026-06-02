@@ -1556,8 +1556,6 @@ def _get_upcoming_program_ids(now):
 
     class_time_events = Event.objects.filter(event_type__description="Class Time Block")
 
-    program_ids_with_class_times = class_time_events.values_list("program_id", flat=True).distinct()
-
     upcoming_with_events = (
         class_time_events
         .values("program_id")
@@ -1566,11 +1564,7 @@ def _get_upcoming_program_ids(now):
         .values_list("program_id", flat=True)
     )
 
-    programs_without_events = Program.objects.exclude(
-        id__in=program_ids_with_class_times
-    ).values_list("id", flat=True)
-
-    return list(chain(upcoming_with_events, programs_without_events))
+    return list(upcoming_with_events)
 
 
 def expire_user_records_for_upcoming_programs(user):
