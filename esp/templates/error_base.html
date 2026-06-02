@@ -9,7 +9,7 @@
 <p>{{ error_description|default:"Something went wrong. Please try again or contact us if the problem persists." }}</p>
 
 {% if error %}
-<p>{{ error|safe }}</p>
+<p>{{ error }}</p>
 {% endif %}
 
 <ul>
@@ -48,7 +48,7 @@
     </tr>
     <tr>
         <th>Message</th>
-        <td>{{ error|safe|default:"(no message)" }}</td>
+        <td>{{ error|default:"(no message)" }}</td>
     </tr>
     <tr>
         <th>URL</th>
