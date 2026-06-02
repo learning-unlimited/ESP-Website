@@ -4,7 +4,7 @@
   "version": "3.0.0",
   "private": true,
   "dependencies": {
-    "bootstrap": "3.3.7",
+    "bootstrap": "5.0.0",
     "bootswatch": "3.4.1"
   }
 }
