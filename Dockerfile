@@ -1,4 +1,4 @@
-FROM python:3.7-slim-bullseye AS builder
+FROM python:3.12-slim-bullseye AS builder
 
 # Build-time environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -35,6 +35,13 @@ RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
     && rm -rf /var/lib/apt/lists/*
 RUN npm install -g --prefix /usr less@3.13.1
 
+# Pre-install Bootstrap 3 / Bootswatch theme dependencies so the runtime
+# image contains node_modules without needing npm at runtime.
+COPY esp/public/media/theme_editor/package.json \
+     esp/public/media/theme_editor/package-lock.json \
+     /tmp/theme-npm/
+RUN cd /tmp/theme-npm && npm ci
+
 # Install Python dependencies
 # Docker layer caching speeds up rebuilds
 # --prefer-binary favors prebuilt wheels over slow source builds
@@ -43,7 +50,7 @@ RUN python -m pip install --upgrade pip setuptools wheel && \
     python -m pip install --prefer-binary --no-cache-dir -r /tmp/requirements.txt
 
 # Runtime stage - smaller final image
-FROM python:3.7-slim-bullseye AS runtime
+FROM python:3.12-slim-bullseye AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -81,8 +88,12 @@ COPY --from=builder /usr/bin/node /usr/bin/node
 COPY --from=builder /usr/lib/node_modules /usr/lib/node_modules
 RUN ln -s /usr/lib/node_modules/less/bin/lessc /usr/local/bin/lessc
 
+# Copy pre-installed theme npm dependencies from builder
+COPY --from=builder /tmp/theme-npm/node_modules \
+     /app/esp/public/media/theme_editor/node_modules
+
 # Copy Python packages from builder
-COPY --from=builder /usr/local/lib/python3.7/site-packages /usr/local/lib/python3.7/site-packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy entrypoint script

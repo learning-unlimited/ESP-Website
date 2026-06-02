@@ -45,7 +45,7 @@ from esp.tagdict.models import Tag
 from django.template import Template
 from django.template import Context as DjangoContext
 from django.template.loader import render_to_string
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.utils.sanitize import strip_base64_images
 
 import re
@@ -419,7 +419,12 @@ class CommModule(ProgramModuleObj):
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
 
                 selected = usc.selected_list_from_postdata(data)
-                filterObj = usc.filter_from_postdata(prog, data)
+                try:
+                    filterObj = usc.filter_from_postdata(prog, data)
+                except (ESPError_Log, ESPError_NoLog) as e:
+                    context.update(usc.prepare_context(prog, target_path=request.path))
+                    context['error'] = str(e)
+                    return render_to_response(self.baseDir()+'commpanel_new.html', request, context)
                 sendto_fn_name = usc.sendto_fn_from_postdata(data)
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
@@ -457,7 +462,7 @@ class CommModule(ProgramModuleObj):
                 raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
 
         #   Otherwise, render a page that shows the list selection options
-        context.update(usc.prepare_context(prog))
+        context.update(usc.prepare_context(prog, target_path=request.path))
 
         return render_to_response(self.baseDir()+'commpanel_new.html', request, context)
 
