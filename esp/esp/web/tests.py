@@ -410,6 +410,31 @@ class ExtractThemeTest(TestCase):
         nav = {'nav_structure': [{'header_link': '', 'links': [{'link': '/learn/'}]}]}
         self.assertEqual(self._extract('/learn/', nav=nav), 'tabcolor1')
 
+    def test_missing_header_link_is_skipped(self):
+        """nav_structure entries without 'header_link' are silently skipped."""
+        nav = {
+            'nav_structure': [
+                {'links': []},                                              # no header_link key
+                {'header_link': '/learn/', 'links': [{'link': '/learn/'}]}, # valid entry
+            ]
+        }
+        self.assertEqual(self._extract('/learn/', nav=nav), 'tabcolor1')
+
+    def test_get_nav_category_skips_missing_header_link(self):
+        """get_nav_category skips entries without 'header_link' and returns valid match."""
+        from esp.web.templatetags.main import get_nav_category
+        nav = {
+            'nav_structure': [
+                {'links': []},                                              # no header_link key
+                {'header_link': '/teach/', 'links': [{'link': '/teach/'}]}, # valid entry
+            ]
+        }
+        with patch('esp.web.templatetags.main.ThemeController') as mock_tc:
+            mock_tc.return_value.get_template_settings.return_value = nav
+            result = get_nav_category('/teach/')
+            self.assertIsNotNone(result)
+            self.assertEqual(result['header_link'], '/teach/')
+
 
 class TabMatchingTest(TestCase):
     """

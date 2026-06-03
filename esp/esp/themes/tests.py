@@ -420,3 +420,33 @@ class SafeCustomizationPathTest(TestCase):
         """A name with embedded slashes that escapes themes_dir must raise."""
         with self.assertRaises(SuspiciousFileOperation):
             self.tc._safe_customization_path('subdir/../../../etc/shadow')
+
+
+class FindScssVariablesSecurityTest(TestCase):
+    """Tests for find_scss_variables path-safety validation."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+
+    def test_find_scss_variables_rejects_path_outside_safe_roots(self):
+        """find_scss_variables silently skips filenames that resolve outside safe roots."""
+        import unittest.mock as mock
+        # Inject a filename that points outside THEME_PATH and scss_dir
+        outside_path = '/tmp/evil.scss'
+        with mock.patch.object(self.tc, 'get_scss_names', return_value=[outside_path]):
+            with self.assertLogs('esp.themes.controllers', level='WARNING') as cm:
+                result = self.tc.find_scss_variables('barebones', flat=True)
+        self.assertEqual(result, {})
+        self.assertTrue(any('rejecting' in msg for msg in cm.output))
+
+    def test_get_scss_names_unknown_theme_returns_global_files_only(self):
+        """get_scss_names for an unknown theme returns only the global SCSS files."""
+        names = self.tc.get_scss_names('nonexistent_theme_xyz')
+        self.assertTrue(all('theme_data' not in f for f in names),
+                        'Unknown theme should not produce theme_data/ entries')
+        self.assertTrue(any('variables_custom.scss' in f for f in names))
+
+    def test_get_less_names_unknown_theme_returns_global_files_only(self):
+        """get_less_names for an unknown theme returns no theme-specific LESS files."""
+        names = self.tc.get_less_names('nonexistent_theme_xyz')
+        self.assertFalse(any('nonexistent_theme_xyz' in f for f in names))
