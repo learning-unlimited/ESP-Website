@@ -497,14 +497,14 @@ class CompileScssErrorPathTest(TestCase):
         self.tc = ThemeController()
 
     def test_compile_scss_raises_on_nonzero_returncode(self):
-        """compile_scss raises ESPError when the sass subprocess exits non-zero."""
+        """compile_scss raises ESPError_Log when the sass subprocess exits non-zero."""
         import unittest.mock as mock
-        from esp.middleware import ESPError
+        from esp.middleware.esperrormiddleware import ESPError_Log
         mock_proc = mock.Mock()
         mock_proc.returncode = 1
         mock_proc.communicate.return_value = (b'Error: bad scss', None)
         with mock.patch('esp.themes.controllers.subprocess.Popen', return_value=mock_proc):
-            with self.assertRaises(ESPError):
+            with self.assertRaises(ESPError_Log):
                 self.tc.compile_scss('$broken: {;')
 
 
