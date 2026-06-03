@@ -57,6 +57,10 @@ $body-color:                $textColor;
 $link-color:                $linkColor;
 $link-hover-color:          $linkColorHover;
 $font-family-sans-serif:    $sansFontFamily;
+// $baseFontSize and $navbarBrandFontSize are px values. Bootstrap 4 uses these variables
+// in arithmetic with rem counterparts (e.g. $nav-link-height, $navbar-brand-padding-y),
+// causing "incompatible units" errors if we bridge them here. Both are applied as
+// direct CSS overrides in main.scss (which compiles after @import "bootstrap").
 $headings-color:            $headingsColor;
 $primary:                   $btnPrimaryBackground;
 $secondary:                 $btnInverseBackground;

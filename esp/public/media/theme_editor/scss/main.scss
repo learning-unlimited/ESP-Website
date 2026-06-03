@@ -7,6 +7,17 @@
 @import "bootstrap-icons/font/bootstrap-icons";
 @import "theme_layout_compat";
 
+// Apply px-based editor variables as direct CSS overrides.
+// Bootstrap 4 uses these variables in arithmetic with rem counterparts, making
+// variable bridges impossible without "incompatible units" errors.  Overriding here
+// (after @import "bootstrap") achieves the same effect for rendered output.
+body {
+    font-size: $baseFontSize;
+}
+.navbar-brand {
+    font-size: $navbarBrandFontSize;
+}
+
 // Bootstrap 3 compatibility helpers (templates/JS still use these classes)
 .hidden {
     display: none !important;
