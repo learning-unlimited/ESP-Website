@@ -492,13 +492,13 @@ class ThemeController(object):
             sass_args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.PIPE,
             cwd=theme_editor_dir,
         )
-        css_data, _ = sass_process.communicate(scss_data.encode())
+        css_data, err_data = sass_process.communicate(scss_data.encode())
 
         if sass_process.returncode != 0:
-            sass_output = css_data.decode('UTF-8', errors='replace')
+            sass_output = err_data.decode('UTF-8', errors='replace')
             raise ESPError(
                 f'The stylesheet compiler (sass) returned error code {sass_process.returncode}. '
                 f'Please check the SCSS sources and settings you are using to generate the theme, '
