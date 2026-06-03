@@ -93,6 +93,24 @@ def _detect_all_themes():
         return frozenset()
 
 _ALL_THEMES = _detect_all_themes()
+
+def _get_theme_editor_dir():
+    """Return the realpath of the theme_editor directory, validated to be inside MEDIA_ROOT.
+
+    Computed once at import time from server-configured settings, not from any
+    user-supplied request data, so the result is a trusted constant.
+    """
+    media_root = os.path.realpath(settings.MEDIA_ROOT)
+    resolved = os.path.realpath(os.path.join(media_root, 'theme_editor'))
+    if not resolved.startswith(media_root + os.sep) and resolved != media_root:
+        raise ValueError('theme_editor_dir path is outside MEDIA_ROOT')
+    return resolved
+
+_THEME_EDITOR_DIR = _get_theme_editor_dir()
+_BOOTSTRAP4_SCSS = os.path.join(
+    _THEME_EDITOR_DIR, 'node_modules', 'bootstrap', 'scss', 'bootstrap.scss'
+)
+
 # MD5 of bundled placeholder logo (black square + "Placeholder logo" text)
 PLACEHOLDER_LOGO_MD5 = '26ef721aabd025a813006aea9af71802'
 THEME_COMPILED_WARNING = textwrap.dedent("""\
@@ -420,7 +438,7 @@ class ThemeController(object):
 
     def compile_scss(self, scss_data):
         """Compile SCSS source string using dart-sass, return CSS bytes."""
-        theme_editor_dir = os.path.join(settings.MEDIA_ROOT, 'theme_editor')
+        theme_editor_dir = _THEME_EDITOR_DIR
         node_modules_dir = 'node_modules'
         scss_dir = 'scss'
         sass_js = os.path.join(node_modules_dir, 'sass', 'sass.js')
@@ -514,10 +532,8 @@ class ThemeController(object):
 
             # Bootstrap 4 is imported inline (not concatenated) so dart-sass
             # can resolve its own @imports via --load-path.
-            bootstrap4_entry = os.path.join(
-                settings.MEDIA_ROOT, 'theme_editor', 'node_modules', 'bootstrap', 'scss', 'bootstrap.scss'
-            )
-            bootstrap_import = f'\n@import "{bootstrap4_entry}";\n'
+            # _BOOTSTRAP4_SCSS is a module-level constant validated against MEDIA_ROOT at import time.
+            bootstrap_import = f'\n@import "{_BOOTSTRAP4_SCSS}";\n'
             scss_data = scss_data + bootstrap_import
 
             #   Replace all SCSS variable declarations for which we have a value defined
