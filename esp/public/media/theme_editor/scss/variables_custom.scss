@@ -64,7 +64,10 @@ $font-family-sans-serif:    $sansFontFamily;
 $headings-color:            $headingsColor;
 $primary:                   $btnPrimaryBackground;
 $secondary:                 $btnInverseBackground;
-$navbar-dark-color:         $navbarLinkColor;
+// $navbarBackground cannot be bridged to $dark here — darken()/lighten() arithmetic
+// inside Bootstrap's _utilities.scss causes "incompatible units" errors when $dark is a
+// hex literal instead of a palette entry.  Applied as a direct CSS override in main.scss.
+$navbar-dark-color:         $navbarText;
 $navbar-dark-hover-color:   $navbarLinkColorHover;
 $navbar-dark-brand-color:   $navbarLinkColor;
 $dropdown-link-color:       $grayDark;
