@@ -140,6 +140,13 @@ class Command(BaseCommand):
         errors = 0
 
         try:
+            # Count data rows up front for a progress percentage
+            with open(csv_path, 'r', encoding=encoding, errors='replace', newline='') as f:
+                total_rows = max(sum(1 for _ in f) - 1, 0)  # subtract the header row
+
+            # With --limit, track progress against the capped count, not the file.
+            progress_total = min(total_rows, limit) if limit is not None else total_rows
+
             with open(csv_path, 'r', encoding=encoding, errors='replace', newline='') as f:
                 reader = csv.DictReader(f, skipinitialspace=True)
 
@@ -160,6 +167,8 @@ class Command(BaseCommand):
                             % (col, available)
                         )
 
+                PROGRESS_EVERY = 5000  # rows between progress lines; tune to taste
+
                 for row in reader:
                     if limit is not None and (created + updated + skipped) >= limit:
                         break
@@ -167,53 +176,68 @@ class Command(BaseCommand):
                     name = safe_str(row.get(name_col))
                     if not name:
                         skipped += 1
-                        continue
-
-                    city = safe_str(row.get(city_col))
-                    state = safe_str(row.get(state_col))
-                    if state:
-                        state = state[:2].upper()
-                    ext_id = safe_str(row.get(id_col))
-                    school_type = safe_str(row.get(type_col)) if type_col else None
-
-                    # Look up existing school (same logic for both dry-run and real import)
-                    school = None
-                    if ext_id:
-                        school = K12School.objects.filter(school_id=ext_id).first()
-                    if not school and name and state:
-                        # Re-import: match by name+state when no NCES ID
-                        school = K12School.objects.filter(
-                            name__iexact=name, state__iexact=state
-                        ).first()
-
-                    if school:
-                        updated += 1
-                        if not dry_run:
-                            school.name = name
-                            school.city = city
-                            school.state = state
-                            if school_type:
-                                school.school_type = school_type
-                            if ext_id:
-                                school.school_id = ext_id
-                            school.save()
                     else:
-                        created += 1
-                        if not dry_run:
-                            try:
-                                K12School.objects.create(
-                                    name=name,
-                                    city=city,
-                                    state=state,
-                                    school_id=ext_id or None,
-                                    school_type=school_type,
-                                )
-                            except Exception as e:
-                                errors += 1
-                                if errors <= 5:
-                                    self.stderr.write(
-                                        self.style.ERROR('Error creating "%s": %s' % (name, e))
+                        city = safe_str(row.get(city_col))
+                        state = safe_str(row.get(state_col))
+                        if state:
+                            state = state[:2].upper()
+                        ext_id = safe_str(row.get(id_col))
+                        school_type = safe_str(row.get(type_col)) if type_col else None
+
+                        # Look up existing school (same logic for both dry-run and real import)
+                        school = None
+                        if ext_id:
+                            school = K12School.objects.filter(school_id=ext_id).first()
+                        if not school and name and state:
+                            # Re-import: match by name+state when no NCES ID
+                            school = K12School.objects.filter(
+                                name__iexact=name, state__iexact=state
+                            ).first()
+
+                        if school:
+                            updated += 1
+                            if not dry_run:
+                                school.name = name
+                                school.city = city
+                                school.state = state
+                                if school_type:
+                                    school.school_type = school_type
+                                if ext_id:
+                                    school.school_id = ext_id
+                                school.save()
+                        else:
+                            created += 1
+                            if not dry_run:
+                                try:
+                                    K12School.objects.create(
+                                        name=name,
+                                        city=city,
+                                        state=state,
+                                        school_id=ext_id or None,
+                                        school_type=school_type,
                                     )
+                                except Exception as e:
+                                    errors += 1
+                                    if errors <= 5:
+                                        self.stderr.write(
+                                            self.style.ERROR('Error creating "%s": %s' % (name, e))
+                                        )
+
+                    # Report progress
+                    processed = created + updated + skipped
+                    if processed % PROGRESS_EVERY == 0:
+                        if progress_total:
+                            self.stdout.write(
+                                '  ... %d/%d rows (%.1f%%) — created %d, updated %d, skipped %d'
+                                % (processed, progress_total,
+                                   100.0 * processed / progress_total,
+                                   created, updated, skipped)
+                            )
+                        else:
+                            self.stdout.write(
+                                '  ... %d rows — created %d, updated %d, skipped %d'
+                                % (processed, created, updated, skipped)
+                            )
 
         except CommandError:
             raise
