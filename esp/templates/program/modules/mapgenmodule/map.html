@@ -102,7 +102,7 @@ chart = Highcharts.mapChart('container', {
                         });
 
                         // Hide loading and add series
-                        chart.d-noneLoading();
+                        chart.hideLoading();
                         chart.addSeriesAsDrilldown(e.point, {
                             name: e.point.name,
                             data: data,

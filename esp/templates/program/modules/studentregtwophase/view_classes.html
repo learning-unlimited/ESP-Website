@@ -20,7 +20,7 @@ Below is the class listing for {{program.niceName}}. If you have trouble viewing
 <hr>
 <div class="sticky-toggle">
   <a href="javascript:void(0)"
-     data-bind="click: toggleFilter, text: d-blockFilter() ? 'Collapse (&ndash;)' : 'Expand (+)'">
+     data-bind="click: toggleFilter, text: showFilter() ? 'Collapse (&ndash;)' : 'Expand (+)'">
   </a>
 </div>
 <div class="search-box">
@@ -28,7 +28,7 @@ Below is the class listing for {{program.niceName}}. If you have trouble viewing
   <input type="text" data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
   <div id="search-spinner">&nbsp;</div>
 </div>
-<div class="filter-box" data-bind="visible: d-blockFilter">
+<div class="filter-box" data-bind="visible: showFilter">
   <label>Category:</label>
   <br>
   {% for column in category_choices %}
@@ -43,7 +43,7 @@ Below is the class listing for {{program.niceName}}. If you have trouble viewing
   </div>
   {% endfor %}
 </div>
-<div class="filter-box" data-bind="visible: d-blockFilter">
+<div class="filter-box" data-bind="visible: showFilter">
   <label>Grade:</label>
   <br>
   {% for column in grade_choices %}

@@ -41,14 +41,14 @@
 
 {% if queryset %}
 <p>
-Your query returned {{queryset|length}} of {{program.classsubject_set.count}} classes in {{program.niceName}}.  Click on a class or flag to see more detail (<a href="#" onclick="d-blockAll()">d-block all</a> <a href="#" onclick="d-blockWithComments()">d-block comments</a> <a href="#" onclick="d-noneAll()">d-none all</a>).  Or <a href="?">search again</a>.
+Your query returned {{queryset|length}} of {{program.classsubject_set.count}} classes in {{program.niceName}}.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="showWithComments()">show comments</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
 </p>
 
 <div class="btn-group">
     <button class="btn btn-approve" onclick="approveAll({{ IDs|escapejs }});">Approve All</button>
     <button class="btn btn-unreview" onclick="unreviewAll({{ IDs|escapejs }});">Unreview All</button>
     <button class="btn btn-reject" onclick="rejectAll({{ IDs|escapejs }});">Reject All</button>
-    <button class="btn btn-info" onclick="d-blockAutoRuleModal();" {% if not query %}style="display:none;"{% endif %}>Create Auto-Flag Rule</button>
+    <button class="btn btn-info" onclick="showAutoRuleModal();" {% if not query %}style="display:none;"{% endif %}>Create Auto-Flag Rule</button>
 </div>
 
 <!-- Auto-Flag Rule Modal -->
@@ -83,8 +83,8 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 </div>
 
 <script type="text/javascript">
-function d-blockAutoRuleModal() {
-    $j('#autorule-modal').modal('d-block');
+function showAutoRuleModal() {
+    $j('#autorule-modal').modal('show');
 }
 </script>
 <div class="btn-toolbar">

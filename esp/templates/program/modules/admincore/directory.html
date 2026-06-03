@@ -9,12 +9,12 @@
         // Timeline/Checklist Toggle
         $j(".switch input").on("change", function () {
             if ($j(this).is(":checked")) {
-                // Checklist Mode: Hide timeline, d-block checklist
+                // Checklist Mode: Hide timeline, show checklist
                 $j(".horizontal-timeline-wrapper").slideUp(function() {
                     $j(".task-checklist-widget").slideDown();
                 });
             } else {
-                // Timeline Mode: Hide checklist, d-block timeline
+                // Timeline Mode: Hide checklist, show timeline
                 $j(".task-checklist-widget").slideUp(function() {
                     $j(".horizontal-timeline-wrapper").slideDown();
                 });

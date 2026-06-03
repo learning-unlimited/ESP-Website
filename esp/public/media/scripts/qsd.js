@@ -193,7 +193,7 @@ function qsd_preview_version(qsd_url, edit_id, version_id, version_date)
         $viewDiv.find('.qsd-preview-restore-btn').on('click', function() {
             qsd_restore_version(qsd_url, edit_id, version_id, version_date);
         });
-        // Show the view div (hidden during inline editing) and d-none the editor
+        // Show the view div (hidden during inline editing) and hide the editor
         $viewDiv.removeClass('hidden').addClass('qsd_view_visible');
         if ($editDiv.length) {
             $editDiv.addClass('hidden').removeClass('qsd_edit_visible');
@@ -212,7 +212,7 @@ function qsd_cancel_preview(edit_id)
         $viewDiv.html(original);
         $viewDiv.removeData('original-content');
     }
-    // Restore inline edit mode: d-none view div, d-block editor
+    // Restore inline edit mode: hide view div, show editor
     if ($editDiv.length) {
         $viewDiv.removeClass('qsd_view_visible').addClass('hidden');
         $editDiv.removeClass('hidden').addClass('qsd_edit_visible');
@@ -235,7 +235,7 @@ function qsd_restore_version(qsd_url, edit_id, version_id, version_date)
     $j("#qsd-restore-modal").remove();
 
     var modalHtml =
-        '<div class="modal d-none fade" id="qsd-restore-modal" tabindex="-1" role="dialog">'
+        '<div class="modal hide fade" id="qsd-restore-modal" tabindex="-1" role="dialog">'
       + '  <div class="modal-header">'
       + '    <button type="button" class="close" data-dismiss="modal">&times;</button>'
       + '    <h4><span class="bi bi-arrow-repeat"></span> Restore Version</h4>'
@@ -254,7 +254,7 @@ function qsd_restore_version(qsd_url, edit_id, version_id, version_date)
 
     $j("body").append(modalHtml);
     var $modal = $j("#qsd-restore-modal");
-    $modal.modal("d-block");
+    $modal.modal("show");
 
     $j("#qsd-restore-confirm-btn").on("click", function() {
         var $btn = $j(this);

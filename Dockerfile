@@ -83,8 +83,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     $(grep -v -E '^(#|$|python|build-essential|git|postgres|memcached)' /tmp/packages_base.txt | grep -v -- '-dev$' | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Node.js and LESS from builder
+# Copy Node.js, npm, and LESS from builder
+# /usr/lib/node_modules already includes the npm package; we just need the wrapper script.
 COPY --from=builder /usr/bin/node /usr/bin/node
+COPY --from=builder /usr/bin/npm /usr/bin/npm
 COPY --from=builder /usr/lib/node_modules /usr/lib/node_modules
 RUN ln -s /usr/lib/node_modules/less/bin/lessc /usr/local/bin/lessc
 

@@ -40,6 +40,25 @@ else
     echo ">>>    docker compose up"
 fi
 
+# Refresh theme node_modules when the named volume is stale.
+# Named volumes persist across `docker compose up --build` and will not
+# automatically receive new packages (e.g. sass) added to package.json.
+# Compare package-lock.json hash to a marker stored inside the volume;
+# if they differ, re-run npm ci to bring the volume up to date.
+THEME_DIR=/app/esp/public/media/theme_editor
+LOCK_FILE="$THEME_DIR/package-lock.json"
+HASH_MARKER="$THEME_DIR/node_modules/.installed-lock-hash"
+if [ -f "$LOCK_FILE" ] && command -v npm &>/dev/null; then
+    CURRENT_HASH=$(sha256sum "$LOCK_FILE" | cut -d' ' -f1)
+    STORED_HASH=$(cat "$HASH_MARKER" 2>/dev/null || echo "")
+    if [ "$CURRENT_HASH" != "$STORED_HASH" ]; then
+        echo ">>> Theme node_modules are stale — refreshing with npm ci..."
+        (cd "$THEME_DIR" && npm ci)
+        echo "$CURRENT_HASH" > "$HASH_MARKER"
+        echo ">>> Theme node_modules refreshed."
+    fi
+fi
+
 # Change to the esp directory before starting the server
 # This ensures manage.py resolves Django settings correctly
 cd /app/esp

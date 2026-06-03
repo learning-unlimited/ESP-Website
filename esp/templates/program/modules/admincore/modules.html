@@ -20,7 +20,7 @@
 
 <h1>Module Management for {{ program.niceName }}</h1>
 
-<p>Welcome to the module management page for {{ program.niceName }}. This page lists the modules that students and teachers will encounter during registration. You can drag individual modules to reorder them and change whether they are required or not. You can also click on a module name to edit the Registration Step Title that will be d-blockn instead of the module's default title in the student/teacher registration to-do list, or the requirement label that will be d-blockn in parentheses next to the title. To add or remove modules, you will need to enable/disable them in the <a href="/manage/{{ program.getUrlBase }}/settings/program">program settings</a>.</p>
+<p>Welcome to the module management page for {{ program.niceName }}. This page lists the modules that students and teachers will encounter during registration. You can drag individual modules to reorder them and change whether they are required or not. You can also click on a module name to edit the Registration Step Title that will be shown instead of the module's default title in the student/teacher registration to-do list, or the requirement label that will be shown in parentheses next to the title. To add or remove modules, you will need to enable/disable them in the <a href="/manage/{{ program.getUrlBase }}/settings/program">program settings</a>.</p>
 {% inline_program_qsd_block program "manage:modules" %}
 {% end_inline_program_qsd_block %}
 
@@ -37,7 +37,7 @@
   </ul>
 </div>
 
-{# Notification d-blockn when a cross-list drop is rejected (required <-> not-required). #}
+{# Notification shown when a cross-list drop is rejected (required <-> not-required). #}
 <div id="module-constraint-msg" class="alert alert-warning" role="alert" style="display:none; position:absolute; z-index:9999; max-width:320px; box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>
 <div id="module-reorder-announce" aria-live="assertive" aria-atomic="true" class="visually-hidden"></div>
 
