@@ -441,21 +441,32 @@ class ThemeController(object):
     def find_scss_variables(self, theme_name=None, theme_only=False, flat=False):
         if theme_name is None:
             theme_name = self.get_current_theme()
+        # Validate each path against known safe roots before any file operation.
+        # os.path.realpath + startswith is the CodeQL-recommended sanitisation pattern
+        # for py/path-injection (see CodeQL docs: "Uncontrolled data in path expression").
+        _safe_roots = (
+            os.path.realpath(THEME_PATH) + os.sep,
+            os.path.realpath(themes_settings.scss_dir) + os.sep,
+        )
         results = {}
         for filename in self.get_scss_names(theme_name, theme_only=theme_only):
-            if not os.path.isfile(filename):
-                logger.debug('find_scss_variables: skipping missing file %s', filename)
+            safe_filename = os.path.realpath(filename)
+            if not any(safe_filename.startswith(root) for root in _safe_roots):
+                logger.warning('find_scss_variables: rejecting path outside safe roots: %s', filename)
+                continue
+            if not os.path.isfile(safe_filename):
+                logger.debug('find_scss_variables: skipping missing file %s', safe_filename)
                 continue
             local_results = {}
-            logger.debug('find_scss_variables: including file %s', filename)
-            with open(filename) as f:
+            logger.debug('find_scss_variables: including file %s', safe_filename)
+            with open(safe_filename) as f:
                 scss_data = f.read()
             for item in re.findall(r'\$([a-zA-Z0-9_]+):\s*(.*?);', scss_data):
                 local_results[item[0]] = item[1]
             if flat:
                 results.update(local_results)
             else:
-                results[filename] = local_results
+                results[safe_filename] = local_results
         return results
 
     def compile_scss(self, scss_data):
