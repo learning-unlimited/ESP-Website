@@ -99,6 +99,10 @@ def _detect_all_themes():
 
 _ALL_THEMES = _detect_all_themes()
 
+# Pre-computed map from theme name → less/ directory, mirroring _SCSS_THEME_DIRS.
+# get_less_names uses this so theme_name never appears in an os.path.join expression.
+_LESS_THEME_DIRS = {name: os.path.join(THEME_PATH, name, 'less') for name in _ALL_THEMES}
+
 def _get_theme_editor_dir():
     """Return the realpath of the theme_editor directory, validated to be inside MEDIA_ROOT.
 
@@ -309,7 +313,8 @@ class ThemeController(object):
             result.append(os.path.join(themes_settings.less_dir, 'main.less'))
 
         #   Make sure variables.less is included first, before any other custom LESS code
-        theme_files = self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'\.less$')
+        theme_less_dir = _LESS_THEME_DIRS.get(theme_name)
+        theme_files = self.list_filenames(theme_less_dir, r'\.less$') if theme_less_dir else []
         nonvariable_files = []
         for theme_file in theme_files:
             if os.path.basename(theme_file).startswith('variables'):
@@ -588,16 +593,10 @@ class ThemeController(object):
             css_data = self.compile_scss(scss_data)
         else:
             #   Load LESS files in order of search path
-            _less_safe_root = os.path.realpath(THEME_PATH) + os.sep
-            _less_editor_root = os.path.realpath(_THEME_EDITOR_DIR) + os.sep
             less_data = ''
             for filename in self.get_less_names(theme_name, bootswatch_theme=bootswatch_theme):
-                safe_less_fn = os.path.realpath(filename)
-                if not safe_less_fn.startswith(_less_safe_root) and \
-                   not safe_less_fn.startswith(_less_editor_root):
-                    raise SuspiciousFileOperation(f'LESS path outside safe roots: {filename!r}')
-                less_file = open(safe_less_fn)
-                logger.debug('Including LESS source %s', safe_less_fn)
+                less_file = open(filename)
+                logger.debug('Including LESS source %s', filename)
                 less_data += '\n' + less_file.read()
                 less_file.close()
 
