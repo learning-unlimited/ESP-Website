@@ -553,11 +553,14 @@ class ThemeController(object):
             bootstrap_import = f'\n@import "{_BOOTSTRAP4_SCSS}";\n'
             scss_data = scss_data + bootstrap_import
 
-            #   Replace all SCSS variable declarations for which we have a value defined
-            for (variable_name, variable_value) in variable_data.items():
-                if not re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', variable_name):
+            #   Replace all SCSS variable declarations for which we have a value defined.
+            #   Iterate over names read from the theme files (trusted) and look up the
+            #   user-supplied value, so the key used in path expressions is never tainted.
+            known_scss_vars = self.find_scss_variables(theme_name, flat=True)
+            for variable_name in known_scss_vars:
+                if variable_name not in variable_data:
                     continue
-                safe_value = _sanitize_scss_value(variable_name, variable_value)
+                safe_value = _sanitize_scss_value(variable_name, variable_data[variable_name])
                 if safe_value is None:
                     continue
                 scss_data = re.sub(
