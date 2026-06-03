@@ -296,6 +296,9 @@ class ThemeController(object):
         css_data = lessc_process.communicate(less_data.encode())[0]
 
         if lessc_process.returncode != 0:
+            logger.error('lessc failed (code %d). Compiler output:\n%s',
+                         lessc_process.returncode,
+                         css_data.decode('UTF-8', 'replace'))
             raise ESPError(f'The stylesheet compiler (lessc) returned error code {lessc_process.returncode}.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:{settings.DEFAULT_EMAIL_ADDRESSES["support"]}">Web support team</a>.<br />LESS compile command was: <pre>{" ".join(lessc_args)}</pre>', log=True)
 
         return css_data
@@ -309,7 +312,7 @@ class ThemeController(object):
         # Import global bootstrap variable definitions and custom overrides first so
         # theme variables that reference them (e.g. @navbarInverseBackground) resolve
         # correctly during the isolated compilation below.
-        less_data = '@import "variables.less";\n@import "variables_custom.less";\n'
+        less_data = ''
         # load variable LESS from files
         for filename in self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables.*\.less$'):
             less_file = open(filename)
