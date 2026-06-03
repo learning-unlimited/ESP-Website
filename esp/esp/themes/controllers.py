@@ -562,17 +562,24 @@ class ThemeController(object):
             # SCSS/Bootstrap 4 pipeline.  theme_name is constrained to the
             # import-time _SCSS_THEMES frozenset, breaking the taint chain
             # before any path expression or subprocess call below.
-            scss_data = ''
+            # Correct compilation order for Bootstrap 4:
+            #   1. Variable files (before @import so !default vars pick up our values)
+            #   2. @import "bootstrap"  (generates Bootstrap CSS)
+            #   3. CSS rule files (after @import so our rules override Bootstrap's)
+            var_data = ''
+            css_data_pre = ''
             for filename in self.get_scss_names(theme_name):
                 with open(filename) as f:
                     logger.debug('Including SCSS source %s', filename)
-                    scss_data += '\n' + f.read()
+                    content = '\n' + f.read()
+                if os.path.basename(filename).startswith('variables'):
+                    var_data += content
+                else:
+                    css_data_pre += content
 
-            # Bootstrap 4 is imported inline (not concatenated) so dart-sass
-            # can resolve its own @imports via --load-path.
-            # _BOOTSTRAP4_SCSS is a module-level constant validated against MEDIA_ROOT at import time.
+            # _BOOTSTRAP4_SCSS is a module-level constant validated at import time.
             bootstrap_import = f'\n@import "{_BOOTSTRAP4_SCSS}";\n'
-            scss_data = scss_data + bootstrap_import
+            scss_data = var_data + bootstrap_import + css_data_pre
 
             #   Replace all SCSS variable declarations for which we have a value defined.
             #   Parse variable names from the already-loaded scss_data (server content,
