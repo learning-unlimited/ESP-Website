@@ -1,4 +1,4 @@
-<ul class="nav nav-list sidebar" id="nav_sidebar">
+<ul class="nav nav-stacked sidebar" id="nav_sidebar">
     {% for section in theme.nav_structure %}
     {% if section.header %}
     <li class="nav-header">
@@ -27,15 +27,15 @@
     {% endfor %}
 </ul>
 
-<div class="accordion sidebar" id="nav_accordion">
-    <div class="accordion-group">
-        <div class="accordion-heading">
-            <a class="accordion-toggle" data-toggle="collapse" data-parent="#nav_accordion" href="#collapseOne">
+<div class="panel-group sidebar" id="nav_accordion">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <a data-toggle="collapse" data-parent="#nav_accordion" href="#collapseOne">
                 <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
             </a>
         </div>
-        <div id="collapseOne" class="accordion-body collapse">
-            <ul class="nav nav-list sidebar">
+        <div id="collapseOne" class="panel-collapse collapse">
+            <ul class="nav nav-stacked sidebar">
             {% for section in theme.nav_structure %}
             {% if section.header %}
             <li class="nav-header">

@@ -100,6 +100,22 @@ class ThemeController(object):
         return [name for name in os.listdir(THEME_PATH)
             if name != '__pycache__' and os.path.isdir(os.path.join(THEME_PATH, name))]
 
+    def get_bootswatch_themes(self):
+        """Return sorted list of Bootswatch 3 theme names available from npm.
+
+        Returns an empty list when the npm package is not installed.
+        """
+        bootswatch_dir = os.path.normpath(os.path.join(
+            themes_settings.less_dir, '..', 'node_modules', 'bootswatch'
+        ))
+        if not os.path.isdir(bootswatch_dir):
+            return []
+        return sorted(
+            name for name in os.listdir(bootswatch_dir)
+            if os.path.isdir(os.path.join(bootswatch_dir, name))
+            and os.path.exists(os.path.join(bootswatch_dir, name, 'variables.less'))
+        )
+
     def get_template_settings(self):
         """
         Get the current template settings. The base settings are the initial
@@ -134,7 +150,12 @@ class ThemeController(object):
         self.set_template_settings(self.get_template_settings())
 
     def base_dir(self, theme_name):
-        return os.path.join(THEME_PATH, theme_name)
+        # Resolve and verify the path stays inside THEME_PATH to prevent traversal.
+        resolved = os.path.realpath(os.path.join(THEME_PATH, theme_name))
+        theme_root = os.path.realpath(THEME_PATH)
+        if not resolved.startswith(theme_root + os.sep) and resolved != theme_root:
+            raise ValueError(f'Invalid theme name: {theme_name!r}')
+        return resolved
 
     def list_filenames(self, dir, file_regexp, mask_base=False):
         """ Quick search for files in the specified directory (dir) which match
@@ -180,12 +201,37 @@ class ThemeController(object):
             result += self.list_filenames(dir, r'\.less$')
         return result
 
-    def get_less_names(self, theme_name, theme_only=False):
+    def get_less_names(self, theme_name, theme_only=False, bootswatch_theme=None):
         result = []
         if not theme_only:
             result += self.global_less()
-            result.append(os.path.join(themes_settings.less_dir, 'bootstrap.less'))
-            result.append(os.path.join(themes_settings.less_dir, 'responsive.less'))
+
+            if bootswatch_theme:
+                valid_bootswatch = self.get_bootswatch_themes()
+                if bootswatch_theme not in valid_bootswatch:
+                    raise ValueError(f'Unknown Bootswatch theme: {bootswatch_theme!r}')
+                # Bootswatch variables must precede bootstrap.less to override its defaults.
+                # Wrong order = Bootswatch colors have zero effect.
+                result.append(os.path.normpath(os.path.join(
+                    themes_settings.less_dir, '..', 'node_modules', 'bootswatch',
+                    bootswatch_theme, 'variables.less'
+                )))
+
+            # Bootstrap 3.3.7 is installed via npm; run 'npm install' in
+            # esp/public/media/theme_editor/ before compiling.
+            # Bootstrap 3 has responsive styles built into bootstrap.less —
+            # no separate responsive.less is needed.
+            result.append(os.path.normpath(os.path.join(
+                themes_settings.less_dir, '..', 'node_modules', 'bootstrap', 'less', 'bootstrap.less'
+            )))
+
+            if bootswatch_theme:
+                # Bootswatch component styles must follow bootstrap.less
+                result.append(os.path.normpath(os.path.join(
+                    themes_settings.less_dir, '..', 'node_modules', 'bootswatch',
+                    bootswatch_theme, 'bootswatch.less'
+                )))
+
             result.append(os.path.join(themes_settings.less_dir, 'variables_custom.less'))
             result.append(os.path.join(themes_settings.less_dir, 'main.less'))
 
@@ -236,7 +282,12 @@ class ThemeController(object):
         if os.name == 'nt':
             INCLUDE_PATH_SEP = ';'
 
-        less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
+        # Include Bootstrap 3 LESS from npm so @imports inside bootstrap.less resolve
+        bootstrap3_less_dir = os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'node_modules', 'bootstrap', 'less')
+        less_search_path = INCLUDE_PATH_SEP.join(
+            settings.LESS_SEARCH_PATH +
+            [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less'), bootstrap3_less_dir]
+        )
         logger.debug('LESS search path is "%s"', less_search_path)
 
         #   Compile to CSS
@@ -255,7 +306,10 @@ class ThemeController(object):
         if theme_name is None:
             theme_name = self.get_current_theme()
 
-        less_data = ''
+        # Import global bootstrap variable definitions and custom overrides first so
+        # theme variables that reference them (e.g. @navbarInverseBackground) resolve
+        # correctly during the isolated compilation below.
+        less_data = '@import "variables.less";\n@import "variables_custom.less";\n'
         # load variable LESS from files
         for filename in self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables.*\.less$'):
             less_file = open(filename)
@@ -282,10 +336,10 @@ class ThemeController(object):
 
         return defaults
 
-    def compile_css(self, theme_name, variable_data, output_filename):
+    def compile_css(self, theme_name, variable_data, output_filename, bootswatch_theme=None):
         #   Load LESS files in order of search path
         less_data = ''
-        for filename in self.get_less_names(theme_name):
+        for filename in self.get_less_names(theme_name, bootswatch_theme=bootswatch_theme):
             less_file = open(filename)
             logger.debug('Including LESS source %s', filename)
             less_data += '\n' + less_file.read()
