@@ -1265,7 +1265,7 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
     def getModules(self, user = None, tl = None, old_prog = None):
-        """ Gets modules for this program, optionally attaching a user. """
+        """ Gets modules for this program, optionally attaching a user. Only open modules are included for non-admins. """
         modules = list(self.getModules_cached(tl, old_prog))
 
         if user and not user.isAdmin(self):
