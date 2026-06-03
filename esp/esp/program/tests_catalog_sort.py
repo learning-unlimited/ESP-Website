@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 from esp.program.models import ClassSubject
 from esp.program.class_status import ClassStatus
@@ -51,10 +52,10 @@ class CatalogSortTest(ProgramFrameworkTest):
     def test_sort_by_earliest_start_ascending(self):
         """Classes should sort by their earliest non-cancelled start time."""
         cls_a = self._make_class('Class A', [
-            (datetime(2026, 1, 1, 10, 0), ClassStatus.ACCEPTED),
+            (timezone.make_aware(datetime(2026, 1, 1, 10, 0)), ClassStatus.ACCEPTED),
         ])
         cls_b = self._make_class('Class B', [
-            (datetime(2026, 1, 1, 11, 0), ClassStatus.ACCEPTED),
+            (timezone.make_aware(datetime(2026, 1, 1, 11, 0)), ClassStatus.ACCEPTED),
         ])
 
         catalog = ClassSubject.objects.catalog(
@@ -67,10 +68,10 @@ class CatalogSortTest(ProgramFrameworkTest):
     def test_sort_by_earliest_start_descending(self):
         """Descending sort should reverse the order."""
         cls_a = self._make_class('Class A', [
-            (datetime(2026, 1, 1, 10, 0), ClassStatus.ACCEPTED),
+            (timezone.make_aware(datetime(2026, 1, 1, 10, 0)), ClassStatus.ACCEPTED),
         ])
         cls_b = self._make_class('Class B', [
-            (datetime(2026, 1, 1, 11, 0), ClassStatus.ACCEPTED),
+            (timezone.make_aware(datetime(2026, 1, 1, 11, 0)), ClassStatus.ACCEPTED),
         ])
 
         catalog = ClassSubject.objects.catalog(
@@ -89,14 +90,14 @@ class CatalogSortTest(ProgramFrameworkTest):
         sort after both.
         """
         cls_a = self._make_class('Class A', [
-            (datetime(2026, 1, 1, 10, 0), ClassStatus.ACCEPTED),
+            (timezone.make_aware(datetime(2026, 1, 1, 10, 0)), ClassStatus.ACCEPTED),
         ])
         cls_b = self._make_class('Class B', [
-            (datetime(2026, 1, 1, 11, 0), ClassStatus.ACCEPTED),
+            (timezone.make_aware(datetime(2026, 1, 1, 11, 0)), ClassStatus.ACCEPTED),
         ])
         cls_c = self._make_class('Class C', [
-            (datetime(2026, 1, 1, 12, 0), ClassStatus.ACCEPTED),
-            (datetime(2026, 1, 1, 8, 0), ClassStatus.CANCELLED),
+            (timezone.make_aware(datetime(2026, 1, 1, 12, 0)), ClassStatus.ACCEPTED),
+            (timezone.make_aware(datetime(2026, 1, 1, 8, 0)), ClassStatus.CANCELLED),
         ])
 
         catalog = ClassSubject.objects.catalog(
@@ -113,11 +114,11 @@ class CatalogSortTest(ProgramFrameworkTest):
     def test_multi_section_no_duplicates(self):
         """A class with multiple active sections must appear only once."""
         cls_a = self._make_class('Class A', [
-            (datetime(2026, 1, 1, 10, 0), ClassStatus.ACCEPTED),
-            (datetime(2026, 1, 1, 14, 0), ClassStatus.ACCEPTED),
+            (timezone.make_aware(datetime(2026, 1, 1, 10, 0)), ClassStatus.ACCEPTED),
+            (timezone.make_aware(datetime(2026, 1, 1, 14, 0)), ClassStatus.ACCEPTED),
         ])
         cls_b = self._make_class('Class B', [
-            (datetime(2026, 1, 1, 11, 0), ClassStatus.ACCEPTED),
+            (timezone.make_aware(datetime(2026, 1, 1, 11, 0)), ClassStatus.ACCEPTED),
         ])
 
         catalog = ClassSubject.objects.catalog(

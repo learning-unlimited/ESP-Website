@@ -7,6 +7,7 @@ from django.conf import settings
 from django.core.validators import EMPTY_VALUES
 from django.forms import widgets
 from django.template import Template, Context
+from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from collections import OrderedDict
@@ -59,10 +60,10 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
         if isinstance(value, datetime.datetime):
             return value
         if isinstance(value, datetime.date):
-            return datetime.datetime(value.year, value.month, value.day)
+            return timezone.make_aware(datetime.datetime(value.year, value.month, value.day))
         for format in dtf:
             try:
-                return datetime.datetime(*(time.strptime(value, format)[:6]))
+                return timezone.make_aware(datetime.datetime(*(time.strptime(value, format)[:6])))
             except ValueError:
                 continue
         return None
@@ -91,12 +92,12 @@ class SplitDateWidget(forms.MultiWidget):
     """ A date widget that separates days, etc. """
 
     def __init__(self, attrs=None, min_year=None, max_year=None):
-        from datetime import datetime
+        from django.utils import timezone
 
         if min_year is None:
-            min_year = datetime.now().year - 70
+            min_year = timezone.now().year - 70
         if max_year is None:
-            max_year = datetime.now().year - 10
+            max_year = timezone.now().year - 10
 
         year_choices = list(range(min_year,
                              max_year+1))

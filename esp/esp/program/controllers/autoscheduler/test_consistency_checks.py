@@ -2,6 +2,8 @@ import datetime
 import traceback
 import unittest
 
+from django.utils import timezone
+
 from esp.program.controllers.autoscheduler import \
         consistency_checks, testutils, data_model
 from esp.program.controllers.autoscheduler.consistency_checks import \
@@ -95,8 +97,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
         sched.lunch_timeslots[day].pop()
 
         sched.lunch_timeslots[day].append(data_model.AS_Timeslot(
-            datetime.datetime(2017, 2, 2, 14, 5),
-            datetime.datetime(2017, 2, 2, 14, 55),
+            timezone.make_aware(datetime.datetime(2017, 2, 2, 14, 5)),
+            timezone.make_aware(datetime.datetime(2017, 2, 2, 14, 55)),
             event_id=5))
         with self.assertRaises(ConsistencyError):
             # Unregistered timeslot
@@ -163,8 +165,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
         sched.timeslots[1].associated_roomslots.remove(roomslot)
 
         new_timeslot = data_model.AS_Timeslot(
-                datetime.datetime(2017, 2, 2, 16, 5),
-                datetime.datetime(2017, 2, 2, 16, 55),
+                timezone.make_aware(datetime.datetime(2017, 2, 2, 16, 5)),
+                timezone.make_aware(datetime.datetime(2017, 2, 2, 16, 55)),
                 7)
         new_roomslot = data_model.AS_RoomSlot(new_timeslot, None)
         # This should be okay, because we made a "rogue" roomslot but it's
@@ -441,8 +443,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
                     f"with error: \n{traceback.format_exc()}")
 
         sched.timeslots.append(data_model.AS_Timeslot(
-            datetime.datetime(2017, 2, 2, 23, 30),
-            datetime.datetime(2017, 2, 3, 0, 30),
+            timezone.make_aware(datetime.datetime(2017, 2, 2, 23, 30)),
+            timezone.make_aware(datetime.datetime(2017, 2, 3, 0, 30)),
             event_id=7))
         sched.timeslot_dict = sched.build_timeslot_dict()
         with self.assertRaises(ConsistencyError):

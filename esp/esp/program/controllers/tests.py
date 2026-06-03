@@ -54,6 +54,7 @@ NOTE:
 """
 
 import datetime
+from django.utils import timezone
 import io
 import os
 from unittest.mock import patch
@@ -127,8 +128,8 @@ class StudentRegSanityFrameworkTest(ProgramFrameworkTest):
             user=student,
             section=section,
             relationship=reg_type,
-            start_date=datetime.datetime.now() - datetime.timedelta(hours=1),
-            end_date=datetime.datetime.now() + datetime.timedelta(days=30),
+            start_date=timezone.now() - datetime.timedelta(hours=1),
+            end_date=timezone.now() + datetime.timedelta(days=30),
         )
         return sr
 

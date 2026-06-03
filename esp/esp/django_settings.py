@@ -147,6 +147,8 @@ EMAIL_HOST = 'localhost'
 #################################
 TIME_ZONE = 'America/New_York'
 
+USE_TZ = True
+
 LANGUAGE_CODE = 'en-us'
 
 
@@ -213,6 +215,7 @@ MIDDLEWARE_GLOBAL = [
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
     ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
+    (1020, 'esp.middleware.timezone_middleware.TimezoneMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.contrib.admindocs.middleware.XViewMiddleware'),
     (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
@@ -420,13 +423,6 @@ STORAGES = {
     "default": {"BACKEND": "esp.web.storage.LowercaseExtensionStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
-
-# TODO: Django 5.0 changed the default for USE_TZ from False to True.  This
-# pin preserves the current behaviour (naive datetimes throughout the codebase)
-# until a dedicated timezone-aware migration effort is undertaken.  Do not
-# remove this line without first auditing every datetime field and making the
-# codebase timezone-aware.
-USE_TZ = False
 
 #   Default imports for shell_plus, for convenience.
 SHELL_PLUS_POST_IMPORTS = (

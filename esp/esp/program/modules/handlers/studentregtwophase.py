@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import datetime
+from django.utils import timezone
 import json
 import logging
 logger = logging.getLogger(__name__)
@@ -319,7 +319,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         to_expire = StudentSubjectInterest.objects.filter(
             user=request.user,
             subject__pk__in=json_data['not_interested'])
-        to_expire.update(end_date=datetime.datetime.now())
+        to_expire.update(end_date=timezone.now())
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return HttpResponse()
@@ -546,7 +546,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             'program': self.program,
             'schedule': schedule,
             'starred_classes': starred_classes,
-            'curtime': datetime.datetime.now(),
+            'curtime': timezone.now(),
             'DEFAULT_HOST': settings.DEFAULT_HOST,
         }
         email_contents = render_to_string(

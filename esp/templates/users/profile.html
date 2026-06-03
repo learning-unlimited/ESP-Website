@@ -97,7 +97,7 @@ div.required label.control-label:after {
     </form>
   </div>
 </div>
-
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
 <script>
 function check_state() {
   if ($j("#id_address_state").val() == "International") {
@@ -135,6 +135,32 @@ $j(document).ready(function() {
   $j("#id_emerg_address_state").change(function() {
     check_emerg_state();
   });
+
+  if ($j("#id_timezone").length) {
+    function initSelect2() {
+       var $tz = $j("#id_timezone");
+       $tz.select2({
+          width: '224px',
+          allowClear: false,
+          dropdownAutoWidth: true
+        });
+        $tz.on('select2:open', function() {
+          setTimeout(function() {
+            var searchField = document.querySelector('.select2-search__field');
+            if (searchField) {
+              searchField.placeholder = "Search for your city or country...";
+            }
+          }, 0);
+        });
+    }
+
+    if (typeof $j.fn.select2 === 'undefined') {
+      $j.getScript("https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js", initSelect2);
+    } else {
+      initSelect2();
+    }
+  }
+  
 });
 </script>
 

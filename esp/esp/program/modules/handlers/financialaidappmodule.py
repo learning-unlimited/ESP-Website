@@ -94,7 +94,7 @@ class FinancialAidAppModule(ProgramModuleObj):
         """
         A way for a student to apply for financial aid.
         """
-        from datetime import datetime
+        from django.utils import timezone
         from esp.dbmail.models import send_mail
 
         app, created = FinancialAidRequest.objects.get_or_create(user = request.user,
@@ -125,7 +125,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 app.save()
 
                 # Send an email announcing the application
-                date_str = str(datetime.now())
+                date_str = str(timezone.now())
                 subj_str = f'{request.user.first_name} {request.user.last_name} applied for Financial Aid for {prog.niceName()}'
                 msg_str = f"\n{request.user.first_name} {request.user.last_name} applied for Financial Aid for {prog.niceName()} on {date_str}."
                 send_mail(subj_str, (msg_str +

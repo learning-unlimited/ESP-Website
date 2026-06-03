@@ -43,7 +43,7 @@ function toggle(source) {
                     <td><b>Import? <input type="checkbox" onclick=toggle(this) checked></b></td>
                 </tr>
                 {% for vr in new_requests %}
-                {% ifchanged vr.timeslot.start.date %}
+                {% ifchanged vr.timeslot.start|date %}
                 <th colspan="3" align="center">{{ vr.timeslot.pretty_date }}</th>
                 {% endifchanged %}
                 <tr>

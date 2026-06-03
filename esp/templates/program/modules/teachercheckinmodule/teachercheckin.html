@@ -32,12 +32,12 @@ Please select a timeslot:
 <li style="margin-top:40px; margin-bottom:20px;">
     <b>
     {% if when %}
-        <a href="missingteachers?date={{ time.start.date|date:"m/d/Y" }}&when={{ url_when }}">
-            View teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} from {{ when }} with classes starting on {{ time.start.date|date:"D m/d/Y" }}
+        <a href="missingteachers?date={{ time.start|date:"m/d/Y" }}&when={{ url_when }}">
+            View teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} from {{ when }} with classes starting on {{ time.start|date:"D m/d/Y" }}
         </a>
     {% else %}
-        <a href="missingteachers?date={{ time.start.date|date:"m/d/Y" }}">
-            Check in teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} with classes starting on {{ time.start.date|date:"D m/d/Y" }}
+        <a href="missingteachers?date={{ time.start|date:"m/d/Y" }}">
+            Check in teachers{% if program|hasModule:"TeacherModeratorModule" %} and {{ program.getModeratorTitle|lower }}s{% endif %} with classes starting on {{ time.start|date:"D m/d/Y" }}
         </a>
     {% endif %}
     </b>

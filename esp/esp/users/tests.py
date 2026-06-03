@@ -1,5 +1,6 @@
 import datetime
 import json
+from django.utils import timezone
 
 from django import forms
 from django.core import mail
@@ -599,8 +600,8 @@ class TestChangeRequestView(TestCase):
 class RecordTest(TestCase):
     def setUp(self):
         super().setUp()
-        self.past     = datetime.datetime(1970, 1, 1)
-        self.future   = datetime.datetime.max
+        self.past     = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+        self.future   = datetime.datetime(2999, 1, 1, tzinfo=datetime.timezone.utc)
         self.user     = ESPUser.objects.create(username='RecordTest')
         self.event    = "student_survey"
         self.program1 = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program1')
@@ -636,9 +637,9 @@ class RecordTest(TestCase):
             # Create Record without time, test that it was created for now,
             # and that the event is complete, both in general and for the
             # current day.
-            before = datetime.datetime.now()
+            before = timezone.now()
             nowRecord = create()
-            after = datetime.datetime.now()
+            after = timezone.now()
             self.assertTrue(before <= nowRecord.time <= after)
             self.assertTrue(user_completed())
             # Below, we must explicitly pass time, instead of relying on

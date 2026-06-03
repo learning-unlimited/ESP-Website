@@ -6,9 +6,11 @@ database interaction happens.
 
 import json
 import logging
+import datetime
 
 from django.db.models import Count
 from django.db import transaction
+from django.utils import timezone
 
 from esp.resources.models import \
     ResourceType, Resource, ResourceAssignment, ResourceRequest
@@ -611,12 +613,19 @@ def scheduling_hash_of(
         meeting_times = meeting_times_by_section[section.id]
     else:
         meeting_times = section.meeting_times.all()
-    meeting_times = sorted([(str(e.start), str(e.end))
-                            for e in meeting_times])
+    meeting_times = sorted([
+        (str(_as_utc(e.start)), str(_as_utc(e.end)))
+        for e in meeting_times])
     rooms = (rooms_by_section[section.id] if rooms_by_section is not None
              else section.classrooms())
     rooms = sorted(list(set(r.name for r in rooms)))
     return json.dumps([meeting_times, rooms])
+
+
+def _as_utc(dt):
+    if dt.tzinfo is None:
+        dt = timezone.make_aware(dt)
+    return dt.astimezone(datetime.timezone.utc)
 
 
 @util.timed_func("db_interface_convert_classroom_resources")

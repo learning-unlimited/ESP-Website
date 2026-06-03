@@ -1,5 +1,5 @@
-import datetime
 import random
+from django.utils import timezone
 
 from twill.commands import *
 from generators import *
@@ -52,7 +52,7 @@ def register_student_profile(b, user):
         'dob_0': user.dob.month,
         'dob_1': user.dob.day,
         'dob_2': user.dob.year,
-        'graduation_year': datetime.date.today().year - user.grade + 12,
+        'graduation_year': timezone.localtime(timezone.now()).year - user.grade + 12,
         'k12school': "Test school",
         "guard_first_name": parent.first,
         "guard_last_name": parent.last,
@@ -87,7 +87,7 @@ def register_teacher_profile(b, user):
         'address_zip': address.zip,
         'phone_day': phone,
         'from_here': 'True',
-        'graduation_year': datetime.date.today().year - user.grade + 12,
+        'graduation_year': timezone.localtime(timezone.now()).year - user.grade + 12,
         'major': "Software Testing",
         }
     for key, value in update_info.items():

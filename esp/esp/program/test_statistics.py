@@ -18,6 +18,7 @@ them.
 """
 
 from datetime import datetime, date
+from django.utils import timezone
 from unittest.mock import patch
 
 from types import SimpleNamespace
@@ -343,7 +344,7 @@ class StartRegTest(StatisticsTestBase):
             {
                 'user_id': 1,
                 'section__parent_class__parent_program': self.programs[0].id,
-                'first_date': datetime(2026, 3, 20)
+                'first_date': timezone.make_aware(datetime(2026, 3, 20))
             }
         ]
 
@@ -351,7 +352,7 @@ class StartRegTest(StatisticsTestBase):
             {
                 'user_id': 1,
                 'program_id': self.programs[0].id,
-                'last_time': datetime(2026, 3, 21)
+                'last_time': timezone.make_aware(datetime(2026, 3, 21))
             }
         ]
 
@@ -365,10 +366,10 @@ class StartRegTest(StatisticsTestBase):
 
             program, reg_list, confirm_list = rd['program_data'][0]
 
-            self.assertEqual(reg_list[0][0], datetime(2026, 3, 20).date())
+            self.assertEqual(reg_list[0][0], timezone.make_aware(datetime(2026, 3, 20)).date())
             self.assertEqual(reg_list[0][1], 1)
 
-            self.assertEqual(confirm_list[0][0], datetime(2026, 3, 21).date())
+            self.assertEqual(confirm_list[0][0], timezone.make_aware(datetime(2026, 3, 21)).date())
             self.assertEqual(confirm_list[0][1], 1)
 
 

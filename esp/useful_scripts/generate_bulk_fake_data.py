@@ -29,6 +29,7 @@ remove_student_from_section(student, class_section)
 """
 
 from datetime import datetime
+from django.utils import timezone
 from esp.users.models import ESPUser, ContactInfo, K12School, StudentInfo
 from esp.users.forms.user_profile import HEARD_ABOUT_ESP_CHOICES
 from esp.program.models import RegistrationProfile
@@ -198,7 +199,7 @@ def generate_student_info(student, min_grade, max_grade, schools):
                                   31  # All the rest have thirty-one
                                  )
 
-    student_info.dob = datetime(year_of_birth, month_of_birth, day_of_birth)
+    student_info.dob = timezone.make_aware(datetime(year_of_birth, month_of_birth, day_of_birth))
 
     # generate random "heard about"
     random_heardabout_index = random.randint(1, len(HEARD_ABOUT_ESP_CHOICES)-1)  # skip blank

@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 import datetime
 from datetime import timedelta
+from django.utils import timezone
 import time
 from collections import defaultdict
 import logging
@@ -164,7 +165,7 @@ class ClassManager(Manager):
         queries for the category's title (cls.category_txt)
         and the total # of media.
         """
-        now = datetime.datetime.now()
+        now = timezone.now()
 
         enrolled_type = RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
 
@@ -596,7 +597,7 @@ class ClassSection(models.Model):
         start_time = self.start_time()
         if start_time is None:
             return True
-        time_passed = datetime.datetime.now() - start_time.start
+        time_passed = timezone.now() - start_time.start
         if self.parent_class.allow_lateness:
             if time_passed > timedelta(0, 1200):
                 return True
@@ -1019,7 +1020,7 @@ class ClassSection(models.Model):
          ...
         }
         """
-        now = datetime.datetime.now()
+        now = timezone.now()
 
         rmap = RegistrationType.get_map()
         result = {}
@@ -1164,7 +1165,7 @@ class ClassSection(models.Model):
             self.save()
 
     def clearStudents(self):
-        now = datetime.datetime.now()
+        now = timezone.now()
         qs = StudentRegistration.valid_objects(now).filter(section=self)
         for reg in qs:
             signals.pre_save.send(sender=StudentRegistration, instance=reg)
@@ -1241,12 +1242,13 @@ class ClassSection(models.Model):
             return True
 
         # Get time and tag values to determine what number to base class changes on
-        now = datetime.datetime.now()
+        now = timezone.now()
+        now_local = timezone.localtime(now)
         switch_time = None
         if Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program):
             try:
-                switch_time_str = now.strftime("%Y/%m/%d ") + Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program)
-                switch_time = datetime.datetime.strptime(switch_time_str, "%Y/%m/%d %H:%M")
+                switch_time_str = now_local.strftime("%Y/%m/%d ") + Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program)
+                switch_time = timezone.make_aware(datetime.datetime.strptime(switch_time_str, "%Y/%m/%d %H:%M"))
             except ValueError:
                 pass
         switch_lag = None
@@ -1360,7 +1362,7 @@ class ClassSection(models.Model):
 
         from esp.program.models.app_ import StudentAppQuestion
 
-        now = datetime.datetime.now()
+        now = timezone.now()
 
         #   Stop all active or pending registrations
         if prereg_verbs:

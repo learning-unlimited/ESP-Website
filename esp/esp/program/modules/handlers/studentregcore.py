@@ -43,7 +43,7 @@ from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
 from esp.middleware   import ESPError
 from decimal import Decimal
-from datetime import datetime
+from django.utils import timezone
 from django.template import Template, Context
 from esp.middleware.threadlocalrequest import AutoRequestContext
 from django.http import HttpResponse
@@ -86,7 +86,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})
 
     def students(self, QObject = False):
-        now = datetime.now()
+        now = timezone.now()
 
         q_confirmed = Q(record__event__name = "reg_confirmed", record__program=self.program)
         q_attended = Q(record__event__name= "attended", record__program=self.program)

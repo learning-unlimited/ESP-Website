@@ -8,6 +8,7 @@ Proves:
 """
 from datetime import datetime
 from decimal import Decimal
+from django.utils import timezone
 
 from django.contrib.auth.models import Group
 
@@ -52,7 +53,7 @@ class GetHoursQueryCountTest(CacheFlushTestCase):
                 grade_min=7, grade_max=12, parent_program=self.program,
                 class_size_max=30, class_info='Desc %d' % i,
                 duration=Decimal('1.00'),
-                timestamp=datetime(2025, 1, 1, 10, 0))
+                timestamp=timezone.make_aware(datetime(2025, 1, 1, 10, 0)))
             cls.teachers.add(self.teacher)
             for j in range(2):
                 ClassSection.objects.create(
@@ -109,7 +110,7 @@ class GetHoursApprovedFilterTest(CacheFlushTestCase):
             grade_min=7, grade_max=12, parent_program=self.program,
             class_size_max=20, class_info='Desc',
             status=10, duration=Decimal('1.00'),
-            timestamp=datetime(2025, 1, 1, 10, 0))
+            timestamp=timezone.make_aware(datetime(2025, 1, 1, 10, 0)))
         self.cls.teachers.add(self.teacher)
 
         # Section 1: approved (status=10)
@@ -176,12 +177,12 @@ class GetHoursScheduledFilterTest(CacheFlushTestCase):
             grade_min=7, grade_max=12, parent_program=self.program,
             class_size_max=25, class_info='Desc',
             status=10, duration=Decimal('1.00'),
-            timestamp=datetime(2025, 1, 1, 10, 0))
+            timestamp=timezone.make_aware(datetime(2025, 1, 1, 10, 0)))
         self.cls.teachers.add(self.teacher)
 
         timeslot = Event.objects.create(
-            start=datetime(2025, 6, 1, 10, 0),
-            end=datetime(2025, 6, 1, 11, 0),
+            start=timezone.make_aware(datetime(2025, 6, 1, 10, 0)),
+            end=timezone.make_aware(datetime(2025, 6, 1, 11, 0)),
             short_description='Slot 1', description='Slot 1',
             name='Slot1', program=self.program, event_type=self.event_type)
 
@@ -242,7 +243,7 @@ class StaticHoursTest(CacheFlushTestCase):
                 grade_min=7, grade_max=12, parent_program=self.program,
                 class_size_max=cap, class_info='Desc',
                 duration=Decimal(str(dur)),
-                timestamp=datetime(2025, 1, 1, 10 + i, 0))
+                timestamp=timezone.make_aware(datetime(2025, 1, 1, 10 + i, 0)))
             cls.teachers.add(self.teacher)
             ClassSection.objects.create(
                 parent_class=cls, status=10,

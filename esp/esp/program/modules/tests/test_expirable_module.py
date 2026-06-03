@@ -6,6 +6,7 @@ from ``ExpirableModel`` after the Phase-1 migration.
 """
 
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
@@ -36,7 +37,7 @@ class ProgramModuleObjExpirableTest(ProgramFrameworkTest):
 
     def test_future_start_is_invalid(self):
         """A module whose start_date is in the future is not yet valid."""
-        self.pmo.start_date = datetime.now() + timedelta(days=30)
+        self.pmo.start_date = timezone.now() + timedelta(days=30)
         self.pmo.end_date = None
         self.pmo.save()
         self.assertFalse(self.pmo.is_valid())
@@ -44,14 +45,14 @@ class ProgramModuleObjExpirableTest(ProgramFrameworkTest):
     def test_past_end_is_invalid(self):
         """A module whose end_date is in the past is no longer valid."""
         self.pmo.start_date = None
-        self.pmo.end_date = datetime.now() - timedelta(days=1)
+        self.pmo.end_date = timezone.now() - timedelta(days=1)
         self.pmo.save()
         self.assertFalse(self.pmo.is_valid())
 
     def test_active_window_is_valid(self):
         """A module currently between its start and end date is valid."""
-        self.pmo.start_date = datetime.now() - timedelta(days=1)
-        self.pmo.end_date = datetime.now() + timedelta(days=30)
+        self.pmo.start_date = timezone.now() - timedelta(days=1)
+        self.pmo.end_date = timezone.now() + timedelta(days=30)
         self.pmo.save()
         self.assertTrue(self.pmo.is_valid())
 
@@ -65,13 +66,13 @@ class ProgramModuleObjExpirableTest(ProgramFrameworkTest):
 
         # Make the first module expired
         expired = all_pmos[0]
-        expired.end_date = datetime.now() - timedelta(days=1)
+        expired.end_date = timezone.now() - timedelta(days=1)
         expired.start_date = None
         expired.save()
 
         # Make the second module future
         future = all_pmos[1]
-        future.start_date = datetime.now() + timedelta(days=30)
+        future.start_date = timezone.now() + timedelta(days=30)
         future.end_date = None
         future.save()
 

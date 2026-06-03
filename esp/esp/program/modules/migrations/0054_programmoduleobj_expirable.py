@@ -19,6 +19,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('modules', '0052_merge_20260321_0030'),
         ('modules', '0053_delete_mailinglabels'),
     ]
 

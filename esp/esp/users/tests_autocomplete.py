@@ -3,6 +3,8 @@ from django.test import TestCase
 from esp.users.models import ESPUser, StudentInfo
 from django.contrib.auth.models import Group
 from django.db.models import Q
+from django.utils import timezone
+from datetime import datetime
 
 class AutocompleteTest(TestCase):
     def setUp(self):
@@ -16,7 +18,7 @@ class AutocompleteTest(TestCase):
         # Ensure program has some dates so current_schoolyear works
         from esp.cal.models import Event, EventType
         et, _ = EventType.objects.get_or_create(description='Class Time Block')
-        Event.objects.create(program=self.program, event_type=et, start='2024-01-01 10:00:00', end='2024-01-01 11:00:00',
+        Event.objects.create(program=self.program, event_type=et, start=timezone.make_aware(datetime(2024, 1, 1, 10, 0, 0)), end=timezone.make_aware(datetime(2024, 1, 1, 11, 0, 0)),
                              name="Test Event", short_description="Test", description="Test Event Description")
 
         # Create some students

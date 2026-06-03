@@ -37,7 +37,7 @@ from esp.tagdict.models import Tag
 from esp.users.models import Record
 from esp.utils.latex  import render_to_latex
 
-from datetime import datetime
+from django.utils import timezone
 
 class StudentCertModule(ProgramModuleObj):
     doc = """Allows students to download a completion certificate
@@ -88,7 +88,7 @@ class StudentCertModule(ProgramModuleObj):
             user = request.user
         cert_tag = Tag.getProgramTag('student_certificate', self.program)
         slots = self.program.getTimeSlots()
-        if slots and datetime.now() > max(slots).end:
+        if slots and timezone.now() > max(slots).end:
             if cert_tag == 'all':
                 return True
             elif cert_tag == 'program_attendance':

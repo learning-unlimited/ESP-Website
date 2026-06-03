@@ -16,6 +16,7 @@ import csv
 import os
 
 from datetime import datetime
+from django.utils import timezone
 from io import open
 
 ETYPE_CLASSBLOCK = EventType.objects.get(description='Class Time Block')
@@ -37,7 +38,7 @@ def parse_time(date, time):
     elif time == "midnight":
         time = "11:00p"
     time = (time + "m").upper()
-    return datetime.combine(date, datetime.strptime(time, "%I:%M%p").time())
+    return timezone.make_aware(datetime.combine(date, datetime.strptime(time, "%I:%M%p").time()))
 
 for row in reader:
     # Parse Input

@@ -1,4 +1,7 @@
 from datetime import datetime, timedelta
+from django.utils import timezone
+
+from django.db.models import ProtectedError
 
 from esp.cal.models import Event, EventType
 from esp.program.models import Program
@@ -11,7 +14,7 @@ class ResourceTypeTest(TestCase):
 
     def setUp(self):
         super().setUp()
-        now = datetime.now()
+        now = timezone.now()
         self.event = Event.objects.create(
             name='event', start=now, end=now,
             short_description='', description='',
@@ -50,7 +53,7 @@ class FloatingResourceAvailabilityTest(TestCase):
 
     def setUp(self):
         super(FloatingResourceAvailabilityTest, self).setUp()
-        now = datetime.now().replace(minute=0, second=0, microsecond=0)
+        now = timezone.now().replace(minute=0, second=0, microsecond=0)
         event_type = EventType.objects.all()[0]
         self.program = Program.objects.create(grade_min=7, grade_max=12)
 

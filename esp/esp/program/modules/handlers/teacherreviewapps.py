@@ -39,6 +39,7 @@ from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
 from datetime import datetime
 from django.utils.decorators import method_decorator
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -78,7 +79,7 @@ class TeacherReviewApps(ProgramModuleObj):
             students += students_dict[key]
 
         for student in students:
-            now = datetime.now()
+            now = timezone.now()
             reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
             student.added_class = reg.start_date if reg else None
             try:

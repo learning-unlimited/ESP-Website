@@ -1,6 +1,7 @@
 """Various utility functions."""
 
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone as datetime_timezone
+from django.utils import timezone
 from timeit import default_timer
 from functools import wraps
 
@@ -111,7 +112,7 @@ def datetimedump(dt):
 
 def datetimeloads(dt_tuple):
     """Turns a json-like datetime dump into a datetime object."""
-    return datetime(*dt_tuple)
+    return timezone.make_aware(datetime(*dt_tuple), datetime_timezone.utc)
 
 
 def memoize(f):

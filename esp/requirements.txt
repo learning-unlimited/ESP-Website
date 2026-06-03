@@ -36,7 +36,7 @@ pycurl==7.45.4 # Used only in a formstack script which I think is outdated
 py3dns==4.0.2 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
 Pygments==2.10.0 # django-extensions dependency
 pymemcache==4.0.0 # Talks to memcached
-pytz==2023.3 # Required for timezone support
+pytz==2023.3 # Used for address country names; DO NOT use the timezone functions as it is buggy. Use the built-in Python zoneinfo instead.
 # pywatchman # Makes dev servers auto-reload
 raven # Required for Sentry error reporting
 setuptools==70.3.0 # For building packages from source

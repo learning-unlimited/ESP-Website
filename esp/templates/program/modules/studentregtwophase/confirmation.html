@@ -34,7 +34,7 @@
         {% for timeslot, priorities in schedule %}
         <tr>
             <td style="border: 1px solid #ddd; padding: 8px; vertical-align: top;">
-                {{ timeslot.short_description }}
+                {{ timeslot.short_time }}
             </td>
             <td style="border: 1px solid #ddd; padding: 8px;">
                 {% for label, title in priorities %}
