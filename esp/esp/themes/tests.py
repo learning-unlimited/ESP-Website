@@ -192,17 +192,29 @@ class ThemesTest(TestCase):
         tc = ThemeController()
         theme_names = tc.get_theme_names()
         for theme_name in theme_names:
-            variables_filename = os.path.join(settings.MEDIA_ROOT, 'esp', 'themes', 'theme_data', theme_name,
-                                              'variables.less')
+            theme_data_dir = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data', theme_name)
+            if tc.uses_scss_pipeline(theme_name):
+                variables_filename = os.path.join(theme_data_dir, 'scss', 'variables.scss')
+                var_pattern = r'\$([a-zA-Z0-9_]+):\s+?(\S+);'
+            else:
+                variables_filename = os.path.join(theme_data_dir, 'less', 'variables.less')
+                var_pattern = r'@([a-zA-Z0-9_]+):\s+?(\S+);'
             if os.path.exists(variables_filename):
+                # Themes with a config form need template settings (see testSelector).
+                if tc.get_config_form_class(theme_name) is not None:
+                    continue
                 tc.clear_theme()
                 tc.load_theme(theme_name)
                 response = self.client.get('/themes/customize/')
                 self.assertEqual(response.status_code, 200)
-                variables = re.findall(r'@(\S+):\s+?(\S+);', open(variables_filename).read())
+                variables = re.findall(var_pattern, open(variables_filename).read())
                 for (varname, value) in variables:
-                    self.assertTrue(len(re.findall(r'<input.*?name="%s".*?value="%s".*?>',
-                                    str(response.content, encoding='UTF-8'), flags=re.I)) > 0)
+                    # Derived expressions (e.g. darken()) are not exposed as simple editor inputs.
+                    if '(' in value:
+                        continue
+                    self.assertTrue(len(re.findall(rf'<input[^>]*\bname="{re.escape(varname)}"',
+                                    str(response.content, encoding='UTF-8'), flags=re.I)) > 0,
+                                    f'Missing editor input for {theme_name} variable {varname}')
 
         #   Test that we can change a parameter and the right value appears in the stylesheet
         def verify_linkcolor(color_str):
@@ -267,8 +279,8 @@ class ThemesTest(TestCase):
             themes_settings.themes_dir = original_themes_dir
 
 
-class Bootstrap3MigrationTest(TestCase):
-    """Unit tests for the Bootstrap 2→3 migration: npm-based LESS compilation and Bootswatch 3."""
+class Bootstrap4MigrationTest(TestCase):
+    """Unit tests for the Bootstrap 3→4 migration: npm-based SCSS compilation."""
 
     def setUp(self):
         self._css_file = themes_settings.COMPILED_CSS_FILE
@@ -281,26 +293,40 @@ class Bootstrap3MigrationTest(TestCase):
         if os.path.exists(self.css_filename):
             os.remove(self.css_filename)
 
-    def test_get_less_names_references_bs3_npm(self):
-        """get_less_names() includes Bootstrap 3 from node_modules, not committed BS2 files."""
-        names = self.tc.get_less_names('barebones')
-        bs3_entries = [f for f in names if 'node_modules' in f and 'bootstrap' in f]
-        self.assertEqual(len(bs3_entries), 1, 'Expected exactly one Bootstrap npm entry')
-        self.assertIn(os.path.join('node_modules', 'bootstrap', 'less', 'bootstrap.less'), bs3_entries[0])
-        # The removed committed BS2 bootstrap.less must not appear
+    def test_all_themes_use_scss_pipeline(self):
+        """Every bundled theme should have a scss/ directory (Bootstrap 4 pipeline)."""
+        for theme_name in self.tc.get_theme_names():
+            self.assertTrue(
+                self.tc.has_scss(theme_name),
+                f'{theme_name} is missing scss/ — expected Bootstrap 4 SCSS pipeline',
+            )
+
+    def test_get_scss_names_includes_bootstrap4_sources(self):
+        """get_scss_names() includes theme-editor and theme SCSS before Bootstrap import."""
+        names = [f.replace('\\', '/') for f in self.tc.get_scss_names('barebones')]
+        self.assertTrue(
+            any('theme_editor/scss/variables_custom.scss' in f for f in names),
+            'variables_custom.scss should be included',
+        )
+        self.assertTrue(
+            any('theme_data/barebones/scss/main.scss' in f for f in names),
+            'theme main.scss should be included',
+        )
         self.assertFalse(
-            any(f.replace('\\', '/').endswith('theme_editor/less/bootstrap.less') for f in names),
-            'Committed BS2 bootstrap.less should be removed'
+            any(f.endswith('theme_editor/less/bootstrap.less') for f in names),
+            'Committed BS2 bootstrap.less should not appear in SCSS pipeline',
         )
 
-    def test_compile_css_produces_bs3_markers(self):
-        """compile_css() output contains Bootstrap 3 markers (.glyphicon, .navbar-toggle)."""
+    def test_compile_css_produces_bs4_markers(self):
+        """compile_css() output contains BS4 markers and no BS3 glyphicon class."""
         self.tc.compile_css('barebones', {}, self.css_filename)
         with open(self.css_filename) as f:
             css = f.read()
         self.assertGreater(len(css), 10000)
-        self.assertIn('.glyphicon', css, 'Missing .glyphicon — BS3 not compiling')
-        self.assertIn('.navbar-toggle', css, 'Missing .navbar-toggle — BS3 not compiling')
+        self.assertIn('.navbar-toggler', css, 'Missing .navbar-toggler — BS4 not compiling')
+        self.assertIn('.card', css, 'Missing .card — BS4 not compiling')
+        self.assertIn('.bi', css, 'Missing .bi — Bootstrap Icons not included')
+        self.assertNotIn('.glyphicon', css, '.glyphicon present — BS3 leaked into BS4 output')
 
     def test_get_variable_defaults_roundtrip(self):
         """get_variable_defaults() compiles and returns a non-empty dict for every theme."""
@@ -345,16 +371,19 @@ class Bootstrap3MigrationTest(TestCase):
                            'Bootswatch bootswatch.less must come AFTER bootstrap.less')
 
     def test_compile_css_with_bootswatch_produces_valid_output(self):
-        """compile_css() with a Bootswatch skin compiles to non-trivial CSS."""
+        """compile_css() with a Bootswatch skin compiles to non-trivial CSS (LESS pipeline only)."""
         themes_list = self.tc.get_bootswatch_themes()
         if not themes_list:
             self.skipTest('Bootswatch npm package not installed')
-        self.tc.compile_css('barebones', {}, self.css_filename, bootswatch_theme=themes_list[0])
+        less_only = [n for n in self.tc.get_theme_names() if not self.tc.uses_scss_pipeline(n)]
+        if not less_only:
+            self.skipTest('All themes use SCSS; Bootswatch 3 LESS test not applicable')
+        self.tc.compile_css(less_only[0], {}, self.css_filename, bootswatch_theme=themes_list[0])
         with open(self.css_filename) as f:
             css = f.read()
         self.assertGreater(len(css), 10000)
-        self.assertIn('.glyphicon', css)
-        self.assertIn('.navbar-toggle', css)
+        self.assertIn('.navbar-toggler', css)
+        self.assertIn('.card', css)
 
 
 class SafeCustomizationPathTest(TestCase):

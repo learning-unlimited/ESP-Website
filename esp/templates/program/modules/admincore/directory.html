@@ -9,12 +9,12 @@
         // Timeline/Checklist Toggle
         $j(".switch input").on("change", function () {
             if ($j(this).is(":checked")) {
-                // Checklist Mode: Hide timeline, show checklist
+                // Checklist Mode: Hide timeline, d-block checklist
                 $j(".horizontal-timeline-wrapper").slideUp(function() {
                     $j(".task-checklist-widget").slideDown();
                 });
             } else {
-                // Timeline Mode: Hide checklist, show timeline
+                // Timeline Mode: Hide checklist, d-block timeline
                 $j(".task-checklist-widget").slideUp(function() {
                     $j(".horizontal-timeline-wrapper").slideDown();
                 });
@@ -90,15 +90,15 @@
 
         if (requiredPending > 0) {
             banner.addClass("alert alert-danger");
-            bannerTitle.html('<i class="glyphicon glyphicon-remove-sign"></i> ACTION REQUIRED');
+            bannerTitle.html('<i class="bi bi-remove-sign"></i> ACTION REQUIRED');
             bannerMsg.text("You have " + requiredPending + " incomplete mandatory setup tasks. Your program cannot launch until these are resolved.");
         } else if (optionalPending > 0) {
             banner.addClass("alert alert-warning");
-            bannerTitle.html('<i class="glyphicon glyphicon-exclamation-sign"></i> ALMOST DONE');
+            bannerTitle.html('<i class="bi bi-exclamation-circle"></i> ALMOST DONE');
             bannerMsg.text("All mandatory tasks are complete! You have " + optionalPending + " optional tasks remaining.");
         } else {
             banner.addClass("alert alert-success");
-            bannerTitle.html('<i class="glyphicon glyphicon-ok-circle"></i> ALL SYSTEMS GO');
+            bannerTitle.html('<i class="bi bi-ok-circle"></i> ALL SYSTEMS GO');
             bannerMsg.text("Your program is fully configured and ready!");
         }
     }
@@ -150,7 +150,7 @@
                 {% endfor %}
             </ul>
             {% endif %}
-            <h2 id="banner-title"><i class="glyphicon glyphicon-ok-circle"></i> ALL SYSTEMS GO</h2>
+            <h2 id="banner-title"><i class="bi bi-ok-circle"></i> ALL SYSTEMS GO</h2>
             <div id="banner-msg" class="banner-msg">Your program is fully configured and ready!</div>
         </div>
 
@@ -174,12 +174,12 @@
                     {% if module.isStep %}
                         {% if module.isCompleted %}
                         <div class="timeline-step-icon iscompleted">
-                            <div class="step-icon-inner bg-success text-success"><i class="glyphicon glyphicon-ok"></i></div>
+                            <div class="step-icon-inner bg-success text-success"><i class="bi bi-check"></i></div>
                             <div class="step-label">{{ module.makeSetupLink }}</div>
                         </div>
                         {% else %}
                         <div class="timeline-step-icon step-not-done">
-                            <div class="step-icon-inner bg-info text-info"><i class="glyphicon glyphicon-folder-open"></i></div>
+                            <div class="step-icon-inner bg-info text-info"><i class="bi bi-folder2-open"></i></div>
                             <div class="step-label">{{ module.makeSetupLink }}</div>
                         </div>
                         {% endif %}
@@ -189,12 +189,12 @@
                 {% for step in extra_steps %}
                     {% if step.3 %}
                         <div class="timeline-step-icon iscompleted">
-                            <div class="step-icon-inner bg-success text-success"><i class="glyphicon glyphicon-ok"></i></div>
+                            <div class="step-icon-inner bg-success text-success"><i class="bi bi-check"></i></div>
                             <div class="step-label"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></div>
                         </div>
                     {% else %}
                         <div class="timeline-step-icon step-not-done">
-                            <div class="step-icon-inner bg-warning text-warning"><i class="glyphicon glyphicon-list-alt"></i></div>
+                            <div class="step-icon-inner bg-warning text-warning"><i class="bi bi-card-list"></i></div>
                             <div class="step-label"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a></div>
                         </div>
                     {% endif %}
@@ -203,12 +203,12 @@
                 {% for step in extra_steps_optional %}
                     {% if step.3 %}
                         <div class="timeline-step-icon iscompleted">
-                            <div class="step-icon-inner bg-light-green"><i class="glyphicon glyphicon-ok"></i></div>
+                            <div class="step-icon-inner bg-light-green"><i class="bi bi-check"></i></div>
                             <div class="step-label"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a><br><small class="text-muted">(Optional)</small></div>
                         </div>
                     {% else %}
                         <div class="timeline-step-icon step-not-done">
-                            <div class="step-icon-inner bg-light-orange"><i class="glyphicon glyphicon-list-alt"></i></div>
+                            <div class="step-icon-inner bg-light-orange"><i class="bi bi-card-list"></i></div>
                             <div class="step-label"><a href="{{ step.2 }}" title="{{ step.1 }}">{{ step.1 }}</a><br><small class="text-muted">(Optional)</small></div>
                         </div>
                     {% endif %}
@@ -256,7 +256,7 @@
 
             <div class="search-bar-wrapper" id="admin_search_wrapper">
                 <input type="text" id="admin_search_input" placeholder="Search modules, pages..." class="dashboard-search-bar">
-                <i class="glyphicon glyphicon-search search-icon text-muted"></i>
+                <i class="bi bi-search search-icon text-muted"></i>
 
                 <div id="admin_search_results" class="admin-search-results"></div>
                 <div id="admin_search_empty" class="admin-search-empty text-muted">
@@ -269,22 +269,22 @@
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_settings %}
-                <a href="/manage/{{ program.getUrlBase }}/settings" title="manage settings for the program/registration" class="dashboard-btn"><i class="glyphicon glyphicon-wrench"></i> Settings</a>
+                <a href="/manage/{{ program.getUrlBase }}/settings" title="manage settings for the program/registration" class="dashboard-btn"><i class="bi bi-wrench"></i> Settings</a>
                 {% endif %}
                 {% if manage_modules %}
-                <a href="/manage/{{ program.getUrlBase }}/modules" title="sequence/requiredness of student/teacher modules" class="dashboard-btn"><i class="glyphicon glyphicon-list"></i> Modules</a>
+                <a href="/manage/{{ program.getUrlBase }}/modules" title="sequence/requiredness of student/teacher modules" class="dashboard-btn"><i class="bi bi-list"></i> Modules</a>
                 {% endif %}
                 {% if manage_surveys %}
-                <a href="/manage/{{ program.getUrlBase }}/surveys" title="create/edit surveys; review results" class="dashboard-btn"><i class="glyphicon glyphicon-edit"></i> Surveys</a>
+                <a href="/manage/{{ program.getUrlBase }}/surveys" title="create/edit surveys; review results" class="dashboard-btn"><i class="bi bi-pencil"></i> Surveys</a>
                 {% endif %}
                 {% if manage_get_materials %}
-                <a href="/manage/{{ program.getUrlBase }}/get_materials" title="upload and view files" class="dashboard-btn"><i class="glyphicon glyphicon-duplicate"></i> Documents</a>
+                <a href="/manage/{{ program.getUrlBase }}/get_materials" title="upload and view files" class="dashboard-btn"><i class="bi bi-copy"></i> Documents</a>
                 {% endif %}
                 {% if manage_tags %}
-                <a href="/manage/{{ program.getUrlBase }}/tags" title="miscellaneous settings, for experts only" class="dashboard-btn"><i class="glyphicon glyphicon-cog"></i> Tags</a>
+                <a href="/manage/{{ program.getUrlBase }}/tags" title="miscellaneous settings, for experts only" class="dashboard-btn"><i class="bi bi-gear"></i> Tags</a>
                 {% endif %}
                 {% if onsite_main %}
-                <a href="/onsite/{{ program.getUrlBase }}/main" class="dashboard-btn"><i class="glyphicon glyphicon-home"></i> Onsite Main</a>
+                <a href="/onsite/{{ program.getUrlBase }}/main" class="dashboard-btn"><i class="bi bi-house"></i> Onsite Main</a>
                 {% endif %}
             </div>
         </div>
@@ -293,16 +293,16 @@
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_resources %}
-                <a href="/manage/{{ program.getUrlBase }}/resources" title="timeslots, classrooms" class="dashboard-btn"><i class="glyphicon glyphicon-th"></i> Resources</a>
+                <a href="/manage/{{ program.getUrlBase }}/resources" title="timeslots, classrooms" class="dashboard-btn"><i class="bi bi-grid"></i> Resources</a>
                 {% endif %}
                 {% if manage_dashboard %}
-                <a href="/manage/{{ program.getUrlBase }}/dashboard" title="review classes and stats" class="dashboard-btn"><i class="glyphicon glyphicon-dashboard"></i> Dashboard</a>
+                <a href="/manage/{{ program.getUrlBase }}/dashboard" title="review classes and stats" class="dashboard-btn"><i class="bi bi-speedometer"></i> Dashboard</a>
                 {% endif %}
                 {% if manage_ajax_scheduling %}
-                <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" title="assign rooms and times" class="dashboard-btn"><i class="glyphicon glyphicon-calendar"></i> Scheduling</a>
+                <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" title="assign rooms and times" class="dashboard-btn"><i class="bi bi-calendar"></i> Scheduling</a>
                 {% endif %}
                 {% if learn_catalog %}
-                <a href="/learn/{{ program.getUrlBase }}/catalog" class="dashboard-btn"><i class="glyphicon glyphicon-book"></i> Catalog</a>
+                <a href="/learn/{{ program.getUrlBase }}/catalog" class="dashboard-btn"><i class="bi bi-book"></i> Catalog</a>
                 {% endif %}
             </div>
         </div>
@@ -311,28 +311,28 @@
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_deadlines %}
-                <a href="/manage/{{ program.getUrlBase }}/deadlines" title="open/close registration" class="dashboard-btn"><i class="glyphicon glyphicon-time"></i> Deadlines</a>
+                <a href="/manage/{{ program.getUrlBase }}/deadlines" title="open/close registration" class="dashboard-btn"><i class="bi bi-clock"></i> Deadlines</a>
                 {% endif %}
                 {% if teach_teacherreg %}
-                <a href="/teach/{{ program.getUrlBase }}/teacherreg" class="dashboard-btn"><i class="glyphicon glyphicon-education"></i> Teacher Reg</a>
+                <a href="/teach/{{ program.getUrlBase }}/teacherreg" class="dashboard-btn"><i class="bi bi-mortarboard"></i> Teacher Reg</a>
                 {% endif %}
                 {% if manage_teacher_events %}
-                <a href="/manage/{{ program.getUrlBase }}/teacher_events" title="edit/monitor teacher events" class="dashboard-btn"><i class="glyphicon glyphicon-comment"></i> Teacher Events</a>
+                <a href="/manage/{{ program.getUrlBase }}/teacher_events" title="edit/monitor teacher events" class="dashboard-btn"><i class="bi bi-chat"></i> Teacher Events</a>
                 {% endif %}
                 {% if learn_studentreg %}
-                <a href="/learn/{{ program.getUrlBase }}/studentreg" class="dashboard-btn"><i class="glyphicon glyphicon-user"></i> Student Reg</a>
+                <a href="/learn/{{ program.getUrlBase }}/studentreg" class="dashboard-btn"><i class="bi bi-person"></i> Student Reg</a>
                 {% endif %}
                 {% if manage_lunch_constraints %}
-                <a href="/manage/{{ program.getUrlBase }}/lunch_constraints" title="rules for your students' schedules" class="dashboard-btn"><i class="glyphicon glyphicon-cutlery"></i> Lunch Rules</a>
+                <a href="/manage/{{ program.getUrlBase }}/lunch_constraints" title="rules for your students' schedules" class="dashboard-btn"><i class="bi bi-cutlery"></i> Lunch Rules</a>
                 {% endif %}
                 {% if manage_registrationtype_management %}
-                <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" title="what classes students see on their schedule" class="dashboard-btn"><i class="glyphicon glyphicon-blackboard"></i> Reg Types</a>
+                <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" title="what classes students see on their schedule" class="dashboard-btn"><i class="bi bi-blackboard"></i> Reg Types</a>
                 {% endif %}
                 {% if volunteer_signup %}
-                <a href="/volunteer/{{ program.getUrlBase }}/signup" class="dashboard-btn"><i class="glyphicon glyphicon-heart"></i> Volunteer Reg</a>
+                <a href="/volunteer/{{ program.getUrlBase }}/signup" class="dashboard-btn"><i class="bi bi-heart"></i> Volunteer Reg</a>
                 {% endif %}
                 {% if manage_volunteering %}
-                <a href="/manage/{{ program.getUrlBase }}/volunteering" title="create shifts, view signups" class="dashboard-btn"><i class="glyphicon glyphicon-bullhorn"></i> Volunteers</a>
+                <a href="/manage/{{ program.getUrlBase }}/volunteering" title="create shifts, view signups" class="dashboard-btn"><i class="bi bi-bullhorn"></i> Volunteers</a>
                 {% endif %}
             </div>
         </div>
@@ -341,13 +341,13 @@
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_commpanel %}
-                <a href="/manage/{{ program.getUrlBase }}/commpanel" title="communications panel" class="dashboard-btn"><i class="glyphicon glyphicon-envelope"></i> Email</a>
+                <a href="/manage/{{ program.getUrlBase }}/commpanel" title="communications panel" class="dashboard-btn"><i class="bi bi-envelope"></i> Email</a>
                 {% endif %}
                 {% if manage_selectList %}
-                <a href="/manage/{{ program.getUrlBase }}/selectList" title="get a list of users" class="dashboard-btn"><i class="glyphicon glyphicon-list-alt"></i> Arbitrary User List</a>
+                <a href="/manage/{{ program.getUrlBase }}/selectList" title="get a list of users" class="dashboard-btn"><i class="bi bi-card-list"></i> Arbitrary User List</a>
                 {% endif %}
                 {% if manage_refund %}
-                <a href="/accounting/refund?program={{ program.id }}" class="dashboard-btn"><i class="glyphicon glyphicon-usd"></i> Refunds</a>
+                <a href="/accounting/refund?program={{ program.id }}" class="dashboard-btn"><i class="bi bi-currency-dollar"></i> Refunds</a>
                 {% endif %}
             </div>
         </div>
@@ -356,17 +356,17 @@
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
                 {% if manage_catalog %}
-                <a href="/manage/{{ program.getUrlBase }}/catalog" class="dashboard-btn"><i class="glyphicon glyphicon-book"></i> PDF Catalog</a>
+                <a href="/manage/{{ program.getUrlBase }}/catalog" class="dashboard-btn"><i class="bi bi-book"></i> PDF Catalog</a>
                 {% endif %}
                 {% if manage_studentschedules %}
-                <a href="/manage/{{ program.getUrlBase }}/studentschedules" class="dashboard-btn"><i class="glyphicon glyphicon-calendar"></i> Student Schedules</a>
-                <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" class="dashboard-btn"><i class="glyphicon glyphicon-th-list"></i> Student Schedule Formatter</a>
+                <a href="/manage/{{ program.getUrlBase }}/studentschedules" class="dashboard-btn"><i class="bi bi-calendar"></i> Student Schedules</a>
+                <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" class="dashboard-btn"><i class="bi bi-th-list"></i> Student Schedule Formatter</a>
                 {% endif %}
                 {% if manage_selectidoptions %}
-                <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="dashboard-btn"><i class="glyphicon glyphicon-tags"></i> Name Tags</a>
+                <a href="/manage/{{ program.getUrlBase }}/selectidoptions" class="dashboard-btn"><i class="bi bi-tags"></i> Name Tags</a>
                 {% endif %}
                 {% if manage_printoptions %}
-                <a href="/manage/{{ program.getUrlBase }}/printoptions" class="dashboard-btn"><i class="glyphicon glyphicon-print"></i> All Printables</a>
+                <a href="/manage/{{ program.getUrlBase }}/printoptions" class="dashboard-btn"><i class="bi bi-printer"></i> All Printables</a>
                 {% endif %}
             </div>
         </div>
@@ -389,7 +389,7 @@
         </div>
 
         <div style="margin-top: 40px; text-align: center;">
-            <a href="/manage/docs/program_modules.rst" style="color: #999; font-size: 1.5em;" title="Help & Documentation"><i class="glyphicon glyphicon-question-sign"></i></a>
+            <a href="/manage/docs/program_modules.rst" style="color: #999; font-size: 1.5em;" title="Help & Documentation"><i class="bi bi-question-circle"></i></a>
         </div>
     </div>
 </div>

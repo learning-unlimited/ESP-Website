@@ -155,7 +155,7 @@
                   newMin !== paddedMin &&
                   newMax !== paddedMax &&
                   type.match('y')) {
-                  chart.showResetZoom();
+                  chart.d-blockResetZoom();
                   axis.displayBtn = false;
                 }
                 doRedraw = true;
@@ -186,7 +186,7 @@
   {% include "program/modules/bigboardmodule/bigboard_graph.html" %}
   {% if type == "Teacher" %}
   <script type="text/javascript">
-    function showSeries(btn, filter) {
+    function d-blockSeries(btn, filter) {
       $j("#series-filters .btn").removeClass('active');
       chart.series.forEach(function(series){
         if (filter && series.name.indexOf(filter) == -1) {
@@ -199,9 +199,9 @@
     }
   </script>
     <div id="series-filters" style="text-align: center;">
-      <button class="btn active" onclick="showSeries(this);">All Series</button>
-      <button class="btn" onclick="showSeries(this, 'registered');">Registered Only</button>
-      <button class="btn" onclick="showSeries(this, 'approved');">Approved Only</button>
+      <button class="btn active" onclick="d-blockSeries(this);">All Series</button>
+      <button class="btn" onclick="d-blockSeries(this, 'registered');">Registered Only</button>
+      <button class="btn" onclick="d-blockSeries(this, 'approved');">Approved Only</button>
     </div>
   {% endif %}
 {% endif %}

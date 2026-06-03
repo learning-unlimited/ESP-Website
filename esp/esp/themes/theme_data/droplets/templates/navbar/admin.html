@@ -1,9 +1,9 @@
-<ul class="nav navbar-nav admin hidden">
-  <li class="dropdown">
-    <a class="navbar-item-label" data-toggle="dropdown">
-      Admin Toolbar
-    </a>
-    <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>
+<ul class="navbar-nav admin hidden">
+  <li class="nav-item dropdown">
+    <div class="nav-link dropdown-split">
+      <a class="navbar-item-label" data-toggle="dropdown">Admin Toolbar</a>
+      <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown" aria-label="Admin menu"><b class="caret"></b></a>
+    </div>
     <ul class="dropdown-menu">
       {% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
       {% load modules %}
@@ -31,10 +31,22 @@
     </ul>
   </li>
 </ul>
-<ul class="nav navbar-nav unmorph hidden">
-  <li>
-    <a href="/myesp/switchback/">
-      <i class="bi bi-person"></i> Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script>
+<ul class="navbar-nav unmorph hidden">
+  <li class="nav-item">
+    <a class="nav-link" href="/myesp/switchback/">
+      <i class="bi bi-person"></i> Unmorph to <span class="unmorph-target-name"></span>
     </a>
   </li>
 </ul>
+<script type="text/javascript">
+  (function () {
+    var el = document.querySelector('.unmorph-target-name');
+    var unmorphNav = document.querySelector('.navbar-nav.unmorph');
+    if (el && typeof esp_user !== 'undefined' && esp_user.cur_retTitle) {
+      el.textContent = esp_user.cur_retTitle;
+      if (unmorphNav) {
+        unmorphNav.classList.remove('hidden');
+      }
+    }
+  })();
+</script>

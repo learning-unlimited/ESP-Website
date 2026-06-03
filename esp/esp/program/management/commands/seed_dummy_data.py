@@ -20,6 +20,10 @@ Covers:
   tags: Tag
 """
 
+import hashlib
+import os
+import shutil
+
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
@@ -63,6 +67,8 @@ SEED_USERNAMES = (
     [f'volunteer{i}' for i in range(1, 4)]
 )
 SEED_PROGRAM_URLS = ['SplashDev/2026', 'SparkDev/2026']
+# MD5 of bundled placeholder logo (black square + "Placeholder logo" text)
+PLACEHOLDER_LOGO_MD5 = '26ef721aabd025a813006aea9af71802'
 
 
 class Command(BaseCommand):
@@ -113,8 +119,38 @@ class Command(BaseCommand):
                 self._create_qsd(program, admin)
                 self._create_splash_info(program, students)
 
+            self._ensure_theme_media()
+
         self.stdout.write(self.style.SUCCESS('✓ Database seeding completed successfully!'))
         self.stdout.write('Admin credentials: username=admin  password=password')
+
+    # ── theme media ─────────────────────────────────────────────────────────
+
+    def _ensure_theme_media(self):
+        """Install default logo/header if missing and refresh cache-bust tags."""
+        theme_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
+        default_dir = os.path.join(settings.MEDIA_ROOT, 'default_images', 'theme')
+        os.makedirs(theme_dir, exist_ok=True)
+
+        for filename, tag_name in (
+            ('logo.png', 'current_logo_version'),
+            ('header.png', 'current_header_version'),
+        ):
+            dest = os.path.join(theme_dir, filename)
+            src = os.path.join(default_dir, filename)
+            replace = not os.path.exists(dest)
+            if os.path.exists(dest) and filename == 'logo.png':
+                with open(dest, 'rb') as logo_file:
+                    replace = hashlib.md5(logo_file.read()).hexdigest() == PLACEHOLDER_LOGO_MD5
+            if replace and os.path.exists(src):
+                shutil.copy2(src, dest)
+                self.stdout.write(f'  Installed theme media: {filename}')
+            if os.path.exists(dest):
+                Tag.setTag(tag_name, value=hex(int(os.path.getmtime(dest))))
+
+        favicon = os.path.join(settings.MEDIA_ROOT, 'images', 'favicon.ico')
+        if os.path.exists(favicon):
+            Tag.setTag('current_favicon_version', value=hex(int(os.path.getmtime(favicon))))
 
     # ── flush ─────────────────────────────────────────────────────────────────
 

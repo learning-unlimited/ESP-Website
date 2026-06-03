@@ -107,7 +107,8 @@ div.navbar-collapse.collapse {
         background: $sidebarBackground;
         margin-bottom: 2em;
     }
-    .nav-header {
+    .nav-header,
+    .dropdown-header {
         color: $sidebarHeader;
     }
     li > a:hover {

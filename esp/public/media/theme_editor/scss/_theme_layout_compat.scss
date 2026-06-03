@@ -1,0 +1,134 @@
+/*
+ * Cross-theme BS4 layout compatibility.
+ * Preserves each theme's original float/fixed-width structure while using Bootstrap 4.
+ */
+
+// --- Legacy form / nav class aliases ---
+.control-group {
+    margin-bottom: 1rem;
+}
+
+.nav-stacked,
+.nav.flex-column {
+    flex-direction: column;
+}
+
+.navbar-form {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+
+    > * {
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 0.25rem;
+    }
+}
+
+.navbar-form .form-control {
+    width: auto;
+    display: inline-block;
+}
+
+// --- Fixed-width / float themes: don't let BS4 grid break custom shells ---
+#page,
+#body,
+#tab_sidebar,
+#page_main,
+#chicago_main,
+#content_area,
+#top_area,
+#bottom_area,
+#boxes_area,
+#nav_area {
+    max-width: none;
+}
+
+#content_area,
+#chicago_main,
+#page_main #content {
+    box-sizing: border-box;
+}
+
+// --- Login box outside Bootstrap navbar (floaty, bigpicture) ---
+#loginbox:not(.navbar-nav) {
+    #loginbox,
+    & {
+        display: block;
+        width: auto;
+    }
+
+    ul.nav,
+    ul.navbar-nav {
+        display: block;
+        flex-direction: column;
+        float: none;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    li,
+    .nav-item {
+        display: block;
+        float: none;
+        margin: 0 0 0.25rem;
+    }
+
+    form {
+        display: block;
+    }
+
+    .dropdown {
+        display: inline-block;
+        position: relative;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        right: 0;
+        left: auto;
+    }
+}
+
+#boxes_area .box #loginbox {
+    text-align: right;
+}
+
+// --- Footer + QSD (all themes) ---
+#footer,
+footer,
+.footer-container,
+.theme-site-footer {
+    clear: both;
+
+    .qsd_header {
+        font-size: 0.85em;
+        margin: 0.5rem 0;
+    }
+
+    .qsd_view_visible {
+        border: none;
+        padding: 0;
+        margin: 0 0 0.5rem;
+    }
+
+    .qsd_edit_visible {
+        margin: 0.5rem 0;
+    }
+}
+
+// Droplets fixed footer: keep content visible
+.footer-container .navbar.fixed-bottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+}
+
+// Barebones / shared navbar clearance
+body.has-fixed-navbar,
+body:has(.navbar.fixed-top) {
+    padding-top: 4rem;
+}

@@ -30,7 +30,7 @@ a.disabled {
 // set some variables for catalog.js
 const INJECTED_DIFFICULTIES = "{{ "teacherreg_difficulty_choices"|getTag|escapejs }}";
 const register_from_catalog = {{ register_from_catalog|yesno:"true,false" }};
-const hide_empty_cats = {{ "hide_empty_categories"|getBooleanTag|yesno:"true,false" }};
+const d-none_empty_cats = {{ "d-none_empty_categories"|getBooleanTag|yesno:"true,false" }};
 </script>
 
 

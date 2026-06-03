@@ -941,6 +941,21 @@ div .adminbar_user {
 .done-sign { color: green; }
 .not-done-sign { color: red; }
 
-.glyphicon.glyphicon-btn-height:before { line-height: 18px; }
+.bi.bi-btn-height:before { line-height: 18px; }
 
 .fqr-class-buttons.btn-toolbar { margin: 0; }
+
+.hidden {
+    display: none !important;
+}
+
+.logged_in.hidden,
+.not_logged_in.hidden,
+.admin.hidden,
+.unmorph.hidden {
+    display: none !important;
+}
+
+#loginbox .dropdown-toggle::after {
+    margin-left: 0.25em;
+}

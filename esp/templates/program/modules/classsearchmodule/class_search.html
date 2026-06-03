@@ -41,14 +41,14 @@
 
 {% if queryset %}
 <p>
-Your query returned {{queryset|length}} of {{program.classsubject_set.count}} classes in {{program.niceName}}.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="showWithComments()">show comments</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
+Your query returned {{queryset|length}} of {{program.classsubject_set.count}} classes in {{program.niceName}}.  Click on a class or flag to see more detail (<a href="#" onclick="d-blockAll()">d-block all</a> <a href="#" onclick="d-blockWithComments()">d-block comments</a> <a href="#" onclick="d-noneAll()">d-none all</a>).  Or <a href="?">search again</a>.
 </p>
 
 <div class="btn-group">
     <button class="btn btn-approve" onclick="approveAll({{ IDs|escapejs }});">Approve All</button>
     <button class="btn btn-unreview" onclick="unreviewAll({{ IDs|escapejs }});">Unreview All</button>
     <button class="btn btn-reject" onclick="rejectAll({{ IDs|escapejs }});">Reject All</button>
-    <button class="btn btn-info" onclick="showAutoRuleModal();" {% if not query %}style="display:none;"{% endif %}>Create Auto-Flag Rule</button>
+    <button class="btn btn-info" onclick="d-blockAutoRuleModal();" {% if not query %}style="display:none;"{% endif %}>Create Auto-Flag Rule</button>
 </div>
 
 <!-- Auto-Flag Rule Modal -->
@@ -83,8 +83,8 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 </div>
 
 <script type="text/javascript">
-function showAutoRuleModal() {
-    $j('#autorule-modal').modal('show');
+function d-blockAutoRuleModal() {
+    $j('#autorule-modal').modal('d-block');
 }
 </script>
 <div class="btn-toolbar">
@@ -164,10 +164,10 @@ function showAutoRuleModal() {
             </div>
             <div class="fqr-class-buttons btn-toolbar">
                 <div class="btn-group">
-                    <button class="btn btn-default" onclick="manage({{class.id}});">manage</button>
+                    <button class="btn btn-secondary" onclick="manage({{class.id}});">manage</button>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-default" onclick="edit({{class.id}});">edit</button>
+                    <button class="btn btn-secondary" onclick="edit({{class.id}});">edit</button>
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-approve" onclick="approve({{class.id}});">approve</button>
@@ -178,10 +178,10 @@ function showAutoRuleModal() {
                     <button class="btn btn-danger" onclick="deleteClass({{class.id}}, '{{class.title}}');">delete</button>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-default" onclick="emailTeachers('{{class.emailcode}}-teachers@{{EMAIL_HOST_SENDER}}', 'Your {{program.program_type}} Class {{class.emailcode}}: {{class.title}}');">email</button>
+                    <button class="btn btn-secondary" onclick="emailTeachers('{{class.emailcode}}-teachers@{{EMAIL_HOST_SENDER}}', 'Your {{program.program_type}} Class {{class.emailcode}}: {{class.title}}');">email</button>
                 </div>
                 <div class="btn-group">
-                    <button class="add-flag btn btn-default">add flag</button>
+                    <button class="add-flag btn btn-secondary">add flag</button>
                 </div>
             </div>
             <div class="fqr-class-detail" style="display: none;">

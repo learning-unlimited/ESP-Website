@@ -36,7 +36,7 @@
 <body>
 
 <div id="side_area">
-<input id="hide_sidebar" type="button" value="<< Hide sidebar"/>
+<input id="d-none_sidebar" type="button" value="<< Hide sidebar"/>
 <input id="show_sidebar" type="button" value=">>"/>
 <table>
 <tr>
@@ -49,15 +49,15 @@
 <td>
     <div id="settings_controls">
     <!-- make sure to update onsite/ajax_status.js when changing this -->
-    <div><input type="checkbox" id="hide_full_control" checked/>Show full classes</div>
+    <div><input type="checkbox" id="d-none_full_control" checked/>Show full classes</div>
     <div><input type="checkbox" id="override_control"/>Override size limits</div>
     <div><input type="checkbox" id="grade_limits_control"/>Show classes outside student's grade range</div>
     <div><input type="checkbox" id="show_class_titles"/>Display class titles</div>
     <div><input type="checkbox" id="show_class_teachers"/>Display class teachers</div>
     <div><input type="checkbox" id="show_class_rooms"/>Display class rooms</div>
     <div><input type="checkbox" id="show_closed_reg"/>Show sections that are closed to registration</div>
-    <div><input type="checkbox" id="hide_past_time_blocks"/>Hide past timeblocks</div>
-    <div><input type="checkbox" id="hide_conflicting"/>Show only classes that fit in student's schedule</div>
+    <div><input type="checkbox" id="d-none_past_time_blocks"/>Hide past timeblocks</div>
+    <div><input type="checkbox" id="d-none_conflicting"/>Show only classes that fit in student's schedule</div>
     <div><input type="checkbox" id="check_in_student"{% if check_in_default %} checked{% endif %}/>Check-in student when making schedule changes</div>
     </div>
 </td>
@@ -91,7 +91,7 @@
         <b>Categories to display</b>
         <div>
             <input id="category_show_all" class="control_button category_selector" type="button" value="Show All"/>
-            <input id="category_hide_all" class="control_button category_selector" type="button" value="Hide All"/>
+            <input id="category_d-none_all" class="control_button category_selector" type="button" value="Hide All"/>
         </div>
         <div id="category_list">
         </div>
@@ -128,7 +128,7 @@
 <div id="space_at_bottom" style="height: 400px;">&nbsp;</div>
 
 <a name="settings" />
-<div id="dialog-confirm" title="Register Account?" class="hide">
+<div id="dialog-confirm" title="Register Account?" class="d-none">
   <div id="not-registered-msg">
   <p>
     This student is not registered with {{ program.name }}. 

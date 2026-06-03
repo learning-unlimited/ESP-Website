@@ -37,7 +37,7 @@
 #program_form{
   display:none;
 }
-#program_form.show{
+#program_form.d-block{
   display:block;
 }
 
@@ -81,7 +81,7 @@ The student lottery is now closed. No more changes may be made at this time. Thi
 </h1>
 {% endif %}
 {% if num_allowed_users > 1 %}
-{# Only show group information and options if students are allowed to be in groups #}
+{# Only d-block group information and options if students are allowed to be in groups #}
     <br><br>
     <h2>
     {% if lottery_size == 1 %}
@@ -143,7 +143,7 @@ var toggle  = document.getElementById("toggle");
 var content = document.getElementById("program_form");
 
 toggle.addEventListener("click", function(){
-  content.classList.toggle("show");
+  content.classList.toggle("d-block");
 }, false);
 </script>
 {% endblock %}

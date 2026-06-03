@@ -39,7 +39,7 @@ td, th {
  <th>Name</th>
 {% if single_select %}{% else %} <th>Item</th>{% endif %}
 <th>Option</th>
-{% if hide_paid %}{% else %} <th>Paid?</th>
+{% if d-none_paid %}{% else %} <th>Paid?</th>
  <th>Has Financial Aid</th>
  <th>Cost</th>{% endif %}
 </tr>
@@ -49,7 +49,7 @@ td, th {
  <td>{{ lineitem.user.first_name }} {{ lineitem.user.last_name }}</td>
 {% if single_select %}{% else %} <td>{{ lineitem.line_item.text }}</td>{% endif %}
 <td>{{ lineitem.option.description }}</td>
-{% if hide_paid %}{% else %} <td>{% if lineitem.paid_in_id %}X{% endif %}</td>
+{% if d-none_paid %}{% else %} <td>{% if lineitem.paid_in_id %}X{% endif %}</td>
  <td>{% if lineitem.has_financial_aid %}X{% endif %}</td>
  <td>${{ lineitem.amount|floatformat:2 }}</td>
 {% endif %}

@@ -19,7 +19,7 @@
 <hr>
 <div class="sticky-toggle">
   <a href="javascript:void(0)"
-     data-bind="click: toggleFilter, text: showFilter() ? 'Collapse (&ndash;)' : 'Expand (+)'">
+     data-bind="click: toggleFilter, text: d-blockFilter() ? 'Collapse (&ndash;)' : 'Expand (+)'">
   </a>
 </div>
 <div class="search-box">
@@ -27,7 +27,7 @@
   <input type="text" data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
   <div id="search-spinner">&nbsp;</div>
 </div>
-<div class="filter-box" data-bind="visible: showFilter">
+<div class="filter-box" data-bind="visible: d-blockFilter">
   <label>Category:</label>
   <br>
   {% for column in category_choices %}

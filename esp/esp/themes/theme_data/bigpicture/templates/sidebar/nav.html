@@ -1,7 +1,7 @@
 <ul class="nav flex-column sidebar" id="nav_sidebar">
     {% for section in theme.nav_structure %}
     {% if section.header %}
-    <li class="nav-header">
+    <li class="dropdown-header">
         {# links on headers are optional #}
         {% if section.header_link %}
         <a href="{{section.header_link}}">
@@ -38,7 +38,7 @@
             <ul class="nav flex-column sidebar">
             {% for section in theme.nav_structure %}
             {% if section.header %}
-            <li class="nav-header">
+            <li class="dropdown-header">
                 {# links on headers are optional #}
                 {% if section.header_link %}
                 <a href="{{section.header_link}}">

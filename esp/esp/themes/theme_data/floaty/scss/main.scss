@@ -369,3 +369,23 @@ h2 {
     font-size: 1.2em !important;
     color: $titleColor;
 }
+
+#boxes_area .box #loginbox {
+    .navbar-form.form-inline {
+        display: block;
+        text-align: right;
+    }
+
+    .btn {
+        margin: 2px;
+    }
+
+    .unmorph {
+        font-size: 0.85em;
+        margin-top: 0.25rem;
+    }
+}
+
+#page {
+    overflow: hidden;
+}

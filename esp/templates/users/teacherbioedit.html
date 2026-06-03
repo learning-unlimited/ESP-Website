@@ -31,7 +31,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
 
 {% if form.errors %}
     <div role="alert" class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
             Please fix the error{{ form.errors|pluralize }} in the form.
     </div>
 {% endif %}
@@ -44,7 +44,7 @@ Please complete the form below to update your biography.  We'd appreciate a pict
 
 <tr>
   <td><label for="id_hidden">Hide your teacher biography:<br />
-      <small>Your major, college or employer, graduation year, biography, photo, and a list of all classes you've taught appear on your public bio. You can choose to leave some fields blank, or you can hide your bio entirely using this checkbox. Note that your name will still appear in the class catalogs of programs you've taught for.</small></label></td>
+      <small>Your major, college or employer, graduation year, biography, photo, and a list of all classes you've taught appear on your public bio. You can choose to leave some fields blank, or you can d-none your bio entirely using this checkbox. Note that your name will still appear in the class catalogs of programs you've taught for.</small></label></td>
   <td>{{ form.hidden }}</td>
 </tr>
 

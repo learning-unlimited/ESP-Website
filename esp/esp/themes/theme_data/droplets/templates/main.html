@@ -17,7 +17,7 @@
 
 {% block navbar %}
 <div class="container navbar-container">
-  <nav class="navbar navbar-dark bg-dark navbar-expand-md navbar-fixed-top">
+  <nav class="navbar navbar-dark bg-dark navbar-expand-md fixed-top">
     <div id="navbar" class="container-fluid">
       {% if theme.show_logo_navbar %}
       <a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo nav"></a>
@@ -32,7 +32,9 @@
         {% include "navbar/admin.html" %}
         {% include "navbar/nav.html" %}
         {% include "navbar/contact.html" %}
-        {% include "users/loginbox_content.html" %}
+        <div class="navbar-login ml-auto d-flex align-items-center">
+          {% include "users/loginbox_content.html" %}
+        </div>
       </div>
     </div>
   </nav>
@@ -95,7 +97,7 @@
       <strong>Admin notice:</strong>
       This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
       {% for tag in active_program_tags %}
-        <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        <span class="badge badge-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
       {% endfor %}
       &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
     </div>
@@ -106,7 +108,7 @@
       <strong>Admin notice:</strong>
       This site has {{ active_global_tags|length }} custom global tag{{ active_global_tags|length|pluralize }} configured that may be modifying page behavior:
       {% for tag in active_global_tags %}
-        <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        <span class="badge badge-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
       {% endfor %}
       &mdash; <a href="{{ active_global_tags_url }}" class="alert-link">View tag settings</a>
     </div>
@@ -152,7 +154,7 @@
 
 {% block footer %}
 <div class="container footer-container">
-  <nav class="navbar navbar-dark bg-dark navbar-fixed-bottom">
+  <nav class="navbar navbar-dark bg-dark fixed-bottom">
     <div id="footer">
       {% if theme.show_footer_textbox %}
       <div>
@@ -161,10 +163,12 @@
         {% end_inline_qsd_block %}
       </div>
       {% endif %}
-      <ul class="nav navbar-nav" style="width: 100%">
-        <li style="width: 100%" class="text-center">
-          <a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
-          <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
+      <ul class="navbar-nav flex-row justify-content-center w-100">
+        <li class="nav-item">
+          <span class="navbar-text text-light py-0">&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</span>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-light py-0" href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
         </li>
       </ul>
     </div>

@@ -57,7 +57,7 @@ def split(str, splitter):
 def index(arr, index):
     try:
         return arr[index]
-    except IndexError:
+    except (IndexError, KeyError, TypeError):
         return ''
 
 @register.filter

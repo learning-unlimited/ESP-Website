@@ -67,7 +67,7 @@ or select a timeslot from the dropdown below to see attendance stats:
     </select>
 
     {% if timeslot %}
-    <!--Could possibly hide this with a tag-->
+    <!--Could possibly d-none this with a tag-->
     <form action="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}" method="get">
         <p>
         If this timeslot is for recurring classes, select the preferred date here:<br />

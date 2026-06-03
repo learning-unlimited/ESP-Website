@@ -111,6 +111,20 @@ _BOOTSTRAP4_SCSS = os.path.join(
     _THEME_EDITOR_DIR, 'node_modules', 'bootstrap', 'scss', 'bootstrap.scss'
 )
 
+def _sanitize_scss_value(variable_name, value):
+    """Return value if it is safe to embed in a SCSS declaration; log and return None otherwise.
+
+    Rejects values containing SCSS directives or syntax that could break out of a
+    variable declaration and inject arbitrary SCSS.  This is an admin-only surface
+    but defence-in-depth is warranted since compiled CSS is served to all users.
+    """
+    if re.search(r'@import\b|url\s*\(|[;{}]', value, re.IGNORECASE):
+        logger.warning(
+            'Rejected suspicious SCSS variable value for %r: %r', variable_name, value
+        )
+        return None
+    return value
+
 # MD5 of bundled placeholder logo (black square + "Placeholder logo" text)
 PLACEHOLDER_LOGO_MD5 = '26ef721aabd025a813006aea9af71802'
 THEME_COMPILED_WARNING = textwrap.dedent("""\
@@ -538,9 +552,12 @@ class ThemeController(object):
 
             #   Replace all SCSS variable declarations for which we have a value defined
             for (variable_name, variable_value) in variable_data.items():
+                safe_value = _sanitize_scss_value(variable_name, variable_value)
+                if safe_value is None:
+                    continue
                 scss_data = re.sub(
                     rf'\${re.escape(variable_name)}:(\s*)(.*?);',
-                    f'${variable_name}: {variable_value};',
+                    f'${variable_name}: {safe_value};',
                     scss_data,
                 )
 

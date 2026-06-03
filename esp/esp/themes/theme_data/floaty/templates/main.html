@@ -90,7 +90,6 @@
     <!-- Login -->
     <div class="box" style="text-align: right;">
     {% include "users/loginbox_content.html" %}
-        <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
     </div>
     
 
@@ -133,7 +132,7 @@
       <strong>Admin notice:</strong>
       This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
       {% for tag in active_program_tags %}
-        <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        <span class="badge badge-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
       {% endfor %}
       &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
     </div>
@@ -144,7 +143,7 @@
       <strong>Admin notice:</strong>
       This site has {{ active_global_tags|length }} custom global tag{{ active_global_tags|length|pluralize }} configured that may be modifying page behavior:
       {% for tag in active_global_tags %}
-        <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        <span class="badge badge-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
       {% endfor %}
       &mdash; <a href="{{ active_global_tags_url }}" class="alert-link">View tag settings</a>
     </div>

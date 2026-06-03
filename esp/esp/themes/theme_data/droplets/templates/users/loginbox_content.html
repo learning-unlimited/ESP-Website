@@ -1,46 +1,43 @@
 {% if login_result %}
-  <div class="nav">{{ login_result }}</div>
+  <div class="navbar-text text-light w-100 px-3">{{ login_result }}</div>
 {% endif %}
 
-<ul class="logged_in nav navbar-nav navbar-right hidden">
-  <li class="dropdown">
-    <a class="navbar-item-label" id="loginbox_user_name" data-toggle="dropdown">
-      Hello, <span id="user_first_name"></span>!
-    </a>
-    <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>
+<ul class="navbar-nav logged_in hidden">
+  <li class="nav-item dropdown">
+    <div class="nav-link dropdown-split">
+      <a class="navbar-item-label" id="loginbox_user_name" data-toggle="dropdown">
+        Hello, <span id="user_first_name"></span>!
+      </a>
+      <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown" aria-label="Account menu"><b class="caret"></b></a>
+    </div>
     <ul class="dropdown-menu dropdown-menu-right">
-      <li><a href="/myesp/accountmanage/">Manage Account</a></li>
+      <li><a class="dropdown-item" href="/myesp/accountmanage/">Manage Account</a></li>
     </ul>
   </li>
-  <li>
-    <form class="navbar-form" action="/myesp/signout">
-      <a href="/myesp/signout"><button class="btn btn-default" style="margin-right:0px;">Logout</button></a>
-    </form>
+  <li class="nav-item">
+    <a class="nav-link" href="/myesp/signout">
+      <button class="btn btn-secondary btn-sm" type="button">Logout</button>
+    </a>
   </li>
 </ul>
 
-
-
-<ul class="nav navbar-nav navbar-right not_logged_in">
-  <li>
-    <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="navbar-form navbar-right">
-      <!-- input type="hidden" name="next" value={-{ request.path }}" / -->
-      <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="inputbox" />
-      <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="inputbox" />
-    
-      <button class="btn btn-default" id="gologin" type="submit" style="margin-right:0px;"> Login </button>
+<ul class="navbar-nav not_logged_in">
+  <li class="nav-item d-flex align-items-center flex-wrap">
+    <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="form-inline navbar-form my-1">
+      <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="form-control form-control-sm inputbox mr-1" />
+      <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="form-control form-control-sm inputbox mr-1" />
+      <button class="btn btn-secondary btn-sm" id="gologin" type="submit">Login</button>
     </form>
   </li>
-  <li class="dropdown">
-    <a class="navbar-item-label" data-toggle="dropdown">
-      Account
-    </a>
-    <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>
-
+  <li class="nav-item dropdown">
+    <div class="nav-link dropdown-split">
+      <a class="navbar-item-label" data-toggle="dropdown">Account</a>
+      <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown" aria-label="Account menu"><b class="caret"></b></a>
+    </div>
     <ul class="dropdown-menu dropdown-menu-right">
-      <li><a href="/myesp/register">Register</a></li>
-      <li><a href="/myesp/passwdrecover/">Forgot Password</a></li>
-      <li><a href="/myesp/loginhelp.html">Help</a></li>
+      <li><a class="dropdown-item" href="/myesp/register">Register</a></li>
+      <li><a class="dropdown-item" href="/myesp/passwdrecover/">Forgot Password</a></li>
+      <li><a class="dropdown-item" href="/myesp/loginhelp.html">Help</a></li>
     </ul>
   </li>
 </ul>

@@ -50,7 +50,7 @@ tr.email-details {
 
 <p>This page lets you monitor emails that have been sent through the website via a program's comm panel.</p>
 <form action="/manage/emails" method="get">
-<p>Currently showing emails since <input name="start_date" type="date" onchange="$j(this).parents('form').submit();return false;" value="{{ start_date|date:"Y-m-d" }}"></p>
+<p>Currently d-blocking emails since <input name="start_date" type="date" onchange="$j(this).parents('form').submit();return false;" value="{{ start_date|date:"Y-m-d" }}"></p>
 </form>
 <p>If you notice any problems (emails aren't getting processed, emails won't send, emails are not sent to everyone, etc.), please contact <a href="mailto:websupport@learningu.org">websupport</a>.</p>
 
