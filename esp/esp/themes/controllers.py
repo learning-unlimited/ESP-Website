@@ -588,10 +588,16 @@ class ThemeController(object):
             css_data = self.compile_scss(scss_data)
         else:
             #   Load LESS files in order of search path
+            _less_safe_root = os.path.realpath(THEME_PATH) + os.sep
+            _less_editor_root = os.path.realpath(_THEME_EDITOR_DIR) + os.sep
             less_data = ''
             for filename in self.get_less_names(theme_name, bootswatch_theme=bootswatch_theme):
-                less_file = open(filename)
-                logger.debug('Including LESS source %s', filename)
+                safe_less_fn = os.path.realpath(filename)
+                if not safe_less_fn.startswith(_less_safe_root) and \
+                   not safe_less_fn.startswith(_less_editor_root):
+                    raise SuspiciousFileOperation(f'LESS path outside safe roots: {filename!r}')
+                less_file = open(safe_less_fn)
+                logger.debug('Including LESS source %s', safe_less_fn)
                 less_data += '\n' + less_file.read()
                 less_file.close()
 
