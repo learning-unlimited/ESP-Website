@@ -555,6 +555,8 @@ class ThemeController(object):
 
             #   Replace all SCSS variable declarations for which we have a value defined
             for (variable_name, variable_value) in variable_data.items():
+                if not re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', variable_name):
+                    continue
                 safe_value = _sanitize_scss_value(variable_name, variable_value)
                 if safe_value is None:
                     continue
@@ -580,6 +582,8 @@ class ThemeController(object):
 
             #   Replace all variable declarations for which we have a value defined
             for (variable_name, variable_value) in variable_data.items():
+                if not re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', variable_name):
+                    continue
                 less_data = re.sub(
                     rf'@{re.escape(variable_name)}:(\s*)(.*?);',
                     lambda match, vn=variable_name, vv=variable_value: f'@{vn}: {vv};',
