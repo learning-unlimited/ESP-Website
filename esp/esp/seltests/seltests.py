@@ -23,11 +23,11 @@ class CsrfTestCase(StaticLiveServerTestCase):
         user.save()
         # Save the last good version of the template override in question
         if len(TemplateOverride.objects.filter(name='index.html')) == 0:
-             # There are no existing template overrides
-             self.good_version = -1
+            # There are no existing template overrides
+            self.good_version = -1
         else:
-             to = TemplateOverride.objects.filter(name='index.html')[0]
-             self.good_version = to.next_version() - 1
+            to = TemplateOverride.objects.filter(name='index.html')[0]
+            self.good_version = to.next_version() - 1
         options = Options()
         options.add_argument("--headless")
         try:
@@ -49,9 +49,9 @@ class CsrfTestCase(StaticLiveServerTestCase):
 
     def setUpNormalLogin(self):
         if(self.good_version == -1):
-             to, created = TemplateOverride.objects.get_or_create(name='index.html', version=1)
+            to, created = TemplateOverride.objects.get_or_create(name='index.html', version=1)
         else:
-             to = TemplateOverride.objects.filter(name='index.html')[0]
+            to = TemplateOverride.objects.filter(name='index.html')[0]
         to.content = """
              {% extends "elements/html" %}
 

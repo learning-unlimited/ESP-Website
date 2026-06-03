@@ -183,7 +183,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     studentrep_error = True
 
     def __init__(self, user=None, *args, **kwargs):
-        from esp.users.models import ESPUser
         super().__init__(user, *args, **kwargs)
 
         self.fields['shirt_size'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('student_shirt_sizes').split(',')]
