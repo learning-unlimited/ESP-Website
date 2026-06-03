@@ -44,6 +44,9 @@ local_fabfile.py
 # Claude Code
 .claude/
 
+# pyenv local version pin — developer-specific, should not be committed
+.python-version
+
 # Mac
 .DS_Store
 

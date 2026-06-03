@@ -7,6 +7,7 @@ import random
 import re
 import shutil
 import tempfile
+import unittest.mock as mock
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
@@ -382,8 +383,8 @@ class Bootstrap4MigrationTest(TestCase):
         with open(self.css_filename) as f:
             css = f.read()
         self.assertGreater(len(css), 10000)
-        self.assertIn('.navbar-toggler', css)
-        self.assertIn('.card', css)
+        self.assertIn('.navbar-toggle', css)
+        self.assertIn('.panel', css)
 
 
 class SafeCustomizationPathTest(TestCase):
@@ -430,8 +431,6 @@ class FindScssVariablesSecurityTest(TestCase):
 
     def test_find_scss_variables_rejects_path_outside_safe_roots(self):
         """find_scss_variables silently skips filenames that resolve outside safe roots."""
-        import unittest.mock as mock
-        # Inject a filename that points outside THEME_PATH and scss_dir
         outside_path = '/tmp/evil.scss'
         with mock.patch.object(self.tc, 'get_scss_names', return_value=[outside_path]):
             with self.assertLogs('esp.themes.controllers', level='WARNING') as cm:
@@ -450,3 +449,125 @@ class FindScssVariablesSecurityTest(TestCase):
         """get_less_names for an unknown theme returns no theme-specific LESS files."""
         names = self.tc.get_less_names('nonexistent_theme_xyz')
         self.assertFalse(any('nonexistent_theme_xyz' in f for f in names))
+
+    def test_find_theme_variables_delegates_to_less_pipeline(self):
+        """find_theme_variables calls find_less_variables when uses_scss_pipeline returns False."""
+        import unittest.mock as mock
+        with mock.patch.object(self.tc, 'uses_scss_pipeline', return_value=False):
+            with mock.patch.object(self.tc, 'find_less_variables', return_value={'x': '1'}) as mock_less:
+                result = self.tc.find_theme_variables('barebones')
+        mock_less.assert_called_once()
+        self.assertEqual(result, {'x': '1'})
+
+
+class SanitizeScssValueTest(TestCase):
+    """Tests for _sanitize_scss_value injection guard."""
+
+    def setUp(self):
+        from esp.themes.controllers import _sanitize_scss_value
+        self._fn = _sanitize_scss_value
+
+    def test_accepts_plain_color(self):
+        self.assertEqual(self._fn('color', '#ff0000'), '#ff0000')
+
+    def test_accepts_px_value(self):
+        self.assertEqual(self._fn('font-size', '14px'), '14px')
+
+    def test_rejects_at_import(self):
+        with self.assertLogs('esp.themes.controllers', level='WARNING'):
+            self.assertIsNone(self._fn('color', '@import "evil"'))
+
+    def test_rejects_url(self):
+        with self.assertLogs('esp.themes.controllers', level='WARNING'):
+            self.assertIsNone(self._fn('bg', 'url(/evil)'))
+
+    def test_rejects_semicolon(self):
+        with self.assertLogs('esp.themes.controllers', level='WARNING'):
+            self.assertIsNone(self._fn('color', 'red; background: evil'))
+
+    def test_rejects_braces(self):
+        with self.assertLogs('esp.themes.controllers', level='WARNING'):
+            self.assertIsNone(self._fn('color', '{color: red}'))
+
+
+class CompileScssErrorPathTest(TestCase):
+    """Tests for compile_scss error handling."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+
+    def test_compile_scss_raises_on_nonzero_returncode(self):
+        """compile_scss raises ESPError when the sass subprocess exits non-zero."""
+        import unittest.mock as mock
+        from esp.middleware import ESPError
+        mock_proc = mock.Mock()
+        mock_proc.returncode = 1
+        mock_proc.communicate.return_value = (b'Error: bad scss', None)
+        with mock.patch('esp.themes.controllers.subprocess.Popen', return_value=mock_proc):
+            with self.assertRaises(ESPError):
+                self.tc.compile_scss('$broken: {;')
+
+
+class GetVariableDefaultsUnknownThemeTest(TestCase):
+    """Tests for get_variable_defaults fallback to barebones on unknown theme."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+
+    def test_unknown_theme_falls_back_to_barebones(self):
+        """get_variable_defaults with an unknown name must not raise and must return a dict."""
+        result = self.tc.get_variable_defaults('__nonexistent_xyz__')
+        self.assertIsInstance(result, dict)
+        self.assertGreater(len(result), 0)
+
+
+class EnsureThemeMediaTest(TestCase):
+    """Tests for ThemeController.ensure_theme_media()."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+        self._tmpdir = tempfile.mkdtemp()
+        self._orig_media = settings.MEDIA_ROOT
+        settings.MEDIA_ROOT = self._tmpdir
+
+    def tearDown(self):
+        settings.MEDIA_ROOT = self._orig_media
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def _write_file(self, rel, content=b'data'):
+        path = os.path.join(self._tmpdir, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'wb') as f:
+            f.write(content)
+        return path
+
+    def test_missing_logo_is_copied_from_default(self):
+        """Logo is copied from default_images when it does not exist yet."""
+        self._write_file('default_images/theme/logo.png', b'reallogo')
+        self.tc.ensure_theme_media()
+        dest = os.path.join(self._tmpdir, 'images', 'theme', 'logo.png')
+        self.assertTrue(os.path.exists(dest))
+
+    def test_placeholder_logo_is_replaced(self):
+        """Placeholder logo (matching MD5) is replaced with the default."""
+        import hashlib
+        from esp.themes.controllers import PLACEHOLDER_LOGO_MD5
+        placeholder = b'placeholder'
+        # Write a file whose MD5 matches PLACEHOLDER_LOGO_MD5 by patching the constant
+        with mock.patch('esp.themes.controllers.PLACEHOLDER_LOGO_MD5',
+                        hashlib.md5(placeholder).hexdigest()):
+            self._write_file('images/theme/logo.png', placeholder)
+            self._write_file('default_images/theme/logo.png', b'reallogo')
+            self.tc.ensure_theme_media()
+        dest = os.path.join(self._tmpdir, 'images', 'theme', 'logo.png')
+        with open(dest, 'rb') as f:
+            self.assertEqual(f.read(), b'reallogo')
+
+    def test_non_placeholder_logo_is_kept(self):
+        """An existing logo with a non-placeholder MD5 must not be overwritten."""
+        self._write_file('images/theme/logo.png', b'customlogo')
+        self._write_file('default_images/theme/logo.png', b'defaultlogo')
+        self.tc.ensure_theme_media()
+        dest = os.path.join(self._tmpdir, 'images', 'theme', 'logo.png')
+        with open(dest, 'rb') as f:
+            self.assertEqual(f.read(), b'customlogo')

@@ -466,7 +466,7 @@ class ThemeController(object):
             logger.debug('find_scss_variables: including file %s', safe_filename)
             with open(safe_filename) as f:
                 scss_data = f.read()
-            for item in re.findall(r'\$([a-zA-Z0-9_]+):\s*(.*?);', scss_data):
+            for item in re.findall(r'\$([a-zA-Z0-9_-]+):\s*(.*?);', scss_data):
                 local_results[item[0]] = item[1]
             if flat:
                 results.update(local_results)

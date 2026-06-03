@@ -517,7 +517,7 @@ class ProfileEditorCapitalizationTest(TestCase):
             email='teststudentrep@test.com'
         )
 
-        # Assign ONLY the CamelCase group â€” no standard role
+        # Assign ONLY the CamelCase group â€" no standard role
         self.user.groups.add(self.group)
         self.user.save()
 
@@ -532,5 +532,37 @@ class ProfileEditorCapitalizationTest(TestCase):
         self.assertTrue(logged_in, "Could not log in test user 'teststudentrep'")
         response = c.get('/myesp/profile/')
 
-        # Should load fine â€” not crash with ValueError
+        # Should load fine â€" not crash with ValueError
         self.assertEqual(response.status_code, 200)
+
+
+class MediaCacheVersionTest(TestCase):
+    """Tests for _media_cache_version in esp.utils.web."""
+
+    def setUp(self):
+        from esp.utils.web import _media_cache_version
+        self._fn = _media_cache_version
+
+    def test_returns_tag_when_present(self):
+        """Returns the stored Tag value when one is set."""
+        with patch('esp.utils.web.Tag') as mock_tag:
+            mock_tag.getTag.return_value = '0xabc'
+            result = self._fn('images/theme/logo.png', 'current_logo_version')
+        self.assertEqual(result, '0xabc')
+
+    def test_falls_back_to_mtime_when_tag_absent(self):
+        """Returns a hex mtime string when the Tag is empty but the file exists."""
+        with patch('esp.utils.web.Tag') as mock_tag:
+            mock_tag.getTag.return_value = ''
+            with patch('esp.utils.web.os.path.exists', return_value=True):
+                with patch('esp.utils.web.os.path.getmtime', return_value=1700000000.0):
+                    result = self._fn('images/theme/logo.png', 'current_logo_version')
+        self.assertEqual(result, hex(1700000000))
+
+    def test_returns_empty_string_when_no_tag_and_no_file(self):
+        """Returns empty string when neither Tag nor file is present."""
+        with patch('esp.utils.web.Tag') as mock_tag:
+            mock_tag.getTag.return_value = ''
+            with patch('esp.utils.web.os.path.exists', return_value=False):
+                result = self._fn('images/theme/logo.png', 'current_logo_version')
+        self.assertEqual(result, '')
