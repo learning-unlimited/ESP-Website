@@ -81,6 +81,11 @@ def _detect_scss_themes():
 
 _SCSS_THEMES = _detect_scss_themes()
 
+# Pre-computed map from theme name → scss/ directory path, built at import time
+# from _SCSS_THEMES so get_scss_names can look up the directory by name without
+# using the (potentially user-supplied) theme_name in an os.path.join expression.
+_SCSS_THEME_DIRS = {name: os.path.join(THEME_PATH, name, 'scss') for name in _SCSS_THEMES}
+
 def _detect_all_themes():
     """All theme directory names — computed at import time, not from user input."""
     try:
@@ -411,13 +416,13 @@ class ThemeController(object):
             result.append(os.path.join(themes_settings.scss_dir, 'variables_custom.scss'))
             result.append(os.path.join(themes_settings.scss_dir, 'main.scss'))
 
-        # Theme-specific SCSS files.  Only themes in _SCSS_THEMES (the
-        # import-time frozenset) reach this path, so theme_name is already
-        # constrained to a known-safe set of directory names.
-        if theme_name not in _SCSS_THEMES:
+        # Theme-specific SCSS files.  Look up the pre-computed directory from
+        # _SCSS_THEME_DIRS (an import-time constant) so theme_name never appears
+        # in an os.path.join expression — CodeQL sees the path as untainted.
+        theme_scss_dir = _SCSS_THEME_DIRS.get(theme_name)
+        if theme_scss_dir is None:
             theme_files = []
         else:
-            theme_scss_dir = os.path.join(THEME_PATH, theme_name, 'scss')
             theme_files = self.list_filenames(theme_scss_dir, r'\.scss$')
         variable_files = []
         nonvariable_files = []
