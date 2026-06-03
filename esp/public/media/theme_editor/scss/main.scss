@@ -18,26 +18,13 @@ body {
     font-size: $navbarBrandFontSize;
 }
 
-// Navbar background: $navbarBackground cannot be bridged to $dark before @import
-// because Bootstrap's utility-color map uses color-contrast() on it, which fails
-// on bare hex values not in the palette.  Direct override here is equivalent.
+// $navbarBackground cannot be bridged to Bootstrap 4's $dark variable before
+// @import because Bootstrap's color-contrast() runs on every palette entry and
+// fails on arbitrary hex values.  Direct CSS override here is equivalent.
 .navbar.bg-dark {
     background-color: $navbarBackground !important;
 }
-// Highlight: theme editor description says it controls the dropdown menu background
-// and the logout/action button color.
-.navbar .dropdown-menu {
-    background-color: $navbarBackgroundHighlight;
-    border-color: $navbarBackground;
-}
-.navbar .dropdown-menu .dropdown-item {
-    color: $navbarLinkColor;
-}
-.navbar .dropdown-menu .dropdown-item:hover,
-.navbar .dropdown-menu .dropdown-item:focus {
-    color: $navbarLinkColorHover;
-    background-color: $navbarBackground;
-}
+
 
 // Bootstrap 3 compatibility helpers (templates/JS still use these classes)
 .hidden {
