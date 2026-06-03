@@ -41,6 +41,9 @@ local_fabfile.py
 .espsettings
 
 
+# Claude Code
+.claude/
+
 # Mac
 .DS_Store
 
