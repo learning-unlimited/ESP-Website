@@ -113,8 +113,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--encoding',
             type=str,
-            default='utf-8',
-            help='CSV file encoding (default: utf-8). Try latin-1 if utf-8 fails.',
+            default='utf-8-sig',
+            help='CSV file encoding (default: utf-8-sig). Try latin-1 if utf-8 fails.',
         )
 
     def handle(self, *args, **options):
@@ -141,15 +141,8 @@ class Command(BaseCommand):
 
         try:
             with open(csv_path, 'r', encoding=encoding, errors='replace', newline='') as f:
-                # Try to detect dialect
-                try:
-                    dialect = csv.Sniffer().sniff(f.read(4096))
-                    f.seek(0)
-                except csv.Error:
-                    dialect = 'excel'
-                    f.seek(0)
+                reader = csv.DictReader(f, skipinitialspace=True)
 
-                reader = csv.DictReader(f, dialect=dialect)
                 if not reader.fieldnames:
                     raise CommandError('CSV has no header row or is empty.')
 
@@ -159,7 +152,7 @@ class Command(BaseCommand):
 
                 for col in (name_col, city_col, state_col, id_col):
                     if col not in fieldnames:
-                        available = ', '.join(fieldnames[:20])
+                        available = ', '.join(repr(fn) for fn in fieldnames[:20])
                         if len(fieldnames) > 20:
                             available += ' ...'
                         raise CommandError(
