@@ -613,6 +613,7 @@ class ProgramFrameworkTest(TestCase):
             room_capacity=settings['room_capacity'],
             admins=self.admins,
             categories=self.categories,
+            modules=settings['modules'],
         )
 
         #   Populate convenience attributes from the created program

@@ -101,6 +101,7 @@ def make_program(
     admin=None,
     admins=None,
     categories=None,
+    modules=None,
 ):
     """Create and return a minimal Program suitable for unit tests.
 
@@ -131,6 +132,9 @@ def make_program(
         categories (list|None): List of ClassCategories for the program. If
                                None, a single default 'Factory Category' is
                                created and used.
+        modules:               QuerySet or list of ProgramModule objects to
+                               attach to the program. Defaults to
+                               ProgramModule.objects.all() if not provided.
 
     Returns:
         Program: The created program, fully committed with permissions.
@@ -172,7 +176,7 @@ def make_program(
         'director_email':    'factory@test.learningu.org',
         'program_size_max':  '3000',
         'program_type':      program_type,
-        'program_modules':   ProgramModule.objects.all(),
+        'program_modules':   modules if modules is not None else ProgramModule.objects.all(),
         'class_categories':  [c.id for c in category_list],
         'admins':            [u.id for u in admin_list],
         'teacher_reg_start': '2000-01-01 00:00:00',
