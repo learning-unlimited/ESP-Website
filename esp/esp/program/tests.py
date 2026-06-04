@@ -584,7 +584,7 @@ class ProgramFrameworkTest(TestCase):
             cat, created = ClassCategories.objects.get_or_create(category='Category %d' % i, symbol=chr(65+i))
             self.categories.append(cat)
 
-        #   Create users via factories (single source of truth for user creation)
+        #   Create users
         self.students = [
             make_user('Student', username='student%04d' % i)
             for i in range(settings['num_students'])
@@ -598,7 +598,7 @@ class ProgramFrameworkTest(TestCase):
             for i in range(settings['num_admins'])
         ]
 
-        #   Create the program via factory (single source of truth for program creation)
+        #   Create the program
         self.program = make_program(
             program_type=settings['program_type'],
             instance_name=settings['program_instance_name'],
@@ -620,7 +620,7 @@ class ProgramFrameworkTest(TestCase):
         self.timeslots = self.program.getTimeSlots()
         self.rooms = self.program.getClassrooms()
 
-        #   Create classes and sections via factory (single source of truth for class creation)
+        #   Create classes and sections
         subject_count = 0
         for t in self.teachers:
             for i in range(settings['classes_per_teacher']):
