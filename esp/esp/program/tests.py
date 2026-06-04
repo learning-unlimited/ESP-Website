@@ -61,6 +61,7 @@ from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.setup import prepare_program, commit_program
+from esp.tests.factories import make_user, make_program, make_class as _make_class
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
 from datetime import datetime, timedelta
@@ -549,13 +550,6 @@ class ProgramFrameworkTest(TestCase):
     """
 
     def setUp(self, *args, **kwargs):
-        # We manually cache the creation of resource types
-        # since the cache persists between tests, and the underlying database objects do not
-        # we clear it here
-        ResourceType._get_or_create_cache = {}
-
-        user_role_setup()
-
         #   Default parameters
         settings = {'num_timeslots': 3,
                     'timeslot_length': 50,
@@ -590,110 +584,63 @@ class ProgramFrameworkTest(TestCase):
             cat, created = ClassCategories.objects.get_or_create(category='Category %d' % i, symbol=chr(65+i))
             self.categories.append(cat)
 
-        #   Create users
-        self.teachers = []
-        self.students = []
-        self.admins = []
-        for i in range(settings['num_students']):
-            name = 'student%04d' % i
-            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
-            new_student.set_password('password')
-            new_student.save()
-            new_student.makeRole("Student")
-            self.students.append(new_student)
-        for i in range(settings['num_teachers']):
-            name = 'teacher%04d' % i
-            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
-            new_teacher.set_password('password')
-            new_teacher.save()
-            new_teacher.makeRole("Teacher")
-            self.teachers.append(new_teacher)
-        for i in range(settings['num_admins']):
-            name = 'admin%04d' % i
-            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
-            new_admin.set_password('password')
-            new_admin.save()
-            new_admin.makeRole("Administrator")
-            self.admins.append(new_admin)
+        #   Create users via factories (single source of truth for user creation)
+        self.students = [
+            make_user('Student', username='student%04d' % i)
+            for i in range(settings['num_students'])
+        ]
+        self.teachers = [
+            make_user('Teacher', username='teacher%04d' % i)
+            for i in range(settings['num_teachers'])
+        ]
+        self.admins = [
+            make_user('Administrator', username='admin%04d' % i)
+            for i in range(settings['num_admins'])
+        ]
 
-        #   Establish attributes for program
-        prog_form_values = {
-                'term': settings['program_instance_name'],
-                'term_friendly': settings['program_instance_label'],
-                'grade_min': '7',
-                'grade_max': '12',
-                'director_email': 'info@test.learningu.org',
-                'program_size_max': '3000',
-                'program_type': settings['program_type'],
-                'program_modules': settings['modules'],
-                'class_categories': [x.id for x in self.categories],
-                'admins': [x.id for x in self.admins],
-                'teacher_reg_start': '2000-01-01 00:00:00',
-                'teacher_reg_end':   '3001-01-01 00:00:00',
-                'student_reg_start': '2000-01-01 00:00:00',
-                'student_reg_end':   '3001-01-01 00:00:00',
-                'base_cost':         settings['base_cost'],
-                'sibling_discount':  settings['sibling_discount'],
-            }
+        #   Create the program via factory (single source of truth for program creation)
+        self.program = make_program(
+            program_type=settings['program_type'],
+            instance_name=settings['program_instance_name'],
+            instance_label=settings['program_instance_label'],
+            base_cost=settings['base_cost'],
+            sibling_discount=settings['sibling_discount'],
+            num_timeslots=settings['num_timeslots'],
+            timeslot_length=settings['timeslot_length'],
+            timeslot_gap=settings['timeslot_gap'],
+            start_time=settings['start_time'],
+            num_rooms=settings['num_rooms'],
+            room_capacity=settings['room_capacity'],
+            admins=self.admins,
+            categories=self.categories,
+        )
 
-        #   Create the program much like the /manage/newprogram view does
-        pcf = ProgramCreationForm(prog_form_values)
-        if not pcf.is_valid():
-            logger.info("ProgramCreationForm errors")
-            logger.info(pcf.data)
-            logger.info(pcf.errors)
-            logger.info(prog_form_values)
-            raise Exception("Program form creation errors")
-
-        temp_prog = pcf.save(commit=False)
-        (perms, modules) = prepare_program(temp_prog, pcf.data)
-
-        new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
-
-        #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
-        new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
-        new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
-        new_prog.save()
-        pcf.save_m2m()
-
-        commit_program(new_prog, perms, pcf.cleaned_data['base_cost'], pcf.cleaned_data['sibling_discount'])
-
-        #   Add recursive permissions to open registration to the appropriate people
-        (perm, created) = Permission.objects.get_or_create(role=Group.objects.get(name='Teacher'), permission_type='Teacher/All', program=new_prog)
-        (perm, created) = Permission.objects.get_or_create(role=Group.objects.get(name='Student'), permission_type='Student/All', program=new_prog)
-
-        self.program = new_prog
-
-        #   Create timeblocks and resources
+        #   Populate convenience attributes from the created program
         self.event_type = EventType.get_from_desc('Class Time Block')
-        for i in range(settings['num_timeslots']):
-            start_time = settings['start_time'] + timedelta(minutes=i * (settings['timeslot_length'] + settings['timeslot_gap']))
-            end_time = start_time + timedelta(minutes=settings['timeslot_length'])
-            event, created = Event.objects.get_or_create(program=self.program, event_type=self.event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
         self.timeslots = self.program.getTimeSlots()
-        for i in range(settings['num_rooms']):
-            for ts in self.timeslots:
-                res, created = Resource.objects.get_or_create(name='Room %d' % i, num_students=settings['room_capacity'], event=ts, res_type=ResourceType.get_or_create('Classroom'))
         self.rooms = self.program.getClassrooms()
 
-        #   Create classes and sections
+        #   Create classes and sections via factory (single source of truth for class creation)
         subject_count = 0
         for t in self.teachers:
             for i in range(settings['classes_per_teacher']):
                 current_category = self.categories[subject_count % settings['num_categories']]
-                new_class, created = ClassSubject.objects.get_or_create(title='Test class %d' % subject_count, category=current_category, grade_min=7, grade_max=12, parent_program=self.program, class_size_max=settings['room_capacity'], class_info='Description %d!' % subject_count)
-                new_class.makeTeacher(t)
+                _make_class(
+                    program=self.program,
+                    teacher=t,
+                    title='Test class %d' % subject_count,
+                    category=current_category,
+                    class_size_max=settings['room_capacity'],
+                    class_info='Description %d!' % subject_count,
+                    sections=settings['sections_per_class'],
+                    accept=True,
+                )
                 subject_count += 1
-                for j in range(settings['sections_per_class']):
-                    if new_class.get_sections().count() <= j:
-                        new_class.add_section(duration=settings['timeslot_length']/60.0)
-                new_class.accept()
 
         #   Give the program its own QSD main-page
         (qsd, created) = QuasiStaticData.objects.get_or_create(url='learn/%s/index' % self.program.url,
                                               name="learn:index",
-                                              title=new_prog.niceName(),
+                                              title=self.program.niceName(),
                                               content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
                                               author=self.admins[0],
                                               nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="", include_auto_links=False)[0])

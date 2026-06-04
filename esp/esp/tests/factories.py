@@ -92,12 +92,16 @@ def make_program(
     grade_min=7,
     grade_max=12,
     base_cost=0,
+    sibling_discount=0,
     num_timeslots=3,
     timeslot_length=50,
     timeslot_gap=10,
+    start_time=None,
     num_rooms=2,
     room_capacity=30,
     admin=None,
+    admins=None,
+    categories=None,
 ):
     """Create and return a minimal Program suitable for unit tests.
 
@@ -112,13 +116,22 @@ def make_program(
         grade_min (int):       Minimum grade for the program.
         grade_max (int):       Maximum grade for the program.
         base_cost (int):       Base registration cost.
+        sibling_discount (int): Sibling discount amount. Defaults to 0.
         num_timeslots (int):   Number of time slots to create.
         timeslot_length (int): Length of each slot in minutes.
         timeslot_gap (int):    Gap between slots in minutes.
+        start_time (datetime|None): Start time for the first timeslot.
+                               Defaults to datetime(2222, 7, 7, 7, 5).
         num_rooms (int):       Number of classroom resources to create.
         room_capacity (int):   Capacity of each room.
-        admin (ESPUser|None):  Admin user for the program. If None, one is
-                               created automatically via make_user().
+        admin (ESPUser|None):  Single admin user (convenience shorthand).
+                               Ignored if ``admins`` is provided.
+        admins (list|None):    List of ESPUser admins for the program. If
+                               neither ``admin`` nor ``admins`` is given, one
+                               admin is created automatically via make_user().
+        categories (list|None): List of ClassCategories for the program. If
+                               None, a single default 'Factory Category' is
+                               created and used.
 
     Returns:
         Program: The created program, fully committed with permissions.
@@ -136,14 +149,26 @@ def make_program(
     # ProgramFrameworkTest.setUp() does the same reset explicitly.
     ResourceType._get_or_create_cache = {}
 
-    if admin is None:
-        admin = make_user('Administrator', username='factory_admin')
+    # Resolve admin list — ``admins`` takes precedence over ``admin``.
+    if admins is not None:
+        admin_list = admins
+    elif admin is not None:
+        admin_list = [admin]
+    else:
+        admin_list = [make_user('Administrator', username='factory_admin')]
 
-    # Build a default category so the program has at least one
-    category, _ = ClassCategories.objects.get_or_create(
-        category='Factory Category',
-        defaults={'symbol': 'F'},
-    )
+    # Resolve category list.
+    if categories is not None:
+        category_list = categories
+    else:
+        category, _ = ClassCategories.objects.get_or_create(
+            category='Factory Category',
+            defaults={'symbol': 'F'},
+        )
+        category_list = [category]
+
+    if start_time is None:
+        start_time = datetime(2222, 7, 7, 7, 5)
 
     prog_form_values = {
         'term':              instance_name,
@@ -154,14 +179,14 @@ def make_program(
         'program_size_max':  '3000',
         'program_type':      program_type,
         'program_modules':   ProgramModule.objects.all(),
-        'class_categories':  [category.id],
-        'admins':            [admin.id],
+        'class_categories':  [c.id for c in category_list],
+        'admins':            [u.id for u in admin_list],
         'teacher_reg_start': '2000-01-01 00:00:00',
         'teacher_reg_end':   '3001-01-01 00:00:00',
         'student_reg_start': '2000-01-01 00:00:00',
         'student_reg_end':   '3001-01-01 00:00:00',
         'base_cost':         base_cost,
-        'sibling_discount':  0,
+        'sibling_discount':  sibling_discount,
     }
 
     pcf = ProgramCreationForm(prog_form_values)
@@ -207,7 +232,6 @@ def make_program(
 
     # Create timeslots
     event_type = EventType.get_from_desc('Class Time Block')
-    start_time = datetime(2222, 7, 7, 7, 5)
     for i in range(num_timeslots):
         slot_start = start_time + timedelta(
             minutes=i * (timeslot_length + timeslot_gap)
@@ -244,8 +268,8 @@ def make_program(
 
 def make_class(program, teacher, title=None, category=None,
                grade_min=7, grade_max=12, class_size_max=30,
-               duration=None, accept=False):
-    """Create and return a ClassSubject with one ClassSection.
+               class_info=None, duration=None, sections=1, accept=False):
+    """Create and return a ClassSubject with one or more ClassSections.
 
     Note: unlike ProgramFrameworkTest.setUp() which calls cls.accept() on
     every class it creates, this factory leaves the class unreviewed/unaccepted
@@ -263,24 +287,31 @@ def make_class(program, teacher, title=None, category=None,
         grade_min (int):            Minimum grade. Defaults to 7.
         grade_max (int):            Maximum grade. Defaults to 12.
         class_size_max (int):       Maximum class size. Defaults to 30.
+        class_info (str|None):      Description text for the class. Defaults
+                                    to a generic placeholder.
         duration (float|None):      Section duration in hours. Derived from
                                     program timeslot length if None.
+        sections (int):             Number of sections to create. Defaults to 1.
         accept (bool):              If True, call cls.accept() so the class
                                     starts in accepted/approved status.
                                     Defaults to False (unreviewed).
 
     Returns:
-        ClassSubject: The created (or retrieved) class, with one section
-                      added and the teacher assigned.
+        ClassSubject: The created (or retrieved) class, with the requested
+                      number of sections added and the teacher assigned.
 
     Example:
         teacher = make_user('Teacher')
         program = make_program()
         cls     = make_class(program, teacher)
         cls     = make_class(program, teacher, title='Advanced Python', accept=True)
+        cls     = make_class(program, teacher, sections=3)
     """
     if title is None:
         title = 'Factory Class for %s' % teacher.username
+
+    if class_info is None:
+        class_info = 'Auto-generated by make_class() factory.'
 
     if category is None:
         # Use the first category associated with the program, or create one
@@ -306,15 +337,16 @@ def make_class(program, teacher, title=None, category=None,
             'grade_min':      grade_min,
             'grade_max':      grade_max,
             'class_size_max': class_size_max,
-            'class_info':     'Auto-generated by make_class() factory.',
+            'class_info':     class_info,
         },
     )
 
     cls.makeTeacher(teacher)
 
-    # Add a section if none exists yet
-    if cls.get_sections().count() == 0:
-        cls.add_section(duration=duration)
+    # Add sections up to the requested count.
+    for j in range(sections):
+        if cls.get_sections().count() <= j:
+            cls.add_section(duration=duration)
 
     if accept:
         cls.accept()
