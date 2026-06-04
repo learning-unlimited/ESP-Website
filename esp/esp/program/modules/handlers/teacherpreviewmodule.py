@@ -63,7 +63,10 @@ class TeacherPreviewModule(ProgramModuleObj):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
+                try:
+                    teacher = ESPUser.objects.get(id=request.GET['user'])
+                except (ESPUser.DoesNotExist, ValueError):
+                    raise Http404('The requested user could not be found.')
             else:
                 teacher = request.user
             scheditems = []
@@ -98,7 +101,10 @@ class TeacherPreviewModule(ProgramModuleObj):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
+                try:
+                    teacher = ESPUser.objects.get(id=request.GET['user'])
+                except (ESPUser.DoesNotExist, ValueError):
+                    raise Http404('The requested user could not be found.')
             else:
                 teacher = request.user
             scheditems = []
@@ -138,7 +144,10 @@ class TeacherPreviewModule(ProgramModuleObj):
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
             if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
+                try:
+                    teacher = ESPUser.objects.get(id=request.GET['user'])
+                except (ESPUser.DoesNotExist, ValueError):
+                    raise Http404('The requested user could not be found.')
             else:
                 teacher = request.user
             scheditems = []
