@@ -502,7 +502,7 @@ class CompileScssErrorPathTest(TestCase):
         from esp.middleware.esperrormiddleware import ESPError_Log
         mock_proc = mock.Mock()
         mock_proc.returncode = 1
-        mock_proc.communicate.return_value = (b'Error: bad scss', None)
+        mock_proc.communicate.return_value = (b'', b'Error: bad scss')
         with mock.patch('esp.themes.controllers.subprocess.Popen', return_value=mock_proc):
             with self.assertRaises(ESPError_Log):
                 self.tc.compile_scss('$broken: {;')
