@@ -24,6 +24,7 @@ def _qsd_display_context(context, qsd):
         'qsdrec': qsd,
         'display_date_author': display_date_author,
         'can_edit_qsd': Permission.user_can_edit_qsd(user, qsd.url),
+        'inline': False,
     }
 
 @register.inclusion_tag('inclusion/qsd/render_qsd.html', takes_context=True)
