@@ -1,26 +1,29 @@
+{% load markup %}
+{% if can_edit_qsd %}
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.css">
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
 <script src="/media/scripts/jodit_base64_upload.js"></script>
 <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
 <script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
 
-{% load markup %}
-<div class="qsd_header qsd_bits hidden" id="inline_edit_msg_{{ qsdrec.edit_id }}" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">
-    <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-    <span class="inline_edit_msg_text">
-    {% if qsdrec.id %}
-        This is editable text.
-    {% else %}
-        This is a placeholder for editable text that has not yet been added.
-    {% endif %}
-    Click here to edit the text.
-    </span>
-    <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+<div class="qsd_header qsd_bits" id="inline_edit_msg_{{ qsdrec.edit_id }}" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">
+  <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+  <span class="inline_edit_msg_text">
+  {% if qsdrec.id %}
+    This is editable text.
+  {% else %}
+    This is a placeholder for editable text that has not yet been added.
+  {% endif %}
+  Click here to edit the text.
+  </span>
+  <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
 </div>
+{% endif %}
 <div class="qsd_view_visible prettify" id="inline_qsd_{{ qsdrec.edit_id }}">
     {% autoescape off %}{{ qsdrec.content|markdown }}{% endautoescape %}
 </div>
-<div class="qsd_bits hidden">
+{% if can_edit_qsd %}
+<div class="qsd_bits">
     <div class="hidden" id="inline_edit_{{ qsdrec.edit_id }}">
         <div class="qsd_buttons">
             <button type="button" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', 'save');"
@@ -40,11 +43,13 @@
         </div>
         <div id="qsd_history_panel_{{ qsdrec.edit_id }}" class="qsd_history_panel" style="display:none;"></div>
         <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.edit_id }}"
-                  class="qsd_editor {% if not inline %}qsd_fullsize{% endif %} qsd_bits hidden {% if inline and not qsdrec.id %}qsd_halfsize{% endif %}"
+                  class="qsd_editor {% if not inline %}qsd_fullsize{% endif %} qsd_bits {% if inline and not qsdrec.id %}qsd_halfsize{% endif %}"
                   name="qsd_content">{% autoescape on %}{{ qsdrec.content }}{% endautoescape %}</textarea>
     </div>
 </div>
+{% endif %}
 
+{% if can_edit_qsd %}
 <script type="text/javascript">
 $j(document).ready(function() {
   if (esp_user.cur_admin != "1") {
@@ -83,6 +88,15 @@ var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
 espHandleBase64Paste(editor);
 })();
 </script>
+{% else %}
+<script type="text/javascript">
+$j(document).ready(function() {
+  if (esp_user.cur_admin != "1") {
+    $j(".qsd_view_visible").removeClass("qsd_view_visible");
+  }
+});
+</script>
+{% endif %}
 <br />
 {% if not inline %}
 <br />
