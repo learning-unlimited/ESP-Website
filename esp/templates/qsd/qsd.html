@@ -18,6 +18,7 @@
 {% block content %}
 
 {% load render_qsd %}
+{% with False as can_edit_qsd %}
 {% if class_qsd %}
 {% can_edit_qsd qsdrec as can_edit_qsd %}
 {% autoescape off %}{% render_qsd_md qsdrec %}{% endautoescape %}
@@ -30,4 +31,5 @@
     <a class="btn btn-primary" href="{{ edit_url }}">Edit this page</a>
 </div>
 {% endif %}
+{% endwith %}
 {% endblock %}
