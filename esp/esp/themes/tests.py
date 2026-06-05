@@ -30,7 +30,8 @@ class ThemesTest(TestCase):
 
         #   Redirect compiled CSS output to avoid disturbing installed setup
         self._css_file = themes_settings.COMPILED_CSS_FILE
-        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'main')
+        themes_settings.COMPILED_CSS_FILE = f'theme_compiled_test_{worker_id}.css'
 
     def tearDown(self):
 
@@ -264,6 +265,96 @@ class ThemesTest(TestCase):
             tc.unset_current_customization()
             shutil.rmtree(themes_settings.themes_dir, ignore_errors=True)
             themes_settings.themes_dir = original_themes_dir
+
+
+class Bootstrap3MigrationTest(TestCase):
+    """Unit tests for the Bootstrap 2→3 migration: npm-based LESS compilation and Bootswatch 3."""
+
+    def setUp(self):
+        self._css_file = themes_settings.COMPILED_CSS_FILE
+        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        self.tc = ThemeController()
+        self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
+
+    def tearDown(self):
+        themes_settings.COMPILED_CSS_FILE = self._css_file
+        if os.path.exists(self.css_filename):
+            os.remove(self.css_filename)
+
+    def test_get_less_names_references_bs3_npm(self):
+        """get_less_names() includes Bootstrap 3 from node_modules, not committed BS2 files."""
+        names = self.tc.get_less_names('barebones')
+        bs3_entries = [f for f in names if 'node_modules' in f and 'bootstrap' in f]
+        self.assertEqual(len(bs3_entries), 1, 'Expected exactly one Bootstrap npm entry')
+        self.assertIn(os.path.join('node_modules', 'bootstrap', 'less', 'bootstrap.less'), bs3_entries[0])
+        # The removed committed BS2 bootstrap.less must not appear
+        self.assertFalse(
+            any(f.replace('\\', '/').endswith('theme_editor/less/bootstrap.less') for f in names),
+            'Committed BS2 bootstrap.less should be removed'
+        )
+
+    def test_compile_css_produces_bs3_markers(self):
+        """compile_css() output contains Bootstrap 3 markers (.glyphicon, .navbar-toggle)."""
+        self.tc.compile_css('barebones', {}, self.css_filename)
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertGreater(len(css), 10000)
+        self.assertIn('.glyphicon', css, 'Missing .glyphicon — BS3 not compiling')
+        self.assertIn('.navbar-toggle', css, 'Missing .navbar-toggle — BS3 not compiling')
+
+    def test_get_variable_defaults_roundtrip(self):
+        """get_variable_defaults() compiles and returns a non-empty dict for every theme."""
+        for theme_name in self.tc.get_theme_names():
+            defaults = self.tc.get_variable_defaults(theme_name)
+            self.assertIsInstance(defaults, dict)
+            self.assertGreater(len(defaults), 0, f'{theme_name}: get_variable_defaults() returned empty dict')
+
+    def test_get_bootswatch_themes_returns_sorted_list(self):
+        """get_bootswatch_themes() returns a sorted list; empty list when npm package absent."""
+        themes_list = self.tc.get_bootswatch_themes()
+        self.assertIsInstance(themes_list, list)
+        self.assertEqual(themes_list, sorted(themes_list), 'Bootswatch theme list must be sorted')
+
+    def test_bootswatch_themes_have_required_less_files(self):
+        """Each discovered Bootswatch theme has variables.less and bootswatch.less."""
+        bootswatch_dir = os.path.normpath(os.path.join(
+            themes_settings.less_dir, '..', 'node_modules', 'bootswatch'
+        ))
+        for name in self.tc.get_bootswatch_themes():
+            self.assertTrue(
+                os.path.exists(os.path.join(bootswatch_dir, name, 'variables.less')),
+                f'bootswatch/{name}/variables.less missing'
+            )
+            self.assertTrue(
+                os.path.exists(os.path.join(bootswatch_dir, name, 'bootswatch.less')),
+                f'bootswatch/{name}/bootswatch.less missing'
+            )
+
+    def test_get_less_names_bootswatch_import_order(self):
+        """Bootswatch variables.less precedes bootstrap.less; bootswatch.less follows it."""
+        themes_list = self.tc.get_bootswatch_themes()
+        if not themes_list:
+            self.skipTest('Bootswatch npm package not installed')
+        names = [f.replace('\\', '/') for f in self.tc.get_less_names('barebones', bootswatch_theme=themes_list[0])]
+        bs3_idx = next(i for i, f in enumerate(names) if 'node_modules/bootstrap/less/bootstrap.less' in f)
+        bsw_var_idx = next(i for i, f in enumerate(names) if 'bootswatch' in f and f.endswith('variables.less'))
+        bsw_sty_idx = next(i for i, f in enumerate(names) if 'bootswatch' in f and f.endswith('bootswatch.less'))
+        self.assertLess(bsw_var_idx, bs3_idx,
+                        'Bootswatch variables.less must come BEFORE bootstrap.less')
+        self.assertGreater(bsw_sty_idx, bs3_idx,
+                           'Bootswatch bootswatch.less must come AFTER bootstrap.less')
+
+    def test_compile_css_with_bootswatch_produces_valid_output(self):
+        """compile_css() with a Bootswatch skin compiles to non-trivial CSS."""
+        themes_list = self.tc.get_bootswatch_themes()
+        if not themes_list:
+            self.skipTest('Bootswatch npm package not installed')
+        self.tc.compile_css('barebones', {}, self.css_filename, bootswatch_theme=themes_list[0])
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertGreater(len(css), 10000)
+        self.assertIn('.glyphicon', css)
+        self.assertIn('.navbar-toggle', css)
 
 
 class SafeCustomizationPathTest(TestCase):
