@@ -18,8 +18,8 @@
 {% block content %}
 
 {% load render_qsd %}
-{% can_edit_qsd qsdrec as can_edit_qsd %}
 {% if class_qsd %}
+{% can_edit_qsd qsdrec as can_edit_qsd %}
 {% autoescape off %}{% render_qsd_md qsdrec %}{% endautoescape %}
 {% else %}
 {% autoescape off %}{% render_qsd qsdrec %}{% endautoescape %}

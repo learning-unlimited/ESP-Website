@@ -16,8 +16,9 @@ def _qsd_display_context(context, qsd):
     elif display_date_author_tag == 'None':
         display_date_author = 0 # hide footer
 
+    class_qsd = bool(context and context.get('class_qsd'))
     request = context.get('request') if context is not None else None
-    user = getattr(request, 'user', None)
+    user = getattr(request, 'user', None) if class_qsd else None
 
     return {
         'qsdrec': qsd,
@@ -35,8 +36,9 @@ def render_qsd_md(context, qsd):
 
 @register.simple_tag(takes_context=True)
 def can_edit_qsd(context, qsd):
+    class_qsd = bool(context and context.get('class_qsd'))
     request = context.get('request') if context is not None else None
-    user = getattr(request, 'user', None)
+    user = getattr(request, 'user', None) if class_qsd else None
     return Permission.user_can_edit_qsd(user, qsd.url)
 
 @cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
