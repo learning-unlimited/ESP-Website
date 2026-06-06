@@ -15,7 +15,7 @@
   {% block main %}
 
     <div class="container">
-      <div class="row-fluid">
+      <div class="row">
         <aside aria-label="Sidebar navigation">
           {% block sidebar %}
             <h3>Navigation</h3>
@@ -25,7 +25,7 @@
           {% endblock sidebar %}
         </aside>
 
-        <main id="main" class="span12 resizable" tabindex="-1">
+        <main id="main" class="col-md-12 resizable" tabindex="-1">
           {% if 'esp_testing_role' in request.COOKIES %}
           {% if request.COOKIES.esp_testing_role %}
           <div
