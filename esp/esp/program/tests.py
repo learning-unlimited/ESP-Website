@@ -40,13 +40,17 @@ from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
-from esp.resources.models import Resource, ResourceType
+from esp.resources.models import Resource, ResourceRequest, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 
 from django.contrib.auth.models import Group
+
+from django.db.models import ProtectedError
+
 from django.core.management import call_command
+
 from django.test import LiveServerTestCase
 from django.test.client import Client
 from django import forms
@@ -67,6 +71,28 @@ import numpy
 import random
 import re
 import unicodedata
+
+
+class _StatsDummy(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+class DemographicsStatisticsTest(TestCase):
+    def test_null_graduation_year_is_ignored(self):
+        from esp.program.statistics import demographics
+
+        form = _StatsDummy(cleaned_data={})
+        profiles = [
+            _StatsDummy(student_info=_StatsDummy(graduation_year=None, dob=None)),
+            _StatsDummy(student_info=_StatsDummy(graduation_year=2030, dob=None)),
+        ]
+        result_dict = {}
+
+        demographics(form, [], [], profiles, result_dict)
+
+        self.assertEqual(result_dict['gradyear_data'], [(2030, 1)])
+
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
@@ -907,6 +933,45 @@ class ProgramCapTest(ProgramFrameworkTest):
             section__parent_class__parent_program=self.program).delete()
         Tag.objects.filter(key='program_size_by_grade').delete()
 
+
+class ProgramDeleteResourceCleanupTest(ProgramFrameworkTest):
+    """Program deletion cleans up program-scoped resource data without leaving
+    protected resource relations behind."""
+
+    def test_delete_program_with_program_resource_type(self):
+        restype = ResourceType.objects.create(
+            name='Program-only resource type',
+            description='',
+            program=self.program,
+        )
+        resource = Resource.objects.create(
+            name='Program classroom',
+            num_students=30,
+            res_type=restype,
+            event=self.timeslots[0],
+        )
+        request = ResourceRequest.objects.create(
+            desired_value='Projector',
+            res_type=restype,
+            target=self.program.sections()[0],
+        )
+
+        program_id = self.program.id
+        restype_id = restype.id
+        resource_id = resource.id
+        request_id = request.id
+
+        try:
+            self.program.delete()
+        except ProtectedError:
+            self.fail('Program deletion should not fail due to protected resource relations.')
+
+        self.assertFalse(Program.objects.filter(id=program_id).exists())
+        self.assertFalse(ResourceType.objects.filter(id=restype_id).exists())
+        self.assertFalse(Resource.objects.filter(id=resource_id).exists())
+        self.assertFalse(ResourceRequest.objects.filter(id=request_id).exists())
+
+
 def randomized_attrs(program):
     section_list = list(program.sections())
     random.shuffle(section_list)
@@ -1308,7 +1373,11 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             hours_priority = numpy.sum([len(sec.get_meeting_times()) for sec in sections_priority_and_enrolled])
             student_utility = (hours_interested + 1.5 * hours_priority) ** 0.5
 
-            student_weight = (len(sections_interested) + len(sections_priority)) ** 0.5
+            # Weight is total hours of registered sections, matching student_utility_weights
+            # (interest and priority are summed independently, mirroring the controller's matrix multiply)
+            weight_hours_interested = numpy.sum([len(sec.get_meeting_times()) for sec in sections_interested])
+            weight_hours_priority = numpy.sum([len(sec.get_meeting_times()) for sec in sections_priority])
+            student_weight = (weight_hours_interested + weight_hours_priority) ** 0.5
             student_screwed_val = (1.0 + student_utility) / (1.0 + student_weight)
 
             #   Compare against the value in the stats dict (allow for floating-point error)
