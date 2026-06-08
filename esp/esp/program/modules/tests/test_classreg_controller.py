@@ -15,7 +15,6 @@ Test classes:
   - UpdateClassSectionsTest:   section count creation, reduction, duration propagation
 """
 
-from collections import OrderedDict
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -24,10 +23,9 @@ from esp.program.controllers.classreg import (
     ClassCreationController,
     get_custom_fields,
 )
-from esp.program.models import ClassCategories, ClassSubject
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
-from esp.tests.factories import make_class, make_program, make_user
+from esp.tests.factories import make_class
 from esp.tests.util import CacheFlushTestCase
 
 
@@ -130,9 +128,15 @@ class ClassregControllerTestBase(ProgramFrameworkTest):
             teacher=teacher,
             title='Controller Test Class for %s' % teacher.username,
             class_size_max=20,
-            sections=num_sections,
             accept=False,
         )
+        # add extra sections if requested (make_class creates 1 by default)
+        for _ in range(max(0, num_sections - cls.get_sections().count())):
+            cls.add_section(duration=Decimal('0.833'))
+        # remove sections if fewer were requested
+        if num_sections < cls.get_sections().count():
+            for sec in list(cls.get_sections())[num_sections:]:
+                sec.delete()
         # Ensure duration is set for controller operations
         if not cls.duration:
             cls.duration = Decimal('0.833')
