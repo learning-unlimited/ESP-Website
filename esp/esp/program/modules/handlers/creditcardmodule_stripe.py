@@ -86,12 +86,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """ Whether the user has fully paid for this program. """
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return IndividualAccountingController(self.program, user).has_paid(in_full=True)
     have_paid = isCompleted
 
@@ -168,7 +165,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   and followed by a 24 character base64-encoded string.
         valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
         valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
-        if not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
+        if not self.settings.get('publishable_key') or not self.settings.get('secret_key') or not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
             return False
         return True
 
@@ -188,7 +185,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         for module in modules:
             if module.id == self.id:
                 continue
-            if not module.isCompleted() and module.isRequired():
+            if not module.isCompleted(request.user) and module.isRequired():
                 completedAll = False
         if not completedAll and not request.user.isAdmin(prog):
             raise ESPError("Please go back and ensure that you have completed all required steps of registration before paying by credit card.", log=False)
@@ -253,7 +250,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['postdata'] = request.POST.copy()
         domain_name = Site.objects.get_current().domain
         msg_content = render_to_string(self.baseDir() + 'error_email.txt', context)
-        msg_subject = '[ ESP CC ] Credit card error on %s: %d %s' % (domain_name, request.user.id, request.user.name())
+        msg_subject = f'[ ESP CC ] Credit card error on {domain_name}: {request.user.id} {request.user.name()}'
         # This message could contain sensitive information.  Send to the
         # confidential messages address, and don't bcc the archive list.
         send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [self.program.getDirectorConfidentialEmail()], bcc=None)
@@ -267,7 +264,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         context = {'postdata': request.POST.copy()}
 
-        group_name = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+        group_name = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
 
         iac = IndividualAccountingController(self.program, request.user)
 
@@ -291,8 +288,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Set Stripe key based on settings.  Also require the API version
         #   which our code is designed for.
         stripe.api_key = self.settings['secret_key']
-        # We are using the 2014-03-13 version of the Stripe API, which is
-        # v1.12.2.
+        # Keep the API version pinned so charge/refund response fields match
+        # our legacy payment code.
         stripe.api_version = '2014-03-13'
 
         if request.POST.get('ponumber', '') != iac.get_id():
@@ -335,8 +332,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     charge = stripe.Charge.create(
                         amount=amount_cents_post,
                         currency="usd",
-                        card=request.POST['stripeToken'],
-                        description="Payment for %s %s - %s" % (group_name, prog.niceName(), request.user.name()),
+                        source=request.POST['stripeToken'],
+                        description=f"Payment for {group_name} {prog.niceName()} - {request.user.name()}",
                         statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
                         metadata={
                             'ponumber': request.POST['ponumber'],
