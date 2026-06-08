@@ -337,9 +337,9 @@ def make_class(program, teacher, title=None, category=None,
 
     cls.makeTeacher(teacher)
 
-    for j in range(sections):
-        if cls.get_sections().count() <= j:
-            cls.add_section(duration=duration)
+    existing = cls.get_sections().count()
+    for _ in range(max(0, sections - existing)):
+        cls.add_section(duration=duration)
 
     if accept:
         cls.accept()
