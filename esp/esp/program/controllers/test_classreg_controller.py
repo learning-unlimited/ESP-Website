@@ -21,7 +21,7 @@ from unittest.mock import MagicMock, patch
 
 from esp.middleware import ESPError
 from esp.program.controllers.classreg import ClassCreationController
-from esp.program.models import ClassCategories, ClassSubject
+from esp.program.models import ClassSubject
 from esp.program.tests import ProgramFrameworkTest
 
 
@@ -78,13 +78,6 @@ class ClassregControllerTestBase(ProgramFrameworkTest):
         form = MagicMock()
         form.cleaned_data = data
         return form
-
-    def _make_unsaved_class(self):
-        """Return an unsaved ClassSubject attached to the test program."""
-        cls = ClassSubject()
-        cls.parent_program = self.program
-        cls.duration = Decimal('0.833')
-        return cls
 
     def _make_saved_class(self, teacher=None, num_sections=1):
         """Return a saved ClassSubject with sections, optionally with a teacher."""
