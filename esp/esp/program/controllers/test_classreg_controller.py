@@ -19,7 +19,7 @@ Test families:
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
-from esp.middleware import ESPError
+from esp.middleware.esperrormiddleware import ESPError_NoLog
 from esp.program.controllers.classreg import ClassCreationController
 from esp.program.models import ClassSubject
 from esp.program.tests import ProgramFrameworkTest
@@ -289,34 +289,32 @@ class TeacherTimeTest(ClassregControllerTestBase):
         teacher = self.teachers[0]
         try:
             self.controller.require_teacher_has_time(teacher, teacher, 0.5)
-        except ESPError:
+        except ESPError_NoLog:
             self.fail(
-                "require_teacher_has_time() raised ESPError unexpectedly "
+                "require_teacher_has_time() raised ESPError_NoLog unexpectedly "
                 "when teacher had sufficient time"
             )
 
     def test_require_teacher_has_time_raises_when_over_capacity(self):
-        """ESPError must be raised when the teacher cannot fit the requested hours."""
+        """ESPError_NoLog must be raised when the teacher cannot fit the requested hours."""
         teacher = self.teachers[0]
-        with self.assertRaises(ESPError,
-                               msg="require_teacher_has_time() should raise ESPError "
-                                   "when teacher exceeds capacity"):
+        with self.assertRaises(ESPError_NoLog):
             self.controller.require_teacher_has_time(teacher, teacher, 100.0)
 
     def test_require_teacher_has_time_self_message(self):
-        """When user == current_user, the ESPError message uses 'you'."""
+        """When user == current_user, the error message uses 'you'."""
         teacher = self.teachers[0]
-        with self.assertRaises(ESPError) as ctx:
+        with self.assertRaises(ESPError_NoLog) as ctx:
             self.controller.require_teacher_has_time(teacher, teacher, 100.0)
         # The self-message contains "you" (see classreg.py: "We love you too!")
         self.assertIn('you', str(ctx.exception).lower(),
                       "Self-referential error message should contain 'you'")
 
     def test_require_teacher_has_time_other_message(self):
-        """When user != current_user, the ESPError mentions the teacher's name."""
+        """When user != current_user, the error message contains the teacher's name."""
         teacher = self.teachers[0]
         editor = self.teachers[1]
-        with self.assertRaises(ESPError) as ctx:
+        with self.assertRaises(ESPError_NoLog) as ctx:
             self.controller.require_teacher_has_time(teacher, editor, 100.0)
         # The other-user message contains the teacher's name
         self.assertIn(
