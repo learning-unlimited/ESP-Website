@@ -24,4 +24,10 @@ urlpatterns = [
     url(r'^manage/docs/?$', views.manage_docs),
     url(r'^manage/docs/(?P<doc_path>.+)/?$', views.manage_docs),
     url(r'^manage/mergeaccounts/?$', esp.users.views.merge.merge_accounts),
+
+    # module timeline API
+    url(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/?$', views.module_schedule_api),
+    url(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/update/?$', views.module_schedule_update_api),
+    url(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/required_toggle/?$', views.module_schedule_required_toggle_api),
+    url(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/preview/?$', views.module_schedule_preview_api),
 ]

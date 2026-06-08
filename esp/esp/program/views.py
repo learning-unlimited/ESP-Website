@@ -1418,3 +1418,155 @@ def manage_docs(request, doc_path=None):
         'latest_release_html': latest_release_html,
     }
     return render_to_response('program/manage_docs.html', request, context)
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST, require_GET
+from django.utils.dateparse import parse_datetime
+
+def get_program_or_404(request, program_type, program_term):
+    from esp.program.models import Program
+    try:
+        prog = Program.by_prog_inst(program_type, program_term)
+    except Program.DoesNotExist:
+        raise Http404("Program not found.")
+
+    if not request.user.is_authenticated or not request.user.isAdministrator(prog):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("You must be an administrator to manage this program.")
+
+    return prog
+
+@require_GET
+def module_schedule_api(request, program_type, program_term):
+    prog = get_program_or_404(request, program_type, program_term)
+    modules = prog.getModules(user=request.user)
+
+    # We serialize them into dicts grouped by module_type (learn/teach)
+    data = {
+        "program_id": prog.id,
+        "program_name": prog.name,
+        "modules": {"learn": [], "teach": []}
+    }
+
+    for mod in modules:
+        tl = mod.module.module_type
+        if tl not in data["modules"]:
+            data["modules"][tl] = []
+
+        data["modules"][tl].append({
+            "id": mod.id,
+            "handler": mod.module.handler,
+            "admin_title": mod.module.admin_title,
+            "link_title": mod.get_link_title(),
+            "module_type": tl,
+            "seq": mod.seq,
+            "start_date": mod.start_date.isoformat() if mod.start_date else None,
+            "end_date": mod.end_date.isoformat() if mod.end_date else None,
+            "required": mod.required,
+            "required_label": mod.required_label,
+        })
+
+    return JsonResponse(data)
+
+@require_POST
+def module_schedule_update_api(request, program_type, program_term):
+    # we simulate PATCH using POST with data, or we could just use POST.
+    prog = get_program_or_404(request, program_type, program_term)
+
+    try:
+        data = json.loads(request.body)
+        module_id = data.get("module_id")
+
+        from esp.program.modules.base import ProgramModuleObj
+        mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
+
+        if "start_date" in data:
+            val = data["start_date"]
+            mod.start_date = parse_datetime(val) if val else None
+        if "end_date" in data:
+            val = data["end_date"]
+            mod.end_date = parse_datetime(val) if val else None
+        if "seq" in data:
+            mod.seq = int(data["seq"])
+
+        if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
+            return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
+
+        mod.save()
+
+        return JsonResponse({
+            "success": True,
+            "module_id": mod.id,
+            "start_date": mod.start_date.isoformat() if mod.start_date else None,
+            "end_date": mod.end_date.isoformat() if mod.end_date else None,
+            "seq": mod.seq
+        })
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+@require_POST
+def module_schedule_required_toggle_api(request, program_type, program_term):
+    prog = get_program_or_404(request, program_type, program_term)
+
+    try:
+        data = json.loads(request.body)
+        module_id = data.get("module_id")
+
+        from esp.program.modules.base import ProgramModuleObj
+        mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
+
+        if "required" in data:
+            mod.required = bool(data["required"])
+        if "required_label" in data:
+            mod.required_label = data["required_label"]
+
+        mod.save()
+
+        return JsonResponse({
+            "success": True,
+            "module_id": mod.id,
+            "required": mod.required,
+            "required_label": mod.required_label
+        })
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+@require_GET
+def module_schedule_preview_api(request, program_type, program_term):
+    prog = get_program_or_404(request, program_type, program_term)
+
+    at_str = request.GET.get("at")
+    if not at_str:
+        return JsonResponse({"success": False, "error": "Missing 'at' parameter"}, status=400)
+
+    at_dt = parse_datetime(at_str)
+
+    # We bypass time filtering initially by using getModules(user=admin)
+    all_modules = prog.getModules(user=request.user)
+
+    data = {
+        "program_id": prog.id,
+        "program_name": prog.name,
+        "modules": {"learn": [], "teach": []}
+    }
+
+    for mod in all_modules:
+        if mod.is_valid(when=at_dt):
+            tl = mod.module.module_type
+            if tl not in data["modules"]:
+                data["modules"][tl] = []
+
+            data["modules"][tl].append({
+                "id": mod.id,
+                "handler": mod.module.handler,
+                "admin_title": mod.module.admin_title,
+                "link_title": mod.get_link_title(),
+                "module_type": tl,
+                "seq": mod.seq,
+                "start_date": mod.start_date.isoformat() if mod.start_date else None,
+                "end_date": mod.end_date.isoformat() if mod.end_date else None,
+                "required": mod.required,
+                "required_label": mod.required_label,
+            })
+
+    return JsonResponse(data)
