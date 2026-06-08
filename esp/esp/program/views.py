@@ -1536,7 +1536,7 @@ def manage_docs(request, doc_path=None):
     }
     return render_to_response('program/manage_docs.html', request, context)
 
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_POST, require_GET
 from django.utils.dateparse import parse_datetime
 
