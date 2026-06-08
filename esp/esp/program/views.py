@@ -1618,8 +1618,10 @@ def module_schedule_update_api(request, program_type, program_term):
             "end_date": mod.end_date.isoformat() if mod.end_date else None,
             "seq": mod.seq
         })
-    except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=400)
+    except ValueError:
+        return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
+    except Exception:
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=400)
 
 @require_POST
 def module_schedule_required_toggle_api(request, program_type, program_term):
@@ -1645,8 +1647,10 @@ def module_schedule_required_toggle_api(request, program_type, program_term):
             "required": mod.required,
             "required_label": mod.required_label
         })
-    except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=400)
+    except ValueError:
+        return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
+    except Exception:
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=400)
 
 @require_GET
 def module_schedule_preview_api(request, program_type, program_term):
