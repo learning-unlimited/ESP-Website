@@ -19,12 +19,19 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
 
         self.admin = self.admins[0]
 
-        # Grab two real modules linked to the program
+        # Grab or create two real modules linked to the program
         mod_qs = ProgramModule.objects.filter(
             id__in=self.program.program_modules.values_list('id', flat=True)
         )
-        self.mod1 = mod_qs[0]
-        self.mod2 = mod_qs[1]
+        if mod_qs.count() >= 2:
+            self.mod1 = mod_qs[0]
+            self.mod2 = mod_qs[1]
+        else:
+            self.mod1 = ProgramModule.objects.create(admin_title="Test Mod 1", module_type="learn", handler="StudentRegTwoPhase", seq=1)
+            self.mod2 = ProgramModule.objects.create(admin_title="Test Mod 2", module_type="teach", handler="TeacherClassRegModule", seq=2)
+            self.program.program_modules.add(self.mod1)
+            self.program.program_modules.add(self.mod2)
+            self.program.save()
 
         self.pmo1 = ProgramModuleObj.getFromProgModule(self.program, self.mod1)
         self.pmo2 = ProgramModuleObj.getFromProgModule(self.program, self.mod2)
