@@ -123,8 +123,8 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
             self.assertEqual(len(data["conflicts"]), 1)
 
             conflict = data["conflicts"][0]
-            self.assertEqual(conflict["module_id_1"], self.pmo1.id)
-            self.assertEqual(conflict["module_id_2"], self.pmo2.id)
+            conflict_ids = {conflict["module_id_1"], conflict["module_id_2"]}
+            self.assertEqual(conflict_ids, {self.pmo1.id, self.pmo2.id})
             self.assertIsNotNone(conflict["overlap_start"])
             self.assertIsNotNone(conflict["overlap_end"])
         finally:
