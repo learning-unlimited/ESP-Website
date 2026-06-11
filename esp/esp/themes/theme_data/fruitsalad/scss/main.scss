@@ -230,7 +230,7 @@ a {
 
 body {
     line-height: normal;
-    font-size: 12pt;
+    font-size: $baseFontSize;
 }
 
 .clear-float {
@@ -255,7 +255,7 @@ position: relative;
 
 #body {
     line-height: normal;
-    font-size: 13px;
+    font-size: $baseFontSize;
 
     width: 640px;
     margin-left: 130px;
@@ -637,11 +637,11 @@ content: '*';
   color: $headingsColor;
   margin: 0;
   padding: 0;
-  font-size: 12pt;
+  font-size: $baseFontSize;
 }
 #divannouncements a {
   color: $linkColor;
-  font-size: 12pt;
+  font-size: $baseFontSize;
   text-decoration: none;
 }
 

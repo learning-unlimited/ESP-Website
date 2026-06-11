@@ -127,8 +127,8 @@ footer,
     z-index: 1030;
 }
 
-// Barebones / shared navbar clearance
+// Barebones / shared navbar clearance (5rem ≈ 80px matches pre-BS4 barebones padding)
 body.has-fixed-navbar,
 body:has(.navbar.fixed-top) {
-    padding-top: 4rem;
+    padding-top: 5rem;
 }
