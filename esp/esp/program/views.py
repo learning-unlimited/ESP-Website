@@ -1577,6 +1577,8 @@ def module_schedule_api(request, program_type, program_term):
             "link_title": mod.get_link_title(),
             "module_type": tl,
             "seq": mod.seq,
+            "always_enabled": mod.always_enabled,
+            "seq_locked": mod.seq_locked,
             "start_date": mod.start_date.isoformat() if mod.start_date else None,
             "end_date": mod.end_date.isoformat() if mod.end_date else None,
             "required": mod.required,
@@ -1596,6 +1598,7 @@ def module_schedule_update_api(request, program_type, program_term):
 
         from esp.program.modules.base import ProgramModuleObj
         mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
+        mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
 
         if "start_date" in data:
             val = data["start_date"]
@@ -1604,6 +1607,8 @@ def module_schedule_update_api(request, program_type, program_term):
             val = data["end_date"]
             mod.end_date = parse_datetime(val) if val else None
         if "seq" in data:
+            if mod_hydrated.seq_locked:
+                return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
             mod.seq = int(data["seq"])
 
         if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
@@ -1684,6 +1689,8 @@ def module_schedule_preview_api(request, program_type, program_term):
                 "link_title": mod.get_link_title(),
                 "module_type": tl,
                 "seq": mod.seq,
+                "always_enabled": mod.always_enabled,
+                "seq_locked": mod.seq_locked,
                 "start_date": mod.start_date.isoformat() if mod.start_date else None,
                 "end_date": mod.end_date.isoformat() if mod.end_date else None,
                 "required": mod.required,
@@ -1691,3 +1698,44 @@ def module_schedule_preview_api(request, program_type, program_term):
             })
 
     return JsonResponse(data)
+
+@require_GET
+def module_schedule_conflicts_api(request, program_type, program_term):
+    prog = get_program_or_404(request, program_type, program_term)
+
+    # request.user is admin, so getModules returns all modules regardless of expiration
+    all_modules = prog.getModules(user=request.user)
+    conflicts = []
+
+    for i, mod1 in enumerate(all_modules):
+        for mod2 in all_modules[i+1:]:
+            # Check for conflict declaration
+            if (mod2.module.handler in mod1.conflicts_with) or (mod1.module.handler in mod2.conflicts_with):
+                # Check for time overlap
+                start1 = mod1.start_date
+                end1 = mod1.end_date
+                start2 = mod2.start_date
+                end2 = mod2.end_date
+
+                # Overlap condition
+                cond1 = (start1 is None) or (end2 is None) or (start1 < end2)
+                cond2 = (start2 is None) or (end1 is None) or (start2 < end1)
+
+                if cond1 and cond2:
+                    overlap_starts = [s for s in (start1, start2) if s is not None]
+                    overlap_start = max(overlap_starts) if overlap_starts else None
+
+                    overlap_ends = [e for e in (end1, end2) if e is not None]
+                    overlap_end = min(overlap_ends) if overlap_ends else None
+
+                    conflicts.append({
+                        "module_id_1": mod1.id,
+                        "handler_1": mod1.module.handler,
+                        "module_id_2": mod2.id,
+                        "handler_2": mod2.module.handler,
+                        "overlap_start": overlap_start.isoformat() if overlap_start else None,
+                        "overlap_end": overlap_end.isoformat() if overlap_end else None,
+                        "description": f"{mod1.get_link_title()} overlaps with {mod2.get_link_title()}"
+                    })
+
+    return JsonResponse({"conflicts": conflicts})
