@@ -7,11 +7,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
 
-# Create a mock handler class for testing seq_locked
-class LockedModuleTestHandler(ProgramModuleObj):
-    seq_locked = True
-    always_enabled = True
-    conflicts_with = ["ConflictingModuleHandler"]
+
 
 class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
     def setUp(self):
@@ -47,7 +43,6 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
         """Updating a seq-locked module should return 403."""
         # Mock the handler class of pmo1 to be locked
         original_class = self.pmo1.__class__
-        self.pmo1.__class__ = LockedModuleTestHandler
 
         # We also need to patch getFromProgModule temporarily so the view sees it as locked
         # But wait, we can just modify the class dynamically for the test!
