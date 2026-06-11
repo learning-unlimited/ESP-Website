@@ -21,7 +21,7 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
 
         # Clear any existing modules from the program to ensure test isolation
         self.program.program_modules.clear()
-        
+
         # Grab or create two real modules linked to the program
         mod_qs = ProgramModule.objects.all()
         if mod_qs.count() >= 2:
@@ -30,7 +30,7 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
         else:
             self.mod1 = ProgramModule.objects.create(admin_title="Test Mod 1", module_type="learn", handler="StudentRegTwoPhase", seq=1)
             self.mod2 = ProgramModule.objects.create(admin_title="Test Mod 2", module_type="teach", handler="TeacherClassRegModule", seq=2)
-            
+
         self.program.program_modules.add(self.mod1)
         self.program.program_modules.add(self.mod2)
         self.program.save()
