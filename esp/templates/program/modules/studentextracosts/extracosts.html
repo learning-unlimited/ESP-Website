@@ -32,7 +32,7 @@ td>ul { list-style-type: none; padding: 0px }
 {% end_inline_program_qsd_block %}
 
 <br /> 
-{% if paid_for %}<div class="alert alert-danger"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>{{ paid_for_text }}</div>{% endif %} 
+{% if paid_for %}<div role="alert" class="alert alert-danger"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>{{ paid_for_text }}</div>{% endif %} 
 
 <br />
 
@@ -53,16 +53,16 @@ td>ul { list-style-type: none; padding: 0px }
 <tr {% if f.type != "sibling" %}style="border-bottom: 1px dashed grey;"{% endif %}>
     <td>
         {% if f.type == "single" %}
-            {% if f.form.cost.errors %}<div style="color: red;">{{ f.form.cost.errors|join:", " }}</div>{% endif %}
+            {% if f.form.cost.errors %}<div style="color: red;" role="alert">Error: {{ f.form.cost.errors|join:", " }}</div>{% endif %}
             {{ f.form.cost }} ${{ f.LineItem.amount_dec|floatformat:2 }}
         {% elif f.type == "multiple" %}
-            {% if f.form.count.errors %}<div style="color: red;">{{ f.form.count.errors|join:", " }}</div>{% endif %}
+            {% if f.form.count.errors %}<div style="color: red;" role="alert">Error: {{ f.form.count.errors|join:", " }}</div>{% endif %}
             {{ f.form.count }} ${{ f.LineItem.amount_dec|floatformat:2 }} each
         {% elif f.type == "select" %}
-            {% if f.form.option.errors %}<div style="color: red;">{{ f.form.option.errors|join:", " }}</div>{% endif %}
+            {% if f.form.option.errors %}<div style="color: red;" role="alert">Error: {{ f.form.option.errors|join:", " }}</div>{% endif %}
             {{ f.form.option }}
         {% elif f.type == "sibling" %}
-            {% if f.form.siblingdiscount.errors %}<div style="color: red;">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
+            {% if f.form.siblingdiscount.errors %}<div style="color: red;" role="alert">Error: {{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
             {{ f.form.siblingdiscount }}
     </td>
 </tr>
@@ -72,7 +72,7 @@ td>ul { list-style-type: none; padding: 0px }
             {% if f.form.siblingname.errors %}
             <tr>
                 <td>
-                    <div style="color: red;">{{ f.form.siblingname.errors|join:", " }}</div>
+                    <div style="color: red;" role="alert">Error: {{ f.form.siblingname.errors|join:", " }}</div>
                 </td>
             </tr>
             {% endif %}

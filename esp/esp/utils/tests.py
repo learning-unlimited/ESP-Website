@@ -6,18 +6,16 @@ Test cases for Django-ESP utilities
 import datetime
 import doctest
 import json
-try:
-    import pylibmc as memcache
-except ImportError:
-    import memcache
 import logging
 logger = logging.getLogger(__name__)
 import os
 import subprocess
 import sys
+import types
 from reversion import revisions as reversion
 from reversion.models import Version
 import unittest
+from unittest.mock import patch
 
 from django.db.models.query import Q
 from django.template import loader, Template, Context, TemplateDoesNotExist
@@ -27,6 +25,7 @@ from esp.middleware import ESPError_Log
 from esp.users.models import ESPUser
 from esp import utils
 from esp.utils import query_builder
+from esp.utils.formats import format_lazy
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
 from unittest.mock import Mock, MagicMock
@@ -88,7 +87,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("django")  # If this fails, we lose.
         self.tryImport("PIL")  # Needed for Django Image fields, which we use for (among other things) teacher bio's
         self.tryImport("PIL._imaging")  # Internal PIL module; PIL will import without it, but it won't have a lot of the functionality that we need
-        self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
+        self.tryImport("pymemcache")  # We use pymemcache as the Python<->memcached interface library.
         self.tryImport("DNS")  # Used for validating email address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("json")  # Used for some of our AJAX magic
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
@@ -96,17 +95,17 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("form_utils")     #Used to create better forms.
         self.assertFalse(self._failed_import)
 
-        # Make sure production uses pylibmc when default cache is memcached.
+        # Make sure production uses pymemcache when default cache is memcached.
         # test_settings (and similar) use LocMemCache/DummyCache — skip then.
         from django.conf import settings
         default_backend = settings.CACHES.get('default', {}).get('BACKEND', '')
         if 'locmem' not in default_backend.lower() and 'dummy' not in default_backend.lower():
-            from pylibmc import Client
+            from pymemcache import HashClient
             from django.core.cache import cache
             if hasattr(cache, "_cache"):
-                self.assertTrue(isinstance(cache._cache, Client))
+                self.assertTrue(isinstance(cache._cache, HashClient))
             elif hasattr(cache, "_wrapped_cache") and hasattr(cache._wrapped_cache, "_cache"):
-                self.assertTrue(isinstance(cache._wrapped_cache._cache, Client))
+                self.assertTrue(isinstance(cache._wrapped_cache._cache, HashClient))
 
         self.tryExecutable("latex")  # Used for a whole pile of program printables, as well as inline LaTeX
         self.tryExecutable("dvips")  # Used to convert LaTeX output (.dvi) to .ps files
@@ -116,35 +115,6 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryExecutable("inkscape")  # Used to render LaTeX output (once converted to .pdf) to .svg image files
 
         self.assertFalse(self._exe_not_found)
-
-class MemcachedTestCase(unittest.TestCase):
-    """
-    Test-case implementation that starts and manages a few memcached processes
-    to be used by test functions.
-    Note that this is not itself a collection of test cases,
-    it's meant to be subclassed as needed.
-    """
-
-    CACHES = [ "127.0.0.1:11218" ]
-
-    def setUp(self):
-        """ Launch memcached instances for all the caches listed in CACHES """
-        caches = [ x.split(':') for x in self.CACHES ]
-        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', f'{cache[1]}'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                         for cache in caches ]
-        self.clients = [ memcache.Client([cache]) for cache in self.CACHES ]
-
-    def tearDown(self):
-        """ Terminate all the server processes that we launched with setUp() """
-        for client in self.clients:
-            client.disconnect_all()
-
-        if len(self.servers) > 0 and hasattr(self.servers[0], 'terminate'):
-            for server in self.servers:
-                server.terminate()  # Sends SIGTERM, telling the servers to terminate
-            for server in self.servers:
-                server.wait()       # After we've told all the servers to terminate, wait for them to all actually stop.
-
 
 class MemcachedKeyLengthTestCase(DjangoTestCase):
     """ Grab a ridiculous URL and make sure the status code isn't 500. """
@@ -774,6 +744,154 @@ class RunInstallTestCase(unittest.TestCase):
         sender.models_module = models_module
         # Should not raise
         run_install(sender)
+
+
+class FormatLazyTest(DjangoTestCase):
+    def test_basic_substitution(self):
+        result = format_lazy("Hello %s", "world")
+        self.assertEqual(str(result), "Hello world")
+
+    def test_returns_lazy_proxy(self):
+        result = format_lazy("Hello %s", "world")
+        self.assertNotIsInstance(result, str)
+
+    def test_integer_substitution(self):
+        result = format_lazy("Value: %d", 42)
+        self.assertEqual(str(result), "Value: 42")
+
+
+class ChooseProgramTestCase(unittest.TestCase):
+    def _install_fake_program_module(self, program_class):
+        module = types.ModuleType('esp.program.models')
+        module.Program = program_class
+        return patch.dict(sys.modules, {'esp.program.models': module})
+
+    def test_rejects_multiple_noninteractive_kwargs(self):
+        class Program(object):
+            class DoesNotExist(Exception):
+                pass
+
+            class MultipleObjectsReturned(Exception):
+                pass
+
+        from esp.utils.shell_utils import choose_program
+
+        with self._install_fake_program_module(Program):
+            with self.assertRaises(ValueError):
+                choose_program(program_id=7, program_name='Splash 2014')
+
+    def test_interactive_accepts_prefixed_suggestion_index(self):
+        suggestion_1 = types.SimpleNamespace(id=101, name='Alpha', url='alpha')
+        suggestion_2 = types.SimpleNamespace(id=202, name='Beta', url='beta')
+
+        class Program(object):
+            class DoesNotExist(Exception):
+                pass
+
+            class MultipleObjectsReturned(Exception):
+                pass
+
+            current_programs = staticmethod(lambda: [suggestion_1, suggestion_2])
+            objects = types.SimpleNamespace(get=lambda **kwargs: None)
+
+        from esp.utils.shell_utils import choose_program
+
+        with self._install_fake_program_module(Program):
+            with patch('builtins.input', side_effect=['2', 'i:2']):
+                result = choose_program()
+
+        self.assertIs(result, suggestion_2)
+
+    def test_interactive_accepts_prefixed_program_id(self):
+        selected = types.SimpleNamespace(id=42, name='Chosen', url='chosen')
+
+        class Program(object):
+            class DoesNotExist(Exception):
+                pass
+
+            class MultipleObjectsReturned(Exception):
+                pass
+
+            current_programs = staticmethod(lambda: [])
+
+        def fake_get(**kwargs):
+            if kwargs.get('id') == 42:
+                return selected
+            raise Program.DoesNotExist()
+
+        Program.objects = types.SimpleNamespace(get=fake_get)
+
+        from esp.utils.shell_utils import choose_program
+
+        with self._install_fake_program_module(Program):
+            with patch('builtins.input', side_effect=['id:42']):
+                result = choose_program()
+
+        self.assertIs(result, selected)
+
+
+class ExpirableModelBoundaryTest(DjangoTestCase):
+    """Tests if ExpirableModel bounds have consistent logic (#5815)."""
+
+    def test_boundary_consistency(self):
+        from esp.users.models import Permission
+
+        # 1. Setup specific boundaries
+        start_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
+        end_time = datetime.datetime(2026, 1, 31, 12, 0, 0)
+
+        # Create a Permission (a concrete subclass of ExpirableModel)
+        perm = Permission.objects.create(
+            permission_type='Administer',
+            start_date=start_time,
+            end_date=end_time
+        )
+
+        # 2. Test exact start boundary (should be valid/included)
+        self.assertTrue(
+            perm.is_valid(when=start_time),
+            "is_valid() should be True at exact start_date"
+        )
+        self.assertIn(
+            perm,
+            Permission.valid_objects(when=start_time),
+            "valid_objects() should include exact start_date"
+        )
+
+        # 3. Test exact end boundary (should be valid/included)
+        self.assertTrue(
+            perm.is_valid(when=end_time),
+            "is_valid() should be True at exact end_date"
+        )
+        self.assertIn(
+            perm,
+            Permission.valid_objects(when=end_time),
+            "valid_objects() should include exact end_date"
+        )
+
+        # 4. Test just before start boundary (should be invalid/excluded)
+        just_before = start_time - datetime.timedelta(microseconds=1)
+        self.assertFalse(
+            perm.is_valid(when=just_before),
+            "is_valid() should be False just before start_date"
+        )
+        self.assertNotIn(
+            perm,
+            Permission.valid_objects(when=just_before),
+            "valid_objects() should exclude just before start_date"
+        )
+
+        # 5. Test just after end boundary (should be invalid/excluded)
+        just_after = end_time + datetime.timedelta(microseconds=1)
+        self.assertFalse(
+            perm.is_valid(when=just_after),
+            "is_valid() should be False just after end_date"
+        )
+        self.assertNotIn(
+            perm,
+            Permission.valid_objects(when=just_after),
+            "valid_objects() should exclude just after end_date"
+        )
 
 
 def suite():

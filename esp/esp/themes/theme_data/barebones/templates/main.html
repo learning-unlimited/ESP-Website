@@ -35,7 +35,7 @@ Example stylesheet inclusion tag:
   <div class="row">
     {% block sidebar %}
     <div class="hidden" id="sidebar">
-      <ul class="nav nav-list sidebar">
+      <ul class="nav nav-stacked sidebar">
         {% include "sidebar/me.html" %}
         {% include "sidebar/programs.html" %}
         {% include "sidebar/admin.html" %}
@@ -44,7 +44,7 @@ Example stylesheet inclusion tag:
     </div>
     {% endblock %}
 
-    <main id="main" class="span12 resizable" tabindex="-1">
+    <main id="main" class="col-md-12 resizable" tabindex="-1">
       {% if request.COOKIES.esp_testing_role %}
       <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
         <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
