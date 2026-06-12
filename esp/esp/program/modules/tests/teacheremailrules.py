@@ -7,7 +7,6 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import RegistrationProfile
 from esp.program.modules.module_ext import TeacherEmailRules, MODE_BLOCK, MODE_WARN
 from esp.users.models import ContactInfo, TeacherInfo
-from esp.middleware.threadlocalrequest import get_current_request
 
 
 class TeacherEmailRulesTest(ProgramFrameworkTest):
@@ -19,6 +18,24 @@ class TeacherEmailRulesTest(ProgramFrameworkTest):
             program=self.program,
             defaults={'enabled': True, 'allowed_domains': 'school.edu', 'mode': MODE_WARN},
         )
+
+    def _valid_teacher_form_data(self, teacher, email):
+        """Minimal valid POST data for TeacherProfileForm."""
+        return {
+            'first_name': teacher.first_name,
+            'last_name': teacher.last_name,
+            'e_mail': email,
+            'phone_day': '',
+            'phone_cell': '+16175551234',
+            'address_street': '',
+            'address_city': '',
+            'address_state': 'MA',
+            'address_zip': '',
+            'address_country': '',
+            'affiliation_0': 'Other',
+            'affiliation_1': 'MIT',
+            'graduation_year': '2020',
+        }
 
     def test_disabled_rules_allow_any_email(self):
         self.rules.enabled = False
@@ -124,7 +141,6 @@ class TeacherEmailRulesTest(ProgramFrameworkTest):
         self.rules.mode = MODE_BLOCK
         self.rules.save()
 
-        get_current_request().user = teacher
         prof = RegistrationProfile.getLastForProgram(teacher, self.program, 'teach')
         self.assertIsNone(prof.id)
 
@@ -141,20 +157,7 @@ class TeacherEmailRulesTest(ProgramFrameworkTest):
         self.rules.mode = MODE_BLOCK
         self.rules.save()
 
-        data = {
-            'first_name': teacher.first_name,
-            'last_name': teacher.last_name,
-            'e_mail': 'teacher@gmail.com',
-            'phone_day': '',
-            'phone_cell': '+16175551234',
-            'address_street': '',
-            'address_city': '',
-            'address_state': 'MA',
-            'address_zip': '',
-            'address_country': '',
-            'affiliation': 'Other:MIT',
-            'graduation_year': '2020',
-        }
+        data = self._valid_teacher_form_data(teacher, 'teacher@gmail.com')
         form = TeacherProfileForm(teacher, data, program=self.program, role='teacher')
         self.assertFalse(form.is_valid())
 
@@ -167,20 +170,7 @@ class TeacherEmailRulesTest(ProgramFrameworkTest):
         self.rules.mode = MODE_WARN
         self.rules.save()
 
-        data = {
-            'first_name': teacher.first_name,
-            'last_name': teacher.last_name,
-            'e_mail': 'teacher@gmail.com',
-            'phone_day': '',
-            'phone_cell': '+16175551234',
-            'address_street': '',
-            'address_city': '',
-            'address_state': 'MA',
-            'address_zip': '',
-            'address_country': '',
-            'affiliation': 'Other:MIT',
-            'graduation_year': '2020',
-        }
+        data = self._valid_teacher_form_data(teacher, 'teacher@gmail.com')
         form = TeacherProfileForm(teacher, data, program=self.program, role='teacher')
-        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid(), form.errors)
         self.assertTrue(getattr(form, '_teacher_email_warning', None))
