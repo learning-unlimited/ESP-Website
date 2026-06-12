@@ -1,7 +1,6 @@
 import json
 from datetime import datetime, timedelta
 
-from django.test import Client
 from django.urls import reverse
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
