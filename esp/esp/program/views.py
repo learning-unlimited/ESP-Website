@@ -1555,6 +1555,11 @@ def get_program_or_404(request, program_type, program_term):
 
 @require_GET
 def module_schedule_api(request, program_type, program_term):
+    """
+    JSON API endpoint to list all modules for a program.
+    Inputs: program_type (str), program_term (str) from the URL.
+    Outputs: JSONResponse with a list of serialized modules grouped by module_type (learn/teach).
+    """
     prog = get_program_or_404(request, program_type, program_term)
     modules = prog.getModules(user=request.user)
 
@@ -1589,6 +1594,11 @@ def module_schedule_api(request, program_type, program_term):
 
 @require_POST
 def module_schedule_update_api(request, program_type, program_term):
+    """
+    JSON API endpoint to update a program module's start_date, end_date, and seq.
+    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, start_date, end_date, seq.
+    Outputs: JSONResponse with success boolean and updated module fields.
+    """
     # we simulate PATCH using POST with data, or we could just use POST.
     prog = get_program_or_404(request, program_type, program_term)
 
@@ -1597,15 +1607,39 @@ def module_schedule_update_api(request, program_type, program_term):
         module_id = data.get("module_id")
 
         from esp.program.modules.base import ProgramModuleObj
-        mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
+        from django.utils import timezone
+        
+        try:
+            mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
+        except ProgramModuleObj.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Module not found"}, status=404)
+            
         mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
 
         if "start_date" in data:
             val = data["start_date"]
-            mod.start_date = parse_datetime(val) if val else None
+            if val:
+                dt = parse_datetime(val)
+                if dt is None:
+                    return JsonResponse({"success": False, "error": "Invalid start_date format"}, status=400)
+                if timezone.is_aware(dt):
+                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
+                mod.start_date = dt
+            else:
+                mod.start_date = None
+                
         if "end_date" in data:
             val = data["end_date"]
-            mod.end_date = parse_datetime(val) if val else None
+            if val:
+                dt = parse_datetime(val)
+                if dt is None:
+                    return JsonResponse({"success": False, "error": "Invalid end_date format"}, status=400)
+                if timezone.is_aware(dt):
+                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
+                mod.end_date = dt
+            else:
+                mod.end_date = None
+                
         if "seq" in data:
             if mod_hydrated.seq_locked:
                 return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
@@ -1626,10 +1660,16 @@ def module_schedule_update_api(request, program_type, program_term):
     except ValueError:
         return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
     except Exception:
-        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=400)
+        logger.exception("module_schedule_update_api failed")
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
 
 @require_POST
 def module_schedule_required_toggle_api(request, program_type, program_term):
+    """
+    JSON API endpoint to toggle a program module's required flag and update its required_label.
+    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, required (bool), required_label (str).
+    Outputs: JSONResponse with success boolean and updated module fields.
+    """
     prog = get_program_or_404(request, program_type, program_term)
 
     try:
@@ -1637,12 +1677,23 @@ def module_schedule_required_toggle_api(request, program_type, program_term):
         module_id = data.get("module_id")
 
         from esp.program.modules.base import ProgramModuleObj
-        mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
+        try:
+            mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
+        except ProgramModuleObj.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Module not found"}, status=404)
 
         if "required" in data:
-            mod.required = bool(data["required"])
+            if not isinstance(data["required"], bool):
+                return JsonResponse({"success": False, "error": "required must be a boolean"}, status=400)
+            mod.required = data["required"]
+            
         if "required_label" in data:
-            mod.required_label = data["required_label"]
+            label = data["required_label"]
+            if not isinstance(label, str):
+                return JsonResponse({"success": False, "error": "required_label must be a string"}, status=400)
+            if len(label) > 80:
+                return JsonResponse({"success": False, "error": "required_label must be 80 characters or fewer"}, status=400)
+            mod.required_label = label
 
         mod.save()
 
@@ -1655,17 +1706,29 @@ def module_schedule_required_toggle_api(request, program_type, program_term):
     except ValueError:
         return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
     except Exception:
-        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=400)
+        logger.exception("module_schedule_required_toggle_api failed")
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
 
 @require_GET
 def module_schedule_preview_api(request, program_type, program_term):
+    """
+    JSON API endpoint to preview the list of active modules for a given timestamp.
+    Inputs: program_type (str), program_term (str) from the URL, GET parameter 'at' (ISO timestamp string).
+    Outputs: JSONResponse with a list of serialized modules valid at the given timestamp.
+    """
     prog = get_program_or_404(request, program_type, program_term)
 
     at_str = request.GET.get("at")
     if not at_str:
         return JsonResponse({"success": False, "error": "Missing 'at' parameter"}, status=400)
 
+    from django.utils import timezone
     at_dt = parse_datetime(at_str)
+    if at_dt is None:
+        return JsonResponse({"success": False, "error": "Invalid 'at' parameter"}, status=400)
+        
+    if timezone.is_aware(at_dt):
+        at_dt = timezone.make_naive(at_dt, timezone.get_current_timezone())
 
     # We bypass time filtering initially by using getModules(user=admin)
     all_modules = prog.getModules(user=request.user)
