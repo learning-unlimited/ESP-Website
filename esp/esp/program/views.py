@@ -1608,12 +1608,12 @@ def module_schedule_update_api(request, program_type, program_term):
 
         from esp.program.modules.base import ProgramModuleObj
         from django.utils import timezone
-        
+
         try:
             mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
         except ProgramModuleObj.DoesNotExist:
             return JsonResponse({"success": False, "error": "Module not found"}, status=404)
-            
+
         mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
 
         if "start_date" in data:
@@ -1627,7 +1627,7 @@ def module_schedule_update_api(request, program_type, program_term):
                 mod.start_date = dt
             else:
                 mod.start_date = None
-                
+
         if "end_date" in data:
             val = data["end_date"]
             if val:
@@ -1639,7 +1639,7 @@ def module_schedule_update_api(request, program_type, program_term):
                 mod.end_date = dt
             else:
                 mod.end_date = None
-                
+
         if "seq" in data:
             if mod_hydrated.seq_locked:
                 return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
@@ -1686,7 +1686,7 @@ def module_schedule_required_toggle_api(request, program_type, program_term):
             if not isinstance(data["required"], bool):
                 return JsonResponse({"success": False, "error": "required must be a boolean"}, status=400)
             mod.required = data["required"]
-            
+
         if "required_label" in data:
             label = data["required_label"]
             if not isinstance(label, str):
@@ -1726,7 +1726,7 @@ def module_schedule_preview_api(request, program_type, program_term):
     at_dt = parse_datetime(at_str)
     if at_dt is None:
         return JsonResponse({"success": False, "error": "Invalid 'at' parameter"}, status=400)
-        
+
     if timezone.is_aware(at_dt):
         at_dt = timezone.make_naive(at_dt, timezone.get_current_timezone())
 
