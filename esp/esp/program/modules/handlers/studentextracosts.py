@@ -101,11 +101,11 @@ class StudentExtraCosts(ProgramModuleObj):
         student_desc = {}
         pac = ProgramAccountingController(self.program)
         for line_item_type in pac.get_lineitemtypes(include_donations=False):
-            student_desc['extracosts_%d' % line_item_type.id] = """Students who have opted for '%s'""" % line_item_type.text
+            student_desc[f'extracosts_{line_item_type.id}'] = f"""Students who have opted for '{line_item_type.text}'"""
             for option in line_item_type.options:
                 (option_id, option_amount, option_description, has_custom_amt) = option
-                key = 'extracosts_%d_%d' % (line_item_type.id, option_id)
-                student_desc[key] = """Students who have opted for '%s' for '%s' ($%s)""" % (option_description, line_item_type.text, option_amount or line_item_type.amount_dec)
+                key = f'extracosts_{line_item_type.id}_{option_id}'
+                student_desc[key] = f"""Students who have opted for '{option_description}' for '{line_item_type.text}' (${option_amount or line_item_type.amount_dec})"""
         if self.program.sibling_discount:
             student_desc['sibling_discount'] = """Students who have opted for a sibling discount"""
 
@@ -122,12 +122,12 @@ class StudentExtraCosts(ProgramModuleObj):
             q_object = pac.all_transfers_Q(lineitemtype_id=i.id)
             students_q = nest_Q(q_object, 'transfer')
             if QObject:
-                student_lists['extracosts_%d' % i.id] = students_q
+                student_lists[f'extracosts_{i.id}'] = students_q
             else:
                 students = ESPUser.objects.filter(students_q).distinct()
-                student_lists['extracosts_%d' % i.id] = students
+                student_lists[f'extracosts_{i.id}'] = students
             for option in i.options:
-                key = 'extracosts_%d_%d' % (i.id, option[0])
+                key = f'extracosts_{i.id}_{option[0]}'
                 filter_qobject = Q(transfer__option=option[0])
                 if QObject:
                     student_lists[key] = students_q & filter_qobject
