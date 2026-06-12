@@ -38,7 +38,7 @@ from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.forms.generic_search_form import StudentSearchForm
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.program.models import StudentRegistration, PhaseZeroRecord, SplashInfo
 from django import forms
 
@@ -224,7 +224,7 @@ class UserAttributeGetter(object):
         if self.profile.student_info:
             dob = self.profile.student_info.dob
             if dob:
-                return '{:%Y-%m-%d}'.format(dob)
+                return f'{dob:%Y-%m-%d}'
 
     def get_gender(self):
         if self.profile.student_info:
@@ -264,13 +264,13 @@ class UserAttributeGetter(object):
     def get_class_application_2(self):
         responses = self.user.listAppResponses(self.program)
         if len(responses) > 1:
-            return str(responses[1].question.subject) + ':  ' + str(responses[0])
+            return str(responses[1].question.subject) + ':  ' + str(responses[1])
         else:
             return None
     def get_class_application_3(self):
         responses = self.user.listAppResponses(self.program)
         if len(responses) > 2:
-            return str(responses[2].question.subject) + ':  ' + str(responses[0])
+            return str(responses[2].question.subject) + ':  ' + str(responses[2])
         else:
             return None
 
@@ -441,7 +441,12 @@ class ListGenModule(ProgramModuleObj):
         if request.method == 'POST':
             data = self.processPost(request)
 
-            filterObj = usc.filter_from_postdata(prog, data)
+            try:
+                filterObj = usc.filter_from_postdata(prog, data)
+            except (ESPError_Log, ESPError_NoLog) as e:
+                context.update(usc.prepare_context(prog, target_path=request.path))
+                context['error'] = str(e)
+                return render_to_response(self.baseDir()+'search.html', request, context)
 
             #   Display list generation options filtered by recipient type
             #   If there is no receipient_type, we submitted a combo list
@@ -456,7 +461,7 @@ class ListGenModule(ProgramModuleObj):
             return render_to_response(self.baseDir()+'options.html', request, context)
 
         #   Otherwise, render a page that shows the list selection options
-        context.update(usc.prepare_context(prog, target_path='/manage/%s/selectList' % prog.url))
+        context.update(usc.prepare_context(prog, target_path=request.path))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     @aux_call
