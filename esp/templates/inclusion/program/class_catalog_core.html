@@ -49,19 +49,19 @@
     </div>
     
     <div class="class_footer_row">
-    <div class="row-fluid">
-        <div class="span6 class_meeting_times">
+    <div class="row">
+        <div class="col-md-6 class_meeting_times">
         {% if show_meeting_times %}
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
         {% for sec in class.get_sections %}
-           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}} <br />{% endif %}
+           {% if not sec.friendly_times|length == 0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}} <br />{% endif %}
           {% endfor %}
         <br />
         {% endif %}
       </div>
 
-      <div class="span6 class_grades">
+      <div class="col-md-6 class_grades">
          <strong>Grades</strong><br />
            <span class="gradelisting grademin" id="class_{{ class.id }}_grade_min">
            {% if not class.parent_program.incrementGrade %}
@@ -86,7 +86,7 @@
            {% for sec in class.get_sections %}
               {% with sec.isRegClosed as is_closed %}
               {% if is_closed %}<font color="#999999">(Closed) {% endif %}
-              {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {% if sec.isFull or is_closed %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% if sec.num_apps %} ({{ sec.num_apps }} applied){% endif %}{% endif %} (max {{ sec.capacity }})<br />{% endif %} 
+              {% if not sec.friendly_times|length == 0 %}Section {{ sec.index }}: {% if sec.isFull or is_closed %}<strong><font color="#990000">Full!</font></strong>{% else %}{{ sec.num_students }}{% if sec.num_apps %} ({{ sec.num_apps }} applied){% endif %}{% endif %} (max {{ sec.capacity }})<br />{% endif %} 
               {% if is_closed %}</font>{% endif %}
               {% endwith %}
            {% endfor %}

@@ -1,6 +1,6 @@
 <script>
 $j(document).ready(function() {
-    $j("#id_target_user").removeClass("span6");
+    $j("#id_target_user").removeClass("col-md-6");
 });
 </script>
 
@@ -29,6 +29,13 @@ $j(document).ready(function() {
 <div id="list_description_{{ item.name }}">{{ item.description }}</div>
 {% endfor %}{% endfor %}
 </div>
+
+{% if error %}
+<div class="alert alert-danger" id="form-error-message">
+    <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+    <strong>Error:</strong> {{ error }}
+</div>
+{% endif %}
 
 <div id="tabs">
     <ul>

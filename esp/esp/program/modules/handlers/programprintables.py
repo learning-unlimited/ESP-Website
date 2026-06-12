@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite
 from esp.program.modules.admin_search import AdminSearchEntry
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record, RecordType
-from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.models  import ClassSubject, ClassSection, StudentRegistration, PrintableJob
 from esp.program.models  import ClassFlagType
 from esp.program.class_status import ClassStatus
 from esp.users.views     import search_for_user
@@ -65,8 +65,23 @@ import collections
 import copy
 import csv
 import json
+import traceback
+import sys
+import os
+import zipfile
+import tempfile
+import mimetypes
+import math
+from itertools import groupby
+from PIL import Image
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from numpy import array_split
+
+# Define a thread pool for background PDF generation jobs
+# Throttling to 4 concurrent jobs to avoid exhausting server resources
+printable_job_executor = ThreadPoolExecutor(max_workers=4)
 
 class ProgramPrintables(ProgramModuleObj):
     doc = """A wide variety of printable documents that are useful for a program."""
@@ -410,7 +425,7 @@ class ProgramPrintables(ProgramModuleObj):
         flag_types = ClassFlagType.get_flag_types(program=prog).order_by("seq")
 
         for cls in classes:
-            flags = cls.flags.all()
+            flags = cls.flags.filter(resolved=False)
             type_dict = {}
             for flag in flags:
                 if flag.flag_type in type_dict:
@@ -644,8 +659,9 @@ class ProgramPrintables(ProgramModuleObj):
                 class_objects = teacher.getTaughtSections(self.program)
             else:
                 class_objects = teacher.getModeratingSectionsFromProgram(self.program)
-            classes = sorted([ cls for cls in class_objects
-                    if cls.isAccepted() and cls.meeting_times.exists() ])
+            classes = [ cls for cls in class_objects.select_related('parent_class').prefetch_related('meeting_times')
+                    if cls.isAccepted() and cls.meeting_times.all() ]
+            classes.sort(key=lambda s: s._sort_key())
             # now we sort them by time/title
 
             if  extra and 'secondday' in extra:
@@ -883,13 +899,13 @@ class ProgramPrintables(ProgramModuleObj):
                 class_objects = teacher.getModeratingSectionsFromProgram(self.program)
 
             # Prefetch meeting_times to avoid N+1 queries during sort-by-time
-            class_objects = class_objects.prefetch_related('meeting_times')
+            class_objects = class_objects.select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
 
-            classes = sorted([cls for cls in class_objects
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-
+            classes = [cls for cls in class_objects
+                    if cls.meeting_times.all()
+                    and cls.resourceassignment_set.all()
+                    and cls.status > 0]
+            classes.sort(key=lambda s: s._sort_key())
             # now we sort them by time/title
             for cls in classes:
                 if role_teachers and role_moderators:
@@ -1081,8 +1097,9 @@ class ProgramPrintables(ProgramModuleObj):
     @staticmethod
     def get_student_classlist(program, student, verbs = ['Enrolled'], valid_only = True):
         # get list of valid classes
-        classes = [ cls for cls in student.getSections(program = program, verbs = verbs, valid_only = valid_only)]
-        classes = sorted([ cls for cls in classes if cls.isAccepted() ])
+        classes = [ cls for cls in student.getSections(program = program, verbs = verbs, valid_only = valid_only).select_related('parent_class').prefetch_related('meeting_times')]
+        classes = [ cls for cls in classes if cls.isAccepted() ]
+        classes.sort(key=lambda s: s._sort_key())
         return classes
 
     @staticmethod
@@ -1090,12 +1107,13 @@ class ProgramPrintables(ProgramModuleObj):
         # get list of valid classes
         classes = []
         if teaching:
-            classes += [ cls for cls in teacher.getTaughtSectionsFromProgram(program)]
+            classes += [ cls for cls in teacher.getTaughtSectionsFromProgram(program).select_related('parent_class').prefetch_related('meeting_times')]
         if moderating:
-            classes += [ cls for cls in teacher.getModeratingSectionsFromProgram(program)]
-        classes = sorted([ cls for cls in classes
-                    if cls.meeting_times.exists()
-                    and cls.status >= 0 ])
+            classes += [ cls for cls in teacher.getModeratingSectionsFromProgram(program).select_related('parent_class').prefetch_related('meeting_times')]
+        classes = [ cls for cls in classes
+                    if cls.meeting_times.all()
+                    and cls.status >= 0 ]
+        classes.sort(key=lambda s: s._sort_key())
 
         scheditems = []
         for cls in classes:
@@ -1259,6 +1277,59 @@ class ProgramPrintables(ProgramModuleObj):
             students = list(ESPUser.objects.filter(filterObj.get_Q(restrict_to_active=False)).distinct())
 
         students.sort()
+        if len(students) > 1 and file_type == 'pdf' and not onsite:
+            from django.http import HttpResponseRedirect
+            from django.db import close_old_connections
+
+            active_jobs = PrintableJob.objects.filter(
+                program=prog, user=request.user, job_type='student schedules',
+                status__in=['PENDING', 'PROCESSING']
+            )
+            if active_jobs.exists():
+                return HttpResponseRedirect('/manage/%s/printable_job_status/%s/' % (prog.url, active_jobs.first().id))
+
+            job = PrintableJob.objects.create(
+                program=prog,
+                user=request.user,
+                job_type='student schedules'
+            )
+            def run_job(job_id, student_ids, prog_id, file_type):
+                close_old_connections()
+                try:
+                    job = PrintableJob.objects.get(id=job_id)
+                    job.status = 'PROCESSING'
+                    job.save()
+
+                    from esp.program.models import Program
+                    prog = Program.objects.get(id=prog_id)
+                    students = list(ESPUser.objects.filter(id__in=student_ids))
+                    students.sort()
+                    class DummyRequest:
+                        pass
+                    dummy_req = DummyRequest()
+                    dummy_req.GET = {}
+                    dummy_req.session = {}
+                    dummy_req.user = job.user
+                    response = ProgramPrintables.get_student_schedules(dummy_req, students, prog, file_type, False)
+                    pdf_content = response.content
+                    from django.core.files.base import ContentFile
+                    filename = "studentschedules_%s_%s.pdf" % (prog.url, job.id)
+                    job.file.save(filename, ContentFile(pdf_content))
+                    job.status = 'COMPLETED'
+                    job.save()
+                except Exception as e:
+                    import traceback
+                    job = PrintableJob.objects.get(id=job_id)
+                    job.status = 'FAILED'
+                    job.error_message = traceback.format_exc()
+                    job.save()
+                finally:
+                    close_old_connections()
+
+            student_ids = [s.id for s in students]
+            printable_job_executor.submit(run_job, job.id, student_ids, prog.id, file_type)
+            return HttpResponseRedirect('/manage/%s/printable_job_status/%s/' % (prog.url, job.id))
+
         return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
 
     @staticmethod
@@ -1439,9 +1510,10 @@ class ProgramPrintables(ProgramModuleObj):
 
         for student in students:
             # get list of valid classes
-            classes = sorted([ cls for cls in student.getEnrolledSections()
+            classes = [ cls for cls in student.getEnrolledSections().select_related('parent_class__parent_program').prefetch_related('meeting_times')
                     if cls.parent_program == self.program
-                    and cls.isAccepted()                       ])
+                    and cls.isAccepted()                       ]
+            classes.sort(key=lambda s: s._sort_key())
             # now we sort them by time/title
 
             for cls in classes:
@@ -1454,6 +1526,36 @@ class ProgramPrintables(ProgramModuleObj):
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
 
         return render_to_response(self.baseDir()+'flatstudentschedule.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def printable_job_status(self, request, tl, one, two, module, extra, prog):
+        """ Displays the status of an asynchronous PrintableJob, and downloads it when completed """
+        import mimetypes
+        import os
+        from wsgiref.util import FileWrapper
+        from django.core.exceptions import ValidationError
+        from django.http import HttpResponse, HttpResponseRedirect
+        try:
+            job = PrintableJob.objects.get(id=extra, program=prog)
+        except (PrintableJob.DoesNotExist, ValueError, ValidationError):
+            raise ESPError("Job not found.")
+        if job.status == 'COMPLETED' and job.file and request.GET.get('download'):
+            job.file.open('rb')
+            content_type = mimetypes.guess_type(job.file.name)[0] or 'application/octet-stream'
+            response = HttpResponse(FileWrapper(job.file), content_type=content_type)
+            response['Content-Disposition'] = 'attachment; filename="%s"' % os.path.basename(job.file.name)
+            try:
+                response['Content-Length'] = job.file.size
+            except (AttributeError, IOError, OSError):
+                pass
+            return response
+        context = {
+            'module': self,
+            'job': job,
+            'program': prog
+        }
+        return render_to_response('program/modules/programprintables/job_status.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1925,7 +2027,11 @@ class ProgramPrintables(ProgramModuleObj):
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
-        sections = sorted(self.program.sections().filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED))
+        sections = list(self.program.sections().filter(
+            status=ClassStatus.ACCEPTED,
+            parent_class__status=ClassStatus.ACCEPTED,
+        ).select_related('parent_class').prefetch_related('meeting_times'))
+        sections.sort(key=lambda s: s._sort_key())
 
         rooms = {}
 
