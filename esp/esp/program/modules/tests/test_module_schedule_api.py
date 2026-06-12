@@ -25,26 +25,29 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         self.past = self.now - timedelta(days=1)
         self.future = self.now + timedelta(days=1)
 
-        # Base url for our API endpoints
-        self.base_url = f"/manage/{self.program.program_type}/{self.program.program_instance}/module_schedule"
+        # Kwargs for URL resolution
+        self.url_kwargs = {
+            'program_type': self.program.program_type,
+            'program_term': self.program.program_instance
+        }
 
     def test_module_schedule_api_auth(self):
         """Only admins can access the schedule API."""
-        response = self.client.get(self.base_url + "/")
+        response = self.client.get(reverse("module_schedule_api", kwargs=self.url_kwargs))
         self.assertEqual(response.status_code, 403) # PermissionDenied returns 403
 
         self.client.force_login(self.student)
-        response = self.client.get(self.base_url + "/")
+        response = self.client.get(reverse("module_schedule_api", kwargs=self.url_kwargs))
         self.assertEqual(response.status_code, 403)
 
         self.client.force_login(self.admin)
-        response = self.client.get(self.base_url + "/")
+        response = self.client.get(reverse("module_schedule_api", kwargs=self.url_kwargs))
         self.assertEqual(response.status_code, 200)
 
     def test_module_schedule_api_get(self):
         """GET returns grouped modules."""
         self.client.force_login(self.admin)
-        response = self.client.get(self.base_url + "/")
+        response = self.client.get(reverse("module_schedule_api", kwargs=self.url_kwargs))
         self.assertEqual(response.status_code, 200)
 
         data = json.loads(response.content)
@@ -72,7 +75,7 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         }
 
         response = self.client.post(
-            self.base_url + "/update/",
+            reverse("module_schedule_update_api", kwargs=self.url_kwargs),
             data=json.dumps(payload),
             content_type="application/json"
         )
@@ -97,7 +100,7 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         }
 
         response = self.client.post(
-            self.base_url + "/update/",
+            reverse("module_schedule_update_api", kwargs=self.url_kwargs),
             data=json.dumps(payload),
             content_type="application/json"
         )
@@ -116,7 +119,7 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         }
 
         response = self.client.post(
-            self.base_url + "/required_toggle/",
+            reverse("module_schedule_required_toggle_api", kwargs=self.url_kwargs),
             data=json.dumps(payload),
             content_type="application/json"
         )
@@ -135,7 +138,8 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         self.client.force_login(self.admin)
 
         # Now (active)
-        response = self.client.get(self.base_url + f"/preview/?at={self.now.isoformat()}")
+        url = reverse("module_schedule_preview_api", kwargs=self.url_kwargs) + f"?at={self.now.isoformat()}"
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
 
@@ -148,7 +152,8 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
 
         # Way past (inactive)
         way_past = self.past - timedelta(days=5)
-        response = self.client.get(self.base_url + f"/preview/?at={way_past.isoformat()}")
+        url = reverse("module_schedule_preview_api", kwargs=self.url_kwargs) + f"?at={way_past.isoformat()}"
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
 
