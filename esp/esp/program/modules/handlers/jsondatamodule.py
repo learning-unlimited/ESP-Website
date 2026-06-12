@@ -38,6 +38,7 @@ from collections import defaultdict
 from datetime import datetime
 import operator
 
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
@@ -408,7 +409,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'requested_room': cls.requested_room,
                 'comments': cls.message_for_directors,
                 'special_requests': cls.requested_special_resources,
-                'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
+                'flags': ', '.join(cls.flags.filter(resolved=False).values_list('flag_type__name', flat=True)),
             }
             sections.append(section)
             section['index'] = s.index()
@@ -627,7 +628,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=300)
+    @method_decorator(cache_control(public=True, max_age=300))
     @json_response()
     @cached_module_view
     def class_info(self, request, tl, one, two, module, extra, prog):
@@ -690,7 +691,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=300)
+    @method_decorator(cache_control(public=True, max_age=300))
     @json_response()
     def class_size_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
@@ -738,7 +739,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     # This is separate from class_info because students shouldn't see it
     @aux_call
-    @cache_control(public=True, max_age=30)
+    @method_decorator(cache_control(public=True, max_age=30))
     @json_response()
     @needs_admin
     def class_admin_info(self, request, tl, one, two, module, extra, prog):
@@ -812,7 +813,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'comments': cls.message_for_directors,
             'special_requests': cls.requested_special_resources,
             'purchases': cls.purchase_requests,
-            'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
+            'flags': ', '.join(cls.flags.filter(resolved=False).values_list('flag_type__name', flat=True)),
         }
 
         return {return_key: [return_dict]}
@@ -858,7 +859,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         classes = prog.classes().select_related()
         flags_num_list = []
         for ft in ClassFlagType.get_flag_types(prog):
-            flags_num_list.append(('Total # of Classes with the <i><span style="color: %s;">%s</span></i> flag' % (ft.color, ft.name), classes.filter(flags__flag_type=ft).distinct().count()))
+            flags_num_list.append(('Total # of Classes with the <i><span style="color: %s;">%s</span></i> flag' % (ft.color, ft.name), classes.filter(flags__flag_type=ft, flags__resolved=False).distinct().count()))
         return flags_num_list
     flags_nums.depend_on_row(ClassFlag, lambda flag: {'prog': flag.subject.parent_program})
     flags_nums = staticmethod(flags_nums)
