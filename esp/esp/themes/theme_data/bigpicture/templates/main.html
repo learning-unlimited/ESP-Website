@@ -20,11 +20,9 @@
 {% block navbar %}{% include "navbar.html" %}{% endblock navbar%}
 {% endcomment %}
 {% block navbar %}
-<div class="navbar">
-  <div class="navbar-inner">
-    {% include "users/loginbox_content.html" %}
-  </div>
-</div>
+<nav class="navbar">
+  {% include "users/loginbox_content.html" %}
+</nav>
 {% endblock navbar%}
 
 {% block heading %}
@@ -81,13 +79,13 @@
 <div class="container">
   <div class="row">
     {% block sidebar %}
-    <div id="sidebar" class="span3">
+    <div id="sidebar" class="col-md-3">
       {% include "sidebar/nav.html" %}
       {% include "sidebar/admin.html" %}
     </div>
     {% endblock %}
 
-    <main id="main" class="span9 resizable" tabindex="-1">
+    <main id="main" class="col-md-9 resizable" tabindex="-1">
       {% if request.COOKIES.esp_testing_role %}
       <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
         <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;

@@ -14,10 +14,10 @@ Context variables injected by the tag:
   extra_steps   -- QSD key for the extra-steps inline block
 {% endcomment %}
 {% if modules %}
-{% ifequal scrmi.progress_mode 1 %}
+{% if scrmi.progress_mode == 1 %}
 {% include "program/modules/checkboxes.html" %}
-{% endifequal %}
-{% ifequal scrmi.progress_mode 2 %}
+{% endif %}
+{% if scrmi.progress_mode == 2 %}
 {% include "program/modules/progressbar.html" %}
-{% endifequal %}
+{% endif %}
 {% endif %}

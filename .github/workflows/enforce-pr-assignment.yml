@@ -52,14 +52,15 @@ jobs:
               }
             }
 
-            if (permission === 'admin' || permission === 'maintain') {
-              console.log('PR author is admin/maintainer — skipping check.');
+            if (permission === 'admin' || permission === 'maintain' || permission === 'write') {
+              console.log('PR author has write access or above — skipping check.');
               return;
             }
 
-            // Exempt PRs opened by GitHub Copilot
-            if (prAuthor === 'copilot[bot]') {
-              console.log('PR author is Copilot — skipping check.');
+            // Exempt PRs opened by GitHub bots (Copilot, Dependabot, etc.)
+            const exemptLogins = ['Copilot', 'copilot[bot]', 'copilot-swe-agent[bot]', 'dependabot[bot]'];
+            if (exemptLogins.includes(prAuthor)) {
+              console.log(`PR author @${prAuthor} is an exempt bot — skipping check.`);
               return;
             }
 
