@@ -138,6 +138,16 @@ class StudentRegSettingsForm(BetterModelForm):
 
 class TeacherEmailRulesForm(BetterModelForm):
     """ Form for per-program teacher email validation rules (Issue #3639). """
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('enabled'):
+            if not cleaned_data.get('allowed_domains', '').strip() and not cleaned_data.get('regex_pattern', '').strip():
+                raise forms.ValidationError(
+                    'When teacher email rules are enabled, you must specify at least one '
+                    'allowed domain or a regex pattern.'
+                )
+        return cleaned_data
+
     class Meta:
         fieldsets = [
             ('Teacher Email Rules', {

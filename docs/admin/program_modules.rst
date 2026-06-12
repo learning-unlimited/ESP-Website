@@ -31,12 +31,8 @@ You will also see references to other data structures that store configuration s
 
 * [Teacher] module control (ClassRegModuleInfo): http://[hostname]/admin/modules/classregmoduleinfo/
 * Student module control (StudentClassRegModuleInfo): http://[hostname]/admin/modules/studentclassregmoduleinfo/
-<<<<<<< HEAD
 * Teacher Email Rules: Configured per program under **Manage → [program] → Settings → Teacher Email Rules**. See :ref:`teacher-email-rules` below.
-* Tags: http://[hostname]/admin/tagdict/tag/ - Very powerful, but more advanced; see [[Customize behavior with Tags]] for more information.
-=======
 * Tags: http://[hostname]/admin/tagdict/tag/ - Very powerful, but more advanced; see `Customizing with Tags <tags.rst>`_ for more information.
->>>>>>> origin/main
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 

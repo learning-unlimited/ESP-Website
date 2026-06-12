@@ -87,11 +87,8 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
         # Per-program teacher email validation (Issue #3639)
         if (self.profile_role == 'teacher' and self.program and 'e_mail' in self.cleaned_data):
             email = self.cleaned_data.get('e_mail', '')
-            try:
-                rules = TeacherEmailRules.objects.get(program=self.program)
-            except TeacherEmailRules.DoesNotExist:
-                rules = None
-            if rules:
+            rules = TeacherEmailRules.get_for_program(self.program)
+            if rules and rules.enabled:
                 is_valid, message, is_warning = rules.validate_teacher_email(email)
                 if not is_valid:
                     logger.info(

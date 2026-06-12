@@ -1683,7 +1683,20 @@ class RegistrationProfile(models.Model):
                         regProf.id = None
                     # otherwise, it was a profile without a program,
                     # and we can just associate it with this program now, so just save
-                    regProf.save()
+                    elif regProf.teacher_info is not None:
+                        from esp.program.modules.module_ext import TeacherEmailRules
+                        rules = TeacherEmailRules.get_for_program(program)
+                        email = ''
+                        if regProf.contact_user and regProf.contact_user.e_mail:
+                            email = regProf.contact_user.e_mail
+                        elif user.email:
+                            email = user.email
+                        if rules and rules.requires_profile_confirmation(email):
+                            regProf.id = None
+                        else:
+                            regProf.save()
+                    else:
+                        regProf.save()
         else:
             regProf = regProfList[0]
         return regProf

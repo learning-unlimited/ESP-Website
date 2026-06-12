@@ -305,6 +305,23 @@ class TeacherEmailRules(models.Model):
     def __str__(self):
         return 'Teacher email rules for %s' % str(self.program)
 
+    @classmethod
+    def get_for_program(cls, program):
+        try:
+            return cls.objects.get(program=program)
+        except cls.DoesNotExist:
+            return None
+
+    def requires_profile_confirmation(self, email):
+        """
+        Return True when enabled rules require the teacher to visit the profile
+        form instead of auto-inheriting a prior profile (block or warn on mismatch).
+        """
+        if not self.enabled or not (email or '').strip():
+            return False
+        is_valid, _, is_warning = self.validate_teacher_email(email)
+        return (not is_valid) or is_warning
+
     def validate_teacher_email(self, email):
         """
         Validate a teacher email against this program's rules.
