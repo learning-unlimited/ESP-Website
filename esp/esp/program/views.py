@@ -1685,8 +1685,9 @@ def module_schedule_required_toggle_api(request, program_type, program_term):
             label = data["required_label"]
             if not isinstance(label, str):
                 return JsonResponse({"success": False, "error": "required_label must be a string"}, status=400)
-            if len(label) > 80:
-                return JsonResponse({"success": False, "error": "required_label must be 80 characters or fewer"}, status=400)
+            max_len = ProgramModuleObj._meta.get_field('required_label').max_length
+            if len(label) > max_len:
+                return JsonResponse({"success": False, "error": f"required_label must be {max_len} characters or fewer"}, status=400)
             mod.required_label = label
 
         mod.save()
