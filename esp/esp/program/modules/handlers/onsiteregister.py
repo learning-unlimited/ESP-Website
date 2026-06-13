@@ -89,7 +89,7 @@ class OnSiteRegister(ProgramModuleObj):
                             student_info.k12school = K12School.objects.get(id=int(new_data['k12school']))
                         else:
                             student_info.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
-                except:
+                except (K12School.DoesNotExist, ValueError, IndexError):
                     student_info.k12school = None
                 student_info.school = new_data['school'] if not student_info.k12school else student_info.k12school.name
 
@@ -120,7 +120,7 @@ class OnSiteRegister(ProgramModuleObj):
 
                 return render_to_response(self.baseDir()+'reg_success.html', request, {
                     'student': new_user,
-                    'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
+                    'retUrl': f'/onsite/{self.program.getUrlBase()}/classchange_grid?student_id={new_user.id}'
                     })
 
         else:

@@ -1,6 +1,20 @@
 // "Base" variables that can be modified using the theme editor
 // ------------------------------------------------------------
 
+// Override Bootstrap 3's relative font path so glyphicons resolve correctly
+// when CSS is served from /media/styles/ (../fonts/ would be /media/fonts/).
+@icon-font-path: "/media/theme_editor/fonts/";
+
+// Gray scale (these were in Bootstrap 2's variables.less; kept here for
+// backward compatibility with theme LESS files that reference them)
+@black:                 #000;
+@grayDarker:            #222;
+@grayDark:              #333;
+@gray:                  #555;
+@grayLight:             #999;
+@grayLighter:           #eee;
+@white:                 #fff;
+
 @bodyBackground:            #fff;
 @contentBackground:         #fff;
 @heroUnitBackground:        #eee;
@@ -9,6 +23,9 @@
 @titleColor:                #333;
 @linkColor:                 #08c;
 @linkColorHover:            #07a;
+// Bridge to Bootstrap 3 kebab-case variables so @linkColor controls a { color }
+@link-color:                @linkColor;
+@link-hover-color:          @linkColorHover;
 @baseFontSize:              13px;
 @sansFontFamily:            "Helvetica Neue", Helvetica, Arial, sans-serif;
 @navbarBackground:          #222;
@@ -18,9 +35,9 @@
 @navbarLinkColorHover:      #fff;
 @navbarInverseBackground:                #111111;
 @navbarInverseBackgroundHighlight:       #222222;
-@navbarInverseText:                      @grayLight;
-@navbarInverseLinkColor:                 @grayLight;
-@navbarInverseLinkColorHover:            @white;
+@navbarInverseText:                      #999;
+@navbarInverseLinkColor:                 #999;
+@navbarInverseLinkColorHover:            #fff;
 @navbarInverseBrandColor:                @navbarInverseLinkColor;
 @navbarBrandFontSize:       24px;
 @sidebarText:               #999;
@@ -37,6 +54,19 @@
 @btnPrimaryLinkColor:       #fff;
 @btnInverseBackground:      #555;
 @btnInverseLinkColor:       #fff;
-@iconSpritePath:          "/media/theme_editor/img/glyphicons-halflings.png";
-@iconWhiteSpritePath:     "/media/theme_editor/img/glyphicons-halflings-white.png";
 @navbarCollapseWidth:             979px;
+
+// Bridge BS2 button variable names to the BS3 equivalents so the theme
+// editor's button color pickers actually affect rendered buttons.
+@btn-default-bg:            @btnBackground;
+@btn-default-color:         @btnLinkColor;
+@btn-default-border:        darken(@btnBackground, 12%);
+@btn-primary-bg:            @btnPrimaryBackground;
+@btn-primary-color:         @btnPrimaryLinkColor;
+@btn-primary-border:        darken(@btnPrimaryBackground, 5%);
+
+// Bootstrap 2 variables that are not in Bootstrap 3 but are used in theme
+// LESS files; defined here so themes continue to compile under Bootstrap 3.
+@navbarCollapseDesktopWidth:      980px;
+@baseLineHeight:                  20px;
+@dropdownLinkColor:               #333;

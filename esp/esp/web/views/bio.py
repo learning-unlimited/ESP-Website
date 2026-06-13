@@ -32,42 +32,33 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from django.core.files.base import ContentFile
-
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response
-from django.http          import HttpResponseRedirect, HttpResponsePermanentRedirect
+from django.http          import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from datetime             import datetime
 from django.conf import settings
+import os
 
 @login_required
-def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, username=''):
+def bio_edit(request, tl='', username='', progid=None):
     """ Edits a teacher bio, given user and program identification information """
 
-    old_url = False
     try:
         if tl == '':
             founduser = request.user
         else:
-            if username != '':
-                founduser = ESPUser.objects.get(username=username)
-                old_url = (tl != 'teach')
-            else:
-                founduser = ESPUser.getUserFromNum(first, last, usernum)
-                old_url = True
-    except:
+            founduser = ESPUser.objects.get(username=username)
+    except ESPUser.DoesNotExist:
         return bio_not_found(request)
 
     foundprogram = get_from_id(progid, Program, 'program', False)
 
-    return bio_edit_user_program(request, founduser, foundprogram,
-                                 old_url=old_url)
+    return bio_edit_user_program(request, founduser, foundprogram)
 
 @login_required
-def bio_edit_user_program(request, founduser, foundprogram, external=False,
-                          old_url=False):
+def bio_edit_user_program(request, founduser, foundprogram, external=False):
     """ Edits a teacher bio, given user and program """
 
     if founduser is None or not founduser.isTeacher():
@@ -80,14 +71,36 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
 
     lastbio      = TeacherBio.getLastBio(founduser)
 
-    if old_url:
-        # TODO(benkraft): after these URLs have been redirecting for a while,
-        # remove them.
-        return HttpResponsePermanentRedirect(lastbio.edit_url())
 
     # if we submitted a newly edited bio...
     from esp.web.forms.bioedit_form import BioEditForm
+    if request.method == 'POST' and 'remove_picture_btn' in request.POST:
+        if foundprogram is not None:
+            progbio = TeacherBio.getLastForProgram(founduser, foundprogram)
+        else:
+            progbio = lastbio
+
+        if progbio.picture:
+            progbio.picture.delete()
+            progbio.picture = None
+            progbio.save()
+
+        return HttpResponseRedirect(request.path)
+
     if request.method == 'POST' and 'bio_submitted' in request.POST:
+        # Check for removal button first
+        if 'remove_picture_btn' in request.POST:
+            if lastbio.picture:
+                old_path = os.path.join(settings.MEDIA_ROOT, lastbio.picture.name)
+                if os.path.isfile(old_path):
+                    try:
+                        os.remove(old_path)
+                    except OSError:
+                        pass
+                lastbio.picture = None
+                lastbio.save()
+            return HttpResponseRedirect(request.path)
+
         form = BioEditForm(request.POST, request.FILES)
 
         if form.is_valid():
@@ -103,11 +116,24 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
             progbio.bio      = form.cleaned_data['bio']
 
             progbio.save()
-            # save the image
-            if form.cleaned_data['picture'] is not None:
-                progbio.picture = form.cleaned_data['picture']
+
+            # Handle picture updates
+            new_picture = form.cleaned_data.get('picture')
+
+            if new_picture is not None:
+                # Delete old file if it exists
+                if lastbio.picture:
+                    old_path = os.path.join(settings.MEDIA_ROOT, lastbio.picture.name)
+                    if os.path.isfile(old_path):
+                        try:
+                            os.remove(old_path)
+                        except OSError:
+                            pass # File might be already gone or permission error
+
+                progbio.picture = new_picture
             else:
                 progbio.picture = lastbio.picture
+
             progbio.save()
             if external:
                 return True
@@ -131,22 +157,17 @@ def bio_not_found(request, user=None, edit_url=None):
     response.status_code = 404
     return response
 
-def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
+def bio(request, tl, username=''):
     """ Displays a teacher bio """
 
     try:
-        if username != '':
-            founduser = ESPUser.objects.get(username=username)
-            old_url = (tl != 'teach')
-        else:
-            founduser = ESPUser.getUserFromNum(first, last, usernum)
-            old_url = True
-    except:
+        founduser = ESPUser.objects.get(username=username)
+    except ESPUser.DoesNotExist:
         return bio_not_found(request)
 
-    return bio_user(request, founduser, old_url)
+    return bio_user(request, founduser)
 
-def bio_user(request, founduser, old_url=False):
+def bio_user(request, founduser):
     """ Display a teacher bio for a given user """
 
     if (not founduser or not founduser.is_active or not founduser.isTeacher()):
@@ -155,11 +176,6 @@ def bio_user(request, founduser, old_url=False):
     teacherbio = TeacherBio.getLastBio(founduser)
     if teacherbio.hidden:
         return bio_not_found(request, founduser, teacherbio.edit_url())
-
-    if old_url:
-        # TODO(benkraft): after these URLs have been redirecting for a while,
-        # remove them.
-        return HttpResponsePermanentRedirect(teacherbio.url())
 
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'
@@ -191,4 +207,6 @@ def bio_user(request, founduser, old_url=False):
                                'classes': classes,
                                'recent_classes': recent_classes,
                                'institution': settings.INSTITUTION_NAME})
+
+
 

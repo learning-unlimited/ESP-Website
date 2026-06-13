@@ -67,10 +67,12 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = sorted([cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
+            sections_qs = teacher.getTaughtSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
+            classes = [cls for cls in sections_qs
+                    if cls.meeting_times.all()
+                    and cls.resourceassignment_set.all()
+                    and cls.status > 0]
+            classes.sort(key=lambda s: s._sort_key())
             for cls in classes:
                 scheditems.append({'name': teacher.name(),
                                    'teacher': teacher,
@@ -100,10 +102,12 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
+            sections_qs = teacher.getTaughtOrModeratingSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
+            classes = [cls for cls in sections_qs
+                    if cls.meeting_times.all()
+                    and cls.resourceassignment_set.all()
+                    and cls.status > 0]
+            classes.sort(key=lambda s: s._sort_key())
             for cls in classes:
                 if teacher in cls.parent_class.get_teachers():
                     role = 'Teacher'
@@ -138,10 +142,12 @@ class TeacherPreviewModule(ProgramModuleObj):
             else:
                 teacher = request.user
             scheditems = []
-            classes = sorted([cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
+            sections_qs = teacher.getModeratingSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
+            classes = [cls for cls in sections_qs
+                    if cls.meeting_times.all()
+                    and cls.resourceassignment_set.all()
+                    and cls.status > 0]
+            classes.sort(key=lambda s: s._sort_key())
             for cls in classes:
                 scheditems.append({'name': teacher.name(),
                                    'teacher': teacher,
@@ -171,7 +177,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         try:
             qs = ClassSubject.objects.filter(id=int(extra))
             cls = qs[0]
-        except (ValueError, IndexError):
+        except (ValueError, IndexError, TypeError):
             raise Http404('The requested class could not be found.')
         cls = ClassSubject.objects.catalog(cls.parent_program, force_all=True, initial_queryset=qs)[0]
         return render_to_response(self.baseDir()+'catalogpreview.html', request, {'class': cls})

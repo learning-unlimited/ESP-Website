@@ -8,7 +8,7 @@ Note: The website has two different facilities for working with student applicat
 
 Eventually, this module may support multiple backends for application forms, including custom forms on the website. For now, the only supported backend is Formstack_, a third party form builder. To use, create an application form to your liking using Formstack, then integrate it with the website as described below.
 
-.. _Formstack: http://www.formstack.com/
+.. _Formstack: https://www.formstack.com/
 
 Deployment Instructions
 =======================
@@ -17,7 +17,7 @@ Before using this code, a webmaster should have done all of the following:
 
 * Run migrations for the esp.application app
 * Install the new program modules (esp.program.modules.models.install)
-* Copy media/default_styles/admissions.css to media/styles/
+* Ensure media/styles/admissions.css exists
 
 Formstack Form Setup Instructions
 =================================
@@ -30,7 +30,7 @@ The dropdown fields for class choices should include an option for each class in
 
 Finally, go to the form settings in Formstack and add a webhook_ to http://WEBSITE_URL/formstack_webhook (where WEBSITE_URL is, for example, esp.mit.edu or stanfordesp.org or splashchicago.learningu.org). This will notify the website whenever the form is submitted, so that the database stays in sync.
 
-.. _webhook: http://blog.formstack.com/2010/create-live-connections-for-your-web-forms-with-webhooks/
+.. _webhook: https://blog.formstack.com/2010/create-live-connections-for-your-web-forms-with-webhooks/
 
 Program Setup Instructions
 ==========================
