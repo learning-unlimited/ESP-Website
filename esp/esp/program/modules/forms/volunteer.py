@@ -121,7 +121,7 @@ class VolunteerOfferForm(forms.Form):
 
         super().__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
-        self.fields['requests'].choices = [(v.id, '%s: %s (%s more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, positive_or_no(v.num_volunteers - v.num_offers()))) for v in vrs]
+        self.fields['requests'].choices = [(v.id, f'{v.timeslot.pretty_time()}: {v.timeslot.description} ({positive_or_no(v.num_volunteers - v.num_offers())} more needed)') for v in vrs]
         self.fields['shirt_size'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('volunteer_shirt_sizes').split(',')]
         self.fields['shirt_type'].choices = [('', '')]+[(x.strip(), x.strip()) for x in Tag.getTag('shirt_types').split(',')]
 

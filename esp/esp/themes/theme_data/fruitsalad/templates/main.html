@@ -72,6 +72,7 @@
 {% endblock %}
 
 {% block body %}
+<a href="#content" class="skip-nav">Skip to main content</a>
 <link rel="stylesheet" type="text/css" href="/media/styles/admin_bar.css">
 <div id="adminbar" class="admin hidden" style="position: fixed !important">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
@@ -197,7 +198,7 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
       {% navbar_gen request.path None navbar_list %}
       {% endblock %}
 
-      <div id="content">
+      <main id="content" tabindex="-1">
           {% if request.COOKIES.esp_testing_role %}
           <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
             <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
@@ -234,13 +235,24 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
             &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
           </div>
           {% endif %}
+          {% if active_global_tags %}
+          <div class="alert alert-info alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <strong>Admin notice:</strong>
+            This site has {{ active_global_tags|length }} custom global tag{{ active_global_tags|length|pluralize }} configured that may be modifying page behavior:
+            {% for tag in active_global_tags %}
+              <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+            {% endfor %}
+            &mdash; <a href="{{ active_global_tags_url }}" class="alert-link">View tag settings</a>
+          </div>
+          {% endif %}
         {% if messages %}
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }}">{{ message }}</div>
         {% endfor %}
         {% endif %}
         {% block content %}{% endblock %}
-      </div>
+      </main>
       <!--[if lte IE 6]>
       <div id="ie6_warning">
 <p>You're using a really old Web browser!  This site will look a lot better if you <a href="http://www.microsoft.com/windows/internet-explorer/">upgrade</a>.</p>
