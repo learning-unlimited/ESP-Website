@@ -565,21 +565,8 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
     <script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
     <script type="text/javascript">
     $j(function () {
-      var $accordion = $j('#theme_editor_accordion');
-      $accordion.find('.collapse.in').removeClass('in').addClass('show');
-      $accordion.on('click', '.card-header button[data-target]', function (e) {
-        e.preventDefault();
-        var $btn = $j(this);
-        var $panel = $j($btn.data('target'));
-        if (!$panel.length) return;
-        var willShow = !$panel.hasClass('show');
-        $accordion.find('.collapse.show').removeClass('show');
-        $accordion.find('.card-header button[data-target]').addClass('collapsed').attr('aria-expanded', 'false');
-        if (willShow) {
-          $panel.addClass('show');
-          $btn.removeClass('collapsed').attr('aria-expanded', 'true');
-        }
-      });
+      // BS3→BS4 class migration only; accordion toggling is handled by Bootstrap collapse.
+      $j('#theme_editor_accordion').find('.collapse.in').removeClass('in').addClass('show');
     });
     </script>
 {% endblock %}
