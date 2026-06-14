@@ -329,6 +329,10 @@ class Answer(models.Model):
             from django.core.exceptions import ValidationError
             raise ValidationError("Both parts of the GenericForeignKey (content_type and object_id) must be either both null or both set.")
 
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+
     def _answer_getter(self):
         """ The actual, unpickled answer. """
         if not self.value:

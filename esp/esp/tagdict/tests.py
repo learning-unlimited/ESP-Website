@@ -71,7 +71,7 @@ class TagTest(TestCase):
         self.assertNotEqual(Tag.getTag("test", default="the default"), "the default", "If the tag is set, even to EMPTY_TAG, we shouldn't return the default.")
 
     def testTagCleanValidation(self):
-        '''Test that Tag.clean() raises ValidationError if GenericForeignKey is partial.'''
+        '''Test that Tag.save() raises ValidationError if GenericForeignKey is partial.'''
         from django.core.exceptions import ValidationError
 
         # Both set -> OK
@@ -85,15 +85,15 @@ class TagTest(TestCase):
         t2 = Tag(key="test2", value="val2", content_type=None, object_id=None)
         t2.clean()  # Should not raise
 
-        # content_type set, object_id null -> ValidationError
+        # content_type set, object_id null -> ValidationError on save()
         t3 = Tag(key="test3", value="val3", content_type=ct, object_id=None)
         with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
-            t3.clean()
+            t3.save()
 
-        # content_type null, object_id set -> ValidationError
+        # content_type null, object_id set -> ValidationError on save()
         t4 = Tag(key="test4", value="val4", content_type=None, object_id=user.id)
         with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
-            t4.clean()
+            t4.save()
 
     def testTagWithTarget(self):
         '''Test getting and setting of tags with targets.'''

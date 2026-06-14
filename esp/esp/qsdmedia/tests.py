@@ -34,8 +34,11 @@ Learning Unlimited, Inc.
 
 from esp.qsdmedia.models import Media
 from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.users.models import ESPUser
 
 from django.core.files.uploadhandler import MemoryFileUploadHandler, StopFutureHandlers
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import reverse
 
 class QSDMediaTest(TestCase):
     def test_upload(self):
@@ -54,7 +57,7 @@ class QSDMediaTest(TestCase):
         media.save()
 
         #   Check that the file can be downloaded from the proper link
-        url = '/download/%s' % media.hashed_name
+        url = f'/download/{media.hashed_name}'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -66,7 +69,7 @@ class QSDMediaTest(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def testMediaCleanValidation(self):
-        '''Test that Media.clean() raises ValidationError if GenericForeignKey is partial.'''
+        '''Test that Media.save() raises ValidationError if GenericForeignKey is partial.'''
         from django.core.exceptions import ValidationError
 
         # Both null -> OK
@@ -80,13 +83,117 @@ class QSDMediaTest(TestCase):
         m2 = Media(friendly_name="test2", owner_type=ct, owner_id=1)
         m2.clean()  # Should not raise
 
-        # owner_type set, owner_id null -> ValidationError
+        # owner_type set, owner_id null -> ValidationError on save()
         m3 = Media(friendly_name="test3", owner_type=ct, owner_id=None)
         with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
-            m3.clean()
+            m3.save()
 
-        # owner_type null, owner_id set -> ValidationError
+        # owner_type null, owner_id set -> ValidationError on save()
         m4 = Media(friendly_name="test4", owner_type=None, owner_id=1)
         with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
-            m4.clean()
+            m4.save()
+
+class SiteMediaTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.admin_user, _ = ESPUser.objects.get_or_create(username='admin_user')
+        self.admin_user.set_password('password')
+        self.admin_user.save()
+        self.admin_user.makeAdmin()
+
+        self.student_user, _ = ESPUser.objects.get_or_create(username='student_user')
+        self.student_user.set_password('password')
+        self.student_user.save()
+        self.student_user.makeRole('Student')
+
+    def test_admin_access_required(self):
+        # Unauthenticated: should redirect to login
+        response = self.client.get(reverse('manage_site_media'))
+        self.assertRedirects(response, '/accounts/login/?next=' + reverse('manage_site_media'))
+
+        # Student: should not have access
+        self.client.login(username='student_user', password='password')
+        response = self.client.get(reverse('manage_site_media'))
+        self.assertEqual(response.status_code, 403)
+
+        # Admin: should be able to access
+        self.client.login(username='admin_user', password='password')
+        response = self.client.get(reverse('manage_site_media'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_add_site_media(self):
+        self.client.login(username='admin_user', password='password')
+
+        test_file = SimpleUploadedFile("test_add.txt", b"site media content")
+        response = self.client.post(reverse('manage_site_media'), {
+            'command': 'add',
+            'title': 'New Site Media',
+            'uploadedfile': test_file
+        }, follow=False)
+        self.assertRedirects(response, reverse('manage_site_media'))
+
+        # Verify it was created as site media
+        media = Media.objects.get(friendly_name='New Site Media')
+        self.assertIsNone(media.owner_type)
+        self.assertIsNone(media.owner_id)
+
+    def test_rename_site_media(self):
+        self.client.login(username='admin_user', password='password')
+
+        media = Media(friendly_name='Old Title')
+        media.save()
+
+        response = self.client.post(reverse('manage_site_media'), {
+            'command': 'rename',
+            'docid': media.id,
+            'title': 'Renamed Title'
+        }, follow=False)
+        self.assertRedirects(response, reverse('manage_site_media'))
+
+        media.refresh_from_db()
+        self.assertEqual(media.friendly_name, 'Renamed Title')
+
+    def test_delete_site_media(self):
+        self.client.login(username='admin_user', password='password')
+
+        media = Media(friendly_name='To Delete')
+        media.save()
+
+        self.assertEqual(Media.objects.count(), 1)
+        response = self.client.post(reverse('manage_site_media'), {
+            'command': 'delete',
+            'docid': media.id
+        }, follow=False)
+        self.assertRedirects(response, reverse('manage_site_media'))
+
+        self.assertEqual(Media.objects.count(), 0)
+
+    def test_only_operates_on_site_media(self):
+        self.client.login(username='admin_user', password='password')
+
+        # Create a non-site media object
+        non_site_media = Media(
+            friendly_name='Not Site Media',
+            owner_type_id=1,
+            owner_id=1
+        )
+        non_site_media.save()
+
+        # Try to rename — should fail silently (not site media)
+        self.client.post(reverse('manage_site_media'), {
+            'command': 'rename',
+            'docid': non_site_media.id,
+            'title': 'Trying to Rename'
+        }, follow=False)
+
+        non_site_media.refresh_from_db()
+        self.assertEqual(non_site_media.friendly_name, 'Not Site Media')
+
+        # Try to delete — should fail silently (not site media)
+        self.client.post(reverse('manage_site_media'), {
+            'command': 'delete',
+            'docid': non_site_media.id
+        }, follow=False)
+
+        self.assertEqual(Media.objects.filter(id=non_site_media.id).count(), 1)
 
