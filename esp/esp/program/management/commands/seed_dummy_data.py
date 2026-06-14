@@ -20,6 +20,8 @@ Covers:
   tags: Tag
 """
 
+import os
+
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
@@ -54,6 +56,7 @@ from esp.web.models import NavBarCategory, NavBarEntry
 from esp.qsd.models import QuasiStaticData
 from esp.survey.models import Survey, SurveyResponse, Question, Answer, QuestionType
 from esp.tagdict.models import Tag
+from esp.themes.controllers import ThemeController
 
 
 SEED_USERNAMES = (
@@ -113,8 +116,16 @@ class Command(BaseCommand):
                 self._create_qsd(program, admin)
                 self._create_splash_info(program, students)
 
+            self._ensure_theme_media()
+
         self.stdout.write(self.style.SUCCESS('✓ Database seeding completed successfully!'))
         self.stdout.write('Admin credentials: username=admin  password=password')
+
+    # ── theme media ─────────────────────────────────────────────────────────
+
+    def _ensure_theme_media(self):
+        """Install default logo/header if missing and refresh cache-bust tags."""
+        ThemeController().ensure_theme_media()
 
     # ── flush ─────────────────────────────────────────────────────────────────
 

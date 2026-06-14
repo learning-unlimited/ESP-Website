@@ -27,14 +27,14 @@ $j(document).ready(function() {
 
 {% if is_overbooked %}
 <div role="alert" class="alert alert-danger">
-    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+    <span class="bi bi-info-circle" aria-hidden="true"></span>
 This class is registered for more hours than the number of hours for which the teachers are jointly available.
 </div>
 {% endif %}
 
 {% if conflict_found %}
 <div role="alert" class="alert alert-danger">
-    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+    <span class="bi bi-info-circle" aria-hidden="true"></span>
 This class is scheduled during at least one timeslot in which at least one teacher is not marked as available (indicated with a red border).
 </div>
 {% endif %}

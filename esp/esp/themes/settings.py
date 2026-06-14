@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 # can we avoid hardcoding this?
 less_dir = path.join(settings.PROJECT_ROOT, 'public', 'media', 'theme_editor', 'less') #directory containing less files used by theme editor
+scss_dir = path.join(settings.PROJECT_ROOT, 'public', 'media', 'theme_editor', 'scss') #directory containing scss files used by theme editor
 themes_dir = path.join(settings.PROJECT_ROOT, 'public', 'media', 'theme_editor', 'themes') #directory containing the themes
 variables_less = path.join(less_dir, 'variables.less')
 # directory containing the javascript that shows the palette
