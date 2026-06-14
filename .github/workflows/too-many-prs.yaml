@@ -1,9 +1,18 @@
 name: Label High-Volume PR Contributors
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, closed]
   workflow_dispatch:
+    inputs:
+      author:
+        description: 'GitHub username to check'
+        required: true
+        type: string
+
+permissions:
+  issues: write
+  pull-requests: write
 
 jobs:
   label-high-volume-prs:
@@ -17,6 +26,27 @@ jobs:
             const labelName = 'too-many-open-prs';
             const labelColor = 'e11d48';
             const labelDescription = 'This is over the 5 PRs per contributor limit';
+
+            // Get the author from the event context
+            const author = context.eventName === 'workflow_dispatch'
+              ? context.payload.inputs.author.trim()
+              : context.payload.pull_request.user.login;
+
+            // Skip contributors with write permissions or higher
+            const exemptPermissions = ['admin', 'maintain', 'write'];
+            try {
+              const { data: permData } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: author
+              });
+              if (exemptPermissions.includes(permData.permission)) {
+                core.info(`${author} has "${permData.permission}" permission. Skipping.`);
+                return;
+              }
+            } catch (err) {
+              core.info(`Could not check permissions for ${author}: ${err.message}. Proceeding with check.`);
+            }
 
             // Ensure the label exists
             try {
@@ -36,10 +66,7 @@ jobs:
               core.info(`Created label "${labelName}"`);
             }
 
-            // Only check the author who triggered the event
-            const author = context.payload.pull_request.user.login;
-
-            // Fetch all open PRs by this author
+            // Fetch all open PRs
             const openPRs = await github.paginate(github.rest.pulls.list, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -47,7 +74,7 @@ jobs:
               per_page: 100
             });
 
-            const authorPRs = openPRs.filter(pr => pr.user.login === author);
+            const authorPRs = openPRs.filter(pr => pr.user.login.toLowerCase() === author.toLowerCase());
             authorPRs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
             const allowed = authorPRs.slice(0, maxOpenPRs);

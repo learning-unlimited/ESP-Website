@@ -35,8 +35,6 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
-from esp.miniblog.models import AnnouncementLink, Entry
-from esp.miniblog.views import preview_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSubject
 from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect
@@ -137,7 +135,8 @@ def edit_profile(request):
 
     else:
         user_types = curUser.groups.all().order_by('-id')
-        return profile_editor(request, None, True, user_types[0].name if user_types else '')
+        return profile_editor(request, None, True, user_types[0].name.lower()
+                              if user_types else '')
 
 @login_required
 def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
@@ -165,12 +164,23 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                         ['Administrator', {'label': 'Administrator', 'profile_form': 'UserContactForm'}],
                        ]
     additional_type_labels = [x[0] for x in additional_types]
-    #   Handle all-lowercase versions of role being passed in by calling title()
+    additional_type_labels_lower = [x.lower() for x in additional_type_labels]
+
+    #   Converting everything to lowercase for consistent comparison
     user_type_labels = [x[0] for x in user_types]
-    if role.title() in user_type_labels:
-        target_type = user_types[user_type_labels.index(role.title())][1]
+    user_type_labels_lower = [x.lower() for x in user_type_labels]
+
+    role_lower = (role or '').lower()
+
+    if role_lower in user_type_labels_lower:
+        target_type = user_types[user_type_labels_lower.index(role_lower)][1]
+    elif role_lower in additional_type_labels_lower:
+        target_type = additional_types[additional_type_labels_lower.index(
+            role_lower)][1]
     else:
-        target_type = additional_types[additional_type_labels.index(role.title())][1]
+        # Any unknown role → fallback to basic contact form
+        target_type = additional_types[0][1]
+
     mod = __import__('esp.users.forms.user_profile', (), (), target_type['profile_form'])
     FormClass = getattr(mod, target_type['profile_form'])
 
@@ -293,6 +303,6 @@ def myesp_onsite(request):
     progs = list(progs.order_by("-id"))
 
     if len(progs) == 1:
-        return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
+        return HttpResponseRedirect(f'/onsite/{progs[0].getUrlBase()}/main')
     else:
         return render_to_response('program/pickonsite.html', request, {'progs': progs})

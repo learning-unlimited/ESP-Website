@@ -37,6 +37,7 @@ import json
 
 from django.http                 import HttpResponse
 from django.db.models.query      import Q
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 
 from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
@@ -61,11 +62,8 @@ class LotteryStudentRegModule(ProgramModuleObj):
     def studentDesc(self):
         return {'lotteried_students': "Students who have entered the lottery"}
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=user))
 
     @classmethod
@@ -130,7 +128,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
     @aux_call
     @no_auth
-    @cache_control(public=True, max_age=3600)
+    @method_decorator(cache_control(public=True, max_age=3600))
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program timeslot names for the tabs in the lottery interface """
         # using .extra() to select all the category text simultaneously

@@ -196,4 +196,3 @@ class SiteMediaTest(TestCase):
         }, follow=False)
 
         self.assertEqual(Media.objects.filter(id=non_site_media.id).count(), 1)
-

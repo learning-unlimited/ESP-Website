@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html>
+<html lang="en">
 <head>
 
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
@@ -167,7 +167,7 @@ table .openclasslist td {
     </tr>
 {% endcomment %}
     {% for class in classes %}
-        {% ifequal class.start_time current_time %}
+        {% if class.start_time == current_time %}
         {% if not class.isFull %}
         {% if not class.already_passed %}
     <tr>
@@ -176,7 +176,7 @@ table .openclasslist td {
     </tr>
         {% endif %}
         {% endif %}
-        {% endifequal %}
+        {% endif %}
     {% endfor %}
 </table>
 </td>
