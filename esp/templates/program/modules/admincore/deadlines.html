@@ -41,7 +41,7 @@
 
 <p>Please proceed to edit <a href="#existing">existing deadlines for user groups</a> or <a href="#new">create a new deadline</a> if necessary.</p>
 
-<p>Alternatively, you can edit <a href="#permissions">existing permissions for individual users</a> or <a href="#new_perm">create a new permission</a>.</p>
+<p>Alternatively, you can edit <a href="#permissions">existing permissions for individual users and filters</a>, <a href="#new_perm">create a new permission for an individual user</a>, or <a href="#new_filter_perm">create a filter-based permission</a> for a dynamic group of users.</p>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
@@ -172,7 +172,7 @@
             {% if perm.user %}
                 {{ perm.user }}
             {% elif perm.user_filter %}
-                Filter: {{ perm.user_filter.useful_name|default:perm.user_filter_id }}
+                Filter: {% if perm.user_filter.useful_name %}{{ perm.user_filter.useful_name }}{% else %}#{{ perm.user_filter_id }}{% endif %}
             {% else %}
                 (none)
             {% endif %}
@@ -226,24 +226,12 @@
 {% endautoescape %}
 </form>
 
-<form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="create_filter_perm_form">
-
+<a name="new_filter_perm"></a>
 <h3>Create new filter-based permissions</h3>
 
-<p>Use a saved user filter (for example, all 7th graders) to grant a permission to a dynamic group of users.</p>
+<p>Grant a permission to a dynamic group of users (for example, all 7th graders or students at a particular school). You will use the user search tool to define which users receive the permission.</p>
 
-{% autoescape off %}
-<table cellspacing="0" cellpadding="3">
-{{ create_filter_perm_form }}
-<tr>
-    <td align="center" valign="center" colspan="2">
-        <input type="hidden" name="action" value="add_filter_permission">
-        <input class="button" type="Submit" name="submit_btn" value="Create Filter Permission" />
-    </td>
-</tr>
-</table>
-{% endautoescape %}
-</form>
+<p><a href="/manage/{{ program.getUrlBase }}/filter_permission" class="btn btn-primary">Create Filter Permission</a></p>
 
 </div>
 
