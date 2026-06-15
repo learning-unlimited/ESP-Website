@@ -1,8 +1,6 @@
 import json
 from datetime import datetime, timedelta
 
-from django.test import Client
-from django.urls import reverse
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
@@ -19,7 +17,7 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
         self.program.program_modules.clear()
 
         # Grab or create two real modules linked to the program
-        mod_qs = ProgramModule.objects.all()
+        mod_qs = ProgramModule.objects.order_by('id')
         if mod_qs.count() >= 2:
             self.mod1 = mod_qs[0]
             self.mod2 = mod_qs[1]
