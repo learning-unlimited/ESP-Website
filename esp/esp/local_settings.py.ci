@@ -39,6 +39,7 @@ Learning Unlimited, Inc.
 #                                                                              #
 ################################################################################
 
+import os
 
 ###########################
 # Site identification     #
@@ -76,14 +77,12 @@ MIDDLEWARE_LOCAL = []
 # Database     #
 ################
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': '',
-        'HOST': 'localhost',
-        'PORT': '5432',
-        'USER': '',
-        'PASSWORD': '',
-    }
-}
+DATABASES = {'default': {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME':     os.environ.get('DATABASE_NAME', 'test_django'),
+    'USER':     os.environ.get('DATABASE_USER', 'testuser'),
+    'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'testpassword'),
+    'HOST': 'localhost',
+    'PORT': '5432',
+}}
 
