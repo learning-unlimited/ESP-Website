@@ -49,7 +49,7 @@
         {% if program|hasModule:"TeacherCheckinModule" %}
         <div class="module_button">
             <a href="/onsite/{{ program.getUrlBase }}/teachercheckin"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="bi bi-check"></i> Check-in Teachers{% if program|hasModule:"TeacherModeratorModule" %}/{{ program.getModeratorTitle }}s{% endif %}</div>
+                <div class="module_link_main"><i class="bi bi-check-square"></i> Check-in Teachers{% if program|hasModule:"TeacherModeratorModule" %}/{{ program.getModeratorTitle }}s{% endif %}</div>
             </button></a>
         </div>
         {% endif %}
@@ -70,7 +70,7 @@
         {% if program|hasModule:"OnSiteClassList" %}
         <div class="module_button">
             <a href="/onsite/{{ program.getUrlBase }}/classchange_grid"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="bi bi-grid"></i> Grid-Based Class Changes</div>
+                <div class="module_link_main"><i class="bi bi-grid-3x3-gap"></i> Grid-Based Class Changes</div>
             </button></a>
         </div>
         {% endif %}
@@ -84,7 +84,7 @@
         {% if program|hasModule:"OnSiteClassList" %}
         <div class="module_button">
             <a href="/onsite/{{ program.getUrlBase }}/allClassList"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="bi bi-list-task"></i> List of Open Classes</div>
+                <div class="module_link_main"><i class="bi bi-list-check"></i> List of Open Classes</div>
             </button></a>
         </div>
         {% endif %}
@@ -98,7 +98,7 @@
         {% if program|hasModule:"OnSiteAttendance" %}
         <div class="module_button">
             <a href="/onsite/{{ program.getUrlBase }}/attendance"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="bi bi-card-list"></i> Check Student Attendance</div>
+                <div class="module_link_main"><i class="bi bi-list-ul"></i> Check Student Attendance</div>
             </button></a>
         </div>
         {% endif %}

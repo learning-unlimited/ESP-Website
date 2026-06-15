@@ -2,7 +2,7 @@
 {% for category in theme.nav_structure reversed %}
   <li class="nav-item dropdown{% if request.path|slice:':5' != category.header_link|slice:':5' %} inactive{% else %} active{% endif %}">
     <a href="{{ category.header_link }}" class="nav-link navbar-item-label">{{ category.header }}</a>
-    <a class="nav-link dropdown-toggle caret-wrapper" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="{{ category.header }} menu"><b class="caret"></b></a>
+    <a class="nav-link dropdown-toggle caret-wrapper" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="{{ category.header }} menu"><b class="caret"></b></a>
     <ul class="dropdown-menu">
       {% for item in category.links %}
       <li><a class="dropdown-item" href="{{ item.link }}">

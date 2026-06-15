@@ -7,8 +7,8 @@
     <a class="nav-link navbar-item-label" id="loginbox_user_name" href="/myesp/profile/">
       Hello, <span id="user_first_name"></span>!
     </a>
-    <a class="nav-link dropdown-toggle caret-wrapper" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Account menu"><b class="caret"></b></a>
-    <ul class="dropdown-menu dropdown-menu-right">
+    <a class="nav-link dropdown-toggle caret-wrapper" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Account menu"><b class="caret"></b></a>
+    <ul class="dropdown-menu dropdown-menu-end">
       <li><a class="dropdown-item" href="/myesp/accountmanage/">Manage Account</a></li>
     </ul>
   </li>
@@ -22,15 +22,15 @@
 <ul class="navbar-nav not_logged_in">
   <li class="nav-item d-flex align-items-center flex-wrap">
     <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="form-inline navbar-form my-1">
-      <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="form-control form-control-sm inputbox mr-1" />
-      <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="form-control form-control-sm inputbox mr-1" />
+      <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="form-control form-control-sm inputbox me-1" />
+      <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="form-control form-control-sm inputbox me-1" />
       <button class="btn btn-secondary btn-sm" id="gologin" type="submit">Login</button>
     </form>
   </li>
   <li class="nav-item dropdown">
     <a class="nav-link navbar-item-label">Account</a>
-    <a class="nav-link dropdown-toggle caret-wrapper" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Account menu"><b class="caret"></b></a>
-    <ul class="dropdown-menu dropdown-menu-right">
+    <a class="nav-link dropdown-toggle caret-wrapper" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Account menu"><b class="caret"></b></a>
+    <ul class="dropdown-menu dropdown-menu-end">
       <li><a class="dropdown-item" href="/myesp/register">Register</a></li>
       <li><a class="dropdown-item" href="/myesp/passwdrecover/">Forgot Password</a></li>
       <li><a class="dropdown-item" href="/myesp/loginhelp.html">Help</a></li>

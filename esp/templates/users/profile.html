@@ -6,9 +6,10 @@
 {{ block.super }}
 <style>
 div.required label.control-label:after {
-  content:" *";
+  content:"*";
   color:red;
 }
+
 #id_receive_txt_message {
   list-style-type: none;
   margin-left: 0px;
@@ -17,13 +18,12 @@ div.required label.control-label:after {
 {% endblock %}
 
 {% block content %}
-<div class="row">
-  <div class="col-md-10">
+<div class="row-fluid">
+  <div class="span10">
     <h1>Your Profile Information</h1>
-    <p class="help-block"><span aria-hidden="true" style="color:red;">*</span> indicates a required field</p>
   </div>
-  <div class="row">
-    <div class="col-md-12">
+  <div class="row-fluid">
+    <div class="span12">
       {% load render_qsd %}
       {% inline_qsd_block "account_creation_basic_info" %}
 <p>First, please tell us a bit about yourself!  The fields with red asterisks are required.  After you have filled out everything, click the "{% if new_user %}submit{% else %}update{% endif %}" button at the bottom of the page to continue.</p>
@@ -35,8 +35,8 @@ div.required label.control-label:after {
     </div>
   </div>
 </div>
-<div class="row">
-  <div class="col-md-10">
+<div class="row-fluid">
+  <div class="span10">
       {% if form.errors %}
             <div role="alert" class="alert alert-danger">
                 <span class="bi bi-info-circle" aria-hidden="true"></span>

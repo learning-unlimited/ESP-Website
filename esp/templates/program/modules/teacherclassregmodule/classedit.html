@@ -22,7 +22,6 @@
 
 <h1>{{ addoredit }}ing a {{ classtype }} for {{ program.niceName }}</h1>
 
-
 {% if manage %}
     <p>
     <a href="/manage/{{ program.getUrlBase }}/dashboard">Return to the {{ program.niceName }} dashboard</a><br />
@@ -90,56 +89,6 @@
         </td>
     </tr>
     {% endif %}
-    {{ form }}
-    <tr>
-        <td colspan="2">&nbsp;</td>
-    </tr>
-    {% if not isopenclass and not formset.forms|length == 0 %}
-    <tr>
-        <th colspan="2">Classroom Requests</th>
-    </tr>
-    <tr>
-        <td colspan="2">
-        {% render_inline_program_qsd program "classroom_requests_advisories" %}
-        </td>
-    </tr>
-    <!--
-    <tr>
-        <td colspan="2">Please specify your classroom needs by building a list of requests.  You may submit more than one request per category (for example, you would need separate A/V requests for both DVD player and speakers).  If you are providing your own space for this class, please remove all requests.</td>
-    </tr>
-    -->
-{% include "program/modules/teacherclassregmodule/requests_form_fragment.html" %}
-    {% endif %}
-    <tr>
-        <td colspan="2">&nbsp;</td>
-    </tr>
-    <tr>
-        <th colspan="2">Submit</th>
-    </tr>
-    <tr>
-        <td colspan="2" class="smaller"><p>
-        Please review the above information carefully, then click "Teach for {{ one }}!" to submit your class.  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
-        </p></td>
-    </tr>
-    <tr>
-        <td align="center" colspan="2">
-            <br />
-            {% if class.id %}
-                <input type="hidden" name="class_id" value="{{ class.id }}" />
-            {% endif %}
-            <input type="hidden" name="class_reg_page" value="" />
-            
-            {% if manage %}
-                <input type="hidden" name="manage" value="manage" />
-                <button class="button" type="submit" name="manage_submit" value="reload">Save, then reload this page</button><br />
-                <button class="button" type="submit" name="manage_submit" value="manageclass">Save, then load the Manage Class page</button><br />
-                <button class="button" type="submit" name="manage_submit" value="dashboard">Save, then load the {{ program.niceName }} dashboard</button><br />
-                <button class="button" type="submit" name="manage_submit" value="main">Save, then load the {{ program.niceName }} admin portal</button><br />
-            {% else %}
-                {% if module.deadline_met %}
-                    <button type="submit" class="btn btn-primary btn-lg">
-                    {% if class.id %}
-                        <span class="bi bi-save"></span>
                         Save course!
                     {% else %}
                         <span class="bi bi-mortarboard"></span>

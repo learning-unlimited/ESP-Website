@@ -1,17 +1,16 @@
-<div class="flag-detail{% if flag.comment %} flag-has-comment{% endif %}{% if flag.resolved %} flag-resolved{% endif %}" id="flag-detail-{{flag.id}}">
-    <div style="background: {{flag.flag_type.getColor}};" title="Click to toggle flag details" onclick="$j('#flag-detail-{{flag.id}}').toggle('blink');$j('#fqr-flag-header-{{flag.id}}').toggleClass('active');">{{flag.flag_type.name}}{% if flag.resolved %} (Resolved){% endif %}</div>
+<div class="flag-detail{% if flag.comment %} flag-has-comment{% endif %}" id="flag-detail-{{flag.id}}">
+    <div style="background: {{flag.flag_type.getColor}};" title="Click to toggle flag details" onclick="$j('#flag-detail-{{flag.id}}').toggle('blink');$j('#fqr-flag-header-{{flag.id}}').toggleClass('active');">{{flag.flag_type.name}}</div>
     <form method="post" class="flag-form" action="/manage/{{program.getUrlBase}}/editflag/{{flag.id}}/">{% csrf_token %}
         <table>
             <tbody>
                 <tr>
                     <th> Created: </th>
-                    <td> {% if flag.created_by %}{{flag.created_by.name}}{% else %}Deleted User{% endif %} on {{flag.created_time.date}} at {{flag.created_time.time}} </td>
+                    <td> {{flag.created_by.name}} on {{flag.created_time.date}} at {{flag.created_time.time}} </td>
                 </tr>
                 <tr>
                     <th> Last modified: </th>
-                    <td class="lastmod"> {% if flag.modified_by %}{{flag.modified_by.name}}{% else %}Deleted User{% endif %} on {{flag.modified_time.date}} at {{flag.modified_time.time}} </td>
+                    <td class="lastmod"> {{flag.modified_by.name}} on {{flag.modified_time.date}} at {{flag.modified_time.time}} </td>
                 </tr>
-                {% if flag.resolved %}
                 <tr>
                     <th> Resolved: </th>
                     <td> {% if flag.resolved_by %}{{ flag.resolved_by.name }}{% else %}Deleted User{% endif %} on {{flag.resolved_time.date}} at {{flag.resolved_time.time}} </td>
@@ -26,6 +25,12 @@
                     </th>
                     <td>
                         <textarea id="flag-comment-{{flag.id}}" name="comment" rows="4" cols="60">{{flag.comment}}</textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <input type="submit" id="flag-submit-{{flag.id}}" class="btn btn-secondary" value="Update"></input>
+                        <button type="button" class="btn btn-secondary" onclick="removeFlag('/manage/{{program.getUrlBase}}/deleteflag/',{{flag.id}});">Remove</button>
                     </td>
                 </tr>
             </tbody>
