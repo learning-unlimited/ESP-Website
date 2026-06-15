@@ -107,22 +107,14 @@ class ClassregControllerTestBase(ProgramFrameworkTest):
             title='Controller Test Class for %s' % teacher.username,
             class_size_max=20,
             duration=Decimal('0.833'),
+            sections=num_sections,
             accept=False,
         )
-        # make_class() sets duration on sections but not on the ClassSubject
-        # itself. update_class_sections() reads cls.duration when creating new
-        # sections, so we set it explicitly here.
+        # make_class() sets duration on sections but not on ClassSubject.duration.
+        # update_class_sections() reads cls.duration when creating sections.
         if not cls.duration:
             cls.duration = Decimal('0.833')
             cls.save()
-        # Adjust section count to match num_sections requested.
-        # make_class() creates 1 section by default.
-        existing = cls.get_sections().count()
-        for _ in range(max(0, num_sections - existing)):
-            cls.add_section(duration=cls.duration)
-        if num_sections < cls.get_sections().count():
-            for sec in list(cls.get_sections())[num_sections:]:
-                sec.delete()
         return cls
 
 
