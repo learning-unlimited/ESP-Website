@@ -5,8 +5,6 @@ test_class_creation.py already covers the HTTP layer (makeaclass/editclass views
 These tests call controller methods directly — a regression in the business logic
 is caught even if the view returns HTTP 200.
 
-Refs: #3780, #3773
-
 Test classes:
   - GetCustomFieldsTest:       tag-driven custom field loading (CacheFlushTestCase)
   - SetClassDataTest:          field routing, custom field separation,
@@ -46,21 +44,11 @@ class GetCustomFieldsTest(CacheFlushTestCase):
         result = get_custom_fields()
         self.assertEqual(result, {})
 
-    def test_return_type_is_dict(self):
-        """get_custom_fields() always returns a dict."""
-        result = get_custom_fields()
-        self.assertIsInstance(result, dict)
-
-    def test_nonexistent_form_class_returns_empty_dict(self):
-        """A tag pointing to a non-existent form class returns empty dict without raising."""
+    def test_nonexistent_form_class_raises(self):
+        """A tag pointing to a non-existent form class raises AttributeError."""
         Tag.setTag('teacherreg_custom_forms', value='["NonExistentFormClass123"]')
-        try:
-            result = get_custom_fields()
-            self.assertEqual(result, {})
-        except Exception:
-            # Import error is acceptable — the key point is it does not
-            # silently return wrong data.
-            pass
+        with self.assertRaises(AttributeError):
+            get_custom_fields()
 
     def test_empty_tag_returns_empty_dict(self):
         """An empty JSON list tag returns an empty dict."""
@@ -74,12 +62,7 @@ class GetCustomFieldsTest(CacheFlushTestCase):
 # ---------------------------------------------------------------------------
 
 class ClassregControllerTestBase(ProgramFrameworkTest):
-    """
-    Shared setUp for controller unit tests.
-
-    Uses ProgramFrameworkTest for the full program environment and
-    factory functions for any additional objects.
-    """
+    """Shared setUp for controller unit tests."""
 
     def setUp(self, *args, **kwargs):
         kwargs.setdefault('num_teachers', 3)
@@ -116,31 +99,24 @@ class ClassregControllerTestBase(ProgramFrameworkTest):
         return form
 
     def _make_saved_class(self, teacher=None, num_sections=1):
-        """
-        Return a saved ClassSubject with sections using make_class() factory.
-
-        accept=False (default) — matches the factory default; call
-        cls.accept() in the test if accepted status is needed.
-        """
+        """Return a saved ClassSubject using make_class() factory."""
         teacher = teacher or self.teachers[0]
         cls = make_class(
             program=self.program,
             teacher=teacher,
             title='Controller Test Class for %s' % teacher.username,
             class_size_max=20,
+            duration=Decimal('0.833'),
             accept=False,
         )
-        # add extra sections if requested (make_class creates 1 by default)
-        for _ in range(max(0, num_sections - cls.get_sections().count())):
+        # Adjust section count to match num_sections requested.
+        # make_class() creates 1 section by default.
+        existing = cls.get_sections().count()
+        for _ in range(max(0, num_sections - existing)):
             cls.add_section(duration=Decimal('0.833'))
-        # remove sections if fewer were requested
         if num_sections < cls.get_sections().count():
             for sec in list(cls.get_sections())[num_sections:]:
                 sec.delete()
-        # Ensure duration is set for controller operations
-        if not cls.duration:
-            cls.duration = Decimal('0.833')
-            cls.save()
         return cls
 
 
@@ -149,16 +125,7 @@ class ClassregControllerTestBase(ProgramFrameworkTest):
 # ---------------------------------------------------------------------------
 
 class SetClassDataTest(ClassregControllerTestBase):
-    """
-    Tests for ClassCreationController.set_class_data().
-
-    Verifies:
-    - Standard form fields are written to cls.__dict__
-    - title and category are handled separately
-    - Fields starting with 'section_' are excluded from cls.__dict__
-    - Custom fields are routed to cls.custom_form_data, not cls.__dict__
-    - Regression guard for the is-not identity comparison bug (refs #3780)
-    """
+    """Tests for ClassCreationController.set_class_data()."""
 
     def test_standard_field_routes_to_cls_dict(self):
         """Standard fields like class_info are written directly to cls."""
@@ -193,16 +160,15 @@ class SetClassDataTest(ClassregControllerTestBase):
 
     def test_section_prefixed_field_excluded_from_cls_dict(self):
         """
-        Regression guard for the is-not identity comparison bug (refs #3780).
+        Regression guard for the is-not identity comparison bug.
 
         Fields starting with 'section_' must NOT be written to cls.__dict__.
         The original code used `k[:8] is not 'section_'` (identity comparison).
         In Python 3, string interning is not guaranteed for sliced strings —
-        `k[:8] is not 'section_'` can evaluate to True even when k starts with
-        'section_', silently writing form fields to cls.__dict__.
-
-        The fix (`!=` value comparison) is already in place. This test
-        documents the correct behaviour and prevents future regression.
+        this can evaluate to True even when k starts with 'section_', silently
+        writing form fields to cls.__dict__. The fix (`!=` value comparison) is
+        already in place. This test documents correct behaviour and prevents
+        future regression.
         """
         cls = self._make_saved_class()
         form = self._make_mock_form({
@@ -246,10 +212,8 @@ class SetClassDataTest(ClassregControllerTestBase):
         self.assertEqual(cls.custom_form_data, {})
 
     def test_excluded_keys_not_in_cls_dict(self):
-        """
-        The explicit exclusion list (resources, viable_times, etc.) must not
-        be written to cls.__dict__ via the generic loop.
-        """
+        """The explicit exclusion list (resources, viable_times, etc.) must not
+        be written to cls.__dict__ via the generic loop."""
         cls = self._make_saved_class()
         form = self._make_mock_form({
             'resources':                   'should_not_appear',
@@ -278,16 +242,7 @@ class SetClassDataTest(ClassregControllerTestBase):
 # ---------------------------------------------------------------------------
 
 class TeacherTimeTest(ClassregControllerTestBase):
-    """
-    Tests for teacher_has_time() and require_teacher_has_time().
-
-    Verifies:
-    - teacher_has_time() returns True when under program capacity
-    - teacher_has_time() returns False when request exceeds program duration
-    - require_teacher_has_time() does not raise when teacher has time
-    - require_teacher_has_time() raises ESPError when over capacity
-    - Error message differs for self vs. other-user edits
-    """
+    """Tests for teacher_has_time() and require_teacher_has_time()."""
 
     def test_teacher_has_time_returns_true_when_under_capacity(self):
         """A teacher with no taught classes has time for a short class."""
@@ -336,16 +291,7 @@ class TeacherTimeTest(ClassregControllerTestBase):
 # ---------------------------------------------------------------------------
 
 class UpdateClassSectionsTest(ClassregControllerTestBase):
-    """
-    Tests for ClassCreationController.update_class_sections().
-
-    Verifies:
-    - 3 sections requested on 0-section class creates 3 sections
-    - Reducing from 3 to 1 deletes the extra 2
-    - All sections receive cls.duration after the update
-    - Same count as existing is a no-op
-    - Requesting 0 sections deletes all
-    """
+    """Tests for ClassCreationController.update_class_sections()."""
 
     def test_creates_sections_up_to_requested_count(self):
         """Starting from 0 sections, requesting 3 creates 3."""
