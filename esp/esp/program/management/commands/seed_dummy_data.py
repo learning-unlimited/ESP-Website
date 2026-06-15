@@ -295,7 +295,10 @@ class Command(BaseCommand):
             module_dotted_name = f'esp.program.modules.handlers.{mod_name}'
             try:
                 mod = importlib.import_module(module_dotted_name)
-            except Exception:
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(
+                    f'  Skipping handler module {module_dotted_name}: {e!r}'
+                ))
                 continue
             for _name, cls in inspect.getmembers(mod, inspect.isclass):
                 # Only consider classes actually defined in this handler file,
@@ -310,15 +313,20 @@ class Command(BaseCommand):
                     continue
                 try:
                     all_props = cls.module_properties_autopopulated()
-                except Exception:
+                except Exception as e:
+                    self.stdout.write(self.style.WARNING(
+                        f'  Skipping module_properties for {module_dotted_name}.{cls.__name__}: {e!r}'
+                    ))
                     continue
                 for props in all_props:
                     if props.get('choosable') == 1:
-                        ProgramModule.objects.get_or_create(
+                        ProgramModule.objects.update_or_create(
                             handler=props['handler'],
                             module_type=props['module_type'],
                             defaults=dict(
                                 admin_title=props.get('admin_title', props['handler']),
+                                link_title=props.get('link_title'),
+                                inline_template=props.get('inline_template'),
                                 seq=props.get('seq', 200),
                                 required=props.get('required', False),
                                 choosable=1,
