@@ -100,12 +100,12 @@ class TestUserSearchController(ProgramFrameworkTest):
         with ESPUser.getAllOfType() instead of an empty Q(), so that OR conditions
         correctly produce a union rather than an intersection.
 
-        Before the fix: Q() | Q(class_approved) collapsed to just Q(class_approved),
-        making "All teachers OR class_approved teachers" return only teachers with
-        an approved class — incorrectly excluding teachers without one.
+        Before the fix: using 'all_X' seeded q_program with Q(), so OR-ing in another
+        list (e.g. 'class_submitted') collapsed to just that list, incorrectly excluding
+        teachers who did not match the OR-ed list.
 
-        After the fix: ESPUser.getAllOfType('Teacher') | Q(class_approved) correctly
-        returns ALL teachers in the DB regardless of whether they have an approved class.
+        After the fix: ESPUser.getAllOfType('Teacher') OR 'class_submitted' correctly
+        returns all teachers.
 
         Issue #1655
         """
@@ -121,9 +121,10 @@ class TestUserSearchController(ProgramFrameworkTest):
 
         # Create a class for teacher_submitted so they appear in class_submitted
         from esp.program.models import ClassSubject
+        from esp.program.class_status import ClassStatus
         cls = ClassSubject.objects.create(
             parent_program=self.program,
-            status=0,   # proposed status
+            status=ClassStatus.UNREVIEWED,   # unreviewed/proposed status
             category=self.program.class_categories.first(),
             grade_min=7, grade_max=12,
             class_size_max=20,
@@ -138,8 +139,8 @@ class TestUserSearchController(ProgramFrameworkTest):
         self.assertIn(teacher_submitted, submitted_qs)
         self.assertNotIn(teacher_only, submitted_qs)
 
-        # Submit: base list = all_Teacher, OR = class_submitted
-        post_data = self._get_combination_post_data('Teacher', 'all_Teacher')
+        # Submit: base list = allTeacher, OR = class_submitted
+        post_data = self._get_combination_post_data('Teacher', 'allTeacher')
         post_data['checkbox_or_class_submitted'] = '1'
 
         query = self.controller.query_from_postdata(self.program, post_data)
