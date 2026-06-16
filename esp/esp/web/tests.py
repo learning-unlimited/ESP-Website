@@ -314,6 +314,68 @@ class JavascriptSyntaxTest(TestCase):
             self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
 
 
+class TeacherBioUrlTest(ProgramFrameworkTest):
+    """Tests that canonical teacher-bio URLs work and deprecated ones are rejected."""
+
+    def setUp(self):
+        super().setUp()
+        self.teacher = self.teachers[0]
+        # Create TeacherBio objects for testing
+        from esp.program.models import TeacherBio
+        for teacher in self.teachers:
+            TeacherBio.objects.create(
+                user=teacher,
+                bio='Test bio for ' + teacher.username,
+                slugbio='Test Teacher'
+            )
+
+    def test_canonical_bio_view(self):
+        """Canonical /teach/teachers/<username>/bio.html should return 200."""
+        response = self.client.get('/teach/teachers/%s/bio.html' % self.teacher.username)
+        self.assertEqual(response.status_code, 200)
+
+    def test_canonical_bio_edit_requires_login(self):
+        """Canonical bio edit URL should redirect to login when not authenticated."""
+        response = self.client.get('/teach/teachers/%s/bio.edit.html' % self.teacher.username)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response['Location'])
+
+    def test_canonical_bio_edit_authenticated(self):
+        """Canonical bio edit URL should return 200 for the logged-in teacher."""
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/teach/teachers/%s/bio.edit.html' % self.teacher.username)
+        self.assertEqual(response.status_code, 200)
+
+    def test_bio_edit_extra_path_rejected(self):
+        """A trailing path after bio.edit.html should 404."""
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/teach/teachers/%s/bio.edit.html/trailing' % self.teacher.username)
+        self.assertEqual(response.status_code, 404)
+
+    def test_deprecated_learn_prefix_returns_404(self):
+        """Deprecated /learn/teachers/<username>/bio.html should return 404."""
+        response = self.client.get('/learn/teachers/%s/bio.html' % self.teacher.username)
+        self.assertEqual(response.status_code, 404)
+
+    def test_deprecated_name_based_url_returns_404(self):
+        """Deprecated /teach/teachers/<last>/<first>/bio.html should return 404."""
+        response = self.client.get('/teach/teachers/%s/%s/bio.html' % (
+            self.teacher.last_name, self.teacher.first_name))
+        self.assertEqual(response.status_code, 404)
+
+    def test_nonexistent_user_returns_404(self):
+        """Bio page for a non-existent user should return 404."""
+        response = self.client.get('/teach/teachers/nonexistent_user_xyz/bio.html')
+        self.assertEqual(response.status_code, 404)
+
+    def test_bio_edit_wrong_user_returns_404(self):
+        """A teacher should not be able to edit another teacher's bio."""
+        other_teacher = self.teachers[1]
+        self.client.login(username=self.teacher.username, password='password')
+        response = self.client.get('/teach/teachers/%s/bio.edit.html' % other_teacher.username)
+        self.assertEqual(response.status_code, 404)
+
+
 class ExtractThemeTest(TestCase):
 
     NAV = {
@@ -347,6 +409,31 @@ class ExtractThemeTest(TestCase):
     def test_empty_header_link_does_not_crash(self):
         nav = {'nav_structure': [{'header_link': '', 'links': [{'link': '/learn/'}]}]}
         self.assertEqual(self._extract('/learn/', nav=nav), 'tabcolor1')
+
+    def test_missing_header_link_is_skipped(self):
+        """nav_structure entries without 'header_link' are silently skipped."""
+        nav = {
+            'nav_structure': [
+                {'links': []},                                              # no header_link key
+                {'header_link': '/learn/', 'links': [{'link': '/learn/'}]}, # valid entry
+            ]
+        }
+        self.assertEqual(self._extract('/learn/', nav=nav), 'tabcolor1')
+
+    def test_get_nav_category_skips_missing_header_link(self):
+        """get_nav_category skips entries without 'header_link' and returns valid match."""
+        from esp.web.templatetags.main import get_nav_category
+        nav = {
+            'nav_structure': [
+                {'links': []},                                              # no header_link key
+                {'header_link': '/teach/', 'links': [{'link': '/teach/'}]}, # valid entry
+            ]
+        }
+        with patch('esp.web.templatetags.main.ThemeController') as mock_tc:
+            mock_tc.return_value.get_template_settings.return_value = nav
+            result = get_nav_category('/teach/')
+            self.assertIsNotNone(result)
+            self.assertEqual(result['header_link'], '/teach/')
 
 
 class TabMatchingTest(TestCase):
@@ -430,7 +517,7 @@ class ProfileEditorCapitalizationTest(TestCase):
             email='teststudentrep@test.com'
         )
 
-        # Assign ONLY the CamelCase group â€” no standard role
+        # Assign ONLY the CamelCase group â€" no standard role
         self.user.groups.add(self.group)
         self.user.save()
 
@@ -445,5 +532,37 @@ class ProfileEditorCapitalizationTest(TestCase):
         self.assertTrue(logged_in, "Could not log in test user 'teststudentrep'")
         response = c.get('/myesp/profile/')
 
-        # Should load fine â€” not crash with ValueError
+        # Should load fine â€" not crash with ValueError
         self.assertEqual(response.status_code, 200)
+
+
+class MediaCacheVersionTest(TestCase):
+    """Tests for _media_cache_version in esp.utils.web."""
+
+    def setUp(self):
+        from esp.utils.web import _media_cache_version
+        self._fn = _media_cache_version
+
+    def test_returns_tag_when_present(self):
+        """Returns the stored Tag value when one is set."""
+        with patch('esp.utils.web.Tag') as mock_tag:
+            mock_tag.getTag.return_value = '0xabc'
+            result = self._fn('images/theme/logo.png', 'current_logo_version')
+        self.assertEqual(result, '0xabc')
+
+    def test_falls_back_to_mtime_when_tag_absent(self):
+        """Returns a hex mtime string when the Tag is empty but the file exists."""
+        with patch('esp.utils.web.Tag') as mock_tag:
+            mock_tag.getTag.return_value = ''
+            with patch('esp.utils.web.os.path.exists', return_value=True):
+                with patch('esp.utils.web.os.path.getmtime', return_value=1700000000.0):
+                    result = self._fn('images/theme/logo.png', 'current_logo_version')
+        self.assertEqual(result, hex(1700000000))
+
+    def test_returns_empty_string_when_no_tag_and_no_file(self):
+        """Returns empty string when neither Tag nor file is present."""
+        with patch('esp.utils.web.Tag') as mock_tag:
+            mock_tag.getTag.return_value = ''
+            with patch('esp.utils.web.os.path.exists', return_value=False):
+                result = self._fn('images/theme/logo.png', 'current_logo_version')
+        self.assertEqual(result, '')

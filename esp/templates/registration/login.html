@@ -5,10 +5,10 @@
 {% block content %}
 <h1>Please log in</h1>
 
-<div class="row-fluid">
+<div class="row">
 <br>
 {% if next and not initiated_login %}
-<div role="alert" class="alert alert-info span10">
+<div role="alert" class="alert alert-info col-md-10">
 {% if "unsubscribe" in next %}
 Unsubscribe token is invalid or has expired (>7 days old). Please login or use an unexpired unsubscribe token.
 {% else %}
@@ -17,11 +17,11 @@ You need to log in before you can access <tt>{{ next }}</tt>.
 </div>
 {% endif %}
 
-<div role="alert" class="alert span10">
+<div role="alert" class="alert col-md-10">
 Both the username and password are <b>case-sensitive</b>: capitalization matters!
 </div>
 
-<div class="well span10">
+<div class="well col-md-10">
 
 <form action="{{ request.action }}" class="form-horizontal" method="post">
 
@@ -64,7 +64,7 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 
 <div class="form-actions">
 <input type="hidden" name="next" value="{{ next }}" />
-<input type="submit" class="btn btn-primary btn-large" value="Login" />
+<input type="submit" class="btn btn-primary btn-lg" value="Login" />
 </div>
 
 </form>
@@ -78,7 +78,7 @@ document.getElementById('id_username').focus();
 </div>
 
 <br />
-<div role="alert" class="alert alert-info span10">
+<div role="alert" class="alert alert-info col-md-10">
 Don't already have an account?  <a href="/myesp/register/">Click here to create one</a>. <br />
 Forgot your password? <a href="/myesp/passwdrecover/" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
 </div>
