@@ -60,15 +60,29 @@ def get_from_id(id, module, strtype = 'object', error = True):
         return None
     return foundobj
 
+def _media_cache_version(rel_path, tag_name):
+    """Cache-busting query param for theme media; falls back to file mtime."""
+    val = Tag.getTag(tag_name)
+    if val:
+        return val
+    full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+    if os.path.exists(full_path):
+        return hex(int(os.path.getmtime(full_path)))
+    return ''
+
+
 def esp_context_stuff():
     context = {}
 
     tc = ThemeController()
     context['theme'] = tc.get_template_settings()
     context['current_theme_version'] = Tag.getTag("current_theme_version")
-    context['current_logo_version'] = Tag.getTag("current_logo_version")
-    context['current_header_version'] = Tag.getTag("current_header_version")
-    context['current_favicon_version'] = Tag.getTag("current_favicon_version")
+    context['current_logo_version'] = _media_cache_version(
+        'images/theme/logo.png', 'current_logo_version')
+    context['current_header_version'] = _media_cache_version(
+        'images/theme/header.png', 'current_header_version')
+    context['current_favicon_version'] = _media_cache_version(
+        'images/favicon.ico', 'current_favicon_version')
     context['settings'] = settings
 
     context['current_programs'] = Program.current_programs()
@@ -81,11 +95,34 @@ _PROGRAM_TLS = frozenset(['manage', 'learn', 'teach', 'onsite', 'volunteer'])
 _CACHEABLE_SUFFIXES = ('catalog', 'index.html')
 
 
+def _filter_active_tags(accessed_keys, get_all_fn):
+    """
+    Given the request-scoped set of consulted tag keys (or None if tracking
+    wasn't initialized) and a callable that returns all non-default tags,
+    return the list of tags that should appear in the banner.
+
+    Returns [] if nothing should be shown so the caller can skip the DB hit
+    in the empty-tracking case.
+    """
+    if accessed_keys is not None and not accessed_keys:
+        # Tracking is active but the view consulted no tags — skip the DB
+        # query entirely; nothing will be shown.
+        return []
+    all_nondefault = get_all_fn()
+    if not all_nondefault:
+        return []
+    if accessed_keys is None:
+        # Fallback: tracking wasn't initialized, show all non-default tags.
+        return all_nondefault
+    return [t for t in all_nondefault if t['key'] in accessed_keys]
+
+
 def _inject_active_program_tags(request, context):
     """
     For admin users viewing a program page, inject ``active_program_tags``
-    (list of tag info dicts) and ``active_program_tags_url`` into *context*
-    so the base template can show a banner listing non-default program tags.
+    and ``active_global_tags`` (lists of tag info dicts) plus their
+    corresponding settings URLs into *context* so the base template can
+    show banners listing non-default tags actually consulted on this page.
     """
     try:
         path = request.path.rstrip('/')
@@ -106,10 +143,26 @@ def _inject_active_program_tags(request, context):
             return
         if not request.user.isAdministrator(program=program):
             return
-        active_tags = Tag.get_nondefault_program_tags(program)
-        if active_tags:
-            context['active_program_tags'] = active_tags
+
+        # Program-specific tags consulted while rendering this page.
+        program_tags = _filter_active_tags(
+            getattr(request, '_active_program_tag_keys', None),
+            lambda: Tag.get_nondefault_program_tags(program),
+        )
+        if program_tags:
+            context['active_program_tags'] = program_tags
             context['active_program_tags_url'] = program.get_manage_url() + 'tags'
+
+        # Global tags consulted while rendering this page. Global tags affect
+        # the whole site, so they're worth flagging in the same banner area
+        # whenever an admin is on a program page that touched one.
+        global_tags = _filter_active_tags(
+            getattr(request, '_active_global_tag_keys', None),
+            Tag.get_nondefault_global_tags,
+        )
+        if global_tags:
+            context['active_global_tags'] = global_tags
+            context['active_global_tags_url'] = '/manage/tags/'
     except Exception:
         pass  # Never let banner logic break page rendering
 
@@ -123,6 +176,15 @@ def render_to_response(template, request, context, content_type=None, use_reques
     context.update(esp_context_stuff())
 
     _inject_active_program_tags(request, context)
+
+    # Shared base templates reference these optional values directly.
+    # Default them here so pages that don't populate them don't emit
+    # VariableDoesNotExist DEBUG noise during tests or local development.
+    context.setdefault('login_result', '')
+    context.setdefault('active_program_tags', [])
+    context.setdefault('active_program_tags_url', '')
+    context.setdefault('active_global_tags', [])
+    context.setdefault('active_global_tags_url', '')
 
     # create nav bar list
     if not 'navbar_list' in context:
@@ -197,10 +259,12 @@ def secure_required(view_fn):
         return view_fn(request, *args, **kwargs)
     return _wrapped_view
 
-def zip_download(files = [], zipname = 'files'):
+def zip_download(files = None, zipname = 'files'):
     """
     Zips a list of files together and returns it as a download
     """
+    if files is None:
+        files = []
     file_like = StringIO()
     zf = zipfile.ZipFile(file_like, 'w')
     for file in files:

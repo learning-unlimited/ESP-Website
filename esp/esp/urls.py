@@ -117,14 +117,16 @@ urlpatterns += [
     re_path(r'^download', include(esp.qsdmedia.urls)),
     re_path(r'^',  include(esp.survey.urls)),
     re_path('^javascript_tests', include(esp.tests.urls)),
+    re_path(r'^theme/?$', RedirectView.as_view(url='/themes/', permanent=False)),
     re_path(r'^themes', include(esp.themes.urls)),
+    re_path(r'^myesp$', RedirectView.as_view(url='/myesp/accountmanage/', permanent=False)),
     re_path(r'^myesp/', include(esp.users.urls)),
     re_path(r'^varnish/', include(esp.varnish.urls)),
 ]
 
 urlpatterns += [
     # bios
-    re_path(r'^(?P<tl>teach|learn)/teachers/', include('esp.web.urls')),
+    re_path(r'^(?P<tl>teach)/teachers/', include('esp.web.urls')),
 ]
 
 # Specific .html pages that have defaults
@@ -162,6 +164,10 @@ re_path(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Z
 
 
 urlpatterns += [
+    re_path(r'^manage/templateoverride/default_content/?$',
+        esp.utils.views.get_default_template_content),
     re_path(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
         esp.utils.views.diff_templateoverride, name='diff_templateoverride'),
 ]
+
+

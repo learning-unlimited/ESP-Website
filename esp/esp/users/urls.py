@@ -1,4 +1,5 @@
 from django.urls import re_path
+from django.views.generic.base import RedirectView
 
 from esp.users import views
 from esp.users.views.registration import GradeChangeRequestView
@@ -14,7 +15,7 @@ urlpatterns = [
     re_path(r'^activate/?$', views.registration.activate_account, name='activate_account'),
     re_path(r'^passwdrecover/(success)?/?$', views.initial_passwd_request, name='passwd_recover_success'),
     re_path(r'^passwdrecover/?$', views.initial_passwd_request, name='passwd_recover'),
-    re_path(r'^resetpassword/(?P<uidb64>[-\w]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+    re_path(r'^resetpassword/(?P<uidb64>[-\w]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]+)/$',
         views.password_reset_confirm, name='password_reset_confirm'),
     re_path(r'^resetpassword/done/?$', views.password_reset_done),
     re_path(r'^resend/?$', views.resend_activation_view,
@@ -41,6 +42,7 @@ urlpatterns += [
 ]
 
 urlpatterns += [
+    re_path(r'^$', RedirectView.as_view(url='accountmanage/', permanent=False)),
     re_path(r'^switchback/?$', myesp.myesp_switchback, name='myesp_switchback'),
     re_path(r'^stop_testing/?$', myesp.myesp_stop_testing, name='myesp_stop_testing'),
     re_path(r'^onsite/?$', myesp.myesp_onsite, name='myesp_onsite'),
