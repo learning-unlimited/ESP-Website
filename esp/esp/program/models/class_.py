@@ -46,8 +46,9 @@ import re
 from django.conf import settings
 from django.db import models, transaction
 from django.db.models.query import Q
-from django.db.models import signals, Sum
+from django.db.models import Min, OuterRef, Subquery, signals, Sum
 from django.db.models.manager import Manager
+from django.dispatch import receiver
 from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
@@ -73,7 +74,6 @@ from esp.dbmail.models import send_mail
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission, PersistentQueryFilter
-from esp.program.models import Program
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
@@ -110,7 +110,7 @@ REGISTRATION_CHOICES = (
 class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
     range_max = models.IntegerField(null=False)
-    program   = models.ForeignKey(Program, blank=True, null=True, on_delete=models.CASCADE)
+    program   = models.ForeignKey('program.Program', blank=True, null=True, on_delete=models.CASCADE)
 
     @classmethod
     def get_ranges_for_program(cls, prog):
@@ -152,11 +152,6 @@ class ClassManager(Manager):
         if catalog is None:
             # Get it from the DB, then try prefetching class sizes
             catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only, order_args_override=order_args_override)
-        else:
-            for cls in catalog:
-                for sec in cls.get_sections():
-                    if hasattr(sec, '_count_students'):
-                        del sec._count_students
 
         return catalog
 
@@ -211,12 +206,40 @@ class ClassManager(Manager):
         if order_args_override:
             order_args = order_args_override
         else:
-            order_args = ['category__symbol', 'category__category', 'sections__meeting_times__start', '_num_students', 'id']
+            order_args = ['category__symbol', 'category__category', 'earliest_start', '_num_students', 'id']
             #   First check if there is an ordering specified for the program.
             program_sort_fields = Tag.getProgramTag('catalog_sort_fields', program)
             if program_sort_fields:
                 #   If you found one, use it.
                 order_args = program_sort_fields.split(',')
+
+        #   Translate legacy ordering fields to use earliest_start so that
+        #   older configurations keep working with the new stable behavior.
+        order_args = [
+            'earliest_start' if f == 'sections__meeting_times__start'
+            else '-earliest_start' if f == '-sections__meeting_times__start'
+            else f
+            for f in order_args
+        ]
+
+        #   Only add the earliest_start annotation when the ordering uses it,
+        #   to avoid unnecessary aggregate + joins for other sort configurations.
+        if any(f.lstrip('-') == 'earliest_start' for f in order_args):
+            #   Compute earliest_start via a correlated subquery so that the
+            #   sections → meeting_times join does not multiply rows and
+            #   corrupt the earlier _num_students aggregate.
+            classes = classes.annotate(
+                earliest_start=Subquery(
+                    ClassSubject.objects.filter(pk=OuterRef('pk'))
+                    .annotate(
+                        _es=Min(
+                            'sections__meeting_times__start',
+                            filter=~Q(sections__status=ClassStatus.CANCELLED),
+                        )
+                    )
+                    .values('_es')[:1]
+                )
+            )
 
         #   Order the QuerySet using the specified list.
         classes = classes.order_by(*order_args)
@@ -227,7 +250,7 @@ class ClassManager(Manager):
         #   Filter out duplicates by ID.  This is necessary because Django's ORM
         #   adds the related fields (e.g. sections__meeting_times) to the SQL
         #   SELECT statement and doesn't include them in the result.
-        #   See http://docs.djangoproject.com/en/dev/ref/models/querysets/#s-distinct
+        #   See https://docs.djangoproject.com/en/dev/ref/models/querysets/#s-distinct
         counter = 0
         index = 0
         max_count = len(classes)
@@ -255,8 +278,8 @@ class ClassManager(Manager):
         # Now, to combine all of the above
 
         if len(classes) >= 1:
+            from esp.program.models import Program
             p = Program.objects.get(id=classes[0].parent_program_id)
-
         for c in classes:
             c._teachers = list(c.teachers.all())
             c._teachers.sort(key=lambda t: t.last_name)
@@ -286,11 +309,19 @@ class ClassManager(Manager):
 
     def random_class(self, q=None):
         classes = self.filter(self.approved(return_q_obj=True))
-        if q is not None: classes = classes.filter(q)
+        if q is not None:
+            classes = classes.filter(q)
         count = classes.count()
+        if count == 0:
+            return None
         return classes[random.randint(0, count - 1)]
 
+class ClassSectionManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().order_by('id')
+
 class ClassSection(models.Model):
+    objects = ClassSectionManager()
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
 
@@ -337,19 +368,10 @@ class ClassSection(models.Model):
 
     @classmethod
     def prefetch_catalog_data(cls, queryset):
-        """ Take a queryset of a set of ClassSubject's, and annotate each class in it with the '_count_students' and 'event_ids' fields (used internally when available by many functions to save on queries later) """
-        now = datetime.datetime.now()
-        enrolled_type = RegistrationType.get_map()['Enrolled']
-
-        select = OrderedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))')])
-
-        select_params = [ enrolled_type.id,
-                          now,
-                          now,
-                         ]
-
+        """Take a queryset of ClassSections, prefetch their meeting_times,
+        and cache the resulting Event objects on each section in a sorted
+        internal ``_events`` list for later reuse."""
         sections = queryset.prefetch_related('meeting_times')
-        sections = sections.extra(select=select, select_params=select_params)
         sections = list(sections)
 
         # Now, to combine all of the above:
@@ -553,7 +575,7 @@ class ClassSection(models.Model):
         classroom = self.initial_rooms().first()
         if classroom:
             res = classroom.associated_resources().filter(res_type__name='Lat/Long')
-            if res.count() == 1 and re.match("^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$", res[0].attribute_value):
+            if res.count() == 1 and re.match(r"^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$", res[0].attribute_value):
                 return res[0].attribute_value
         return None
 
@@ -901,7 +923,7 @@ class ClassSection(models.Model):
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
 
         # check to see if there's a conflict:
-        my_timeslots = self.timeslot_ids()
+        my_timeslots = set(self.timeslot_ids())
         for sec in section_list:
             if sec.parent_class == self.parent_class:
                 return 'You are already signed up for a section of this class!'
@@ -932,6 +954,24 @@ class ClassSection(models.Model):
 
         # this user *can* add this class!
         return False
+
+    def get_conflicts(self, user):
+        """ Return a list of sections that conflict with this one for the given user. """
+        section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
+        my_timeslots = set(self.timeslot_ids())
+        conflicts = []
+        for sec in section_list:
+            if sec.parent_class == self.parent_class:
+                conflicts.append(sec)
+                continue
+
+            if hasattr(sec, '_timeslot_ids'):
+                timeslot_ids = set(sec._timeslot_ids)
+            else:
+                timeslot_ids = set(sec.timeslot_ids())
+            if my_timeslots.intersection(timeslot_ids):
+                conflicts.append(sec)
+        return conflicts
 
     def conflicts(self, teacher, meeting_times=None):
         """Return a scheduling conflict if one exists, or None."""
@@ -1017,15 +1057,13 @@ class ClassSection(models.Model):
     @cache_function
     def num_students(self, verbs=['Enrolled']):
         if verbs == ['Enrolled']:
-            if not hasattr(self, '_count_students'):
-                self._count_students = self.students(verbs).count()
-            return self._count_students
+            return self.enrolled_students
         return self.students(verbs).count()
     num_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
     def count_enrolled_students(self):
-        return self.num_students(use_cache=False)
+        return self.students(['Enrolled']).count()
     count_enrolled_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
@@ -1191,6 +1229,12 @@ class ClassSection(models.Model):
             return None
         else:
             return eventList[0]
+
+    def _sort_key(self):
+        """Return a sort key tuple that works with prefetched meeting_times."""
+        start = self.start_time_prefetchable()
+        # Sort None start times before real ones, matching __cmp__ semantics
+        return (start is not None, start or datetime.datetime.min, self.title())
 
     def isFull(self, ignore_changes=False, webapp=False):
         if len(self.get_meeting_times()) == 0:
@@ -1433,7 +1477,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     form_link_name='Course'
 
     title = models.TextField()
-    parent_program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    parent_program = models.ForeignKey('program.Program', on_delete=models.CASCADE)
     category = models.ForeignKey('ClassCategories', related_name = 'cls', on_delete=models.CASCADE)
     class_info = models.TextField(blank=True)
     teachers = models.ManyToManyField(ESPUser)
@@ -2070,6 +2114,33 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             return eventList[0]
 
+    def start_time_prefetchable(self):
+        """Like ClassSection.start_time_prefetchable, but for subjects.
+
+        Returns the earliest start time across all sections.  If sections
+        and their meeting_times have been prefetched, this will not hit the DB.
+
+        Uses sections.all() instead of get_sections() to preserve Django's
+        prefetch cache (get_sections() adds order_by which can bypass it).
+        """
+        starts = []
+        for section in self.sections.all():
+            st = section.start_time_prefetchable()
+            if st is not None:
+                starts.append(st)
+        return min(starts) if starts else None
+
+    def _sort_key(self):
+        """Return a sort key tuple that works with prefetched data.
+
+        Use as:
+            subjects = qs.prefetch_related('sections__meeting_times')
+            sorted(subjects, key=lambda s: s._sort_key())
+        """
+        start = self.start_time_prefetchable()
+        # Sort None start times before real ones, matching __cmp__ semantics
+        return (start is not None, start or datetime.datetime.min, self.title)
+
     def getArchiveClass(self):
         result = ArchiveClass.objects.filter(original_id=self.id)
         if result.exists():
@@ -2189,3 +2260,27 @@ def install():
     if not ClassCategories.objects.exists():
         for key in category_dict:
             ClassCategories.objects.create(symbol=key, category=category_dict[key])
+
+
+@receiver(signals.post_save, sender=ClassSubject)
+def handle_auto_class_flags(sender, instance, **kwargs):
+    """Automatically add flags to a class if it satisfies certain conditions."""
+    import json
+    from esp.program.models.flags import AutoClassFlagRule
+    from esp.program.modules.handlers.classsearchmodule import ClassSearchModule
+
+    rules = list(AutoClassFlagRule.objects.filter(program=instance.parent_program))
+    if not rules:
+        return
+
+    module = ClassSearchModule(program=instance.parent_program)
+    qb = module.query_builder()
+
+    for rule in rules:
+        try:
+            decoded_rule = json.loads(rule.rule_data)
+            qs = qb.as_queryset(decoded_rule)
+            if qs.filter(pk=instance.pk).exists():
+                rule.apply_to_class(instance)
+        except Exception as e:
+            logger.error("Error evaluating AutoClassFlagRule %s: %s", rule.id, e)

@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
+import inspect
 
 """ Removed the staff-only restriction and instead pass a flag to ajax_autocomplete if the user
     is not a staff member.  The staff bit is checked at the per-function level, so that students
@@ -10,13 +11,22 @@ user_is_staff = user_passes_test(lambda u: u.is_authenticated and u.is_staff and
 """
 
 def autocomplete_wrapper(function, data, is_staff, **kwargs):
+    """Call the model's ajax_autocomplete; pass request if the function accepts it."""
+    # Only pass 'request' if the function actually accepts it
+    try:
+        sig = inspect.signature(function)
+        if 'request' not in sig.parameters:
+            kwargs.pop('request', None)
+    except (TypeError, ValueError):
+        kwargs.pop('request', None)
     if is_staff:
         return function(data, **kwargs)
-    else:
-        if 'allow_non_staff' in function.__func__.__code__.co_varnames:
-            return function(data, **kwargs)
-        else:
-            return []
+    # Unwrap classmethod/bound method to get the underlying function
+    fn = getattr(function, '__func__', function)
+    code = getattr(fn, '__code__', None)
+    if code and 'allow_non_staff' in code.co_varnames:
+        return function(data, **kwargs)
+    return []
 
 @login_required
 def ajax_autocomplete(request):
@@ -47,12 +57,10 @@ def ajax_autocomplete(request):
     except (Program.DoesNotExist, ValueError):
         prog_obj = None
 
-    kwargs = {'grade': grade, 'last_name_range': last_name_range, 'prog': prog_obj}
+    kwargs = {'grade': grade, 'last_name_range': last_name_range, 'prog': prog_obj, 'request': request}
 
-    if hasattr(Model.objects, ajax_func):
-        query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff, **kwargs)
-    else:
-        query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff, **kwargs)
+    func = getattr(Model.objects, ajax_func) if hasattr(Model.objects, ajax_func) else getattr(Model, ajax_func)
+    query_set = autocomplete_wrapper(func, data, request.user.is_staff, **kwargs)
 
     output = list(query_set[:limit])
     output2 = []
