@@ -32,14 +32,18 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.models import FinancialAidRequest, SplashInfo
+from esp.program.models import FinancialAidRequest, SplashInfo, RegistrationType, StudentRegistration, ProgramModule
 from esp.accounting.models import FinancialAidGrant, LineItemType
 
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.tagdict.models import Tag
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController
+from esp.users.models import ESPUser
 
 from decimal import Decimal
+import json
 import random
 import re
 
@@ -506,3 +510,467 @@ class StudentRegTest(ProgramFrameworkTest):
         spi = SplashInfo.getForUser(student, self.program)
         self.assertEqual(spi.siblingname, 'Test Name')
 
+
+class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
+    """
+    Tests for Issue #227: registration type visibility filtering on the student
+    registration page, introduced in PR #207 to resolve Issue #35.
+
+    The 'display_registration_names' Tag controls which RegistrationTypes are
+    shown on the student main registration page.  These tests exercise
+    RegistrationTypeController.getVisibleRegistrationTypeNames() directly and
+    through the live HTTP response to /learn/<prog>/studentreg.
+    """
+
+    def setUp(self):
+        modules = [
+            ProgramModule.objects.get(handler='TeacherClassRegModule'),
+            ProgramModule.objects.get(handler='StudentClassRegModule'),
+            ProgramModule.objects.get(handler='StudentRegCore'),
+        ]
+        super().setUp(modules=modules)
+        self.schedule_randomly()
+        self.add_student_profiles()
+
+        # Disable the required-modules gate so the studentreg page renders directly
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = False
+        scrmi.save()
+
+        # Ensure the registration types we test with exist
+        RegistrationType.objects.get_or_create(name='Enrolled')
+        self.rt_waitlisted, _ = RegistrationType.objects.get_or_create(name='Waitlisted')
+        self.rt_priority, _   = RegistrationType.objects.get_or_create(name='Priority')
+
+        # Pick the first student and give them registrations under all three types
+        self.student = self.students[0]
+        self.student.set_password('password')
+        self.student.save()
+
+        section = self.teachers[0].getTaughtSectionsFromProgram(self.program)[0]
+        for rt_name in ('Enrolled', 'Waitlisted', 'Priority'):
+            rt = RegistrationType.objects.get(name=rt_name)
+            StudentRegistration.objects.get_or_create(
+                user=self.student, section=section, relationship=rt
+            )
+
+        # Start each test with a clean slate — no display_registration_names tag
+        Tag.objects.filter(key='display_registration_names').delete()
+
+    # ------------------------------------------------------------------
+    # Helper
+    # ------------------------------------------------------------------
+
+    def _set_tag(self, names):
+        """Create/update a program-scoped display_registration_names tag."""
+        Tag.setTag(
+            key='display_registration_names',
+            target=self.program,
+            value=json.dumps(names),
+        )
+
+    def _student_login(self):
+        self.assertTrue(
+            self.client.login(username=self.student.username, password='password'),
+            'Could not log in as test student',
+        )
+
+    def _get_studentreg(self):
+        return self.client.get('/learn/' + self.program.url + '/studentreg')
+
+    # ------------------------------------------------------------------
+    # Test A: Default behaviour — no tag set
+    # ------------------------------------------------------------------
+
+    def test_default_no_tag(self):
+        """
+        When no display_registration_names tag exists the controller returns
+        only the default ['Enrolled'] list, and the student reg page does not
+        surface any non-default registration type names.
+        """
+        # Controller returns the hardcoded default
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        self.assertIn('Enrolled', visible)
+        self.assertNotIn('Waitlisted', visible)
+        self.assertNotIn('Priority', visible)
+
+        # HTTP response agrees
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Waitlisted')
+        self.assertNotContains(response, 'Priority')
+
+    # ------------------------------------------------------------------
+    # Test B: Tag restricts which types are visible
+    # ------------------------------------------------------------------
+
+    def test_tag_restricts_visible_types(self):
+        """
+        When the tag lists only 'Waitlisted', the controller returns
+        ['Waitlisted', 'Enrolled'] (tag value merged with the mandatory
+        default).  The student reg page shows 'Waitlisted' but not 'Priority'.
+        """
+        self._set_tag(['Waitlisted'])
+
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        self.assertIn('Enrolled', visible,
+                      'Enrolled must always be present regardless of tag')
+        self.assertIn('Waitlisted', visible)
+        self.assertNotIn('Priority', visible)
+
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Waitlisted')
+        self.assertNotContains(response, 'Priority')
+
+    # ------------------------------------------------------------------
+    # Test C: Changing the tag dynamically updates what the page shows
+    # ------------------------------------------------------------------
+
+    def test_tag_change_reflects_on_page(self):
+        """
+        Updating the tag value is immediately reflected on the next GET of
+        the student reg page without any restart or cache invalidation step.
+        """
+        self._student_login()
+
+        # First configuration: only Waitlisted (+ Enrolled)
+        self._set_tag(['Waitlisted'])
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Waitlisted')
+        self.assertNotContains(response, 'Priority')
+
+        # Second configuration: only Priority (+ Enrolled)
+        Tag.objects.filter(key='display_registration_names').delete()
+        self._set_tag(['Priority'])
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Priority')
+        self.assertNotContains(response, 'Waitlisted')
+
+    # ------------------------------------------------------------------
+    # Test D: 'All' sentinel returns every RegistrationType
+    # ------------------------------------------------------------------
+
+    def test_all_sentinel_shows_every_type(self):
+        """
+        When the tag contains the special value 'All', every RegistrationType
+        name in the database is returned.  Passing for_VRT_form=True additionally
+        appends the literal string 'All' to the result (used by the admin form).
+        """
+        self._set_tag(['All'])
+
+        # Normal (student-facing) call: every RT name, but NOT the literal 'All'
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        all_names = list(
+            RegistrationType.objects.values_list('name', flat=True)
+                                    .distinct().order_by('name')
+        )
+        for name in all_names:
+            self.assertIn(name, visible,
+                         'Expected %r in visible types when tag is "All"' % name)
+        self.assertNotIn('All', visible,
+                         'Literal "All" must not appear in the student-facing list')
+
+        # Admin VRT form call: 'All' appended so the form can re-select it
+        visible_vrt = RegistrationTypeController.getVisibleRegistrationTypeNames(
+            self.program, for_VRT_form=True
+        )
+        self.assertIn('All', visible_vrt)
+
+    # ------------------------------------------------------------------
+    # Test E: Empty or invalid tag falls back safely
+    # ------------------------------------------------------------------
+
+    def test_empty_tag_falls_back_to_default(self):
+        """
+        A tag that exists but carries an empty string value is treated as
+        absent: the controller returns the default ['Enrolled'] list and
+        the student reg page renders without error.
+        """
+        # Manually insert a tag with an empty value (bypasses Tag.setTag validation)
+        Tag.objects.get_or_create(key='display_registration_names', value='')
+
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        # Empty string is falsy -> falls back to default_names
+        self.assertEqual(list(visible), RegistrationTypeController.default_names)
+
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+
+    def test_malformed_tag_falls_back_to_default(self):
+        """
+        A malformed JSON tag value should be ignored safely: the controller
+        falls back to default_names and the student reg page still renders.
+        """
+        Tag.objects.get_or_create(key='display_registration_names', value='not_valid_json')
+
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
+
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+
+    def test_none_program_returns_default(self):
+        """
+        Passing prog=None (or any non-Program value) to the controller is
+        safe: it returns the default set without touching the database.
+        """
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(None)
+        self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
+
+    def test_invalid_program_id_returns_default(self):
+        """
+        Passing a numeric program id that does not exist in the database
+        returns the default set without raising an exception.
+        """
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(999999999)
+        self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
+class UserviewGradeUpdateTest(ProgramFrameworkTest):
+    """
+    Tests for the grade-update functionality introduced in PR #208 (commit
+    7db5367) that resolves Issue #26.  The feature allows an admin to visit
+    /manage/userview?username=<student>&graduation_year=<year> and have the
+    student's graduation year updated immediately.
+
+    Covers Issue #226: "Test for updating student grades".
+    """
+
+    def setUp(self, *args, **kwargs):
+        # Minimal program scaffold; we only need students, teachers, and admins.
+        kwargs.update({
+            'num_timeslots': 1, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 1, 'classes_per_teacher': 1, 'sections_per_class': 1,
+            'num_rooms': 1,
+        })
+        super().setUp(*args, **kwargs)
+
+        # Build StudentInfo / RegistrationProfile rows for every student.
+        self.add_student_profiles()
+
+        self.student = self.students[0]
+        self.admin   = self.admins[0]
+
+        # Record the initial graduation year so each test can assert "unchanged".
+        self.initial_grad_year = (
+            self.student.getLastProfile().student_info.graduation_year
+        )
+
+        # A graduation year different from the initial one, chosen from a valid
+        # ChoiceField value (grade 11 in the current school year).
+        new_grade = 11
+        new_yog = ESPUser.YOGFromGrade(new_grade)
+        # Make sure we actually pick a *different* value
+        if new_yog == self.initial_grad_year:
+            new_grade = 10
+            new_yog = ESPUser.YOGFromGrade(new_grade)
+        self.new_grad_year = new_yog
+
+        self.userview_base = '/manage/userview'
+
+    # ------------------------------------------------------------------
+    # Test 1: Admin can update a student's grade
+    # ------------------------------------------------------------------
+
+    def test_admin_can_update_grade(self):
+        """A logged-in admin should be able to change a student's graduation
+        year via the graduation_year GET parameter."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(response.status_code, 200)
+
+        # Re-fetch from DB to confirm persistence.
+        updated_info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            updated_info.graduation_year, self.new_grad_year,
+            "Admin update failed: expected grad year %s, got %s"
+            % (self.new_grad_year, updated_info.graduation_year),
+        )
+
+    # ------------------------------------------------------------------
+    # Test 2: A student cannot update their own grade
+    # ------------------------------------------------------------------
+
+    def test_student_cannot_update_own_grade(self):
+        """A student is not an administrator, so the view should return 403
+        and leave the graduation year unchanged."""
+        self.client.login(username=self.student.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(
+            response.status_code, 403,
+            "Expected 403 for non-admin access, got %s" % response.status_code,
+        )
+
+        # Grade must not have changed.
+        info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            info.graduation_year, self.initial_grad_year,
+            "Graduation year was incorrectly modified by the student themselves.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 3: An unrelated non-admin user cannot update the grade
+    # ------------------------------------------------------------------
+
+    def test_non_admin_cannot_update_grade(self):
+        """A teacher (non-admin) should receive 403 and leave the grade
+        unchanged."""
+        teacher = self.teachers[0]
+        self.client.login(username=teacher.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(
+            response.status_code, 403,
+            "Expected 403 for teacher access, got %s" % response.status_code,
+        )
+
+        info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            info.graduation_year, self.initial_grad_year,
+            "Graduation year was incorrectly modified by a non-admin teacher.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 4: Unauthenticated user is redirected and grade is unchanged
+    # ------------------------------------------------------------------
+
+    def test_unauthenticated_cannot_update_grade(self):
+        """An unauthenticated visitor should be redirected to login (302) and
+        the graduation year must remain untouched."""
+        # Ensure no session cookie is active.
+        self.client.logout()
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(
+            response.status_code, 302,
+            "Expected 302 redirect for unauthenticated access, got %s"
+            % response.status_code,
+        )
+
+        info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            info.graduation_year, self.initial_grad_year,
+            "Graduation year was incorrectly modified by an unauthenticated user.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 5: Invalid (non-numeric) graduation_year does not crash silently
+    # and leaves the grade unchanged
+    # ------------------------------------------------------------------
+
+    def test_invalid_graduation_year_does_not_change_grade(self):
+        """Passing a non-integer graduation_year should be silently ignored:
+        the view returns 200 without crashing, and the graduation year in the
+        DB remains unchanged."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': 'not_a_number',
+        })
+        self.assertEqual(
+            response.status_code, 200,
+            "Expected 200 for invalid graduation_year input, got %s"
+            % response.status_code,
+        )
+
+        info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            info.graduation_year, self.initial_grad_year,
+            "Graduation year was incorrectly modified on invalid input.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 6: StudentInfo is recreated only for valid grade updates
+    # ------------------------------------------------------------------
+
+    def test_creates_student_info_when_missing(self):
+        """If a student's most recent profile has no StudentInfo row, an admin
+        grade update should recreate it and persist the new graduation year."""
+        profile = self.student.getLastProfile()
+        profile.student_info = None
+        profile.save()
+
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(response.status_code, 200)
+
+        updated_info = self.student.getLastProfile().student_info
+        self.assertIsNotNone(updated_info)
+        self.assertEqual(
+            updated_info.graduation_year, self.new_grad_year,
+            "Expected StudentInfo to be recreated and graduation year updated.",
+        )
+
+    def test_out_of_range_graduation_year_does_not_change_grade(self):
+        """Passing a graduation year outside configured grade options should be
+        ignored safely, leaving the existing graduation year unchanged."""
+        self.client.login(username=self.admin.username, password='password')
+
+        for invalid_year in ('-100', '999999'):
+            response = self.client.get(self.userview_base, data={
+                'username': self.student.username,
+                'graduation_year': invalid_year,
+            })
+            self.assertEqual(response.status_code, 200)
+
+            info = self.student.getLastProfile().student_info
+            self.assertEqual(
+                info.graduation_year, self.initial_grad_year,
+                "Graduation year changed unexpectedly for invalid input %s"
+                % invalid_year,
+            )
+
+    def test_invalid_graduation_year_does_not_create_missing_student_info(self):
+        """If StudentInfo is missing, invalid input must not recreate it."""
+        profile = self.student.getLastProfile()
+        profile.student_info = None
+        profile.save()
+
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': 'not_a_number',
+        })
+        self.assertEqual(response.status_code, 200)
+
+        profile.refresh_from_db()
+        self.assertIsNone(
+            profile.student_info,
+            "StudentInfo should not be created for invalid graduation year input.",
+        )
+
+    # ------------------------------------------------------------------
+    # Test 7: change_grade_form is present in template context
+    # ------------------------------------------------------------------
+
+    def test_change_grade_form_in_context(self):
+        """A GET to userview without a graduation_year param should still
+        include 'change_grade_form' in the template context so the UI can
+        render the grade-change widget."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            'change_grade_form', response.context,
+            "'change_grade_form' was not found in the userview template context.",
+        )

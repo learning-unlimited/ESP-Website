@@ -60,15 +60,29 @@ def get_from_id(id, module, strtype = 'object', error = True):
         return None
     return foundobj
 
+def _media_cache_version(rel_path, tag_name):
+    """Cache-busting query param for theme media; falls back to file mtime."""
+    val = Tag.getTag(tag_name)
+    if val:
+        return val
+    full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+    if os.path.exists(full_path):
+        return hex(int(os.path.getmtime(full_path)))
+    return ''
+
+
 def esp_context_stuff():
     context = {}
 
     tc = ThemeController()
     context['theme'] = tc.get_template_settings()
     context['current_theme_version'] = Tag.getTag("current_theme_version")
-    context['current_logo_version'] = Tag.getTag("current_logo_version")
-    context['current_header_version'] = Tag.getTag("current_header_version")
-    context['current_favicon_version'] = Tag.getTag("current_favicon_version")
+    context['current_logo_version'] = _media_cache_version(
+        'images/theme/logo.png', 'current_logo_version')
+    context['current_header_version'] = _media_cache_version(
+        'images/theme/header.png', 'current_header_version')
+    context['current_favicon_version'] = _media_cache_version(
+        'images/favicon.ico', 'current_favicon_version')
     context['settings'] = settings
 
     context['current_programs'] = Program.current_programs()
@@ -163,6 +177,15 @@ def render_to_response(template, request, context, content_type=None, use_reques
 
     _inject_active_program_tags(request, context)
 
+    # Shared base templates reference these optional values directly.
+    # Default them here so pages that don't populate them don't emit
+    # VariableDoesNotExist DEBUG noise during tests or local development.
+    context.setdefault('login_result', '')
+    context.setdefault('active_program_tags', [])
+    context.setdefault('active_program_tags_url', '')
+    context.setdefault('active_global_tags', [])
+    context.setdefault('active_global_tags_url', '')
+
     # create nav bar list
     if not 'navbar_list' in context:
         category = None
@@ -236,10 +259,12 @@ def secure_required(view_fn):
         return view_fn(request, *args, **kwargs)
     return _wrapped_view
 
-def zip_download(files = [], zipname = 'files'):
+def zip_download(files = None, zipname = 'files'):
     """
     Zips a list of files together and returns it as a download
     """
+    if files is None:
+        files = []
     file_like = StringIO()
     zf = zipfile.ZipFile(file_like, 'w')
     for file in files:
