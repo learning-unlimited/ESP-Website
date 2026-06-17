@@ -336,7 +336,7 @@ class UserSearchController(object):
                         q_program = q_program | ~Q(pk__in=subquery_qs)
 
             #   Get the user-specific part of the query (e.g. ID, name, school)
-            q_extra = self.query_from_criteria(recipient_type, data, program)
+            q_extra = self.query_from_criteria('any', data, program)
 
         qobject = (q_extra & q_program & Q(is_active=True))
 
