@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 import codecs
 from esp.program.models import VolunteerRequest
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.modules.forms.volunteer import VolunteerRequestForm, VolunteerImportForm
 from esp.program.modules.handlers.volunteersignup import VolunteerSignup
 from esp.users.models import ESPUser
@@ -57,6 +58,19 @@ class VolunteerManage(ProgramModuleObj):
             "seq": 0,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "volunteering":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_volunteering",
+            url="/manage/%s/volunteering" % base,
+            title="Volunteers",
+            category="Logistics",
+            keywords=["volunteers", "shifts", "signups"],
+        )
 
     """
         Create/delete timeslots for volunteers
@@ -194,7 +208,7 @@ class VolunteerManage(ProgramModuleObj):
             target_id = request.POST['user']
         else:
             context = {}
-            return HttpResponseRedirect( '/manage/%s/%s/volunteering' % (one, two) )
+            return HttpResponseRedirect( f'/manage/{one}/{two}/volunteering' )
 
         try:
             volunteer = ESPUser.objects.get(id=target_id)
