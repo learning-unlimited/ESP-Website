@@ -54,6 +54,21 @@ class TestUserSearchController(ProgramFrameworkTest):
         self.assertEqual(result.model, ESPUser)
         self.assertGreater(result.count(), 0)
 
+<<<<<<< HEAD
+    def test_username_exact_match(self):
+        """Username search should use iexact (not substring) matching."""
+        User.objects.create_user(username='john', password='x')
+        User.objects.create_user(username='johnny', password='x')
+
+        query = UserSearchController().query_from_criteria(
+            'any', {'username': 'john'}
+        )
+        results = User.objects.filter(query)
+        usernames = list(results.values_list('username', flat=True))
+        self.assertIn('john', usernames)
+        self.assertNotIn('johnny', usernames)
+
+=======
     def test_overlap_bug(self):
         """
         Verify that combining mutually exclusive checklist filters (e.g., 'attended' AND
@@ -93,3 +108,4 @@ class TestUserSearchController(ProgramFrameworkTest):
         # The other_user should NOT be found because they only have ONE of the records (AND logic)
         self.assertNotIn(other_user, results)
         self.assertEqual(results.count(), 1)
+>>>>>>> upstream/main
