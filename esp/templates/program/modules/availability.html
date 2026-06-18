@@ -21,10 +21,10 @@
                     </div>
                   </th></tr>
                   {% for time in group %}
-                    {% ifchanged time.slot.start|date %}
+                    {% ifchanged time.slot.start.day %}
                     <tr><th class="dateHeader weekday" nowrap="" onclick="Availability.header_switch(event,{{ forloop.parentloop.counter }});">
                       <div class="subheaderText">
-                        {{ time.slot.start|date:"D d M" }}
+                        {{ day_header_override|default:time.slot.pretty_date }}
                       </div>
                     </th></tr>
                     {% endifchanged %}

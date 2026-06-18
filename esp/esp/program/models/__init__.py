@@ -981,7 +981,7 @@ class Program(models.Model, CustomFormsLinkModel):
     current_programs.depend_on_model('program.Program')
     current_programs = staticmethod(current_programs)
 
-    def date_range(self):
+    def date_range_base(self):
         """ Returns string range from earliest timeslot to latest timeslot, or NoneType if no timeslots set """
         datetime_range = self.datetime_range()
 
@@ -999,6 +999,21 @@ class Program(models.Model, CustomFormsLinkModel):
                 return six.u('%s - %s') % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
         else:
             return None
+
+    def date_range(self):
+        """ Returns the date_range_pretty tag if set, otherwise falls back to date_range_base(). """
+        override = Tag.getProgramTag('date_range_pretty', self)
+        if override:
+            return override
+        return self.date_range_base()
+
+    def get_singleday_header_override(self):
+        """If a program is registered as one day on the website and date_range_pretty tag is set,
+        return the tag; otherwise none. This is intended for multi-week repeating programs that
+        are registered on the website as one day (e.g. MIT HSSP)."""
+        datetime_range = self.datetime_range()
+        is_one_day = datetime_range and datetime_range[0].date() == datetime_range[1].date()
+        return Tag.getProgramTag('date_range_pretty', self) if is_one_day else None
 
     def get_teacher_event_times(self, event_type):
         """event_type should be 'interview' or 'training'"""

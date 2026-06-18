@@ -79,7 +79,7 @@
 	       </span>
            {% endif %}
            <br />
-         {% if show_enrollment %} 
+         {% if show_enrollment and class.category != class.parent_program.open_class_category %}
          <strong>Enrollment</strong><br />
            {% for sec in class.get_sections %}
               {% with sec.isRegClosed as is_closed %}

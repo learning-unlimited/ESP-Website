@@ -6,7 +6,7 @@
     <th></th>
     <td>
         <a href="/manage/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">
-        Edit Teacher{% if class.moderators.count > 0 %} and Moderator{% endif %} List</a>
+        Edit Teacher{% if class.moderators.count > 0 %} and {{ program.getModeratorTitle }}{% endif %} List</a>
         <br />
         <a href="/manage/{{ program.getUrlBase }}/classavailability/{{ class.id }}">
         Check Class Availability</a>
@@ -66,6 +66,12 @@
     <th class="smaller">Room Request:</th>
     <td>
         {{ class.requested_room }}
+    </td>
+</tr>
+<tr>
+    <th class="smaller">Special Requests:</th>
+    <td>
+        {{ class.requested_special_resources }}
     </td>
 </tr>
 <tr>

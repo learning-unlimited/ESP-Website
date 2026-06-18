@@ -82,6 +82,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['just_changed_classes']=request.GET.get('just_changed_classes','')=='true'
         context['checkin_note'] = Tag.getProgramTag('student_onsite_checkin_note', program = prog)
 
+        context['day_header_override'] = prog.get_singleday_header_override()
+
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 
     @aux_call

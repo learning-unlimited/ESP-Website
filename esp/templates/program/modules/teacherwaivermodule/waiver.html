@@ -5,7 +5,10 @@
 <br />
 {% load render_qsd %}
 {% inline_program_qsd_block program "teach:waiver_instructions" %}
-Before attending {{ prog.niceName }}, please fill out the code of conduct at the following link: <a href="LINK GOES HERE" target="_blank">LINK TEXT GOES HERE</a>. Once you have completed this code of conduct (with email confirmation), check the box below and proceed with registration. Please email us at <a href="mailto:{{ prog.director_email }}">{{ prog.director_email }}</a> if you have any questions.
+Before attending {{ prog.niceName }}, please complete the <a href="/nowaiver.html" target="_blank">[FIXME] Minors Code of Conduct Form</a>&nbsp;AND&nbsp;the <a href="/nowaiver.html" target="_blank">[FIXME] liability waiver</a>.&nbsp;<strong>If you do not complete the code of conduct form&nbsp;prior to {{ prog.niceName }}, you will not be allowed to teach.</strong> Check the box below to confirm that you have read and understand this, and proceed
+to teacher registration.&nbsp;Please email us at <a href="mailto:{{ prog.director_email }}">{{ prog.director_email }}</a> if you have any questions.
+
+<b>You must fill out the linked forms above. Only clicking the checkbox is not sufficient.</b>
 {% end_inline_program_qsd_block %}
 <br />
 <form action="waiver" method="post">

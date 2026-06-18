@@ -3,7 +3,6 @@
 
 {{ form.errors }}
 
-{% if not user.getGrade or form.allow_change_grade_level %}
 <div class="alert">
 <button type="button" class="close" data-dismiss="alert">x</button>
 Please fill out your current age and grade accurately and honestly.
@@ -15,20 +14,22 @@ requirements with full knowledge of the outstanding students in the
 program. Please be honest and support the community.
 <br /> <br />
 {% if not user.getGrade and not form.allow_change_grade_level %}
-You will only be able to set your age and grade level ONCE. 
+You will only be able to set your age and grade level ONCE.
 After you click "Update Your Information!" below, you will not be
 able to change your age or grade level.
 <br /> <br />
 {% endif %}
-Your grade level will update automatically every August.
-</div>
-{% endif %}
-
+Your grade level updates automatically every August{% if not user.getGrade %}; if you skip a
+grade or take a year off, please email us and we will fix your grade{% endif %}.
+For a more detailed explanation of our age and grade level policy,
+please see our <a href="/learn/espolicy.html">policies</a>.
 {% if user.getGrade and not form.allow_change_grade_level %}
-    {% include "users/profiles/gradechangerequestinfo.html" %}
+<br /> <br />
+If you skipped a grade or took a year off, please
+<a href="{% url 'grade_change_request' %}">submit a grade change request</a>.
 {% endif %}
+</div>
 
-{% if form.dob %}
 <div class="control-group">
     <label for="id_dob_0" class="control-label">Date of Birth:</label>
     <div class="controls controls-row">
@@ -37,9 +38,7 @@ Your grade level will update automatically every August.
     {% endif %}
     </div>
 </div>
-{% endif %}
 
-{% if form.graduation_year %}
 <div class="control-group">
     <label for="id_graduation_year" class="control-label">Grade / Graduation Year:</label>
     <div class="controls">
@@ -48,7 +47,6 @@ Your grade level will update automatically every August.
     {% endif %}
     </div>
 </div>
-{% endif %}
 
 {% if form.gender %}
 <div class="control-group">
@@ -73,7 +71,6 @@ Your grade level will update automatically every August.
 </div>
 {% endif %}
 
-{% if form.k12school %}
 <div class="control-group">
     <label for="id_k12school" class="control-label">School:</label>
     <div class="controls controls-row">
@@ -83,7 +80,6 @@ Your grade level will update automatically every August.
     {% endif %}
     </div>
 </div>
-{% endif %}
 
 {% if form.unmatched_school %}
 <div class="control-group">
@@ -97,7 +93,6 @@ Your grade level will update automatically every August.
 </div>
 {% endif %}
 
-{% if form.heard_about %}
 <div class="control-group">
     <label for="id_heardofesp" class="control-label">How did you hear of this program?
     </label>
@@ -108,7 +103,6 @@ Your grade level will update automatically every August.
     {% endif %}
     </div>
 </div>
-{% endif %}
 
 {% if form.fields.studentrep %}
 <div class="control-group">

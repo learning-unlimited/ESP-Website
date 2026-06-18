@@ -226,6 +226,10 @@ class ProgramTagSettingsForm(BetterForm):
                     if isinstance(self.fields[key], forms.MultipleChoiceField):
                         set_val = set_val.split(",")
                     self.fields[key].initial = set_val
+                # Apply dynamic placeholder if specified
+                placeholder_fn = tag_info.get('placeholder_fn')
+                if placeholder_fn is not None:
+                    self.fields[key].widget.attrs['placeholder'] = placeholder_fn(self.program)
                 # For class reg tags, hide them if the fields are not in the form
                 if key.startswith("teacherreg_label") and key.partition("teacherreg_label_")[2] not in classreg_fields:
                     self.fields[key].widget = forms.HiddenInput()

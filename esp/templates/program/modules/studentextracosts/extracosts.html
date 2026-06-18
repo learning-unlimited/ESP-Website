@@ -21,14 +21,15 @@ td>ul { list-style-type: none; padding: 0px }
 <h1>Additional Purchases</h1>
 
 {% load render_qsd %}
+{% load getTag %}
 
 {% inline_program_qsd_block program "learn:extracosts" %}
 <h2>This program contains additional items that you can pay for online.</h2>
 <br />
 
-<p>To purchase any of the following items, please check its corresponding checkbox and click "Save".  They will be added to your bill if you pay by credit card.  Otherwise, you will be charged when you arrive for the program.</p>
+<p>To purchase any of the following items, please check its corresponding checkbox and click "Save".  They will be added to your bill if you pay by credit card.  Otherwise, you will be charged when you arrive for the program.{% if not "already_paid_extracosts_allowed"|getBooleanTag %}  If you plan to pay by credit card, you must select all additional items before paying.{% endif %}</p>
 
-<p>Food and other additional items can only be changed up until <b>1 week before the program.</b></p>
+<p>Food, t-shirts, and other additional items can only be updated until {% if not "already_paid_extracosts_allowed"|getBooleanTag %}you pay for the program online or, if you plan to pay upon arrival, {% endif %}1 week before the program.</p>
 {% end_inline_program_qsd_block %}
 
 <br /> 

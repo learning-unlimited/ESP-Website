@@ -101,6 +101,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
 
         context = {}
+        context['one'] = one
+        context['two'] = two
         timeslot_dict = {}
         # Populate the timeslot dictionary with the priority to class title
         # mappings for each timeslot.
@@ -143,6 +145,15 @@ class StudentRegTwoPhase(ProgramModuleObj):
         blockCount = 0
         schedule = []
         timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        timeslot_ids_with_classes = set(
+            ClassSection.objects.filter(
+                parent_class__parent_program=prog,
+                parent_class__status__gte=0,
+            ).values_list('meeting_times', flat=True)
+        )
+        timeslots = [t for t in timeslots
+                     if t.event_type.description == 'Compulsory'
+                     or t.id in timeslot_ids_with_classes]
 
         context['num_priority'] = prog.priorityLimit()
         context['num_star'] = int(Tag.getProgramTag("num_stars", program = prog))
@@ -174,6 +185,28 @@ class StudentRegTwoPhase(ProgramModuleObj):
             prevTimeSlot = timeslot
 
         context['timeslots'] = schedule
+
+        context['day_header_override'] = prog.get_singleday_header_override()
+
+        phasezero_inline = Tag.getBooleanTag('phasezero_inline', prog)
+        show_waiver = Tag.getBooleanTag('show_twophase_waiver_step', prog)
+        show_finaid = Tag.getBooleanTag('show_twophase_finaid_step', prog)
+        if phasezero_inline:
+            context['phasezero_inline'] = True
+            context['group_name'] = Tag.getProgramTag('phasezero_group_name', prog)
+        context['show_twophase_waiver_step'] = show_waiver
+        context['show_twophase_finaid_step'] = show_finaid
+
+        step_list = []
+        if show_waiver:
+            step_list.append('waiver')
+        if show_finaid:
+            step_list.append('finaid')
+        if phasezero_inline:
+            step_list.append('phasezero')
+        step_list.append('star')
+        step_list.append('rank')
+        context['step_num'] = {name: i + 1 for i, name in enumerate(step_list)}
 
         return render_to_response(
             self.baseDir()+'studentregtwophase.html', request, context)

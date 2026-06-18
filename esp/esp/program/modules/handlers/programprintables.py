@@ -51,14 +51,15 @@ from esp.accounting.controllers import ProgramAccountingController, IndividualAc
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
+from esp.middleware.esperrormiddleware import ESPError_Log, ESPError_NoLog
 from esp.utils.query_utils import nest_Q
 from esp.utils import cmp
-from esp.program.models import VolunteerOffer
+from esp.program.models import VolunteerOffer, Program
 
 from django import forms
 from django.conf import settings
 from django.http import HttpResponse
-from django.db.models import IntegerField, Case, When, Count
+from django.db.models import IntegerField, Case, When, Count, Q
 from django.template import loader
 from django.template.loader import render_to_string, get_template
 from django.utils.encoding import smart_str
@@ -822,6 +823,19 @@ class ProgramPrintables(ProgramModuleObj):
 
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff, display_name = 'Student Emergency Contact List')
 
+    def _scheditems_for_teacher(self, teacher):
+        """ Build scheditems list for a single teacher (teaching + moderating sections). """
+        classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
+                if cls.meeting_times.all().exists()
+                and cls.resourceassignment_set.all().exists()
+                and cls.status > 0])
+        scheditems = []
+        for cls in classes:
+            moderating = teacher not in cls.parent_class.get_teachers()
+            role = self.program.getModeratorTitle() if moderating else 'Teacher'
+            scheditems.append({'name': teacher.name(), 'teacher': teacher, 'cls': cls, 'role': role, 'moderating': moderating})
+        return scheditems
+
     @aux_call
     @needs_admin
     def teachermoderatorschedules(self, request, tl, one, two, module, extra, prog):
@@ -831,33 +845,29 @@ class ProgramPrintables(ProgramModuleObj):
         if not found:
             return filterObj
 
-        context = {'module': self     }
+        context = {'module': self}
         teachers = sorted(filterObj.getList(ESPUser).distinct())
 
         scheditems = []
-
         for teacher in teachers:
-            # get list of valid classes
-            classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-            # now we sort them by time/title
-            for cls in classes:
-                if teacher in cls.parent_class.get_teachers():
-                    role = 'Teacher'
-                else:
-                    role = self.program.getModeratorTitle()
-                scheditems.append({'name': teacher.name(),
-                                   'teacher': teacher,
-                                   'cls': cls,
-                                   'role': role})
+            scheditems.extend(self._scheditems_for_teacher(teacher))
 
         context['scheditems'] = scheditems
         context['moderators'] = True
         context['teachers'] = True
 
         return render_to_response(self.baseDir()+'teachermoderatorschedule.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def teacherschedule(self, request, tl, one, two, module, extra, prog):
+        """ generate schedule for a single teacher (teaching + moderating) specified by ?user=ID """
+        teacher = ESPUser.objects.get(id=request.GET["user"])
+        context = {
+            'module': self,
+            'scheditems': self._scheditems_for_teacher(teacher),
+        }
+        return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1163,8 +1173,152 @@ class ProgramPrintables(ProgramModuleObj):
             form = StudentScheduleFormatForm(program = prog)
 
         context['form'] = form
+        context['all_programs'] = Program.objects.exclude(id=prog.id).order_by('-id')
 
         return render_to_response(self.baseDir()+'studentscheduleform.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def studentscheduleformajax(self, request, tl, one, two, module, extra, prog):
+        program_id = request.GET.get('program_id')
+        try:
+            source_prog = Program.objects.get(id=program_id)
+        except (Program.DoesNotExist, ValueError, TypeError):
+            return HttpResponse(json.dumps({'error': 'Program not found'}), content_type='application/json', status=404)
+        data = {
+            'schedule_fields': json.loads(Tag.getProgramTag("student_schedule_format", source_prog) or '[]'),
+            'pretext': Tag.getProgramTag("student_schedule_pretext", source_prog) or '',
+            'posttext': Tag.getProgramTag("student_schedule_posttext", source_prog) or '',
+        }
+        if not data['schedule_fields']:
+            form = StudentScheduleFormatForm(program=source_prog)
+            data['schedule_fields'] = [choice[0] for choice in form.fields['schedule_fields'].choices]
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+    def _enrolled_students_qs(self, prog):
+        return ESPUser.objects.filter(
+            studentregistration__section__parent_class__parent_program=prog,
+            studentregistration__relationship__name='Enrolled',
+        ).filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')).distinct().order_by('last_name', 'first_name', 'username')
+
+    @aux_call
+    @needs_admin
+    def studentschedulepreviewsearch(self, request, tl, one, two, module, extra, prog):
+        q = request.GET.get('q', '').strip()
+        qs = self._enrolled_students_qs(prog)
+        if q:
+            qs = qs.filter(
+                Q(last_name__istartswith=q) | Q(first_name__istartswith=q) | Q(username__istartswith=q)
+            )
+        results = list(qs.values('id', 'first_name', 'last_name', 'username')[:20])
+        for r in results:
+            r['label'] = '%s, %s (%s)' % (r['last_name'], r['first_name'], r['username'])
+        return HttpResponse(json.dumps(results), content_type='application/json')
+
+    @aux_call
+    @needs_admin
+    def studentschedulepreview(self, request, tl, one, two, module, extra, prog):
+        user_id = request.GET.get('user_id')
+        qs = self._enrolled_students_qs(prog)
+        if user_id:
+            try:
+                student = qs.get(id=user_id)
+            except ESPUser.DoesNotExist:
+                return HttpResponse('Student not found or not enrolled in this program.', status=404)
+        else:
+            # Apply optional criteria filters to find the first alphabetical matching student.
+            # All filtering uses id__in subqueries to avoid adding JOINs directly to the
+            # complex _enrolled_students_qs (which has its own multi-table joins + DISTINCT).
+            # Mixing JOIN conditions into that queryset causes bad SQL plans and incorrect
+            # results, especially with exclude() over multi-valued relations.
+            extracosts = request.GET.get('extracosts', '')
+            payment = request.GET.get('payment', '')
+
+            if extracosts:
+                pac = ProgramAccountingController(prog)
+                extracost_ids = ESPUser.objects.filter(
+                    nest_Q(pac.all_transfers_Q(optional_only=True), 'transfer')
+                ).values_list('id', flat=True)
+                if extracosts == 'yes':
+                    qs = qs.filter(id__in=extracost_ids)
+                else:  # 'no'
+                    qs = qs.exclude(id__in=extracost_ids)
+
+            def _finaid_ids():
+                return ESPUser.objects.filter(
+                    financialaidrequest__program=prog,
+                    financialaidrequest__financialaidgrant__isnull=False,
+                ).filter(
+                    Q(financialaidrequest__financialaidgrant__percent__isnull=False) |
+                    Q(financialaidrequest__financialaidgrant__amount_max_dec__isnull=False)
+                ).values_list('id', flat=True)
+
+            def _paid_ids():
+                return ESPUser.objects.filter(
+                    transfer__line_item__for_payments=True,
+                    transfer__source__isnull=True,
+                    transfer__line_item__program=prog,
+                ).values_list('id', flat=True)
+
+            if not payment:
+                student = qs.first()
+            elif payment == 'partial':
+                # ORM pre-filter: made a direct payment AND has an unsettled charge.
+                # IAC confirmation guards against overpayments where paid_in may not be
+                # set on all charge rows despite amount_due <= 0.
+                unpaid_charge_ids = ESPUser.objects.filter(
+                    transfer__line_item__for_payments=False,
+                    transfer__paid_in__isnull=True,
+                    transfer__line_item__program=prog,
+                ).values_list('id', flat=True)
+                candidates = qs.filter(id__in=_paid_ids()).filter(id__in=unpaid_charge_ids)
+                student = None
+                for s in candidates:
+                    iac = IndividualAccountingController(prog, s)
+                    if iac.amount_due() > 0 and iac.amount_paid() > 0:
+                        student = s
+                        break
+            elif payment in ('finaid_partial', 'finaid_full'):
+                candidates = qs.filter(id__in=_finaid_ids())
+                student = None
+                for s in candidates:
+                    iac = IndividualAccountingController(prog, s)
+                    match = iac.amount_due() > 0 if payment == 'finaid_partial' else iac.amount_due() <= 0
+                    if match:
+                        student = s
+                        break
+            else:
+                # unpaid / full — IAC needed because required transfers may not exist
+                # in DB yet (ensure_required_transfers is lazy).
+                if payment == 'unpaid':
+                    candidates = qs.exclude(id__in=_paid_ids())
+                else:  # 'full'
+                    candidates = qs.filter(Q(id__in=_paid_ids()) | Q(id__in=_finaid_ids()))
+
+                student = None
+                for s in candidates:
+                    iac = IndividualAccountingController(prog, s)
+                    match = iac.amount_due() <= 0 if payment == 'full' else iac.amount_due() > 0
+                    if match:
+                        student = s
+                        break
+
+            if student is None:
+                if extracosts or payment:
+                    return HttpResponse('No enrolled student matches the selected criteria.', status=404)
+                return HttpResponse('No enrolled students found for this program.', status=404)
+        file_type = extra.strip() if extra else 'pdf'
+        try:
+            return ProgramPrintables.get_student_schedules(request, [student], prog, file_type)
+        except (ESPError_Log, ESPError_NoLog):
+            # Re-run with file_type='log' to retrieve the full LaTeX log.
+            # render_to_latex returns the log as text/plain even on compile failure,
+            # so this second run will not raise regardless of the LaTeX error.
+            try:
+                log_response = ProgramPrintables.get_student_schedules(request, [student], prog, 'log')
+                return HttpResponse(b'=== LaTeX error log ===\n\n' + log_response.content, content_type='text/plain', status=500)
+            except Exception as e:
+                return HttpResponse(str(e), content_type='text/plain', status=500)
 
     @aux_call
     @needs_onsite_no_switchback
@@ -1318,6 +1472,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
+        context['MEDIA_ROOT'] = settings.MEDIA_ROOT.rstrip('/') + '/'
 
         basedir = 'program/modules/programprintables/'
         if Tag.getProgramTag("student_schedule_format", prog):
@@ -1985,6 +2140,7 @@ class StudentScheduleFormatForm(forms.Form):
                                                            ("required_costs", "Required Choices"),
                                                            ("optional_costs", "Optional Purchases"),
                                                            ("codes", "Class Codes"),
+                                                           ("teacher_pronouns", "Teacher Pronouns"),
                                                           ],
                                                 widget = forms.widgets.CheckboxSelectMultiple,
                                                 label = "Select the fields that you would like to include in the schedule",

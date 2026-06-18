@@ -1,19 +1,25 @@
 {% autoescape off %} {% load latex %} {% load main %} {% load getTag %}
 \documentclass[letterpaper,12pt]{article}
-\usepackage[left=.75in,top=1in,bottom=.75in,right=.75in]{geometry}
+\usepackage{fullpage}
+\usepackage[left=.5in,top=1cm,right=.5in]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage{multicol}
 \usepackage{fancyhdr}
 \usepackage{tabularx}
 \usepackage{array}
-\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{multirow}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
-\usepackage[code=Code39,X=.5mm,ratio=2.25,H=2cm]{makebarcode}
+\usepackage[code=Code39,X=.5mm,ratio=2.25,H=3cm]{makebarcode}
+
+\graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ MEDIA_ROOT }}{% templatetag closebrace %}{% templatetag closebrace %}
 
 \pagestyle{fancy}
-\fancyhead[C]{\Huge \textsf{\textbf{ {{ program.niceName|texescape }} } }}
-\setlength\headheight{16pt}
-\renewcommand{\headrulewidth}{3pt}
+\fancyhead[C]{\Huge \textbf{ {{ program.niceName|texescape }} } \normalsize \\
+\rule{\linewidth}{1mm}}
+\setlength\headheight{60pt}
+\renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
 \fancyfoot{}
 
@@ -24,7 +30,7 @@
 \begin{document}
 {% for student in students %}
 \renewcommand{\nameblock}{
-\textbf{Name: {{ student.name|texescape }} \\{% if schedule_format.username %}
+\noindent\textbf{Name: {{ student.name|texescape }} \\{% if schedule_format.username %}
 Username: {{ student.username|texescape }} \\{% endif %}{% if schedule_format.userid %}
 User ID: {{ student.id }} \\{% endif %}
 }
@@ -32,89 +38,88 @@ User ID: {{ student.id }} \\{% endif %}
 
 \renewcommand{\costsblock}{
 {% if schedule_format.amount_owed %}
-\textbf{Amount Owed: \fbox{\${{ student.itemizedcosttotal|floatformat:"-2" }} } }
+\textbf{Amount Owed: \fbox{ \${{ student.itemizedcosttotal|floatformat:"-2" }} } }
+{% endif %}
+{% if schedule_format.optional_costs and student.meals or schedule_format.required_costs and student.required %}
+\vspace{0.2cm}
+\textbf{Preordered Items:} \\
+{% if schedule_format.optional_costs %}
+{% for item in student.meals %}
+\indent {{ item.line_item.text|texescape }}{% if item.option.description %} {{item.option.description|texescape}}{% endif %} \\
+{% endfor %}
 {% endif %}
 {% if schedule_format.required_costs and student.required %}
-\vspace{.5ex}
-\textbf{Required Choices: } \\
-\vspace{.5ex}
-\begin{tabular}{ | l | }	
-{% for item in student.required %}\hline	
-$\Box$  {{item.line_item.text|texescape}}{% if item.option.description %} -- {{ item.option.description|texescape }}{% endif %} \\	
-{% endfor %}\hline	
-\end{tabular}
+\textbf{Required:} \\
+{% for item in student.required %}
+\indent {{ item.line_item.text|texescape }}{% if item.option.description %} {{item.option.description|texescape}}{% endif %} \\
+{% endfor %}
 {% endif %}
-{% if schedule_format.optional_costs and student.meals %}
-\vspace{1ex}
-\textbf{Optional Purchases: } \\
-\vspace{.5ex}
-\begin{tabular}{ | l | }	
-{% for item in student.meals %}\hline	
-$\Box$  {{item.line_item.text|texescape}}{% if item.option.description %} -- {{ item.option.description|texescape }}{% endif %} \\	
-{% endfor %}\hline	
-\end{tabular}
 {% endif %}
 }
 
 \renewcommand{\barcodeblock}{
-{% if schedule_format.barcode %}\barcode{% templatetag openbrace %}{{ student.id }}{% templatetag closebrace %}{% endif %}
+\barcode{% templatetag openbrace %}{{ student.id }}{% templatetag closebrace %}
 }
 
+\setlength{\multicolsep}{0pt}
 \begin{multicols}{3}
-
-\begin{flushleft}
-\costsblock
-\end{flushleft}
-
+\nameblock
 \columnbreak
 \begin{center}
+\vspace{0.6cm}
 Student Schedule for \\
 
-\begin{spacing}{1}
-\LARGE \bfseries {{ student.name|texescape }}
-\end{spacing}
+{\LARGE\textbf{% templatetag openbrace %}{{ student.name|texescape }}{% templatetag closebrace %}
 
+{% templatetag closebrace %}
 \end{center}
-
 \columnbreak
-
-\begin{flushright}
-\nameblock
-\vspace{1ex}
-\barcodeblock
-\end{flushright}
-
+\begin{flushleft}
+\vspace{2cm}
+\costsblock
+\end{flushleft}
 \end{multicols}
-
-\renewcommand\tabularxcolumn[1]{m{#1}}
+\vspace*{0.4cm}
 
 {{ pretext }}
+\newpage
 
-\begin{center}
-{\large \textbf{Class Schedule} \\}
-\vspace{0.25cm}
-\begin{tabularx}{\textwidth}{|m{1.7in}|X|{% if schedule_format.codes %}m{0.55in}|{% endif %}{% templatetag closebrace %}
-\hline
-\textbf{Time and Room} & \textbf{Class and Teacher}{% if schedule_format.codes %} & \textbf{Code}{% endif %} \\
+\def\arraystretch{1.2}
+\begin{tabularx}{18cm}{|>{\raggedright}p{1.6in}|>{\raggedright}p{1in}|X|}
+\multicolumn{1}{l}{\textbf{Time}} & \multicolumn{1}{l}{\textbf{Room}} & \multicolumn{1}{l}{\textbf{Class and Teacher}} \\
 {% for cls in student.classes %}\hline
-{% if cls.friendly_times|length_is:"0" %}N/A{% endif %}{{ cls.friendly_times|join:", " }} \newline
-\footnotesize{ {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms.0|texescape }}{% endif %} } &
-{% if cls.event_type.description == "Compulsory" %}{{ cls.description }}{% elif cls.title|length_is:"0" %}N/A{% else %}{{ cls.title|truncatewords_char:45|texescape }}{% endif %} \newline
-{% if "teacher_profile_pronoun_field"|getBooleanTag %}
-\footnotesize{ {{ cls.parent_class.getTeacherNamesWithPronouns|join:", "|truncatewords_char:50|texescape }} }
-{% else %}
-\footnotesize{ {{ cls.parent_class.getTeacherNames|join:", "|truncatewords_char:50|texescape }} }
-{% endif %}{% if schedule_format.codes %}  &
-\texttt{% templatetag openbrace %}{{ cls.emailcode }}{% templatetag closebrace %}
-{% endif %} \\
+{% if cls.friendly_times|length_is:"0" %}N/A{% endif %}{{ cls.friendly_times|join:",\\newline " }} &
+{% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} &
+{% if cls.event_type.description == "Compulsory" %}{{ cls.description }}{% elif cls.title|length_is:"0" %}N/A{% else %}{{ cls.title|truncatewords_char:45|texescape }}{% if schedule_format.codes and cls.parent_class.category.category != 'Lunch' %} \footnotesize{ (\texttt{% templatetag openbrace %}{{ cls.emailcode }}{% templatetag closebrace %}) }{% endif %}{% endif %} \newline
+{% if schedule_format.teacher_pronouns %}\footnotesize{ {{ cls.parent_class.getTeacherNamesWithPronouns|join:", "|truncatewords_char:50|texescape }} }{% else %}\footnotesize{ {{ cls.parent_class.getTeacherNames|join:", "|truncatewords_char:50|texescape }} }{% endif %} \\
 {% endfor %}\hline
 \end{tabularx}
 
-\end{center}
-
+\vspace{0.4cm}
 {{ posttext }}
 
+{% if schedule_format.barcode %}
+\newpage
+\begin{center}
+\barcodeblock \hspace*{\fill} \barcodeblock
+
+\vspace*{\fill}
+
+{\LARGE \nameblock}
+
+\vspace*{\fill}
+
+\barcodeblock \hspace*{\fill} \barcodeblock
+
+\vspace{1in}
+\end{center}
+\newpage
+\thispagestyle{empty}
+\vspace*{\fill}
+\newpage
+{% else %}
 {% if not forloop.last %}\pagebreak{% endif %}
+{% endif %}
 {% endfor %}
 
 \end{document}

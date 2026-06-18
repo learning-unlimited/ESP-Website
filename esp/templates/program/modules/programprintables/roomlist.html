@@ -24,7 +24,7 @@
     <td>{% autoescape off %}{{ room.prog_available_times }}{% endautoescape %}</td>
     <td>
         {% for f in room.furnishings %}
-            {{ f.res_type.name }}{% if not forloop.last %}<br />{% endif %}
+            {{ f.res_type.name }}: {{ f.attribute_value }}{% if not forloop.last %}<br />{% endif %}
         {% endfor %}
     </td>    
 </tr>

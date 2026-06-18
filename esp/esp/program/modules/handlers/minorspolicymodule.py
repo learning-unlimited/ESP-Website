@@ -25,7 +25,7 @@ def minorspolicyacknowledgementform_factory(prog):
     observing_choices = Tag.getProgramTag('minors_observing_choices', prog, default=str([
         ('no', 'I have coteachers or commit to finding coteachers for all of my classes by the registration deadline.'),
         ('yes', "I agree to sit in on an hour of someone else's class for each hour of my classes without a coteacher."),
-        ('other', 'Other: I will explain in an email to the directors at esp@mit.edu.'),
+        ('other', 'Other: I will explain in an email to the directors at %s.' % prog.director_email),
     ]))
     observing_label = Tag.getProgramTag('minors_observing_label', prog, default='The MIT Minors Policy requires that all classes have at least 2 adults present at all times.')
 

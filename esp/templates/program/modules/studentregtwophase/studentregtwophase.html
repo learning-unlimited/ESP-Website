@@ -31,7 +31,7 @@
 .progress-custom .progress-value{
     display: table-cell;
     vertical-align: middle;
-    width: 40%; 
+    width: 40%;
     padding-left: 1em;
 }
 
@@ -70,9 +70,41 @@
 Welcome to the registration lottery for {{program.niceName}}. Please complete all of the steps below to select your class preferences. You may come back to this page to update your preferences at any time before the deadline.
 {% end_inline_program_qsd_block %}
 
+{% if show_twophase_waiver_step %}
 <hr>
 
-<h1>Step 1 &ndash; Star all classes you are interested in taking</h1>
+<h1>Step {{ step_num.waiver }} &ndash; Submit waiver</h1>
+{% inline_program_qsd_block program "learn:studentregtwophase/step_waiver" %}
+<p>Please fill out the {{program.program_type}} waiver: <b><a href="https://example.com">[INSERT LINK HERE]</a></b></p>
+{% end_inline_program_qsd_block %}
+{% endif %}
+
+{% if show_twophase_finaid_step %}
+<hr>
+
+<h1>Step {{ step_num.finaid }} &ndash; Apply for financial aid</h1>
+{% inline_program_qsd_block program "learn:studentregtwophase/step_finaid" %}
+<p>Financial limitations should not prevent anyone from participating in {{program.program_type}}. If costs are at all holding you back, please <a href="/learn/{{program.getUrlBase}}/finaid" target="_blank">request financial aid</a>!</p>
+{% end_inline_program_qsd_block %}
+{% endif %}
+
+{% if phasezero_inline %}
+<hr>
+
+<h1>Step {{ step_num.phasezero }} &ndash; Indicate {{ group_name }}</h1>
+{% inline_program_qsd_block program "learn:studentregtwophase/step2phasezero" %}
+If we need to turn away some students because the MIT administration imposes campus access limits, we will do so by random lottery.
+
+<b>You can choose a group of people to join with in a "staple group," and we'll either accept all of you at Splash or none of you.</b> For example, if you're part of a family coming from far away, you might want to join a staple group with your siblings.
+
+Joining a staple group will neither increase nor decrease your chance of being chosen to attend Splash; it's just a way to choose a group of other people with whom you'll be accepted or not accepted. (And in a perfect world, we won't have to reject anyone at all.)
+{% end_inline_program_qsd_block %}
+<iframe src="/learn/{{one}}/{{two}}/studentregphasezero" width="100%" height="600" style="display:block; margin:0 auto;"></iframe>
+{% endif %}
+
+<hr>
+
+<h1>Step {{ step_num.star }} &ndash; Star all classes you are interested in taking</h1>
 {% inline_program_qsd_block program "learn:studentregtwophase/step1" %}
 <p>
 Follow the link below to star classes you would consider taking for {{program.niceName}}.
@@ -87,7 +119,7 @@ View the classes >>
 <br>
 <hr>
 
-<h1>Step 2 &ndash; Rank the top {{num_priority}} classes for each time</h1>
+<h1>Step {{ step_num.rank }} &ndash; Rank the top {{num_priority}} classes for each time</h1>
 {% inline_program_qsd_block program "learn:studentregtwophase/step2" %}
 <p>
 Rank your preferences for each time block during {{program.niceName}}. We highly
@@ -103,7 +135,7 @@ recommend you have at least {{num_star}} classes starred for every priority slot
 </tr>
 {% for timeslot, priority_list, blockCount, star_count, perc_star in timeslots %}
     {% ifchanged timeslot.start.day %}
-        <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.pretty_date }}</th></tr>
+        <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes on {{ day_header_override|default:timeslot.pretty_date }}</th></tr>
     {% endifchanged %}
     {% ifchanged blockCount %}
         <tr><th class="small" colspan="3" height="3">Block {{ blockCount }}</th></tr>
@@ -114,8 +146,7 @@ recommend you have at least {{num_star}} classes starred for every priority slot
     </tr>
     {% else %}
     <tr>
-    <tr>
-        <td width="20%"align="center">{{ timeslot.short_description }}</td>
+        <td width="20%" align="center">{{ timeslot.start|time:"g:i" }}</td>
 
         <td style="vertical-align: top !important;">
             <div class="progress-custom">
@@ -146,4 +177,11 @@ recommend you have at least {{num_star}} classes starred for every priority slot
 {% endfor %}
 </table>
 </div>
+<br>
+{% inline_program_qsd_block program "learn:studentregtwophase/endofpageinstructions" %}
+<p>
+If you've reached this point, your preferences have all been saved. Look out for an email after lottery registration closes!
+</p>
+{% end_inline_program_qsd_block %}
+
 {% endblock %}

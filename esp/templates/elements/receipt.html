@@ -14,7 +14,7 @@
 {% block xtrajs %}{% endblock %}
 </head>
 <body>
-<p class="title">Registration Receipt for {{request.user.first_name}} {{request.user.last_name}}</p>
+<p class="title">{% block heading %}Registration Receipt for {{request.user.first_name}} {{request.user.last_name}}{% endblock %}</p>
 
 <div id="divmaintext">
 <hr />

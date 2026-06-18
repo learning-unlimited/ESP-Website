@@ -103,9 +103,9 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except:
-            raise ESPError("Corrupted POST data!  Please contact us at" +
-            "websupport@learningu.org and tell us how you got this error," +
-            "and we'll look into it.")
+            raise ESPError("Corrupted POST data!  Please contact us at " +
+            settings.DEFAULT_EMAIL_ADDRESSES['support'] + " and tell us how you got this error," +
+            " and we'll look into it.")
 
         userlist = PersistentQueryFilter.getFilterFromID(filterid, ESPUser).getList(ESPUser)
 

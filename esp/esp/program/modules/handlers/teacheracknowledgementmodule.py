@@ -12,15 +12,10 @@ def teacheracknowledgementform_factory(prog):
     bases = (forms.Form,)
     date_range = prog.date_range()
 
-    if prog.hasModule("TeacherModeratorModule"):
-        teach_text = "teacher and/or " + prog.getModeratorTitle().lower()
-    else:
-        teach_text = "teacher"
-
     if date_range is None:
-        label = six.u("I have read the above and commit to serving as a %s for my %s class(es).") % (teach_text, prog.program_type)
+        label = six.u("I have read the above and commit to teaching at %s.") % prog.program_type
     else:
-        label = six.u("I have read the above and commit to serving as a %s for my %s class(es) on %s.") % (teach_text, prog.program_type, date_range)
+        label = six.u("I have read the above and commit to teaching at %s on %s.") % (prog.program_type, date_range)
 
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)

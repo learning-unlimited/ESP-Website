@@ -148,6 +148,13 @@ all_global_tags = {
         'is_setting': True,
         'field': forms.CharField(validators=[RegexValidator(r'^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$', 'Enter a valid phone number.')])
     },
+    'nametag_logo_url': {
+        'is_boolean': False,
+        'help_text': 'URL of the logo image to display on nametags (e.g. /media/images/logo.png)',
+        'default': None,
+        'category': 'manage',
+        'is_setting': True,
+    },
     'finaid_form_fields': {
         'is_boolean': False,
         'help_text': 'A comma-separated list that specifies which Financial Aid Request fields to include in the form (all fields shown by default)',
@@ -578,6 +585,14 @@ all_global_tags = {
 # Any tag used with Tag.getProgramTag()
 # or Tag.getBooleanTag() with a program argument
 all_program_tags = {
+    'date_range_pretty': {
+        'is_boolean': False,
+        'help_text': 'Override the displayed date range for this program (e.g. for multi-week programs where classes meet every week but only the first week is registered on the website). If blank, the date range is computed from the program\'s timeslots.',
+        'default': None,
+        'category': 'manage',
+        'is_setting': True,
+        'placeholder_fn': lambda prog: prog.date_range_base() or '',
+    },
     'increment_default_grade_levels': {
         'is_boolean': True,
         'help_text': 'Consider all students to be one grade level higher (useful for summer programs)',
@@ -1243,6 +1258,34 @@ all_program_tags = {
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
     },
+    'phasezero_group_name': {
+        'is_boolean': False,
+        'help_text': 'Name for the phase zero lottery group (e.g. "Staple Group", "Lottery Ticket")',
+        'default': 'Staple Group',
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'phasezero_inline': {
+        'is_boolean': True,
+        'help_text': 'If enabled, the phase zero staple group form is shown inline on the two-phase student reg page instead of as a standalone page.',
+        'default': False,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'show_twophase_waiver_step': {
+        'is_boolean': True,
+        'help_text': 'Show a waiver submission step on the two-phase student reg page with a link to the waiver form (configured via QSD).',
+        'default': True,
+        'category': 'learn',
+        'is_setting': True,
+    },
+    'show_twophase_finaid_step': {
+        'is_boolean': True,
+        'help_text': 'Show a financial aid step on the two-phase student reg page (links to the finaid module).',
+        'default': True,
+        'category': 'learn',
+        'is_setting': True,
+    },
     'student_survey_isstep': {
         'is_boolean': True,
         'help_text': 'Should the student survey be shown as a step in student registration once the event has started?',
@@ -1394,7 +1437,36 @@ all_program_tags = {
     'student_schedule_pretext': {
         'is_boolean': False,
         'help_text': 'The text that is included right above the schedule in PDF student schedules (LaTeX is supported).',
-        'default': '',
+        'default': r"""\begin{center}
+Your schedule is on the back of this page!\\
+------------------------------\\
+Emergency? Call the \textbf{MIT Police} at \textbf{(617) 253-1212}.\\
+For assistance during Spark, go to \textbf{Help Desk} in Lobby 10 or call \textbf{(617) 253-4882}.\\
+------------------------------\\
+Need directions? Check out the map below, or you can go to \texttt{whereis.mit.edu} for an online map.\\
+Find bathroom directions and elevator locations at \texttt{esp.mit.edu/bathroom}. \\
+
+\vspace{12px}
+
+\begin{center}
+%\includegraphics[width=5in]{spark_26_map.jpeg}
+\vspace{48px}{\Huge \textbf{INSERT MAP HERE}} \vspace{48px}
+\end{center}
+
+\vspace{12px}
+
+For MIT room numbers, the digits before the dash are the \textbf{building number}.
+The first digit after the dash is the \textbf{floor number}, and the remaining digits are the \textbf{room number}.
+For example, 4-237 would be on the second floor of Building 4. \\
+
+\vspace{12px}
+
+For the \textbf{Hitchhiker's Guide to Spark}, visit \texttt{esp.mit.edu/hhg}! It contains all the details you'll need to know for Spark, including \textbf{getting help, lunch, emergency procedures and class changes}. \\
+
+\vspace{12px}
+
+You'll also be able to see and modify your schedule at \texttt{esp.mit.edu/[TODO: studentonsite shortlink]} around 20 minutes after checking in.
+\end{center}""",
         'category': 'manage',
         'is_setting': False,
     },
@@ -1408,17 +1480,7 @@ all_program_tags = {
     'student_schedule_posttext': {
         'is_boolean': False,
         'help_text': 'The text that is included right below the schedule in PDF student schedules (LaTeX is supported).',
-        'default': r"""\begin{center}
-\begin{tabularx}{17cm}{X c}
-\multicolumn{2}{c}{\small
-\textit{Please see your map for building directions, or ask anyone for help.}
-\normalsize } \\
-\multicolumn{2}{c}{\small
-\textit{If you are not signed up for a full day of classes, we encourage you to add more!}
-\normalsize } \\
-~ & ~
-\end{tabularx}
-\end{center}""",
+        'default': '',
         'category': 'manage',
         'is_setting': False,
     },

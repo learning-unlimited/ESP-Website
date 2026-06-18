@@ -54,6 +54,14 @@
     <p>
     Checked in {{ results.new|length }} students.  {{ results.not_found|length }} students were not found, {{ results.existing|length }} students were already checked in, and {{ results.not_student|length }} IDs did not correspond to students.
     </p>
+    {% if results.new %}
+    <p>
+    IDs successfully checked in:
+    {% for id in results.new %}
+    {{ id }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    </p>
+    {% endif %}
     {% if results.not_found %}
     <p>
     Students not found:
@@ -70,16 +78,16 @@
     {% endfor %}
     </p>
     {% endif %}
-    {% comment %}
+
     {% if results.existing %}
     <p>
-    IDs already checked in:
+    IDs already checked in previously:
     {% for id in results.existing %}
     {{ id }}{% if not forloop.last %},{% endif %}
     {% endfor %}
     </p>
     {% endif %}
-    {% endcomment %}
+
     {% endif %}
 
     <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">

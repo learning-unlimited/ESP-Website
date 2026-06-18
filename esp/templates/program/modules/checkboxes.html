@@ -16,7 +16,11 @@
     {% if not module.isRequired %}{% if not module.hideNotRequired %} <i>(not required)</i> {% endif %}{% endif %}
 {% endif %}
 </td>
-<td>{% if not module.useTemplate %}
+<td>{% if module.module.link_title == "Teacher Waiver" or module.module.link_title == "Student Waiver" %}
+{# we don't have a completion callback from docusign, so we can't show done/not-done for waivers #}
+<i class="glyphicon glyphicon-new-window external-sign" aria-label="External"></i>
+{% else %}
+{% if not module.useTemplate %}
 <a href="{{ module.get_full_path }}">
 {% else %}
 <a href="#module-{{ module.id }}">
@@ -27,9 +31,25 @@
     <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
 {% endif %}
 </a>
+{% endif %}
 
 </td>
 </tr>
+{# Hack: walk-in reg has no dedicated step; piggyback on "Register Your Classes" when open class reg is enabled #}
+{% if module.module.link_title == "Register Your Classes" and program.open_class_registration %}
+<tr>
+<td>
+<a href="/teach/{{ program.getUrlBase }}/makeopenclass"> Register Walk-In Classes </a>
+</td>
+<td>
+{% if module.isCompleted %}
+    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+{% else %}
+    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+{% endif %}
+</td>
+</tr>
+{% endif %}
 {% endif %}
 {% endfor %}
 

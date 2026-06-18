@@ -47,6 +47,7 @@
     <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}">Morph into this user</a>
     <a class="sidelink" href="/admin/users/espuser/{{user.id}}/">View on admin panel</a>
     <a class="sidelink" href="/admin/program/registrationprofile/?user__id={{user.id}}">View registration profiles</a>
+    <a class="sidelink" href="/admin/users/record/?user__id={{user.id}}">View records</a>
     {% if "Student" in user.getUserTypes %}
         <a id="biolink" class="sidelink" href="/accounting/user?target_user={{user.id}}">View accounting info</a>
     {% endif %}
@@ -78,10 +79,10 @@
                 {% endif %}
                 <div id="print-student-schedule">
                     <a id="getstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/studentschedule?user={{user.id}}" target="_new">Print schedule locally</a>
-                    <a id="printstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&next=/manage/userview?username={{user.username}}">Print schedule to default printer</a>
+                    <a id="printstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&next=/manage/userview%3Fusername%3D{{user.username}}">Print schedule to default printer</a>
                     {% if printers %}
                         {% for printer in printers %}
-                        <a id="printstudentschedulelink-{{printer|slugify}}" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&printer={{ printer }}&next=/manage/userview?username={{user.username}}">Print schedule to {{ printer }}</a>
+                        <a id="printstudentschedulelink-{{printer|slugify}}" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&printer={{ printer }}&next=/manage/userview%3Fusername%3D{{user.username}}">Print schedule to {{ printer }}</a>
                         {% endfor %}
                     {% endif %}
                 </div>
@@ -142,16 +143,8 @@
             {% endif %}
             {% if profile.teacher_info and profile.id %}
                 <div id="print-teacher-schedule">
-                    <a id="getteacherschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teacherschedule?user={{user.id}}" target="_new">Print teacher schedule locally</a>
+                    <a id="getteacherschedulelink" class="sidelink" href="/manage/{{program.getUrlBase}}/teacherschedule?user={{user.id}}" target="_new">Print teacher schedule locally</a>
                 </div>
-                {% if program|hasModule:"TeacherModeratorModule" %}
-                    <div id="print-teachermoderator-schedule">
-                        <a id="getteachermoderatorschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teachermoderatorschedule?user={{user.id}}" target="_new">Print combined teacher and {{program.getModeratorTitle|lower}} schedule locally</a>
-                    </div>
-                    <div id="print-moderator-schedule">
-                        <a id="getmoderatorschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/moderatorschedule?user={{user.id}}" target="_new">Print {{program.getModeratorTitle|lower}} schedule locally</a>
-                    </div>
-                {% endif %}
                 <table class="table-condensed modules">
                 {% for module in teach_modules %}
                     {% if module.isStep %}
@@ -197,6 +190,7 @@
                 <a id="getvolunteerschedulelink" class="sidelink" href="/volunteer/{{program.getUrlBase}}/volunteerschedule?user={{user.id}}" target="_new">Print schedule locally</a>
             </div>
         {% endif %}
+        <a href="/admin/users/permission/add/?user={{user.id}}&program={{program.id}}" class="sidelink">Give permissions</a>
     {% endif %}
 </div>
 

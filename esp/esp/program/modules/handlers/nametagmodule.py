@@ -179,13 +179,15 @@ class NameTagModule(ProgramModuleObj):
             users = []
             misc = request.POST['misc_info']
             for user in misc.split("\n"):
-                arruser = user.split(",", 1)
+                arruser = user.split(",", 2)
 
                 if len(arruser) >= 2:
                     user_title = arruser[1].strip()
+                    pronoun = arruser[2].strip() if len(arruser) >= 3 else None
                     users.append({'title': user_title,
                                   'name' : arruser[0].strip(),
-                                  'id'   : ''})
+                                  'id'   : '',
+                                  'pronoun': pronoun})
 
 
         elif idtype == 'blank':
@@ -235,6 +237,7 @@ class NameTagModule(ProgramModuleObj):
         context['users_and_backs'] = users_and_backs
         context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['phone_number'] = Tag.getTag('group_phone_number')
+        context['nametag_logo_url'] = Tag.getTag('nametag_logo_url')
 
         return render_to_response(self.baseDir()+'ids.html', request, context)
 

@@ -96,9 +96,12 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context['two'] = two
         user = request.user
 
-        if user.can_skip_phase_zero(self.program):
+        phasezero_inline = Tag.getBooleanTag('phasezero_inline', prog)
+
+        if user.can_skip_phase_zero(self.program) and not phasezero_inline:
             #Student has permission to skip this module, redirect to main student reg page
             #This includes students that won the lottery
+            #When inline, skip the redirect so the iframe shows confirmation instead
             return HttpResponseRedirect('/learn/%s/studentreg' % prog.getUrlBase())
         else:
             #Student must win the lottery to progress
@@ -107,9 +110,12 @@ class StudentRegPhaseZero(ProgramModuleObj):
             in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
             lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
             num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
+            group_name = Tag.getProgramTag('phasezero_group_name', prog)
             context['lottery_perm'] = lottery_perm
             context['lottery_run'] = lottery_run
             context['num_allowed_users'] = num_allowed_users
+            context['group_name'] = group_name
+            context['phasezero_inline'] = phasezero_inline
 
             if not in_lottery:
                 if lottery_run:
@@ -157,6 +163,9 @@ class StudentRegPhaseZero(ProgramModuleObj):
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
         lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
         num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
+        phasezero_inline = Tag.getBooleanTag('phasezero_inline', prog)
+        context['phasezero_inline'] = phasezero_inline
+        context['group_name'] = Tag.getProgramTag('phasezero_group_name', prog)
         context['lottery_perm'] = lottery_perm
         context['lottery_run'] = lottery_run
         context['num_allowed_users'] = num_allowed_users
@@ -214,6 +223,9 @@ class StudentRegPhaseZero(ProgramModuleObj):
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
         lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
         num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+        phasezero_inline = Tag.getBooleanTag('phasezero_inline', prog)
+        context['phasezero_inline'] = phasezero_inline
+        context['group_name'] = Tag.getProgramTag('phasezero_group_name', prog)
         context['lottery_perm'] = lottery_perm
         context['lottery_run'] = lottery_run
         context['num_allowed_users'] = num_allowed_users

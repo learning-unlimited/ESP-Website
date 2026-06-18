@@ -6,16 +6,17 @@
   <table class="bottom">
   <tr>
      <td class="left">
-        <!-- INSERT LOGO IMAGE HERE.  Example:
-            <img src="/media/images/my-logo-small.png" class="logo" />
-        -->
+        {% if nametag_logo_url %}
+        <img src="{{ nametag_logo_url }}" class="espimg logo" />
+        {% endif %}
      </td>
-     <td class="right url">
-    {% if user.id %}
-      <span class="studentid">{{ user.username }} (ID: {{ user.id }})</span>
-    {% endif  %}
-      <br /> 
-      http://{{ request.META.HTTP_HOST }}
+     <td class="right url">{% if user.id %}
+       <div class="espinfo">
+      <span class="studentid">{{ user.username }} (ID: {{ user.id }})</span> <br />
+      {% endif %}
+        http://{{ request.META.HTTP_HOST }}
+        {% if phone_number %}{{ phone_number }}{% endif %}
+        </div>
      </td>
   </tr>
   </table>
@@ -23,21 +24,17 @@
   <div class="restdiv">
     <table class="top">
     <tr>
-      <td class="left company">
-        {{ group_name }}
+      <td class="left programname">
+        <span class="programtitle">{{ programname }}</span>
       </td>
-      <td class="right phone"> {% if phone_number %}{{ phone_number }}{% endif %}</td>
     </tr>
     </table>
     <div class="firstspace">&nbsp;</div>
-    <span class="programtitle">{{ programname }}</span>
-    <div class="title">{{ user.title }}</div>
-    <hr />
-    {% if user.name %}
-        <div class="name">{{ user.name }} {% if user.title == "Teacher" and "teacher_profile_pronoun_field"|getBooleanTag or user.title == "Student" and "student_profile_pronoun_field"|getBooleanTag %} {% if user.pronoun %}
-            <div class="pronoun">({{ user.pronoun }})</div>
-        {% endif %} {% endif %}</div>
+    <div class="name">{{ user.name }}</div>
+    {% if user.pronoun %}
+      <div class="pronoun">({{ user.pronoun }})</div>
     {% endif %}
+    <div class="title">{{ user.title }}</div>
   </div>
 </div>
 </div>

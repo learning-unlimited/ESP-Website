@@ -2,7 +2,7 @@
 <head>
 <title>IDs</title>
 <style type="text/css" media="print,screen">
-body { font-family: georgia;
+body { font-family: helveticaneue;
        margin-left: 0in; margin-top: 0in; margin-right: 0in; margin-bottom: 0in}
 
 .right { text-align: right; }
@@ -15,8 +15,7 @@ body { font-family: georgia;
 .idback .help { font-size: 16px; font-weight: bolder; text-align:
                 center; }
 .idback .mapimg { width: 3.95in; height:2.18in; border: 1px solid black; }
-.idback .barcode { width: 3.4in; position: relative; left: .2in; }
-.idback .marginator { margin-top: .6in; }
+.idback .barcode { width: 3.4in; position: relative; top: 1in; left: .2in; }
 
 .singleid,.idback,.numlabel { width:3.9in; height: 3in; overflow: hidden;
             text-align: center; margin: 0px; padding: 0px;}
@@ -29,16 +28,16 @@ body { font-family: georgia;
 .singleid .bottom td   { vertical-align: bottom;}
 
 .singleid .restdiv   { position: relative; top:-0.4in; }
-.singleid .url,.company,.phone       { font-weight: bold;  }
-.singleid .company,.phone {text-decoration: underline; font-size: 9pt; }
+.singleid .url,.programname,.phone       { font-weight: bold;  }
+.singleid .programname,.phone {text-decoration: none; font-size: 9pt; }
 .singleid .url { font-size: 10pt; }
-.singleid .title { font-weight: bolder; font-size: 15pt;}
-.singleid .programtitle { font-weight: bolder; font-size: 19pt;}
-.singleid .name  { font-weight: bolder; font-size: 20pt; height: 1in }
-.singleid .pronoun  {font-size: 15pt}
+.singleid .title { font-weight: bolder; font-size: 12pt; text-align: left; }
+.singleid .programtitle { font-weight: bolder; font-size: 16pt; text-align: left; }
+.singleid .name  { font-weight: bolder; font-size: 28pt; text-align: left; line-height: 90% }
+.singleid .pronoun  { font-size: 15pt; text-align: left; }
 .singleid .studentid { font-size: 10pt; font-weight: normal; }
 .firstspace { height: 5pt; }
-.numlabel { text-align: center; vertical-align: center;
+.numlabel { text-align: left; vertical-align: center;
             font-size: 48pt; font-weight: bolder;
             border: 1px solid black; }
 .marginator { margin: .1in; }
@@ -47,8 +46,6 @@ body { font-family: georgia;
 
 .indicator { border: 1px solid black; border-width: 0 1px 0 1px; height: 0.85in;}
 </style>
-
-<script src="https://cdn.jsdelivr.net/gh/STRML/textFit@dfb36f5497b9f664184cffd064fda060fa77e171/textFit.min.js"></script>
 
 </head>
 <body>
@@ -155,10 +152,5 @@ body { font-family: georgia;
         {% endfor %}
     {% endif %}
 {% endfor %}
-
-
-<script>
-textFit(document.getElementsByClassName('name'), {minFontSize:10, maxFontSize: 40});
-</script>
 </body>
 </html>

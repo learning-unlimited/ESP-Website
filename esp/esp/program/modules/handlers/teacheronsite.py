@@ -73,6 +73,8 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['classes'] = classes
         context['checked_in'] = Record.objects.filter(program=prog, event__name='teacher_checked_in', user=user, time__year=now.year, time__month=now.month, time__day=now.day).exists()
 
+        context['day_header_override'] = prog.get_singleday_header_override()
+
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 
     @aux_call

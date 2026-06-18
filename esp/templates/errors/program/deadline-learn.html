@@ -9,12 +9,18 @@
 
 <strong>
 <p>
-This registration page ({{ moduleObj.module.getFriendlyName }}) is not currently open, possibly because you are either too early or too late.  Please look in the <a href="/learn/index.html">students section</a> of our site for information about the schedule for this program.  Alternatively, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.
+Registration for {{ moduleObj.program.niceName }} is not currently open.
 </p>
 
-<p>
-If you think this message was in error, send us an <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">email</a>, telling us what you were trying to do, the URL of the page, and that {{ extension }} closed.
-</p>
+<ul>
+<li> <p> If you are viewing this page before the <a href="/learn/{{moduleObj.program.program_type}}/index.html">registration period</a> for the upcoming program has begun, you are too early. Please check back later! </p> </li>
+<li> <p> If you are viewing this page after the lottery phase of student registration, don't worry: any lottery preferences you've submitted have been saved. Keep an eye out for an email in the next few days with lottery results and further information on logistics and payment. <p> </li>
+</ul>
 </strong>
+
+<p>
+If you think this message was in error, or if you have any other questions, please send us an <a href="mailto:{{moduleObj.program.director_email}}">email</a>, telling us <strong>what you were trying to do</strong>, the <strong>URL</strong> of this page, and that <strong>{{ extension }} closed</strong>. Additionally, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.
+</p>
+
 
 {% endblock %}

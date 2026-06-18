@@ -28,6 +28,13 @@
                                 {% elif map_provider == 'google' %}
                                     (<a href="/learn/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>)
                                 {% endif %}
+                                {% comment %}
+                                {% if section.resourceassignments %}
+                                    (<a title="Zoom Link" href="{{ section.resourceassignments.0.resource.attribute_value }}" target="_blank">Zoom link</a>)
+                                {% else %}
+                                    (<a title="Zoom Link" href="{{ section.classrooms.0.associated_resources.0.attribute_value }}" target="_blank">Zoom link</a>)
+                                {% endif %}
+                                {% endcomment %}
                                 {% if not forloop.last %}, {% endif %}
                             {% endfor %}
                         {% else %}

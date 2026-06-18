@@ -311,6 +311,8 @@ class StudentClassRegModule(ProgramModuleObj):
         if scrm:
             context['allow_removal'] = scrm.deadline_met('/Removal')
 
+        context['day_header_override'] = program.get_singleday_header_override()
+
         return context
 
 

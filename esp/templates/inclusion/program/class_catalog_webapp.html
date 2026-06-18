@@ -44,7 +44,7 @@
                     Click here to add this class
                 </button></div>
             {% else %}
-              <input type="submit" class="btn-disabled" name="action" value="{{ errormsg }}" id="submitbutton{{ sec.id }}" disabled />
+              <p style="background: #f774; color: #444; border-radius: 3px; border: 1px solid black; font-size: 1.5vh; display: inline-block; padding: 0.3vh">{% autoescape off %}{{ errormsg }}{% endautoescape %}</p>
             {% endif %}
         </form>
     </div>

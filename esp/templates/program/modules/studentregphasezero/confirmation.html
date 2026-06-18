@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends phasezero_inline|yesno:"elements/iframe,main.html" %}
 {% load render_qsd %}
 {% load users %}
 
@@ -49,15 +49,18 @@
 {% endblock %}
 
 {% block content %}
+{% if not phasezero_inline %}
 <h1 style="color: black">Phase Zero (Student Lottery) for {{program.niceName}}</h1>
 {% inline_program_qsd_block program "learn:studentregphasezero/top" %}
 Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. Only students selected in the student lottery may proceed to register for classes.
 {% end_inline_program_qsd_block %}
+{% endif %}
 
 {% if join_error %}
 <p><font color="red">{{ join_error }}</font></p>
 {% endif %}
 
+{% if not phasezero_inline %}
 <hr>
 
 <center>
@@ -80,15 +83,16 @@ This is confirmation that you are entered into our student lottery.
 The student lottery is now closed. No more changes may be made at this time. This page will be updated once the lottery has been run.
 </h1>
 {% endif %}
+{% endif %}
 {% if num_allowed_users > 1 %}
 {# Only show group information and options if students are allowed to be in groups #}
     <br><br>
     <h2>
     {% if lottery_size == 1 %}
-        You are the only student in your lottery group.
+        You are the only student in your {{ group_name|lower }}.
         <br>
     {% else %}
-        The following students are in your lottery group:
+        The following students are in your {{ group_name|lower }}:
         </h2>
         <br>
         <div id="lottery_group">
@@ -99,35 +103,41 @@ The student lottery is now closed. No more changes may be made at this time. Thi
         </ul>
         </div>
         {% if lottery_size == num_allowed_users %}
-            Note: Your lottery group is at the maximum size ({{ num_allowed_users }} students)
+            Note: Your {{ group_name|lower }} is at the maximum size ({{ num_allowed_users }} students). Email us at <a href="mailto:{{ program.director_email }}">{{ program.director_email }}</a> if you need more than {{ num_allowed_users }} students in your {{ group_name|lower }}, and we can add others manually.
         {% endif %}
     {% endif %}
     {% if lottery_size < num_allowed_users %}
-        Note: The maximum lottery group size is {{ num_allowed_users }} students.
+        Note: The maximum {{ group_name|lower }} size is {{ num_allowed_users }} students. Email us at <a href="mailto:{{ program.director_email }}">{{ program.director_email }}</a> if you need more than {{ num_allowed_users }} students in your {{ group_name|lower }}, and we can add others manually.
     {% endif %}
     <br>
     </center>
 
     {% if lottery_perm and not lottery_run %}
     {# Lottery is still open (and hasn't been run) #}
+        <center>
+        <form action="/learn/{{one}}/{{two}}/leavegroup" method="post" name="leavegroup">
+        {% csrf_token %}
+        <input type="submit" class="button1" value="Leave My {{ group_name }}">
+        </form>
+        </center>
         <hr>
 
         <p>
-        If you would like to join a different lottery group, please click the button below for further instructions:
+        If you would like to join a different {{ group_name|lower }}, please click the button below for further instructions:
         </p>
 
         <center>
 
-        <input type="button" class="button1" value="I Would Like To Join A Different Lottery Group" id="toggle" />
+        <input type="button" class="button1" value="Join A Different {{ group_name }}" id="toggle" />
 
         <div id="program_form">
         {% inline_program_qsd_block program "learn:studentregphasezero/lottery_id_form" %}
         <p>
-        1) Begin typing another student's <u>username</u> below<br>2) Select the correct username<br>3) Click the button.<br><br>Note: the student must already have a lottery ticket and the maximum allowed group size is <b>{{ num_allowed_users }}</b> students
+        1) Begin typing another student's <u>username</u> below<br>2) Select the correct username<br>3) Click the button.<br><br>Note: the student must already have a {{ group_name|lower }} and the maximum allowed group size is <b>{{ num_allowed_users }}</b> students. Email us at <a href="mailto:{{ program.director_email }}">{{ program.director_email }}</a> if you need more than {{ num_allowed_users }} students in your {{ group_name|lower }}, and we can add others manually.
         </p>
         {% end_inline_program_qsd_block %}
         <form action="/learn/{{one}}/{{two}}/joingroup" method="post" name="addstudent">
-
+        {% csrf_token %}
         <input type="text" name="student_username" id="student_username" />
         <input type="hidden" name="student_selected" id="student_id" />
         <br><br>

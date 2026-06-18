@@ -1,8 +1,7 @@
 <html>
 <head>
-<title>{% if teachers %}Teacher {% if moderators %}and {% endif %}{% endif %}{% if moderators %}{{ program.getModeratorTitle }} {% endif %}Schedules</title>
+<title>{{ program.niceName }} Teacher Schedule</title>
 <link rel='stylesheet' type='text/css' href='/media/styles/teacherschedule.css' />
-<script type="text/javascript" src="/media/scripts/nametag_barcodes.js"></script>
 </head>
 <body>
 {% if scheditems|length_is:0 %}
@@ -17,43 +16,19 @@
 <div id="pagebreak">&nbsp;</div>
 {% endif %}
 
-<table align="center" class="header">
-    <tr>
-        <td colspan="3" style="text-align: center;"><h1>{{ program.niceName }}</h1><hr class="hr"></td>
-    </tr>
-    <tr>
-        <td width="35%"></td>
-        <td class="title">{% if teachers %}Teacher {% if moderators %}and {% endif %}{% endif %}{% if moderators %}{{ program.getModeratorTitle }} {% endif %}Schedule for<h2>{{ scheditem.name }}</h2></td>
-        <td width="35%">
-            <div class="barcode">
-                <div id="inputdata{{ scheditem.teacher.id }}">{{ scheditem.teacher.id }}</div>
-            </div>
-            <script type="text/javascript">
-            /* <![CDATA[ */
-              function get_object(id) {
-               var object = null;
-               if (document.layers) {
-                object = document.layers[id];
-               } else if (document.all) {
-                object = document.all[id];
-               } else if (document.getElementById) {
-                object = document.getElementById(id);
-               }
-               return object;
-              }
-            get_object("inputdata{{ scheditem.teacher.id }}").innerHTML=DrawHTMLBarcode_Code39(get_object("inputdata{{ scheditem.teacher.id }}").innerHTML,0,"yes","in",0,1.5,.75,2.5,"bottom","center", "","black","white");
-            /* ]]> */
-            </script>
-        </td>
-    </tr>
-</table>
+<div class="title">{{ program.niceName }} Teacher Schedule for <br /><br />
+    <span>{{ scheditem.name }}</span>
+</div>
+<div class="description">
+<ul>
+<li>If you spent money for your class, get reimbursed by following the instructions at <strong>{{ request.scheme }}://{{ request.get_host }}/teach/{{ program.program_type }}/reimbursements.html</strong>.</li>
+<li>If there is an emergency, contact the MIT Police at <strong>617-253-1212</strong> (not 911!) After calling them, please call us to let us know of the emergency.</li>
+<li>For less urgent issues, contact {{ program.program_type }} HQ at <strong>617-253-4941</strong>.  If you have any questions, need help, need a projector, need an adapter, or anything else, please don't hesitate to call.</li>
+<li>Please remember that MIT's Protection of Minors Policy forbids you from being the only adult in a room with students. Therefore, please avoid situations that will leave you alone with students.</li>
+<li>We hope you enjoy teaching at {{ program.program_type }}!</li>
+</ul>
+</div>
 
-<div class="description">Here is your schedule.
-              Please show up to class on-time.<br />
-              If you have any questions, please visit the {{ settings.ORGANIZATION_SHORT_NAME }} help desk.
-            </div>
-<br />
-<br />
 <table align="center" cellspacing="0" cellpadding="2px" class="schedule">
 <tr><th colspan="4">Schedule</th></tr>
 <tr>
@@ -63,7 +38,6 @@
     <th>Time</th>
     <th>Room</th>
     <th>Class</th>
-    {% if moderators and teachers %}<th>Role</th> {% endif %}
 </tr>
 {% endifchanged %}
 {% autoescape off %}
@@ -72,7 +46,6 @@
   <td>{% if scheditem.cls.classrooms|length_is:0 %}N/A{% else %}
       {{ scheditem.cls.prettyrooms|join:"<br />" }}{% endif %}</td>
   <td>{% if scheditem.moderating %}<em>({{ program.getModeratorGerund }} class by {% for teacher in scheditem.cls.teachers %}{% if not forloop.first %}, {% endif %}{{ teacher.name }}{% endfor %})</em><br/>{% endif %}{{ scheditem.cls.title }}</td>
-    {% if moderators and teachers %}<td>{{ scheditem.role }}</td>{% endif %}
 </tr>
 {% endautoescape %}
 {% endfor %}

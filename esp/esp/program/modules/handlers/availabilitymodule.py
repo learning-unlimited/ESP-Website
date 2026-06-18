@@ -282,6 +282,8 @@ class AvailabilityModule(ProgramModuleObj):
         context["one"] = one
         context["two"] = two
 
+        context['day_header_override'] = self.program.get_singleday_header_override()
+
         return render_to_response(
             self.baseDir() + "availability_form.html", request, context
         )

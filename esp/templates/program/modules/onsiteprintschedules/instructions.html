@@ -19,14 +19,17 @@ Using this tool you can print student schedules for students on the fly.
 <br />
 To use this tool as intended you must:<br />
 <ol>
-<li>Get a printer that can reliably sit and be plugged into a printer</li>
+<li>Get a computer that can reliably sit and be plugged into a printer</li>
+<li>Update firefox to the most recent version on the computer</li>
 <li>Install a printer, and make SURE it's default (at least in Firefox)</li>
 <li>Use firefox :-D</li>
 <li>Set up the printer as default:<br />
 <ol>
 <li>Goto <tt>about:config</tt> and type `<tt>print_printer</tt>'. Enter the string title (exactly) for the {{ settings.ORGANIZATION_SHORT_NAME }} Printer.</li>
-<li>Rightclick on some whitespace and click on "New --> Boolean". Add <tt>print.always_print_silent</tt> and make it TRUE.</li>
-<li>While you're at it, you might as well make <tt>print.print_color</tt> false.</li>
+<li>Type in <tt>print.always_print_silent</tt> into the search bar, and make it a new boolean variable if it doesn't already exist; then set it to TRUE.</li>
+<li>Make <tt>print.print_duplex</tt> as a number variable if it doesn't already exist. Set it to 0 for single-sided, 1 for double-sided with long-edge binding, and 2 for double-sided with short-edge binding (you'll usually want it set to 1). </li>
+<li>While you're at it, you might as well make <tt>print.print_color</tt> FALSE.</li>
+<li>Note that the print_duplex and print_color settings might be overridden in per-printer config settings (e.g. <tt>print.printer_Brother_HL-2280DW.print_duplex</tt>), so if the settings don't seem to be working, check your per-printer settings as well.</li>
 </ol>
 Now your printer will now automatically print from firefox. Test this by printing this page. Notice it shouldn't open a dialog box or anything.
 </li>

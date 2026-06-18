@@ -82,15 +82,19 @@ Please select from options below.
         <div>
             <div>Users:</div>
             <select id="schedule_user_type">
+                {% if program|hasModule:"TeacherModeratorModule" %}
+                <option value="teachermoderatorschedules" selected data-get="combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo">
+                    Teachers and {{ program.getModeratorTitle }}s
+                </option>
+                <option value="teacherschedules" data-get="recipient_type=Teacher&base_list=class_approved">
+                    Teachers only
+                </option>
+                <option value="moderatorschedules" data-get="recipient_type=Teacher&base_list=assigned_moderator">
+                    {{ program.getModeratorTitle }}s only
+                </option>
+                {% else %}
                 <option value="teacherschedules" selected data-get="recipient_type=Teacher&base_list=class_approved">
                     Teachers
-                </option>
-                {% if program|hasModule:"TeacherModeratorModule" %}
-                <option value="moderatorschedules" data-get="recipient_type=Teacher&base_list=assigned_moderator">
-                    {{ program.getModeratorTitle }}s
-                </option>
-                <option value="teachermoderatorschedules" data-get="combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo">
-                    Teachers and {{ program.getModeratorTitle }}s
                 </option>
                 {% endif %}
                 <option value="volunteerschedules" data-get="recipient_type=Volunteer&base_list=volunteer_all">
@@ -99,7 +103,11 @@ Please select from options below.
             </select>
         </div>
         <div class="module_button" id="other_schedules">
+            {% if program|hasModule:"TeacherModeratorModule" %}
+            <a href="./teachermoderatorschedules?combo_base_list=Teacher:class_approved&checkbox_or_assigned_moderator#tab_combo" title="Generate Schedules">
+            {% else %}
             <a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Generate Schedules">
+            {% endif %}
                 <button type="button" class="module_link_large">
                     <div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Generate Schedules</div>
                 </button>

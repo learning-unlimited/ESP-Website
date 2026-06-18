@@ -4,6 +4,9 @@
     <tr>
         <th width="30%">
             {{ field.label_tag }}
+            {% if field.label == "Classroom space" %}
+                <span style="font-weight:bold;color:red;font-size:20px">*</span>
+            {% endif %}
         </th>
         <td>
             {% if forloop.first %}

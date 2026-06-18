@@ -367,7 +367,7 @@ class MessageRequest(models.Model):
             if self.creator is not None:
                 send_from = self.creator.get_email_sendto_address()
             else:
-                send_from = 'ESP Web Site <esp@mit.edu>'
+                send_from = 'ESP Web Site <%s>' % settings.DEFAULT_EMAIL_ADDRESSES['default']
 
         users = self.recipients.getList(ESPUser).distinct()
 
