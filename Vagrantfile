@@ -30,6 +30,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # vb.gui = true
     vb.customize ['modifyvm', :id, '--memory', '2048']
     vb.customize ["modifyvm", :id, "--cpus", "2"]
+    vb.customize ["modifyvm", :id, "--vrde", "off"] # disabled so vm doesn't steal port 5900
   end
 
 end
