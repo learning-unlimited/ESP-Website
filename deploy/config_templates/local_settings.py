@@ -25,6 +25,16 @@ MIDDLEWARE_LOCAL = []
 
 EMAIL_HOST_SENDER = 'esp.mit.edu'
 ALLOWED_SENDER_EMAIL_DOMAINS = [r'esp\.mit\.edu', r'mit\.edu', r'esp-dev\.mit\.edu']
+
+DEFAULT_EMAIL_ADDRESSES = {
+    'archive':           'archive@esp-dev.mit.edu',
+    'bounces':           'bounces@esp-dev.mit.edu',
+    'support':           'web@esp-dev.mit.edu',
+    'membership':        'esp@esp-dev.mit.edu',
+    'default':           'esp@esp-dev.mit.edu',
+    'treasury':          'esp-credit-cards@esp-dev.mit.edu',
+    'mailman_moderator': 'esp-moderators@esp-dev.mit.edu',
+}
 VARNISH_HOST = None
 DEBUG_TOOLBAR = True
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

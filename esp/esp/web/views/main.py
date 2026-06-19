@@ -181,7 +181,7 @@ def contact(request, section='esp'):
                 if form.cleaned_data['cc_myself']:
                     bcc.append(email)
 
-                email = settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()]
+                email = settings.DEFAULT_EMAIL_ADDRESSES['default']
 
             to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
 

@@ -72,12 +72,6 @@ class AvailabilityModule(ProgramModuleObj):
             "required": True,
             "seq": 1,
             "choosable": 1,
-            }, {
-            "admin_title": "Teacher Availability Checker",
-            "link_title": "Check Teacher Availability",
-            "module_type": "manage",
-            "seq": 0,
-            "choosable": 1,
             } ]
 
     def event_type(self):

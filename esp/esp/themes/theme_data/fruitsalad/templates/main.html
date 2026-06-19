@@ -131,21 +131,12 @@ var debug = {{ settings.DEBUG|yesno:"true,false" }};
         {% if theme.show_email %}
         <span class="normal">Email: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
         {% endif %}
-        {% if theme.contact_links %}
-        <span class="normal">
-          {% for link in theme.contact_links %}
-          <a href="{{ link.link }}">{{ link.text }}</a>
-          {% if forloop.counter|divisibleby:3 %}<br />
-          {% elif not forloop.last %} | {% endif %}
-          {% endfor %}
-        </span>
-        {% endif %}
-        {% if theme.faq_link or theme.facebook_link %}
-        <span class="normal">
+        {% if theme.faq_link or theme.contact_links or theme.facebook_link %}
+        <span class="normal links-row">
           {% if theme.faq_link %}
             <a href="{{ theme.faq_link }}">FAQ</a> |
           {% endif %}
-          <a href="/contact.html">contact us</a> |
+          {% for link in theme.contact_links %}<a href="{{ link.link }}">{{ link.text }}</a> | {% endfor %}
 	  <a href="/about/donate.html">donate</a>
           {% if theme.instagram_link %}
             | <a href="{{ theme.instagram_link }}">instagram</a>

@@ -87,5 +87,3 @@ class ContactForm(forms.Form):
     # If this is true, then the user has seen and clicked through a message
     # checking whether they want to recover login information.
     decline_password_recovery = forms.BooleanField(required=False, widget=forms.HiddenInput)
-
-    captcha = ReCaptchaField()
