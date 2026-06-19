@@ -534,7 +534,12 @@ def usersearch(request):
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
         found_users = found_users.all()
-        sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
+        def _last_active_sort_key(user):
+            # Sort by the user's most recent program (volunteers included), oldest-possible if none
+            program = user.get_last_active_program()
+            dates = program.dates() if program else None
+            return dates[0] if dates else datetime.date(datetime.MINYEAR, 1, 1)
+        sorted_users = sorted(found_users, key=_last_active_sort_key, reverse=True)
         return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
         raise ESPError("No user found by that name! Searched for `{}`".format(userstr), log=False)
@@ -553,7 +558,11 @@ def userview(request):
         except Program.DoesNotExist:
             raise ESPError("Sorry, can't find that program.", log=False)
     else:
-        program = user.get_last_program_with_profile()
+        program = user.get_last_active_program()
+        if program is None:
+            current = Program.current_programs()
+            if current:
+                program = current[0]
 
     learn_modules = []
     teach_modules = []
