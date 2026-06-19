@@ -16,12 +16,13 @@ import numpy
 
 from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.models import (
+    RegistrationProfile,
     RegistrationType,
     StudentRegistration,
     StudentSubjectInterest,
 )
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import RegistrationProfile, StudentInfo, ESPUser
+from esp.users.models import ESPUser, StudentInfo
 
 
 # ---------------------------------------------------------------------------
