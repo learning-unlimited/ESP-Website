@@ -838,8 +838,12 @@ def redirects(request, section=""):
                 if redirect_form.is_valid():
                     redirect = redirect_form.save(commit=False)
                     redirect.site = Site.objects.get_current()
-                    redirect.save()
-                    redirect_form = RedirectForm()
+                    existing = Redirect.objects.filter(site=redirect.site, old_path=redirect.old_path).first()
+                    if existing:
+                        context['duplicate_redirect'] = {'existing': existing, 'new_path': redirect.new_path}
+                    else:
+                        redirect.save()
+                        redirect_form = RedirectForm()
             elif request.POST.get('command') == 'load': # Load existing redirect into form
                 redirect_id = request.POST.get('id')
                 redirects = Redirect.objects.filter(id = redirect_id)

@@ -53,7 +53,28 @@ function deleteEmailRedirect() {
     <div class="dspcont">
     {% endif %}
 
+    {% if duplicate_redirect %}
+    <div class="alert alert-warning" style="padding:10px; margin-bottom:10px; border:1px solid #e6ac00; background:#fff8e1;">
+        <strong>{{ duplicate_redirect.existing.old_path }}</strong> already exists and points to
+        <strong>{{ duplicate_redirect.existing.new_path }}</strong>.
+        Update it to point to <strong>{{ duplicate_redirect.new_path }}</strong>?
+        <form method="post" style="display:inline; margin-left:10px;">
+            {% csrf_token %}
+            <input type="hidden" name="command" value="edit" />
+            <input type="hidden" name="id" value="{{ duplicate_redirect.existing.id }}" />
+            <input type="hidden" name="object" value="redirect" />
+            <input type="hidden" name="old_path" value="{{ duplicate_redirect.existing.old_path }}" />
+            <input type="hidden" name="new_path" value="{{ duplicate_redirect.new_path }}" />
+            <input type="submit" value="Yes, update" class="btn btn-warning" />
+        </form>
+        <form method="get" style="display:inline; margin-left:5px;">
+            <input type="submit" value="Cancel" class="btn btn-default" />
+        </form>
+    </div>
+    {% endif %}
+
     <form method="post">
+    {% csrf_token %}
     <input type="hidden" name="command" value="{% if redirect_form.instance.id %}edit{% else %}add{% endif %}" />
     {% if redirect_form.instance.id %}
     <input type="hidden" name="id" value="{{ redirect_form.instance.id }}" />
@@ -84,12 +105,14 @@ function deleteEmailRedirect() {
                 <center>
                     <a href="{{ redirect.old_path }}" target="_blank" class="btn btn-primary" />Test</a>
                     <form method="post">
+                        {% csrf_token %}
                         <input type="hidden" name="id" value="{{ redirect.id }}" />
                         <input type="hidden" name="command" value="load" />
                         <input type="hidden" name="object" value="redirect" />
                         <input type="submit" value="Edit" class="btn btn-primary" />
                     </form>
                     <form method="post" onsubmit="return deleteRedirect()">
+                        {% csrf_token %}
                         <input type="hidden" name="id" value="{{ redirect.id }}" />
                         <input type="hidden" name="command" value="delete" />
                         <input type="hidden" name="object" value="redirect" />
@@ -117,6 +140,7 @@ function deleteEmailRedirect() {
     {% endif %}
 
     <form method="post">
+    {% csrf_token %}
     <input type="hidden" name="command" value="{% if email_redirect_form.instance.id %}edit{% else %}add{% endif %}" />
     {% if email_redirect_form.instance.id %}
     <input type="hidden" name="id" value="{{ email_redirect_form.instance.id }}" />
@@ -146,12 +170,14 @@ function deleteEmailRedirect() {
             <td>
                 <center>
                     <form method="post">
+                        {% csrf_token %}
                         <input type="hidden" name="id" value="{{ er.id }}" />
                         <input type="hidden" name="command" value="load" />
                         <input type="hidden" name="object" value="email_redirect" />
                         <input type="submit" value="Edit" class="btn btn-primary" />
                     </form>
                     <form method="post" onsubmit="return deleteEmailRedirect()">
+                        {% csrf_token %}
                         <input type="hidden" name="id" value="{{ er.id }}" />
                         <input type="hidden" name="command" value="delete" />
                         <input type="hidden" name="object" value="email_redirect" />

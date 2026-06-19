@@ -461,6 +461,36 @@ class RedirectForm(forms.ModelForm):
         model = Redirect
         fields = ['old_path', 'new_path']
 
+    def clean_old_path(self):
+        value = self.cleaned_data['old_path']
+        if not value.startswith('/'):
+            raise forms.ValidationError("Old path must start with a slash (e.g. /mypage).")
+        if any(c.isspace() for c in value):
+            raise forms.ValidationError("Old path must not contain whitespace.")
+        return value
+
+    def clean_new_path(self):
+        value = self.cleaned_data['new_path']
+        if value.startswith('/'):
+            if any(c.isspace() for c in value):
+                raise forms.ValidationError("New path must not contain whitespace.")
+            return value
+        try:
+            validators.URLValidator()(value)
+        except forms.ValidationError:
+            raise forms.ValidationError(
+                "New path must either start with a slash (e.g. /mypage) or be a full URL (e.g. https://example.com)."
+            )
+        return value
+
+    def clean(self):
+        cleaned_data = super().clean()
+        old_path = cleaned_data.get('old_path')
+        new_path = cleaned_data.get('new_path')
+        if old_path and new_path and old_path == new_path:
+            raise forms.ValidationError("Old path and new path must be different to avoid a redirect loop.")
+        return cleaned_data
+
 class PlainRedirectForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(PlainRedirectForm, self).__init__(*args, **kwargs)

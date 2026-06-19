@@ -36,7 +36,9 @@ local_fabfile.py
 *.orig
 *.swp
 .espsettings
+.coverage
 
 
 # Mac
 .DS_Store
+/tmp/

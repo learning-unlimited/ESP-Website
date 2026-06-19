@@ -42,3 +42,8 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 
 SECRET_KEY = '%(secret_key)s'
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+
+# for shell_plus jupyter notebook:
+NOTEBOOK_ARGUMENTS = [
+    '--ip', '0.0.0.0',
+]

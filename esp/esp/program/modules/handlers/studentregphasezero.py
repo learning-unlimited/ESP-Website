@@ -282,7 +282,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             obj_list = []
 
         return JsonResponse(obj_list)
-    
+
     def send_join_emails(self,joined_student,prog):
         other_users=set()
         groups = PhaseZeroRecord.objects.filter(user=joined_student, program=prog)

@@ -85,7 +85,7 @@ class ClassChangeController(object):
 
     def get_changed_student_email_text(self, student_ind, for_real = False):
         if not self.check_in_room:
-            self.check_in_room = raw_input("What room should students check in at? ")
+            self.check_in_room = input("What room should students check in at? ")
             assert self.check_in_room
         student = self.students[student_ind]
         text = "<html>\nHello "+student.first_name+",<br /><br />\n\n"
