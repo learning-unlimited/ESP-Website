@@ -438,14 +438,21 @@ class ClassSection(models.Model):
                 if not ans:
                     ans = self.parent_class.class_size_max
             else:
-                ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
+                room_cap = self._get_room_capacity(rooms)
+                if self.parent_class.class_size_max is not None:
+                    ans = min(self.parent_class.class_size_max, room_cap)
+                else:
+                    ans = room_cap
 
         #hacky fix for classes with no max size
         if ans is None or ans == 0:
             # New class size capacity condition set for Splash 2010.  In code
             # because it seems like a fairly reasonable metric.
             if self.parent_class.allowable_class_size_ranges.all() and len(rooms) != 0:
-                ans = min(max(self.parent_class.allowable_class_size_ranges.order_by('-range_max').values_list('range_max', flat=True)[0], self.parent_class.class_size_optimal), self._get_room_capacity(rooms))
+                range_max = self.parent_class.allowable_class_size_ranges.order_by('-range_max').values_list('range_max', flat=True)[0]
+                size_optimal = self.parent_class.class_size_optimal
+                upper = max(range_max, size_optimal) if size_optimal is not None else range_max
+                ans = min(upper, self._get_room_capacity(rooms))
             elif self.parent_class.class_size_optimal and len(rooms) != 0:
                 ans = min(self.parent_class.class_size_optimal, self._get_room_capacity(rooms))
             elif self.parent_class.class_size_optimal:

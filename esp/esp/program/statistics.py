@@ -98,8 +98,8 @@ def demographics(form, programs, students, profiles, result_dict={}):
         result_dict['num_classes'] += program.classes().select_related().filter(status=ClassStatus.ACCEPTED).count()
         result_dict['num_sections'] += program.sections().select_related().filter(status=ClassStatus.ACCEPTED).count()
         for section in program.sections().select_related().filter(status=ClassStatus.ACCEPTED):
-            result_dict['num_class_hours'] += section.duration
-            result_dict['num_student_class_hours'] += section.duration*section.parent_class.class_size_max
+            result_dict['num_class_hours'] += section.duration or 0
+            result_dict['num_student_class_hours'] += (section.duration or 0) * (section.parent_class.class_size_max or 0)
     result_dict['num_class_hours'] = int(result_dict['num_class_hours'])
     result_dict['num_student_class_hours'] = int(result_dict['num_student_class_hours'])
 

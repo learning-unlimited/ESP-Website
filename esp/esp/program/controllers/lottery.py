@@ -827,14 +827,15 @@ class LotteryAssignmentController(object):
                 pref_array=numpy.logical_or(pref_array,rank_level[:,n])
             num_prefs=numpy.sum(pref_array)
 
-            max_capacity=min(sec.capacity,num_prefs)
+            section_capacity = sec.capacity or 0
+            max_capacity=min(section_capacity,num_prefs)
             if max_capacity==0:
                 continue
 
             # consider a class to be "as filled as it will reasonably get" if
             # it reaches capacity or if 1/2 of the people who ranked/starred it
             # get the class:
-            target_capacity=min(sec.capacity, num_prefs//2)
+            target_capacity=min(section_capacity, num_prefs//2)
 
             enrolled_array=self.student_sections[:,n]
             num_enrolled=numpy.sum(enrolled_array)

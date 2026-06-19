@@ -75,7 +75,7 @@ class ClassCreationController(object):
         except (TypeError, ClassSubject.DoesNotExist):
             raise ESPError("The class you're trying to edit (ID %s) does not exist!" % (repr(clsid)), log=False)
 
-        extra_time = reg_form._get_total_time_requested() - cls.sections.count() * float(cls.duration)
+        extra_time = reg_form._get_total_time_requested() - cls.sections.count() * float(cls.duration or 0)
         for teacher in cls.get_teachers():
             self.require_teacher_has_time(teacher, current_user, extra_time)
 

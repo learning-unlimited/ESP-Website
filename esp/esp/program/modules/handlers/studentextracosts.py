@@ -104,7 +104,7 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
         pac = ProgramAccountingController(self.program)
-        for line_item_type in pac.get_lineitemtypes(include_donations=False):
+        for line_item_type in pac.get_lineitemtypes(include_donations=False).exclude(text__in=pac.admission_items):
             student_desc['extracosts_%d' % line_item_type.id] = """Students who have opted for '%s'""" % line_item_type.text
             for option in line_item_type.options:
                 (option_id, option_amount, option_description, has_custom_amt) = option
@@ -121,8 +121,8 @@ class StudentExtraCosts(ProgramModuleObj):
         student_lists = OrderedDict()
         pac = ProgramAccountingController(self.program)
 
-        # Get all the line item types for this program.
-        for i in pac.get_lineitemtypes(include_donations=False):
+        # Get optional line item types only; exclude admission items (Program admission, Student payment).
+        for i in pac.get_lineitemtypes(include_donations=False).exclude(text__in=pac.admission_items):
             q_object = pac.all_transfers_Q(lineitemtype_id=i.id)
             students_q = nest_Q(q_object, 'transfer')
             if QObject:

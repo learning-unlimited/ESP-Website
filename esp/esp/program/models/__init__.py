@@ -72,6 +72,7 @@ from esp.dbmail.models import send_mail, BARE_EMAIL_PATTERN, _EMAIL_DOMAINS
 from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
+from esp.utils import cmp
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
