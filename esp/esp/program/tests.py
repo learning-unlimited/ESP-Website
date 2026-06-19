@@ -277,7 +277,7 @@ class ViewUserInfoTest(TestCase):
 
         # Create a volunteer user with no RegistrationProfile
         volunteer, created = ESPUser.objects.get_or_create(
-            username='testvolunteer999', 
+            username='testvolunteer999',
             defaults={'first_name': 'Test', 'last_name': 'Volunteer', 'email': 'vol@esp.mit.edu'}
         )
         if created:
