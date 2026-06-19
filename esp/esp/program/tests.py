@@ -293,6 +293,36 @@ class ViewUserInfoTest(TestCase):
 
         volunteer.delete()
 
+    def testVolunteerLastActiveProgram(self):
+        """ A user who only volunteers (no RegistrationProfile) should still have
+            their program returned by get_last_active_program(), even though the
+            profile-only get_last_program_with_profile() returns None for them. """
+        from esp.program.models import VolunteerRequest, VolunteerOffer
+
+        # Create a volunteer user with no RegistrationProfile
+        volunteer, created = ESPUser.objects.get_or_create(
+            username='testvolunteer998',
+            defaults={'first_name': 'Active', 'last_name': 'Volunteer', 'email': 'vol2@esp.mit.edu'}
+        )
+        if created:
+            volunteer.set_password(self.password)
+            volunteer.save()
+
+        # Sign the volunteer up for a shift on a real program, reusing a
+        # timeslot that make_program() already created (VolunteerRequest just
+        # needs some cal.Event; its type is irrelevant to get_last_active_program).
+        program = make_program()
+        timeslot = list(program.getTimeSlots())[0]
+        vr = VolunteerRequest.objects.create(program=program, timeslot=timeslot, num_volunteers=1)
+        VolunteerOffer.objects.create(user=volunteer, request=vr)
+
+        # The profile-only method still finds nothing (no RegistrationProfile)...
+        self.assertIsNone(volunteer.get_last_program_with_profile())
+        # ...but get_last_active_program() picks up the volunteered program.
+        self.assertEqual(volunteer.get_last_active_program(), program)
+
+        volunteer.delete()
+
     def tearDown(self):
         self.user.delete()
         self.admin.delete()
