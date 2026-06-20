@@ -1,0 +1,40 @@
+modules = ["python-3.12", "web", "nodejs-20", "python3"]
+[agent]
+expertMode = true
+stack = "BEST_EFFORT_FALLBACK"
+
+[nix]
+channel = "stable-25_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd esp && python3 manage.py runserver 0.0.0.0:5000 --settings=esp.settings"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["python3", "esp/manage.py", "runserver", "0.0.0.0:5000", "--settings=esp.settings"]
+build = ["python3", "-m", "pip", "install", "--break-system-packages", "-r", "esp/requirements.txt"]
