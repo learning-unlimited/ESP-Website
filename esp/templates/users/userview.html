@@ -106,9 +106,9 @@
                     <tr>
                         <td>
                             {% if module.isCompleted %}
-                                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                                <i class="bi bi-check done-sign" aria-label="Done"></i>
                             {% else %}
-                                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                                <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
                             {% endif %}
                             {{ module.module.link_title }}
                         </td>
@@ -122,9 +122,9 @@
                         <tr>
                             <td>
                                 {% if record.isCompleted %}
-                                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                                    <i class="bi bi-check done-sign" aria-label="Done"></i>
                                 {% else %}
-                                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                                    <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
                                 {% endif %}
                                 {{ record.full_event }}
                             </td>
@@ -163,9 +163,9 @@
                     <tr>
                         <td>
                             {% if module.isCompleted %}
-                                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                                <i class="bi bi-check done-sign" aria-label="Done"></i>
                             {% else %}
-                                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                                <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
                             {% endif %}
                             {{ module.module.link_title }}
                         </td>
@@ -179,9 +179,9 @@
                         <tr>
                             <td>
                                 {% if record.isCompleted %}
-                                    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                                    <i class="bi bi-check done-sign" aria-label="Done"></i>
                                 {% else %}
-                                    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                                    <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
                                 {% endif %}
                                 {{ record.full_event }}
                             </td>
@@ -207,12 +207,12 @@
 
 <table class="dottedtable">
 <tr><td class="key">Name</td><td id="td_name">
-    <span class="disp">{{ user.first_name }} {{ user.last_name }} <a href="#" onclick="toggleEditUser('name', true); return false;" aria-label="Edit name" title="Edit name"><i class="glyphicon glyphicon-pencil" style="font-size: 0.8em; margin-left: 5px; color: #888;" aria-hidden="true"></i></a></span>
+    <span class="disp">{{ user.first_name }} {{ user.last_name }} <a href="#" onclick="toggleEditUser('name', true); return false;" aria-label="Edit name" title="Edit name"><i class="bi bi-pencil" style="font-size: 0.8em; margin-left: 5px; color: #888;" aria-hidden="true"></i></a></span>
     <span class="edit" style="display:none;">
         <input type="text" id="edit_first_name" value="{{ user.first_name }}" placeholder="First Name" />
         <input type="text" id="edit_last_name" value="{{ user.last_name }}" placeholder="Last Name" />
-        <button class="btn btn-small btn-primary" onclick="submitEditUser('name');">Save</button>
-        <button class="btn btn-small btn-default" onclick="toggleEditUser('name', false); return false;">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="submitEditUser('name');">Save</button>
+        <button class="btn btn-sm btn-secondary" onclick="toggleEditUser('name', false); return false;">Cancel</button>
     </span>
 </td></tr>
 <tr><td class="key">Gender</td><td>{% if profile.student_info.gender %}{{ profile.student_info.gender }}{% else %}Not specified{% endif %}</td></tr>
@@ -220,11 +220,11 @@
 <tr><td class="key">Username</td><td>{{ user.username }}</td></tr>
 <tr><td class="key">User ID</td><td>{{ user.id }}</td></tr>
 <tr><td class="key">Email</td><td id="td_email">
-    <span class="disp">{{ user.email }} <a href="#" onclick="toggleEditUser('email', true); return false;" aria-label="Edit email" title="Edit email"><i class="glyphicon glyphicon-pencil" style="font-size: 0.8em; margin-left: 5px; color: #888;" aria-hidden="true"></i></a></span>
+    <span class="disp">{{ user.email }} <a href="#" onclick="toggleEditUser('email', true); return false;" aria-label="Edit email" title="Edit email"><i class="bi bi-pencil" style="font-size: 0.8em; margin-left: 5px; color: #888;" aria-hidden="true"></i></a></span>
     <span class="edit" style="display:none;">
         <input type="email" id="edit_email" value="{{ user.email }}" placeholder="Email" style="width: 250px;" />
-        <button class="btn btn-small btn-primary" onclick="submitEditUser('email');">Save</button>
-        <button class="btn btn-small btn-default" onclick="toggleEditUser('email', false); return false;">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="submitEditUser('email');">Save</button>
+        <button class="btn btn-sm btn-secondary" onclick="toggleEditUser('email', false); return false;">Cancel</button>
     </span>
 </td></tr>
 {% if profile.contact_user %}
@@ -267,13 +267,13 @@
         {% if program %}
         <input type="hidden" name="program" value="{{ program.id }}" />
         {% endif %}
-        <input type="submit" value="Change" class="btn btn-default" />
+        <input type="submit" value="Change" class="btn btn-secondary" />
         </form></td></tr>
         {% if grade_change_requests %}
         <tr><td colspan="2">
             {% for gcr in grade_change_requests %}
-            <div class="alert alert-danger">
-                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            <div role="alert" class="alert alert-danger">
+                <span class="bi bi-info-circle" aria-hidden="true"></span>
                 {{ gcr }}{% if gcr.reason %} ({{ gcr.reason }}){% endif %}<br />
                 <center>
                     <form action="/manage/userview/" method="get" name="approve_grade_request">
@@ -282,7 +282,7 @@
                         {% if program %}
                         <input type="hidden" name="program" value="{{ program.id }}" />
                         {% endif %}
-                        <input type="submit" value="Approve" class="btn btn-default" />
+                        <input type="submit" value="Approve" class="btn btn-secondary" />
                     </form>
                     <form action="/manage/userview/" method="get" name="reject_grade_request">
                         <input type="hidden" name="reject_request" value="{{ gcr.id }}" />
@@ -290,7 +290,7 @@
                         {% if program %}
                         <input type="hidden" name="program" value="{{ program.id }}" />
                         {% endif %}
-                        <input type="submit" value="Reject" class="btn btn-default" />
+                        <input type="submit" value="Reject" class="btn btn-secondary" />
                     </form>
                 </center>
             </div>

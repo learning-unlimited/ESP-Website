@@ -37,7 +37,7 @@ from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 
 from django.conf import settings
 
@@ -109,14 +109,19 @@ class GroupTextModule(ProgramModuleObj):
 
         if request.method == "POST":
             data = ListGenModule.processPost(request)
-            filterObj = UserSearchController().filter_from_postdata(prog, data)
+            try:
+                filterObj = usc.filter_from_postdata(prog, data)
+            except (ESPError_Log, ESPError_NoLog) as e:
+                context.update(usc.prepare_context(prog, target_path=request.path))
+                context['error'] = str(e)
+                return render_to_response(self.baseDir()+'search.html', request, context)
 
             context['filterid'] = filterObj.id
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             context['est_time'] = float(context['num_users']) * 1.0 / len(settings.TWILIO_ACCOUNT_NUMBERS)
             return render_to_response(self.baseDir()+'options.html', request, context)
 
-        context.update(usc.prepare_context(prog, target_path='/manage/%s/grouptextpanel' % prog.url))
+        context.update(usc.prepare_context(prog, target_path=request.path))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     @staticmethod
@@ -152,7 +157,7 @@ class GroupTextModule(ProgramModuleObj):
             try:
                 #   Only get contact info for the actual user (not guardians or emergency contacts)
                 contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).distinct('user')[0]
-            except ContactInfo.DoesNotExist:
+            except IndexError:
                 pass
             if not contactInfo:
                 send_log.append("Could not find contact info for "+str(user))
