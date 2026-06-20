@@ -2,7 +2,7 @@
 
 {% comment %}
 Customize your title formatting here.  For example:
-Splash at UFoo - [page title]
+{% block fulltitle %}Splash at UFoo - {% block title %}{% endblock %}{% endblock %}
 {% endcomment %}
 {% block fulltitle %}{% block title %}{% endblock %}{% endblock %}
 
